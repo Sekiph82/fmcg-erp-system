@@ -1,0 +1,10 @@
+Disposable database: fmcg_m34_s04_t003_6b4da5a489b5433892cee848
+Loopback port: 57614
+Container: fmcg-m34-s04-t003-6b4da5a489b5433892cee848
+Image: postgres:16.6
+8bba0477a85c668ebb7d77fa188fcdfc2adbf61959056e9a3f3491f7d0b5e220
+
+Alembic upgrade exit: 0
+
+PostgreSQL pytest exit: 0
+M34.S04.T003 PostgreSQL tests passed.

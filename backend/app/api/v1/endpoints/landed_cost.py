@@ -30,7 +30,10 @@ async def dashboard(db: AsyncSession = Depends(get_db)):
 
 @router.post("", response_model=LandedCostOut, status_code=201)
 async def create(payload: LandedCostHeaderCreate, db: AsyncSession = Depends(get_db)):
-    return await svc.create_header(db, payload)
+    try:
+        return await svc.create_header(db, payload)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
 
 
 @router.get("", response_model=List[LandedCostSummary])

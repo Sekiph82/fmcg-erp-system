@@ -10,9 +10,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M34 — Strategic Procurement Upgrade
 - Current Sprint: M34.S01 — Strategic Sourcing
-- Current Task: M34.S04.T002 — Tolerance/exception approval
+- Current Task: M34.S04.T003 — Landed-cost linkage
 - Current Task Status: COMPLETE
-- Next Task/Action: M34.S04.T003 — Landed-cost linkage
+- Next Task/Action: M34.S04.T004 — Finance posting/reconciliation
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -1119,7 +1119,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
   Evidence: coordination/sessions/M34.S04.T001/CODEX_LOG_V01.md and verification-V01.md; 7 focused tests, 5 fresh PostgreSQL tests, backend compile, targeted Ruff, frontend type-check/ESLint, reviewer no findings.
 - [x] M34.S04.T002 — Tolerance/exception approval
   Evidence: Tolerance/exception policy implemented and independently reviewed. Focused suite: 18 passed; fresh PostgreSQL 16.6: 7 passed at Alembic 20261104_0001 head with disposable container cleanup verified; targeted Ruff, compileall and diff-check passed. Evidence: coordination/sessions/M34.S04.T002/CODEX_LOG_V01.md and verification-V01.md.
-- [ ] M34.S04.T003 — Landed-cost linkage
+- [x] M34.S04.T003 — Landed-cost linkage
+  Evidence: Landed-cost source validation now enforces canonical GRN/PO snapshots, PO/shipment membership and duplicate prevention; allocation revalidates links and all GRNs must be posted before replacing allocations. Five fresh PostgreSQL 16.6 tests passed at 20261104_0001 head with cleanup verified; allocation unit regressions 18 passed; targeted Ruff, compileall, diff-check and independent review passed. Evidence: coordination/sessions/M34.S04.T003/CODEX_LOG_V01.md and verification-V01.md.
 - [ ] M34.S04.T004 — Finance posting/reconciliation
 
 ## M34.S05 — Verification

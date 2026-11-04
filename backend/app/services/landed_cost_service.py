@@ -35,7 +35,8 @@ from app.models.landed_cost import (
     LCInventoryAdjustment, LCAIRecommendation,
     LCAllocationMethod,
 )
-from app.models.procurement import GoodsReceipt, GRNLine, GRNStatus, POLine
+from app.models.logistics import InternationalShipment, ShipmentPOLink
+from app.models.procurement import GoodsReceipt, GRNLine, GRNStatus, POLine, PurchaseOrder
 from app.schemas.landed_cost import (
     LandedCostHeaderCreate, LandedCostHeaderUpdate,
     LandedCostLineCreate, LandedCostLineActualCreate, LandedCostGRNLinkCreate,
@@ -95,9 +96,111 @@ def _header_totals(lines: list[LandedCostLine], header_rate: Decimal) -> tuple[D
     return _R(total_fc), _R(total_base)
 
 
+async def _validate_landed_cost_links(
+    db: AsyncSession,
+    *,
+    po_id: Optional[UUID],
+    shipment_id: Optional[UUID],
+    grn_ids: list[UUID],
+) -> tuple[dict[UUID, GoodsReceipt], dict[UUID, PurchaseOrder]]:
+    """Resolve landed-cost source links from canonical PO/GRN/shipment records."""
+    if len(grn_ids) != len(set(grn_ids)):
+        raise ValueError("A landed-cost document cannot link the same goods receipt more than once")
+
+    if shipment_id is not None:
+        shipment = (await db.execute(
+            select(InternationalShipment)
+            .where(InternationalShipment.id == shipment_id)
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        )).scalar_one_or_none()
+        if shipment is None:
+            raise ValueError("Landed-cost shipment was not found")
+
+    receipt_references = (await db.execute(
+        select(GoodsReceipt.id, GoodsReceipt.po_id)
+        .where(GoodsReceipt.id.in_(grn_ids))
+        .order_by(GoodsReceipt.id)
+    )).all() if grn_ids else []
+    receipt_po_by_id = {receipt_id: source_po_id for receipt_id, source_po_id in receipt_references}
+    missing_receipts = set(grn_ids) - set(receipt_po_by_id)
+    if missing_receipts:
+        raise ValueError("One or more linked goods receipts were not found")
+
+    source_po_ids = set(receipt_po_by_id.values())
+    if po_id is not None:
+        source_po_ids.add(po_id)
+    purchase_orders = (await db.execute(
+        select(PurchaseOrder)
+        .where(PurchaseOrder.id.in_(source_po_ids))
+        .order_by(PurchaseOrder.id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )).scalars().all() if source_po_ids else []
+    po_by_id = {purchase_order.id: purchase_order for purchase_order in purchase_orders}
+    missing_po_ids = source_po_ids - set(po_by_id)
+    if missing_po_ids:
+        raise ValueError("A linked goods receipt or landed-cost document references a missing purchase order")
+
+    receipts = (await db.execute(
+        select(GoodsReceipt)
+        .where(GoodsReceipt.id.in_(grn_ids))
+        .order_by(GoodsReceipt.id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )).scalars().all() if grn_ids else []
+    receipt_by_id = {receipt.id: receipt for receipt in receipts}
+    if set(grn_ids) != set(receipt_by_id):
+        raise ValueError("A linked goods receipt changed while its landed-cost source was being validated")
+    if any(receipt.po_id != receipt_po_by_id[receipt.id] for receipt in receipts):
+        raise ValueError("A goods receipt purchase order changed during linkage; retry the operation")
+
+    if po_id is not None:
+        mismatched = [receipt.grn_no for receipt in receipts if receipt.po_id != po_id]
+        if mismatched:
+            raise ValueError("Every linked goods receipt must belong to the landed-cost purchase order")
+
+    if shipment_id is not None and source_po_ids:
+        shipment_links = (await db.execute(
+            select(ShipmentPOLink.po_id)
+            .where(
+                ShipmentPOLink.shipment_id == shipment_id,
+                ShipmentPOLink.po_id.in_(source_po_ids),
+            )
+            .order_by(ShipmentPOLink.po_id)
+            .with_for_update()
+        )).scalars().all()
+        linked_po_ids = set(shipment_links)
+        if po_id is not None and po_id not in linked_po_ids:
+            raise ValueError("The landed-cost purchase order is not linked to its shipment")
+        if any(receipt.po_id not in linked_po_ids for receipt in receipts):
+            raise ValueError("Every linked goods receipt must belong to a purchase order on the landed-cost shipment")
+
+    return receipt_by_id, po_by_id
+
+
+def _grn_link_snapshots(
+    receipt: GoodsReceipt,
+    purchase_orders: dict[UUID, PurchaseOrder],
+) -> dict[str, Optional[str]]:
+    """Use canonical document numbers instead of caller-supplied display snapshots."""
+    purchase_order = purchase_orders.get(receipt.po_id)
+    return {
+        "grn_no": receipt.grn_no,
+        "po_no": purchase_order.po_no if purchase_order is not None else None,
+    }
+
+
 # ── CRUD ──────────────────────────────────────────────────────────────────────
 
 async def create_header(db: AsyncSession, payload: LandedCostHeaderCreate) -> LandedCostHeader:
+    grn_ids = [link.grn_id for link in payload.grn_links]
+    receipt_by_id, purchase_orders = await _validate_landed_cost_links(
+        db,
+        po_id=payload.po_id,
+        shipment_id=payload.shipment_id,
+        grn_ids=grn_ids,
+    )
     lc_no = await _next_lc_no(db)
     header_rate, header_rate_id, header_rate_date, header_rate_source = await _resolve_rate_snapshot(
         db, payload.currency_code, payload.bill_date,
@@ -157,11 +260,11 @@ async def create_header(db: AsyncSession, payload: LandedCostHeaderCreate) -> La
     hdr.total_lc_amount_base = total_base
 
     for gl in payload.grn_links:
+        receipt = receipt_by_id[gl.grn_id]
         link = LandedCostGRNLink(
             header_id=hdr.id,
-            grn_id=gl.grn_id,
-            grn_no=gl.grn_no,
-            po_no=gl.po_no,
+            grn_id=receipt.id,
+            **_grn_link_snapshots(receipt, purchase_orders),
         )
         db.add(link)
 
@@ -841,11 +944,25 @@ async def add_grn_link(db: AsyncSession, header_id: UUID, payload: LandedCostGRN
         raise ValueError("Landed cost document not found")
     if hdr.status != "DRAFT":
         raise ValueError(f"Cannot add a GRN link in status {hdr.status}")
+    duplicate = (await db.execute(
+        select(LandedCostGRNLink.id).where(
+            LandedCostGRNLink.header_id == header_id,
+            LandedCostGRNLink.grn_id == payload.grn_id,
+        )
+    )).scalar_one_or_none()
+    if duplicate is not None:
+        raise ValueError("This goods receipt is already linked to the landed-cost document")
+    receipt_by_id, purchase_orders = await _validate_landed_cost_links(
+        db,
+        po_id=hdr.po_id,
+        shipment_id=hdr.shipment_id,
+        grn_ids=[payload.grn_id],
+    )
+    receipt = receipt_by_id[payload.grn_id]
     link = LandedCostGRNLink(
         header_id=header_id,
-        grn_id=payload.grn_id,
-        grn_no=payload.grn_no,
-        po_no=payload.po_no,
+        grn_id=receipt.id,
+        **_grn_link_snapshots(receipt, purchase_orders),
     )
     db.add(link)
     await db.commit()
@@ -875,17 +992,30 @@ async def run_allocation(db: AsyncSession, header_id: UUID) -> LandedCostHeader:
             "Negative landed-cost lines require a separately configured credit or reversal flow and cannot be allocated"
         )
 
-    # Clear existing allocation lines
+    grn_ids = [gl.grn_id for gl in hdr.grn_links]
+    if not grn_ids:
+        raise ValueError("Landed cost must be linked to at least one goods receipt before allocation")
+
+    receipt_by_id, _ = await _validate_landed_cost_links(
+        db,
+        po_id=hdr.po_id,
+        shipment_id=hdr.shipment_id,
+        grn_ids=grn_ids,
+    )
+    unposted_grns = [
+        receipt.grn_no
+        for receipt in receipt_by_id.values()
+        if receipt.status != GRNStatus.POSTED
+    ]
+    if unposted_grns:
+        raise ValueError("All linked goods receipts must be posted before landed-cost allocation")
+
+    # Validate every source before replacing existing allocation rows.
     await db.execute(
         LandedCostAllocationLine.__table__.delete().where(
             LandedCostAllocationLine.header_id == header_id
         )
     )
-
-    # Allocation is based only on posted receipts and quantities accepted into stock.
-    grn_ids = [gl.grn_id for gl in hdr.grn_links]
-    if not grn_ids:
-        raise ValueError("Landed cost must be linked to at least one goods receipt before allocation")
 
     grn_lines_q = await db.execute(
         select(GRNLine)
