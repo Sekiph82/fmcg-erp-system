@@ -233,6 +233,67 @@ async def _lock_work_order_context(
     return parent, work_order
 
 
+async def _require_routing_predecessors_complete(
+    db: AsyncSession, parent_id: UUID, work_order: WorkOrder
+) -> None:
+    """Require every earlier routed operation to have completed before start.
+
+    RoutingStep currently stores only an ``is_parallel`` flag, without a group
+    identifier or dependency graph. Until that domain can represent explicit
+    parallel groups, sequence order is enforced conservatively for every
+    routed operation. Unrouted/manual work orders retain their existing path.
+    """
+    if work_order.routing_step_id is None:
+        return
+
+    current_step = await db.get(RoutingStep, work_order.routing_step_id)
+    if current_step is None:
+        raise ValueError("Work order routing step not found")
+
+    predecessor_steps_result = await db.execute(
+        select(RoutingStep.id, RoutingStep.step_number)
+        .where(
+            RoutingStep.routing_id == current_step.routing_id,
+            RoutingStep.step_number < current_step.step_number,
+        )
+        .order_by(RoutingStep.step_number, RoutingStep.id)
+    )
+    predecessor_steps = list(predecessor_steps_result.all())
+    if not predecessor_steps:
+        return
+
+    predecessor_ids = [step_id for step_id, _ in predecessor_steps]
+    work_orders_result = await db.execute(
+        select(WorkOrder.routing_step_id, WorkOrder.work_order_id, WorkOrder.status)
+        .where(
+            WorkOrder.production_order_id == parent_id,
+            WorkOrder.routing_step_id.in_(predecessor_ids),
+        )
+        .execution_options(populate_existing=True)
+    )
+    work_orders_by_step: dict[UUID, list[tuple[str, WorkOrderStatus]]] = {}
+    for step_id, code, status in work_orders_result.all():
+        work_orders_by_step.setdefault(step_id, []).append((code, status))
+
+    for step_id, step_number in predecessor_steps:
+        # Split/merge records cancel their source work orders and create new
+        # rows at the same routing step. Evaluate the active replacement rows,
+        # while a bare cancellation still fails closed as an empty operation.
+        operation_orders = [
+            (code, status)
+            for code, status in work_orders_by_step.get(step_id, [])
+            if status != WorkOrderStatus.CANCELLED
+        ]
+        if not operation_orders:
+            raise ValueError(
+                f"Predecessor operation step {step_number} has no active work order"
+            )
+        if any(status != WorkOrderStatus.COMPLETED for _, status in operation_orders):
+            raise ValueError(
+                f"Predecessor operation step {step_number} must be completed before this work order can start"
+            )
+
+
 def _require_parent_status(
     parent: ProductionOrder,
     allowed: set[ProductionOrderStatus],
@@ -838,6 +899,7 @@ async def start_work_order(
     _require_parent_status(parent, {ProductionOrderStatus.IN_PROGRESS}, "start")
     if work_order.status != WorkOrderStatus.PLANNED:
         raise ValueError(f"Cannot start work order in status '{work_order.status.value}'")
+    await _require_routing_predecessors_complete(db, parent.id, work_order)
     previous_status = work_order.status
     work_order.status = WorkOrderStatus.IN_PROGRESS
     work_order.start_time = datetime.now(timezone.utc)
