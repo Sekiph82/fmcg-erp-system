@@ -21,7 +21,7 @@ import enum
 from datetime import datetime
 from sqlalchemy import (
     Column, String, Text, Numeric, Boolean, Integer, Float,
-    ForeignKey, Enum, DateTime, Date, UniqueConstraint, Index,
+    ForeignKey, Enum, DateTime, Date, UniqueConstraint, Index, CheckConstraint,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
@@ -198,6 +198,12 @@ class RoutingStep(Base, TimestampMixin):
 class WorkOrder(Base, TimestampMixin):
     """Executable operation derived from a production order."""
     __tablename__ = "work_orders"
+    __table_args__ = (
+        CheckConstraint(
+            "actual_quantity IS NULL OR (actual_quantity > 0 AND (planned_quantity IS NULL OR actual_quantity <= planned_quantity))",
+            name="ck_work_orders_actual_quantity_range",
+        ),
+    )
 
     id                  = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     work_order_id       = Column(String(50), unique=True, nullable=False, index=True)

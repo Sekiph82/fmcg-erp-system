@@ -10,9 +10,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M22 — Production Order / Work Order
 - Current Sprint: M22.S02 — Execution Structure
-- Current Task: M22.S02.T002 — Split/merge work orders
+- Current Task: M22.S02.T003 — Partial completion/backorder semantics
 - Current Task Status: COMPLETE
-- Next Task/Action: M22.S02.T003 — Partial completion/backorder semantics
+- Next Task/Action: M22.S02.T004 — Rework/reprocess flows
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -685,7 +685,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
   Evidence: Added canonical routing-to-work-order generation, sequence display, work-center/product guards, duplicate protection and migration preflights. Independent read-only review found no remaining blockers; git diff --check passed. PostgreSQL tests, migration execution and build are deferred to the M22 milestone batch; no runtime acceptance is claimed. See coordination/sessions/M22.S02.T001/CLAUDE_LOG_V01.md.
 - [x] M22.S02.T002 — Split/merge work orders
   Evidence: Implemented quantity-conserving split/merge for compatible unstarted work orders, immutable lineage and transition history, API/UI, migration safeguards, and disposable PostgreSQL regression coverage. Independent read-only review findings corrected; git diff --cached --check passed; alembic heads resolves 20261104_0005 as the sole head. PostgreSQL tests, migration execution, and frontend build deferred to the M22.S02 milestone batch; no runtime acceptance claimed.
-- [ ] M22.S02.T003 — Partial completion/backorder semantics
+- [x] M22.S02.T003 — Partial completion/backorder semantics
+  Evidence: Implemented bounded partial completion and linked planned backorders with transaction/actor history, quantity guards, final-operation reconciliation, backorder-aware reports/KPIs, API/UI links, migration preflights and guarded disposable-PostgreSQL regressions; independent read-only review found no remaining blocker after an analytics-scope fix; git diff --check passed and Alembic has sole head 20261104_0006. Automated tests, migration execution and frontend type-check/build are deferred to the M22.S02 milestone batch; no runtime/database acceptance is claimed. See coordination/sessions/M22.S02.T003/CLAUDE_LOG_V01.md.
 - [ ] M22.S02.T004 — Rework/reprocess flows
 
 ## M22.S03 — Subcontracting & Dependencies

@@ -293,6 +293,12 @@ export default function OrderDetailPage() {
             </p>
           </div>
           <div>
+            <p className="text-xs text-gray-500">Backordered Qty</p>
+            <p className="text-lg font-semibold">
+              {Number(order.backordered_quantity ?? 0).toLocaleString()} <span className="text-sm font-normal text-gray-400">{order.uom}</span>
+            </p>
+          </div>
+          <div>
             <p className="text-xs text-gray-500">Scheduled</p>
             <p className="text-sm font-medium">{new Date(order.scheduled_start).toLocaleString()}</p>
             <p className="text-xs text-gray-400">→ {new Date(order.scheduled_end).toLocaleString()}</p>
@@ -306,6 +312,37 @@ export default function OrderDetailPage() {
           )}
         </div>
       </div>
+
+      {order.backorder_of_id && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          This order is a backorder of{" "}
+          <button className="font-mono underline" onClick={() => router.push(`/dashboard/production/orders/${order.backorder_of_id}`)}>
+            the source production order
+          </button>
+          . It remains unapproved until an authorized user approves it.
+        </div>
+      )}
+      {order.backorders.length > 0 && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-5">
+          <h2 className="font-semibold text-amber-950">Backorder created from this order</h2>
+          <p className="mt-1 text-sm text-amber-900">
+            The unproduced quantity is recorded separately. The new order stays planned and requires approval before release.
+          </p>
+          <ul className="mt-3 space-y-2">
+            {order.backorders.map((backorder) => (
+              <li key={backorder.id}>
+                <button
+                  className="font-mono text-sm text-indigo-700 underline"
+                  onClick={() => router.push(`/dashboard/production/orders/${backorder.id}`)}
+                >{backorder.order_no}</button>
+                <span className="ml-2 text-sm text-gray-700">
+                  {Number(backorder.planned_quantity).toLocaleString()} {order.uom} · {backorder.status}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* Routed Work Orders */}
       <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
@@ -562,11 +599,13 @@ export default function OrderDetailPage() {
       <Modal open={completeOpen} onClose={() => setCompleteOpen(false)} title="Complete Production Order">
         <form onSubmit={(e) => { e.preventDefault(); complete.mutate(); }} className="space-y-4">
           <p className="text-sm text-gray-500">
-            This will issue materials from inventory, receive finished goods into the target warehouse, and close the order.
+            Materials and finished goods are posted for the actual quantity. Any unproduced remainder becomes a linked planned backorder, which requires separate approval before release.
           </p>
           <Input
             label="Actual Quantity Produced *"
             type="number"
+            min="0.001"
+            max={order.planned_quantity}
             step="0.001"
             value={completeForm.actual_quantity || ""}
             onChange={(e) => setCompleteForm((f) => ({ ...f, actual_quantity: parseFloat(e.target.value) || 0 }))}
@@ -612,7 +651,11 @@ export default function OrderDetailPage() {
           />
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" type="button" onClick={() => setCompleteOpen(false)}>Cancel</Button>
-            <Button type="submit" loading={complete.isPending} disabled={!completeForm.actual_quantity}>
+            <Button
+              type="submit"
+              loading={complete.isPending}
+              disabled={!completeForm.actual_quantity || completeForm.actual_quantity > Number(order.planned_quantity)}
+            >
               Complete Order
             </Button>
           </div>

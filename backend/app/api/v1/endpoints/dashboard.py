@@ -150,7 +150,9 @@ async def get_dashboard_summary(
     # Today planned vs actual qty (orders scheduled to start today or in progress)
     today_prod_result = await db.execute(
         select(
-            func.coalesce(func.sum(ProductionOrder.planned_quantity), 0),
+            func.coalesce(func.sum(
+                ProductionOrder.planned_quantity - ProductionOrder.backordered_quantity
+            ), 0),
             func.coalesce(func.sum(ProductionOrder.actual_quantity), 0),
         ).where(
             and_(

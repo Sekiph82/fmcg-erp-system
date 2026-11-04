@@ -11,7 +11,7 @@ stock delta logic so that inventory remains consistent.
 """
 from __future__ import annotations
 
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Optional, List
 import uuid
@@ -27,6 +27,7 @@ from app.models.production import (
     ProductionPlanStatus, ProductionOrderStatus, DowntimeReason,
 )
 from app.models.production_advanced import WorkOrder, WorkOrderStatus
+from app.models.production_advanced import RoutingStep
 from app.models.recipe import Recipe, RecipeItem
 from app.models.inventory import Stock, StockMovement, MovementType, StockType, Lot
 from app.models.master import Material, Warehouse
@@ -525,6 +526,146 @@ async def resume_order(
     return log
 
 
+async def _completed_work_order_output_quantity(
+    db: AsyncSession, order: ProductionOrder
+) -> Optional[Decimal]:
+    all_count_result = await db.execute(
+        select(func.count(WorkOrder.id)).where(WorkOrder.production_order_id == order.id)
+    )
+    all_count = all_count_result.scalar_one()
+    rows_result = await db.execute(
+        select(
+            WorkOrder,
+            RoutingStep.routing_id,
+            RoutingStep.step_number,
+        )
+        .outerjoin(RoutingStep, WorkOrder.routing_step_id == RoutingStep.id)
+        .where(
+            WorkOrder.production_order_id == order.id,
+            WorkOrder.status != WorkOrderStatus.CANCELLED,
+        )
+        .order_by(WorkOrder.created_at, WorkOrder.id)
+    )
+    rows = list(rows_result.all())
+    if not rows:
+        if all_count:
+            raise HTTPException(
+                422,
+                detail="Production order has only cancelled work orders; add an active operation before completion.",
+            )
+        return None
+
+    if any(work_order.status != WorkOrderStatus.COMPLETED for work_order, _, _ in rows):
+        raise HTTPException(422, detail="Every active work order must be completed before order closure.")
+    if any(work_order.actual_quantity is None for work_order, _, _ in rows):
+        raise HTTPException(422, detail="Completed work orders must record their actual quantity.")
+
+    routed_rows = [row for row in rows if row[0].routing_step_id is not None]
+    manual_rows = [row for row in rows if row[0].routing_step_id is None]
+    if routed_rows and manual_rows:
+        raise HTTPException(422, detail="Routed and manual work orders cannot be reconciled on the same production order.")
+
+    if routed_rows:
+        routing_ids = {routing_id for _, routing_id, _ in routed_rows}
+        if len(routing_ids) != 1 or None in routing_ids:
+            raise HTTPException(422, detail="Production order work orders must use one valid routing.")
+        routing_id = next(iter(routing_ids))
+        final_step_result = await db.execute(
+            select(func.max(RoutingStep.step_number)).where(RoutingStep.routing_id == routing_id)
+        )
+        final_step_number = final_step_result.scalar_one_or_none()
+        if final_step_number is None:
+            raise HTTPException(422, detail="Production routing has no final operation to reconcile.")
+        final_rows = [row[0] for row in routed_rows if row[2] == final_step_number]
+        if not final_rows:
+            raise HTTPException(422, detail="Final routing operation has no linked work orders.")
+    else:
+        manual_groups = {(work_order.work_center_id, work_order.operation.strip()) for work_order, _, _ in manual_rows}
+        if len(manual_groups) != 1:
+            raise HTTPException(
+                422,
+                detail="Multiple manual operations have no authoritative sequence; link them to a routing before closure.",
+            )
+        final_rows = [work_order for work_order, _, _ in manual_rows]
+
+    return sum((Decimal(work_order.actual_quantity) for work_order in final_rows), Decimal("0"))
+
+
+async def _create_partial_backorder(
+    db: AsyncSession,
+    source: ProductionOrder,
+    quantity: Decimal,
+    actor_id: uuid.UUID,
+) -> ProductionOrder:
+    if quantity <= 0 or quantity != quantity.quantize(Decimal("0.001")):
+        raise HTTPException(422, detail="Backorder quantity must be positive and use no more than three decimal places.")
+    existing_result = await db.execute(
+        select(ProductionOrder.id)
+        .where(ProductionOrder.backorder_of_id == source.id)
+        .limit(1)
+    )
+    if existing_result.scalar_one_or_none() is not None:
+        raise HTTPException(422, detail="This production order already has a backorder; refusing to create a duplicate.")
+
+    duration = source.scheduled_end - source.scheduled_start
+    if duration <= timedelta(0):
+        raise HTTPException(422, detail="A valid source schedule window is required to plan the backorder.")
+    now = _now()
+    scheduled_start = max(source.scheduled_end, now)
+    scheduled_end = scheduled_start + duration
+
+    sequence = 1
+    while True:
+        order_no = f"{source.order_no}-BO-{sequence:02d}"
+        if len(order_no) > 50:
+            order_no = f"BO-{source.id.hex[:16]}-{sequence:02d}"
+        collision = await db.execute(
+            select(ProductionOrder.id).where(ProductionOrder.order_no == order_no).limit(1)
+        )
+        if collision.scalar_one_or_none() is None:
+            break
+        sequence += 1
+        if sequence > 999_999:
+            raise HTTPException(422, detail="Unable to allocate a unique backorder number.")
+
+    backorder = ProductionOrder(
+        order_no=order_no,
+        plan_line_id=source.plan_line_id,
+        product_id=source.product_id,
+        recipe_id=source.recipe_id,
+        planned_quantity=quantity,
+        actual_quantity=None,
+        backorder_of_id=source.id,
+        backordered_quantity=Decimal("0"),
+        batch_no=source.batch_no,
+        uom=source.uom,
+        status=ProductionOrderStatus.PLANNED,
+        target_warehouse_id=source.target_warehouse_id,
+        source_warehouse_id=source.source_warehouse_id,
+        scheduled_start=scheduled_start,
+        scheduled_end=scheduled_end,
+        created_by=actor_id,
+        notes=(
+            f"Backorder from {source.order_no}; remaining quantity {quantity} {source.uom}."
+            + (f" Source notes: {source.notes}" if source.notes else "")
+        ),
+    )
+    db.add(backorder)
+    source.backordered_quantity = quantity
+    await db.flush()
+    record_transition(
+        db,
+        entity_type=PRODUCTION_ORDER,
+        entity_id=backorder.id,
+        parent_entity_type=PRODUCTION_ORDER,
+        parent_entity_id=source.id,
+        action="BACKORDER_CREATED",
+        actor_id=actor_id,
+        to_status=backorder.status,
+    )
+    return backorder
+
+
 async def complete_order(
     db: AsyncSession,
     order: ProductionOrder,
@@ -545,11 +686,29 @@ async def complete_order(
         raise HTTPException(422, detail=f"Order is {order.status.value}. Must be IN_PROGRESS to complete.")
     _require_order_transition(order, ProductionOrderStatus.COMPLETED)
 
+    requested_quantity = Decimal(req.actual_quantity)
+    if not requested_quantity.is_finite() or requested_quantity <= 0:
+        raise HTTPException(422, detail="actual_quantity must be a positive finite quantity.")
+    if requested_quantity != requested_quantity.quantize(Decimal("0.001")):
+        raise HTTPException(422, detail="actual_quantity must use no more than three decimal places.")
+    if requested_quantity > Decimal(order.planned_quantity):
+        raise HTTPException(422, detail="actual_quantity cannot exceed the production-order planned quantity.")
+
+    final_operation_quantity = await _completed_work_order_output_quantity(db, order)
+    if final_operation_quantity is not None and requested_quantity != final_operation_quantity:
+        raise HTTPException(
+            422,
+            detail=(
+                "Production-order actual quantity must equal the completed output of the final work-order operation "
+                f"({final_operation_quantity} {order.uom})."
+            ),
+        )
+
     unfinished_work_order = await db.execute(
         select(WorkOrder.id)
         .where(
             WorkOrder.production_order_id == order.id,
-            WorkOrder.status != WorkOrderStatus.COMPLETED,
+            WorkOrder.status.notin_({WorkOrderStatus.COMPLETED, WorkOrderStatus.CANCELLED}),
         )
         .limit(1)
     )
@@ -573,9 +732,6 @@ async def complete_order(
         )
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
-
-    if req.actual_quantity <= 0:
-        raise HTTPException(422, detail="actual_quantity must be positive.")
 
     finished_lot_number = (req.fg_lot_number or order.batch_no or "").strip()
     if not finished_lot_number:
@@ -610,7 +766,7 @@ async def complete_order(
             )
 
         if items and float(order.planned_quantity) > 0:
-            scale = float(req.actual_quantity) / float(order.planned_quantity)
+            scale = float(requested_quantity) / float(order.planned_quantity)
         else:
             scale = 1.0
 
@@ -662,7 +818,7 @@ async def complete_order(
     movement, lot_id = await _receipt_finished_goods(
         db=db,
         order=order,
-        quantity=req.actual_quantity,
+        quantity=requested_quantity,
         warehouse_id=order.target_warehouse_id,
         lot_number=finished_lot_number,
         batch_no=order.batch_no,
@@ -673,7 +829,7 @@ async def complete_order(
     fg_receipt = FinishedGoodsReceipt(
         production_order_id=order.id,
         product_id=order.product_id,
-        quantity=req.actual_quantity,
+        quantity=requested_quantity,
         uom=order.uom,
         lot_number=finished_lot_number,
         batch_no=order.batch_no,
@@ -727,16 +883,20 @@ async def complete_order(
 
     # ── Finalise order ────────────────────────────────────────────────────────
     previous_status = order.status
-    order.actual_quantity = req.actual_quantity
+    order.actual_quantity = requested_quantity
     order.actual_end = _now()
     order.status = ProductionOrderStatus.COMPLETED
+    remaining_quantity = Decimal(order.planned_quantity) - requested_quantity
+    backorder = None
+    if remaining_quantity > 0:
+        backorder = await _create_partial_backorder(db, order, remaining_quantity, user_id)
     record_transition(
         db,
         entity_type=PRODUCTION_ORDER,
         entity_id=order.id,
         parent_entity_type=PRODUCTION_ORDER,
         parent_entity_id=order.id,
-        action="COMPLETED",
+        action="COMPLETED_WITH_BACKORDER" if backorder is not None else "COMPLETED",
         actor_id=user_id,
         from_status=previous_status,
         to_status=order.status,
@@ -835,16 +995,18 @@ async def get_production_report(
             downtime_map[key]["count"] += 1
             downtime_map[key]["total_minutes"] += log.duration_minutes or 0
 
-        total_planned += o.planned_quantity
+        backordered_quantity = Decimal(o.backordered_quantity or 0)
+        effective_planned_quantity = Decimal(o.planned_quantity) - backordered_quantity
+        total_planned += effective_planned_quantity
         if o.actual_quantity:
             total_actual += o.actual_quantity
 
         variance = None
         variance_pct = None
         if o.actual_quantity is not None:
-            variance = o.actual_quantity - o.planned_quantity
-            if float(o.planned_quantity) > 0:
-                variance_pct = round(float(variance) / float(o.planned_quantity) * 100, 2)
+            variance = o.actual_quantity - effective_planned_quantity
+            if effective_planned_quantity > 0:
+                variance_pct = round(float(variance) / float(effective_planned_quantity) * 100, 2)
 
         if o.status == ProductionOrderStatus.COMPLETED:
             oee = _compute_oee(o)
@@ -855,7 +1017,8 @@ async def get_production_report(
             order_no=o.order_no,
             product_name=o.product.name if o.product else "",
             product_sku=o.product.sku if o.product else "",
-            planned_quantity=o.planned_quantity,
+            planned_quantity=effective_planned_quantity,
+            backordered_quantity=backordered_quantity,
             actual_quantity=o.actual_quantity,
             variance=variance,
             variance_pct=variance_pct,

@@ -122,7 +122,9 @@ async def run_prediction_agent(
     # ── Historical data ────────────────────────────────────────────────────────
     hist_q = await db.execute(
         select(
-            ProductionOrder.planned_quantity,
+            (
+                ProductionOrder.planned_quantity - ProductionOrder.backordered_quantity
+            ).label("planned_quantity"),
             ProductionOrder.actual_quantity,
             ProductionOrder.scheduled_start,
             ProductionOrder.scheduled_end,

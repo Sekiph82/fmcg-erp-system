@@ -27,6 +27,7 @@ from app.schemas.production import (
     OEEMetrics, CompleteOrderRequest,
     ProductionSummary,
     MaterialConsumptionRead, FinishedGoodsReceiptRead,
+    ProductionOrderBackorderRead,
 )
 from app.schemas.production_transition import ProductionTransitionEventRead
 from app.services.production_transition_history import PRODUCTION_ORDER, list_parent_history
@@ -127,6 +128,7 @@ def _enrich_order_detail(order) -> ProductionOrderDetailRead:
         detail.fg_receipts.append(r)
 
     detail.downtime_logs = [DowntimeLogRead.model_validate(d) for d in order.downtime_logs]
+    detail.backorders = [ProductionOrderBackorderRead.model_validate(backorder) for backorder in order.backorders]
 
     if order.status == ProductionOrderStatus.COMPLETED:
         from app.services.production_service import _compute_oee

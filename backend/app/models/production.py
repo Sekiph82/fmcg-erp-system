@@ -3,7 +3,7 @@ import enum
 from datetime import datetime
 from sqlalchemy import (
     Column, String, Text, Numeric, Boolean, Integer,
-    ForeignKey, Enum, DateTime, UniqueConstraint, Index,
+    ForeignKey, Enum, DateTime, UniqueConstraint, Index, CheckConstraint,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
@@ -83,6 +83,16 @@ class ProductionPlanLine(Base, TimestampMixin):
 
 class ProductionOrder(Base, TimestampMixin):
     __tablename__ = "production_orders"
+    __table_args__ = (
+        CheckConstraint(
+            "backordered_quantity >= 0 AND backordered_quantity <= planned_quantity",
+            name="ck_production_orders_backordered_quantity_range",
+        ),
+        CheckConstraint(
+            "actual_quantity IS NULL OR (actual_quantity > 0 AND actual_quantity <= planned_quantity)",
+            name="ck_production_orders_actual_quantity_range",
+        ),
+    )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     order_no = Column(String(50), unique=True, nullable=False, index=True)
@@ -91,6 +101,13 @@ class ProductionOrder(Base, TimestampMixin):
     recipe_id = Column(UUID(as_uuid=True), ForeignKey("recipes.id", ondelete="RESTRICT"), nullable=False)
     planned_quantity = Column(Numeric(14, 3), nullable=False)
     actual_quantity = Column(Numeric(14, 3), nullable=True)
+    backorder_of_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("production_orders.id", ondelete="RESTRICT", name="fk_production_orders_backorder_of"),
+        nullable=True,
+        index=True,
+    )
+    backordered_quantity = Column(Numeric(14, 3), nullable=False, default=0, server_default="0")
     batch_no = Column(String(100), nullable=True, index=True)
     uom = Column(String(20), nullable=False, default="KG")
     status = Column(Enum(ProductionOrderStatus), nullable=False, default=ProductionOrderStatus.PLANNED)
@@ -126,6 +143,18 @@ class ProductionOrder(Base, TimestampMixin):
     target_warehouse = relationship("Warehouse", foreign_keys=[target_warehouse_id])
     source_warehouse = relationship("Warehouse", foreign_keys=[source_warehouse_id])
     creator = relationship("User", foreign_keys=[created_by])
+    backorder_of = relationship(
+        "ProductionOrder",
+        remote_side=[id],
+        foreign_keys=[backorder_of_id],
+        back_populates="backorders",
+    )
+    backorders = relationship(
+        "ProductionOrder",
+        foreign_keys=[backorder_of_id],
+        back_populates="backorder_of",
+        passive_deletes="all",
+    )
     consumptions = relationship(
         "MaterialConsumption",
         back_populates="production_order",

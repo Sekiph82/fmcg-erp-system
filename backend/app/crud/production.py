@@ -101,6 +101,7 @@ async def get_order(db: AsyncSession, order_id: uuid.UUID) -> Optional[Productio
             selectinload(ProductionOrder.consumptions).selectinload(MaterialConsumption.source_warehouse),
             selectinload(ProductionOrder.fg_receipts).selectinload(FinishedGoodsReceipt.warehouse),
             selectinload(ProductionOrder.downtime_logs),
+            selectinload(ProductionOrder.backorders),
         )
     )
     return result.scalar_one_or_none()

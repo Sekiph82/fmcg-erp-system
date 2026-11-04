@@ -860,21 +860,38 @@ async def complete_work_order(
     _require_parent_status(parent, {ProductionOrderStatus.IN_PROGRESS}, "complete")
     if work_order.status != WorkOrderStatus.IN_PROGRESS:
         raise ValueError(f"Cannot complete work order in status '{work_order.status.value}'")
-    if actual_quantity is not None and actual_quantity <= 0:
-        raise ValueError("actual_quantity must be positive")
+    planned_quantity = (
+        Decimal(work_order.planned_quantity)
+        if work_order.planned_quantity is not None
+        else Decimal(parent.planned_quantity)
+    )
+    if planned_quantity <= 0 or planned_quantity > Decimal(parent.planned_quantity):
+        raise ValueError("Work-order planned quantity must be positive and cannot exceed the production order")
+    completed_quantity = planned_quantity if actual_quantity is None else Decimal(actual_quantity)
+    if not completed_quantity.is_finite() or completed_quantity <= 0:
+        raise ValueError("actual_quantity must be a positive finite quantity")
+    if completed_quantity != completed_quantity.quantize(Decimal("0.001")):
+        raise ValueError("actual_quantity must use no more than three decimal places")
+    if completed_quantity > planned_quantity:
+        raise ValueError("actual_quantity cannot exceed the work-order planned quantity")
+    if completed_quantity > Decimal(parent.planned_quantity):
+        raise ValueError("actual_quantity cannot exceed the production-order planned quantity")
 
     previous_status = work_order.status
     work_order.status = WorkOrderStatus.COMPLETED
     work_order.end_time = datetime.now(timezone.utc)
-    if actual_quantity is not None:
-        work_order.actual_quantity = actual_quantity
+    work_order.actual_quantity = completed_quantity
     record_transition(
         db,
         entity_type=WORK_ORDER,
         entity_id=work_order.id,
         parent_entity_type=PRODUCTION_ORDER,
         parent_entity_id=parent.id,
-        action="COMPLETED",
+        action=(
+            "COMPLETED_PARTIALLY"
+            if completed_quantity < planned_quantity
+            else "COMPLETED"
+        ),
         actor_id=actor_id,
         from_status=previous_status,
         to_status=work_order.status,

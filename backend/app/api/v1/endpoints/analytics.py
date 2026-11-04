@@ -281,12 +281,15 @@ async def production_analytics(
     completed_today = completed_today_result.scalar_one() or 0
 
     # Completion rate (avg planned vs actual for completed orders)
+    effective_planned_quantity = (
+        ProductionOrder.planned_quantity - ProductionOrder.backordered_quantity
+    )
     rate_result = await db.execute(
         select(
             func.avg(
                 func.case(
-                    (ProductionOrder.planned_quantity > 0,
-                     ProductionOrder.actual_quantity / ProductionOrder.planned_quantity * 100),
+                    (effective_planned_quantity > 0,
+                     ProductionOrder.actual_quantity / effective_planned_quantity * 100),
                     else_=0
                 )
             )
@@ -321,7 +324,7 @@ async def production_analytics(
     prod_trend_result = await db.execute(
         select(
             cast(ProductionOrder.scheduled_start, SADate).label("day"),
-            func.coalesce(func.sum(ProductionOrder.planned_quantity), 0).label("planned"),
+            func.coalesce(func.sum(effective_planned_quantity), 0).label("planned"),
             func.coalesce(func.sum(ProductionOrder.actual_quantity), 0).label("actual"),
         )
         .where(cast(ProductionOrder.scheduled_start, SADate).between(start, today))
@@ -2073,8 +2076,11 @@ async def daily_kpis(db: AsyncSession = Depends(get_db)):
     zero_stock_count = sum(1 for r in list(prod_s) + list(mat_s) if _f(r.qty) <= 0)
 
     # ── Production today ──
+    effective_today_planned_quantity = (
+        ProductionOrder.planned_quantity - ProductionOrder.backordered_quantity
+    )
     prod_row = (await db.execute(
-        select(func.coalesce(func.sum(ProductionOrder.planned_quantity), 0),
+        select(func.coalesce(func.sum(effective_today_planned_quantity), 0),
                func.coalesce(func.sum(ProductionOrder.actual_quantity), 0))
         .where(and_(
             ProductionOrder.status.in_([

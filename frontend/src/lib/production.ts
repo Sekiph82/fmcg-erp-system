@@ -69,6 +69,8 @@ export interface ProductionOrder {
   recipe_name?: string;
   planned_quantity: number;
   actual_quantity?: number;
+  backorder_of_id?: string;
+  backordered_quantity: number;
   batch_no?: string;
   uom: string;
   status: OrderStatus;
@@ -138,7 +140,13 @@ export interface ProductionOrderDetail extends ProductionOrder {
   consumptions: MaterialConsumption[];
   fg_receipts: FGReceipt[];
   downtime_logs: DowntimeLog[];
+  backorders: ProductionOrderBackorder[];
   oee?: OEEMetrics;
+}
+
+export interface ProductionOrderBackorder {
+  id: string; order_no: string; planned_quantity: number;
+  status: OrderStatus; backorder_of_id?: string; batch_no?: string;
 }
 
 export interface ProductionReportRow {
@@ -147,6 +155,7 @@ export interface ProductionReportRow {
   product_name: string;
   product_sku: string;
   planned_quantity: number;
+  backordered_quantity: number;
   actual_quantity?: number;
   variance?: number;
   variance_pct?: number;

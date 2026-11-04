@@ -89,6 +89,8 @@ class ProductionOrderRead(BaseModel):
     recipe_id: uuid.UUID
     planned_quantity: Decimal
     actual_quantity: Optional[Decimal] = None
+    backorder_of_id: Optional[uuid.UUID] = None
+    backordered_quantity: Decimal = Decimal("0")
     batch_no: Optional[str] = None
     uom: str
     status: ProductionOrderStatus
@@ -106,6 +108,17 @@ class ProductionOrderRead(BaseModel):
     product_sku: Optional[str] = None
     recipe_name: Optional[str] = None
     target_warehouse_name: Optional[str] = None
+    model_config = {"from_attributes": True}
+
+
+class ProductionOrderBackorderRead(BaseModel):
+    id: uuid.UUID
+    order_no: str
+    planned_quantity: Decimal
+    status: ProductionOrderStatus
+    backorder_of_id: Optional[uuid.UUID] = None
+    batch_no: Optional[str] = None
+
     model_config = {"from_attributes": True}
 
 
@@ -213,6 +226,7 @@ class ProductionOrderDetailRead(ProductionOrderRead):
     consumptions: List[MaterialConsumptionRead] = []
     fg_receipts: List[FinishedGoodsReceiptRead] = []
     downtime_logs: List[DowntimeLogRead] = []
+    backorders: List[ProductionOrderBackorderRead] = []
     oee: Optional[OEEMetrics] = None
 
 
@@ -224,6 +238,7 @@ class ProductionReportRow(BaseModel):
     product_name: str
     product_sku: str
     planned_quantity: Decimal
+    backordered_quantity: Decimal = Decimal("0")
     actual_quantity: Optional[Decimal]
     variance: Optional[Decimal]
     variance_pct: Optional[float]
