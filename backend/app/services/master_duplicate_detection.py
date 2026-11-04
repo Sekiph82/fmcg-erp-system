@@ -22,8 +22,12 @@ def unique_key_groups(model: type) -> list[tuple[str, ...]]:
             groups.add((column.name,))
     for constraint in table.constraints:
         if isinstance(constraint, UniqueConstraint):
-            names = tuple(column.name for column in constraint.columns)
-            if names:
+            columns = tuple(constraint.columns)
+            names = tuple(column.name for column in columns)
+            # Composite keys containing a primary-key column are commonly
+            # declared only to support composite foreign keys. They cannot
+            # identify a duplicate master record independently of its row ID.
+            if names and not any(column.primary_key for column in columns):
                 groups.add(names)
     return sorted(groups)
 

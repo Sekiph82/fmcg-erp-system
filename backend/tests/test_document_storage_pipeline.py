@@ -201,9 +201,10 @@ def test_binary_routes_require_document_permissions():
 def _task_database_name() -> str:
     expected = os.environ.get("M01_S02_T005_DISPOSABLE_TEST_DATABASE_NAME")
     url = engine.url
+    if os.environ.get("M01_S02_T005_DISPOSABLE_TEST_DATABASE") != "1":
+        pytest.skip("Requires an explicitly opted-in M01.S02.T005 disposable PostgreSQL database.")
     if not (
-        os.environ.get("M01_S02_T005_DISPOSABLE_TEST_DATABASE") == "1"
-        and url.drivername in {"postgresql", "postgresql+asyncpg"}
+        url.drivername in {"postgresql", "postgresql+asyncpg"}
         and url.host in {"127.0.0.1", "localhost", "::1"}
         and url.password is None
         and expected

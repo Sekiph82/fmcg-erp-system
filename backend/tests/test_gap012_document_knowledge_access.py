@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 
-from fastapi import APIRouter
+from fastapi import APIRouter, FastAPI
 
 from app.core.module_registry import (
     ENDPOINT_ROUTE_DEFINITIONS,
@@ -122,7 +122,9 @@ def test_document_knowledge_esign_permissions_are_registry_and_seed_owned():
 def test_document_knowledge_esign_routes_register_from_module_registry():
     router = APIRouter()
     diagnostics = register_module_routes(router, environment="development")
-    paths = {route.path for route in router.routes}
+    app = FastAPI()
+    app.include_router(router)
+    paths = set(app.openapi()["paths"])
 
     assert not [item for item in diagnostics if item.get("status") == "error"]
     assert any(path.startswith("/documents") for path in paths)

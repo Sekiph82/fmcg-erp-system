@@ -93,7 +93,7 @@ async def test_simulation_connector_returns_accepted():
     assert "KRA-INV-001" in result.control_unit_invoice_no
     assert result.signed_invoice_hash is not None
     assert result.invoice_qr_data is not None
-    assert result.response_code == "00"
+    assert result.kra_response_code == "00"
 
 
 @pytest.mark.asyncio
@@ -104,7 +104,7 @@ async def test_http_connector_uses_mock_no_real_network():
     mock_resp.json.return_value = {"rcptNo": "KRA-001", "resultCd": "00", "resultMsg": "Success"}
 
     with patch(
-        "app.services.etims_connector.httpx.AsyncClient",
+        "httpx.AsyncClient",
         return_value=AsyncMock(
             __aenter__=AsyncMock(return_value=AsyncMock(post=AsyncMock(return_value=mock_resp))),
             __aexit__=AsyncMock(return_value=False),

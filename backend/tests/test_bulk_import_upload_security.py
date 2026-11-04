@@ -88,11 +88,41 @@ async def test_bulk_import_routes_reject_missing_mime_and_binary_text(
 ):
     app = _import_app(monkeypatch)
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        response = await client.post(
-            f"/api/v1/bulk-import/products/{route}",
-            data=form,
-            files={"file": ("payload.csv", content, content_type)},
-        )
+        if content_type is None:
+            # HTTPX guesses a MIME type from the filename when a 3-tuple has a
+            # None content type. Build the multipart body explicitly so this
+            # route test really exercises a file part with no Content-Type.
+            boundary = "codex-missing-mime-boundary"
+            parts = []
+            for name, value in form.items():
+                parts.extend(
+                    [
+                        f"--{boundary}\r\n".encode(),
+                        f'Content-Disposition: form-data; name="{name}"\r\n\r\n'.encode(),
+                        str(value).encode(),
+                        b"\r\n",
+                    ]
+                )
+            parts.extend(
+                [
+                    f"--{boundary}\r\n".encode(),
+                    b'Content-Disposition: form-data; name="file"; filename="payload.csv"\r\n\r\n',
+                    content,
+                    b"\r\n",
+                    f"--{boundary}--\r\n".encode(),
+                ]
+            )
+            response = await client.post(
+                f"/api/v1/bulk-import/products/{route}",
+                content=b"".join(parts),
+                headers={"Content-Type": f"multipart/form-data; boundary={boundary}"},
+            )
+        else:
+            response = await client.post(
+                f"/api/v1/bulk-import/products/{route}",
+                data=form,
+                files={"file": ("payload.csv", content, content_type)},
+            )
     assert response.status_code == 415, response.text
 
 

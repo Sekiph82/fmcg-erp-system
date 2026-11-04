@@ -6,7 +6,7 @@ import uuid
 from types import SimpleNamespace
 
 import pytest
-from fastapi import APIRouter, Response
+from fastapi import APIRouter, FastAPI, Response
 from pydantic import ValidationError
 from starlette.requests import Request
 
@@ -152,13 +152,27 @@ def test_clear_auth_cookie_expires_auth_cookie(monkeypatch):
 @pytest.mark.asyncio
 async def test_get_current_user_accepts_cookie_token(monkeypatch):
     user_id = uuid.uuid4()
-    user = SimpleNamespace(id=user_id, is_active=True, roles=[])
+    user = SimpleNamespace(
+        id=user_id,
+        is_active=True,
+        is_superuser=False,
+        auth_session_version=0,
+        roles=[],
+    )
 
     async def not_blocked(_token: str) -> bool:
         return False
 
-    monkeypatch.setattr("app.core.deps.decode_token", lambda token: str(user_id))
+    monkeypatch.setattr(
+        "app.core.deps.decode_access_token",
+        lambda token: {"sub": str(user_id), "usv": 0},
+    )
     monkeypatch.setattr("app.core.deps.token_blocklist.is_blocked", not_blocked)
+
+    async def not_privileged(_db, _user_id):
+        return False
+
+    monkeypatch.setattr("app.services.auth_2fa_policy.requires_privileged_2fa", not_privileged)
 
     current = await get_current_user(
         request=_cookie_request("cookie-token"),
@@ -170,12 +184,6 @@ async def test_get_current_user_accepts_cookie_token(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_get_current_user_rejects_authorization_header_without_cookie(monkeypatch):
-    async def not_blocked(_token: str) -> bool:
-        return False
-
-    monkeypatch.setattr("app.core.deps.decode_token", lambda token: "unused")
-    monkeypatch.setattr("app.core.deps.token_blocklist.is_blocked", not_blocked)
-
     with pytest.raises(Exception) as exc_info:
         await get_current_user(
             request=_bearer_request("legacy-token"),
@@ -370,7 +378,9 @@ def test_registry_route_registration_loads_enabled_modules(monkeypatch):
 
     api_router = APIRouter()
     diagnostics = register_module_routes(api_router, environment="development")
-    paths = {route.path for route in api_router.routes}
+    app = FastAPI()
+    app.include_router(api_router)
+    paths = set(app.openapi()["paths"])
 
     assert diagnostics == [{"module": "factory-test", "status": "registered"}]
     assert "/factory-test/ping" in paths
@@ -421,7 +431,9 @@ def test_endpoint_route_registration_loads_non_core_routes(monkeypatch):
 
     api_router = APIRouter()
     diagnostics = register_endpoint_routes(api_router, environment="development")
-    paths = {route.path for route in api_router.routes}
+    app = FastAPI()
+    app.include_router(api_router)
+    paths = set(app.openapi()["paths"])
 
     assert diagnostics == [{"module": "factory-health", "status": "registered"}]
     assert "/factory-health/status" in paths
