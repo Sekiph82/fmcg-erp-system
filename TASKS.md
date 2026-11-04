@@ -9,10 +9,10 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 ## Project Status
 
 - Current Milestone: M34 — Strategic Procurement Upgrade
-- Current Sprint: M34.S01 — Strategic Sourcing
-- Current Task: M34.S04.T004 — Finance posting/reconciliation
+- Current Sprint: M34.S05 — Verification
+- Current Task: M34.S05.T001 — Sourcing workflow tests
 - Current Task Status: COMPLETE
-- Next Task/Action: M34.S05.T001 — Sourcing workflow tests
+- Next Task/Action: M34.S05.T002 — Supplier scorecard tests
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -1125,7 +1125,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
   Evidence: Configured, idempotent supplier-invoice GL posting and payment guards; task-owned PostgreSQL 16.6 migrated to 20261104_0001 with 9 integration tests passing and cleanup verified. Python compile, targeted Ruff, frontend ESLint/TypeScript, diff-check and independent review passed. Evidence: coordination/sessions/M34.S04.T004/CODEX_LOG_V01.md and verification-V01.md.
 
 ## M34.S05 — Verification
-- [ ] M34.S05.T001 — Sourcing workflow tests
+- [x] M34.S05.T001 — Sourcing workflow tests
+  Evidence: FastAPI ASGI integration through authenticated existing routes covers synthetic RFQ invite, bid, evaluation revision/gate, and configured two-level award; PostgreSQL 16.6 migrated to 20261104_0001, 2 passed, cleanup verified, independent review no findings. Login/2FA journey and award-to-PO are outside scope. See coordination/sessions/M34.S05.T001/verification-V01.md and CODEX_LOG_V01.md.
 - [ ] M34.S05.T002 — Supplier scorecard tests
 - [ ] M34.S05.T003 — Three-way-match/finance integration tests
 - [ ] M34.S05.T004 — Close M34
