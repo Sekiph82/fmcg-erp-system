@@ -214,8 +214,11 @@ async def advance_order(
     try:
         order = await svc._load_order(db, order_id, for_update=True)
         action = {
+            "DRAFT": "edit",
             "PLANNED": "release",
+            "RELEASED": "edit",
             "IN_PROGRESS": "close",
+            "PAUSED": "edit",
             "COMPLETED": "close",
         }.get(order.status, "edit")
         _require_execution_action(current_user, action, order)
@@ -259,6 +262,19 @@ async def pause_order(
     try:
         await _get_order_for_action(db, order_id, current_user, "edit")
         return await svc.pause_order(db, order_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/{order_id}/resume", response_model=ProdExecOrderOut)
+async def resume_order(
+    order_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    try:
+        await _get_order_for_action(db, order_id, current_user, "edit")
+        return await svc.resume_order(db, order_id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 

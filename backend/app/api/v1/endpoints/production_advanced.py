@@ -61,6 +61,12 @@ from app.models.production_advanced import (
     AdvQCInspection, WasteRecord, BatchLot, LaborLog, OEERecord,
 )
 
+
+def _work_order_error(exc: ValueError) -> None:
+    detail = str(exc)
+    status_code = 404 if "not found" in detail.lower() else 422
+    raise HTTPException(status_code=status_code, detail=detail) from exc
+
 router = APIRouter()
 
 
@@ -208,7 +214,10 @@ async def list_work_orders(
 
 @router.post("/work-orders", response_model=WorkOrderRead, status_code=201, tags=["work-orders"])
 async def create_work_order(data: WorkOrderCreate, db: AsyncSession = Depends(get_db), _=Depends(get_current_user)):
-    obj = await crud.create_work_order(db, data)
+    try:
+        obj = await crud.create_work_order(db, data)
+    except ValueError as exc:
+        _work_order_error(exc)
     await db.commit()
     return _enrich_wo(obj)
 
@@ -226,7 +235,10 @@ async def update_work_order(pk: _uuid.UUID, data: WorkOrderUpdate, db: AsyncSess
     obj = await crud.get_work_order(db, pk)
     if not obj:
         raise HTTPException(404, "Work order not found")
-    obj = await crud.update_work_order(db, obj, data)
+    try:
+        obj = await crud.update_work_order(db, obj, data)
+    except ValueError as exc:
+        _work_order_error(exc)
     await db.commit()
     return _enrich_wo(obj)
 
@@ -236,21 +248,20 @@ async def delete_work_order(pk: _uuid.UUID, db: AsyncSession = Depends(get_db), 
     obj = await crud.get_work_order(db, pk)
     if not obj:
         raise HTTPException(404, "Work order not found")
-    await crud.delete_work_order(db, obj)
+    try:
+        await crud.delete_work_order(db, obj)
+    except ValueError as exc:
+        _work_order_error(exc)
     await db.commit()
     return Response(status_code=204)
 
 
 @router.post("/work-orders/{pk}/start", response_model=WorkOrderRead, tags=["work-orders"])
 async def start_work_order(pk: _uuid.UUID, db: AsyncSession = Depends(get_db), _=Depends(get_current_user)):
-    from datetime import datetime, timezone
-    obj = await crud.get_work_order(db, pk)
-    if not obj:
-        raise HTTPException(404, "Work order not found")
-    if obj.status != "planned":
-        raise HTTPException(400, f"Cannot start work order in status '{obj.status}'")
-    obj.status = "in_progress"
-    obj.start_time = datetime.now(timezone.utc)
+    try:
+        obj = await crud.start_work_order(db, pk)
+    except ValueError as exc:
+        _work_order_error(exc)
     await db.flush()
     await db.commit()
     return _enrich_wo(obj)
@@ -263,18 +274,15 @@ async def complete_work_order(
     db: AsyncSession = Depends(get_db),
     _=Depends(get_current_user),
 ):
-    from datetime import datetime, timezone
     from decimal import Decimal as D
-    obj = await crud.get_work_order(db, pk)
-    if not obj:
-        raise HTTPException(404, "Work order not found")
-    if obj.status != "in_progress":
-        raise HTTPException(400, f"Cannot complete work order in status '{obj.status}'")
-    obj.status = "completed"
-    obj.end_time = datetime.now(timezone.utc)
-    if actual_quantity is not None:
-        obj.actual_quantity = D(str(actual_quantity))
-    await db.flush()
+    try:
+        obj = await crud.complete_work_order(
+            db,
+            pk,
+            D(str(actual_quantity)) if actual_quantity is not None else None,
+        )
+    except ValueError as exc:
+        _work_order_error(exc)
     await db.commit()
     return _enrich_wo(obj)
 

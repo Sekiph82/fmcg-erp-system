@@ -11,12 +11,12 @@ from sqlalchemy import select, and_, or_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models.production import ProductionOrder
+from app.models.production import ProductionOrder, ProductionOrderStatus
 from app.models.recipe import RecipeItem
 from app.models.master import Material
 
 from app.models.production_advanced import (
-    WorkCenter, Routing, RoutingStep, WorkOrder,
+    WorkCenter, Routing, RoutingStep, WorkOrder, WorkOrderStatus,
     Shift, ProductionSchedule, TimeTracking, DowntimeEvent,
     AdvQCInspection, AdvQCResult, WasteRecord, BatchLot, LaborLog, OEERecord,
 )
@@ -136,6 +136,56 @@ async def delete_routing(db: AsyncSession, obj: Routing) -> None:
 
 # ── Work Orders ────────────────────────────────────────────────────────────────
 
+async def _lock_work_order_parent(
+    db: AsyncSession, production_order_id: UUID
+) -> ProductionOrder:
+    result = await db.execute(
+        select(ProductionOrder)
+        .where(ProductionOrder.id == production_order_id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )
+    parent = result.scalar_one_or_none()
+    if parent is None:
+        raise ValueError("Production order not found")
+    return parent
+
+
+async def _lock_work_order_context(
+    db: AsyncSession, work_order_id: UUID
+) -> tuple[ProductionOrder, WorkOrder]:
+    parent_id_result = await db.execute(
+        select(WorkOrder.production_order_id).where(WorkOrder.id == work_order_id)
+    )
+    parent_id = parent_id_result.scalar_one_or_none()
+    if parent_id is None:
+        raise ValueError("Work order not found")
+
+    # All mutations acquire locks in parent-then-child order so parent state
+    # transitions serialize against operation edits and lifecycle changes.
+    parent = await _lock_work_order_parent(db, parent_id)
+    work_order_result = await db.execute(
+        select(WorkOrder)
+        .where(WorkOrder.id == work_order_id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )
+    work_order = work_order_result.scalar_one_or_none()
+    if work_order is None:
+        raise ValueError("Work order not found")
+    if work_order.production_order_id != parent.id:
+        raise ValueError("Work order changed production order during transition")
+    return parent, work_order
+
+
+def _require_parent_status(
+    parent: ProductionOrder, allowed: set[ProductionOrderStatus], action: str
+) -> None:
+    if parent.status not in allowed:
+        raise ValueError(
+            f"Cannot {action} work orders while production order is {parent.status.value}"
+        )
+
 async def list_work_orders(
     db: AsyncSession, skip=0, limit=100,
     production_order_id: Optional[UUID] = None,
@@ -168,13 +218,22 @@ async def get_work_order(db: AsyncSession, pk: UUID) -> Optional[WorkOrder]:
     return r.scalar_one_or_none()
 
 async def create_work_order(db: AsyncSession, data: WorkOrderCreate) -> WorkOrder:
-    obj = WorkOrder(**data.model_dump())
+    parent = await _lock_work_order_parent(db, data.production_order_id)
+    _require_parent_status(parent, {ProductionOrderStatus.PLANNED}, "create")
+    obj = WorkOrder(
+        **data.model_dump(),
+        status=WorkOrderStatus.PLANNED,
+    )
     db.add(obj)
     await db.flush()
     await db.refresh(obj)
     return obj
 
 async def update_work_order(db: AsyncSession, obj: WorkOrder, data: WorkOrderUpdate) -> WorkOrder:
+    parent, obj = await _lock_work_order_context(db, obj.id)
+    _require_parent_status(parent, {ProductionOrderStatus.PLANNED}, "edit")
+    if obj.status != WorkOrderStatus.PLANNED:
+        raise ValueError(f"Work order in status {obj.status.value} cannot be edited")
     for k, v in data.model_dump(exclude_unset=True).items():
         setattr(obj, k, v)
     await db.flush()
@@ -182,8 +241,45 @@ async def update_work_order(db: AsyncSession, obj: WorkOrder, data: WorkOrderUpd
     return obj
 
 async def delete_work_order(db: AsyncSession, obj: WorkOrder) -> None:
+    parent, obj = await _lock_work_order_context(db, obj.id)
+    _require_parent_status(parent, {ProductionOrderStatus.PLANNED}, "delete")
+    if obj.status != WorkOrderStatus.PLANNED:
+        raise ValueError(f"Work order in status {obj.status.value} cannot be deleted")
     await db.delete(obj)
     await db.flush()
+
+
+async def start_work_order(db: AsyncSession, work_order_id: UUID) -> WorkOrder:
+    parent, work_order = await _lock_work_order_context(db, work_order_id)
+    _require_parent_status(parent, {ProductionOrderStatus.IN_PROGRESS}, "start")
+    if work_order.status != WorkOrderStatus.PLANNED:
+        raise ValueError(f"Cannot start work order in status '{work_order.status.value}'")
+    work_order.status = WorkOrderStatus.IN_PROGRESS
+    work_order.start_time = datetime.now(timezone.utc)
+    await db.flush()
+    await db.refresh(work_order)
+    return work_order
+
+
+async def complete_work_order(
+    db: AsyncSession,
+    work_order_id: UUID,
+    actual_quantity: Optional[Decimal] = None,
+) -> WorkOrder:
+    parent, work_order = await _lock_work_order_context(db, work_order_id)
+    _require_parent_status(parent, {ProductionOrderStatus.IN_PROGRESS}, "complete")
+    if work_order.status != WorkOrderStatus.IN_PROGRESS:
+        raise ValueError(f"Cannot complete work order in status '{work_order.status.value}'")
+    if actual_quantity is not None and actual_quantity <= 0:
+        raise ValueError("actual_quantity must be positive")
+
+    work_order.status = WorkOrderStatus.COMPLETED
+    work_order.end_time = datetime.now(timezone.utc)
+    if actual_quantity is not None:
+        work_order.actual_quantity = actual_quantity
+    await db.flush()
+    await db.refresh(work_order)
+    return work_order
 
 
 # ── Shifts ─────────────────────────────────────────────────────────────────────

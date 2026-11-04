@@ -26,6 +26,7 @@ from app.models.production import (
     MaterialConsumption, FinishedGoodsReceipt, DowntimeLog,
     ProductionPlanStatus, ProductionOrderStatus, DowntimeReason,
 )
+from app.models.production_advanced import WorkOrder, WorkOrderStatus
 from app.models.recipe import Recipe, RecipeItem
 from app.models.inventory import Stock, StockMovement, MovementType, StockType, Lot
 from app.models.master import Material, Warehouse
@@ -73,6 +74,33 @@ async def _lock_order_for_transition(db: AsyncSession, order_id: uuid.UUID) -> P
     if order is None:
         raise HTTPException(status_code=404, detail="Production order not found")
     return order
+
+
+PRODUCTION_ORDER_TRANSITIONS = {
+    ProductionOrderStatus.PLANNED: {
+        ProductionOrderStatus.RELEASED,
+        ProductionOrderStatus.CANCELLED,
+    },
+    ProductionOrderStatus.RELEASED: {
+        ProductionOrderStatus.IN_PROGRESS,
+        ProductionOrderStatus.CANCELLED,
+    },
+    ProductionOrderStatus.IN_PROGRESS: {
+        ProductionOrderStatus.COMPLETED,
+        ProductionOrderStatus.CANCELLED,
+    },
+    ProductionOrderStatus.COMPLETED: set(),
+    ProductionOrderStatus.CANCELLED: set(),
+}
+
+
+def _require_order_transition(order: ProductionOrder, target: ProductionOrderStatus) -> None:
+    allowed = PRODUCTION_ORDER_TRANSITIONS.get(order.status, set())
+    if target not in allowed:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Cannot transition production order from {order.status.value} to {target.value}.",
+        )
 
 
 async def _get_material_stock(
@@ -329,8 +357,7 @@ async def release_order(
     db: AsyncSession, order: ProductionOrder, user_id: Optional[uuid.UUID] = None
 ) -> ProductionOrder:
     order = await _lock_order_for_transition(db, order.id)
-    if order.status != ProductionOrderStatus.PLANNED:
-        raise HTTPException(422, detail=f"Order is {order.status.value}. Only PLANNED orders can be released.")
+    _require_order_transition(order, ProductionOrderStatus.RELEASED)
 
     # Validate recipe is approved
     r = await db.execute(select(Recipe).where(Recipe.id == order.recipe_id))
@@ -363,8 +390,7 @@ async def start_order(
     db: AsyncSession, order: ProductionOrder, actual_start: Optional[datetime] = None
 ) -> ProductionOrder:
     order = await _lock_order_for_transition(db, order.id)
-    if order.status != ProductionOrderStatus.RELEASED:
-        raise HTTPException(422, detail=f"Order is {order.status.value}. Only RELEASED orders can be started.")
+    _require_order_transition(order, ProductionOrderStatus.IN_PROGRESS)
 
     order.status = ProductionOrderStatus.IN_PROGRESS
     order.actual_start = actual_start or _now()
@@ -436,6 +462,21 @@ async def complete_order(
 
     if order.status != ProductionOrderStatus.IN_PROGRESS:
         raise HTTPException(422, detail=f"Order is {order.status.value}. Must be IN_PROGRESS to complete.")
+    _require_order_transition(order, ProductionOrderStatus.COMPLETED)
+
+    unfinished_work_order = await db.execute(
+        select(WorkOrder.id)
+        .where(
+            WorkOrder.production_order_id == order.id,
+            WorkOrder.status != WorkOrderStatus.COMPLETED,
+        )
+        .limit(1)
+    )
+    if unfinished_work_order.scalar_one_or_none() is not None:
+        raise HTTPException(
+            status_code=422,
+            detail="All work orders must be completed before the production order can be completed.",
+        )
 
     from app.services.qms_service import (
         PRODUCTION_GATE_TARGET_MODULE,
@@ -628,12 +669,7 @@ async def complete_order(
 
 async def cancel_order(db: AsyncSession, order: ProductionOrder) -> ProductionOrder:
     order = await _lock_order_for_transition(db, order.id)
-    if order.status not in {
-        ProductionOrderStatus.PLANNED,
-        ProductionOrderStatus.RELEASED,
-        ProductionOrderStatus.IN_PROGRESS,
-    }:
-        raise HTTPException(422, detail=f"Orders in {order.status.value} status cannot be cancelled.")
+    _require_order_transition(order, ProductionOrderStatus.CANCELLED)
     active_downtime = (
         await crud.get_active_downtime(db, order.id)
         if order.status == ProductionOrderStatus.IN_PROGRESS

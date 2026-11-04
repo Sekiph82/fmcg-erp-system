@@ -754,7 +754,8 @@ from app.schemas.production_advanced import (
     WorkCenterCreate as _WCCreate,
     ShiftCreate as _ShiftCreate,
 )
-from app.models.production import ProductionOrder as _PO
+from app.models.production import ProductionOrder as _PO, ProductionOrderStatus as _POStatus
+from app.models.production_advanced import WorkOrderStatus as _WorkOrderStatus
 
 
 class WorkCenterImportAdapter(BaseImportAdapter):
@@ -828,9 +829,7 @@ class _WorkOrderImport(BaseModel):
     work_center_code: str      # resolved → work_center_id
     operation:        str
     operator:         Optional[str] = None
-    status:           str = "planned"
-    start_time:       Optional[datetime] = None
-    end_time:         Optional[datetime] = None
+    model_config = {"extra": "forbid"}
 
 
 class WorkOrderImportAdapter(BaseImportAdapter):
@@ -839,11 +838,16 @@ class WorkOrderImportAdapter(BaseImportAdapter):
     schema_class = _WorkOrderImport
     unique_key   = ["work_order_id"]
     field_overrides: dict = {}
+    forbidden_import_fields = {
+        "status": "Work-order lifecycle state must use the guarded transition endpoints.",
+        "start_time": "Work-order lifecycle timestamps must use the guarded transition endpoints.",
+        "end_time": "Work-order lifecycle timestamps must use the guarded transition endpoints.",
+        "actual_quantity": "Work-order actual quantity must be recorded through the guarded completion endpoint.",
+    }
     example_row  = {
         "work_order_id": "WO001", "production_order_no": "PO001",
         "work_center_code": "WC001", "operation": "Mixing",
-        "operator": "Operator1", "status": "in_progress",
-        "start_time": "2026-04-01 08:00", "end_time": "",
+        "operator": "Operator1",
     }
 
     async def resolve_relations(self, row: dict, db: AsyncSession) -> tuple[dict, list[str]]:
@@ -854,6 +858,10 @@ class WorkOrderImportAdapter(BaseImportAdapter):
             po = r.scalar_one_or_none()
             if po is None:
                 errors.append(f"production_order_no '{po_no}' not found")
+            elif po.status != _POStatus.PLANNED:
+                errors.append(
+                    f"production_order_no '{po_no}' must be PLANNED before work orders can be created"
+                )
             else:
                 row["production_order_id"] = po.id
         wc_code = row.pop("work_center_code", None)
@@ -871,7 +879,24 @@ class WorkOrderImportAdapter(BaseImportAdapter):
         return r.scalar_one_or_none() is not None
 
     async def insert(self, data: dict, db: AsyncSession) -> Any:
-        obj = _WorkOrder(**{k: v for k, v in data.items() if v is not None})
+        parent_result = await db.execute(
+            select(_PO)
+            .where(_PO.id == data["production_order_id"])
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        )
+        parent = parent_result.scalar_one_or_none()
+        if parent is None:
+            raise HTTPException(status_code=404, detail="Production order not found")
+        if parent.status != _POStatus.PLANNED:
+            raise HTTPException(
+                status_code=422,
+                detail="Work orders can only be imported while the production order is PLANNED",
+            )
+        obj = _WorkOrder(
+            **{k: v for k, v in data.items() if v is not None},
+            status=_WorkOrderStatus.PLANNED,
+        )
         db.add(obj)
         await db.flush()
         return obj

@@ -64,6 +64,7 @@ export default function ProdExecOrderDetailPage() {
 
   const advance    = useMutation({ mutationFn: () => execApi.advance(id),    onSuccess: invalidate });
   const pauseOrder = useMutation({ mutationFn: () => execApi.pause(id),      onSuccess: invalidate });
+  const resumeOrder = useMutation({ mutationFn: () => execApi.resume(id),    onSuccess: invalidate });
   const closeOrder = useMutation({ mutationFn: () => execApi.close(id),      onSuccess: invalidate });
   const cancelOrder = useMutation({ mutationFn: () => execApi.cancel(id),    onSuccess: invalidate });
   const runAI      = useMutation({ mutationFn: () => execApi.runAI(id),      onSuccess: () => qc.invalidateQueries({ queryKey: ["exec-ai", id] }) });
@@ -163,7 +164,10 @@ export default function ProdExecOrderDetailPage() {
             {runAI.isPending ? "Running AI…" : "Run AI"}
           </button>
           {order.status === "IN_PROGRESS" && (
-            <button onClick={() => pauseOrder.mutate()} className="px-3 py-1.5 text-xs border border-orange-200 text-orange-600 rounded-lg hover:bg-orange-50">Pause</button>
+            <button onClick={() => pauseOrder.mutate()} disabled={pauseOrder.isPending} className="px-3 py-1.5 text-xs border border-orange-200 text-orange-600 rounded-lg hover:bg-orange-50 disabled:opacity-40">{pauseOrder.isPending ? "Pausing…" : "Pause"}</button>
+          )}
+          {order.status === "PAUSED" && (
+            <button onClick={() => resumeOrder.mutate()} disabled={resumeOrder.isPending} className="px-3 py-1.5 text-xs border border-green-200 text-green-700 rounded-lg hover:bg-green-50 disabled:opacity-40">{resumeOrder.isPending ? "Resuming…" : "Resume"}</button>
           )}
           {order.status === "IN_PROGRESS" && (
             <button onClick={() => { setCompleteForm({ ...completeForm, completed_qty: String(order.planned_qty) }); setShowComplete(true); }} className="px-3 py-1.5 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700">Complete</button>

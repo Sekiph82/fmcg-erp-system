@@ -95,6 +95,48 @@ async def _get_wo(db: AsyncSession, wo_id: uuid.UUID) -> ExecWorkOrder:
     return wo
 
 
+async def _lock_wo_context(
+    db: AsyncSession, wo_id: uuid.UUID
+) -> tuple[ProdExecOrder, ExecWorkOrder]:
+    parent_id_result = await db.execute(
+        select(ExecWorkOrder.production_order_id).where(ExecWorkOrder.id == wo_id)
+    )
+    parent_id = parent_id_result.scalar_one_or_none()
+    if parent_id is None:
+        raise ValueError(f"Work order {wo_id} not found")
+
+    # Match the production execution service's parent-then-child lock order.
+    parent_result = await db.execute(
+        select(ProdExecOrder)
+        .where(ProdExecOrder.id == parent_id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )
+    parent = parent_result.scalar_one_or_none()
+    if parent is None:
+        raise ValueError("Parent production order not found")
+
+    work_order_result = await db.execute(
+        select(ExecWorkOrder)
+        .where(ExecWorkOrder.id == wo_id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )
+    work_order = work_order_result.scalar_one_or_none()
+    if work_order is None:
+        raise ValueError(f"Work order {wo_id} not found")
+    if work_order.production_order_id != parent.id:
+        raise ValueError("Work order changed production order during transition")
+    return parent, work_order
+
+
+def _require_parent_in_progress(parent: ProdExecOrder) -> None:
+    if parent.status != "IN_PROGRESS":
+        raise ValueError(
+            f"Production order must be IN_PROGRESS for shop-floor work (status={parent.status})"
+        )
+
+
 # ── Sessions ───────────────────────────────────────────────────────────────────
 
 async def login_session(db: AsyncSession, data: dict) -> SFSession:
@@ -218,9 +260,23 @@ async def start_work_order(
     line_id: Optional[str],
     machine_id: Optional[uuid.UUID],
 ) -> ExecWorkOrder:
-    wo = await _get_wo(db, wo_id)
-    if wo.status not in {"READY", "PENDING", "PAUSED"}:
+    parent, wo = await _lock_wo_context(db, wo_id)
+    _require_parent_in_progress(parent)
+    if wo.status not in {"READY", "PENDING"}:
         raise ValueError(f"Work order cannot be started from status {wo.status}")
+    if wo.dependency_work_order_id:
+        predecessor_result = await db.execute(
+            select(ExecWorkOrder)
+            .where(ExecWorkOrder.id == wo.dependency_work_order_id)
+            .execution_options(populate_existing=True)
+        )
+        predecessor = predecessor_result.scalar_one_or_none()
+        if (
+            predecessor is None
+            or predecessor.production_order_id != wo.production_order_id
+            or predecessor.status != "COMPLETED"
+        ):
+            raise ValueError("Preceding work order must be completed before this step can start")
     wo.status = "IN_PROGRESS"
     if not wo.started_at:
         wo.started_at = _now()
@@ -246,7 +302,8 @@ async def pause_work_order(
     reason_code: Optional[str],
     remarks: Optional[str],
 ) -> ExecWorkOrder:
-    wo = await _get_wo(db, wo_id)
+    parent, wo = await _lock_wo_context(db, wo_id)
+    _require_parent_in_progress(parent)
     if wo.status != "IN_PROGRESS":
         raise ValueError("Work order must be IN_PROGRESS to pause")
     wo.status = "PAUSED"
@@ -266,7 +323,8 @@ async def resume_work_order(
     session_id: Optional[uuid.UUID],
     operator_name: Optional[str],
 ) -> ExecWorkOrder:
-    wo = await _get_wo(db, wo_id)
+    parent, wo = await _lock_wo_context(db, wo_id)
+    _require_parent_in_progress(parent)
     if wo.status not in {"PAUSED"}:
         raise ValueError("Work order must be PAUSED to resume")
     wo.status = "IN_PROGRESS"
@@ -289,7 +347,10 @@ async def update_quantity(
     operator_name: Optional[str],
     remarks: Optional[str],
 ) -> ExecWorkOrder:
-    wo = await _get_wo(db, wo_id)
+    parent, wo = await _lock_wo_context(db, wo_id)
+    _require_parent_in_progress(parent)
+    if wo.status not in {"IN_PROGRESS", "PAUSED"}:
+        raise ValueError("Work-order quantities can only be updated while the work order is active")
     if qty_good < 0 or qty_scrap < 0 or qty_rework < 0:
         raise ValueError("Quantities cannot be negative")
     wo.completed_qty = qty_good
@@ -315,7 +376,12 @@ async def log_scrap(
     session_id: Optional[uuid.UUID],
     operator_name: Optional[str],
 ) -> ExecWorkOrder:
-    wo = await _get_wo(db, wo_id)
+    parent, wo = await _lock_wo_context(db, wo_id)
+    _require_parent_in_progress(parent)
+    if wo.status not in {"IN_PROGRESS", "PAUSED"}:
+        raise ValueError("Scrap can only be logged while the work order is active")
+    if qty_scrap < 0:
+        raise ValueError("Scrap quantity cannot be negative")
     wo.scrap_qty = (wo.scrap_qty or Decimal("0")) + qty_scrap
     await _log_event(
         db, wo_id, wo.production_order_id, "SCRAP",
@@ -338,7 +404,8 @@ async def finish_work_order(
     operator_name: Optional[str],
     remarks: Optional[str],
 ) -> ExecWorkOrder:
-    wo = await _get_wo(db, wo_id)
+    parent, wo = await _lock_wo_context(db, wo_id)
+    _require_parent_in_progress(parent)
     if wo.status not in {"IN_PROGRESS", "PAUSED"}:
         raise ValueError("Work order must be IN_PROGRESS or PAUSED to finish")
     wo.status = "COMPLETED"

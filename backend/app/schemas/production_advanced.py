@@ -115,21 +115,18 @@ class WorkOrderCreate(BaseModel):
     operation:           str  = Field(..., max_length=255)
     operator:            Optional[str] = None
     routing_step_id:     Optional[UUID] = None
-    status:              str  = "planned"
     planned_quantity:    Optional[Decimal] = None
-    start_time:          Optional[datetime] = None
-    end_time:            Optional[datetime] = None
     planned_start:       Optional[datetime] = None
     planned_end:         Optional[datetime] = None
     notes:               Optional[str] = None
 
+    model_config = {"extra": "forbid"}
+
 class WorkOrderUpdate(BaseModel):
-    status:           Optional[str]      = None
     operator:         Optional[str]      = None
-    actual_quantity:  Optional[Decimal]  = None
-    start_time:       Optional[datetime] = None
-    end_time:         Optional[datetime] = None
     notes:            Optional[str]      = None
+
+    model_config = {"extra": "forbid"}
 
 class WorkOrderRead(BaseModel):
     id:                  UUID

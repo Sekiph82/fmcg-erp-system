@@ -42,6 +42,22 @@ LIFECYCLE_FLOW = {
     "COMPLETED":   "CLOSED",
 }
 
+EXECUTION_ORDER_TRANSITIONS = {
+    "DRAFT": {"PLANNED", "RELEASED", "CANCELLED"},
+    "PLANNED": {"RELEASED", "CANCELLED"},
+    "RELEASED": {"IN_PROGRESS", "CANCELLED"},
+    "IN_PROGRESS": {"PAUSED", "COMPLETED", "CANCELLED"},
+    "PAUSED": {"IN_PROGRESS", "COMPLETED", "CANCELLED"},
+    "COMPLETED": {"CLOSED"},
+    "CLOSED": set(),
+    "CANCELLED": set(),
+}
+
+
+def _require_order_transition(order: ProdExecOrder, target: str) -> None:
+    if target not in EXECUTION_ORDER_TRANSITIONS.get(order.status, set()):
+        raise ValueError(f"Cannot transition order from {order.status} to {target}")
+
 ORDER_EDITABLE_FIELDS = frozenset({
     "product_id", "bom_id", "routing_id", "product_name", "bom_code",
     "planned_qty", "uom", "batch_no", "source_type", "source_document_id",
@@ -228,20 +244,27 @@ async def advance_order(db: AsyncSession, order_id: uuid.UUID) -> ProdExecOrder:
     next_status = LIFECYCLE_FLOW.get(order.status)
     if not next_status:
         raise ValueError(f"Cannot advance order in status {order.status}")
+
+    if next_status == "COMPLETED":
+        raise ValueError("Use the complete endpoint with completion quantities to finish an order")
+    if next_status == "RELEASED":
+        return await release_order(db, order_id)
+    if next_status == "IN_PROGRESS":
+        return await start_order(db, order_id)
+    if next_status == "CLOSED":
+        return await close_order(db, order_id)
+
+    # DRAFT -> PLANNED is the only status-only edge. Operational transitions
+    # delegate to their dedicated guarded actions above.
+    _require_order_transition(order, next_status)
     order.status = next_status
-    if next_status == "IN_PROGRESS" and not order.actual_start:
-        order.actual_start = _now()
-    if next_status == "COMPLETED" and not order.actual_end:
-        order.actual_end = _now()
-        await _accumulate_costs(db, order)
     await db.commit()
     return await _load_order(db, order_id)
 
 
 async def release_order(db: AsyncSession, order_id: uuid.UUID) -> ProdExecOrder:
     order = await _load_order(db, order_id, for_update=True)
-    if order.status not in {"DRAFT", "PLANNED"}:
-        raise ValueError("Order must be DRAFT or PLANNED to release")
+    _require_order_transition(order, "RELEASED")
     order.status = "RELEASED"
     await db.commit()
     return await _load_order(db, order_id)
@@ -249,8 +272,7 @@ async def release_order(db: AsyncSession, order_id: uuid.UUID) -> ProdExecOrder:
 
 async def start_order(db: AsyncSession, order_id: uuid.UUID) -> ProdExecOrder:
     order = await _load_order(db, order_id, for_update=True)
-    if order.status != "RELEASED":
-        raise ValueError("Order must be RELEASED to start")
+    _require_order_transition(order, "IN_PROGRESS")
     order.status = "IN_PROGRESS"
     order.actual_start = _now()
     await db.commit()
@@ -259,9 +281,16 @@ async def start_order(db: AsyncSession, order_id: uuid.UUID) -> ProdExecOrder:
 
 async def pause_order(db: AsyncSession, order_id: uuid.UUID) -> ProdExecOrder:
     order = await _load_order(db, order_id, for_update=True)
-    if order.status != "IN_PROGRESS":
-        raise ValueError("Order must be IN_PROGRESS to pause")
+    _require_order_transition(order, "PAUSED")
     order.status = "PAUSED"
+    await db.commit()
+    return await _load_order(db, order_id)
+
+
+async def resume_order(db: AsyncSession, order_id: uuid.UUID) -> ProdExecOrder:
+    order = await _load_order(db, order_id, for_update=True)
+    _require_order_transition(order, "IN_PROGRESS")
+    order.status = "IN_PROGRESS"
     await db.commit()
     return await _load_order(db, order_id)
 
@@ -274,8 +303,20 @@ async def complete_order(
     remarks: Optional[str] = None,
 ) -> ProdExecOrder:
     order = await _load_order(db, order_id, for_update=True)
-    if order.status not in {"IN_PROGRESS", "PAUSED"}:
-        raise ValueError("Order must be IN_PROGRESS or PAUSED to complete")
+    _require_order_transition(order, "COMPLETED")
+    unfinished_work_order = await db.execute(
+        select(ExecWorkOrder.id)
+        .where(
+            ExecWorkOrder.production_order_id == order.id,
+            ExecWorkOrder.status != "COMPLETED",
+        )
+        .with_for_update()
+        .limit(1)
+    )
+    if unfinished_work_order.scalar_one_or_none() is not None:
+        raise ValueError(
+            "All execution work orders must be completed before the production order can be completed"
+        )
     order.completed_qty = completed_qty
     order.scrap_qty = scrap_qty
     order.status = "COMPLETED"
@@ -289,8 +330,7 @@ async def complete_order(
 
 async def close_order(db: AsyncSession, order_id: uuid.UUID) -> ProdExecOrder:
     order = await _load_order(db, order_id, for_update=True)
-    if order.status != "COMPLETED":
-        raise ValueError("Order must be COMPLETED to close")
+    _require_order_transition(order, "CLOSED")
     order.status = "CLOSED"
     await db.commit()
     return await _load_order(db, order_id)
@@ -298,8 +338,7 @@ async def close_order(db: AsyncSession, order_id: uuid.UUID) -> ProdExecOrder:
 
 async def cancel_order(db: AsyncSession, order_id: uuid.UUID) -> ProdExecOrder:
     order = await _load_order(db, order_id, for_update=True)
-    if order.status not in {"DRAFT", "PLANNED", "RELEASED", "IN_PROGRESS", "PAUSED"}:
-        raise ValueError(f"Orders in status {order.status} cannot be cancelled")
+    _require_order_transition(order, "CANCELLED")
     order.status = "CANCELLED"
     await db.commit()
     return await _load_order(db, order_id)
@@ -344,8 +383,7 @@ async def split_order(
     user_id: uuid.UUID,
 ) -> List[ProdExecOrder]:
     order = await _load_order(db, order_id, for_update=True)
-    if order.status not in {"DRAFT", "PLANNED", "RELEASED"}:
-        raise ValueError("Only DRAFT/PLANNED/RELEASED orders can be split")
+    _require_order_transition(order, "CANCELLED")
     if len(split_qtys) < 2 or any(qty <= 0 for qty in split_qtys):
         raise ValueError("A split requires at least two positive quantities")
 
@@ -414,8 +452,7 @@ async def merge_orders(
     orders = []
     for oid in sorted(order_ids, key=str):
         o = await _load_order(db, oid, for_update=True)
-        if o.status not in {"DRAFT", "PLANNED", "RELEASED"}:
-            raise ValueError(f"Order {o.order_no} cannot be merged (status={o.status})")
+        _require_order_transition(o, "CANCELLED")
         orders.append(o)
 
     if len({o.product_id for o in orders}) > 1:

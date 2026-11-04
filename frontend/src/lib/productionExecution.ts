@@ -187,7 +187,6 @@ export const LIFECYCLE_NEXT: Partial<Record<ProdExecStatus, string>> = {
   DRAFT:       "Mark Planned",
   PLANNED:     "Release",
   RELEASED:    "Start",
-  IN_PROGRESS: "Complete",
   COMPLETED:   "Close",
 };
 
@@ -224,6 +223,7 @@ export const execApi = {
   release:  (id: string) => apiClient.post<ProdExecOrderOut>(`${BASE}/${id}/release`, {}).then((r) => r.data),
   start:    (id: string) => apiClient.post<ProdExecOrderOut>(`${BASE}/${id}/start`, {}).then((r) => r.data),
   pause:    (id: string) => apiClient.post<ProdExecOrderOut>(`${BASE}/${id}/pause`, {}).then((r) => r.data),
+  resume:   (id: string) => apiClient.post<ProdExecOrderOut>(`${BASE}/${id}/resume`, {}).then((r) => r.data),
   complete: (id: string, body: { completed_qty: number; scrap_qty?: number; remarks?: string }) =>
     apiClient.post<ProdExecOrderOut>(`${BASE}/${id}/complete`, body).then((r) => r.data),
   close:    (id: string) => apiClient.post<ProdExecOrderOut>(`${BASE}/${id}/close`, {}).then((r) => r.data),
