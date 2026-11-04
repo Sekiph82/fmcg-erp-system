@@ -8,7 +8,7 @@ import { createNextTaskSpec } from "./task-spec.mjs";
 export function claimCurrentTask(source) {
   const state = parseTaskState(source);
   if (!state.currentTask) return { source, changed: false, complete: true, id: null, title: null };
-  if (state.currentTaskStatus === "COMPLETE") {
+  if (["IMPLEMENTED", "COMPLETE"].includes(state.currentTaskStatus)) {
     const next = createNextTaskSpec(state);
     if (next.status !== "SPEC_READY") {
       throw new Error(`The completed task cannot advance: ${next.status}.`);
@@ -19,7 +19,7 @@ export function claimCurrentTask(source) {
     lines[task.lineIndex] = lines[task.lineIndex].replace("- [ ]", "- [~]");
     let updated = lines.join("\n")
       .replace(/^- Current Task: .+$/m, `- Current Task: ${task.id} — ${task.title}`)
-      .replace(/^- Current Task Status: COMPLETE$/m, "- Current Task Status: IN_PROGRESS")
+      .replace(new RegExp(`^- Current Task Status: ${state.currentTaskStatus}$`, "m"), "- Current Task Status: IN_PROGRESS")
       .replace(/^- Next Task\/Action: .+$/m, "- Next Task/Action: Select the next task explicitly");
     if (updated === source) throw new Error(`Could not advance to explicit successor ${task.id}.`);
     parseTaskState(updated);
@@ -70,6 +70,48 @@ export function completeCurrentTask(source, { nextTaskId, evidence }) {
   }
   parseTaskState(updated);
   return { source: updated, changed: true, id: current.id, title: current.title, nextTaskId: nextTaskId === "None" ? null : nextTaskId.trim() };
+}
+
+export function implementCurrentTask(source, { nextTaskId, evidence }) {
+  const state = parseTaskState(source);
+  if (!state.currentTask || state.currentTaskStatus !== "IN_PROGRESS") {
+    throw new Error("Only the explicit IN_PROGRESS task can be marked implemented.");
+  }
+  if (typeof evidence !== "string" || !evidence.trim() || evidence.length > 4_000 || /[\r\n]/.test(evidence)) {
+    throw new Error("Implementation evidence must be a non-empty single line of at most 4000 characters.");
+  }
+  if (typeof nextTaskId !== "string" || !nextTaskId.trim()) {
+    throw new Error("Select an exact READY successor ID.");
+  }
+  const current = state.tasks.find((task) => task.id === state.currentTask.id && task.title === state.currentTask.title);
+  if (!current || current.marker !== "~") throw new Error("The explicit current task is not the only in-progress task.");
+  const successor = state.tasks.find((task) => task.id === nextTaskId.trim());
+  if (!successor || successor.id === current.id || successor.marker !== " ") {
+    throw new Error(`Successor ${nextTaskId} must match an exact canonical READY task row.`);
+  }
+  const lines = source.split(/\r?\n/);
+  lines[current.lineIndex] = lines[current.lineIndex].replace("- [~]", "- [v]");
+  lines.splice(current.lineIndex + 1, 0, `  Implementation Evidence: ${evidence.trim()} (pending milestone verification)`);
+  const updated = lines.join("\n")
+    .replace(/^- Current Task Status: IN_PROGRESS$/m, "- Current Task Status: IMPLEMENTED")
+    .replace(/^- Next Task\/Action: .+$/m, `- Next Task/Action: ${successor.id} — ${successor.title}`);
+  parseTaskState(updated);
+  return { source: updated, changed: true, id: current.id, title: current.title, nextTaskId: successor.id };
+}
+
+export function acceptImplementedTask(source, { taskId, evidence }) {
+  const state = parseTaskState(source);
+  if (typeof evidence !== "string" || !evidence.trim() || evidence.length > 4_000 || /[\r\n]/.test(evidence)) {
+    throw new Error("Acceptance evidence must be a non-empty single line of at most 4000 characters.");
+  }
+  const task = state.tasks.find((item) => item.id === taskId);
+  if (!task || task.marker !== "v") throw new Error(`Task ${taskId} must match an exact implemented-pending-verification row.`);
+  const lines = source.split(/\r?\n/);
+  lines[task.lineIndex] = lines[task.lineIndex].replace("- [v]", "- [x]");
+  lines.splice(task.lineIndex + 2, 0, `  Acceptance Evidence: ${evidence.trim()}`);
+  const updated = lines.join("\n");
+  parseTaskState(updated);
+  return { source: updated, changed: true, id: task.id, title: task.title };
 }
 
 export function applyOwnerAnswers(source, answers) {
@@ -191,18 +233,21 @@ export async function writeTracker(root, expectedSource, source) {
 async function run() {
   const root = resolve(fileURLToPath(new URL("../..", import.meta.url)));
   const argv = process.argv.slice(2);
-  const actions = new Set(["--check", "--claim", "--complete", "--apply-answers", "--spec"]);
+  const actions = new Set(["--check", "--claim", "--implement", "--accept-task", "--complete", "--apply-answers", "--spec"]);
   const selectedActions = argv.filter((arg) => actions.has(arg));
   if (selectedActions.length !== 1) {
-    throw new Error("Use --check, --claim, --complete --next <task-id> --evidence <text>, --apply-answers, or --spec.");
+    throw new Error("Use --check, --claim, --implement --next <task-id> --evidence <text>, --accept-task --task <task-id> --evidence <text>, --complete --next <task-id> --evidence <text>, --apply-answers, or --spec.");
   }
   const action = selectedActions[0];
   const args = new Set([action]);
   const values = new Map();
+  const allowedOptions = ["--complete", "--implement"].includes(action)
+    ? ["--next", "--evidence"]
+    : action === "--accept-task" ? ["--task", "--evidence"] : [];
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     if (arg === action) continue;
-    if (action !== "--complete" || !["--next", "--evidence"].includes(arg) || values.has(arg)) {
+    if (!allowedOptions.includes(arg) || values.has(arg)) {
       throw new Error(`Unexpected or duplicate argument: ${arg}`);
     }
     const value = argv[index + 1];
@@ -210,8 +255,11 @@ async function run() {
     values.set(arg, value);
     index += 1;
   }
-  if (action === "--complete" && (!values.has("--next") || !values.has("--evidence"))) {
-    throw new Error("--complete requires both --next <task-id> and --evidence <text>.");
+  if (["--complete", "--implement"].includes(action) && (!values.has("--next") || !values.has("--evidence"))) {
+    throw new Error(`${action} requires both --next <task-id> and --evidence <text>.`);
+  }
+  if (action === "--accept-task" && (!values.has("--task") || !values.has("--evidence"))) {
+    throw new Error("--accept-task requires both --task <task-id> and --evidence <text>.");
   }
   const { source, state } = await readProjectTaskState(root);
   if (args.has("--apply-answers")) {
@@ -237,6 +285,18 @@ async function run() {
     const result = completeCurrentTask(source, { nextTaskId: values.get("--next"), evidence: values.get("--evidence") });
     await writeTracker(root, source, result.source);
     console.log(`Completed ${result.id}: ${result.title}; selected successor ${result.nextTaskId ?? "None"}.`);
+    return;
+  }
+  if (args.has("--implement")) {
+    const result = implementCurrentTask(source, { nextTaskId: values.get("--next"), evidence: values.get("--evidence") });
+    await writeTracker(root, source, result.source);
+    console.log(`Implemented ${result.id}: ${result.title}; pending milestone verification; selected successor ${result.nextTaskId}.`);
+    return;
+  }
+  if (args.has("--accept-task")) {
+    const result = acceptImplementedTask(source, { taskId: values.get("--task"), evidence: values.get("--evidence") });
+    await writeTracker(root, source, result.source);
+    console.log(`Accepted ${result.id}: ${result.title} with milestone evidence.`);
     return;
   }
   const nextTaskSpec = createNextTaskSpec(state);

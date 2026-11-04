@@ -12,12 +12,13 @@ stock delta logic so that inventory remains consistent.
 from __future__ import annotations
 
 from datetime import date, datetime, timedelta, timezone
-from decimal import Decimal
+from decimal import Decimal, ROUND_CEILING
 from typing import Optional, List
 import uuid
 
 from fastapi import HTTPException
 from sqlalchemy import select, and_, func
+from sqlalchemy.exc import MultipleResultsFound
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -31,6 +32,7 @@ from app.models.production_advanced import RoutingStep
 from app.models.recipe import Recipe, RecipeItem
 from app.models.inventory import Stock, StockMovement, MovementType, StockType, Lot
 from app.models.master import Material, Warehouse
+from app.models.quality import LotQualityStatus, ReleaseStatus
 from app.models.traceability import (
     GenealogyRelType,
     LotGenealogyLink,
@@ -48,6 +50,7 @@ from app.schemas.production import (
 from app.crud import production as crud
 from app.services.inventory_locking import lot_identity, lock_inventory_identity, stock_identity
 from app.services import quality_service
+from app.services.utilities_service import convert_uom
 from app.services.production_transition_history import PRODUCTION_ORDER, record_transition
 
 
@@ -76,6 +79,164 @@ async def _lock_order_for_transition(db: AsyncSession, order_id: uuid.UUID) -> P
     if order is None:
         raise HTTPException(status_code=404, detail="Production order not found")
     return order
+
+
+async def _require_release_material_readiness(
+    db: AsyncSession, order: ProductionOrder, recipe: Recipe
+) -> None:
+    """Fail release when required recipe inputs are not currently usable.
+
+    This is a point-in-time readiness gate, not a stock reservation. Material
+    issue remains authoritative and rechecks availability when consumption is
+    posted. The existing configured QMS release gate remains authoritative for
+    production QC; blocked/quarantined/expired material stock is excluded here.
+    """
+    required_items = [item for item in recipe.items if not item.is_optional]
+    if not required_items:
+        return
+    if order.source_warehouse_id is None:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "error": "PRODUCTION_SOURCE_WAREHOUSE_REQUIRED",
+                "message": "Cannot release: assign a source warehouse to verify required recipe materials.",
+                "production_order_id": str(order.id),
+            },
+        )
+
+    warehouse_result = await db.execute(
+        select(Warehouse).where(Warehouse.id == order.source_warehouse_id)
+    )
+    source_warehouse = warehouse_result.scalar_one_or_none()
+    if source_warehouse is None or not source_warehouse.is_active:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "error": "PRODUCTION_SOURCE_WAREHOUSE_UNAVAILABLE",
+                "message": "Cannot release: the production source warehouse is missing or inactive.",
+                "production_order_id": str(order.id),
+            },
+        )
+
+    def _uom_code(value) -> str:
+        return str(getattr(value, "value", value) or "").strip().upper()
+
+    required_by_material: dict[uuid.UUID, tuple[Material, Decimal]] = {}
+    for item in required_items:
+        material = item.material
+        if material is None or not material.is_active:
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "error": "PRODUCTION_RECIPE_MATERIAL_UNAVAILABLE",
+                    "message": "Cannot release: a required recipe material is missing or inactive.",
+                    "recipe_item_id": str(item.id),
+                    "material_id": str(item.material_id),
+                },
+            )
+        quantity = Decimal(item.quantity)
+        loss_percentage = Decimal(item.loss_percentage or 0)
+        if quantity < 0 or loss_percentage < 0 or loss_percentage >= 100:
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "error": "PRODUCTION_RECIPE_MATERIAL_INVALID",
+                    "message": "Cannot release: a required recipe material has invalid quantity or loss percentage.",
+                    "recipe_item_id": str(item.id),
+                    "material_id": str(material.id),
+                },
+            )
+        try:
+            material_uom_quantity = await convert_uom(
+                db,
+                quantity * (Decimal(1) + loss_percentage / Decimal(100)),
+                _uom_code(item.unit),
+                _uom_code(material.uom),
+            )
+        except (HTTPException, MultipleResultsFound) as exc:
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "error": "PRODUCTION_MATERIAL_UOM_UNRESOLVED",
+                    "message": f"Cannot release: recipe material '{material.name}' has no unique conversion to its inventory unit.",
+                    "recipe_item_id": str(item.id),
+                    "material_id": str(material.id),
+                    "from_uom": _uom_code(item.unit),
+                    "to_uom": _uom_code(material.uom),
+                },
+            ) from exc
+        required_quantity = material_uom_quantity.quantize(
+            Decimal("0.001"), rounding=ROUND_CEILING
+        )
+        previous = required_by_material.get(material.id)
+        required_by_material[material.id] = (
+            material,
+            required_quantity + (previous[1] if previous else Decimal(0)),
+        )
+
+    material_use_date = order.scheduled_start.date()
+    for material_id, (material, required_quantity) in required_by_material.items():
+        stock_result = await db.execute(
+            select(Stock)
+            .options(selectinload(Stock.lot))
+            .where(
+                Stock.stock_type == StockType.MATERIAL,
+                Stock.warehouse_id == order.source_warehouse_id,
+                Stock.material_id == material_id,
+                Stock.is_blocked.is_(False),
+            )
+            .order_by(Stock.id)
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        )
+        usable_quantity = Decimal(0)
+        stocks = list(stock_result.scalars().all())
+        lot_ids = sorted({stock.lot_id for stock in stocks if stock.lot_id is not None})
+        quality_statuses: dict[uuid.UUID, LotQualityStatus] = {}
+        if lot_ids:
+            quality_result = await db.execute(
+                select(LotQualityStatus)
+                .where(LotQualityStatus.lot_id.in_(lot_ids))
+                .order_by(LotQualityStatus.lot_id)
+                .with_for_update()
+                .execution_options(populate_existing=True)
+            )
+            quality_statuses = {
+                status.lot_id: status for status in quality_result.scalars().all()
+            }
+        for stock in stocks:
+            if stock.lot_id is not None:
+                lot = stock.lot
+                quality_status = quality_statuses.get(stock.lot_id)
+                if (
+                    lot is None
+                    or lot.material_id != material_id
+                    or lot.is_quarantine
+                    or (lot.expiry_date is not None and lot.expiry_date < material_use_date)
+                    or (
+                        quality_status is not None
+                        and (
+                            quality_status.hold_flag
+                            or quality_status.quarantine_flag
+                            or quality_status.release_status != ReleaseStatus.RELEASED
+                        )
+                    )
+                ):
+                    continue
+            usable_quantity += max(Decimal(0), Decimal(stock.quantity_available))
+        if usable_quantity < required_quantity:
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "error": "PRODUCTION_MATERIAL_SHORTAGE",
+                    "message": f"Cannot release: insufficient released stock for required material '{material.name}'.",
+                    "production_order_id": str(order.id),
+                    "material_id": str(material_id),
+                    "required_quantity": str(required_quantity),
+                    "available_quantity": str(usable_quantity),
+                    "uom": _uom_code(material.uom),
+                },
+            )
 
 
 PRODUCTION_ORDER_TRANSITIONS = {
@@ -393,7 +554,11 @@ async def release_order(
         raise HTTPException(422, detail="Cannot release: production order approval is required first.")
 
     # Validate recipe is approved
-    r = await db.execute(select(Recipe).where(Recipe.id == order.recipe_id))
+    r = await db.execute(
+        select(Recipe)
+        .options(selectinload(Recipe.items).selectinload(RecipeItem.material))
+        .where(Recipe.id == order.recipe_id)
+    )
     recipe = r.scalar_one_or_none()
     if not recipe or recipe.status.value != "APPROVED":
         raise HTTPException(422, detail="Cannot release: Recipe must be in APPROVED status.")
@@ -412,6 +577,8 @@ async def release_order(
         )
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    await _require_release_material_readiness(db, order, recipe)
 
     previous_status = order.status
     order.status = ProductionOrderStatus.RELEASED

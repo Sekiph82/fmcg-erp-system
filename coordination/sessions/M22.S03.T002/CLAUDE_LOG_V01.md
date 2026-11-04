@@ -2,7 +2,7 @@
 
 Date: 2026-11-04
 Actor: CODEX
-State: Implementation and independent read-only review complete; M22 milestone verification pending.
+State: IMPLEMENTED; acceptance and M22 milestone verification pending.
 
 ## Scope and acceptance material
 
@@ -20,9 +20,9 @@ State: Implementation and independent read-only review complete; M22 milestone v
 - `RoutingStep.is_parallel` has no group identity or dependency representation. Until the model can express parallel groups, routed steps are conservatively sequenced by `step_number`; the implementation does not enable concurrent parallel execution.
 - Added guarded disposable-PostgreSQL regression cases for the exact loopback, passwordless M22.S03.T002 database; they cover all-earlier-step gating, missing/cancelled predecessors, completed replacement rows, and the manual-operation boundary.
 
-## Independent review and verification limits
+## Preliminary review and verification limits
 
-- Independent read-only reviewer: `/root/m22_s03_t002_review`.
+- Focused read-only implementation reviewer: `/root/m22_s03_t002_review`; consolidated independent review remains pending at M22 acceptance.
 - The reviewer identified two test error-message expectation mismatches after the cancelled-source handling changed. Both expectations were corrected and the reviewer confirmed that correction with no remaining findings. The reviewer did not edit files or run tests.
 - Automated tests were intentionally deferred to the requested M22 milestone-batched verification. No test PASS is claimed.
 - `git diff --check` passed (exit code 0). No migration was added.

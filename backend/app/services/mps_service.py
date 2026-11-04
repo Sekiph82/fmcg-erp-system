@@ -543,6 +543,8 @@ async def release_mps_plan(
     source_warehouse = await db.get(Warehouse, source_run.warehouse_id)
     if source_warehouse is None:
         raise ValueError("Source MRP warehouse no longer exists")
+    if not source_warehouse.is_active:
+        raise ValueError("Release requires an active source MRP warehouse")
 
     warehouse = await db.get(Warehouse, target_warehouse_id)
     if not warehouse:
@@ -662,6 +664,7 @@ async def release_mps_plan(
             planned_quantity=line.planned_production_qty,
             uom=uom_value,
             status=ProductionOrderStatus.PLANNED,
+            source_warehouse_id=source_warehouse.id,
             target_warehouse_id=target_warehouse_id,
             scheduled_start=start_dt,
             scheduled_end=end_dt,

@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
-const taskRowPattern = /^- \[([ x~!])\] ([A-Z][A-Z0-9]*(?:[.-][A-Z0-9]+)+) — (.+)$/;
+const taskRowPattern = /^- \[([ x~!v])\] ([A-Z][A-Z0-9]*(?:[.-][A-Z0-9]+)+) — (.+)$/;
 const taskReferencePattern = /^([A-Z][A-Z0-9]*(?:[.-][A-Z0-9]+)+) — (.+)$/;
 
 export function readField(source, name) {
@@ -32,7 +32,7 @@ export function parseTaskState(source) {
   if (current) {
     const matches = tasks.filter((task) => task.id === current[1] && task.title === current[2]);
     if (matches.length !== 1) throw new Error(`Current Task ${current[1]} must match exactly one canonical task row.`);
-    const markerForStatus = { READY: " ", IN_PROGRESS: "~", BLOCKED: "!", COMPLETE: "x" }[status];
+    const markerForStatus = { READY: " ", IN_PROGRESS: "~", BLOCKED: "!", IMPLEMENTED: "v", COMPLETE: "x" }[status];
     if (!markerForStatus) throw new Error(`Unsupported Current Task Status: ${status}.`);
     if (matches[0].marker !== markerForStatus) throw new Error(`Current Task Status ${status} does not match [${matches[0].marker}] for ${current[1]}.`);
     if (inProgress.length && (status !== "IN_PROGRESS" || !current || inProgress[0].id !== current[1])) {

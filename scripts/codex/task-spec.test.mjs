@@ -32,3 +32,14 @@ test("successor prompt is withheld when the canonical row is not READY", () => {
   assert.equal(spec.status, "SUCCESSOR_NOT_READY");
   assert.equal(spec.prompt, null);
 });
+
+test("an implemented checkpoint can generate the exact successor handoff", () => {
+  const spec = createNextTaskSpec({
+    currentTask: { id: "M22.S03.T001", title: "Subcontract operation linkage" },
+    currentTaskStatus: "IMPLEMENTED",
+    nextTaskId: "M22.S03.T002",
+    tasks: [{ id: "M22.S03.T002", title: "Dependency enforcement", marker: " " }],
+  });
+  assert.equal(spec.status, "SPEC_READY");
+  assert.equal(spec.taskId, "M22.S03.T002");
+});

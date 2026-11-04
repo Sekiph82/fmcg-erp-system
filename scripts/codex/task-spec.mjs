@@ -8,6 +8,10 @@ function promptFor(task) {
     `Workspace: ${canonicalRoot}`,
     "",
     "Use this exact task as the only implementation scope. Treat the root TASKS.md row as the authority. On completion, select the next dependency-ready task using canonical acceptance criteria and dependencies, then write its exact ID/title to TASKS.md; do not choose solely by checkbox order or dashboard selection.",
+    "After implementation and lightweight checks, mark the task IMPLEMENTED/pending milestone verification with `task-queue.mjs --implement`; do not mark it DONE until milestone validation and consolidated independent review provide evidence. At milestone acceptance, mark pending tasks DONE with `--accept-task` and evidence.",
+    "Batch comprehensive tests and independent code/security review at milestone acceptance; do not rerun full suites or launch a separate review campaign after every small task. Use focused checks earlier only for a specific risk, acceptance requirement, or observed failure.",
+    "After implementation and lightweight checks, mark the task IMPLEMENTED/pending milestone verification with `task-queue.mjs --implement`; do not mark it DONE until milestone validation and consolidated independent review provide evidence. At milestone acceptance, mark pending tasks DONE with `--accept-task` and evidence.",
+    "Batch comprehensive tests and independent code/security review at milestone acceptance; do not rerun full suites or launch a separate review campaign after every small task. Use focused checks earlier only for a specific risk, acceptance requirement, or observed failure.",
     "Before editing, read this task's linked acceptance material and the latest applicable audit. If those materials do not define a required business decision, record the precise blocker for the owner instead of inventing a value.",
     "At the task boundary, run `node scripts/codex/task-queue.mjs --apply-answers` and apply only exact Q-ID/task-ID matches once. Preserve owner data and existing local changes. Never inspect `.hiveai`, Codex private databases, or AppData. Do not modify FormuLab or create another Desktop checkout.",
     "Use one implementation executor and one independent read-only reviewer. Report only checks and approvals supported by evidence. Respect owner-data, security, authentication, approval, and publication gates; do not fabricate data or approval.",
@@ -20,8 +24,8 @@ export function createNextTaskSpec(state) {
   if (!state.currentTask) {
     return { status: "QUEUE_COMPLETE", taskId: null, title: null, prompt: null };
   }
-  if (state.currentTaskStatus !== "COMPLETE") {
-    return { status: "CURRENT_TASK_NOT_COMPLETE", taskId: null, title: null, prompt: null };
+  if (!["IMPLEMENTED", "COMPLETE"].includes(state.currentTaskStatus)) {
+    return { status: "CURRENT_TASK_NOT_IMPLEMENTED", taskId: null, title: null, prompt: null };
   }
   if (!state.nextTaskId) {
     return { status: "EXPLICIT_TASK_SELECTION_REQUIRED", taskId: null, title: null, prompt: null };

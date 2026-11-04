@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { applyOwnerAnswers, claimCurrentTask, completeCurrentTask, writeTracker } from "./task-queue.mjs";
+import { acceptImplementedTask, applyOwnerAnswers, claimCurrentTask, completeCurrentTask, implementCurrentTask, writeTracker } from "./task-queue.mjs";
 import { parseTaskState } from "./task-state.mjs";
 
 const tracker = `# Tracker
@@ -120,6 +120,30 @@ test("claim advances only to the exact selected READY successor after completion
   assert.equal(state.currentTaskStatus, "IN_PROGRESS");
   assert.equal(state.tasks.find((task) => task.id === "M20.S01.T004").marker, "~");
   assert.equal(state.nextTaskSelectionRequired, true);
+});
+
+test("implementation checkpoint remains pending until milestone acceptance", () => {
+  const implemented = implementCurrentTask(tracker, {
+    nextTaskId: "M20.S01.T004",
+    evidence: "Added bounded release guard and deferred integration tests to milestone acceptance.",
+  });
+  const state = parseTaskState(implemented.source);
+  assert.equal(state.currentTaskStatus, "IMPLEMENTED");
+  assert.equal(state.tasks.find((task) => task.id === "M20.S01.T003").marker, "v");
+  assert.equal(state.completedTasks, 1);
+  assert.equal(state.nextTaskId, "M20.S01.T004");
+  const advanced = claimCurrentTask(implemented.source);
+  assert.equal(parseTaskState(advanced.source).currentTask.id, "M20.S01.T004");
+
+  const accepted = acceptImplementedTask(advanced.source, {
+    taskId: "M20.S01.T003",
+    evidence: "Milestone database regression and consolidated review passed on the accepted revision.",
+  });
+  const acceptedState = parseTaskState(accepted.source);
+  assert.equal(acceptedState.currentTask.id, "M20.S01.T004");
+  assert.equal(acceptedState.tasks.find((task) => task.id === "M20.S01.T003").marker, "x");
+  assert.equal(acceptedState.completedTasks, 2);
+  assert.match(accepted.source, /Acceptance Evidence: Milestone database regression/);
 });
 
 test("cannot complete the active task without selecting a READY successor", () => {

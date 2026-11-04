@@ -9,10 +9,10 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 ## Project Status
 
 - Current Milestone: M22 — Production Order / Work Order
-- Current Sprint: M22.S02 — Execution Structure
-- Current Task: M22.S03.T002 — Dependency/predecessor enforcement
-- Current Task Status: COMPLETE
-- Next Task/Action: M22.S03.T003 — Material/QC prerequisites before release
+- Current Sprint: M22.S04 — Verification
+- Current Task: M22.S04.T002 — Split/merge/rework tests
+- Current Task Status: IMPLEMENTED
+- Next Task/Action: M22.S04.T003 — Cross-module transaction tests
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -21,6 +21,7 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 ## Status Legend
 
 - `[x]` DONE
+- `[v]` IMPLEMENTED / PENDING MILESTONE VERIFICATION
 - `[~]` IN_PROGRESS
 - `[ ]` PLANNED
 - `[!]` BLOCKED
@@ -32,7 +33,7 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 1. Milestone → Sprint → Task is the canonical hierarchy.
 2. Existing capabilities are extended, never rebuilt without evidence that replacement is required.
-3. A task may become DONE only with implementation evidence and appropriate tests/checks.
+3. A task may be marked IMPLEMENTED (`[v]`) after source changes and lightweight checks; it becomes DONE (`[x]`) only after its milestone validation and consolidated independent review are recorded.
 4. Historical tasks already marked Done remain accepted unless a later remediation explicitly supersedes them.
 5. External credentials, live providers, production devices and live-DB acceptance must never be fabricated as PASS.
 6. Cross-module changes must preserve RBAC, auditability, migrations, API contracts, frontend/backend consistency and tenant/company boundaries.
@@ -693,14 +694,18 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 ## M22.S03 — Subcontracting & Dependencies
 - [x] M22.S03.T001 — Subcontract operation linkage
   Evidence: Added optional one-to-one canonical WorkOrder linkage on subcontract orders, validation for open planned operations, visible API/UI relationships, and transaction-safe output reconciliation. Linked product receipts defer inventory posting until parent production-order close; subcontract completion requires accepted output and WorkOrder completion must equal it. Independent read-only review confirmed duplicate-stock and receipt/completion race blockers resolved. git diff --check passed; python -m alembic heads reports sole head 20261104_0008. Guarded disposable-PostgreSQL regression added; functional tests, migration execution and frontend type/build checks are deferred to M22 milestone-batched verification; no test PASS claimed.
-- [x] M22.S03.T002 — Dependency/predecessor enforcement
-  Evidence: Added canonical routed WorkOrder predecessor gates requiring every earlier routing step to have active completed work orders; missing or cancelled-only predecessors fail closed, completed split replacement rows satisfy the step, and manual unrouted starts remain unchanged. Independent read-only review found no remaining blockers after correcting test error-message assertions. git diff --check passed. Guarded PostgreSQL regression tests were added but not run per milestone-batched verification; no test PASS claimed.
-- [ ] M22.S03.T003 — Material/QC prerequisites before release
-- [ ] M22.S03.T004 — Scheduling linkage to MPS
+- [v] M22.S03.T002 — Dependency/predecessor enforcement
+  Implementation Evidence: Added canonical routed WorkOrder predecessor gates requiring every earlier routing step to have active completed work orders; missing or cancelled-only predecessors fail closed, completed split replacement rows satisfy the step, and manual unrouted starts remain unchanged. Focused read-only implementation review and git diff --check found no blocker; guarded PostgreSQL regressions await M22 milestone validation. This task is implemented, not accepted/DONE.
+- [v] M22.S03.T003 — Material/QC prerequisites before release
+  Implementation Evidence: Implemented canonical production-order material readiness with existing QMS gates, lot disposition/expiry filtering, UOM conversion, loss and transaction locks; syntax/import and diff checks passed. PostgreSQL and milestone acceptance deferred; see coordination/sessions/M22.S03.T003/CLAUDE_LOG_V01.md. (pending milestone verification)
+- [v] M22.S03.T004 — Scheduling linkage to MPS
+  Implementation Evidence: Added MPS source-warehouse linkage and active-source guard while preserving MPSLine-to-order association and existing scheduled-date mapping; exact-database integration regressions added. Focused task-queue/spec tests passed 22/22, service imports and Python syntax checks passed, and git diff --check passed. PostgreSQL and consolidated M22 acceptance remain pending; see coordination/sessions/M22.S03.T004/CLAUDE_LOG_V01.md. (pending milestone verification)
 
 ## M22.S04 — Verification
-- [ ] M22.S04.T001 — Lifecycle/state tests
-- [ ] M22.S04.T002 — Split/merge/rework tests
+- [v] M22.S04.T001 — Lifecycle/state tests
+  Implementation Evidence: Added exact-disposable-PostgreSQL lifecycle regressions for self/repeated approval, canonical order approval/release attribution and order, and append-only transition-history update/delete rejection. Test syntax and git diff --check passed; database suite and consolidated M22 acceptance remain pending. See coordination/sessions/M22.S04.T001/CLAUDE_LOG_V01.md. (pending milestone verification)
+- [v] M22.S04.T002 — Split/merge/rework tests
+  Implementation Evidence: Mapped existing exact-disposable-PostgreSQL split/merge and rework regressions to conservation, immutable lineage, authorization/state bounds, parent-close blocking, and output reconciliation; Python syntax and git diff checks passed. PostgreSQL cases and consolidated M22 acceptance remain pending; see coordination/sessions/M22.S04.T002/CLAUDE_LOG_V01.md. (pending milestone verification)
 - [ ] M22.S04.T003 — Cross-module transaction tests
 - [ ] M22.S04.T004 — Close M22
 
