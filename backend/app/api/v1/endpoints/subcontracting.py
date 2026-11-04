@@ -43,6 +43,7 @@ def _order_out(o) -> SCOrderOut:
     out = SCOrderOut.model_validate(o)
     if o.supplier:  out.supplier_name  = o.supplier.name
     if o.warehouse: out.warehouse_name = o.warehouse.name
+    if o.work_order: out.work_order_code = o.work_order.work_order_id
     if hasattr(o, "lines"):
         out.lines = [_line_out(l) for l in o.lines]
     return out

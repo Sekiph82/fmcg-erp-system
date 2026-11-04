@@ -22,6 +22,13 @@ from app.models.production_advanced import (
     AdvQCInspection, AdvQCResult, WasteRecord, BatchLot, LaborLog, OEERecord,
 )
 from app.models.production_work_order_genealogy import ProductionWorkOrderGenealogy
+from app.models.subcontracting import (
+    SCOrderStatus,
+    SCReceiptStatus,
+    SubcontractOrder,
+    SubcontractReceipt,
+    SubcontractReceiptLine,
+)
 from app.services.production_transition_history import (
     PRODUCTION_ORDER,
     WORK_ORDER,
@@ -876,6 +883,31 @@ async def complete_work_order(
         raise ValueError("actual_quantity cannot exceed the work-order planned quantity")
     if completed_quantity > Decimal(parent.planned_quantity):
         raise ValueError("actual_quantity cannot exceed the production-order planned quantity")
+
+    subcontract_result = await db.execute(
+        select(SubcontractOrder)
+        .where(SubcontractOrder.work_order_id == work_order.id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )
+    subcontract_order = subcontract_result.scalar_one_or_none()
+    if subcontract_order is not None:
+        if subcontract_order.status not in {SCOrderStatus.COMPLETED, SCOrderStatus.CLOSED}:
+            raise ValueError("The linked subcontracting order must be completed before its work order")
+        accepted_result = await db.execute(
+            select(func.coalesce(func.sum(SubcontractReceiptLine.quantity_accepted), 0))
+            .join(SubcontractReceipt, SubcontractReceipt.id == SubcontractReceiptLine.receipt_id)
+            .where(
+                SubcontractReceipt.order_id == subcontract_order.id,
+                SubcontractReceipt.status == SCReceiptStatus.POSTED,
+                SubcontractReceiptLine.product_id == parent.product_id,
+            )
+        )
+        accepted_quantity = Decimal(str(accepted_result.scalar_one()))
+        if completed_quantity != accepted_quantity:
+            raise ValueError(
+                "Work-order actual quantity must equal accepted output on its linked subcontracting order"
+            )
 
     previous_status = work_order.status
     work_order.status = WorkOrderStatus.COMPLETED

@@ -98,6 +98,10 @@ class SubcontractOrder(Base, TimestampMixin):
     subcontractor_location_id = Column(UUID(as_uuid=True),
                                        ForeignKey("subcontractor_locations.id", ondelete="SET NULL"),
                                        nullable=True)
+    work_order_id             = Column(UUID(as_uuid=True),
+                                       ForeignKey("work_orders.id", ondelete="RESTRICT",
+                                                  name="fk_subcontract_orders_work_order"),
+                                       nullable=True, unique=True, index=True)
 
     # Cost summary
     total_material_cost    = Column(Numeric(16, 4), nullable=True)
@@ -113,6 +117,7 @@ class SubcontractOrder(Base, TimestampMixin):
     supplier                = relationship("Supplier")
     warehouse               = relationship("Warehouse")
     subcontractor_location  = relationship("SubcontractorLocation")
+    work_order              = relationship("WorkOrder")
     linked_po               = relationship("PurchaseOrder")
     approved_by             = relationship("User", foreign_keys=[approved_by_id])
     created_by              = relationship("User", foreign_keys=[created_by_id])

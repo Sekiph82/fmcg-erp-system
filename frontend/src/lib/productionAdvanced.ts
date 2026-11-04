@@ -167,7 +167,7 @@ export const advProductionApi = {
   },
 
   // Work Orders
-  async listWorkOrders(p?: { production_order_id?: string; status?: string }): Promise<WorkOrder[]> {
+  async listWorkOrders(p?: { production_order_id?: string; status?: string; skip?: number; limit?: number }): Promise<WorkOrder[]> {
     const r = await apiClient.get(`${BASE}/work-orders`, { params: p });
     return r.data;
   },

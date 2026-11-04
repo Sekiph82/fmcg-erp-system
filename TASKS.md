@@ -10,9 +10,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M22 — Production Order / Work Order
 - Current Sprint: M22.S02 — Execution Structure
-- Current Task: M22.S02.T004 — Rework/reprocess flows
+- Current Task: M22.S03.T001 — Subcontract operation linkage
 - Current Task Status: COMPLETE
-- Next Task/Action: M22.S03.T001 — Subcontract operation linkage
+- Next Task/Action: M22.S03.T002 — Dependency/predecessor enforcement
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -691,7 +691,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
   Evidence: Implemented canonical WorkOrder rework API, UI, quantity conservation, actor transition and genealogy lineage; added migration 20261104_0007 and guarded disposable-PostgreSQL regressions. Independent read-only review found no blockers. git diff --check passed; python -m alembic heads reports sole head 20261104_0007. Functional DB tests, migration execution and frontend build/type checks are intentionally deferred to M22 milestone-batched verification; no test PASS claimed.
 
 ## M22.S03 — Subcontracting & Dependencies
-- [ ] M22.S03.T001 — Subcontract operation linkage
+- [x] M22.S03.T001 — Subcontract operation linkage
+  Evidence: Added optional one-to-one canonical WorkOrder linkage on subcontract orders, validation for open planned operations, visible API/UI relationships, and transaction-safe output reconciliation. Linked product receipts defer inventory posting until parent production-order close; subcontract completion requires accepted output and WorkOrder completion must equal it. Independent read-only review confirmed duplicate-stock and receipt/completion race blockers resolved. git diff --check passed; python -m alembic heads reports sole head 20261104_0008. Guarded disposable-PostgreSQL regression added; functional tests, migration execution and frontend type/build checks are deferred to M22 milestone-batched verification; no test PASS claimed.
 - [ ] M22.S03.T002 — Dependency/predecessor enforcement
 - [ ] M22.S03.T003 — Material/QC prerequisites before release
 - [ ] M22.S03.T004 — Scheduling linkage to MPS

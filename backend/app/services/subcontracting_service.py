@@ -18,6 +18,8 @@ from sqlalchemy.orm import selectinload
 
 from app.models.inventory import Stock, StockMovement, StockType, MovementType, Lot
 from app.models.master import Material, Supplier, Warehouse
+from app.models.production import ProductionOrder, ProductionOrderStatus
+from app.models.production_advanced import WorkOrder, WorkOrderStatus
 from app.models.subcontracting import (
     SCAIAgentType, SCAIRecommendation,
     SCIssueStatus, SCOrderStatus, SCReceiptStatus,
@@ -98,6 +100,49 @@ async def create_order(db: AsyncSession, payload: SCOrderCreate, user_id: Option
     # Resolve subcontractor location
     loc = await get_location_for_supplier(db, payload.supplier_id)
 
+    linked_work_order = None
+    if payload.work_order_id is not None:
+        candidate = await db.get(WorkOrder, payload.work_order_id)
+        if candidate is None:
+            raise ValueError("Linked work order not found")
+        parent_result = await db.execute(
+            select(ProductionOrder)
+            .where(ProductionOrder.id == candidate.production_order_id)
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        )
+        parent = parent_result.scalar_one_or_none()
+        if parent is None:
+            raise ValueError("Linked work order has no production order")
+        if parent.status in {ProductionOrderStatus.COMPLETED, ProductionOrderStatus.CANCELLED}:
+            raise ValueError("Cannot subcontract an operation under a completed or cancelled production order")
+        work_order_result = await db.execute(
+            select(WorkOrder)
+            .where(WorkOrder.id == payload.work_order_id)
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        )
+        linked_work_order = work_order_result.scalar_one_or_none()
+        if linked_work_order is None:
+            raise ValueError("Linked work order not found")
+        if linked_work_order.status != WorkOrderStatus.PLANNED:
+            raise ValueError("Only planned work orders can be linked to a new subcontracting order")
+        if linked_work_order.planned_quantity is None or _D(linked_work_order.planned_quantity) <= 0:
+            raise ValueError("A linked work order must have a positive planned quantity")
+        existing_link = await db.execute(
+            select(SubcontractOrder.id)
+            .where(SubcontractOrder.work_order_id == linked_work_order.id)
+            .with_for_update()
+            .limit(1)
+        )
+        if existing_link.scalar_one_or_none() is not None:
+            raise ValueError("A work order can be linked to only one subcontracting order")
+        if any(
+            line.product_id is not None and line.product_id != parent.product_id
+            for line in payload.lines
+        ):
+            raise ValueError("Subcontract output products must match the linked production order product")
+
     order = SubcontractOrder(
         order_no=_order_no(),
         supplier_id=payload.supplier_id,
@@ -107,6 +152,7 @@ async def create_order(db: AsyncSession, payload: SCOrderCreate, user_id: Option
         warehouse_id=payload.warehouse_id,
         linked_po_id=payload.linked_po_id,
         subcontractor_location_id=loc.id if loc else None,
+        work_order_id=linked_work_order.id if linked_work_order else None,
         currency=payload.currency,
         remarks=payload.remarks,
         created_by_id=user_id,
@@ -159,6 +205,7 @@ async def list_orders(
         .options(
             selectinload(SubcontractOrder.supplier),
             selectinload(SubcontractOrder.warehouse),
+            selectinload(SubcontractOrder.work_order),
             selectinload(SubcontractOrder.lines).selectinload(SubcontractOrderLine.product),
             selectinload(SubcontractOrder.lines).selectinload(SubcontractOrderLine.material),
         )
@@ -178,6 +225,7 @@ async def get_order(db: AsyncSession, order_id: UUID) -> Optional[SubcontractOrd
         .options(
             selectinload(SubcontractOrder.supplier),
             selectinload(SubcontractOrder.warehouse),
+            selectinload(SubcontractOrder.work_order),
             selectinload(SubcontractOrder.lines).selectinload(SubcontractOrderLine.product),
             selectinload(SubcontractOrder.lines).selectinload(SubcontractOrderLine.material),
             selectinload(SubcontractOrder.material_issues).selectinload(
@@ -319,12 +367,78 @@ async def receive_goods(
     payload: SCReceiptCreate,
     user_id: Optional[UUID],
 ) -> SubcontractReceipt:
-    order = await db.get(SubcontractOrder, payload.order_id)
+    candidate_order = await db.get(SubcontractOrder, payload.order_id)
+    if not candidate_order:
+        raise ValueError(f"Order {payload.order_id} not found")
+
+    linked_work_order = None
+    linked_parent = None
+    if candidate_order.work_order_id is not None:
+        candidate_work_order = await db.get(WorkOrder, candidate_order.work_order_id)
+        if candidate_work_order is None:
+            raise ValueError("Linked work order not found")
+        parent_result = await db.execute(
+            select(ProductionOrder)
+            .where(ProductionOrder.id == candidate_work_order.production_order_id)
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        )
+        linked_parent = parent_result.scalar_one_or_none()
+        if linked_parent is None:
+            raise ValueError("Linked work order has no production order")
+        work_order_result = await db.execute(
+            select(WorkOrder)
+            .where(WorkOrder.id == candidate_order.work_order_id)
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        )
+        linked_work_order = work_order_result.scalar_one_or_none()
+        if linked_work_order is None:
+            raise ValueError("Linked work order not found")
+        if linked_parent.status in {ProductionOrderStatus.COMPLETED, ProductionOrderStatus.CANCELLED}:
+            raise ValueError("Cannot receive subcontract output for a completed or cancelled production order")
+        if linked_work_order.status not in {WorkOrderStatus.PLANNED, WorkOrderStatus.IN_PROGRESS}:
+            raise ValueError("Subcontract output can only be received for an open work order")
+
+    order_result = await db.execute(
+        select(SubcontractOrder)
+        .where(SubcontractOrder.id == payload.order_id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )
+    order = order_result.scalar_one_or_none()
     if not order:
         raise ValueError(f"Order {payload.order_id} not found")
+    if order.work_order_id != candidate_order.work_order_id:
+        raise ValueError("Subcontract work-order link changed while receiving goods; retry the receipt")
     if order.status not in (SCOrderStatus.ISSUED, SCOrderStatus.IN_PROGRESS,
                              SCOrderStatus.PARTIALLY_RECEIVED):
         raise ValueError(f"Cannot receive for order in status {order.status}")
+
+    linked_product_acceptance = Decimal("0")
+    if linked_work_order is not None and linked_parent is not None:
+        for line in payload.lines:
+            if line.product_id is not None:
+                if line.material_id is not None or line.product_id != linked_parent.product_id:
+                    raise ValueError("Linked subcontract receipts must identify the production-order product only")
+                accepted = line.quantity_accepted if line.quantity_accepted is not None else (
+                    _D(line.quantity_received) - _D(line.quantity_rejected)
+                )
+                if accepted < 0 or accepted > line.quantity_received:
+                    raise ValueError("Accepted linked product quantity must be between zero and received quantity")
+                linked_product_acceptance += accepted
+        previous_result = await db.execute(
+            select(func.coalesce(func.sum(SubcontractReceiptLine.quantity_accepted), 0))
+            .join(SubcontractReceipt, SubcontractReceipt.id == SubcontractReceiptLine.receipt_id)
+            .where(
+                SubcontractReceipt.order_id == order.id,
+                SubcontractReceipt.status == SCReceiptStatus.POSTED,
+                SubcontractReceiptLine.product_id == linked_parent.product_id,
+            )
+        )
+        prior_accepted = _D(previous_result.scalar_one())
+        if prior_accepted + linked_product_acceptance > _D(linked_work_order.planned_quantity):
+            raise ValueError("Accepted subcontract output cannot exceed the linked work-order planned quantity")
 
     receipt = SubcontractReceipt(
         receipt_no=_receipt_no(),
@@ -351,7 +465,8 @@ async def receive_goods(
         loc = await get_location_for_supplier(db, order.supplier_id)
         sc_wh_id = loc.warehouse_id if loc else None
 
-        if dest_wh_id and accepted > 0:
+        defer_linked_product_stock = linked_work_order is not None and l.product_id is not None
+        if dest_wh_id and accepted > 0 and not defer_linked_product_stock:
             mv = StockMovement(
                 reference_number=receipt.receipt_no,
                 movement_type=MovementType.RECEIPT,
@@ -487,9 +602,67 @@ async def _recalculate_yield(db: AsyncSession, order: SubcontractOrder) -> None:
 # ── Complete / Close order ────────────────────────────────────────────────────
 
 async def complete_order(db: AsyncSession, order_id: UUID) -> SubcontractOrder:
-    order = await db.get(SubcontractOrder, order_id)
+    candidate_order = await db.get(SubcontractOrder, order_id)
+    if not candidate_order:
+        raise ValueError(f"Order {order_id} not found")
+
+    linked_work_order = None
+    if candidate_order.work_order_id is not None:
+        candidate_work_order = await db.get(WorkOrder, candidate_order.work_order_id)
+        if candidate_work_order is None:
+            raise ValueError("Linked work order not found")
+        parent_result = await db.execute(
+            select(ProductionOrder)
+            .where(ProductionOrder.id == candidate_work_order.production_order_id)
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        )
+        parent = parent_result.scalar_one_or_none()
+        if parent is None:
+            raise ValueError("Linked work order has no production order")
+        work_order_result = await db.execute(
+            select(WorkOrder)
+            .where(WorkOrder.id == candidate_order.work_order_id)
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        )
+        linked_work_order = work_order_result.scalar_one_or_none()
+        if linked_work_order is None:
+            raise ValueError("Linked work order not found")
+
+    order_result = await db.execute(
+        select(SubcontractOrder)
+        .where(SubcontractOrder.id == order_id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )
+    order = order_result.scalar_one_or_none()
     if not order:
         raise ValueError(f"Order {order_id} not found")
+    if order.work_order_id != candidate_order.work_order_id:
+        raise ValueError("Subcontract work-order link changed while completing the order; retry")
+    if order.status not in {
+        SCOrderStatus.ISSUED,
+        SCOrderStatus.IN_PROGRESS,
+        SCOrderStatus.PARTIALLY_RECEIVED,
+    }:
+        raise ValueError(f"Cannot complete subcontract order in status {order.status}")
+
+    if linked_work_order is not None:
+        accepted_result = await db.execute(
+            select(func.coalesce(func.sum(SubcontractReceiptLine.quantity_accepted), 0))
+            .join(SubcontractReceipt, SubcontractReceipt.id == SubcontractReceiptLine.receipt_id)
+            .where(
+                SubcontractReceipt.order_id == order.id,
+                SubcontractReceipt.status == SCReceiptStatus.POSTED,
+                SubcontractReceiptLine.product_id == parent.product_id,
+            )
+        )
+        accepted_quantity = _D(accepted_result.scalar_one())
+        if accepted_quantity <= 0:
+            raise ValueError("A linked subcontract order needs accepted product output before completion")
+        if accepted_quantity > _D(linked_work_order.planned_quantity):
+            raise ValueError("Accepted subcontract output cannot exceed the linked work-order planned quantity")
 
     order.status = SCOrderStatus.COMPLETED
     order.actual_completion_date = _today()

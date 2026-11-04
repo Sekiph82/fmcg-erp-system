@@ -32,12 +32,12 @@ export interface SCOrderOut {
   id: string; order_no: string; supplier_id: string; order_date: string;
   expected_completion_date: string|null; actual_completion_date: string|null;
   status: SCOrderStatus; linked_po_id: string|null; warehouse_id: string|null;
-  subcontractor_location_id: string|null;
+  subcontractor_location_id: string|null; work_order_id: string|null;
   total_material_cost: number|null; total_service_cost: number|null;
   total_wastage_cost: number|null; currency: string;
   approved_by_id: string|null; approved_at: string|null;
   created_by_id: string|null; remarks: string|null; created_at: string|null;
-  supplier_name: string|null; warehouse_name: string|null;
+  supplier_name: string|null; warehouse_name: string|null; work_order_code: string|null;
   lines: SCOrderLineOut[];
 }
 export interface SCIssueLineOut {

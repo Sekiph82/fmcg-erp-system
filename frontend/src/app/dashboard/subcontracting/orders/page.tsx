@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { scApi, SCOrderOut, SCOrderStatus, orderStatusBadge, fmt } from "@/lib/subcontracting";
+import { advProductionApi } from "@/lib/productionAdvanced";
 
 const STATUS_OPTIONS: (SCOrderStatus|"")[] = ["","DRAFT","APPROVED","ISSUED","IN_PROGRESS","PARTIALLY_RECEIVED","COMPLETED","CLOSED","CANCELLED"];
 
@@ -48,6 +49,7 @@ function OrderDetail({ orderId }: { orderId: string }) {
         <div><p className="text-gray-500 text-xs">Service Cost</p><p className="font-medium">{order.total_service_cost ? `KES ${fmt(order.total_service_cost, 0)}` : "—"}</p></div>
         <div><p className="text-gray-500 text-xs">Wastage Cost</p><p className="font-medium text-orange-600">{order.total_wastage_cost ? `KES ${fmt(order.total_wastage_cost, 0)}` : "—"}</p></div>
         <div><p className="text-gray-500 text-xs">SC Location</p><p className="font-medium">{order.subcontractor_location_id ? "Configured" : <span className="text-red-500">Not configured</span>}</p></div>
+        <div><p className="text-gray-500 text-xs">Linked Work Order</p><p className="font-medium font-mono">{order.work_order_code ?? "Unlinked"}</p></div>
         <div><p className="text-gray-500 text-xs">Remarks</p><p className="font-medium">{order.remarks ?? "—"}</p></div>
       </div>
 
@@ -164,11 +166,19 @@ function NewOrderModal({ onClose }: { onClose: () => void }) {
   const qc = useQueryClient();
   const [form, setForm] = useState({
     supplier_id: "", order_date: new Date().toISOString().split("T")[0],
-    expected_completion_date: "", warehouse_id: "", currency: "KES", remarks: "",
+    expected_completion_date: "", warehouse_id: "", work_order_id: "", currency: "KES", remarks: "",
+  });
+  const { data: workOrders = [] } = useQuery({
+    queryKey: ["sc-linkable-work-orders"],
+    queryFn: () => advProductionApi.listWorkOrders({ limit: 500 }),
   });
 
   const create = useMutation({
-    mutationFn: () => scApi.createOrder({ ...form, lines: [] }),
+    mutationFn: () => scApi.createOrder({
+      ...form,
+      work_order_id: form.work_order_id || undefined,
+      lines: [],
+    }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["sc-orders"] }); onClose(); },
   });
 
@@ -178,6 +188,19 @@ function NewOrderModal({ onClose }: { onClose: () => void }) {
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <div className="bg-white rounded-xl p-6 w-96 space-y-3 shadow-xl">
         <h2 className="font-semibold text-gray-900">New Subcontracting Order</h2>
+        <div>
+          <label className="text-xs text-gray-600">Production Work Order (optional)</label>
+          <select value={form.work_order_id} onChange={(e) => f("work_order_id", e.target.value)}
+            className="w-full border rounded px-2 py-1.5 text-sm mt-0.5">
+            <option value="">No operation link</option>
+            {workOrders.filter((workOrder) => workOrder.status === "planned").map((workOrder) => (
+              <option key={workOrder.id} value={workOrder.id}>
+                {workOrder.work_order_id} · {workOrder.order_no ?? workOrder.production_order_id} · {workOrder.operation}
+              </option>
+            ))}
+          </select>
+          <p className="text-[11px] text-gray-500 mt-1">Only planned operations can be linked. Existing orders remain unlinked.</p>
+        </div>
         {[["Supplier ID","supplier_id"],["Order Date","order_date","date"],["Expected Completion","expected_completion_date","date"],
           ["Source Warehouse ID","warehouse_id"],["Currency","currency"],["Remarks","remarks"],
         ].map(([label, key, type = "text"]) => (
@@ -234,18 +257,20 @@ export default function OrdersPage() {
           <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
             <tr>
               <th className="text-left px-4 py-2">Order No</th><th className="text-left px-4 py-2">Supplier</th>
+              <th className="text-left px-4 py-2">Work Order</th>
               <th className="text-left px-4 py-2">Date</th><th className="text-left px-4 py-2">Due</th>
               <th className="text-left px-4 py-2">Status</th><th className="text-right px-4 py-2">Items</th>
               <th className="text-right px-4 py-2">Service Cost</th><th className="text-left px-4 py-2">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {isLoading && <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">Loading…</td></tr>}
-            {!isLoading && !orders?.length && <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">No orders found.</td></tr>}
+            {isLoading && <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">Loading…</td></tr>}
+            {!isLoading && !orders?.length && <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">No orders found.</td></tr>}
             {(orders ?? []).map((o) => (
               <tr key={o.id} className="border-t border-gray-100 hover:bg-gray-50">
                 <td className="px-4 py-2 font-mono font-medium text-blue-700">{o.order_no}</td>
                 <td className="px-4 py-2">{o.supplier_name}</td>
+                <td className="px-4 py-2 font-mono text-xs">{o.work_order_code ?? "—"}</td>
                 <td className="px-4 py-2 text-gray-500">{o.order_date}</td>
                 <td className={`px-4 py-2 ${o.expected_completion_date && o.expected_completion_date < new Date().toISOString().split("T")[0] && ["ISSUED","IN_PROGRESS"].includes(o.status) ? "text-red-600 font-medium" : "text-gray-500"}`}>
                   {o.expected_completion_date ?? "—"}

@@ -56,6 +56,7 @@ class SCOrderCreate(BaseModel):
     expected_completion_date: Optional[date] = None
     warehouse_id:             Optional[uuid.UUID] = None
     linked_po_id:             Optional[uuid.UUID] = None
+    work_order_id:            Optional[uuid.UUID] = None
     currency:                 str = "KES"
     remarks:                  Optional[str] = None
     lines:                    List[SCOrderLineCreate] = []
@@ -92,6 +93,7 @@ class SCOrderOut(BaseModel):
     linked_po_id:             Optional[uuid.UUID]
     warehouse_id:             Optional[uuid.UUID]
     subcontractor_location_id: Optional[uuid.UUID]
+    work_order_id:            Optional[uuid.UUID]
     total_material_cost:      Optional[Decimal]
     total_service_cost:       Optional[Decimal]
     total_wastage_cost:       Optional[Decimal]
@@ -102,6 +104,7 @@ class SCOrderOut(BaseModel):
     remarks:                  Optional[str]
     created_at:               Optional[datetime]
     supplier_name:  Optional[str] = None
+    work_order_code: Optional[str] = None
     warehouse_name: Optional[str] = None
     lines:          List[SCOrderLineOut] = []
 
