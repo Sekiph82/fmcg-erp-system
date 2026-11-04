@@ -101,6 +101,12 @@ class ProductionOrder(Base, TimestampMixin):
     actual_start = Column(DateTime(timezone=True), nullable=True)
     actual_end = Column(DateTime(timezone=True), nullable=True)
     created_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    approved_by = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="RESTRICT", name="fk_production_orders_approved_by_users"),
+        nullable=True,
+    )
+    approved_at = Column(DateTime(timezone=True), nullable=True)
     notes = Column(Text, nullable=True)
 
     # ── Costing (populated by production_cost_service.compute_order_cost) ─────

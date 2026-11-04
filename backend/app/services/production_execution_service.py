@@ -43,11 +43,11 @@ LIFECYCLE_FLOW = {
 }
 
 EXECUTION_ORDER_TRANSITIONS = {
-    "DRAFT": {"PLANNED", "RELEASED", "CANCELLED"},
+    "DRAFT": {"PLANNED", "CANCELLED"},
     "PLANNED": {"RELEASED", "CANCELLED"},
     "RELEASED": {"IN_PROGRESS", "CANCELLED"},
-    "IN_PROGRESS": {"PAUSED", "COMPLETED", "CANCELLED"},
-    "PAUSED": {"IN_PROGRESS", "COMPLETED", "CANCELLED"},
+    "IN_PROGRESS": {"PAUSED", "COMPLETED"},
+    "PAUSED": {"IN_PROGRESS", "COMPLETED"},
     "COMPLETED": {"CLOSED"},
     "CLOSED": set(),
     "CANCELLED": set(),
@@ -57,6 +57,13 @@ EXECUTION_ORDER_TRANSITIONS = {
 def _require_order_transition(order: ProdExecOrder, target: str) -> None:
     if target not in EXECUTION_ORDER_TRANSITIONS.get(order.status, set()):
         raise ValueError(f"Cannot transition order from {order.status} to {target}")
+
+
+def _require_order_unapproved_for_planning_changes(order: ProdExecOrder) -> None:
+    if order.status not in {"DRAFT", "PLANNED"}:
+        raise ValueError(f"Planning changes are not allowed in status {order.status}")
+    if order.approved_by is not None or order.approved_at is not None:
+        raise ValueError("Planning changes are locked after approval; cancel and recreate the order to change its approved scope")
 
 ORDER_EDITABLE_FIELDS = frozenset({
     "product_id", "bom_id", "routing_id", "product_name", "bom_code",
@@ -229,8 +236,7 @@ async def update_order(db: AsyncSession, order_id: uuid.UUID, data: dict) -> Pro
     if forbidden:
         raise ValueError(f"Fields cannot be edited directly: {', '.join(sorted(forbidden))}")
     order = await _load_order(db, order_id, for_update=True)
-    if order.status not in {"DRAFT", "PLANNED"}:
-        raise ValueError("Only DRAFT or PLANNED orders can be edited")
+    _require_order_unapproved_for_planning_changes(order)
     for k, v in data.items():
         setattr(order, k, v)
     await db.commit()
@@ -265,7 +271,27 @@ async def advance_order(db: AsyncSession, order_id: uuid.UUID) -> ProdExecOrder:
 async def release_order(db: AsyncSession, order_id: uuid.UUID) -> ProdExecOrder:
     order = await _load_order(db, order_id, for_update=True)
     _require_order_transition(order, "RELEASED")
+    if order.approved_by is None or order.approved_at is None:
+        raise ValueError("Cannot release: production order approval is required first")
     order.status = "RELEASED"
+    await db.commit()
+    return await _load_order(db, order_id)
+
+
+async def approve_order(
+    db: AsyncSession, order_id: uuid.UUID, user_id: uuid.UUID
+) -> ProdExecOrder:
+    order = await _load_order(db, order_id, for_update=True)
+    if order.status != "PLANNED":
+        raise ValueError("Only a planned production order can be approved")
+    if order.approved_by is not None or order.approved_at is not None:
+        raise ValueError("Production order approval has already been recorded")
+    if order.created_by is None:
+        raise ValueError("The order creator must be recorded before approval")
+    if order.created_by == user_id:
+        raise ValueError("The order creator cannot approve the same production order")
+    order.approved_by = user_id
+    order.approved_at = _now()
     await db.commit()
     return await _load_order(db, order_id)
 
@@ -410,6 +436,10 @@ async def split_order(
             priority=order.priority,
             planned_start=order.planned_start,
             planned_end=order.planned_end,
+            plant_id=order.plant_id,
+            section_id=order.section_id,
+            line_id=order.line_id,
+            preferred_machine_id=order.preferred_machine_id,
             parent_order_id=order.id,
             is_split=True,
             status="PLANNED",
@@ -455,8 +485,25 @@ async def merge_orders(
         _require_order_transition(o, "CANCELLED")
         orders.append(o)
 
-    if len({o.product_id for o in orders}) > 1:
-        raise ValueError("Cannot merge orders for different products")
+    merge_keys = {
+        (
+            o.product_id,
+            o.uom,
+            o.bom_id,
+            o.routing_id,
+            o.preferred_machine_id,
+            o.plant_id,
+            o.section_id,
+            o.line_id,
+            o.source_type,
+            o.source_document_id,
+            o.planned_start,
+            o.planned_end,
+        )
+        for o in orders
+    }
+    if len(merge_keys) != 1:
+        raise ValueError("Cannot merge orders with different product, UOM, BOM, routing, machine, scope, source, or schedule")
 
     total_qty = sum(float(o.planned_qty) for o in orders)
     new_no = await _next_order_no(db)
@@ -470,8 +517,15 @@ async def merge_orders(
         routing_id=orders[0].routing_id,
         planned_qty=Decimal(str(total_qty)),
         uom=orders[0].uom,
-        source_type="MANUAL",
+        source_type=orders[0].source_type,
+        source_document_id=orders[0].source_document_id,
         priority=min(o.priority for o in orders),
+        planned_start=orders[0].planned_start,
+        planned_end=orders[0].planned_end,
+        plant_id=orders[0].plant_id,
+        section_id=orders[0].section_id,
+        line_id=orders[0].line_id,
+        preferred_machine_id=orders[0].preferred_machine_id,
         status="PLANNED",
         created_by=user_id,
     )
@@ -479,16 +533,18 @@ async def merge_orders(
     await db.flush()
     await _generate_work_orders(db, merged)
 
-    log = ExecSplitMergeLog(
-        operation_type="MERGE",
-        source_order_id=orders[0].id,
-        result_order_ids=[str(merged.id)],
-        source_qty=Decimal(str(total_qty)),
-        result_qtys=[total_qty],
-        reason=reason,
-        performed_by=user_id,
-    )
-    db.add(log)
+    for source in orders:
+        db.add(
+            ExecSplitMergeLog(
+                operation_type="MERGE",
+                source_order_id=source.id,
+                result_order_ids=[str(merged.id)],
+                source_qty=source.planned_qty,
+                result_qtys=[total_qty],
+                reason=reason,
+                performed_by=user_id,
+            )
+        )
 
     for o in orders:
         o.status = "CANCELLED"
@@ -506,7 +562,11 @@ async def create_rework_order(
     reason: str,
     user_id: uuid.UUID,
 ) -> ProdExecOrder:
-    order = await _load_order(db, order_id)
+    order = await _load_order(db, order_id, for_update=True)
+    if order.status not in {"COMPLETED", "CLOSED"}:
+        raise ValueError("Rework can be created only from a completed or closed production order")
+    if qty <= 0:
+        raise ValueError("Rework quantity must be positive")
     new_no = await _next_order_no(db)
     rework = ProdExecOrder(
         order_no=new_no,
@@ -520,6 +580,10 @@ async def create_rework_order(
         uom=order.uom,
         source_type="MANUAL",
         priority=1,
+        plant_id=order.plant_id,
+        section_id=order.section_id,
+        line_id=order.line_id,
+        preferred_machine_id=order.preferred_machine_id,
         parent_order_id=order.id,
         is_rework=True,
         rework_reason=reason,
@@ -628,8 +692,7 @@ async def add_work_order(
     data: dict,
 ) -> ExecWorkOrder:
     parent = await _load_order(db, order_id, for_update=True)
-    if parent.status not in {"DRAFT", "PLANNED"}:
-        raise ValueError(f"Work orders cannot be added after production starts (status={parent.status})")
+    _require_order_unapproved_for_planning_changes(parent)
     dependency_id = data.get("dependency_work_order_id")
     if dependency_id is not None:
         dependency_result = await db.execute(
@@ -778,8 +841,7 @@ async def update_work_order(db: AsyncSession, wo_id: uuid.UUID, data: dict) -> E
         raise ValueError("Work order not found")
     if wo.production_order_id != parent.id:
         raise ValueError("Work order changed production order during update")
-    if parent.status not in {"DRAFT", "PLANNED"}:
-        raise ValueError(f"Work orders cannot be edited after production starts (status={parent.status})")
+    _require_order_unapproved_for_planning_changes(parent)
     if wo.status not in {"PENDING", "READY"}:
         raise ValueError(f"Work order in status {wo.status} cannot be edited")
     if "dependency_work_order_id" in data and data["dependency_work_order_id"] is not None:
@@ -835,6 +897,8 @@ async def list_work_orders(
 async def add_material(
     db: AsyncSession, order_id: uuid.UUID, data: dict,
 ) -> ExecOrderMaterial:
+    order = await _load_order(db, order_id, for_update=True)
+    _require_order_unapproved_for_planning_changes(order)
     mat = ExecOrderMaterial(production_order_id=order_id, **data, status="RESERVED")
     db.add(mat)
     await db.commit()
@@ -849,9 +913,16 @@ async def issue_material(
     qty: Decimal,
     lot_no: Optional[str],
 ) -> ExecOrderMaterial:
+    order = await _load_order(db, order_id, for_update=True)
+    if order.status not in {"RELEASED", "IN_PROGRESS"}:
+        raise ValueError("Materials can be issued only after order release and before completion")
+    if qty <= 0:
+        raise ValueError("Material issue quantity must be positive")
     result = await db.execute(
         select(ExecOrderMaterial)
         .where(ExecOrderMaterial.id == material_id, ExecOrderMaterial.production_order_id == order_id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
     )
     mat = result.scalar_one_or_none()
     if not mat:
@@ -873,15 +944,30 @@ async def return_material(
     material_id: uuid.UUID,
     qty: Decimal,
 ) -> ExecOrderMaterial:
+    order = await _load_order(db, order_id, for_update=True)
+    if order.status not in {"RELEASED", "IN_PROGRESS", "CANCELLED"}:
+        raise ValueError("Materials can be returned only for a released, active, or cancelled order")
+    if qty <= 0:
+        raise ValueError("Material return quantity must be positive")
     result = await db.execute(
         select(ExecOrderMaterial)
         .where(ExecOrderMaterial.id == material_id, ExecOrderMaterial.production_order_id == order_id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
     )
     mat = result.scalar_one_or_none()
     if not mat:
         raise ValueError("Material not found")
+    outstanding_qty = (
+        (mat.issued_qty or Decimal("0"))
+        - (mat.consumed_qty or Decimal("0"))
+        - (mat.returned_qty or Decimal("0"))
+    )
+    if qty > outstanding_qty:
+        raise ValueError("Material return quantity cannot exceed the unreturned issued quantity")
     mat.returned_qty = (mat.returned_qty or Decimal("0")) + qty
-    mat.status = "RETURNED"
+    settled_qty = (mat.consumed_qty or Decimal("0")) + mat.returned_qty
+    mat.status = "RETURNED" if settled_qty >= (mat.issued_qty or Decimal("0")) else "ISSUED"
     await db.commit()
     await db.refresh(mat)
     return mat

@@ -136,6 +136,7 @@ class ProdExecOrder(Base):
     remarks     = Column(Text, nullable=True)
     created_by  = Column(UUID(as_uuid=True), nullable=True)
     approved_by = Column(UUID(as_uuid=True), nullable=True)
+    approved_at = Column(DateTime(timezone=True), nullable=True)
     created_at  = Column(DateTime(timezone=True), server_default=func.now())
     updated_at  = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

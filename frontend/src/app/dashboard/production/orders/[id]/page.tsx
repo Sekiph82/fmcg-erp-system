@@ -60,6 +60,12 @@ export default function OrderDetailPage() {
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ["production-order", id] });
 
+  const approve = useMutation({
+    mutationFn: () => productionApi.approveOrder(id),
+    onSuccess: () => { invalidate(); toast("success", "Approved", "Approval recorded; release remains a separate action."); },
+    onError: (err) => toast("error", "Failed", extractApiError(err)),
+  });
+
   const release = useMutation({
     mutationFn: () => productionApi.releaseOrder(id),
     onSuccess: () => { invalidate(); toast("success", "Released", "Order released to production floor."); },
@@ -111,6 +117,7 @@ export default function OrderDetailPage() {
   const isPlanned = order.status === "PLANNED";
   const isCompleted = order.status === "COMPLETED";
   const isCancelled = order.status === "CANCELLED";
+  const isApproved = Boolean(order.approved_by && order.approved_at);
 
   const variancePct = order.actual_quantity != null && order.planned_quantity
     ? (((order.actual_quantity - order.planned_quantity) / order.planned_quantity) * 100).toFixed(1)
@@ -140,7 +147,15 @@ export default function OrderDetailPage() {
           <div className="flex flex-col items-end gap-3">
             <Badge label={order.status} variant={statusVariant(order.status)} />
             <div className="flex gap-2 flex-wrap justify-end">
-              {isPlanned && (
+              {isPlanned && !isApproved && !order.created_by && (
+                <span className="text-xs text-amber-700">Creator attribution is required before approval</span>
+              )}
+              {isPlanned && !isApproved && order.created_by && (
+                <Button variant="secondary" onClick={() => approve.mutate()} loading={approve.isPending}>
+                  Approve
+                </Button>
+              )}
+              {isPlanned && isApproved && (
                 <Button variant="secondary" onClick={() => release.mutate()} loading={release.isPending}>
                   Release
                 </Button>
@@ -165,7 +180,7 @@ export default function OrderDetailPage() {
                   Complete
                 </Button>
               )}
-              {!isCompleted && !isCancelled && (
+              {(isPlanned || isReleased) && !isCompleted && !isCancelled && (
                 <Button variant="secondary" onClick={() => cancel.mutate()} loading={cancel.isPending}>
                   Cancel
                 </Button>
@@ -173,6 +188,13 @@ export default function OrderDetailPage() {
             </div>
           </div>
         </div>
+
+        {isApproved && (
+          <p className="mt-3 text-xs text-gray-500">
+            Approved by <span className="font-mono">{order.approved_by}</span>
+            {order.approved_at && <> at {new Date(order.approved_at).toLocaleString()}</>}
+          </p>
+        )}
 
         {/* Key metrics row */}
         <div className="mt-5 grid grid-cols-2 md:grid-cols-4 gap-4 pt-5 border-t border-gray-100">

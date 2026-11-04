@@ -315,6 +315,22 @@ async def release_order(
     return _enrich_order(order)
 
 
+@router.post("/orders/{order_id}/approve", response_model=ProductionOrderRead)
+async def approve_order(
+    order_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    order = await crud.get_order(db, order_id)
+    if not order:
+        raise HTTPException(404, detail="Order not found")
+    _require_order_action(current_user, order, "approve")
+    order = await svc.approve_order(db, order, current_user.id)
+    await db.commit()
+    order = await crud.get_order(db, order_id)
+    return _enrich_order(order)
+
+
 @router.post("/orders/{order_id}/start", response_model=ProductionOrderRead)
 async def start_order(
     order_id: uuid.UUID,

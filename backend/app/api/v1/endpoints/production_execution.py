@@ -240,6 +240,19 @@ async def release_order(
         raise HTTPException(status_code=400, detail=str(e))
 
 
+@router.post("/{order_id}/approve", response_model=ProdExecOrderOut)
+async def approve_order(
+    order_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    try:
+        await _get_order_for_action(db, order_id, current_user, "approve")
+        return await svc.approve_order(db, order_id, current_user.id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
 @router.post("/{order_id}/start", response_model=ProdExecOrderOut)
 async def start_order(
     order_id: uuid.UUID,
@@ -331,7 +344,8 @@ async def split_order(
     current_user=Depends(get_current_user),
 ):
     try:
-        await _get_order_for_action(db, order_id, current_user, "edit")
+        source = await _get_order_for_action(db, order_id, current_user, "cancel")
+        _require_execution_action(current_user, "create", source)
         return await svc.split_order(db, order_id, body.split_qtys, body.reason, current_user.id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -346,8 +360,10 @@ async def merge_orders(
     try:
         if not body.order_ids:
             raise HTTPException(status_code=422, detail="At least two production orders are required to merge")
+        source_orders = []
         for order_id in sorted(set(body.order_ids), key=str):
-            await _get_order_for_action(db, order_id, current_user, "edit")
+            source_orders.append(await _get_order_for_action(db, order_id, current_user, "cancel"))
+        _require_execution_action(current_user, "create", source_orders[0])
         return await svc.merge_orders(db, body.order_ids, body.reason, current_user.id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -361,7 +377,8 @@ async def create_rework_order(
     current_user=Depends(get_current_user),
 ):
     try:
-        await _get_order_for_action(db, order_id, current_user, "edit")
+        source = await _get_order_for_action(db, order_id, current_user, "edit")
+        _require_execution_action(current_user, "create", source)
         return await svc.create_rework_order(db, order_id, body.qty, body.reason, current_user.id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -424,10 +441,13 @@ async def add_work_order(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    parent = await _get_order_for_action(db, order_id, current_user, "edit")
-    changes = body.model_dump(exclude_unset=True)
-    _require_scope_change(current_user, "edit", parent, changes, fallback=parent)
-    return await svc.add_work_order(db, order_id, changes)
+    try:
+        parent = await _get_order_for_action(db, order_id, current_user, "edit")
+        changes = body.model_dump(exclude_unset=True)
+        _require_scope_change(current_user, "edit", parent, changes, fallback=parent)
+        return await svc.add_work_order(db, order_id, changes)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.patch("/work-orders/{wo_id}", response_model=ExecWorkOrderOut)
@@ -491,8 +511,11 @@ async def add_material(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    await _get_order_for_action(db, order_id, current_user, "edit")
-    return await svc.add_material(db, order_id, body.model_dump(exclude_unset=True))
+    try:
+        await _get_order_for_action(db, order_id, current_user, "edit")
+        return await svc.add_material(db, order_id, body.model_dump(exclude_unset=True))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/{order_id}/materials/issue", response_model=ExecOrderMaterialOut)

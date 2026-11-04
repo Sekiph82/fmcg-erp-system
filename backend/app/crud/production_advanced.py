@@ -179,12 +179,18 @@ async def _lock_work_order_context(
 
 
 def _require_parent_status(
-    parent: ProductionOrder, allowed: set[ProductionOrderStatus], action: str
+    parent: ProductionOrder,
+    allowed: set[ProductionOrderStatus],
+    action: str,
+    *,
+    require_unapproved: bool = False,
 ) -> None:
     if parent.status not in allowed:
         raise ValueError(
             f"Cannot {action} work orders while production order is {parent.status.value}"
         )
+    if require_unapproved and (parent.approved_by is not None or parent.approved_at is not None):
+        raise ValueError(f"Cannot {action} work orders after production-order approval")
 
 async def list_work_orders(
     db: AsyncSession, skip=0, limit=100,
@@ -219,7 +225,7 @@ async def get_work_order(db: AsyncSession, pk: UUID) -> Optional[WorkOrder]:
 
 async def create_work_order(db: AsyncSession, data: WorkOrderCreate) -> WorkOrder:
     parent = await _lock_work_order_parent(db, data.production_order_id)
-    _require_parent_status(parent, {ProductionOrderStatus.PLANNED}, "create")
+    _require_parent_status(parent, {ProductionOrderStatus.PLANNED}, "create", require_unapproved=True)
     obj = WorkOrder(
         **data.model_dump(),
         status=WorkOrderStatus.PLANNED,
@@ -231,7 +237,7 @@ async def create_work_order(db: AsyncSession, data: WorkOrderCreate) -> WorkOrde
 
 async def update_work_order(db: AsyncSession, obj: WorkOrder, data: WorkOrderUpdate) -> WorkOrder:
     parent, obj = await _lock_work_order_context(db, obj.id)
-    _require_parent_status(parent, {ProductionOrderStatus.PLANNED}, "edit")
+    _require_parent_status(parent, {ProductionOrderStatus.PLANNED}, "edit", require_unapproved=True)
     if obj.status != WorkOrderStatus.PLANNED:
         raise ValueError(f"Work order in status {obj.status.value} cannot be edited")
     for k, v in data.model_dump(exclude_unset=True).items():
@@ -242,7 +248,7 @@ async def update_work_order(db: AsyncSession, obj: WorkOrder, data: WorkOrderUpd
 
 async def delete_work_order(db: AsyncSession, obj: WorkOrder) -> None:
     parent, obj = await _lock_work_order_context(db, obj.id)
-    _require_parent_status(parent, {ProductionOrderStatus.PLANNED}, "delete")
+    _require_parent_status(parent, {ProductionOrderStatus.PLANNED}, "delete", require_unapproved=True)
     if obj.status != WorkOrderStatus.PLANNED:
         raise ValueError(f"Work order in status {obj.status.value} cannot be deleted")
     await db.delete(obj)

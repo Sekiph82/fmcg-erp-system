@@ -63,6 +63,7 @@ export default function ProdExecOrderDetailPage() {
   };
 
   const advance    = useMutation({ mutationFn: () => execApi.advance(id),    onSuccess: invalidate });
+  const approveOrder = useMutation({ mutationFn: () => execApi.approve(id), onSuccess: invalidate });
   const pauseOrder = useMutation({ mutationFn: () => execApi.pause(id),      onSuccess: invalidate });
   const resumeOrder = useMutation({ mutationFn: () => execApi.resume(id),    onSuccess: invalidate });
   const closeOrder = useMutation({ mutationFn: () => execApi.close(id),      onSuccess: invalidate });
@@ -157,9 +158,30 @@ export default function ProdExecOrderDetailPage() {
             {order.is_split && <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">SPLIT</span>}
             <span className="text-xs text-gray-400">Priority: {order.priority}</span>
           </div>
+          {order.approved_by && order.approved_at && (
+            <p className="text-xs text-gray-500 mt-1">
+              Approved by <span className="font-mono">{order.approved_by}</span> at {new Date(order.approved_at).toLocaleString()}
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <a href={`/dashboard/production-execution/${id}/genealogy`} className="px-3 py-1.5 text-xs border rounded-lg text-gray-600 hover:bg-gray-50">Genealogy</a>
+          {order.status === "PLANNED" && !order.created_by && !order.approved_by && !order.approved_at && (
+            <span className="text-xs text-amber-700">Creator attribution is required before approval</span>
+          )}
+          {order.status === "PLANNED" && order.created_by && !order.approved_by && !order.approved_at && (
+            <button onClick={() => approveOrder.mutate()} disabled={approveOrder.isPending} className="px-3 py-1.5 text-xs border border-green-200 text-green-700 rounded-lg hover:bg-green-50 disabled:opacity-40">
+              {approveOrder.isPending ? "Approving…" : "Approve"}
+            </button>
+          )}
+          {order.status === "PLANNED" && order.approved_by && order.approved_at && (
+            <button onClick={() => advance.mutate()} disabled={advance.isPending} className="px-3 py-1.5 text-xs bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-40">
+              {advance.isPending ? "Releasing…" : "Release"}
+            </button>
+          )}
+          {order.status === "PLANNED" && Boolean(order.approved_by) !== Boolean(order.approved_at) && (
+            <span className="text-xs text-amber-700">Approval record needs administrator review</span>
+          )}
           <button onClick={() => runAI.mutate()} disabled={runAI.isPending} className="px-3 py-1.5 text-xs bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-40">
             {runAI.isPending ? "Running AI…" : "Run AI"}
           </button>
@@ -186,7 +208,7 @@ export default function ProdExecOrderDetailPage() {
               {advance.isPending ? "…" : nextAction}
             </button>
           )}
-          {!["COMPLETED", "CLOSED", "CANCELLED"].includes(order.status) && (
+          {["DRAFT", "PLANNED", "RELEASED"].includes(order.status) && (
             <button onClick={() => cancelOrder.mutate()} className="px-3 py-1.5 text-xs border border-red-200 text-red-500 rounded-lg hover:bg-red-50">Cancel</button>
           )}
         </div>

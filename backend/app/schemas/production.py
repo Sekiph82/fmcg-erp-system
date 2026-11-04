@@ -99,6 +99,8 @@ class ProductionOrderRead(BaseModel):
     actual_start: Optional[datetime] = None
     actual_end: Optional[datetime] = None
     created_by: Optional[uuid.UUID] = None
+    approved_by: Optional[uuid.UUID] = None
+    approved_at: Optional[datetime] = None
     notes: Optional[str] = None
     product_name: Optional[str] = None
     product_sku: Optional[str] = None

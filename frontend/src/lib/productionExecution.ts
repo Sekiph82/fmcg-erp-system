@@ -109,6 +109,7 @@ export interface ProdExecOrderSummary {
   parent_order_id: string | null;
   total_actual_cost: number;
   cost_per_uom: number | null;
+  created_by: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -128,6 +129,7 @@ export interface ProdExecOrderOut extends ProdExecOrderSummary {
   rework_reason: string | null;
   remarks: string | null;
   approved_by: string | null;
+  approved_at: string | null;
   work_orders: ExecWorkOrderOut[];
   materials: ExecOrderMaterialOut[];
 }
@@ -185,7 +187,6 @@ export const WO_STATUS_COLOR: Record<WOExecStatus, string> = {
 
 export const LIFECYCLE_NEXT: Partial<Record<ProdExecStatus, string>> = {
   DRAFT:       "Mark Planned",
-  PLANNED:     "Release",
   RELEASED:    "Start",
   COMPLETED:   "Close",
 };
@@ -219,6 +220,7 @@ export const execApi = {
   update:  (id: string, body: Partial<ProdExecOrderOut>) => apiClient.patch<ProdExecOrderOut>(`${BASE}/${id}`, body).then((r) => r.data),
 
   // Lifecycle
+  approve:   (id: string) => apiClient.post<ProdExecOrderOut>(`${BASE}/${id}/approve`, {}).then((r) => r.data),
   advance:  (id: string) => apiClient.post<ProdExecOrderOut>(`${BASE}/${id}/advance`, {}).then((r) => r.data),
   release:  (id: string) => apiClient.post<ProdExecOrderOut>(`${BASE}/${id}/release`, {}).then((r) => r.data),
   start:    (id: string) => apiClient.post<ProdExecOrderOut>(`${BASE}/${id}/start`, {}).then((r) => r.data),

@@ -190,7 +190,7 @@ export default function ProductionExecutionPage() {
                           {LIFECYCLE_NEXT[o.status]}
                         </button>
                       )}
-                      {!["COMPLETED", "CLOSED", "CANCELLED"].includes(o.status) && (
+                      {["DRAFT", "PLANNED", "RELEASED"].includes(o.status) && (
                         <button onClick={() => cancel.mutate(o.id)} className="text-xs text-red-400 hover:text-red-600">Cancel</button>
                       )}
                     </div>

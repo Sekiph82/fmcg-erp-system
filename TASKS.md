@@ -10,9 +10,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M22 — Production Order / Work Order
 - Current Sprint: M22.S01 — Order Lifecycle
-- Current Task: M22.S01.T002 — Harden state machine and transition guards
+- Current Task: M22.S01.T003 — Approval/release/cancel/close semantics
 - Current Task Status: COMPLETE
-- Next Task/Action: M22.S01.T003 — Approval/release/cancel/close semantics
+- Next Task/Action: M22.S01.T004 — Immutable audit history for critical transitions
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -675,7 +675,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
   Evidence: Defined the target ProductionOrder/work-order boundary and a non-destructive crosswalk plan for the active parallel exec_* subsystem in coordination/milestones/M22/M22_S01_T001_RESPONSIBILITY_DECISION_V01.md; corrected the manufacturing manual terminology, current schedule behavior, routes and costing ownership. Independent read-only review found no blockers; git diff --check passed. Documentation/domain-design task only; no tests or runtime behavior claimed.
 - [x] M22.S01.T002 — Harden state machine and transition guards
   Evidence: Canonical and parallel execution transitions are guarded with parent-first locks; unfinished child operations block parent completion; schema, CSV import, and shop-floor bypasses are guarded; paused-order resume is exposed. Independent read-only review found no blocking issue; git diff --check passed; automated tests were not run, and runtime acceptance is not claimed. See coordination/sessions/M22.S01.T002/CODEX_LOG_V01.md.
-- [ ] M22.S01.T003 — Approval/release/cancel/close semantics
+- [x] M22.S01.T003 — Approval/release/cancel/close semantics
+  Evidence: Added parent approval/release guards, cancellation/close semantics, authenticated actor and scoped permission checks, schema migration, canonical/exec work-order and import locks, material movement/reconciliation gates, split/merge/rework protections, and UI approval controls. Independent read-only review found no remaining blockers; git diff --check passed. Automated tests, type-check/build, and migration execution were not run, and runtime/database acceptance is not claimed. See coordination/sessions/M22.S01.T003/CLAUDE_LOG_V01.md.
 - [ ] M22.S01.T004 — Immutable audit history for critical transitions
 
 ## M22.S02 — Execution Structure

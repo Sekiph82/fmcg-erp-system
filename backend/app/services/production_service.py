@@ -87,7 +87,6 @@ PRODUCTION_ORDER_TRANSITIONS = {
     },
     ProductionOrderStatus.IN_PROGRESS: {
         ProductionOrderStatus.COMPLETED,
-        ProductionOrderStatus.CANCELLED,
     },
     ProductionOrderStatus.COMPLETED: set(),
     ProductionOrderStatus.CANCELLED: set(),
@@ -353,11 +352,32 @@ def _compute_oee(order: ProductionOrder) -> OEEMetrics:
 
 # ── Lifecycle operations ──────────────────────────────────────────────────────
 
+async def approve_order(
+    db: AsyncSession, order: ProductionOrder, user_id: uuid.UUID
+) -> ProductionOrder:
+    order = await _lock_order_for_transition(db, order.id)
+    if order.status != ProductionOrderStatus.PLANNED:
+        raise HTTPException(422, detail="Only a planned production order can be approved.")
+    if order.approved_by is not None or order.approved_at is not None:
+        raise HTTPException(422, detail="Production order approval has already been recorded.")
+    if order.created_by is None:
+        raise HTTPException(422, detail="The order creator must be recorded before approval.")
+    if order.created_by == user_id:
+        raise HTTPException(422, detail="The order creator cannot approve the same production order.")
+
+    order.approved_by = user_id
+    order.approved_at = _now()
+    await db.flush()
+    await db.refresh(order)
+    return order
+
 async def release_order(
     db: AsyncSession, order: ProductionOrder, user_id: Optional[uuid.UUID] = None
 ) -> ProductionOrder:
     order = await _lock_order_for_transition(db, order.id)
     _require_order_transition(order, ProductionOrderStatus.RELEASED)
+    if order.approved_by is None or order.approved_at is None:
+        raise HTTPException(422, detail="Cannot release: production order approval is required first.")
 
     # Validate recipe is approved
     r = await db.execute(select(Recipe).where(Recipe.id == order.recipe_id))
@@ -670,17 +690,6 @@ async def complete_order(
 async def cancel_order(db: AsyncSession, order: ProductionOrder) -> ProductionOrder:
     order = await _lock_order_for_transition(db, order.id)
     _require_order_transition(order, ProductionOrderStatus.CANCELLED)
-    active_downtime = (
-        await crud.get_active_downtime(db, order.id)
-        if order.status == ProductionOrderStatus.IN_PROGRESS
-        else None
-    )
-    if active_downtime:
-        end_time = _now()
-        active_downtime.end_time = end_time
-        active_downtime.duration_minutes = max(
-            0, int((end_time - active_downtime.start_time).total_seconds() / 60)
-        )
     order.status = ProductionOrderStatus.CANCELLED
     await db.flush()
     await db.refresh(order)

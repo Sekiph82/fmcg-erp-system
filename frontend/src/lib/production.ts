@@ -64,6 +64,8 @@ export interface ProductionOrder {
   actual_start?: string;
   actual_end?: string;
   created_by?: string;
+  approved_by?: string;
+  approved_at?: string;
   notes?: string;
 }
 
@@ -240,6 +242,10 @@ export const productionApi = {
   },
 
   // Execution
+  async approveOrder(id: string): Promise<ProductionOrder> {
+    const res = await apiClient.post<ProductionOrder>(`/api/v1/production/orders/${id}/approve`);
+    return res.data;
+  },
   async releaseOrder(id: string): Promise<ProductionOrder> {
     const res = await apiClient.post<ProductionOrder>(`/api/v1/production/orders/${id}/release`);
     return res.data;

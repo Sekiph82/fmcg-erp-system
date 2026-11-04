@@ -862,6 +862,10 @@ class WorkOrderImportAdapter(BaseImportAdapter):
                 errors.append(
                     f"production_order_no '{po_no}' must be PLANNED before work orders can be created"
                 )
+            elif po.approved_by is not None or po.approved_at is not None:
+                errors.append(
+                    f"production_order_no '{po_no}' is approved; work orders cannot be changed"
+                )
             else:
                 row["production_order_id"] = po.id
         wc_code = row.pop("work_center_code", None)
@@ -892,6 +896,11 @@ class WorkOrderImportAdapter(BaseImportAdapter):
             raise HTTPException(
                 status_code=422,
                 detail="Work orders can only be imported while the production order is PLANNED",
+            )
+        if parent.approved_by is not None or parent.approved_at is not None:
+            raise HTTPException(
+                status_code=422,
+                detail="Work orders cannot be imported after production-order approval",
             )
         obj = _WorkOrder(
             **{k: v for k, v in data.items() if v is not None},

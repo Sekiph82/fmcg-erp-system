@@ -209,6 +209,7 @@ class ProdExecOrderSummary(BaseModel):
     parent_order_id: Optional[UUID]
     total_actual_cost: Decimal
     cost_per_uom: Optional[Decimal]
+    created_by: Optional[UUID]
     created_at: datetime
     updated_at: datetime
 
@@ -228,6 +229,7 @@ class ProdExecOrderOut(ProdExecOrderSummary):
     rework_reason: Optional[str]
     remarks: Optional[str]
     approved_by: Optional[UUID]
+    approved_at: Optional[datetime]
     work_orders: List[ExecWorkOrderOut] = []
     materials: List[ExecOrderMaterialOut] = []
 
