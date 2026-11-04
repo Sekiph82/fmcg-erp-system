@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { financeApi, PurchaseInvoice, PurchaseInvoiceStatus } from "@/lib/finance";
+import { financeApi, OperationalPostingEvent, PurchaseInvoice, PurchaseInvoiceStatus } from "@/lib/finance";
 
 function fmtKES(n: number) {
   return `KES ${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -113,12 +113,37 @@ export default function PurchaseInvoicesPage() {
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [search, setSearch] = useState("");
   const [payingInvoice, setPayingInvoice] = useState<PurchaseInvoice | null>(null);
+  const [postingError, setPostingError] = useState("");
   const qc = useQueryClient();
 
   const { data = [], isLoading } = useQuery<PurchaseInvoice[]>({
     queryKey: ["accounting-purchase-invoices", statusFilter],
     queryFn: () => financeApi.listPurchaseInvoices({ status: statusFilter || undefined, limit: 300 }),
     staleTime: 30_000,
+  });
+
+  const { data: postingEvents = [] } = useQuery<OperationalPostingEvent[]>({
+    queryKey: ["purchase-invoice-posting-events", data.map((invoice) => invoice.id).join(",")],
+    queryFn: () => financeApi.listOperationalPostingEvents({
+      source_module: "procurement",
+      source_event: "PURCHASE_INVOICE_POSTED",
+      source_ids: data.filter((invoice) => invoice.po_id).map((invoice) => invoice.id).join(","),
+      limit: 300,
+    }),
+    enabled: data.length > 0,
+    staleTime: 30_000,
+  });
+
+  const postMutation = useMutation({
+    mutationFn: (invoiceId: string) => financeApi.postPurchaseInvoice(invoiceId),
+    onSuccess: async () => {
+      setPostingError("");
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["accounting-purchase-invoices"] }),
+        qc.invalidateQueries({ queryKey: ["purchase-invoice-posting-events"] }),
+      ]);
+    },
+    onError: (e: any) => setPostingError(e?.response?.data?.detail ?? "Failed to post supplier invoice"),
   });
 
   const filtered = search
@@ -147,6 +172,12 @@ export default function PurchaseInvoicesPage() {
         <h1 className="text-2xl font-bold text-gray-900">Purchase Invoices</h1>
         <p className="text-sm text-gray-400 mt-0.5">Supplier invoices for materials and goods received</p>
       </div>
+      {postingError && (
+        <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {postingError}
+          <button onClick={() => setPostingError("")} className="ml-3 font-semibold underline">Dismiss</button>
+        </div>
+      )}
 
       {/* Summary */}
       <div className="grid grid-cols-3 gap-4">
@@ -227,7 +258,16 @@ export default function PurchaseInvoicesPage() {
               {filtered.map((inv) => {
                 const cfg = STATUS_CONFIG[inv.status as PurchaseInvoiceStatus];
                 const payable = inv.total_amount - inv.paid_amount;
-                const canPay = !["PAID", "CANCELLED"].includes(inv.status) && payable > 0;
+                const hasPostedLedgerEvent = postingEvents.some(
+                  (event) => event.source_id === inv.id && event.status === "POSTED"
+                );
+                const canPost = !!inv.po_id
+                  && ["DRAFT", "RECEIVED"].includes(inv.status)
+                  && inv.paid_amount === 0
+                  && !hasPostedLedgerEvent;
+                const canPay = !["PAID", "CANCELLED"].includes(inv.status)
+                  && payable > 0
+                  && (!inv.po_id || hasPostedLedgerEvent);
                 return (
                   <tr key={inv.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-5 py-3 font-mono text-xs font-semibold text-indigo-600">{inv.invoice_no}</td>
@@ -248,14 +288,25 @@ export default function PurchaseInvoicesPage() {
                       </span>
                     </td>
                     <td className="px-5 py-3 text-center">
-                      {canPay && (
-                        <button
-                          onClick={() => setPayingInvoice(inv)}
-                          className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 hover:underline"
-                        >
-                          Pay
-                        </button>
-                      )}
+                      <div className="flex items-center justify-center gap-3">
+                        {canPost && (
+                          <button
+                            disabled={postMutation.isPending}
+                            onClick={() => postMutation.mutate(inv.id)}
+                            className="text-xs font-semibold text-emerald-700 hover:text-emerald-900 hover:underline disabled:opacity-50"
+                          >
+                            {postMutation.isPending && postMutation.variables === inv.id ? "Posting…" : "Post to GL"}
+                          </button>
+                        )}
+                        {canPay && (
+                          <button
+                            onClick={() => setPayingInvoice(inv)}
+                            className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 hover:underline"
+                          >
+                            Pay
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );

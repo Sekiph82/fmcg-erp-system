@@ -438,6 +438,450 @@ async def mark_operational_posting_failed(
     return event
 
 
+async def post_purchase_invoice(
+    db: AsyncSession,
+    invoice_id: uuid.UUID,
+    user_id: uuid.UUID,
+) -> OperationalPostingEvent:
+    """Clear posted GRNI to AP for a payable, three-way-matched supplier invoice.
+
+    The service uses only configured posting rules and item mappings. It refuses
+    incomplete source receipts, stale matching snapshots, missing account setup,
+    and closed periods so an invoice cannot create accounting without its
+    operational evidence.
+    """
+    from decimal import ROUND_HALF_UP
+
+    from app.models.company import Company
+    from app.models.finance import (
+        AccountingPostingRule,
+        AccountType,
+        PurchaseInvoice,
+        PurchaseInvoiceLine,
+        PurchaseInvoiceStatus,
+    )
+    from app.models.invoice_match import InvoiceMatchHeader, InvoiceMatchLine, MatchOverallStatus
+    from app.models.procurement import GoodsReceipt, GRNLine, GRNStatus, POLine, PurchaseOrder
+
+    money_quantum = Decimal("0.0001")
+
+    def money(value: Decimal) -> Decimal:
+        return value.quantize(money_quantum, rounding=ROUND_HALF_UP)
+
+    try:
+        invoice = await db.scalar(
+            select(PurchaseInvoice)
+            .where(PurchaseInvoice.id == invoice_id)
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        )
+        if not invoice:
+            raise ValueError("Purchase invoice not found")
+
+        event_result = await db.execute(
+            select(OperationalPostingEvent)
+            .where(
+                OperationalPostingEvent.source_module == "procurement",
+                OperationalPostingEvent.source_event == "PURCHASE_INVOICE_POSTED",
+                OperationalPostingEvent.source_id == str(invoice.id),
+                OperationalPostingEvent.source_line_id.is_(None),
+            )
+            .with_for_update()
+        )
+        existing_event = event_result.scalar_one_or_none()
+        if existing_event:
+            batch = await db.get(AccountingPostingBatch, existing_event.posting_batch_id) \
+                if existing_event.posting_batch_id else None
+            journal = await db.get(JournalEntry, existing_event.journal_entry_id) \
+                if existing_event.journal_entry_id else None
+            if (
+                existing_event.status != OperationalPostingStatus.POSTED
+                or not batch or batch.status != PostingBatchStatus.POSTED
+                or batch.journal_entry_id != existing_event.journal_entry_id
+                or not journal or not journal.is_posted or journal.status != JournalStatus.POSTED
+                or journal.source_module != "procurement"
+                or journal.source_event != "PURCHASE_INVOICE_POSTED"
+                or journal.source_id != invoice.id
+            ):
+                raise ValueError("Purchase invoice has an inconsistent prior posting; manual reconciliation is required")
+            return existing_event
+
+        if invoice.status not in {PurchaseInvoiceStatus.DRAFT, PurchaseInvoiceStatus.RECEIVED}:
+            raise ValueError(f"Purchase invoice cannot be posted from status {invoice.status.value}")
+        if Decimal(str(invoice.paid_amount or 0)) != 0:
+            raise ValueError("A purchase invoice with recorded payments cannot be posted")
+        if not invoice.po_id:
+            raise ValueError("Purchase invoice posting requires a linked purchase order and GRN evidence")
+
+        po = await db.scalar(
+            select(PurchaseOrder)
+            .where(PurchaseOrder.id == invoice.po_id)
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        )
+        if not po:
+            raise ValueError("Purchase invoice purchase order not found")
+        if po.supplier_id != invoice.supplier_id:
+            raise ValueError("Purchase invoice supplier does not match its purchase order")
+        company = await db.get(Company, po.company_id) if po.company_id else None
+        if not company or not (company.base_currency or "").strip():
+            raise ValueError("Purchase order needs a company with a configured base currency")
+
+        invoice_currency = (invoice.currency or "").strip().upper()
+        po_currency = (po.currency or "").strip().upper()
+        base_currency = company.base_currency.strip().upper()
+        if not invoice_currency or invoice_currency != po_currency:
+            raise ValueError("Purchase invoice currency must match its purchase order currency")
+        exchange_rate = Decimal(str(po.exchange_rate or 0))
+        if not exchange_rate.is_finite() or exchange_rate <= 0:
+            raise ValueError("Purchase order needs a positive saved exchange rate")
+        if po_currency == base_currency and exchange_rate != Decimal("1"):
+            raise ValueError("Purchase order base-currency exchange rate must be 1")
+        if po_currency != base_currency and exchange_rate == Decimal("1"):
+            raise ValueError("Foreign-currency purchase order needs a saved non-default exchange rate")
+
+        match = await db.scalar(
+            select(InvoiceMatchHeader)
+            .where(InvoiceMatchHeader.invoice_id == invoice.id)
+            .order_by(InvoiceMatchHeader.run_at.desc(), InvoiceMatchHeader.created_at.desc())
+            .limit(1)
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        )
+        payable_statuses = {
+            MatchOverallStatus.FULLY_MATCHED,
+            MatchOverallStatus.MATCHED_WITHIN_TOLERANCE,
+            MatchOverallStatus.APPROVED_EXCEPTION,
+        }
+        if (
+            not match or match.po_id != po.id or match.supplier_id != invoice.supplier_id
+            or not match.is_payable or match.duplicate_flag
+            or match.overall_status not in payable_statuses
+        ):
+            raise ValueError("Purchase invoice needs a current payable three-way match with no unresolved duplicate")
+        if (
+            match.invoice_no != invoice.invoice_no
+            or match.invoice_date != invoice.invoice_date
+            or (match.currency or "").strip().upper() != (invoice.currency or "").strip().upper()
+            or Decimal(str(match.invoice_total)) != Decimal(str(invoice.total_amount))
+        ):
+            raise ValueError("Purchase invoice changed after matching; rerun matching before posting")
+        if match.overall_status == MatchOverallStatus.APPROVED_EXCEPTION and not (match.approved_by and match.approved_at):
+            raise ValueError("Payable exception match has no recorded approver")
+
+        rule_result = await db.execute(
+            select(AccountingPostingRule)
+            .where(
+                AccountingPostingRule.source_module == "procurement",
+                AccountingPostingRule.source_event == "PURCHASE_INVOICE_POSTED",
+                AccountingPostingRule.is_active.is_(True),
+            )
+            .order_by(AccountingPostingRule.priority, AccountingPostingRule.id)
+        )
+        rules = list(rule_result.scalars().all())
+        if not rules:
+            raise ValueError("Configure an active procurement purchase-invoice posting rule before posting")
+        top_priority = rules[0].priority
+        top_rules = [rule for rule in rules if rule.priority == top_priority]
+        if len(top_rules) != 1:
+            raise ValueError("Purchase-invoice posting has ambiguous active rules at the highest priority")
+        rule = top_rules[0]
+        if not rule.credit_account_id:
+            raise ValueError("Purchase-invoice posting rule needs an accounts-payable credit account")
+        ap_account = await db.get(ChartOfAccount, rule.credit_account_id)
+        if not ap_account or ap_account.account_type != AccountType.LIABILITY:
+            raise ValueError("Purchase-invoice accounts-payable mapping must point to a liability account")
+
+        invoice_lines_result = await db.execute(
+            select(PurchaseInvoiceLine)
+            .where(PurchaseInvoiceLine.invoice_id == invoice.id)
+            .order_by(PurchaseInvoiceLine.id)
+            .with_for_update()
+        )
+        invoice_lines = list(invoice_lines_result.scalars().all())
+        if not invoice_lines:
+            raise ValueError("Purchase invoice needs at least one line before posting")
+
+        match_lines_result = await db.execute(
+            select(InvoiceMatchLine)
+            .options(selectinload(InvoiceMatchLine.grn_links))
+            .where(InvoiceMatchLine.header_id == match.id)
+            .order_by(InvoiceMatchLine.invoice_line_id, InvoiceMatchLine.id)
+            .with_for_update()
+        )
+        match_lines = list(match_lines_result.scalars().all())
+        if len(match_lines) != len(invoice_lines):
+            raise ValueError("Three-way match lines are incomplete; rerun matching before posting")
+        match_by_invoice_line: dict[uuid.UUID, Any] = {}
+        for match_line in match_lines:
+            if not match_line.invoice_line_id or match_line.invoice_line_id in match_by_invoice_line:
+                raise ValueError("Three-way match must contain exactly one result for each invoice line")
+            if match_line.match_status not in {
+                "FULLY_MATCHED", "MATCHED_WITHIN_TOLERANCE", "APPROVED_EXCEPTION",
+            }:
+                raise ValueError("Every invoice line must be matched or explicitly approved before posting")
+            match_by_invoice_line[match_line.invoice_line_id] = match_line
+
+        po_lines_result = await db.execute(
+            select(POLine).where(POLine.po_id == po.id).order_by(POLine.line_no, POLine.id)
+        )
+        po_lines = list(po_lines_result.scalars().all())
+        po_line_by_id = {line.id: line for line in po_lines}
+
+        grn_result = await db.execute(
+            select(GRNLine)
+            .join(GoodsReceipt, GoodsReceipt.id == GRNLine.grn_id)
+            .options(selectinload(GRNLine.grn))
+            .where(GoodsReceipt.po_id == po.id, GoodsReceipt.status == GRNStatus.POSTED)
+            .order_by(GoodsReceipt.received_date, GoodsReceipt.id, GRNLine.id)
+            .with_for_update(of=GRNLine)
+        )
+        grn_lines = list(grn_result.scalars().all())
+        grn_by_po_line: dict[uuid.UUID, list[GRNLine]] = {}
+        for grn_line in grn_lines:
+            if grn_line.po_line_id in po_line_by_id:
+                grn_by_po_line.setdefault(grn_line.po_line_id, []).append(grn_line)
+
+        prior_result = await db.execute(
+            select(InvoiceMatchLine.po_line_id, func.sum(InvoiceMatchLine.invoiced_qty))
+            .join(InvoiceMatchHeader, InvoiceMatchHeader.id == InvoiceMatchLine.header_id)
+            .where(
+                InvoiceMatchHeader.po_id == po.id,
+                InvoiceMatchHeader.invoice_id != invoice.id,
+                InvoiceMatchHeader.overall_status.in_([status.value for status in payable_statuses]),
+            )
+            .group_by(InvoiceMatchLine.po_line_id)
+        )
+        prior_billed = {row[0]: Decimal(str(row[1] or 0)) for row in prior_result.all()}
+
+        journal_lines: dict[uuid.UUID, dict[str, Any]] = {}
+
+        def add_line(account: ChartOfAccount, description: str, *, debit: Decimal = Decimal("0"),
+                     credit: Decimal = Decimal("0")) -> None:
+            if account.id not in journal_lines:
+                journal_lines[account.id] = {
+                    "account": account,
+                    "description": description[:255],
+                    "debit": Decimal("0"),
+                    "credit": Decimal("0"),
+                }
+            journal_lines[account.id]["debit"] += debit
+            journal_lines[account.id]["credit"] += credit
+
+        subtotal_doc = Decimal("0")
+        tax_doc = Decimal("0")
+        ap_base_total = Decimal("0")
+        has_tax = False
+
+        # Verify that match quantities still reflect the posted receipt set and
+        # previous payable bills, then clear each source's remaining GRNI value.
+        for invoice_line in invoice_lines:
+            match_line = match_by_invoice_line.get(invoice_line.id)
+            if not match_line:
+                raise ValueError("Three-way match is missing an invoice line")
+            if not match_line.po_line_id or match_line.po_line_id not in po_line_by_id:
+                raise ValueError("Matched invoice line has no purchase-order line")
+            po_line = po_line_by_id[match_line.po_line_id]
+            if (
+                (invoice_line.material_id, invoice_line.product_id)
+                != (po_line.material_id, po_line.product_id)
+            ):
+                raise ValueError("Matched invoice line item differs from its purchase-order line")
+
+            sources = grn_by_po_line.get(po_line.id, [])
+            link_by_grn_line = {
+                link.grn_line_id: link for link in match_line.grn_links if link.grn_line_id
+            }
+            source_ids = {source.id for source in sources}
+            if set(link_by_grn_line) != source_ids:
+                raise ValueError("Three-way match receipt links are stale; rerun matching before posting")
+            for source in sources:
+                link = link_by_grn_line[source.id]
+                if Decimal(str(link.accepted_qty or 0)) != Decimal(str(source.accepted_quantity)):
+                    raise ValueError("Matched receipt quantity changed; rerun matching before posting")
+                if (
+                    source.accounting_status != OperationalPostingStatus.POSTED
+                    or not source.posting_batch_id or not source.journal_entry_id
+                ):
+                    raise ValueError(f"GRN line {source.id} must have posted inventory/GRNI accounting first")
+                batch = await db.get(AccountingPostingBatch, source.posting_batch_id)
+                journal = await db.get(JournalEntry, source.journal_entry_id)
+                if (
+                    not batch or batch.status != PostingBatchStatus.POSTED
+                    or batch.journal_entry_id != source.journal_entry_id
+                    or not journal or not journal.is_posted or journal.status != JournalStatus.POSTED
+                    or journal.source_module != "procurement"
+                    or journal.source_event != "GRN_INVENTORY_VALUATION_POSTED"
+                    or journal.source_id != source.id
+                ):
+                    raise ValueError(f"GRN line {source.id} has inconsistent accounting links")
+
+            received_qty = sum((Decimal(str(source.accepted_quantity)) for source in sources), Decimal("0"))
+            previous_qty = prior_billed.get(po_line.id, Decimal("0"))
+            if Decimal(str(match_line.prev_invoiced_qty or 0)) != previous_qty:
+                raise ValueError("Previous billed quantity changed; rerun matching before posting")
+            billable_qty = max(received_qty - previous_qty, Decimal("0"))
+            if Decimal(str(match_line.billable_qty or 0)) != billable_qty:
+                raise ValueError("Billable receipt quantity changed; rerun matching before posting")
+
+            quantity = Decimal(str(invoice_line.quantity))
+            unit_price = Decimal(str(invoice_line.unit_price))
+            tax_rate = Decimal(str(invoice_line.tax_rate))
+            if (
+                Decimal(str(match_line.invoiced_qty)) != quantity
+                or Decimal(str(match_line.invoiced_unit_price)) != unit_price
+                or Decimal(str(match_line.invoiced_tax_rate)) != tax_rate
+                or money(Decimal(str(match_line.invoiced_line_total)))
+                != money(Decimal(str(invoice_line.line_total)))
+            ):
+                raise ValueError("Purchase invoice line changed after matching; rerun matching before posting")
+            if (invoice_line.unit or "").strip().upper() != (po_line.unit or "").strip().upper():
+                raise ValueError("Purchase invoice unit differs from its matched purchase-order unit")
+            if not quantity.is_finite() or quantity <= 0:
+                raise ValueError("Purchase invoice line quantities must be positive")
+            if not unit_price.is_finite() or unit_price < 0:
+                raise ValueError("Purchase invoice line unit prices cannot be negative")
+            if not tax_rate.is_finite() or tax_rate < 0:
+                raise ValueError("Purchase invoice line tax rates cannot be negative")
+
+            line_net_doc = money(quantity * unit_price)
+            line_total_doc = money(Decimal(str(invoice_line.line_total)))
+            line_tax_doc = money(line_total_doc - line_net_doc)
+            expected_tax_doc = money(line_net_doc * tax_rate)
+            if line_tax_doc < 0 or abs(line_tax_doc - expected_tax_doc) > money_quantum:
+                raise ValueError("Purchase invoice line totals do not reconcile to its saved tax rate")
+            subtotal_doc += line_net_doc
+            tax_doc += line_tax_doc
+            net_base = money(line_net_doc * exchange_rate)
+            tax_base = money(line_tax_doc * exchange_rate)
+            ap_base_total += net_base + tax_base
+            has_tax = has_tax or tax_base > 0
+
+            remaining_prior = previous_qty
+            remaining_invoice_qty = quantity
+            grni_amount = Decimal("0")
+            variance_account = None
+            for source in sources:
+                accepted_qty = Decimal(str(source.accepted_quantity))
+                prior_on_source = min(accepted_qty, remaining_prior)
+                remaining_prior -= prior_on_source
+                available_qty = accepted_qty - prior_on_source
+                allocated_qty = min(available_qty, remaining_invoice_qty)
+                remaining_invoice_qty -= allocated_qty
+                if allocated_qty <= 0:
+                    continue
+
+                mapping = await find_inventory_account_mapping(
+                    db,
+                    stock_type="MATERIAL" if source.material_id else "PRODUCT",
+                    material_id=source.material_id,
+                    product_id=source.product_id,
+                )
+                if not mapping or not mapping.grni_account_id:
+                    raise ValueError(f"GRN item on line {source.id} needs an active GRNI account mapping")
+                grni_account = await db.get(ChartOfAccount, mapping.grni_account_id)
+                if not grni_account or grni_account.account_type != AccountType.LIABILITY:
+                    raise ValueError(f"GRNI mapping for GRN line {source.id} must point to a liability account")
+                receipt_unit_cost = money(Decimal(str(po_line.unit_price)) * exchange_rate)
+                source_accrual = money(allocated_qty * receipt_unit_cost)
+                grni_amount += source_accrual
+                add_line(grni_account, f"Clear GRNI for supplier invoice {invoice.invoice_no}", debit=source_accrual)
+                if mapping.variance_account_id:
+                    variance_account = await db.get(ChartOfAccount, mapping.variance_account_id)
+
+            if remaining_invoice_qty > 0 and match_line.match_status not in {
+                "MATCHED_WITHIN_TOLERANCE", "APPROVED_EXCEPTION",
+            }:
+                raise ValueError("Invoice quantity exceeds accepted receipts without an approved match tolerance")
+            if remaining_invoice_qty > 0 and match_line.match_status == "MATCHED_WITHIN_TOLERANCE" \
+                    and not match_line.tolerance_rule_id:
+                raise ValueError("Invoice quantity excess has no recorded tolerance rule")
+
+            variance = net_base - grni_amount
+            if variance:
+                if not variance_account or variance_account.account_type != AccountType.EXPENSE:
+                    raise ValueError(
+                        f"Invoice price/quantity variance on PO line {po_line.line_no} needs an expense variance mapping"
+                    )
+                add_line(
+                    variance_account,
+                    f"Supplier invoice variance {invoice.invoice_no}",
+                    debit=variance if variance > 0 else Decimal("0"),
+                    credit=abs(variance) if variance < 0 else Decimal("0"),
+                )
+
+        if abs(subtotal_doc - Decimal(str(invoice.subtotal))) > money_quantum:
+            raise ValueError("Purchase invoice subtotal does not reconcile to its lines")
+        if abs(tax_doc - Decimal(str(invoice.tax_amount))) > money_quantum:
+            raise ValueError("Purchase invoice tax does not reconcile to its lines")
+        if abs((subtotal_doc + tax_doc) - Decimal(str(invoice.total_amount))) > money_quantum:
+            raise ValueError("Purchase invoice total does not reconcile to its lines")
+        if has_tax:
+            if not rule.tax_account_id:
+                raise ValueError("Purchase-invoice posting rule needs a recoverable-tax debit account")
+            tax_account = await db.get(ChartOfAccount, rule.tax_account_id)
+            if not tax_account or tax_account.account_type != AccountType.ASSET:
+                raise ValueError("Purchase-invoice recoverable-tax mapping must point to an asset account")
+            add_line(tax_account, f"Recoverable tax {invoice.invoice_no}", debit=money(tax_doc * exchange_rate))
+
+        expected_ap_base = money(Decimal(str(invoice.total_amount)) * exchange_rate)
+        if abs(expected_ap_base - ap_base_total) > money_quantum:
+            raise ValueError("Base-currency purchase invoice total does not reconcile to its rounded lines")
+        add_line(ap_account, f"Accounts payable {invoice.invoice_no}", credit=ap_base_total)
+
+        await assert_posting_period_open(db, invoice.invoice_date, require_period=True)
+        event, batch, created = await get_or_create_operational_posting_event(
+            db,
+            source_module="procurement",
+            source_event="PURCHASE_INVOICE_POSTED",
+            source_id=invoice.id,
+            source_ref=invoice.invoice_no,
+            event_date=invoice.invoice_date,
+            amount=ap_base_total,
+            currency=base_currency,
+            created_by_id=user_id,
+            require_period=True,
+        )
+        if not created or event.status != OperationalPostingStatus.PENDING:
+            raise ValueError("A prior purchase-invoice posting exists but is not safely replayable")
+
+        entry = JournalEntry(
+            entry_no=f"PINV-{str(invoice.id).replace('-', '')}",
+            entry_date=invoice.invoice_date,
+            description=f"Supplier invoice {invoice.invoice_no}",
+            source_module="procurement",
+            source_event="PURCHASE_INVOICE_POSTED",
+            source_id=invoice.id,
+            source_ref=invoice.invoice_no,
+            company_id=company.id,
+            branch_id=po.branch_id,
+            cost_center_id=po.cost_center_id,
+            status=JournalStatus.DRAFT,
+            posting_batch_id=batch.id,
+            created_by_id=user_id,
+        )
+        for row in journal_lines.values():
+            entry.lines.append(JournalLine(
+                account_id=row["account"].id,
+                description=row["description"],
+                debit=money(row["debit"]),
+                credit=money(row["credit"]),
+                currency=base_currency,
+            ))
+        db.add(entry)
+        await db.flush()
+        await mark_journal_posted(db, entry, user_id, require_period=True)
+        await mark_operational_posting_posted(
+            db, event, batch, journal_entry_id=entry.id, posted_by_id=user_id,
+        )
+        invoice.status = PurchaseInvoiceStatus.RECEIVED
+        await db.flush()
+        return event
+    except Exception:
+        await db.rollback()
+        raise
+
+
 # ── Production Cost Rollup ────────────────────────────────────────────────────
 
 async def rollup_production_order_costs(

@@ -21,12 +21,13 @@ from app.models.finance import (
     CashAccount, CashTransaction, MpesaReconciliation,
     ProductCost, ProductionCostEntry, Budget, BudgetLine,
     BudgetStatus, BudgetType, FinTxStatus, ReconciliationStatus,
+    AccountingCloseCheckStatus,
     PurchaseInvoice, PurchaseInvoiceLine, PurchasePayment,
     PurchaseInvoiceStatus, FiscalYear, AccountingPeriodCloseCheck,
     RecurringJournalTemplate, RecurringJournalTemplateLine,
     AccountingPostingBatch, AccountingPostingRule, PaymentAllocation,
     CurrencyRevaluationRun, CurrencyRevaluationLine,
-    OperationalPostingEvent, InventoryAccountMapping,
+    OperationalPostingEvent, OperationalPostingStatus, InventoryAccountMapping,
 )
 from app.schemas.finance import (
     COACreate, COAUpdate, COARead,
@@ -779,8 +780,6 @@ async def _lock_open_accounting_period(db: AsyncSession, period_id: uuid.UUID):
 
 
 def _validate_close_check_result(status: AccountingCloseCheckStatus, summary: Optional[str]) -> None:
-    from app.models.finance import AccountingCloseCheckStatus
-
     if status in {AccountingCloseCheckStatus.FAILED, AccountingCloseCheckStatus.WAIVED} and not (summary or "").strip():
         raise HTTPException(422, f"A result summary is required when a close check is {status.value}")
 
@@ -905,6 +904,7 @@ async def list_posting_batches(
 async def list_operational_posting_events(
     source_module: Optional[str] = None,
     source_event: Optional[str] = None,
+    source_ids: Optional[str] = None,
     status: Optional[str] = None,
     limit: int = Query(100, le=500),
     db: AsyncSession = Depends(get_db),
@@ -915,6 +915,15 @@ async def list_operational_posting_events(
         q = q.where(OperationalPostingEvent.source_module == source_module)
     if source_event:
         q = q.where(OperationalPostingEvent.source_event == source_event)
+    if source_ids is not None:
+        ids = list(dict.fromkeys(
+            source_id.strip() for source_id in source_ids.split(",") if source_id.strip()
+        ))
+        if not ids:
+            return []
+        if len(ids) > 500:
+            raise HTTPException(422, "At most 500 source IDs can be queried at once")
+        q = q.where(OperationalPostingEvent.source_id.in_(ids))
     if status:
         q = q.where(OperationalPostingEvent.status == status)
     rows = (await db.execute(q)).scalars().all()
@@ -1692,6 +1701,32 @@ async def create_purchase_invoice(
     return _build_purchase_invoice_read(inv)
 
 
+@router.post(
+    "/accounting/purchase-invoices/{invoice_id}/post",
+    response_model=OperationalPostingEventRead,
+)
+async def post_purchase_invoice(
+    invoice_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    invoice = await db.scalar(
+        select(PurchaseInvoice)
+        .options(selectinload(PurchaseInvoice.po))
+        .where(PurchaseInvoice.id == invoice_id)
+    )
+    if not invoice:
+        raise HTTPException(404, "Purchase invoice not found")
+    _require_finance_action(current_user, invoice.po or invoice, "post")
+    try:
+        event = await svc.post_purchase_invoice(db, invoice.id, current_user.id)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    await db.commit()
+    await db.refresh(event)
+    return OperationalPostingEventRead.model_validate(event)
+
+
 @router.post("/accounting/purchase-invoices/{invoice_id}/payments",
              response_model=PurchasePaymentRead, status_code=201)
 async def create_purchase_payment(
@@ -1701,10 +1736,40 @@ async def create_purchase_payment(
     current_user=Depends(require_permission("finance", "create")),
 ):
     inv = (await db.execute(
-        select(PurchaseInvoice).where(PurchaseInvoice.id == invoice_id)
+        select(PurchaseInvoice)
+        .options(selectinload(PurchaseInvoice.po))
+        .where(PurchaseInvoice.id == invoice_id)
+        .with_for_update()
     )).scalar_one_or_none()
     if not inv:
         raise HTTPException(404, "Purchase invoice not found")
+
+    _require_finance_action(current_user, inv.po or inv, "create")
+
+    if inv.status not in {
+        PurchaseInvoiceStatus.RECEIVED,
+        PurchaseInvoiceStatus.PARTIALLY_PAID,
+        PurchaseInvoiceStatus.OVERDUE,
+    }:
+        raise HTTPException(422, "Only received, partially paid, or overdue purchase invoices can be paid")
+    if not body.amount.is_finite() or body.amount <= 0:
+        raise HTTPException(422, "Payment amount must be greater than zero")
+
+    outstanding = (inv.total_amount or 0) - (inv.paid_amount or 0)
+    if outstanding <= 0 or body.amount > outstanding:
+        raise HTTPException(422, "Payment amount cannot exceed the invoice's outstanding balance")
+
+    if inv.po_id:
+        posting_event = await db.scalar(
+            select(OperationalPostingEvent).where(
+                OperationalPostingEvent.source_module == "procurement",
+                OperationalPostingEvent.source_event == "PURCHASE_INVOICE_POSTED",
+                OperationalPostingEvent.source_id == str(inv.id),
+                OperationalPostingEvent.status == OperationalPostingStatus.POSTED,
+            )
+        )
+        if not posting_event:
+            raise HTTPException(422, "Post the purchase invoice to the general ledger before recording payment")
 
     payment = PurchasePayment(
         invoice_id=invoice_id,

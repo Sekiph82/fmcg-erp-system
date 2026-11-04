@@ -809,6 +809,13 @@ export const financeApi = {
     return res.data;
   },
 
+  async postPurchaseInvoice(invoiceId: string): Promise<OperationalPostingEvent> {
+    const res = await apiClient.post<OperationalPostingEvent>(
+      `/api/v1/finance/accounting/purchase-invoices/${invoiceId}/post`
+    );
+    return res.data;
+  },
+
   async createPurchasePayment(invoiceId: string, data: {
     invoice_id: string; payment_date: string; amount: number; method: string;
     reference?: string; notes?: string;
@@ -904,7 +911,8 @@ export const financeApi = {
   },
 
   async listOperationalPostingEvents(params?: {
-    source_module?: string; source_event?: string; status?: OperationalPostingStatus; limit?: number;
+    source_module?: string; source_event?: string; source_ids?: string;
+    status?: OperationalPostingStatus; limit?: number;
   }): Promise<OperationalPostingEvent[]> {
     const res = await apiClient.get<OperationalPostingEvent[]>(
       "/api/v1/finance/accounting/operational-posting-events/",

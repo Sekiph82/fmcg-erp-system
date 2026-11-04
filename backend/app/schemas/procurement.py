@@ -1,7 +1,7 @@
 from __future__ import annotations
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
-from typing import Optional, List
+from typing import Annotated, Optional, List
 import uuid
 
 from pydantic import BaseModel, computed_field, ConfigDict, Field, field_validator, model_validator
@@ -938,7 +938,7 @@ class BlanketAgreementCreate(ProcurementScopeFields):
     description: Optional[str] = Field(default=None, max_length=300)
     agreed_unit_price: Decimal = Field(gt=0, max_digits=14, decimal_places=4)
     currency: str = Field(default="KES", min_length=3, max_length=3, pattern=r"^[A-Za-z]{3}$")
-    agreed_quantity: Optional[Decimal] = Field(default=None, gt=0, max_digits=14, decimal_places=3)
+    agreed_quantity: Optional[Annotated[Decimal, Field(gt=0, max_digits=14, decimal_places=3)]] = None
     unit: str = Field(default="KG", min_length=1, max_length=20)
     valid_from: date
     valid_to: date
@@ -965,8 +965,8 @@ class BlanketAgreementCreate(ProcurementScopeFields):
 
 
 class BlanketAgreementUpdate(ProcurementScopeFields):
-    agreed_unit_price: Optional[Decimal] = Field(default=None, gt=0, max_digits=14, decimal_places=4)
-    agreed_quantity: Optional[Decimal] = Field(default=None, gt=0, max_digits=14, decimal_places=3)
+    agreed_unit_price: Optional[Annotated[Decimal, Field(gt=0, max_digits=14, decimal_places=4)]] = None
+    agreed_quantity: Optional[Annotated[Decimal, Field(gt=0, max_digits=14, decimal_places=3)]] = None
     valid_to: Optional[date] = None
     payment_terms: Optional[str] = Field(default=None, max_length=100)
     notes: Optional[str] = Field(default=None, max_length=1000)

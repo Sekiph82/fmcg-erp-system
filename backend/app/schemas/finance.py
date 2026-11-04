@@ -6,7 +6,7 @@ from typing import Optional, List
 import uuid
 import re
 
-from pydantic import BaseModel, ConfigDict, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.models.finance import (
     AccountType, CashAccountType, TxDirection, FinTxStatus,
@@ -833,7 +833,7 @@ class PurchaseInvoiceRead(BaseModel):
 class PurchasePaymentCreate(BaseModel):
     invoice_id: uuid.UUID
     payment_date: date
-    amount: Decimal
+    amount: Decimal = Field(gt=0, max_digits=16, decimal_places=4, allow_inf_nan=False)
     method: str = "bank"   # cash | bank | mpesa
     reference: Optional[str] = None
     notes: Optional[str] = None
