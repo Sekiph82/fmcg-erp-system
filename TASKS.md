@@ -9,10 +9,10 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 ## Project Status
 
 - Current Milestone: M22 — Production Order / Work Order
-- Current Sprint: M22.S01 — Order Lifecycle
-- Current Task: M22.S01.T004 — Immutable audit history for critical transitions
+- Current Sprint: M22.S02 — Execution Structure
+- Current Task: M22.S02.T001 — Routing/work-center operation sequencing
 - Current Task Status: COMPLETE
-- Next Task/Action: M22.S02.T001 — Routing/work-center operation sequencing
+- Next Task/Action: M22.S02.T002 — Split/merge work orders
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -681,7 +681,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
   Evidence: Added a PostgreSQL append-only production transition ledger with monotonic ordering, actor identity snapshots, mutation-blocking triggers, transactional event writes across canonical and parallel order/operation paths, MRP/MPS/import/shop-floor coverage, scoped history endpoints, and production detail timelines. Independent read-only review found no remaining blockers; git diff --check passed. Automated tests, typecheck/build, migration execution, and runtime acceptance are deferred to milestone verification; legacy history was not fabricated or backfilled. See coordination/sessions/M22.S01.T004/CLAUDE_LOG_V01.md.
 
 ## M22.S02 — Execution Structure
-- [ ] M22.S02.T001 — Routing/work-center operation sequencing
+- [x] M22.S02.T001 — Routing/work-center operation sequencing
+  Evidence: Added canonical routing-to-work-order generation, sequence display, work-center/product guards, duplicate protection and migration preflights. Independent read-only review found no remaining blockers; git diff --check passed. PostgreSQL tests, migration execution and build are deferred to the M22 milestone batch; no runtime acceptance is claimed. See coordination/sessions/M22.S02.T001/CLAUDE_LOG_V01.md.
 - [ ] M22.S02.T002 — Split/merge work orders
 - [ ] M22.S02.T003 — Partial completion/backorder semantics
 - [ ] M22.S02.T004 — Rework/reprocess flows

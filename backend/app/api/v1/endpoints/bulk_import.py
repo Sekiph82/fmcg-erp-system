@@ -877,6 +877,8 @@ class WorkOrderImportAdapter(BaseImportAdapter):
             wc = r2.scalar_one_or_none()
             if wc is None:
                 errors.append(f"work_center_code '{wc_code}' not found")
+            elif wc.status != "active":
+                errors.append(f"work_center_code '{wc_code}' is not active")
             else:
                 row["work_center_id"] = wc.id
         return row, errors
@@ -904,6 +906,19 @@ class WorkOrderImportAdapter(BaseImportAdapter):
             raise HTTPException(
                 status_code=422,
                 detail="Work orders cannot be imported after production-order approval",
+            )
+        routed_work_order = await db.execute(
+            select(_WorkOrder.id)
+            .where(
+                _WorkOrder.production_order_id == parent.id,
+                _WorkOrder.routing_step_id.is_not(None),
+            )
+            .limit(1)
+        )
+        if routed_work_order.scalar_one_or_none() is not None:
+            raise HTTPException(
+                status_code=422,
+                detail="Manual work-order imports cannot be mixed into a routing-sequenced production order",
             )
         obj = _WorkOrder(
             **{k: v for k, v in data.items() if v is not None},

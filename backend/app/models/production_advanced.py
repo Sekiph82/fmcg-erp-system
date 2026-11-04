@@ -186,6 +186,11 @@ class RoutingStep(Base, TimestampMixin):
 
     routing     = relationship("Routing", back_populates="steps")
     work_center = relationship("WorkCenter", back_populates="routing_steps")
+    work_orders = relationship(
+        "WorkOrder",
+        back_populates="routing_step",
+        passive_deletes="all",
+    )
 
 
 # ── 3. Work Orders ─────────────────────────────────────────────────────────────
@@ -193,11 +198,26 @@ class RoutingStep(Base, TimestampMixin):
 class WorkOrder(Base, TimestampMixin):
     """Executable operation derived from a production order."""
     __tablename__ = "work_orders"
+    __table_args__ = (
+        UniqueConstraint(
+            "production_order_id",
+            "routing_step_id",
+            name="uq_work_order_route_step_per_parent",
+        ),
+    )
 
     id                  = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     work_order_id       = Column(String(50), unique=True, nullable=False, index=True)
     production_order_id = Column(UUID(as_uuid=True), ForeignKey("production_orders.id", ondelete="RESTRICT"), nullable=False, index=True)
-    routing_step_id     = Column(UUID(as_uuid=True), ForeignKey("routing_steps.id", ondelete="SET NULL"), nullable=True)
+    routing_step_id     = Column(
+        UUID(as_uuid=True),
+        ForeignKey(
+            "routing_steps.id",
+            ondelete="RESTRICT",
+            name="fk_work_orders_routing_step_id_routing_steps",
+        ),
+        nullable=True,
+    )
     work_center_id      = Column(UUID(as_uuid=True), ForeignKey("work_centers.id", ondelete="RESTRICT"), nullable=False)
     operation           = Column(String(255), nullable=False)
     operator            = Column(String(255), nullable=True)          # free-text operator name
@@ -211,7 +231,7 @@ class WorkOrder(Base, TimestampMixin):
     notes               = Column(Text, nullable=True)
 
     production_order = relationship("ProductionOrder")
-    routing_step     = relationship("RoutingStep")
+    routing_step     = relationship("RoutingStep", back_populates="work_orders")
     work_center      = relationship("WorkCenter", back_populates="work_orders")
     time_entries     = relationship("TimeTracking", back_populates="work_order", cascade="all, delete-orphan")
     labor_logs       = relationship("LaborLog", back_populates="work_order", cascade="all, delete-orphan")

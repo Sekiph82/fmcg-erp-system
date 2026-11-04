@@ -25,6 +25,8 @@ export interface RoutingStep {
 export interface WorkOrder {
   id: string; work_order_id: string; production_order_id: string;
   order_no?: string; work_center_id: string; work_center_name?: string;
+  routing_step_id?: string; routing_step_number?: number;
+  routing_id?: string; routing_code?: string;
   operation: string; operator?: string; status: string;
   planned_quantity?: number; actual_quantity?: number;
   start_time?: string; end_time?: string;
@@ -163,6 +165,10 @@ export const advProductionApi = {
   },
   async createWorkOrder(d: object): Promise<WorkOrder> {
     const r = await apiClient.post(`${BASE}/work-orders`, d);
+    return r.data;
+  },
+  async generateWorkOrdersFromRouting(d: { production_order_id: string; routing_id: string }): Promise<WorkOrder[]> {
+    const r = await apiClient.post(`${BASE}/work-orders/generate-from-routing`, d);
     return r.data;
   },
   async updateWorkOrder(id: string, d: object): Promise<WorkOrder> {

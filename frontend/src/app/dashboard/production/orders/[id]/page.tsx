@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
 import {
   productionApi, CompleteOrderRequest, DowntimeReason,
 } from "@/lib/production";
+import { advProductionApi } from "@/lib/productionAdvanced";
 import { warehousesApi } from "@/lib/warehouses";
 import { extractApiError } from "@/lib/inventory";
 import { Table } from "@/components/ui/Table";
@@ -40,6 +41,7 @@ export default function OrderDetailPage() {
 
   const [completeOpen, setCompleteOpen] = useState(false);
   const [pauseOpen, setPauseOpen] = useState(false);
+  const [selectedRoutingId, setSelectedRoutingId] = useState("");
   const [completeForm, setCompleteForm] = useState<CompleteOrderRequest>({
     actual_quantity: 0, consume_materials: true,
   });
@@ -51,10 +53,26 @@ export default function OrderDetailPage() {
     enabled: !!id,
   });
 
+  useEffect(() => {
+    setSelectedRoutingId("");
+  }, [id]);
+
   const { data: transitionHistory = [], isLoading: historyLoading } = useQuery({
     queryKey: ["production-order-transition-history", id],
     queryFn: () => productionApi.getOrderTransitionHistory(id),
     enabled: !!id,
+  });
+
+  const { data: routedWorkOrders = [] } = useQuery({
+    queryKey: ["production-work-orders", id],
+    queryFn: () => advProductionApi.listWorkOrders({ production_order_id: id }),
+    enabled: !!id,
+  });
+
+  const { data: availableRoutings = [] } = useQuery({
+    queryKey: ["production-order-routings", order?.product_id],
+    queryFn: () => advProductionApi.listRoutings({ product_id: order!.product_id }),
+    enabled: Boolean(order?.product_id),
   });
 
   const { data: warehouses = [] } = useQuery({
@@ -108,6 +126,19 @@ export default function OrderDetailPage() {
   const cancel = useMutation({
     mutationFn: () => productionApi.cancelOrder(id),
     onSuccess: () => { invalidate(); toast("success", "Cancelled", "Order cancelled."); },
+    onError: (err) => toast("error", "Failed", extractApiError(err)),
+  });
+
+  const generateOperations = useMutation({
+    mutationFn: () => advProductionApi.generateWorkOrdersFromRouting({
+      production_order_id: id,
+      routing_id: selectedRoutingId,
+    }),
+    onSuccess: (created) => {
+      qc.invalidateQueries({ queryKey: ["production-work-orders", id] });
+      setSelectedRoutingId("");
+      toast("success", "Operations added", `${created.length} routing operations linked in sequence.`);
+    },
     onError: (err) => toast("error", "Failed", extractApiError(err)),
   });
 
@@ -240,6 +271,57 @@ export default function OrderDetailPage() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Routed Work Orders */}
+      <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+        <div className="mb-4 flex items-center justify-between gap-4 flex-wrap">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-800">Routing Operations</h2>
+            <p className="text-sm text-gray-500">Work orders follow the selected routing step order and work-center assignments.</p>
+          </div>
+          {isPlanned && !isApproved && routedWorkOrders.length === 0 && (
+            <div className="flex items-end gap-2 flex-wrap">
+              <Select
+                label="Active Routing"
+                options={[
+                  { value: "", label: "Select routing…" },
+                  ...availableRoutings.filter((routing) => routing.is_active && routing.steps.length > 0).map((routing) => ({
+                    value: routing.id,
+                    label: `${routing.routing_id} v${routing.version} · ${routing.steps.length} steps`,
+                  })),
+                ]}
+                value={selectedRoutingId}
+                onChange={(e) => setSelectedRoutingId(e.target.value)}
+              />
+              <Button
+                disabled={!selectedRoutingId || generateOperations.isPending}
+                loading={generateOperations.isPending}
+                onClick={() => generateOperations.mutate()}
+              >
+                Generate Operations
+              </Button>
+            </div>
+          )}
+        </div>
+        {routedWorkOrders.length === 0 ? (
+          <p className="text-sm text-gray-500">No work-order operations are linked to this production order.</p>
+        ) : (
+          <Table
+            keyField="id"
+            data={routedWorkOrders}
+            emptyMessage="No work-order operations are linked to this production order."
+            columns={[
+              { header: "Step", accessor: (workOrder) => workOrder.routing_step_number ?? "Manual" },
+              { header: "Work Order", accessor: (workOrder) => <span className="font-mono text-xs">{workOrder.work_order_id}</span> },
+              { header: "Operation", accessor: (workOrder) => workOrder.operation },
+              { header: "Work Center", accessor: (workOrder) => workOrder.work_center_name ?? "—" },
+              { header: "Planned Qty", accessor: (workOrder) => workOrder.planned_quantity == null ? "—" : `${Number(workOrder.planned_quantity).toLocaleString()} ${order.uom}` },
+              { header: "Actual Qty", accessor: (workOrder) => workOrder.actual_quantity == null ? "—" : `${Number(workOrder.actual_quantity).toLocaleString()} ${order.uom}` },
+              { header: "Status", accessor: (workOrder) => <Badge label={workOrder.status} variant={workOrder.status === "completed" ? "green" : workOrder.status === "in_progress" ? "blue" : "blue"} /> },
+            ]}
+          />
+        )}
       </div>
 
       {/* OEE card */}

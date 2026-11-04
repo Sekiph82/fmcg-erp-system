@@ -36,7 +36,7 @@ from app.schemas.production_advanced import (
     # Routing
     RoutingCreate, RoutingUpdate, RoutingRead, RoutingStepCreate, RoutingStepRead,
     # Work Orders
-    WorkOrderCreate, WorkOrderUpdate, WorkOrderRead,
+    WorkOrderCreate, WorkOrderGenerateFromRouting, WorkOrderUpdate, WorkOrderRead,
     # Shifts
     ShiftCreate, ShiftUpdate, ShiftRead,
     # Schedule
@@ -189,7 +189,10 @@ async def delete_routing(pk: _uuid.UUID, db: AsyncSession = Depends(get_db), _=D
     obj = await crud.get_routing(db, pk)
     if not obj:
         raise HTTPException(404, "Routing not found")
-    await crud.delete_routing(db, obj)
+    try:
+        await crud.delete_routing(db, obj)
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
     await db.commit()
     return Response(status_code=204)
 
@@ -211,7 +214,10 @@ async def delete_routing_step(pk: _uuid.UUID, step_id: _uuid.UUID, db: AsyncSess
     step = r.scalar_one_or_none()
     if not step:
         raise HTTPException(404, "Step not found")
-    await crud.delete_routing_step(db, step)
+    try:
+        await crud.delete_routing_step(db, step)
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
     await db.commit()
     return Response(status_code=204)
 
@@ -229,6 +235,32 @@ async def list_work_orders(
     db: AsyncSession = Depends(get_db), _=Depends(get_current_user),
 ):
     return [_enrich_wo(w) for w in await crud.list_work_orders(db, skip, limit, production_order_id, work_center_id, status)]
+
+
+@router.post("/work-orders/generate-from-routing", response_model=List[WorkOrderRead], tags=["work-orders"])
+async def generate_work_orders_from_routing(
+    data: WorkOrderGenerateFromRouting,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    try:
+        parent = await crud._lock_work_order_parent(db, data.production_order_id)
+        _require_canonical_order_action(current_user, parent, "edit")
+        work_orders = await crud.generate_work_orders_from_routing(
+            db,
+            data.production_order_id,
+            data.routing_id,
+            current_user.id,
+        )
+    except ValueError as exc:
+        _work_order_error(exc)
+    await db.commit()
+    refreshed = await crud.list_work_orders(
+        db,
+        production_order_id=data.production_order_id,
+        limit=max(len(work_orders), 1),
+    )
+    return [_enrich_wo(work_order) for work_order in refreshed]
 
 
 @router.post("/work-orders", response_model=WorkOrderRead, status_code=201, tags=["work-orders"])
@@ -851,6 +883,11 @@ def _enrich_wo(obj: WorkOrder) -> dict:
     d = WorkOrderRead.model_validate(obj).model_dump()
     if obj.work_center:
         d["work_center_name"] = obj.work_center.name
+    if obj.routing_step:
+        d["routing_step_number"] = obj.routing_step.step_number
+        if obj.routing_step.routing:
+            d["routing_id"] = obj.routing_step.routing.id
+            d["routing_code"] = obj.routing_step.routing.routing_id
     return d
 
 def _enrich_schedule(obj: ProductionSchedule) -> dict:

@@ -58,11 +58,11 @@ class WorkCenterRead(BaseModel):
 # ── Routing ────────────────────────────────────────────────────────────────────
 
 class RoutingStepCreate(BaseModel):
-    step_number:           int
-    operation:             str = Field(..., max_length=255)
+    step_number:           int = Field(..., ge=1)
+    operation:             str = Field(..., min_length=1, max_length=255)
     work_center_id:        UUID
-    standard_time_minutes: int   = Field(0)
-    setup_time_minutes:    Optional[int] = None
+    standard_time_minutes: int   = Field(0, ge=0)
+    setup_time_minutes:    Optional[int] = Field(None, ge=0)
     is_parallel:           bool  = False
     notes:                 Optional[str] = None
 
@@ -109,16 +109,22 @@ class RoutingRead(BaseModel):
 # ── Work Orders ────────────────────────────────────────────────────────────────
 
 class WorkOrderCreate(BaseModel):
-    work_order_id:       str  = Field(..., max_length=50)
+    work_order_id:       str  = Field(..., min_length=1, max_length=50)
     production_order_id: UUID
     work_center_id:      UUID
-    operation:           str  = Field(..., max_length=255)
+    operation:           str  = Field(..., min_length=1, max_length=255)
     operator:            Optional[str] = None
     routing_step_id:     Optional[UUID] = None
     planned_quantity:    Optional[Decimal] = None
     planned_start:       Optional[datetime] = None
     planned_end:         Optional[datetime] = None
     notes:               Optional[str] = None
+
+    model_config = {"extra": "forbid"}
+
+class WorkOrderGenerateFromRouting(BaseModel):
+    production_order_id: UUID
+    routing_id: UUID
 
     model_config = {"extra": "forbid"}
 
@@ -135,6 +141,10 @@ class WorkOrderRead(BaseModel):
     order_no:            Optional[str]  = None
     work_center_id:      UUID
     work_center_name:    Optional[str] = None
+    routing_step_id:     Optional[UUID] = None
+    routing_step_number: Optional[int] = None
+    routing_id:          Optional[UUID] = None
+    routing_code:        Optional[str] = None
     operation:           str
     operator:            Optional[str]
     status:              str

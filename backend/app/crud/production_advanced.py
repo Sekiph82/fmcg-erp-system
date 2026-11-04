@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from decimal import Decimal
 from typing import List, Optional
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from sqlalchemy import select, and_, or_, func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -117,6 +117,10 @@ async def create_routing(db: AsyncSession, data: RoutingCreate) -> Routing:
     return obj
 
 async def update_routing(db: AsyncSession, obj: Routing, data: RoutingUpdate) -> Routing:
+    locked = await db.execute(select(Routing).where(Routing.id == obj.id).with_for_update())
+    obj = locked.scalar_one_or_none()
+    if obj is None:
+        raise ValueError("Routing not found")
     for k, v in data.model_dump(exclude_unset=True).items():
         setattr(obj, k, v)
     await db.flush()
@@ -124,6 +128,25 @@ async def update_routing(db: AsyncSession, obj: Routing, data: RoutingUpdate) ->
     return obj
 
 async def add_routing_step(db: AsyncSession, routing_id: UUID, data: RoutingStepCreate) -> RoutingStep:
+    routing_result = await db.execute(
+        select(Routing).where(Routing.id == routing_id).with_for_update()
+    )
+    routing = routing_result.scalar_one_or_none()
+    if routing is None:
+        raise ValueError("Routing not found")
+    assigned_step = await db.execute(
+        select(WorkOrder.id)
+        .join(RoutingStep, WorkOrder.routing_step_id == RoutingStep.id)
+        .where(RoutingStep.routing_id == routing_id)
+        .limit(1)
+    )
+    if assigned_step.scalar_one_or_none() is not None:
+        raise ValueError("Routing is already assigned to production orders; create a new routing version to change its steps")
+    center = await db.get(WorkCenter, data.work_center_id)
+    if center is None:
+        raise ValueError("Work center not found")
+    if center.status != "active":
+        raise ValueError("Routing steps require an active work center")
     step = RoutingStep(routing_id=routing_id, **data.model_dump())
     db.add(step)
     await db.flush()
@@ -131,10 +154,28 @@ async def add_routing_step(db: AsyncSession, routing_id: UUID, data: RoutingStep
     return step
 
 async def delete_routing_step(db: AsyncSession, step: RoutingStep) -> None:
+    await db.execute(select(Routing.id).where(Routing.id == step.routing_id).with_for_update())
+    referenced = await db.execute(
+        select(WorkOrder.id).where(WorkOrder.routing_step_id == step.id).limit(1)
+    )
+    if referenced.scalar_one_or_none() is not None:
+        raise ValueError("Routing step is used by a production work order and cannot be deleted")
     await db.delete(step)
     await db.flush()
 
 async def delete_routing(db: AsyncSession, obj: Routing) -> None:
+    locked = await db.execute(select(Routing).where(Routing.id == obj.id).with_for_update())
+    obj = locked.scalar_one_or_none()
+    if obj is None:
+        raise ValueError("Routing not found")
+    referenced = await db.execute(
+        select(WorkOrder.id)
+        .join(RoutingStep, WorkOrder.routing_step_id == RoutingStep.id)
+        .where(RoutingStep.routing_id == obj.id)
+        .limit(1)
+    )
+    if referenced.scalar_one_or_none() is not None:
+        raise ValueError("Routing is used by production work orders and cannot be deleted")
     await db.delete(obj)
     await db.flush()
 
@@ -203,8 +244,9 @@ async def list_work_orders(
     work_center_id: Optional[UUID] = None,
     status: Optional[str] = None,
 ):
-    q = select(WorkOrder).options(
+    q = select(WorkOrder).outerjoin(WorkOrder.routing_step).options(
         selectinload(WorkOrder.work_center),
+        selectinload(WorkOrder.routing_step).selectinload(RoutingStep.routing),
     )
     if production_order_id:
         q = q.where(WorkOrder.production_order_id == production_order_id)
@@ -212,7 +254,12 @@ async def list_work_orders(
         q = q.where(WorkOrder.work_center_id == work_center_id)
     if status:
         q = q.where(WorkOrder.status == status)
-    q = q.offset(skip).limit(limit)
+    q = q.order_by(
+        WorkOrder.production_order_id,
+        RoutingStep.step_number.asc().nulls_last(),
+        WorkOrder.created_at,
+        WorkOrder.id,
+    ).offset(skip).limit(limit)
     r = await db.execute(q)
     return list(r.scalars().all())
 
@@ -221,6 +268,7 @@ async def get_work_order(db: AsyncSession, pk: UUID) -> Optional[WorkOrder]:
         select(WorkOrder)
         .options(
             selectinload(WorkOrder.work_center),
+            selectinload(WorkOrder.routing_step).selectinload(RoutingStep.routing),
             selectinload(WorkOrder.time_entries),
             selectinload(WorkOrder.labor_logs),
         )
@@ -233,10 +281,82 @@ async def create_work_order(
 ) -> WorkOrder:
     parent = await _lock_work_order_parent(db, data.production_order_id)
     _require_parent_status(parent, {ProductionOrderStatus.PLANNED}, "create", require_unapproved=True)
+
+    existing_result = await db.execute(
+        select(WorkOrder)
+        .options(selectinload(WorkOrder.routing_step).selectinload(RoutingStep.routing))
+        .where(WorkOrder.production_order_id == parent.id)
+        .with_for_update()
+    )
+    existing = list(existing_result.scalars().all())
+    routing_step = None
+    work_center = await db.get(WorkCenter, data.work_center_id)
+    if work_center is None:
+        raise ValueError("Work center not found")
+    if work_center.status != "active":
+        raise ValueError("Work orders require an active work center")
+    if data.routing_step_id is not None:
+        step_result = await db.execute(
+            select(RoutingStep)
+            .options(
+                selectinload(RoutingStep.routing),
+                selectinload(RoutingStep.work_center),
+            )
+            .where(RoutingStep.id == data.routing_step_id)
+        )
+        routing_step = step_result.scalar_one_or_none()
+        if routing_step is None:
+            raise ValueError("Routing step not found")
+        locked_routing_result = await db.execute(
+            select(Routing)
+            .where(Routing.id == routing_step.routing_id)
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        )
+        locked_routing = locked_routing_result.scalar_one_or_none()
+        if locked_routing is None:
+            raise ValueError("Routing not found")
+        refreshed_step_result = await db.execute(
+            select(RoutingStep)
+            .options(selectinload(RoutingStep.work_center))
+            .where(RoutingStep.id == data.routing_step_id)
+            .execution_options(populate_existing=True)
+        )
+        routing_step = refreshed_step_result.scalar_one_or_none()
+        if routing_step is None:
+            raise ValueError("Routing step not found")
+        routing_step.routing = locked_routing
+        if not locked_routing.is_active:
+            raise ValueError("Work orders can only use steps from an active routing")
+        if locked_routing.product_id != parent.product_id:
+            raise ValueError("Routing product does not match the production order")
+        if routing_step.work_center_id != data.work_center_id:
+            raise ValueError("Work center must match the selected routing step")
+        if routing_step.operation.strip() != data.operation.strip():
+            raise ValueError("Operation must match the selected routing step")
+        if routing_step.work_center.status != "active":
+            raise ValueError("Routing step work center is not active")
+        if any(
+            row.routing_step_id == routing_step.id
+            for row in existing
+        ):
+            raise ValueError("This routing step already has a work order for the production order")
+        existing_routing_ids = {
+            row.routing_step.routing_id
+            for row in existing
+            if row.routing_step is not None
+        }
+        if existing_routing_ids and existing_routing_ids != {locked_routing.id}:
+            raise ValueError("A production order cannot mix operations from different routings")
+    elif any(row.routing_step_id is not None for row in existing):
+        raise ValueError("A routed production order requires every operation to reference its routing step")
+
     obj = WorkOrder(
         **data.model_dump(),
         status=WorkOrderStatus.PLANNED,
     )
+    if routing_step is not None:
+        obj.routing_step = routing_step
     db.add(obj)
     await db.flush()
     record_transition(
@@ -251,6 +371,94 @@ async def create_work_order(
     )
     await db.refresh(obj)
     return obj
+
+
+async def generate_work_orders_from_routing(
+    db: AsyncSession,
+    production_order_id: UUID,
+    routing_id: UUID,
+    actor_id: UUID,
+) -> list[WorkOrder]:
+    parent = await _lock_work_order_parent(db, production_order_id)
+    _require_parent_status(parent, {ProductionOrderStatus.PLANNED}, "generate", require_unapproved=True)
+
+    routing_result = await db.execute(
+        select(Routing)
+        .options(
+            selectinload(Routing.steps).selectinload(RoutingStep.work_center),
+        )
+        .where(Routing.id == routing_id)
+        .with_for_update()
+    )
+    routing = routing_result.scalar_one_or_none()
+    if routing is None:
+        raise ValueError("Routing not found")
+    if not routing.is_active:
+        raise ValueError("Only an active routing can be assigned to a production order")
+    if routing.product_id != parent.product_id:
+        raise ValueError("Routing product does not match the production order")
+    steps = sorted(routing.steps or [], key=lambda step: step.step_number)
+    if not steps:
+        raise ValueError("Routing has no operation steps")
+    if any(step.work_center is None or step.work_center.status != "active" for step in steps):
+        raise ValueError("Every routing step must use an active work center")
+
+    existing_result = await db.execute(
+        select(WorkOrder)
+        .options(selectinload(WorkOrder.routing_step).selectinload(RoutingStep.routing))
+        .where(WorkOrder.production_order_id == parent.id)
+        .with_for_update()
+    )
+    existing = list(existing_result.scalars().all())
+    expected_step_ids = {step.id for step in steps}
+    existing_step_ids = {
+        row.routing_step_id
+        for row in existing
+        if row.routing_step_id is not None
+    }
+    if existing:
+        if (
+            len(existing) == len(steps)
+            and existing_step_ids == expected_step_ids
+            and all(row.routing_step_id is not None for row in existing)
+            and all(row.routing_step.routing_id == routing.id for row in existing)
+        ):
+            return sorted(existing, key=lambda row: row.routing_step.step_number)
+        raise ValueError("Production order already has work orders; routing generation would replace or mix them")
+
+    work_orders: list[WorkOrder] = []
+    for step in steps:
+        readable_code = f"{parent.order_no}-OP-{step.step_number:03d}"
+        if len(readable_code) > 50:
+            readable_code = f"WO-{uuid4().hex}"
+        work_order = WorkOrder(
+            work_order_id=readable_code,
+            production_order_id=parent.id,
+            routing_step_id=step.id,
+            work_center_id=step.work_center_id,
+            operation=step.operation,
+            status=WorkOrderStatus.PLANNED,
+            planned_quantity=parent.planned_quantity,
+        )
+        db.add(work_order)
+        await db.flush()
+        record_transition(
+            db,
+            entity_type=WORK_ORDER,
+            entity_id=work_order.id,
+            parent_entity_type=PRODUCTION_ORDER,
+            parent_entity_id=parent.id,
+            action="CREATED",
+            actor_id=actor_id,
+            to_status=work_order.status,
+        )
+        work_order.routing_step = step
+        step.routing = routing
+        work_order.work_center = step.work_center
+        work_orders.append(work_order)
+
+    await db.flush()
+    return work_orders
 
 async def update_work_order(db: AsyncSession, obj: WorkOrder, data: WorkOrderUpdate) -> WorkOrder:
     parent, obj = await _lock_work_order_context(db, obj.id)
