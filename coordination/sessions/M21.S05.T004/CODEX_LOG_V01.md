@@ -84,3 +84,20 @@ At exact source SHA `318b9ca085b1a0bc72f291351ffe6859b7eb97f0`, the nine-suite P
 - `M20.S03.T001` and `.T004`: `test_postgres_mps_capacity_reconciles_rate_shifts_downtime_locks_and_modes` verifies PostgreSQL-backed capacity inputs, locks/modes and persisted overload diagnostics/history.
 
 These bounded synthetic cases address the integrated behaviors enumerated by criteria V01 for those rows; no concrete missing behavior was found in the reviewed tests. This is supporting independent evidence, not a formal per-task PASS or overall M20 acceptance. Broader permutations remain bounded; the strict auditor retains the responsibility to adjudicate the evidence against V01.
+
+## Superseding bounded closeout — 2026-11-04
+
+The former M21 block above reflected the M20 V05/V06-era deferred-CI state and is retained as history. Its dependency has now been re-evaluated against the current canonical tracker and the post-window CI receipt:
+
+- M20.S05.T004 is complete in `TASKS.md`; its CI receipt is `coordination/sessions/M20.S05.T004/CODEX_LOG_V01.md`.
+- Owner-triggered workflow-dispatch run [41762085149](https://github.com/Sekiph82/fmcg-erp-system/actions/runs/41762085149) completed successfully on `main` at exact source SHA `bf3e97f193155322998645a44b4b19840b0d1a69`. Backend, frontend and docker-config jobs passed. Backend pytest reported 1,238 passed, 236 skipped and 1,109 warnings. The skips and warnings remain visible and are not recast as passes.
+- M20 strict audit V06 is not edited or reissued. Its remote-CI statement is an as-of-2026-10-29 finding; this later receipt supplies the deferred CI evidence only. No broader independent M20 acceptance or live-production claim is made here.
+- Canonical `TASKS.md` shows M21.S01–S05.T001–T003 complete with linked task evidence. An independent read-only review of the M21 closure row, M21 S03–S05 task evidence, this closure record and M20 V06 found no additional explicit blocker to bounded M21 closure once the M20 CI dependency was satisfied.
+
+### Preserved M21 evidence boundaries
+
+M21.S03.T003's shortage/order references remain requester-supplied and are not verified against live inventory or released orders. M21.S03.T004's identity-partition database test remains skipped. M21.S04.T002 has type-check evidence but no browser visual acceptance. These limits are preserved; this closure does not claim those dimensions passed or imply live factory/production acceptance.
+
+### Disposition
+
+M21.S05.T004 is complete for its canonical bounded scope: M21's tracked implementation/verification rows are complete, and the only recorded cross-milestone closure dependency has the post-window CI receipt above. M22's explicit dependency list requires M20 and M21; the first M22 lifecycle task is therefore eligible to be selected next. This is task/tracker closure, not an additional independent audit verdict.

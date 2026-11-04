@@ -10,9 +10,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M34 — Strategic Procurement Upgrade
 - Current Sprint: M34.S05 — Verification
-- Current Task: M20.S05.T004 — Close M20 with evidence and tracker update
+- Current Task: M21.S05.T004 — Close M21
 - Current Task Status: COMPLETE
-- Next Task/Action: M21.S05.T004 — Close M21
+- Next Task/Action: M22.S01.T001 — Reconcile production-order vs work-order responsibilities
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -659,8 +659,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
   Evidence: [CODEX log](coordination/sessions/M21.S05.T002/CODEX_LOG_V01.md); disposable PostgreSQL integration passed after migration to head, proving completed MRP result → linked MPS quantity → approved BOM with 10% process loss and G-to-KG conversion → 0.1556 KG material-short diagnostic; container cleanup and independent read-only review passed.
 - [x] M21.S05.T003 — Costing integration tests
   Evidence: [CODEX log](coordination/sessions/M21.S05.T003/CODEX_LOG_V01.md); fresh task-owned PostgreSQL integration passed through real compute/finalize/report queries, exposed 10 KES yield-loss cost variance separately from unchanged 0 total cost, and passed cleanup and independent read-only review.
-- [ ] M21.S05.T004 — Close M21
-  Ready: the sole recorded M20 dependency gate now has post-window CI success on exact SHA `bf3e97f193155322998645a44b4b19840b0d1a69`; receipt: [M20.S05.T004 log](coordination/sessions/M20.S05.T004/CODEX_LOG_V01.md). The M20 audit V06 is unchanged; this does not imply broader independent acceptance beyond its bounded findings. Re-evaluate M21 closure against its linked evidence.
+- [x] M21.S05.T004 — Close M21
+  Evidence: M21.S01–S05.T001–T003 tracker rows and task receipts are complete; the M20 dependency is satisfied by successful post-window owner-triggered CI run 41762085149 at SHA bf3e97f193155322998645a44b4b19840b0d1a69. Independent read-only review found no additional explicit blocker to bounded M21 closure. Preserved evidence limits: requester-supplied order references, a skipped identity-partition DB test, and no M21.S04.T002 browser visual acceptance. See coordination/sessions/M21.S05.T004/CODEX_LOG_V01.md.
+  Closure boundaries: see the superseding bounded closeout in [CODEX log](coordination/sessions/M21.S05.T004/CODEX_LOG_V01.md); V06 remains unchanged, skipped evidence stays explicitly skipped, and no live-production acceptance is claimed.
 
 ---
 
