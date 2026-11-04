@@ -10,9 +10,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M34 — Strategic Procurement Upgrade
 - Current Sprint: M34.S05 — Verification
-- Current Task: M34.S05.T004 — Close M34
+- Current Task: M20.S05.T004 — Close M20 with evidence and tracker update
 - Current Task Status: COMPLETE
-- Next Task/Action: M20.S05.T004 — Close M20 with evidence and tracker update
+- Next Task/Action: M21.S05.T004 — Close M21
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -601,8 +601,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 - [x] M20.S05.T001 — Backend MPS regression tests
 - [x] M20.S05.T002 — Frontend planning-board/capacity/campaign/what-if tests
 - [x] M20.S05.T003 — Cross-module MPS→MRP/production verification
-- [ ] M20.S05.T004 — Close M20 with evidence and tracker update
-  Reopened for acceptance: `coordination/milestones/M20/CHATGPT_M20_STRICT_AUDIT_V06.md` records local evidence PASS but milestone BLOCKED_EVIDENCE / NOT CLOSED pending a remote CI result after the quota window. The date gate has elapsed; this exact closure task must obtain and record the CI result before M21 closure can become READY.
+- [x] M20.S05.T004 — Close M20 with evidence and tracker update
+  Evidence: Post-window owner-triggered CI run 41762085149 passed at exact main SHA bf3e97f193155322998645a44b4b19840b0d1a69: backend, frontend and docker-config all succeeded; 1,238 backend tests passed, 236 skipped, 1,109 warnings. Receipt: coordination/sessions/M20.S05.T004/CODEX_LOG_V01.md. Independent reviewer confirmed this resolves only the deferred CI gate; V06 remains unchanged and no broader acceptance is claimed.
+  Reopened for acceptance because V06 recorded the remaining post-quota CI gate. The authorized run is now recorded above; V06 itself remains unchanged, and its bounded-acceptance limits remain in force.
 
 ---
 
@@ -658,8 +659,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
   Evidence: [CODEX log](coordination/sessions/M21.S05.T002/CODEX_LOG_V01.md); disposable PostgreSQL integration passed after migration to head, proving completed MRP result → linked MPS quantity → approved BOM with 10% process loss and G-to-KG conversion → 0.1556 KG material-short diagnostic; container cleanup and independent read-only review passed.
 - [x] M21.S05.T003 — Costing integration tests
   Evidence: [CODEX log](coordination/sessions/M21.S05.T003/CODEX_LOG_V01.md); fresh task-owned PostgreSQL integration passed through real compute/finalize/report queries, exposed 10 KES yield-loss cost variance separately from unchanged 0 total cost, and passed cleanup and independent read-only review.
-- [!] M21.S05.T004 — Close M21
-  Blocked: M20 local acceptance is PASS under the owner-approved synthetic virtual-factory assumptions, but M20 remains BLOCKED_EVIDENCE until it has an authorized post-window remote-CI result and final tracker closure. The `DEFERRED_CI_QUOTA` window ended 2026-10-30; no later CI result or pass is claimed. M21 depends on M20 closure. No real factory or employee data is required. See [M20 strict re-audit V06](coordination/milestones/M20/CHATGPT_M20_STRICT_AUDIT_V06.md) and [closure assessment](coordination/sessions/M21.S05.T004/CODEX_LOG_V01.md).
+- [ ] M21.S05.T004 — Close M21
+  Ready: the sole recorded M20 dependency gate now has post-window CI success on exact SHA `bf3e97f193155322998645a44b4b19840b0d1a69`; receipt: [M20.S05.T004 log](coordination/sessions/M20.S05.T004/CODEX_LOG_V01.md). The M20 audit V06 is unchanged; this does not imply broader independent acceptance beyond its bounded findings. Re-evaluate M21 closure against its linked evidence.
 
 ---
 
