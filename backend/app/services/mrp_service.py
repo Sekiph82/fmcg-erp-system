@@ -27,6 +27,7 @@ from app.models.procurement import (
     PurchaseRequisition, PRLine, PRStatus,
 )
 from app.models.production import ProductionOrder, ProductionOrderStatus
+from app.services.production_transition_history import PRODUCTION_ORDER, record_transition
 from app.models.recipe import Recipe, RecipeItem, RecipeStatus
 from app.models.sales import SalesOrder, SOLine, SOStatus
 
@@ -392,6 +393,17 @@ async def convert_suggestion_to_production_order(
         created_by=created_by_id,
     )
     db.add(order)
+    await db.flush()
+    record_transition(
+        db,
+        entity_type=PRODUCTION_ORDER,
+        entity_id=order.id,
+        parent_entity_type=PRODUCTION_ORDER,
+        parent_entity_id=order.id,
+        action="CREATED_BY_MRP",
+        actor_id=created_by_id,
+        to_status=order.status,
+    )
 
     suggestion.status = SuggestionStatus.CONVERTED
     suggestion.converted_production_order_id = order.id

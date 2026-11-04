@@ -26,6 +26,7 @@ from app.models.mrp import MRPRun, MRPResult, MRPRunStatus
 from app.models.production import ProductionOrder, ProductionOrderStatus
 from app.models.recipe import Recipe, RecipeStatus
 from app.services.recipe_governance import recipe_precedence_ordering, recipe_required_date
+from app.services.production_transition_history import PRODUCTION_ORDER, record_transition
 from app.models.master import Product, UnitOfMeasure, Warehouse
 from app.schemas.mps import (
     MPSPlanCreate, MPSLineUpdate, GenerateFromMRPRequest,
@@ -669,6 +670,16 @@ async def release_mps_plan(
         )
         db.add(po)
         await db.flush()
+        record_transition(
+            db,
+            entity_type=PRODUCTION_ORDER,
+            entity_id=po.id,
+            parent_entity_type=PRODUCTION_ORDER,
+            parent_entity_id=po.id,
+            action="CREATED_BY_MPS",
+            actor_id=user_id,
+            to_status=po.status,
+        )
 
         line.production_order_id = po.id
         created += 1

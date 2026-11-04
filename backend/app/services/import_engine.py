@@ -327,6 +327,12 @@ class BaseImportAdapter(ABC):
         """Apply actor-owned lineage fields before the row is audited and committed."""
         return record
 
+    async def after_insert(
+        self, record: Any, payload: dict, actor: Any, db: AsyncSession
+    ) -> None:
+        """Record domain-specific creation evidence in the import transaction."""
+        return None
+
     async def exists_in_db(self, row: dict, db: AsyncSession) -> bool:
         """Return True if the record already exists (based on unique key)."""
         if self.model is not None:
@@ -522,6 +528,7 @@ class ImportEngine:
                 raise ValueError("Authenticated actor required for master-data import audit")
             for payload in valid_payloads:
                 record = await adapter.insert(payload, db)
+                await adapter.after_insert(record, payload, actor, db)
                 if stewardship_permission:
                     from app.services.master_stewardship import record_master_data_change
 

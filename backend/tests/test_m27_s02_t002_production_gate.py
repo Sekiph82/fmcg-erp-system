@@ -91,7 +91,7 @@ async def test_production_release_gate_blocks_before_status_change(monkeypatch):
     monkeypatch.setattr(qms_service, "ensure_production_quality_gates_pass", check)
 
     with pytest.raises(HTTPException) as raised:
-        await production_service.release_order(db, order)
+        await production_service.release_order(db, order, uuid4())
 
     assert raised.value.status_code == 422
     assert "missing in-process QC" in raised.value.detail

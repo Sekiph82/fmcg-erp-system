@@ -1,4 +1,5 @@
 import { apiClient } from "./api";
+import type { ProductionTransitionEvent } from "./production";
 
 // ── Enums ──────────────────────────────────────────────────────────────────────
 
@@ -217,6 +218,7 @@ export const execApi = {
   },
   create:  (body: Partial<ProdExecOrderOut>) => apiClient.post<ProdExecOrderOut>(BASE, body).then((r) => r.data),
   get:     (id: string) => apiClient.get<ProdExecOrderOut>(`${BASE}/${id}`).then((r) => r.data),
+  transitionHistory: (id: string) => apiClient.get<ProductionTransitionEvent[]>(`${BASE}/${id}/transition-history`).then((r) => r.data),
   update:  (id: string, body: Partial<ProdExecOrderOut>) => apiClient.patch<ProdExecOrderOut>(`${BASE}/${id}`, body).then((r) => r.data),
 
   // Lifecycle

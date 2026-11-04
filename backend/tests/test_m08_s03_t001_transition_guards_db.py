@@ -18,6 +18,7 @@ from app.db.session import AsyncSessionLocal, engine
 from app.models.master import Product, ProductCategory, UnitOfMeasure, Warehouse, WarehouseType
 from app.models.production import DowntimeLog, DowntimeReason, ProductionOrder, ProductionOrderStatus
 from app.models.production_execution import ExecWorkOrder, ProdExecOrder
+from app.models.user import User
 from app.models.recipe import Recipe, RecipeStatus
 from app.services import production_service
 from app.services import production_execution_service as service
@@ -78,6 +79,18 @@ async def _order(db, suffix: str, status: str = "IN_PROGRESS") -> ProdExecOrder:
     return order
 
 
+async def _task_actor(db, suffix: str):
+    actor = User(
+        email=f"m08-t001-{suffix}@example.invalid",
+        username=f"m08-t001-{suffix}",
+        full_name=f"Synthetic M08 actor {suffix}",
+        hashed_password="test-only",
+    )
+    db.add(actor)
+    await db.flush()
+    return actor.id
+
+
 async def _work_order(
     db,
     parent: ProdExecOrder,
@@ -104,13 +117,16 @@ async def _seed_order_and_work_order(*, order_status="IN_PROGRESS", work_status=
     _require_task_database()
     suffix = uuid4().hex[:18]
     async with AsyncSessionLocal() as db:
+        actor_id = await _task_actor(db, suffix)
         order = await _order(db, suffix, order_status)
+        order.created_by = actor_id
         work_order = await _work_order(db, order, suffix, status=work_status)
         await db.commit()
         return order.id, work_order.id
 
 
 async def _seed_core_production_order(db, suffix: str, status: ProductionOrderStatus):
+    actor_id = await _task_actor(db, suffix)
     product = Product(
         sku=f"M08-T001-CORE-P-{suffix}", name=f"Synthetic core product {suffix}",
         category=ProductCategory.FOOD, uom=UnitOfMeasure.KG,
@@ -134,6 +150,7 @@ async def _seed_core_production_order(db, suffix: str, status: ProductionOrderSt
         planned_quantity=Decimal("10"),
         uom="KG",
         status=status,
+        created_by=actor_id,
         target_warehouse_id=warehouse.id,
         scheduled_start=datetime(2026, 10, 29, tzinfo=timezone.utc),
         scheduled_end=datetime(2026, 10, 30, tzinfo=timezone.utc),
@@ -176,11 +193,12 @@ async def test_work_order_patch_rejects_engine_owned_state_and_started_rows_are_
 
 @pytest.mark.asyncio
 async def test_work_order_cannot_complete_before_start_or_complete_twice():
-    _, work_order_id = await _seed_order_and_work_order(work_status="READY")
+    order_id, work_order_id = await _seed_order_and_work_order(work_status="READY")
     async with AsyncSessionLocal() as db:
+        actor_id = (await service.get_order(db, order_id)).created_by
         with pytest.raises(ValueError, match="IN_PROGRESS"):
             await service.complete_work_order(
-                db, work_order_id, Decimal("8"), Decimal("1"), Decimal("0"),
+                db, work_order_id, actor_id, Decimal("8"), Decimal("1"), Decimal("0"),
                 None, None, None, None, None, None, None,
             )
         await db.rollback()
@@ -190,14 +208,14 @@ async def test_work_order_cannot_complete_before_start_or_complete_twice():
         work_order.status = "IN_PROGRESS"
         await db.commit()
         completed = await service.complete_work_order(
-            db, work_order_id, Decimal("8"), Decimal("1"), Decimal("0"),
+            db, work_order_id, actor_id, Decimal("8"), Decimal("1"), Decimal("0"),
             None, None, None, None, None, None, None,
         )
         assert completed.status == "COMPLETED"
         completed_at = completed.completed_at
         with pytest.raises(ValueError, match="IN_PROGRESS"):
             await service.complete_work_order(
-                db, work_order_id, Decimal("7"), Decimal("2"), Decimal("0"),
+                db, work_order_id, actor_id, Decimal("7"), Decimal("2"), Decimal("0"),
                 None, None, None, None, None, None, None,
             )
         await db.rollback()
@@ -212,7 +230,9 @@ async def test_work_order_start_requires_parent_running_and_completed_predecesso
     _require_task_database()
     suffix = uuid4().hex[:18]
     async with AsyncSessionLocal() as db:
+        actor_id = await _task_actor(db, suffix)
         parent = await _order(db, suffix, "RELEASED")
+        parent.created_by = actor_id
         predecessor = await _work_order(db, parent, f"{suffix}-previous", status="IN_PROGRESS")
         current = await _work_order(
             db, parent, f"{suffix}-current", status="PENDING",
@@ -224,7 +244,7 @@ async def test_work_order_start_requires_parent_running_and_completed_predecesso
         current_id = current.id
         await db.commit()
         with pytest.raises(ValueError, match="Production order must be IN_PROGRESS"):
-            await service.start_work_order(db, current_id)
+            await service.start_work_order(db, current_id, actor_id)
         await db.rollback()
         await db.execute(
             update(ProdExecOrder)
@@ -233,12 +253,12 @@ async def test_work_order_start_requires_parent_running_and_completed_predecesso
         )
         await db.commit()
         with pytest.raises(ValueError, match="Preceding work order must be completed"):
-            await service.start_work_order(db, current_id)
+            await service.start_work_order(db, current_id, actor_id)
         await db.rollback()
         predecessor = await db.get(ExecWorkOrder, predecessor_id)
         predecessor.status = "COMPLETED"
         await db.commit()
-        started = await service.start_work_order(db, current_id)
+        started = await service.start_work_order(db, current_id, actor_id)
         assert started.status == "IN_PROGRESS"
         assert started.started_at is not None
 
@@ -259,7 +279,7 @@ async def test_dependency_from_another_production_order_is_rejected():
         current_id = current.id
         await db.commit()
         with pytest.raises(ValueError, match="Preceding work order must be completed"):
-            await service.start_work_order(db, current_id)
+            await service.start_work_order(db, current_id, uuid4())
         await db.rollback()
         persisted = await db.get(ExecWorkOrder, current_id)
         assert persisted.status == "PENDING"
@@ -345,7 +365,8 @@ async def test_concurrent_duplicate_release_allows_only_one_transition():
     async def attempt_release():
         async with AsyncSessionLocal() as db:
             try:
-                return await service.release_order(db, order_id)
+                order = await service.get_order(db, order_id)
+                return await service.release_order(db, order_id, order.created_by)
             except ValueError as exc:
                 await db.rollback()
                 return exc
@@ -370,7 +391,7 @@ async def test_completed_or_terminal_order_cannot_be_cancelled_again():
         await db.commit()
         for order_id in (completed_id, closed_id, cancelled_id):
             with pytest.raises(ValueError, match="cannot be cancelled"):
-                await service.cancel_order(db, order_id)
+                await service.cancel_order(db, order_id, uuid4())
             await db.rollback()
         assert (await service.get_order(db, completed_id)).status == "COMPLETED"
         assert (await service.get_order(db, closed_id)).status == "CLOSED"
@@ -433,11 +454,13 @@ async def test_core_production_order_terminal_cancel_is_rejected_and_active_canc
         downtime_id = downtime.id
         await db.commit()
         for order_id in (completed_id, cancelled_id):
+            blocked_order = await db.get(ProductionOrder, order_id)
             with pytest.raises(HTTPException) as denied:
-                await production_service.cancel_order(db, await db.get(ProductionOrder, order_id))
+                await production_service.cancel_order(db, blocked_order, blocked_order.created_by)
             assert getattr(denied.value, "status_code", None) == 422
             await db.rollback()
-        result = await production_service.cancel_order(db, await db.get(ProductionOrder, active_id))
+        active_order = await db.get(ProductionOrder, active_id)
+        result = await production_service.cancel_order(db, active_order, active_order.created_by)
         assert result.status == ProductionOrderStatus.CANCELLED
         await db.commit()
         persisted_downtime = await db.get(DowntimeLog, downtime_id)
@@ -445,7 +468,7 @@ async def test_core_production_order_terminal_cancel_is_rejected_and_active_canc
         assert persisted_downtime.duration_minutes is not None
         assert persisted_downtime.duration_minutes >= 0
         with pytest.raises(HTTPException) as repeated:
-            await production_service.cancel_order(db, await db.get(ProductionOrder, active_id))
+            await production_service.cancel_order(db, await db.get(ProductionOrder, active_id), active_order.created_by)
         assert getattr(repeated.value, "status_code", None) == 422
 
 
@@ -462,7 +485,7 @@ async def test_core_duplicate_release_serializes_on_the_order_row():
         async with AsyncSessionLocal() as db:
             order = await db.get(ProductionOrder, order_id)
             try:
-                result = await production_service.release_order(db, order)
+                result = await production_service.release_order(db, order, order.created_by)
                 await db.commit()
                 return result
             except HTTPException as exc:

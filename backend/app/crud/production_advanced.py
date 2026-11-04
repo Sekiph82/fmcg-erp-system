@@ -20,6 +20,11 @@ from app.models.production_advanced import (
     Shift, ProductionSchedule, TimeTracking, DowntimeEvent,
     AdvQCInspection, AdvQCResult, WasteRecord, BatchLot, LaborLog, OEERecord,
 )
+from app.services.production_transition_history import (
+    PRODUCTION_ORDER,
+    WORK_ORDER,
+    record_transition,
+)
 from app.schemas.production_advanced import (
     WorkCenterCreate, WorkCenterUpdate,
     RoutingCreate, RoutingUpdate, RoutingStepCreate,
@@ -223,7 +228,9 @@ async def get_work_order(db: AsyncSession, pk: UUID) -> Optional[WorkOrder]:
     )
     return r.scalar_one_or_none()
 
-async def create_work_order(db: AsyncSession, data: WorkOrderCreate) -> WorkOrder:
+async def create_work_order(
+    db: AsyncSession, data: WorkOrderCreate, actor_id: UUID
+) -> WorkOrder:
     parent = await _lock_work_order_parent(db, data.production_order_id)
     _require_parent_status(parent, {ProductionOrderStatus.PLANNED}, "create", require_unapproved=True)
     obj = WorkOrder(
@@ -232,6 +239,16 @@ async def create_work_order(db: AsyncSession, data: WorkOrderCreate) -> WorkOrde
     )
     db.add(obj)
     await db.flush()
+    record_transition(
+        db,
+        entity_type=WORK_ORDER,
+        entity_id=obj.id,
+        parent_entity_type=PRODUCTION_ORDER,
+        parent_entity_id=parent.id,
+        action="CREATED",
+        actor_id=actor_id,
+        to_status=obj.status,
+    )
     await db.refresh(obj)
     return obj
 
@@ -246,22 +263,46 @@ async def update_work_order(db: AsyncSession, obj: WorkOrder, data: WorkOrderUpd
     await db.refresh(obj)
     return obj
 
-async def delete_work_order(db: AsyncSession, obj: WorkOrder) -> None:
+async def delete_work_order(db: AsyncSession, obj: WorkOrder, actor_id: UUID) -> None:
     parent, obj = await _lock_work_order_context(db, obj.id)
     _require_parent_status(parent, {ProductionOrderStatus.PLANNED}, "delete", require_unapproved=True)
     if obj.status != WorkOrderStatus.PLANNED:
         raise ValueError(f"Work order in status {obj.status.value} cannot be deleted")
+    record_transition(
+        db,
+        entity_type=WORK_ORDER,
+        entity_id=obj.id,
+        parent_entity_type=PRODUCTION_ORDER,
+        parent_entity_id=parent.id,
+        action="DELETED",
+        actor_id=actor_id,
+        from_status=obj.status,
+    )
     await db.delete(obj)
     await db.flush()
 
 
-async def start_work_order(db: AsyncSession, work_order_id: UUID) -> WorkOrder:
+async def start_work_order(
+    db: AsyncSession, work_order_id: UUID, actor_id: UUID
+) -> WorkOrder:
     parent, work_order = await _lock_work_order_context(db, work_order_id)
     _require_parent_status(parent, {ProductionOrderStatus.IN_PROGRESS}, "start")
     if work_order.status != WorkOrderStatus.PLANNED:
         raise ValueError(f"Cannot start work order in status '{work_order.status.value}'")
+    previous_status = work_order.status
     work_order.status = WorkOrderStatus.IN_PROGRESS
     work_order.start_time = datetime.now(timezone.utc)
+    record_transition(
+        db,
+        entity_type=WORK_ORDER,
+        entity_id=work_order.id,
+        parent_entity_type=PRODUCTION_ORDER,
+        parent_entity_id=parent.id,
+        action="STARTED",
+        actor_id=actor_id,
+        from_status=previous_status,
+        to_status=work_order.status,
+    )
     await db.flush()
     await db.refresh(work_order)
     return work_order
@@ -270,6 +311,7 @@ async def start_work_order(db: AsyncSession, work_order_id: UUID) -> WorkOrder:
 async def complete_work_order(
     db: AsyncSession,
     work_order_id: UUID,
+    actor_id: UUID,
     actual_quantity: Optional[Decimal] = None,
 ) -> WorkOrder:
     parent, work_order = await _lock_work_order_context(db, work_order_id)
@@ -279,10 +321,22 @@ async def complete_work_order(
     if actual_quantity is not None and actual_quantity <= 0:
         raise ValueError("actual_quantity must be positive")
 
+    previous_status = work_order.status
     work_order.status = WorkOrderStatus.COMPLETED
     work_order.end_time = datetime.now(timezone.utc)
     if actual_quantity is not None:
         work_order.actual_quantity = actual_quantity
+    record_transition(
+        db,
+        entity_type=WORK_ORDER,
+        entity_id=work_order.id,
+        parent_entity_type=PRODUCTION_ORDER,
+        parent_entity_id=parent.id,
+        action="COMPLETED",
+        actor_id=actor_id,
+        from_status=previous_status,
+        to_status=work_order.status,
+    )
     await db.flush()
     await db.refresh(work_order)
     return work_order

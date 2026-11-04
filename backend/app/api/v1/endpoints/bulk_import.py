@@ -756,6 +756,11 @@ from app.schemas.production_advanced import (
 )
 from app.models.production import ProductionOrder as _PO, ProductionOrderStatus as _POStatus
 from app.models.production_advanced import WorkOrderStatus as _WorkOrderStatus
+from app.services.production_transition_history import (
+    PRODUCTION_ORDER as _PRODUCTION_ORDER,
+    WORK_ORDER as _WORK_ORDER,
+    record_transition as _record_production_transition,
+)
 
 
 class WorkCenterImportAdapter(BaseImportAdapter):
@@ -779,7 +784,6 @@ class WorkCenterImportAdapter(BaseImportAdapter):
         db.add(obj)
         await db.flush()
         return obj
-
 
 class _RoutingImport(BaseModel):
     routing_id:  str
@@ -821,7 +825,6 @@ class RoutingImportAdapter(BaseImportAdapter):
         db.add(obj)
         await db.flush()
         return obj
-
 
 class _WorkOrderImport(BaseModel):
     work_order_id:    str
@@ -909,6 +912,22 @@ class WorkOrderImportAdapter(BaseImportAdapter):
         db.add(obj)
         await db.flush()
         return obj
+
+    async def after_insert(
+        self, record: Any, payload: dict, actor: Any, db: AsyncSession
+    ) -> None:
+        if actor is None or getattr(actor, "id", None) is None:
+            raise ValueError("Authenticated actor required for production work-order import history")
+        _record_production_transition(
+            db,
+            entity_type=_WORK_ORDER,
+            entity_id=record.id,
+            parent_entity_type=_PRODUCTION_ORDER,
+            parent_entity_id=record.production_order_id,
+            action="CREATED_BY_IMPORT",
+            actor_id=actor.id,
+            to_status=record.status,
+        )
 
 
 class _ScheduleImport(BaseModel):

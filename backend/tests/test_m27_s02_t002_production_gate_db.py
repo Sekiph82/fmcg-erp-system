@@ -16,6 +16,7 @@ from sqlalchemy import func, select
 from app.db.session import AsyncSessionLocal, engine
 from app.models.master import Product, ProductCategory, UnitOfMeasure, Warehouse, WarehouseType
 from app.models.production import FinishedGoodsReceipt, ProductionOrder, ProductionOrderStatus
+from app.models.user import User
 from app.models.quality import (
     QCDecision, QCInspection, QCStatus, QCType, QCTemplate, QCTemplateParameter, ParameterType,
 )
@@ -90,6 +91,14 @@ async def test_configured_production_gates_block_transitions_until_each_template
         )
         db.add_all([product, warehouse])
         await db.flush()
+        actor = User(
+            email=f"m27-t002-{suffix}@example.invalid",
+            username=f"m27-t002-{suffix}",
+            full_name=f"Synthetic M27 actor {suffix}",
+            hashed_password="test-only",
+        )
+        db.add(actor)
+        await db.flush()
         recipe = Recipe(
             product_id=product.id, version="1", name=f"Synthetic approved recipe {suffix}",
             status=RecipeStatus.APPROVED, is_active=True,
@@ -100,6 +109,7 @@ async def test_configured_production_gates_block_transitions_until_each_template
             order_no=f"M27-T002-PO-{suffix}", product_id=product.id, recipe_id=recipe.id,
             planned_quantity=Decimal("2"), uom="KG", status=ProductionOrderStatus.PLANNED,
             target_warehouse_id=warehouse.id,
+            created_by=actor.id,
             scheduled_start=datetime.now(timezone.utc),
             scheduled_end=datetime.now(timezone.utc),
             batch_no=f"M27-T002-B-{suffix}",
@@ -133,7 +143,7 @@ async def test_configured_production_gates_block_transitions_until_each_template
         await db.commit()
 
         with pytest.raises(HTTPException) as release_error:
-            await production_service.release_order(db, order)
+            await production_service.release_order(db, order, actor.id)
         assert release_error.value.status_code == 422
         assert "accepted, passed inspection" in release_error.value.detail
         await db.rollback()
@@ -153,7 +163,7 @@ async def test_configured_production_gates_block_transitions_until_each_template
         await ensure_production_quality_gates_pass(
             db, order, PRODUCTION_RELEASE_GATE_TRIGGER_EVENT, date.today()
         )
-        await production_service.release_order(db, order)
+        await production_service.release_order(db, order, actor.id)
         assert order.status == ProductionOrderStatus.RELEASED
 
         order.status = ProductionOrderStatus.IN_PROGRESS

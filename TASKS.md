@@ -10,9 +10,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M22 — Production Order / Work Order
 - Current Sprint: M22.S01 — Order Lifecycle
-- Current Task: M22.S01.T003 — Approval/release/cancel/close semantics
+- Current Task: M22.S01.T004 — Immutable audit history for critical transitions
 - Current Task Status: COMPLETE
-- Next Task/Action: M22.S01.T004 — Immutable audit history for critical transitions
+- Next Task/Action: M22.S02.T001 — Routing/work-center operation sequencing
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -677,7 +677,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
   Evidence: Canonical and parallel execution transitions are guarded with parent-first locks; unfinished child operations block parent completion; schema, CSV import, and shop-floor bypasses are guarded; paused-order resume is exposed. Independent read-only review found no blocking issue; git diff --check passed; automated tests were not run, and runtime acceptance is not claimed. See coordination/sessions/M22.S01.T002/CODEX_LOG_V01.md.
 - [x] M22.S01.T003 — Approval/release/cancel/close semantics
   Evidence: Added parent approval/release guards, cancellation/close semantics, authenticated actor and scoped permission checks, schema migration, canonical/exec work-order and import locks, material movement/reconciliation gates, split/merge/rework protections, and UI approval controls. Independent read-only review found no remaining blockers; git diff --check passed. Automated tests, type-check/build, and migration execution were not run, and runtime/database acceptance is not claimed. See coordination/sessions/M22.S01.T003/CLAUDE_LOG_V01.md.
-- [ ] M22.S01.T004 — Immutable audit history for critical transitions
+- [x] M22.S01.T004 — Immutable audit history for critical transitions
+  Evidence: Added a PostgreSQL append-only production transition ledger with monotonic ordering, actor identity snapshots, mutation-blocking triggers, transactional event writes across canonical and parallel order/operation paths, MRP/MPS/import/shop-floor coverage, scoped history endpoints, and production detail timelines. Independent read-only review found no remaining blockers; git diff --check passed. Automated tests, typecheck/build, migration execution, and runtime acceptance are deferred to milestone verification; legacy history was not fabricated or backfilled. See coordination/sessions/M22.S01.T004/CLAUDE_LOG_V01.md.
 
 ## M22.S02 — Execution Structure
 - [ ] M22.S02.T001 — Routing/work-center operation sequencing

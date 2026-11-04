@@ -9,6 +9,7 @@ from app.models.production import (
     ProductionOrder, MaterialConsumption, FinishedGoodsReceipt, DowntimeLog,
     ProductionPlanStatus, ProductionOrderStatus,
 )
+from app.services.production_transition_history import PRODUCTION_ORDER, record_transition
 from app.schemas.production import (
     ProductionPlanCreate, ProductionPlanUpdate,
     PlanLineCreate, ProductionOrderCreate,
@@ -138,6 +139,16 @@ async def create_order(
     obj = ProductionOrder(**data.model_dump(), created_by=user_id)
     db.add(obj)
     await db.flush()
+    record_transition(
+        db,
+        entity_type=PRODUCTION_ORDER,
+        entity_id=obj.id,
+        parent_entity_type=PRODUCTION_ORDER,
+        parent_entity_id=obj.id,
+        action="CREATED",
+        actor_id=user_id,
+        to_status=obj.status,
+    )
     await db.refresh(obj)
     return obj
 

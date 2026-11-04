@@ -51,6 +51,12 @@ export default function OrderDetailPage() {
     enabled: !!id,
   });
 
+  const { data: transitionHistory = [], isLoading: historyLoading } = useQuery({
+    queryKey: ["production-order-transition-history", id],
+    queryFn: () => productionApi.getOrderTransitionHistory(id),
+    enabled: !!id,
+  });
+
   const { data: warehouses = [] } = useQuery({
     queryKey: ["warehouses"],
     queryFn: () => warehousesApi.list(0, 100),
@@ -58,7 +64,10 @@ export default function OrderDetailPage() {
 
   const rmWarehouses = warehouses.filter((w) => w.warehouse_type === "RAW_MATERIAL");
 
-  const invalidate = () => qc.invalidateQueries({ queryKey: ["production-order", id] });
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ["production-order", id] });
+    qc.invalidateQueries({ queryKey: ["production-order-transition-history", id] });
+  };
 
   const approve = useMutation({
     mutationFn: () => productionApi.approveOrder(id),
@@ -345,6 +354,31 @@ export default function OrderDetailPage() {
           ]}
         />
       </div>
+
+      <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <h2 className="text-lg font-semibold text-gray-800 mb-3">Immutable transition history</h2>
+        {historyLoading ? <p className="text-sm text-gray-400">Loading history…</p> : transitionHistory.length === 0 ? (
+          <p className="text-sm text-gray-500">No recorded transitions yet. History starts with events created after the audit-history migration; earlier events are not backfilled.</p>
+        ) : (
+          <ol className="divide-y divide-gray-100">
+            {transitionHistory.map((event) => (
+              <li key={event.id} className="py-3 grid gap-1 md:grid-cols-[1fr_auto]">
+                <div>
+                  <p className="text-sm font-medium text-gray-800">{event.action.replace(/_/g, " ")}</p>
+                  <p className="text-xs text-gray-500">
+                    {event.entity_type.replace(/_/g, " ")} · {event.from_status || "—"} → {event.to_status || "—"}
+                  </p>
+                  {event.entity_id !== event.parent_entity_id && <p className="text-xs font-mono text-gray-400">Operation: {event.entity_id}</p>}
+                </div>
+                <div className="text-xs text-gray-500 md:text-right">
+                  <p>{new Date(event.created_at).toLocaleString()}</p>
+                  <p>Actor: {event.actor_label}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        )}
+      </section>
 
       {/* Complete Modal */}
       <Modal open={completeOpen} onClose={() => setCompleteOpen(false)} title="Complete Production Order">

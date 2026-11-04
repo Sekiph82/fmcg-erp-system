@@ -16,6 +16,7 @@ from app.models.shop_floor import (
     SFSession, WOActivityLog, SFDowntimeLog,
     ShiftHandover, SupervisorOverride, SFAIRec,
 )
+from app.services.production_transition_history import record_shop_floor_transition
 from app.models.production_execution import ExecWorkOrder, ProdExecOrder
 
 
@@ -277,9 +278,15 @@ async def start_work_order(
             or predecessor.status != "COMPLETED"
         ):
             raise ValueError("Preceding work order must be completed before this step can start")
+    previous_status = wo.status
     wo.status = "IN_PROGRESS"
     if not wo.started_at:
         wo.started_at = _now()
+    await record_shop_floor_transition(
+        db, session_id=session_id, entity_id=wo.id,
+        parent_entity_id=parent.id, action="SHOP_FLOOR_STARTED",
+        from_status=previous_status, to_status=wo.status,
+    )
     await _log_event(
         db, wo_id, wo.production_order_id, "START",
         session_id=session_id, operator_name=operator_name, line_id=line_id,
@@ -306,7 +313,13 @@ async def pause_work_order(
     _require_parent_in_progress(parent)
     if wo.status != "IN_PROGRESS":
         raise ValueError("Work order must be IN_PROGRESS to pause")
+    previous_status = wo.status
     wo.status = "PAUSED"
+    await record_shop_floor_transition(
+        db, session_id=session_id, entity_id=wo.id,
+        parent_entity_id=parent.id, action="SHOP_FLOOR_PAUSED",
+        from_status=previous_status, to_status=wo.status,
+    )
     await _log_event(
         db, wo_id, wo.production_order_id, "PAUSE",
         session_id=session_id, operator_name=operator_name,
@@ -327,7 +340,13 @@ async def resume_work_order(
     _require_parent_in_progress(parent)
     if wo.status not in {"PAUSED"}:
         raise ValueError("Work order must be PAUSED to resume")
+    previous_status = wo.status
     wo.status = "IN_PROGRESS"
+    await record_shop_floor_transition(
+        db, session_id=session_id, entity_id=wo.id,
+        parent_entity_id=parent.id, action="SHOP_FLOOR_RESUMED",
+        from_status=previous_status, to_status=wo.status,
+    )
     await _log_event(
         db, wo_id, wo.production_order_id, "RESUME",
         session_id=session_id, operator_name=operator_name,
@@ -408,6 +427,7 @@ async def finish_work_order(
     _require_parent_in_progress(parent)
     if wo.status not in {"IN_PROGRESS", "PAUSED"}:
         raise ValueError("Work order must be IN_PROGRESS or PAUSED to finish")
+    previous_status = wo.status
     wo.status = "COMPLETED"
     wo.completed_qty = qty_good
     wo.scrap_qty = qty_scrap
@@ -415,6 +435,11 @@ async def finish_work_order(
     wo.completed_at = _now()
     if run_time_actual is not None:
         wo.run_time_actual = run_time_actual
+    await record_shop_floor_transition(
+        db, session_id=session_id, entity_id=wo.id,
+        parent_entity_id=parent.id, action="SHOP_FLOOR_COMPLETED",
+        from_status=previous_status, to_status=wo.status,
+    )
 
     await _log_event(
         db, wo_id, wo.production_order_id, "FINISH",
@@ -430,7 +455,13 @@ async def finish_work_order(
         .where(ExecWorkOrder.status == "PENDING")
     )
     for nwo in next_result.scalars().all():
+        previous_status = nwo.status
         nwo.status = "READY"
+        await record_shop_floor_transition(
+            db, session_id=session_id, entity_id=nwo.id,
+            parent_entity_id=parent.id, action="SHOP_FLOOR_READY",
+            from_status=previous_status, to_status=nwo.status,
+        )
 
     if session_id:
         s_result = await db.execute(select(SFSession).where(SFSession.id == session_id))

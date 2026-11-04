@@ -16,6 +16,11 @@ from app.models.production_execution import (
     ProdExecOrder, ExecWorkOrder, ExecOrderMaterial,
     BatchGenealogy, ExecSplitMergeLog,
 )
+from app.services.production_transition_history import (
+    EXEC_PRODUCTION_ORDER,
+    EXEC_WORK_ORDER,
+    record_transition,
+)
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
@@ -104,7 +109,9 @@ async def _load_order(
 
 # ── Work order generation from routing ────────────────────────────────────────
 
-async def _generate_work_orders(db: AsyncSession, order: ProdExecOrder) -> None:
+async def _generate_work_orders(
+    db: AsyncSession, order: ProdExecOrder, actor_id: uuid.UUID
+) -> None:
     if not order.routing_id:
         return
 
@@ -136,6 +143,16 @@ async def _generate_work_orders(db: AsyncSession, order: ProdExecOrder) -> None:
         )
         db.add(wo)
         await db.flush()
+        record_transition(
+            db,
+            entity_type=EXEC_WORK_ORDER,
+            entity_id=wo.id,
+            parent_entity_type=EXEC_PRODUCTION_ORDER,
+            parent_entity_id=order.id,
+            action="CREATED",
+            actor_id=actor_id,
+            to_status=wo.status,
+        )
         prev_wo_id = wo.id
 
 
@@ -202,7 +219,17 @@ async def create_order(db: AsyncSession, data: dict, user_id: uuid.UUID) -> Prod
     await db.flush()
 
     # Generate work orders from routing
-    await _generate_work_orders(db, order)
+    record_transition(
+        db,
+        entity_type=EXEC_PRODUCTION_ORDER,
+        entity_id=order.id,
+        parent_entity_type=EXEC_PRODUCTION_ORDER,
+        parent_entity_id=order.id,
+        action="CREATED",
+        actor_id=user_id,
+        to_status=order.status,
+    )
+    await _generate_work_orders(db, order, user_id)
 
     # Populate materials from BOM
     await _populate_materials_from_bom(db, order)
@@ -245,7 +272,9 @@ async def update_order(db: AsyncSession, order_id: uuid.UUID, data: dict) -> Pro
 
 # ── Lifecycle ──────────────────────────────────────────────────────────────────
 
-async def advance_order(db: AsyncSession, order_id: uuid.UUID) -> ProdExecOrder:
+async def advance_order(
+    db: AsyncSession, order_id: uuid.UUID, user_id: uuid.UUID
+) -> ProdExecOrder:
     order = await _load_order(db, order_id, for_update=True)
     next_status = LIFECYCLE_FLOW.get(order.status)
     if not next_status:
@@ -254,26 +283,47 @@ async def advance_order(db: AsyncSession, order_id: uuid.UUID) -> ProdExecOrder:
     if next_status == "COMPLETED":
         raise ValueError("Use the complete endpoint with completion quantities to finish an order")
     if next_status == "RELEASED":
-        return await release_order(db, order_id)
+        return await release_order(db, order_id, user_id)
     if next_status == "IN_PROGRESS":
-        return await start_order(db, order_id)
+        return await start_order(db, order_id, user_id)
     if next_status == "CLOSED":
-        return await close_order(db, order_id)
+        return await close_order(db, order_id, user_id)
 
     # DRAFT -> PLANNED is the only status-only edge. Operational transitions
     # delegate to their dedicated guarded actions above.
     _require_order_transition(order, next_status)
+    previous_status = order.status
     order.status = next_status
+    record_transition(
+        db,
+        entity_type=EXEC_PRODUCTION_ORDER,
+        entity_id=order.id,
+        parent_entity_type=EXEC_PRODUCTION_ORDER,
+        parent_entity_id=order.id,
+        action="PLANNED",
+        actor_id=user_id,
+        from_status=previous_status,
+        to_status=order.status,
+    )
     await db.commit()
     return await _load_order(db, order_id)
 
 
-async def release_order(db: AsyncSession, order_id: uuid.UUID) -> ProdExecOrder:
+async def release_order(
+    db: AsyncSession, order_id: uuid.UUID, user_id: uuid.UUID
+) -> ProdExecOrder:
     order = await _load_order(db, order_id, for_update=True)
     _require_order_transition(order, "RELEASED")
     if order.approved_by is None or order.approved_at is None:
         raise ValueError("Cannot release: production order approval is required first")
+    previous_status = order.status
     order.status = "RELEASED"
+    record_transition(
+        db, entity_type=EXEC_PRODUCTION_ORDER, entity_id=order.id,
+        parent_entity_type=EXEC_PRODUCTION_ORDER, parent_entity_id=order.id,
+        action="RELEASED", actor_id=user_id,
+        from_status=previous_status, to_status=order.status,
+    )
     await db.commit()
     return await _load_order(db, order_id)
 
@@ -292,31 +342,64 @@ async def approve_order(
         raise ValueError("The order creator cannot approve the same production order")
     order.approved_by = user_id
     order.approved_at = _now()
+    record_transition(
+        db, entity_type=EXEC_PRODUCTION_ORDER, entity_id=order.id,
+        parent_entity_type=EXEC_PRODUCTION_ORDER, parent_entity_id=order.id,
+        action="APPROVED", actor_id=user_id,
+        from_status=order.status, to_status=order.status,
+    )
     await db.commit()
     return await _load_order(db, order_id)
 
 
-async def start_order(db: AsyncSession, order_id: uuid.UUID) -> ProdExecOrder:
+async def start_order(
+    db: AsyncSession, order_id: uuid.UUID, user_id: uuid.UUID
+) -> ProdExecOrder:
     order = await _load_order(db, order_id, for_update=True)
     _require_order_transition(order, "IN_PROGRESS")
+    previous_status = order.status
     order.status = "IN_PROGRESS"
     order.actual_start = _now()
+    record_transition(
+        db, entity_type=EXEC_PRODUCTION_ORDER, entity_id=order.id,
+        parent_entity_type=EXEC_PRODUCTION_ORDER, parent_entity_id=order.id,
+        action="STARTED", actor_id=user_id,
+        from_status=previous_status, to_status=order.status,
+    )
     await db.commit()
     return await _load_order(db, order_id)
 
 
-async def pause_order(db: AsyncSession, order_id: uuid.UUID) -> ProdExecOrder:
+async def pause_order(
+    db: AsyncSession, order_id: uuid.UUID, user_id: uuid.UUID
+) -> ProdExecOrder:
     order = await _load_order(db, order_id, for_update=True)
     _require_order_transition(order, "PAUSED")
+    previous_status = order.status
     order.status = "PAUSED"
+    record_transition(
+        db, entity_type=EXEC_PRODUCTION_ORDER, entity_id=order.id,
+        parent_entity_type=EXEC_PRODUCTION_ORDER, parent_entity_id=order.id,
+        action="PAUSED", actor_id=user_id,
+        from_status=previous_status, to_status=order.status,
+    )
     await db.commit()
     return await _load_order(db, order_id)
 
 
-async def resume_order(db: AsyncSession, order_id: uuid.UUID) -> ProdExecOrder:
+async def resume_order(
+    db: AsyncSession, order_id: uuid.UUID, user_id: uuid.UUID
+) -> ProdExecOrder:
     order = await _load_order(db, order_id, for_update=True)
     _require_order_transition(order, "IN_PROGRESS")
+    previous_status = order.status
     order.status = "IN_PROGRESS"
+    record_transition(
+        db, entity_type=EXEC_PRODUCTION_ORDER, entity_id=order.id,
+        parent_entity_type=EXEC_PRODUCTION_ORDER, parent_entity_id=order.id,
+        action="RESUMED", actor_id=user_id,
+        from_status=previous_status, to_status=order.status,
+    )
     await db.commit()
     return await _load_order(db, order_id)
 
@@ -324,6 +407,7 @@ async def resume_order(db: AsyncSession, order_id: uuid.UUID) -> ProdExecOrder:
 async def complete_order(
     db: AsyncSession,
     order_id: uuid.UUID,
+    user_id: uuid.UUID,
     completed_qty: Decimal,
     scrap_qty: Decimal = Decimal("0"),
     remarks: Optional[str] = None,
@@ -345,27 +429,52 @@ async def complete_order(
         )
     order.completed_qty = completed_qty
     order.scrap_qty = scrap_qty
+    previous_status = order.status
     order.status = "COMPLETED"
     order.actual_end = _now()
     if remarks:
         order.remarks = remarks
     await _accumulate_costs(db, order)
+    record_transition(
+        db, entity_type=EXEC_PRODUCTION_ORDER, entity_id=order.id,
+        parent_entity_type=EXEC_PRODUCTION_ORDER, parent_entity_id=order.id,
+        action="COMPLETED", actor_id=user_id,
+        from_status=previous_status, to_status=order.status,
+    )
     await db.commit()
     return await _load_order(db, order_id)
 
 
-async def close_order(db: AsyncSession, order_id: uuid.UUID) -> ProdExecOrder:
+async def close_order(
+    db: AsyncSession, order_id: uuid.UUID, user_id: uuid.UUID
+) -> ProdExecOrder:
     order = await _load_order(db, order_id, for_update=True)
     _require_order_transition(order, "CLOSED")
+    previous_status = order.status
     order.status = "CLOSED"
+    record_transition(
+        db, entity_type=EXEC_PRODUCTION_ORDER, entity_id=order.id,
+        parent_entity_type=EXEC_PRODUCTION_ORDER, parent_entity_id=order.id,
+        action="CLOSED", actor_id=user_id,
+        from_status=previous_status, to_status=order.status,
+    )
     await db.commit()
     return await _load_order(db, order_id)
 
 
-async def cancel_order(db: AsyncSession, order_id: uuid.UUID) -> ProdExecOrder:
+async def cancel_order(
+    db: AsyncSession, order_id: uuid.UUID, user_id: uuid.UUID
+) -> ProdExecOrder:
     order = await _load_order(db, order_id, for_update=True)
     _require_order_transition(order, "CANCELLED")
+    previous_status = order.status
     order.status = "CANCELLED"
+    record_transition(
+        db, entity_type=EXEC_PRODUCTION_ORDER, entity_id=order.id,
+        parent_entity_type=EXEC_PRODUCTION_ORDER, parent_entity_id=order.id,
+        action="CANCELLED", actor_id=user_id,
+        from_status=previous_status, to_status=order.status,
+    )
     await db.commit()
     return await _load_order(db, order_id)
 
@@ -447,7 +556,12 @@ async def split_order(
         )
         db.add(child)
         await db.flush()
-        await _generate_work_orders(db, child)
+        record_transition(
+            db, entity_type=EXEC_PRODUCTION_ORDER, entity_id=child.id,
+            parent_entity_type=EXEC_PRODUCTION_ORDER, parent_entity_id=child.id,
+            action="CREATED_BY_SPLIT", actor_id=user_id, to_status=child.status,
+        )
+        await _generate_work_orders(db, child, user_id)
         child_ids.append(child.id)
         child_order_no_list.append(str(child.id))
 
@@ -462,7 +576,14 @@ async def split_order(
         performed_by=user_id,
     )
     db.add(log)
+    previous_status = order.status
     order.status = "CANCELLED"
+    record_transition(
+        db, entity_type=EXEC_PRODUCTION_ORDER, entity_id=order.id,
+        parent_entity_type=EXEC_PRODUCTION_ORDER, parent_entity_id=order.id,
+        action="SPLIT_SOURCE_CANCELLED", actor_id=user_id,
+        from_status=previous_status, to_status=order.status,
+    )
     await db.commit()
 
     results = []
@@ -531,7 +652,12 @@ async def merge_orders(
     )
     db.add(merged)
     await db.flush()
-    await _generate_work_orders(db, merged)
+    record_transition(
+        db, entity_type=EXEC_PRODUCTION_ORDER, entity_id=merged.id,
+        parent_entity_type=EXEC_PRODUCTION_ORDER, parent_entity_id=merged.id,
+        action="CREATED_BY_MERGE", actor_id=user_id, to_status=merged.status,
+    )
+    await _generate_work_orders(db, merged, user_id)
 
     for source in orders:
         db.add(
@@ -547,7 +673,14 @@ async def merge_orders(
         )
 
     for o in orders:
+        previous_status = o.status
         o.status = "CANCELLED"
+        record_transition(
+            db, entity_type=EXEC_PRODUCTION_ORDER, entity_id=o.id,
+            parent_entity_type=EXEC_PRODUCTION_ORDER, parent_entity_id=o.id,
+            action="MERGE_SOURCE_CANCELLED", actor_id=user_id,
+            from_status=previous_status, to_status=o.status,
+        )
 
     await db.commit()
     return await _load_order(db, merged.id)
@@ -592,8 +725,19 @@ async def create_rework_order(
     )
     db.add(rework)
     await db.flush()
-    await _generate_work_orders(db, rework)
+    record_transition(
+        db, entity_type=EXEC_PRODUCTION_ORDER, entity_id=rework.id,
+        parent_entity_type=EXEC_PRODUCTION_ORDER, parent_entity_id=rework.id,
+        action="REWORK_CREATED", actor_id=user_id, to_status=rework.status,
+    )
+    await _generate_work_orders(db, rework, user_id)
     order.rework_qty = (order.rework_qty or Decimal("0")) + qty
+    record_transition(
+        db, entity_type=EXEC_PRODUCTION_ORDER, entity_id=order.id,
+        parent_entity_type=EXEC_PRODUCTION_ORDER, parent_entity_id=order.id,
+        action="REWORK_ORDER_CREATED", actor_id=user_id,
+        from_status=order.status, to_status=order.status,
+    )
     await db.commit()
     return await _load_order(db, rework.id)
 
@@ -690,6 +834,7 @@ async def add_work_order(
     db: AsyncSession,
     order_id: uuid.UUID,
     data: dict,
+    user_id: uuid.UUID,
 ) -> ExecWorkOrder:
     parent = await _load_order(db, order_id, for_update=True)
     _require_order_unapproved_for_planning_changes(parent)
@@ -707,12 +852,20 @@ async def add_work_order(
             raise ValueError("Work-order dependency must be an earlier step on the same production order")
     wo = ExecWorkOrder(production_order_id=order_id, **data, status="PENDING")
     db.add(wo)
+    await db.flush()
+    record_transition(
+        db, entity_type=EXEC_WORK_ORDER, entity_id=wo.id,
+        parent_entity_type=EXEC_PRODUCTION_ORDER, parent_entity_id=parent.id,
+        action="CREATED", actor_id=user_id, to_status=wo.status,
+    )
     await db.commit()
     await db.refresh(wo)
     return wo
 
 
-async def start_work_order(db: AsyncSession, wo_id: uuid.UUID) -> ExecWorkOrder:
+async def start_work_order(
+    db: AsyncSession, wo_id: uuid.UUID, user_id: uuid.UUID
+) -> ExecWorkOrder:
     parent_id_result = await db.execute(
         select(ExecWorkOrder.production_order_id).where(ExecWorkOrder.id == wo_id)
     )
@@ -748,8 +901,15 @@ async def start_work_order(db: AsyncSession, wo_id: uuid.UUID) -> ExecWorkOrder:
             or predecessor.status != "COMPLETED"
         ):
             raise ValueError("Preceding work order must be completed before this step can start")
+    previous_status = wo.status
     wo.status = "IN_PROGRESS"
     wo.started_at = _now()
+    record_transition(
+        db, entity_type=EXEC_WORK_ORDER, entity_id=wo.id,
+        parent_entity_type=EXEC_PRODUCTION_ORDER, parent_entity_id=parent.id,
+        action="STARTED", actor_id=user_id,
+        from_status=previous_status, to_status=wo.status,
+    )
     await db.commit()
     await db.refresh(wo)
     return wo
@@ -758,6 +918,7 @@ async def start_work_order(db: AsyncSession, wo_id: uuid.UUID) -> ExecWorkOrder:
 async def complete_work_order(
     db: AsyncSession,
     wo_id: uuid.UUID,
+    user_id: uuid.UUID,
     completed_qty: Decimal,
     scrap_qty: Decimal,
     rework_qty: Decimal,
@@ -791,6 +952,7 @@ async def complete_work_order(
         raise ValueError("Work order changed production order during transition")
     if parent.status != "IN_PROGRESS":
         raise ValueError("Production order must be IN_PROGRESS to complete a work order")
+    previous_status = wo.status
     wo.status = "COMPLETED"
     wo.completed_qty = completed_qty
     wo.scrap_qty = scrap_qty
@@ -803,6 +965,12 @@ async def complete_work_order(
     wo.qc_passed = qc_passed
     wo.notes = notes
     wo.completed_at = _now()
+    record_transition(
+        db, entity_type=EXEC_WORK_ORDER, entity_id=wo.id,
+        parent_entity_type=EXEC_PRODUCTION_ORDER, parent_entity_id=parent.id,
+        action="COMPLETED", actor_id=user_id,
+        from_status=previous_status, to_status=wo.status,
+    )
 
     # Unblock next work order in chain
     next_result = await db.execute(
@@ -812,7 +980,14 @@ async def complete_work_order(
     )
     next_wos = next_result.scalars().all()
     for nwo in next_wos:
+        previous_status = nwo.status
         nwo.status = "READY"
+        record_transition(
+            db, entity_type=EXEC_WORK_ORDER, entity_id=nwo.id,
+            parent_entity_type=EXEC_PRODUCTION_ORDER, parent_entity_id=parent.id,
+            action="READY", actor_id=user_id,
+            from_status=previous_status, to_status=nwo.status,
+        )
 
     await db.commit()
     await db.refresh(wo)

@@ -47,6 +47,7 @@ from app.schemas.production import (
 from app.crud import production as crud
 from app.services.inventory_locking import lot_identity, lock_inventory_identity, stock_identity
 from app.services import quality_service
+from app.services.production_transition_history import PRODUCTION_ORDER, record_transition
 
 
 # ── Internal helpers ──────────────────────────────────────────────────────────
@@ -367,12 +368,23 @@ async def approve_order(
 
     order.approved_by = user_id
     order.approved_at = _now()
+    record_transition(
+        db,
+        entity_type=PRODUCTION_ORDER,
+        entity_id=order.id,
+        parent_entity_type=PRODUCTION_ORDER,
+        parent_entity_id=order.id,
+        action="APPROVED",
+        actor_id=user_id,
+        from_status=order.status,
+        to_status=order.status,
+    )
     await db.flush()
     await db.refresh(order)
     return order
 
 async def release_order(
-    db: AsyncSession, order: ProductionOrder, user_id: Optional[uuid.UUID] = None
+    db: AsyncSession, order: ProductionOrder, user_id: uuid.UUID
 ) -> ProductionOrder:
     order = await _lock_order_for_transition(db, order.id)
     _require_order_transition(order, ProductionOrderStatus.RELEASED)
@@ -400,27 +412,54 @@ async def release_order(
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
+    previous_status = order.status
     order.status = ProductionOrderStatus.RELEASED
+    record_transition(
+        db,
+        entity_type=PRODUCTION_ORDER,
+        entity_id=order.id,
+        parent_entity_type=PRODUCTION_ORDER,
+        parent_entity_id=order.id,
+        action="RELEASED",
+        actor_id=user_id,
+        from_status=previous_status,
+        to_status=order.status,
+    )
     await db.flush()
     await db.refresh(order)
     return order
 
 
 async def start_order(
-    db: AsyncSession, order: ProductionOrder, actual_start: Optional[datetime] = None
+    db: AsyncSession,
+    order: ProductionOrder,
+    actual_start: Optional[datetime],
+    user_id: uuid.UUID,
 ) -> ProductionOrder:
     order = await _lock_order_for_transition(db, order.id)
     _require_order_transition(order, ProductionOrderStatus.IN_PROGRESS)
 
+    previous_status = order.status
     order.status = ProductionOrderStatus.IN_PROGRESS
     order.actual_start = actual_start or _now()
+    record_transition(
+        db,
+        entity_type=PRODUCTION_ORDER,
+        entity_id=order.id,
+        parent_entity_type=PRODUCTION_ORDER,
+        parent_entity_id=order.id,
+        action="STARTED",
+        actor_id=user_id,
+        from_status=previous_status,
+        to_status=order.status,
+    )
     await db.flush()
     await db.refresh(order)
     return order
 
 
 async def pause_order(
-    db: AsyncSession, order: ProductionOrder, req: DowntimeLogCreate
+    db: AsyncSession, order: ProductionOrder, req: DowntimeLogCreate, user_id: uuid.UUID
 ) -> DowntimeLog:
     order = await _lock_order_for_transition(db, order.id)
     if order.status != ProductionOrderStatus.IN_PROGRESS:
@@ -438,13 +477,24 @@ async def pause_order(
         notes=req.notes,
     )
     db.add(log)
+    record_transition(
+        db,
+        entity_type=PRODUCTION_ORDER,
+        entity_id=order.id,
+        parent_entity_type=PRODUCTION_ORDER,
+        parent_entity_id=order.id,
+        action="DOWNTIME_OPENED",
+        actor_id=user_id,
+        from_status=order.status,
+        to_status=order.status,
+    )
     await db.flush()
     await db.refresh(log)
     return log
 
 
 async def resume_order(
-    db: AsyncSession, order: ProductionOrder, req: DowntimeLogClose
+    db: AsyncSession, order: ProductionOrder, req: DowntimeLogClose, user_id: uuid.UUID
 ) -> DowntimeLog:
     order = await _lock_order_for_transition(db, order.id)
     if order.status != ProductionOrderStatus.IN_PROGRESS:
@@ -459,6 +509,17 @@ async def resume_order(
     log.duration_minutes = int((end_time - log.start_time).total_seconds() / 60)
     if req.notes:
         log.notes = req.notes
+    record_transition(
+        db,
+        entity_type=PRODUCTION_ORDER,
+        entity_id=order.id,
+        parent_entity_type=PRODUCTION_ORDER,
+        parent_entity_id=order.id,
+        action="DOWNTIME_CLOSED",
+        actor_id=user_id,
+        from_status=order.status,
+        to_status=order.status,
+    )
     await db.flush()
     await db.refresh(log)
     return log
@@ -665,9 +726,21 @@ async def complete_order(
             ))
 
     # ── Finalise order ────────────────────────────────────────────────────────
+    previous_status = order.status
     order.actual_quantity = req.actual_quantity
     order.actual_end = _now()
     order.status = ProductionOrderStatus.COMPLETED
+    record_transition(
+        db,
+        entity_type=PRODUCTION_ORDER,
+        entity_id=order.id,
+        parent_entity_type=PRODUCTION_ORDER,
+        parent_entity_id=order.id,
+        action="COMPLETED",
+        actor_id=user_id,
+        from_status=previous_status,
+        to_status=order.status,
+    )
     if req.notes:
         order.notes = req.notes
 
@@ -687,10 +760,24 @@ async def complete_order(
     return order
 
 
-async def cancel_order(db: AsyncSession, order: ProductionOrder) -> ProductionOrder:
+async def cancel_order(
+    db: AsyncSession, order: ProductionOrder, user_id: uuid.UUID
+) -> ProductionOrder:
     order = await _lock_order_for_transition(db, order.id)
     _require_order_transition(order, ProductionOrderStatus.CANCELLED)
+    previous_status = order.status
     order.status = ProductionOrderStatus.CANCELLED
+    record_transition(
+        db,
+        entity_type=PRODUCTION_ORDER,
+        entity_id=order.id,
+        parent_entity_type=PRODUCTION_ORDER,
+        parent_entity_id=order.id,
+        action="CANCELLED",
+        actor_id=user_id,
+        from_status=previous_status,
+        to_status=order.status,
+    )
     await db.flush()
     await db.refresh(order)
     return order

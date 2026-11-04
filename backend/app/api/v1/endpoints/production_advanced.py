@@ -27,6 +27,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.access_control import can_modify_scope, forbidden_detail
 from app.core.deps import get_current_user, get_db
 from app.crud import production_advanced as crud
 from app.schemas.production_advanced import (
@@ -68,6 +69,24 @@ def _work_order_error(exc: ValueError) -> None:
     raise HTTPException(status_code=status_code, detail=detail) from exc
 
 router = APIRouter()
+
+
+def _require_canonical_order_action(user, order, action: str) -> None:
+    warehouse_ids = {
+        value for value in (
+            getattr(order, "source_warehouse_id", None),
+            getattr(order, "target_warehouse_id", None),
+        ) if value is not None
+    }
+    if any(
+        can_modify_scope(user, "production", action, "warehouse", warehouse_id)
+        for warehouse_id in warehouse_ids
+    ):
+        return
+    raise HTTPException(
+        status_code=403,
+        detail=forbidden_detail("Required production permission and warehouse scope are missing."),
+    )
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -213,9 +232,11 @@ async def list_work_orders(
 
 
 @router.post("/work-orders", response_model=WorkOrderRead, status_code=201, tags=["work-orders"])
-async def create_work_order(data: WorkOrderCreate, db: AsyncSession = Depends(get_db), _=Depends(get_current_user)):
+async def create_work_order(data: WorkOrderCreate, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
     try:
-        obj = await crud.create_work_order(db, data)
+        parent = await crud._lock_work_order_parent(db, data.production_order_id)
+        _require_canonical_order_action(current_user, parent, "edit")
+        obj = await crud.create_work_order(db, data, current_user.id)
     except ValueError as exc:
         _work_order_error(exc)
     await db.commit()
@@ -244,12 +265,14 @@ async def update_work_order(pk: _uuid.UUID, data: WorkOrderUpdate, db: AsyncSess
 
 
 @router.delete("/work-orders/{pk}", status_code=204, tags=["work-orders"])
-async def delete_work_order(pk: _uuid.UUID, db: AsyncSession = Depends(get_db), _=Depends(get_current_user)):
+async def delete_work_order(pk: _uuid.UUID, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
     obj = await crud.get_work_order(db, pk)
     if not obj:
         raise HTTPException(404, "Work order not found")
     try:
-        await crud.delete_work_order(db, obj)
+        parent, _ = await crud._lock_work_order_context(db, pk)
+        _require_canonical_order_action(current_user, parent, "edit")
+        await crud.delete_work_order(db, obj, current_user.id)
     except ValueError as exc:
         _work_order_error(exc)
     await db.commit()
@@ -257,9 +280,11 @@ async def delete_work_order(pk: _uuid.UUID, db: AsyncSession = Depends(get_db), 
 
 
 @router.post("/work-orders/{pk}/start", response_model=WorkOrderRead, tags=["work-orders"])
-async def start_work_order(pk: _uuid.UUID, db: AsyncSession = Depends(get_db), _=Depends(get_current_user)):
+async def start_work_order(pk: _uuid.UUID, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
     try:
-        obj = await crud.start_work_order(db, pk)
+        parent, _ = await crud._lock_work_order_context(db, pk)
+        _require_canonical_order_action(current_user, parent, "edit")
+        obj = await crud.start_work_order(db, pk, current_user.id)
     except ValueError as exc:
         _work_order_error(exc)
     await db.flush()
@@ -272,13 +297,16 @@ async def complete_work_order(
     pk: _uuid.UUID,
     actual_quantity: Optional[float] = None,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    current_user=Depends(get_current_user),
 ):
     from decimal import Decimal as D
     try:
+        parent, _ = await crud._lock_work_order_context(db, pk)
+        _require_canonical_order_action(current_user, parent, "close")
         obj = await crud.complete_work_order(
             db,
             pk,
+            current_user.id,
             D(str(actual_quantity)) if actual_quantity is not None else None,
         )
     except ValueError as exc:

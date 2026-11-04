@@ -23,8 +23,13 @@ from app.schemas.production_execution import (
     SplitOrderRequest, MergeOrdersRequest, ReworkOrderRequest,
     ExecAIRecOut, ExecDashboard, BatchRecord,
 )
+from app.schemas.production_transition import ProductionTransitionEventRead
 from app.services import production_execution_service as svc
 from app.services import production_exec_ai_service as ai_svc
+from app.services.production_transition_history import (
+    EXEC_PRODUCTION_ORDER,
+    list_parent_history,
+)
 
 router = APIRouter()
 
@@ -187,6 +192,19 @@ async def get_order(
         raise HTTPException(status_code=404, detail=str(e))
 
 
+@router.get(
+    "/{order_id}/transition-history",
+    response_model=List[ProductionTransitionEventRead],
+)
+async def get_order_transition_history(
+    order_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    order = await _get_order_for_action(db, order_id, current_user, "view")
+    return await list_parent_history(db, EXEC_PRODUCTION_ORDER, order.id)
+
+
 @router.patch("/{order_id}", response_model=ProdExecOrderOut)
 async def update_order(
     order_id: uuid.UUID,
@@ -222,7 +240,7 @@ async def advance_order(
             "COMPLETED": "close",
         }.get(order.status, "edit")
         _require_execution_action(current_user, action, order)
-        return await svc.advance_order(db, order_id)
+        return await svc.advance_order(db, order_id, current_user.id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -235,7 +253,7 @@ async def release_order(
 ):
     try:
         await _get_order_for_action(db, order_id, current_user, "release")
-        return await svc.release_order(db, order_id)
+        return await svc.release_order(db, order_id, current_user.id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -261,7 +279,7 @@ async def start_order(
 ):
     try:
         await _get_order_for_action(db, order_id, current_user, "edit")
-        return await svc.start_order(db, order_id)
+        return await svc.start_order(db, order_id, current_user.id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -274,7 +292,7 @@ async def pause_order(
 ):
     try:
         await _get_order_for_action(db, order_id, current_user, "edit")
-        return await svc.pause_order(db, order_id)
+        return await svc.pause_order(db, order_id, current_user.id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -287,7 +305,7 @@ async def resume_order(
 ):
     try:
         await _get_order_for_action(db, order_id, current_user, "edit")
-        return await svc.resume_order(db, order_id)
+        return await svc.resume_order(db, order_id, current_user.id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -302,7 +320,7 @@ async def complete_order(
     try:
         await _get_order_for_action(db, order_id, current_user, "close")
         return await svc.complete_order(
-            db, order_id, body.completed_qty, body.scrap_qty, body.remarks
+            db, order_id, current_user.id, body.completed_qty, body.scrap_qty, body.remarks
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -316,7 +334,7 @@ async def close_order(
 ):
     try:
         await _get_order_for_action(db, order_id, current_user, "close")
-        return await svc.close_order(db, order_id)
+        return await svc.close_order(db, order_id, current_user.id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -329,7 +347,7 @@ async def cancel_order(
 ):
     try:
         await _get_order_for_action(db, order_id, current_user, "cancel")
-        return await svc.cancel_order(db, order_id)
+        return await svc.cancel_order(db, order_id, current_user.id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -445,7 +463,7 @@ async def add_work_order(
         parent = await _get_order_for_action(db, order_id, current_user, "edit")
         changes = body.model_dump(exclude_unset=True)
         _require_scope_change(current_user, "edit", parent, changes, fallback=parent)
-        return await svc.add_work_order(db, order_id, changes)
+        return await svc.add_work_order(db, order_id, changes, current_user.id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -478,7 +496,7 @@ async def start_work_order(
 ):
     try:
         await _get_work_order_parent_for_action(db, wo_id, current_user, "edit")
-        return await svc.start_work_order(db, wo_id)
+        return await svc.start_work_order(db, wo_id, current_user.id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -493,7 +511,7 @@ async def complete_work_order(
     try:
         await _get_work_order_parent_for_action(db, wo_id, current_user, "close")
         return await svc.complete_work_order(
-            db, wo_id,
+            db, wo_id, current_user.id,
             body.completed_qty, body.scrap_qty, body.rework_qty,
             body.setup_time_actual, body.run_time_actual, body.cleanup_time_actual,
             body.scrap_category, body.scrap_reason, body.qc_passed, body.notes,

@@ -50,6 +50,12 @@ export default function ProdExecOrderDetailPage() {
     queryFn: () => execApi.get(id),
   });
 
+  const { data: transitionHistory = [], isLoading: historyLoading } = useQuery({
+    queryKey: ["exec-order-transition-history", id],
+    queryFn: () => execApi.transitionHistory(id),
+    enabled: !!id,
+  });
+
   const { data: aiRecs = [] } = useQuery<ExecAIRecOut[]>({
     queryKey: ["exec-ai", id],
     queryFn: () => execApi.listAI(id),
@@ -58,6 +64,7 @@ export default function ProdExecOrderDetailPage() {
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["exec-order", id] });
+    qc.invalidateQueries({ queryKey: ["exec-order-transition-history", id] });
     qc.invalidateQueries({ queryKey: ["exec-orders"] });
     qc.invalidateQueries({ queryKey: ["exec-dashboard"] });
   };
@@ -499,6 +506,31 @@ export default function ProdExecOrderDetailPage() {
           </div>
         </div>
       )}
+
+      <section className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+        <h3 className="font-semibold text-gray-800 mb-3">Immutable transition history</h3>
+        {historyLoading ? <p className="text-sm text-gray-400">Loading history…</p> : transitionHistory.length === 0 ? (
+          <p className="text-sm text-gray-500">No recorded transitions yet. History starts with events created after the audit-history migration; earlier events are not backfilled.</p>
+        ) : (
+          <ol className="divide-y divide-gray-100">
+            {transitionHistory.map((event) => (
+              <li key={event.id} className="py-3 grid gap-1 md:grid-cols-[1fr_auto]">
+                <div>
+                  <p className="text-sm font-medium text-gray-800">{event.action.replace(/_/g, " ")}</p>
+                  <p className="text-xs text-gray-500">
+                    {event.entity_type.replace(/_/g, " ")} · {event.from_status || "—"} → {event.to_status || "—"}
+                  </p>
+                  {event.entity_id !== event.parent_entity_id && <p className="text-xs font-mono text-gray-400">Operation: {event.entity_id}</p>}
+                </div>
+                <div className="text-xs text-gray-500 md:text-right">
+                  <p>{new Date(event.created_at).toLocaleString()}</p>
+                  <p>Actor: {event.actor_label}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        )}
+      </section>
 
       {/* Complete Order Modal */}
       {showComplete && (

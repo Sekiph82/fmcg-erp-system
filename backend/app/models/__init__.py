@@ -33,6 +33,7 @@ from app.models.production import (
     ProductionPlan, ProductionPlanLine, ProductionOrder,
     MaterialConsumption, FinishedGoodsReceipt, DowntimeLog,
 )
+from app.models.production_transition import ProductionTransitionEvent
 from app.models.wms import WarehouseZone, StorageLocation, StockCount, StockCountLine, PutawayRule, PutawayTask, PutawayExecution
 from app.models.procurement import (
     PurchaseRequisition, PRLine, PurchaseOrder, POLine,
@@ -657,6 +658,7 @@ __all__ = [
     "Recipe", "RecipeItem", "ProcessParameter",
     "ProductionPlan", "ProductionPlanLine", "ProductionOrder",
     "MaterialConsumption", "FinishedGoodsReceipt", "DowntimeLog",
+    "ProductionTransitionEvent",
     "WarehouseZone", "StorageLocation", "StockCount", "StockCountLine",
     "PurchaseRequisition", "PRLine", "PurchaseOrder", "POLine",
     "GoodsReceipt", "GRNLine", "ImportShipment", "SupplierEvaluation", "SupplierPayment",

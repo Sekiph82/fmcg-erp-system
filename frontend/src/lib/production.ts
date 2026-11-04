@@ -10,6 +10,22 @@ export type DowntimeReason =
   | "QUALITY_HOLD"
   | "OTHER";
 
+export interface ProductionTransitionEvent {
+  id: string;
+  event_seq: number;
+  entity_type: string;
+  entity_id: string;
+  parent_entity_type: string;
+  parent_entity_id: string;
+  action: string;
+  from_status?: string | null;
+  to_status?: string | null;
+  actor_id?: string | null;
+  actor_session_id?: string | null;
+  actor_label: string;
+  created_at: string;
+}
+
 export interface ProductionPlan {
   id: string;
   plan_no: string;
@@ -234,6 +250,10 @@ export const productionApi = {
   },
   async getOrder(id: string): Promise<ProductionOrderDetail> {
     const res = await apiClient.get<ProductionOrderDetail>(`/api/v1/production/orders/${id}`);
+    return res.data;
+  },
+  async getOrderTransitionHistory(id: string): Promise<ProductionTransitionEvent[]> {
+    const res = await apiClient.get<ProductionTransitionEvent[]>(`/api/v1/production/orders/${id}/transition-history`);
     return res.data;
   },
   async createOrder(data: OrderCreate): Promise<ProductionOrder> {

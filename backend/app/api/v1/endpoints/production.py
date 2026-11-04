@@ -28,6 +28,8 @@ from app.schemas.production import (
     ProductionSummary,
     MaterialConsumptionRead, FinishedGoodsReceiptRead,
 )
+from app.schemas.production_transition import ProductionTransitionEventRead
+from app.services.production_transition_history import PRODUCTION_ORDER, list_parent_history
 
 router = APIRouter()
 
@@ -297,6 +299,22 @@ async def get_order(
     return _enrich_order_detail(order)
 
 
+@router.get(
+    "/orders/{order_id}/transition-history",
+    response_model=List[ProductionTransitionEventRead],
+)
+async def get_order_transition_history(
+    order_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(require_any_permission(PRODUCTION_VIEW_PERMISSIONS)),
+):
+    order = await crud.get_order(db, order_id)
+    if not order:
+        raise HTTPException(404, detail="Production order not found")
+    _require_order_view(current_user, order)
+    return await list_parent_history(db, PRODUCTION_ORDER, order.id)
+
+
 # ── Execution ─────────────────────────────────────────────────────────────────
 
 @router.post("/orders/{order_id}/release", response_model=ProductionOrderRead)
@@ -342,7 +360,7 @@ async def start_order(
     if not order:
         raise HTTPException(404, detail="Order not found")
     _require_order_action(current_user, order, "edit")
-    order = await svc.start_order(db, order, actual_start)
+    order = await svc.start_order(db, order, actual_start, current_user.id)
     await db.commit()
     order = await crud.get_order(db, order_id)
     return _enrich_order(order)
@@ -358,7 +376,7 @@ async def pause_order(
     if not order:
         raise HTTPException(404, detail="Order not found")
     _require_order_action(current_user, order, "edit")
-    log = await svc.pause_order(db, order, req)
+    log = await svc.pause_order(db, order, req, current_user.id)
     await db.commit()
     await db.refresh(log)
     return DowntimeLogRead.model_validate(log)
@@ -374,7 +392,7 @@ async def resume_order(
     if not order:
         raise HTTPException(404, detail="Order not found")
     _require_order_action(current_user, order, "edit")
-    log = await svc.resume_order(db, order, req)
+    log = await svc.resume_order(db, order, req, current_user.id)
     await db.commit()
     await db.refresh(log)
     return DowntimeLogRead.model_validate(log)
@@ -406,7 +424,7 @@ async def cancel_order(
     if not order:
         raise HTTPException(404, detail="Order not found")
     _require_order_action(current_user, order, "cancel")
-    order = await svc.cancel_order(db, order)
+    order = await svc.cancel_order(db, order, current_user.id)
     await db.commit()
     order = await crud.get_order(db, order_id)
     return _enrich_order(order)
