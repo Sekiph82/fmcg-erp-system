@@ -8,11 +8,11 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 ## Project Status
 
-- Current Milestone: M34 — Strategic Procurement Upgrade
-- Current Sprint: M34.S05 — Verification
-- Current Task: M21.S05.T004 — Close M21
+- Current Milestone: M22 — Production Order / Work Order
+- Current Sprint: M22.S01 — Order Lifecycle
+- Current Task: M22.S01.T001 — Reconcile production-order vs work-order responsibilities
 - Current Task Status: COMPLETE
-- Next Task/Action: M22.S01.T001 — Reconcile production-order vs work-order responsibilities
+- Next Task/Action: M22.S01.T002 — Harden state machine and transition guards
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -671,7 +671,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 **Depends on:** M20, M21.
 
 ## M22.S01 — Order Lifecycle
-- [ ] M22.S01.T001 — Reconcile production-order vs work-order responsibilities
+- [x] M22.S01.T001 — Reconcile production-order vs work-order responsibilities
+  Evidence: Defined the target ProductionOrder/work-order boundary and a non-destructive crosswalk plan for the active parallel exec_* subsystem in coordination/milestones/M22/M22_S01_T001_RESPONSIBILITY_DECISION_V01.md; corrected the manufacturing manual terminology, current schedule behavior, routes and costing ownership. Independent read-only review found no blockers; git diff --check passed. Documentation/domain-design task only; no tests or runtime behavior claimed.
 - [ ] M22.S01.T002 — Harden state machine and transition guards
 - [ ] M22.S01.T003 — Approval/release/cancel/close semantics
 - [ ] M22.S01.T004 — Immutable audit history for critical transitions

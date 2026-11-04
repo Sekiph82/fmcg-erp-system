@@ -5,41 +5,37 @@
 
 ---
 
-## Work Orders Tab
+## Production orders and work-order operations
 
-**Tab key:** `orders`  
-**Route:** `/dashboard/production/orders/page`
+**Production-order route:** `/dashboard/production/orders`
+**Compatibility route:** `/dashboard/production/work-orders` redirects to the production-order tab.
 
-![Production — Work Orders tab](../../../screenshots/captured/module-ui/manufacturing/production/work-orders-tab.png)
-*Production Work Orders tab listing work orders with status, plan reference, and target quantities.*
+The production-order page lists and creates top-level `ProductionOrder` records. Its “New Production Order” form captures the order number, product, approved recipe, planned quantity/UOM, target warehouse and schedule. This is the parent manufacturing commitment; the older screenshot description and “New Work Order” wording on this page were incorrect.
 
-## Creating a Work Order
+A **work order** is an operation under a production order: for example, pre-mixing, pasteurisation, filling or labelling at a routed work center. It carries operation sequence, resource assignment, operation progress and actual time/labor/QC details. It does not replace the parent order or independently post finished goods.
 
-**Button:** `+ New Order` (opens the New Work Order modal)
+### Current implementation boundary
 
-![New Work Order modal](../../../screenshots/captured/module-ui/manufacturing/production/new-work-order-modal.png)
-*New Work Order modal — Order No, Product, Recipe, Planned Quantity, UOM, Target Warehouse, Scheduled Start and End fields.*
+The ERP currently contains two separate persisted execution families: `production_orders` with routed `work_orders`, and the active `production-execution` module with `exec_production_orders` and `exec_work_orders`. They have no automatic ID crosswalk or synchronization. Do not assume that similarly named or numbered records are the same order. M22 is reconciling these structures through an explicit, non-destructive migration/compatibility plan; no existing rows are claimed migrated or removed. See [M22 responsibility decision](../../../../coordination/milestones/M22/M22_S01_T001_RESPONSIBILITY_DECISION_V01.md).
 
-Work orders are the execution units of manufacturing. Each work order references a production plan, a product (or BOM), a target quantity, and a work center. Work orders progress through status stages from DRAFT to COMPLETED.
+### Key concepts
 
-### Key Concepts
-
-- A work order is always linked to a **Production Plan**. The plan must be `CONFIRMED` before work orders can start.
-- Work orders reference a **BOM** (the RELEASED formulation) and a **Routing** (the sequence of operations across work centers).
-- Batch and lot numbers are assigned when a work order is released.
-- Labour, time tracking, and OEE data are linked at the work order level.
+- A production plan/line is a planning proposal; the production order is the order-level commitment created from it or through the explicit production-order workflow.
+- A production order can have multiple routed work-order operations.
+- Routing determines operation sequence and work-center assignment; actual work-order time/labor and QC remain attributable to the parent order.
+- Order-level material and finished-goods postings, overall status and finalized production cost belong to the parent production order.
 
 ---
 
 ## Scheduling Tab
 
 **Tab key:** `scheduling`  
-**Route:** `/dashboard/production/scheduling/page`
+**Route:** `/dashboard/production/scheduling`
 
-![Production — Scheduling tab](../../../screenshots/captured/module-ui/manufacturing/production/scheduling-tab.png)
-*Production Scheduling tab — Gantt-style board for sequencing work orders across work centers and shifts.*
 
-The scheduling tab provides a visual Gantt-style board for sequencing work orders across work centers and shifts. Use this when you need to manually adjust planned start/end times or resolve conflicts.
+
+
+The current scheduling page lists production-order schedule entries in a table and supports creating or deleting entries. It does not provide a Gantt board or an edit action. These rows schedule a parent production order at a work center and optional shift; they are not routing-step work orders.
 
 For advanced finite-capacity scheduling with AI optimisation, use **Advanced Planning** (`/dashboard/planning`).
 
@@ -132,17 +128,18 @@ Work-in-Progress (WIP) tracks materials that have been issued to production but 
 ## Costing Tab
 
 **Tab key:** `costing`  
-**Route:** `/dashboard/production/costing/page`
+**Route:** `/dashboard/production/costing`
 
 ![Production — Costing tab](../../../screenshots/captured/module-ui/manufacturing/production/costing-tab.png)
-*Costing tab showing standard vs. actual cost breakdown per work order.*
+*Costing tab showing the production-order cost breakdown.*
 
-Production costing aggregates:
-- Material costs (actual quantities issued × material cost)
-- Labour costs (logged hours × labour rate)
-- Overhead absorption (machine hours × overhead rate)
+Production-order costing currently aggregates:
+- Material costs from issued quantities and material standard cost
+- Labour costs from labor logs attached through routed work orders and work-center labor rates
+- Machine costs from work-order actual duration and work-center machine rates
+- Energy costs from utility transactions matched by the parent batch number
 
-Costing is performed per work order and rolled up to the production plan level.
+The computed breakdown is finalized on the `ProductionOrder`; work-order labor/time records provide operation-level inputs. Yield-loss variance is reported separately from booked production cost.
 
 ---
 
