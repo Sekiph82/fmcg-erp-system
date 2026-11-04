@@ -198,13 +198,6 @@ class RoutingStep(Base, TimestampMixin):
 class WorkOrder(Base, TimestampMixin):
     """Executable operation derived from a production order."""
     __tablename__ = "work_orders"
-    __table_args__ = (
-        UniqueConstraint(
-            "production_order_id",
-            "routing_step_id",
-            name="uq_work_order_route_step_per_parent",
-        ),
-    )
 
     id                  = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     work_order_id       = Column(String(50), unique=True, nullable=False, index=True)

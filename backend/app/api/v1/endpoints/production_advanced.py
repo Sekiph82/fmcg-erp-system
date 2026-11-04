@@ -25,6 +25,7 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import Response
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.access_control import can_modify_scope, forbidden_detail
@@ -37,6 +38,7 @@ from app.schemas.production_advanced import (
     RoutingCreate, RoutingUpdate, RoutingRead, RoutingStepCreate, RoutingStepRead,
     # Work Orders
     WorkOrderCreate, WorkOrderGenerateFromRouting, WorkOrderUpdate, WorkOrderRead,
+    WorkOrderSplitRequest, WorkOrderMergeRequest, WorkOrderGenealogyRead,
     # Shifts
     ShiftCreate, ShiftUpdate, ShiftRead,
     # Schedule
@@ -261,6 +263,82 @@ async def generate_work_orders_from_routing(
         limit=max(len(work_orders), 1),
     )
     return [_enrich_wo(work_order) for work_order in refreshed]
+
+
+@router.post("/work-orders/{pk}/split", response_model=List[WorkOrderRead], tags=["work-orders"])
+async def split_work_order(
+    pk: _uuid.UUID,
+    data: WorkOrderSplitRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    source = await crud.get_work_order(db, pk)
+    if source is None:
+        raise HTTPException(404, "Work order not found")
+    try:
+        parent = await crud._lock_work_order_parent(db, source.production_order_id)
+        _require_canonical_order_action(current_user, parent, "edit")
+        results = await crud.split_work_order(db, pk, data.quantities, current_user.id)
+    except ValueError as exc:
+        _work_order_error(exc)
+    await db.commit()
+    refreshed = await crud.list_work_orders(
+        db,
+        work_order_ids=[work_order.id for work_order in results],
+        limit=len(results),
+    )
+    return [_enrich_wo(work_order) for work_order in refreshed]
+
+
+@router.post("/work-orders/merge", response_model=WorkOrderRead, tags=["work-orders"])
+async def merge_work_orders(
+    data: WorkOrderMergeRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    parent_id_result = await db.execute(
+        select(WorkOrder.production_order_id).where(WorkOrder.id == data.source_work_order_ids[0])
+    )
+    parent_id = parent_id_result.scalar_one_or_none()
+    if parent_id is None:
+        raise HTTPException(404, "One or more work orders were not found")
+    try:
+        parent = await crud._lock_work_order_parent(db, parent_id)
+        _require_canonical_order_action(current_user, parent, "edit")
+        result = await crud.merge_work_orders(db, data.source_work_order_ids, current_user.id)
+    except ValueError as exc:
+        _work_order_error(exc)
+    await db.commit()
+    return _enrich_wo(result)
+
+
+@router.get(
+    "/work-orders/{pk}/genealogy",
+    response_model=List[WorkOrderGenealogyRead],
+    tags=["work-orders"],
+)
+async def get_work_order_genealogy(
+    pk: _uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_user),
+):
+    if await crud.get_work_order(db, pk) is None:
+        raise HTTPException(404, "Work order not found")
+    return [
+        WorkOrderGenealogyRead(
+            id=row.id,
+            operation_id=row.operation_id,
+            action=row.action,
+            source_work_order_id=row.source_work_order_id,
+            source_work_order_code=row.source_work_order.work_order_id,
+            result_work_order_id=row.result_work_order_id,
+            result_work_order_code=row.result_work_order.work_order_id,
+            transferred_quantity=row.transferred_quantity,
+            actor_id=row.actor_id,
+            created_at=row.created_at,
+        )
+        for row in await crud.list_work_order_genealogy(db, pk)
+    ]
 
 
 @router.post("/work-orders", response_model=WorkOrderRead, status_code=201, tags=["work-orders"])

@@ -33,6 +33,13 @@ export interface WorkOrder {
   planned_start?: string; planned_end?: string; created_at: string;
 }
 
+export interface WorkOrderGenealogy {
+  id: string; operation_id: string; action: "SPLIT" | "MERGE";
+  source_work_order_id: string; source_work_order_code: string;
+  result_work_order_id: string; result_work_order_code: string;
+  transferred_quantity: number; actor_id: string; created_at: string;
+}
+
 export interface Shift {
   id: string; shift_code: string; name: string;
   start_time_str: string; end_time_str: string;
@@ -169,6 +176,18 @@ export const advProductionApi = {
   },
   async generateWorkOrdersFromRouting(d: { production_order_id: string; routing_id: string }): Promise<WorkOrder[]> {
     const r = await apiClient.post(`${BASE}/work-orders/generate-from-routing`, d);
+    return r.data;
+  },
+  async splitWorkOrder(id: string, quantities: number[]): Promise<WorkOrder[]> {
+    const r = await apiClient.post(`${BASE}/work-orders/${id}/split`, { quantities });
+    return r.data;
+  },
+  async mergeWorkOrders(source_work_order_ids: string[]): Promise<WorkOrder> {
+    const r = await apiClient.post(`${BASE}/work-orders/merge`, { source_work_order_ids });
+    return r.data;
+  },
+  async getWorkOrderGenealogy(id: string): Promise<WorkOrderGenealogy[]> {
+    const r = await apiClient.get(`${BASE}/work-orders/${id}/genealogy`);
     return r.data;
   },
   async updateWorkOrder(id: string, d: object): Promise<WorkOrder> {

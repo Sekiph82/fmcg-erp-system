@@ -11,6 +11,7 @@ from sqlalchemy import select, and_, or_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.db.base import Base
 from app.models.production import ProductionOrder, ProductionOrderStatus
 from app.models.recipe import RecipeItem
 from app.models.master import Material
@@ -20,6 +21,7 @@ from app.models.production_advanced import (
     Shift, ProductionSchedule, TimeTracking, DowntimeEvent,
     AdvQCInspection, AdvQCResult, WasteRecord, BatchLot, LaborLog, OEERecord,
 )
+from app.models.production_work_order_genealogy import ProductionWorkOrderGenealogy
 from app.services.production_transition_history import (
     PRODUCTION_ORDER,
     WORK_ORDER,
@@ -243,6 +245,7 @@ async def list_work_orders(
     production_order_id: Optional[UUID] = None,
     work_center_id: Optional[UUID] = None,
     status: Optional[str] = None,
+    work_order_ids: Optional[list[UUID]] = None,
 ):
     q = select(WorkOrder).outerjoin(WorkOrder.routing_step).options(
         selectinload(WorkOrder.work_center),
@@ -254,6 +257,10 @@ async def list_work_orders(
         q = q.where(WorkOrder.work_center_id == work_center_id)
     if status:
         q = q.where(WorkOrder.status == status)
+    if work_order_ids is not None:
+        if not work_order_ids:
+            return []
+        q = q.where(WorkOrder.id.in_(work_order_ids))
     q = q.order_by(
         WorkOrder.production_order_id,
         RoutingStep.step_number.asc().nulls_last(),
@@ -460,6 +467,321 @@ async def generate_work_orders_from_routing(
     await db.flush()
     return work_orders
 
+
+def _require_milliquantity(value: Decimal, label: str) -> Decimal:
+    normalized = Decimal(value)
+    if not normalized.is_finite() or normalized <= 0:
+        raise ValueError(f"{label} must be a positive finite quantity")
+    if normalized != normalized.quantize(Decimal("0.001")):
+        raise ValueError(f"{label} must use no more than three decimal places")
+    return normalized
+
+
+async def _reject_work_order_dependents(db: AsyncSession, work_order_ids: list[UUID]) -> None:
+    """Refuse transformations while another module has attached operational data."""
+    for table in Base.metadata.tables.values():
+        if table.name == ProductionWorkOrderGenealogy.__tablename__:
+            continue
+        for column in table.columns:
+            if not any(fk.target_fullname == "work_orders.id" for fk in column.foreign_keys):
+                continue
+            referenced = await db.execute(
+                select(column).select_from(table).where(column.in_(work_order_ids)).limit(1)
+            )
+            if referenced.scalar_one_or_none() is not None:
+                raise ValueError(
+                    "Work orders with schedules, assignments, execution records, or other linked data cannot be split or merged"
+                )
+
+
+async def _reject_parent_work_center_schedule(
+    db: AsyncSession, parent_id: UUID, work_center_ids: set[UUID]
+) -> None:
+    scheduled = await db.execute(
+        select(ProductionSchedule.id)
+        .where(
+            ProductionSchedule.production_order_id == parent_id,
+            ProductionSchedule.work_center_id.in_(work_center_ids),
+        )
+        .limit(1)
+    )
+    if scheduled.scalar_one_or_none() is not None:
+        raise ValueError("Scheduled work orders cannot be split or merged; remove the schedule before retrying")
+
+
+def _require_unstarted_work_order(work_order: WorkOrder) -> None:
+    if work_order.status != WorkOrderStatus.PLANNED:
+        raise ValueError("Only planned work orders can be split or merged")
+    if (
+        work_order.actual_quantity not in (None, Decimal("0"))
+        or work_order.start_time is not None
+        or work_order.end_time is not None
+    ):
+        raise ValueError("A work order with actual production activity cannot be split or merged")
+    if work_order.planned_quantity is None:
+        raise ValueError("A work order without a planned quantity cannot be split or merged")
+    _require_milliquantity(work_order.planned_quantity, "Work-order planned quantity")
+
+
+async def _require_current_routing_context(
+    db: AsyncSession, parent: ProductionOrder, work_order: WorkOrder
+) -> None:
+    if work_order.routing_step_id is None:
+        center_result = await db.execute(
+            select(WorkCenter).where(WorkCenter.id == work_order.work_center_id).with_for_update()
+        )
+        center = center_result.scalar_one_or_none()
+        if center is None or center.status != "active":
+            raise ValueError("Work order must use an active work center")
+        return
+    routing_id_result = await db.execute(
+        select(RoutingStep.routing_id).where(RoutingStep.id == work_order.routing_step_id)
+    )
+    routing_id = routing_id_result.scalar_one_or_none()
+    if routing_id is None:
+        raise ValueError("Work order routing step not found")
+    routing_result = await db.execute(
+        select(Routing).where(Routing.id == routing_id).with_for_update()
+    )
+    routing = routing_result.scalar_one_or_none()
+    step_result = await db.execute(
+        select(RoutingStep)
+        .where(RoutingStep.id == work_order.routing_step_id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )
+    step = step_result.scalar_one_or_none()
+    if step is None or step.routing_id != routing_id:
+        raise ValueError("Work order routing step changed during split/merge; retry from the refreshed order")
+    if routing is None or not routing.is_active or routing.product_id != parent.product_id:
+        raise ValueError("Work order must reference an active routing for its production-order product")
+    center_result = await db.execute(
+        select(WorkCenter).where(WorkCenter.id == work_order.work_center_id).with_for_update()
+    )
+    center = center_result.scalar_one_or_none()
+    if (
+        center is None
+        or center.status != "active"
+        or step.work_center_id != work_order.work_center_id
+        or step.operation.strip() != work_order.operation.strip()
+    ):
+        raise ValueError("Work order no longer matches an active routing-step work center and operation")
+
+
+async def split_work_order(
+    db: AsyncSession,
+    work_order_id: UUID,
+    quantities: list[Decimal],
+    actor_id: UUID,
+) -> list[WorkOrder]:
+    if not 2 <= len(quantities) <= 20:
+        raise ValueError("A split must create between 2 and 20 work orders")
+    parent, source = await _lock_work_order_context(db, work_order_id)
+    _require_parent_status(parent, {ProductionOrderStatus.PLANNED}, "split", require_unapproved=True)
+    _require_unstarted_work_order(source)
+    await _require_current_routing_context(db, parent, source)
+    if Decimal(source.planned_quantity) > Decimal(parent.planned_quantity):
+        raise ValueError("A work order cannot exceed its production-order planned quantity")
+    normalized = [_require_milliquantity(value, "Split quantity") for value in quantities]
+    if sum(normalized, Decimal("0")) != Decimal(source.planned_quantity):
+        raise ValueError("Split quantities must exactly equal the source planned quantity")
+    await _reject_work_order_dependents(db, [source.id])
+    await _reject_parent_work_center_schedule(db, parent.id, {source.work_center_id})
+
+    results: list[WorkOrder] = []
+    operation_id = uuid4()
+    previous_status = source.status
+    source.status = WorkOrderStatus.CANCELLED
+    await db.flush()
+    record_transition(
+        db,
+        entity_type=WORK_ORDER,
+        entity_id=source.id,
+        parent_entity_type=PRODUCTION_ORDER,
+        parent_entity_id=parent.id,
+        action="SPLIT_SOURCE_CANCELLED",
+        actor_id=actor_id,
+        from_status=previous_status,
+        to_status=source.status,
+    )
+
+    for quantity in normalized:
+        result = WorkOrder(
+            work_order_id=f"WO-{uuid4().hex}",
+            production_order_id=parent.id,
+            routing_step_id=source.routing_step_id,
+            work_center_id=source.work_center_id,
+            operation=source.operation,
+            operator=source.operator,
+            status=WorkOrderStatus.PLANNED,
+            planned_quantity=quantity,
+            planned_start=source.planned_start,
+            planned_end=source.planned_end,
+            notes=source.notes,
+        )
+        db.add(result)
+        await db.flush()
+        record_transition(
+            db,
+            entity_type=WORK_ORDER,
+            entity_id=result.id,
+            parent_entity_type=PRODUCTION_ORDER,
+            parent_entity_id=parent.id,
+            action="SPLIT_RESULT_CREATED",
+            actor_id=actor_id,
+            to_status=result.status,
+        )
+        db.add(
+            ProductionWorkOrderGenealogy(
+                operation_id=operation_id,
+                action="SPLIT",
+                source_work_order_id=source.id,
+                result_work_order_id=result.id,
+                transferred_quantity=quantity,
+                actor_id=actor_id,
+            )
+        )
+        results.append(result)
+    await db.flush()
+    return results
+
+
+async def merge_work_orders(
+    db: AsyncSession,
+    work_order_ids: list[UUID],
+    actor_id: UUID,
+) -> WorkOrder:
+    if not 2 <= len(work_order_ids) <= 20 or len(set(work_order_ids)) != len(work_order_ids):
+        raise ValueError("A merge must contain 2 to 20 distinct work orders")
+    parent_ids_result = await db.execute(
+        select(WorkOrder.production_order_id)
+        .where(WorkOrder.id.in_(work_order_ids))
+        .order_by(WorkOrder.production_order_id)
+    )
+    parent_ids = list(parent_ids_result.scalars().all())
+    if len(parent_ids) != len(work_order_ids):
+        raise ValueError("One or more work orders were not found")
+    if len(set(parent_ids)) != 1:
+        raise ValueError("Work orders from different production orders cannot be merged")
+
+    parent = await _lock_work_order_parent(db, parent_ids[0])
+    _require_parent_status(parent, {ProductionOrderStatus.PLANNED}, "merge", require_unapproved=True)
+    locked_result = await db.execute(
+        select(WorkOrder)
+        .where(WorkOrder.id.in_(work_order_ids))
+        .order_by(WorkOrder.id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )
+    sources = list(locked_result.scalars().all())
+    if len(sources) != len(work_order_ids) or any(source.production_order_id != parent.id for source in sources):
+        raise ValueError("Work orders changed during merge; refresh and retry")
+    for source in sources:
+        _require_unstarted_work_order(source)
+        await _require_current_routing_context(db, parent, source)
+
+    first = sources[0]
+    if any(
+        source.routing_step_id != first.routing_step_id
+        or source.work_center_id != first.work_center_id
+        or source.operation != first.operation
+        or source.operator != first.operator
+        or source.planned_start != first.planned_start
+        or source.planned_end != first.planned_end
+        for source in sources[1:]
+    ):
+        raise ValueError(
+            "Merged work orders must share the same routing step, work center, operation, operator, and planned window"
+        )
+
+    await _reject_work_order_dependents(db, [source.id for source in sources])
+    await _reject_parent_work_center_schedule(
+        db, parent.id, {source.work_center_id for source in sources}
+    )
+
+    total_quantity = sum((Decimal(source.planned_quantity) for source in sources), Decimal("0"))
+    _require_milliquantity(total_quantity, "Merged planned quantity")
+    if total_quantity > Decimal(parent.planned_quantity):
+        raise ValueError("Merged quantity cannot exceed the production-order planned quantity")
+    source_notes = [
+        f"{source.work_order_id}: {source.notes}"
+        for source in sources
+        if source.notes and source.notes.strip()
+    ]
+    result = WorkOrder(
+        work_order_id=f"WO-{uuid4().hex}",
+        production_order_id=parent.id,
+        routing_step_id=first.routing_step_id,
+        work_center_id=first.work_center_id,
+        operation=first.operation,
+        operator=first.operator,
+        status=WorkOrderStatus.PLANNED,
+        planned_quantity=total_quantity,
+        planned_start=first.planned_start,
+        planned_end=first.planned_end,
+        notes="\n\n".join(source_notes) or None,
+    )
+    operation_id = uuid4()
+    for source in sources:
+        previous_status = source.status
+        source.status = WorkOrderStatus.CANCELLED
+        record_transition(
+            db,
+            entity_type=WORK_ORDER,
+            entity_id=source.id,
+            parent_entity_type=PRODUCTION_ORDER,
+            parent_entity_id=parent.id,
+            action="MERGE_SOURCE_CANCELLED",
+            actor_id=actor_id,
+            from_status=previous_status,
+            to_status=source.status,
+        )
+    db.add(result)
+    await db.flush()
+    record_transition(
+        db,
+        entity_type=WORK_ORDER,
+        entity_id=result.id,
+        parent_entity_type=PRODUCTION_ORDER,
+        parent_entity_id=parent.id,
+        action="MERGE_RESULT_CREATED",
+        actor_id=actor_id,
+        to_status=result.status,
+    )
+    for source in sources:
+        db.add(
+            ProductionWorkOrderGenealogy(
+                operation_id=operation_id,
+                action="MERGE",
+                source_work_order_id=source.id,
+                result_work_order_id=result.id,
+                transferred_quantity=source.planned_quantity,
+                actor_id=actor_id,
+            )
+        )
+    await db.flush()
+    return result
+
+
+async def list_work_order_genealogy(
+    db: AsyncSession, work_order_id: UUID
+) -> list[ProductionWorkOrderGenealogy]:
+    rows = await db.execute(
+        select(ProductionWorkOrderGenealogy)
+        .options(
+            selectinload(ProductionWorkOrderGenealogy.source_work_order),
+            selectinload(ProductionWorkOrderGenealogy.result_work_order),
+        )
+        .where(
+            or_(
+                ProductionWorkOrderGenealogy.source_work_order_id == work_order_id,
+                ProductionWorkOrderGenealogy.result_work_order_id == work_order_id,
+            )
+        )
+        .order_by(ProductionWorkOrderGenealogy.created_at, ProductionWorkOrderGenealogy.id)
+    )
+    return list(rows.scalars().all())
+
 async def update_work_order(db: AsyncSession, obj: WorkOrder, data: WorkOrderUpdate) -> WorkOrder:
     parent, obj = await _lock_work_order_context(db, obj.id)
     _require_parent_status(parent, {ProductionOrderStatus.PLANNED}, "edit", require_unapproved=True)
@@ -476,6 +798,18 @@ async def delete_work_order(db: AsyncSession, obj: WorkOrder, actor_id: UUID) ->
     _require_parent_status(parent, {ProductionOrderStatus.PLANNED}, "delete", require_unapproved=True)
     if obj.status != WorkOrderStatus.PLANNED:
         raise ValueError(f"Work order in status {obj.status.value} cannot be deleted")
+    genealogy = await db.execute(
+        select(ProductionWorkOrderGenealogy.id)
+        .where(
+            or_(
+                ProductionWorkOrderGenealogy.source_work_order_id == obj.id,
+                ProductionWorkOrderGenealogy.result_work_order_id == obj.id,
+            )
+        )
+        .limit(1)
+    )
+    if genealogy.scalar_one_or_none() is not None:
+        raise ValueError("A work order with split/merge lineage cannot be deleted")
     record_transition(
         db,
         entity_type=WORK_ORDER,

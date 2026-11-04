@@ -8,7 +8,7 @@ from decimal import Decimal
 from typing import List, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 # ── Work Center ────────────────────────────────────────────────────────────────
@@ -127,6 +127,44 @@ class WorkOrderGenerateFromRouting(BaseModel):
     routing_id: UUID
 
     model_config = {"extra": "forbid"}
+
+class WorkOrderSplitRequest(BaseModel):
+    quantities: List[Decimal] = Field(..., min_length=2, max_length=20)
+
+    model_config = {"extra": "forbid"}
+
+    @field_validator("quantities")
+    @classmethod
+    def quantities_must_be_positive(cls, values: List[Decimal]) -> List[Decimal]:
+        if any(value <= 0 for value in values):
+            raise ValueError("Every split quantity must be positive")
+        return values
+
+class WorkOrderMergeRequest(BaseModel):
+    source_work_order_ids: List[UUID] = Field(..., min_length=2, max_length=20)
+
+    model_config = {"extra": "forbid"}
+
+    @field_validator("source_work_order_ids")
+    @classmethod
+    def source_ids_must_be_unique(cls, values: List[UUID]) -> List[UUID]:
+        if len(set(values)) != len(values):
+            raise ValueError("A work order can only appear once in a merge")
+        return values
+
+class WorkOrderGenealogyRead(BaseModel):
+    id: UUID
+    operation_id: UUID
+    action: str
+    source_work_order_id: UUID
+    source_work_order_code: str
+    result_work_order_id: UUID
+    result_work_order_code: str
+    transferred_quantity: Decimal
+    actor_id: UUID
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
 
 class WorkOrderUpdate(BaseModel):
     operator:         Optional[str]      = None

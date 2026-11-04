@@ -6,7 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import {
   productionApi, CompleteOrderRequest, DowntimeReason,
 } from "@/lib/production";
-import { advProductionApi } from "@/lib/productionAdvanced";
+import { advProductionApi, WorkOrder, WorkOrderGenealogy } from "@/lib/productionAdvanced";
 import { warehousesApi } from "@/lib/warehouses";
 import { extractApiError } from "@/lib/inventory";
 import { Table } from "@/components/ui/Table";
@@ -42,6 +42,10 @@ export default function OrderDetailPage() {
   const [completeOpen, setCompleteOpen] = useState(false);
   const [pauseOpen, setPauseOpen] = useState(false);
   const [selectedRoutingId, setSelectedRoutingId] = useState("");
+  const [splitTarget, setSplitTarget] = useState<WorkOrder | null>(null);
+  const [splitQuantities, setSplitQuantities] = useState(["", ""]);
+  const [mergeSelection, setMergeSelection] = useState<string[]>([]);
+  const [genealogyTarget, setGenealogyTarget] = useState<string | null>(null);
   const [completeForm, setCompleteForm] = useState<CompleteOrderRequest>({
     actual_quantity: 0, consume_materials: true,
   });
@@ -63,7 +67,7 @@ export default function OrderDetailPage() {
     enabled: !!id,
   });
 
-  const { data: routedWorkOrders = [] } = useQuery({
+  const { data: routedWorkOrders = [] } = useQuery<WorkOrder[]>({
     queryKey: ["production-work-orders", id],
     queryFn: () => advProductionApi.listWorkOrders({ production_order_id: id }),
     enabled: !!id,
@@ -140,6 +144,36 @@ export default function OrderDetailPage() {
       toast("success", "Operations added", `${created.length} routing operations linked in sequence.`);
     },
     onError: (err) => toast("error", "Failed", extractApiError(err)),
+  });
+
+  const splitOperation = useMutation({
+    mutationFn: () => advProductionApi.splitWorkOrder(
+      splitTarget!.id,
+      splitQuantities.map((quantity) => Number(quantity)),
+    ),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["production-work-orders", id] });
+      setSplitTarget(null);
+      setSplitQuantities(["", ""]);
+      toast("success", "Operation split", "The original operation was preserved and linked to its two replacements.");
+    },
+    onError: (err) => toast("error", "Split failed", extractApiError(err)),
+  });
+
+  const mergeOperations = useMutation({
+    mutationFn: () => advProductionApi.mergeWorkOrders(mergeSelection),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["production-work-orders", id] });
+      setMergeSelection([]);
+      toast("success", "Operations merged", "The source operations were preserved and linked to the replacement.");
+    },
+    onError: (err) => toast("error", "Merge failed", extractApiError(err)),
+  });
+
+  const { data: workOrderGenealogy = [] } = useQuery<WorkOrderGenealogy[]>({
+    queryKey: ["production-work-order-genealogy", genealogyTarget],
+    queryFn: () => advProductionApi.getWorkOrderGenealogy(genealogyTarget!),
+    enabled: Boolean(genealogyTarget),
   });
 
   const hasActiveDowntime = order?.downtime_logs.some((d) => !d.end_time);
@@ -280,8 +314,18 @@ export default function OrderDetailPage() {
             <h2 className="text-lg font-semibold text-gray-800">Routing Operations</h2>
             <p className="text-sm text-gray-500">Work orders follow the selected routing step order and work-center assignments.</p>
           </div>
-          {isPlanned && !isApproved && routedWorkOrders.length === 0 && (
+          {isPlanned && !isApproved && (
             <div className="flex items-end gap-2 flex-wrap">
+              {routedWorkOrders.length > 0 && mergeSelection.length >= 2 && (
+                <Button
+                  disabled={mergeOperations.isPending}
+                  loading={mergeOperations.isPending}
+                  onClick={() => mergeOperations.mutate()}
+                >
+                  Merge {mergeSelection.length} Operations
+                </Button>
+              )}
+              {routedWorkOrders.length === 0 && <>
               <Select
                 label="Active Routing"
                 options={[
@@ -301,6 +345,7 @@ export default function OrderDetailPage() {
               >
                 Generate Operations
               </Button>
+              </>}
             </div>
           )}
         </div>
@@ -312,6 +357,19 @@ export default function OrderDetailPage() {
             data={routedWorkOrders}
             emptyMessage="No work-order operations are linked to this production order."
             columns={[
+              {
+                header: "Merge",
+                accessor: (workOrder) => workOrder.status === "planned" && isPlanned && !isApproved ? (
+                  <input
+                    type="checkbox"
+                    aria-label={`Select ${workOrder.work_order_id} for merge`}
+                    checked={mergeSelection.includes(workOrder.id)}
+                    onChange={(event) => setMergeSelection((current) => event.target.checked
+                      ? [...current, workOrder.id]
+                      : current.filter((selected) => selected !== workOrder.id))}
+                  />
+                ) : "—",
+              },
               { header: "Step", accessor: (workOrder) => workOrder.routing_step_number ?? "Manual" },
               { header: "Work Order", accessor: (workOrder) => <span className="font-mono text-xs">{workOrder.work_order_id}</span> },
               { header: "Operation", accessor: (workOrder) => workOrder.operation },
@@ -319,8 +377,46 @@ export default function OrderDetailPage() {
               { header: "Planned Qty", accessor: (workOrder) => workOrder.planned_quantity == null ? "—" : `${Number(workOrder.planned_quantity).toLocaleString()} ${order.uom}` },
               { header: "Actual Qty", accessor: (workOrder) => workOrder.actual_quantity == null ? "—" : `${Number(workOrder.actual_quantity).toLocaleString()} ${order.uom}` },
               { header: "Status", accessor: (workOrder) => <Badge label={workOrder.status} variant={workOrder.status === "completed" ? "green" : workOrder.status === "in_progress" ? "blue" : "blue"} /> },
+              {
+                header: "Actions",
+                accessor: (workOrder) => <div className="flex gap-2 whitespace-nowrap">
+                  {workOrder.status === "planned" && isPlanned && !isApproved && Number(workOrder.planned_quantity ?? 0) > 0 && (
+                    <button
+                      className="text-xs font-medium text-indigo-700 hover:underline"
+                      onClick={() => {
+                        const first = (Number(workOrder.planned_quantity ?? 0) / 2).toFixed(3);
+                        setSplitTarget(workOrder);
+                        setSplitQuantities([first, (Number(workOrder.planned_quantity ?? 0) - Number(first)).toFixed(3)]);
+                      }}
+                    >Split</button>
+                  )}
+                  <button
+                    className="text-xs font-medium text-indigo-700 hover:underline"
+                    onClick={() => setGenealogyTarget(workOrder.id)}
+                  >History</button>
+                </div>,
+              },
             ]}
           />
+        )}
+        {genealogyTarget && (
+          <div className="mt-4 rounded-lg border border-gray-200 p-4">
+            <div className="mb-2 flex items-center justify-between">
+              <h3 className="font-medium text-gray-800">Split / merge history</h3>
+              <button className="text-sm text-indigo-700 hover:underline" onClick={() => setGenealogyTarget(null)}>Close</button>
+            </div>
+            {workOrderGenealogy.length === 0 ? (
+              <p className="text-sm text-gray-500">No split or merge history for this operation.</p>
+            ) : (
+              <ul className="space-y-1 text-sm text-gray-600">
+                {workOrderGenealogy.map((edge) => (
+                  <li key={edge.id}>
+                    {edge.action}: {edge.source_work_order_code} → {edge.result_work_order_code} · {Number(edge.transferred_quantity).toLocaleString()} {order.uom} · {new Date(edge.created_at).toLocaleString()}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         )}
       </div>
 
@@ -548,6 +644,58 @@ export default function OrderDetailPage() {
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" type="button" onClick={() => setPauseOpen(false)}>Cancel</Button>
             <Button type="submit" loading={pause.isPending}>Log Downtime</Button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal
+        open={Boolean(splitTarget)}
+        onClose={() => { setSplitTarget(null); setSplitQuantities(["", ""]); }}
+        title={`Split ${splitTarget?.work_order_id ?? "work order"}`}
+      >
+        <form
+          onSubmit={(event) => { event.preventDefault(); splitOperation.mutate(); }}
+          className="space-y-4"
+        >
+          <p className="text-sm text-gray-600">
+            Enter two planned quantities whose sum exactly matches the source. The source stays in history as cancelled; no actual production data is moved.
+          </p>
+          <Input
+            label={`First quantity (${order.uom})`}
+            type="number"
+            min="0.001"
+            step="0.001"
+            value={splitQuantities[0]}
+            onChange={(event) => setSplitQuantities(([_, second]) => [event.target.value, second])}
+            required
+          />
+          <Input
+            label={`Second quantity (${order.uom})`}
+            type="number"
+            min="0.001"
+            step="0.001"
+            value={splitQuantities[1]}
+            onChange={(event) => setSplitQuantities(([first]) => [first, event.target.value])}
+            required
+          />
+          <p className="text-xs text-gray-500">
+            Source planned quantity: {Number(splitTarget?.planned_quantity ?? 0).toLocaleString()} {order.uom}
+          </p>
+          <div className="flex justify-end gap-3 pt-2">
+            <Button variant="secondary" type="button" onClick={() => setSplitTarget(null)}>Cancel</Button>
+            <Button
+              type="submit"
+              loading={splitOperation.isPending}
+              disabled={(() => {
+                const values = splitQuantities.map(Number);
+                const sourceMilli = Math.round(Number(splitTarget?.planned_quantity ?? 0) * 1000);
+                return !splitTarget
+                  || values.some((value) => !Number.isFinite(value) || value <= 0 || Math.abs(value * 1000 - Math.round(value * 1000)) > 0.000001)
+                  || Math.round(values[0] * 1000) + Math.round(values[1] * 1000) !== sourceMilli;
+              })()}
+            >
+              Split Work Order
+            </Button>
           </div>
         </form>
       </Modal>
