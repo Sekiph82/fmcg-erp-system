@@ -10,9 +10,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M34 — Strategic Procurement Upgrade
 - Current Sprint: M34.S05 — Verification
-- Current Task: M34.S05.T003 — Three-way-match/finance integration tests
+- Current Task: M34.S05.T004 — Close M34
 - Current Task Status: COMPLETE
-- Next Task/Action: M34.S05.T004 — Close M34
+- Next Task/Action: M20.S05.T004 — Close M20 with evidence and tracker update
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -601,7 +601,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 - [x] M20.S05.T001 — Backend MPS regression tests
 - [x] M20.S05.T002 — Frontend planning-board/capacity/campaign/what-if tests
 - [x] M20.S05.T003 — Cross-module MPS→MRP/production verification
-- [x] M20.S05.T004 — Close M20 with evidence and tracker update
+- [ ] M20.S05.T004 — Close M20 with evidence and tracker update
+  Reopened for acceptance: `coordination/milestones/M20/CHATGPT_M20_STRICT_AUDIT_V06.md` records local evidence PASS but milestone BLOCKED_EVIDENCE / NOT CLOSED pending a remote CI result after the quota window. The date gate has elapsed; this exact closure task must obtain and record the CI result before M21 closure can become READY.
 
 ---
 
@@ -658,7 +659,7 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 - [x] M21.S05.T003 — Costing integration tests
   Evidence: [CODEX log](coordination/sessions/M21.S05.T003/CODEX_LOG_V01.md); fresh task-owned PostgreSQL integration passed through real compute/finalize/report queries, exposed 10 KES yield-loss cost variance separately from unchanged 0 total cost, and passed cleanup and independent read-only review.
 - [!] M21.S05.T004 — Close M21
-  Blocked: M20 local acceptance is PASS under the owner-approved synthetic virtual-factory assumptions, but the M20 milestone remains BLOCKED_EVIDENCE while remote CI is `DEFERRED_CI_QUOTA` through 2026-10-30; M21 depends on M20 closure. No real factory or employee data is required. See [M20 strict re-audit V06](coordination/milestones/M20/CHATGPT_M20_STRICT_AUDIT_V06.md) and [closure assessment](coordination/sessions/M21.S05.T004/CODEX_LOG_V01.md).
+  Blocked: M20 local acceptance is PASS under the owner-approved synthetic virtual-factory assumptions, but M20 remains BLOCKED_EVIDENCE until it has an authorized post-window remote-CI result and final tracker closure. The `DEFERRED_CI_QUOTA` window ended 2026-10-30; no later CI result or pass is claimed. M21 depends on M20 closure. No real factory or employee data is required. See [M20 strict re-audit V06](coordination/milestones/M20/CHATGPT_M20_STRICT_AUDIT_V06.md) and [closure assessment](coordination/sessions/M21.S05.T004/CODEX_LOG_V01.md).
 
 ---
 
@@ -1081,7 +1082,7 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 # M34 — Strategic Procurement Upgrade
 
-**Status: PLANNED / PARTIAL foundation**
+**Status: DONE — scoped M34 task set complete; broader GAP-009 and M06/M13 foundation gaps remain outside this milestone scope.**
 **Depends on:** M06, M13, M25, M31.
 
 ## M34.S01 — Strategic Sourcing
@@ -1131,7 +1132,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
   Evidence: Authenticated supplier scorecard API integration verifies synthetic posted-GRN OTIF, KPI dimension averages, eligible ESG/QMS linkage, and branch-scoped privacy; PostgreSQL 16.6 migrated to 20261104_0001, 2 DB tests plus 2 existing scorecard unit tests passed, cleanup verified, independent review no findings. Login/2FA challenge excluded. See coordination/sessions/M34.S05.T002/verification-V01.md and CODEX_LOG_V01.md.
 - [x] M34.S05.T003 — Three-way-match/finance integration tests
   Evidence: Authenticated FastAPI/PostgreSQL synthetic PO-GRN-invoice flow: draft GRN blocks payable match/posting; posted GRN updates stock and unlocks three-way match; finance API creates one balanced GRNI/tax/AP journal and idempotent event. Disposable PostgreSQL 16.6, 1 passed, cleanup verified, independent review no actionable findings; Ruff unavailable. See coordination/sessions/M34.S05.T003/verification-V01.md and CODEX_LOG_V01.md.
-- [ ] M34.S05.T004 — Close M34
+- [x] M34.S05.T004 — Close M34
+  Evidence: All explicit M34.S01-S05 rows have task-level evidence and independent reviews; M34 is closed only for its defined scope. Broader M06/M13 and GAP-009 follow-ups remain partial/deferred, with no live-provider/production claims. Reopened M20.S05.T004 because strict audit V06 still requires a post-window remote-CI result; selected it as the direct dependency prerequisite to blocked M21 closure.
 
 ---
 
