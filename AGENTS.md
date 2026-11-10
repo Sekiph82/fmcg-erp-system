@@ -1,6 +1,8 @@
+> **2026-11-10 owner override:** Claude is the sole active autonomous task runner, tracker writer and implementation coordinator. Read `coordination/CLAUDE_AUTONOMOUS_EXECUTION_POLICY.md` first. Conflicting older Codex/ChatGPT/H!veAI actor restrictions below are historical and superseded. Root TASKS.md remains canonical.
+
 # Repository task authority
 
-The root `TASKS.md` is the single task and progress authority. Do not read, create, or update `.hiveai` state. The dashboard may read `TASKS.md` and append owner answers to `project-control/codex/owner-answers.jsonl`; only the task runner updates task state.
+The root `TASKS.md` is the single task and progress authority. Do not read, create, or update `.hiveai` state. The dashboard may read `TASKS.md` and append owner answers to `project-control/codex/owner-answers.jsonl`; only Claude, the owner-authorized task runner, updates task state.
 
 
 ---
