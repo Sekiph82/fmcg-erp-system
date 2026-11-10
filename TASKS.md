@@ -10,9 +10,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M35 — QC / QA Enterprise Upgrade
 - Current Sprint: M35.S06 — Verification & Program Closure
-- Current Task: M35.S06.T002 — Quality workflow UI/E2E suite
-- Current Task Status: PLANNED (M35 backend scope implemented: 109 new tests, zero regressions vs HEAD)
-- Next Task/Action: Build frontend pages for /quality-enterprise routes, then run UI/E2E; PostgreSQL rehearsal of migration 20261110_0028 and S06.T003 wait for a database environment
+- Current Task: M35.S05.T001 — Internal/supplier audit lifecycle (supplier part)
+- Current Task Status: PARTIAL (S06.T002 QA Governance UI done: mocked Playwright 7/7)
+- Next Task/Action: Supplier audit lifecycle; PostgreSQL rehearsal of migration 20261110_0028 and S06.T003 wait for a database environment
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -1334,7 +1334,7 @@ Shared evidence: `backend/tests/test_m28_traceability_verification.py` (27 passe
 
 # M35 — QC / QA Enterprise Upgrade
 
-**Status: PARTIAL — backend QC/QA enterprise scope implemented and verified on an in-memory session; no UI for the new routes, no PostgreSQL rehearsal of migration 20261110_0028, and no browser/E2E runs. (2026-11-10: the earlier same-day DONE closure was withdrawn as overclaimed.)**
+**Status: PARTIAL — backend scope implemented and verified on an in-memory session; QA Governance UI built and accepted with mocked Playwright. Open: PostgreSQL rehearsal of migration 20261110_0028, receive→dispatch E2E on a database, supplier audit lifecycle, whole-system security/deployment review. (2026-11-10: the earlier same-day DONE closure was withdrawn as overclaimed.)**
 **Depends on:** M10, M27, M28, M29, M31, M33.
 
 Shared evidence (2026-11-10): `app/services/qa_enterprise_service.py`, router `app/api/v1/endpoints/quality_enterprise.py` (`/api/v1/quality-enterprise`, 24 paths), hardening in `qms.py` / `quality.py` / `quality_service.py` / `recall_service.py`, models in `app/models/quality.py`, migration `20261110_0028` (single head; offline SQL renders; table/column/FK/check parity with models checked by script — not applied to a database). Tests: `test_m35_qa_enterprise_rules.py` 44 passed, `test_m35_qa_enterprise_api.py` 65 passed (in-memory `fake_async_db.py`; it does not exercise SQL, row locks or DB constraints). Full backend suite 1652 passed / 8 failed / 309 skipped; the 8 failures also fail on unchanged HEAD (login rate-limit and PostgreSQL concurrency tests); 309 skipped are PostgreSQL-gated. Independent read-only review found 6 defects (SPC deviations unresolvable, CAPA owner reassign-then-verify, CoA lot/status holes, concession reuse, missing locks, SPC race → 500); all fixed with regression tests.
@@ -1392,8 +1392,8 @@ Shared evidence (2026-11-10): `app/services/qa_enterprise_service.py`, router `a
 ## M35.S06 — Verification & Program Closure
 - [x] M35.S06.T001 — QC/QA backend regression suite
   Evidence: 109 new M35 tests + 33 foundation tests; full backend suite compared against unchanged HEAD with zero new failures.
-- [ ] M35.S06.T002 — Quality workflow UI/E2E suite
-  Not done: no frontend pages exist for the new `/quality-enterprise` routes; no browser run.
+- [x] M35.S06.T002 — Quality workflow UI/E2E suite
+  Evidence: "QA Governance" tab on `/dashboard/quality` (`frontend/src/components/quality/qa-enterprise/*`, client `frontend/src/lib/qa-enterprise.ts`) covering specifications + change control, QC plans + coverage, AQL + SPC chart, concessions + cost of quality, retain samples + test methods, CAPA links; controls shown per quality view/create/edit/approve permission and server rule messages surfaced. Frontend type-check and ESLint clean. Mocked Chromium Playwright `frontend/e2e/m35-qa-governance.mocked.spec.ts` 7 passed, plus M27 quality-gate UI suite 4 passed (synthetic route mocks; no live backend). Backend `GET /quality-enterprise/qc-plans` added for the plan list (covered by API tests, 110 M35 tests passing).
 - [D] M35.S06.T003 — Receive→produce→release→dispatch quality-gate E2E
   Deferred: needs a PostgreSQL environment (Docker daemon not running).
 - [P] M35.S06.T004 — Traceability/recall mock exercise

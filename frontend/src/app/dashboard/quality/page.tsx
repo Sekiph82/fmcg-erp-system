@@ -245,6 +245,7 @@ const QMSPage               = dynamic(() => import("@/app/dashboard/qms/page"), 
 const AllergenPage          = dynamic(() => import("@/app/dashboard/allergen/page"),                     { ssr: false });
 const BrandAssetsPage       = dynamic(() => import("@/app/dashboard/brand-assets/page"),                 { ssr: false });
 const QualityGateWorkspace  = dynamic(() => import("@/components/quality/QualityGateWorkspace").then((module) => module.QualityGateWorkspace), { ssr: false });
+const QAEnterpriseWorkspace = dynamic(() => import("@/components/quality/qa-enterprise/QAEnterpriseWorkspace").then((module) => module.QAEnterpriseWorkspace), { ssr: false });
 
 export default function QualityPage() {
   const tabs = [
@@ -255,6 +256,7 @@ export default function QualityPage() {
     { key: "reports",            label: "Reports",             permission: "quality.view", content: <QualityReportsPage /> },
     { key: "gates",              label: "Quality Gates",       content: <QualityGateWorkspace /> },
     { key: "qms",                label: "QMS",                 permission: "quality.view", content: <QMSPage /> },
+    { key: "qa-governance",      label: "QA Governance",       permission: "quality.view", content: <QAEnterpriseWorkspace /> },
     { key: "allergen",           label: "Allergen",            permission: "quality.view", content: <AllergenPage /> },
     { key: "brand-assets",       label: "Brand Assets",        permission: "quality.view", content: <BrandAssetsPage /> },
   ];

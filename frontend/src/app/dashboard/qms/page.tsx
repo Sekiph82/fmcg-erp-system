@@ -107,6 +107,7 @@ export default function QMSDashboardPage() {
           { label: "Calibration Instruments", href: "/dashboard/qms/calibration", color: "border-cyan-200 hover:bg-cyan-50" },
           { label: "QMS Reports", href: "/dashboard/qms/reports", color: "border-gray-200 hover:bg-gray-50" },
           { label: "AI Quality Agents", href: "/dashboard/qms/ai", color: "border-violet-200 hover:bg-violet-50" },
+          { label: "QA Governance", href: "/dashboard/quality?tab=qa-governance", color: "border-emerald-200 hover:bg-emerald-50" },
         ].map(n => (
           <a key={n.href} href={n.href}
             className={`block border rounded-xl p-3 text-center text-sm font-medium text-gray-700 ${n.color} transition-colors`}>

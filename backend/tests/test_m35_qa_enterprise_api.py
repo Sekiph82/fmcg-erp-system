@@ -147,6 +147,8 @@ def test_qc_plan_activation_and_coverage(env):
         "steps": [{"sequence": 1, "qc_type": "IN_PROCESS"}, {"sequence": 2, "qc_type": "FINISHED_GOODS"}]}).json()
     assert c.as_(AUTHOR).post(f"/qe/qc-plans/{plan['id']}/activate").status_code == 409
     assert c.as_(APPROVER).post(f"/qe/qc-plans/{plan['id']}/activate").json()["status"] == "ACTIVE"
+    listed = c.as_(_user("quality.view")).get("/qe/qc-plans").json()
+    assert [(p["plan_code"], p["status"], len(p["steps"])) for p in listed] == [("PLAN-1", "ACTIVE", 2)]
     db.add(QCInspection(id=uuid.uuid4(), inspection_no="I1", qc_type=QCType.IN_PROCESS, status=QCStatus.PASSED,
                         production_order_id=order, inspection_date=date.today()))
     cov = c.as_(AUTHOR).get(f"/qe/qc-plans/{plan['id']}/coverage",

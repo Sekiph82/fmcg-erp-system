@@ -281,6 +281,15 @@ def _plan_out(plan: QCPlan, steps) -> dict:
                    "spec_code": s.spec_code, "is_mandatory": s.is_mandatory} for s in steps]}
 
 
+@router.get("/qc-plans")
+async def list_qc_plans(db: AsyncSession = Depends(get_db), _=Depends(_need("view"))):
+    plans = (await db.execute(select(QCPlan).order_by(QCPlan.plan_code, QCPlan.version))).scalars().all()
+    steps = (await db.execute(
+        select(QCPlanStep).where(QCPlanStep.plan_id.in_([p.id for p in plans])).order_by(QCPlanStep.sequence)
+    )).scalars().all() if plans else []
+    return [_plan_out(p, [s for s in steps if s.plan_id == p.id]) for p in plans]
+
+
 @router.post("/qc-plans", status_code=201)
 async def create_qc_plan(body: PlanIn, db: AsyncSession = Depends(get_db), user=Depends(_need("create"))):
     if body.product_id is None and body.material_id is None:
