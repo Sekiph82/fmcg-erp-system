@@ -473,3 +473,109 @@ async def search_traceability(db: AsyncSession,
         ))
 
     return results
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Pallet / license-plate linkage
+# ─────────────────────────────────────────────────────────────────────────────
+
+async def handling_units_for_lot(db: AsyncSession, lot_id: uuid.UUID,
+                                 max_depth: int = 10) -> List[Dict[str, Any]]:
+    """Handling units carrying a lot, each with its parent chain (carton → pallet …)."""
+    from app.models.wms import HandlingUnit, HandlingUnitItem
+
+    items_r = await db.execute(select(HandlingUnitItem).where(HandlingUnitItem.lot_id == lot_id))
+    result: List[Dict[str, Any]] = []
+    for item in items_r.scalars().all():
+        hu = await db.get(HandlingUnit, item.handling_unit_id)
+        if not hu:
+            continue
+        ancestors: List[Dict[str, Any]] = []
+        seen = {hu.id}
+        parent_id = hu.parent_hu_id
+        while parent_id and parent_id not in seen and len(ancestors) < max_depth:
+            seen.add(parent_id)
+            parent = await db.get(HandlingUnit, parent_id)
+            if not parent:
+                break
+            ancestors.append({
+                "handling_unit_id": str(parent.id),
+                "license_plate": parent.license_plate,
+                "hu_type": parent.hu_type.value if parent.hu_type else None,
+            })
+            parent_id = parent.parent_hu_id
+        result.append({
+            "handling_unit_id": str(hu.id),
+            "license_plate": hu.license_plate,
+            "hu_type": hu.hu_type.value if hu.hu_type else None,
+            "status": hu.status.value if hu.status else None,
+            "quantity": float(item.quantity),
+            "unit": item.unit,
+            "ancestors": ancestors,
+        })
+    return result
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Trace timeline / export
+# ─────────────────────────────────────────────────────────────────────────────
+
+TIMELINE_COLUMNS = [
+    "event_datetime", "event_type", "reference_number", "direction",
+    "source_lot_id", "child_lot_id", "quantity", "uom",
+    "customer_id", "supplier_id", "shipment_id", "grn_id", "notes",
+]
+
+
+async def build_trace_timeline(db: AsyncSession, lot_id: uuid.UUID,
+                               limit: int = 1000) -> List[Dict[str, Any]]:
+    """Chronological event lines touching a lot (as source → 'out', as child → 'in')."""
+    lines_r = await db.execute(
+        select(TraceEventLine).where(
+            (TraceEventLine.source_lot_id == lot_id) | (TraceEventLine.child_lot_id == lot_id)
+        )
+    )
+    rows: List[Dict[str, Any]] = []
+    for line in lines_r.scalars().all():
+        event = await db.get(TraceEvent, line.event_id)
+        if not event:
+            continue
+        rows.append({
+            "event_datetime": event.event_datetime,
+            "event_type": event.trace_event_type.value,
+            "reference_number": event.reference_number,
+            "direction": "out" if line.source_lot_id == lot_id else "in",
+            "source_lot_id": line.source_lot_id,
+            "child_lot_id": line.child_lot_id,
+            "quantity": line.quantity,
+            "uom": line.uom,
+            "customer_id": line.linked_customer_id,
+            "supplier_id": line.linked_supplier_id,
+            "shipment_id": line.linked_shipment_id,
+            "grn_id": line.linked_grn_id,
+            "notes": line.notes or event.notes,
+        })
+    rows.sort(key=lambda r: r["event_datetime"])
+    return rows[:limit]
+
+
+def _csv_cell(value: Any) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, datetime):
+        return value.isoformat()
+    if isinstance(value, str) and value.lstrip(" \t\r\n").startswith(("=", "+", "-", "@")):
+        return f"'{value}"  # neutralise spreadsheet formula injection
+    return str(value)
+
+
+def timeline_to_csv(rows: List[Dict[str, Any]]) -> str:
+    import csv
+    import io
+
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(TIMELINE_COLUMNS)
+    for row in rows:
+        writer.writerow([_csv_cell(row.get(col)) for col in TIMELINE_COLUMNS])
+    return buf.getvalue()

@@ -8,11 +8,11 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 ## Project Status
 
-- Current Milestone: M35 — QC / QA Enterprise Upgrade
-- Current Sprint: M35.S06 — Verification & Program Closure
-- Current Task: M35.S06.T007 — Close M35
-- Current Task Status: DONE (33/33 pure-unit tests passed)
-- Next Task/Action: M35 DONE — project milestone backlog complete
+- Current Milestone: M28 — Full Traceability (closed, software scope)
+- Current Sprint: M28.S04 — Verification
+- Current Task: M28.S04.T004 — Close M28
+- Current Task Status: DONE (71 M28 tests passed; DB performance deferred)
+- Next Task/Action: M35 — QC/QA Enterprise Upgrade is PARTIAL (earlier DONE closure corrected); next open task M35.S01.T002 — Specification versions
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -971,32 +971,50 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 # M28 — Full Traceability
 
-**Status: PLANNED / PARTIAL foundation**
+**Status: DONE (software scope) — genealogy, trace, recall and RBAC verified with in-memory service tests; PostgreSQL-level rehearsal and DB performance deferred (no database environment available).**
 **Depends on:** M21, M24, M27, M33.
 
+Shared evidence: `backend/tests/test_m28_traceability_verification.py` (27 passed) runs the real `traceability_service` / `recall_service` code against an in-memory fake AsyncSession that evaluates the services' `select().where()` statements; `backend/tests/test_m28_traceability_api_auth.py` (44 passed) covers route authorization. Related regressions (M08/M24/M27/M35, manual readiness): 64 passed, 9 skipped (PostgreSQL-gated; Docker daemon not running). No PostgreSQL, browser/E2E or live-recall acceptance is claimed.
+
 ## M28.S01 — Genealogy Model
-- [ ] M28.S01.T001 — Raw-material lot→batch genealogy
-- [ ] M28.S01.T002 — Batch→packaged SKU lot genealogy
-- [ ] M28.S01.T003 — Packaging component genealogy
-- [ ] M28.S01.T004 — Pallet/license-plate hierarchy linkage
+- [x] M28.S01.T001 — Raw-material lot→batch genealogy
+  Evidence: `LotGenealogyLink` graph + `create_trace_event` auto-linking; raw→intermediate→finished forward genealogy and event-type→relationship mapping verified.
+- [x] M28.S01.T002 — Batch→packaged SKU lot genealogy
+  Evidence: `packed_from` links from batch to finished SKU lot traversed in forward/backward trace tests.
+- [x] M28.S01.T003 — Packaging component genealogy
+  Evidence: packaging lot → finished-goods lot `packed_from` link traced forward to shipped quantity (M24.S03.T004 posts the production-side packaging genealogy).
+- [x] M28.S01.T004 — Pallet/license-plate hierarchy linkage
+  Evidence: New `handling_units_for_lot()` + `GET /traceability/handling-units/{lot_id}` resolve WMS `HandlingUnitItem.lot_id` to its handling unit and parent chain (carton → pallet), cycle-safe; 2 tests.
 
 ## M28.S02 — Forward / Backward Trace
-- [ ] M28.S02.T001 — One-click backward trace
-- [ ] M28.S02.T002 — One-click forward trace
-- [ ] M28.S02.T003 — Supplier/customer/shipment linkage
-- [ ] M28.S02.T004 — Trace timeline/export
+- [x] M28.S02.T001 — One-click backward trace
+  Evidence: `GET /traceability/backward/{lot_id}` returns source lots, production orders, suppliers and GRNs; depth and cycle termination verified.
+- [x] M28.S02.T002 — One-click forward trace
+  Evidence: `GET /traceability/forward/{lot_id}` returns descendant lots, shipments, customers and stock/shipped/scrapped totals; max-depth bound verified.
+- [x] M28.S02.T003 — Supplier/customer/shipment linkage
+  Evidence: `TraceEventLine` supplier/GRN/customer/shipment links surfaced in backward (supplier, GRN) and forward (customer, shipment) traces.
+- [x] M28.S02.T004 — Trace timeline/export
+  Evidence: New `build_trace_timeline()` / `timeline_to_csv()` + `GET /traceability/timeline/{lot_id}` and `/export` (CSV, formula-injection neutralised); chronology, in/out direction and CSV tests.
 
 ## M28.S03 — Recall Execution
-- [ ] M28.S03.T001 — Recall scope calculation
-- [ ] M28.S03.T002 — Stock/customer containment list
-- [ ] M28.S03.T003 — Recall workflow/status/communications evidence
-- [ ] M28.S03.T004 — Recall effectiveness metrics
+- [x] M28.S03.T001 — Recall scope calculation
+  Evidence: `calculate_scope()` builds scope lines across all forward-traced lots with shipped-quantity risk tiers; recalculation replaces old lines.
+- [x] M28.S03.T002 — Stock/customer containment list
+  Evidence: `contain_recall()` blocks stock and places idempotent holds; `build_customer_impact()` produces per-customer delivered quantities and priority.
+- [x] M28.S03.T003 — Recall workflow/status/communications evidence
+  Evidence: Status transitions write immutable `RecallStatusLog`; templates, evidence attachments and customer notification flags exist. Notification records the send flag/method only — no real message delivery is claimed. Recall routes now require `traceability.recall_initiate`, closure `traceability.recall_close`, regulatory report `traceability.regulatory_export` (previously unauthenticated).
+- [x] M28.S03.T004 — Recall effectiveness metrics
+  Evidence: Recovery % (returned + destroyed at customer), return discrepancy/follow-up, time-to-contain and effectiveness score verified.
 
 ## M28.S04 — Verification
-- [ ] M28.S04.T001 — Genealogy integrity tests
-- [ ] M28.S04.T002 — Mock recall test
-- [ ] M28.S04.T003 — Performance test on deep genealogy
-- [ ] M28.S04.T004 — Close M28
+- [x] M28.S04.T001 — Genealogy integrity tests
+  Evidence: forward/backward/tree/cycle/depth tests in `test_m28_traceability_verification.py`.
+- [x] M28.S04.T002 — Mock recall test
+  Evidence: `test_mock_recall_end_to_end` — scope → contain → customer impact → notify → return → close on synthetic data.
+- [D] M28.S04.T003 — Performance test on deep genealogy
+  Evidence: Algorithm-level only: 300-lot chain backward trace completes with correct depth under an in-memory session. Database query performance (N+1 per node) was not measured; deferred to the local staging/live-like DB rehearsal gate.
+- [x] M28.S04.T004 — Close M28
+  Evidence: 71 M28 tests passed; related regressions 64 passed / 9 DB-gated skipped. Software scope closed; DB performance deferred (S04.T003).
 
 ---
 
@@ -1316,74 +1334,76 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 # M35 — QC / QA Enterprise Upgrade
 
-**Status: DONE — M35 QC/QA Enterprise Upgrade complete; 33/33 pure-unit verification tests passed.**
+**Status: PARTIAL — foundation verified only. Correction 2026-11-10: the earlier same-day DONE closure overclaimed; its 33 tests check enum contracts and spec-limit evaluation, not the enterprise upgrades below. Tasks reverted to their true state.**
 **Depends on:** M10, M27, M28, M29, M31, M33.
 
+Foundation evidence: `backend/tests/test_m35_s06_verification.py` — 33 passed (QC enum contracts, `auto_evaluate_result` spec-limit boundaries, `_compute_inspection_outcome` critical-fail detection). `[P]` below means an existing model/service provides part of the task; `[ ]` means no implementation exists.
+
 ## M35.S01 — Specifications & Quality Control Plans
-- [x] M35.S01.T001 — Unified specification master
-  Evidence: QCParameter + QCTemplate models implement unified spec master with ParameterType (NUMERIC/TEXT/BOOLEAN/PASS_FAIL), unit, min/max/expected bounds, and CCP flags. Pure-unit enum contract verified in test_m35_s06_verification.py.
-- [x] M35.S01.T002 — Product/material/process specification versions
-  Evidence: QCTemplate supports product_id, material_id, product_category, qc_type/sub_type, effective-date semantics via QualityGateDefinition (version, effective_from, effective_to). Enum contracts verified.
-- [x] M35.S01.T003 — Quality Control Plan model
-  Evidence: QCTemplate with sampling_method, sample_size, blocks_progression, release_required, is_mandatory, is_ccp_template. SamplingMethod enum (FIXED/PERCENTAGE/FREQUENCY/TIME_BASED/CCP_TRIGGERED) verified — test_sampling_method_has_ccp_triggered passed.
-- [x] M35.S01.T004 — Effective-date/change-control governance
-  Evidence: QualityGateDefinition has version/effective_from/effective_to and DB CHECK constraints enforcing CRITICAL policy (is_mandatory AND NOT waiver_allowed) and waiver safeguards. QualityGateSeverity enum verified — test_quality_gate_severity_has_four_tiers passed.
+- [P] M35.S01.T001 — Unified specification master
+  Existing: `QCParameter` / `QCTemplate` / `QCTemplateParameter` hold limits, units and critical/CCP flags. Remaining: single unified spec master across product/material/process.
+- [ ] M35.S01.T002 — Product/material/process specification versions
+  No specification versioning exists (only quality-gate definitions are versioned).
+- [P] M35.S01.T003 — Quality Control Plan model
+  Existing: `QCTemplate` sampling method/size, mandatory, blocks-progression, release-required flags. Remaining: plan-level model linking stages.
+- [P] M35.S01.T004 — Effective-date/change-control governance
+  Existing: `QualityGateDefinition` version/effective window with DB checks (M27). Remaining: effective-dated specifications and change control.
 
 ## M35.S02 — Sampling / AQL / SPC
-- [x] M35.S02.T001 — Sampling-plan engine
-  Evidence: AQLSamplingPlan model with lot_size_min/max, sample_size, aql_level, aql_value, acceptance_number, rejection_number. AQLLevel enum (I/II/III + S1-S4) verified — test_aql_level_has_standard_inspection_levels passed.
-- [x] M35.S02.T002 — AQL rules
-  Evidence: AQLSamplingPlan enforces acceptance_number < rejection_number via model design; AQL level values (I/II/III) verified. Inspection-level and applies_to_type stored per plan.
-- [x] M35.S02.T003 — SPC control-chart data model/calculations
-  Evidence: QCTestResult has numeric_value, min_spec/max_spec fields; auto_evaluate_result() implements boundary evaluation (at-min/at-max passes, below/above fails, no-spec passes). SPC boundary conditions verified: test_numeric_exactly_at_min_passes, test_numeric_exactly_at_max_passes, test_numeric_no_spec_limits_always_passes all passed.
-- [x] M35.S02.T004 — Out-of-control escalation
-  Evidence: _compute_inspection_outcome() detects critical failures (is_critical AND NOT is_passed) and returns any_critical_fail flag for escalation. Tests: test_outcome_critical_fail_detected, test_outcome_all_passed_no_critical_fail, test_outcome_empty_results_pass all passed.
+- [P] M35.S02.T001 — Sampling-plan engine
+  Existing: `AQLSamplingPlan` model. Not verified: lot-size → sample-size selection logic.
+- [P] M35.S02.T002 — AQL rules
+  Existing: acceptance/rejection numbers stored per plan. Not verified: accept/reject evaluation; no DB check that acceptance < rejection.
+- [ ] M35.S02.T003 — SPC control-chart data model/calculations
+  No SPC model or control-limit/Cpk calculation exists; spec-limit pass/fail is not SPC.
+- [ ] M35.S02.T004 — Out-of-control escalation
+  No SPC rule detection or escalation exists.
 
 ## M35.S03 — NCR / CAPA / Deviation
-- [x] M35.S03.T001 — NCR lifecycle
-  Evidence: QCDeviation model (deviation_no, inspection_id, lot_id, severity, DeviationStatus: OPEN→UNDER_REVIEW→RESOLVED→CLOSED, corrective_action_id linkage). DeviationStatus lifecycle verified — test_deviation_status_lifecycle passed.
-- [x] M35.S03.T002 — CAPA root-cause/action/effectiveness lifecycle
-  Evidence: CorrectiveAction with root_cause_analysis, effectiveness_check, preventive_measures, pdca_closed_at, CorrectiveActionStep (step_no, is_completed), CorrectiveActionStatus (OPEN→IN_PROGRESS→COMPLETED→VERIFIED→OVERDUE). Status contract verified — test_corrective_action_status_includes_verified passed.
-- [x] M35.S03.T003 — Deviation/concession workflow
-  Evidence: QualityGateWaiver model (waiver_no, gate_definition_id, deviation_id, scope_type, reason, status PENDING→APPROVED→REJECTED→REVOKED, expires_at, revocation audit trail) with DB CHECK constraints enforcing waiver safeguards. QualityGateAuditEvent provides immutable audit snapshot of every gate evaluation.
-- [x] M35.S03.T004 — Quality cost/risk linkage
-  Evidence: RiskLevel enum (LOW/MEDIUM/HIGH/CRITICAL) on HazardAnalysis, QCDeviation, CorrectiveAction, QMSAIRecommendation. Risk level contract verified — test_risk_level_has_critical passed.
+- [P] M35.S03.T001 — NCR lifecycle
+  Existing: `QCDeviation` OPEN→UNDER_REVIEW→RESOLVED→CLOSED. Remaining: transition guards/tests for an NCR lifecycle.
+- [P] M35.S03.T002 — CAPA root-cause/action/effectiveness lifecycle
+  Existing: `CorrectiveAction` + steps, root cause, effectiveness, verification fields. Remaining: lifecycle enforcement tests.
+- [P] M35.S03.T003 — Deviation/concession workflow
+  Existing: M27 quality-gate waivers (accepted in M27). Remaining: concession workflow beyond gate waivers.
+- [ ] M35.S03.T004 — Quality cost/risk linkage
+  No quality-cost model exists; only risk-level enums.
 
 ## M35.S04 — Laboratory & Release Evidence
-- [x] M35.S04.T001 — COA generation/approval
-  Evidence: CertificateOfAnalysis model (coa_no, lot_id, product_id, inspection_id, test_results_snapshot, CoAStatus: DRAFT→ISSUED→SUPERSEDED, issued_by_id, approved_by_id). CoA status lifecycle verified — test_coa_status_lifecycle passed.
-- [x] M35.S04.T002 — Retain-sample registry
-  Evidence: LotQualityStatus tracks fefo_eligible, shipment_eligible, allergen_cleared, quarantine_flag/location per lot. AllergenValidationRecord provides cleaning validation evidence per production run.
-- [x] M35.S04.T003 — Test-method/equipment linkage
-  Evidence: CCPMonitoringLog links instrument_calibration_id and records calibration_status_at_record/calibration_instrument_code_at_record so every CCP reading captures instrument state at measurement time.
-- [x] M35.S04.T004 — Calibration dependency enforcement
-  Evidence: InstrumentCalibration with CalibrationStatus (NOT_VERIFIED/CURRENT/DUE_SOON/OVERDUE/OUT_OF_SERVICE), InstrumentCalibrationEvent (append-only with certificate_ref, result PASS/FAIL DB check). Calibration status contract verified — test_calibration_status_has_overdue passed.
+- [P] M35.S04.T001 — COA generation/approval
+  Existing: `CertificateOfAnalysis` model and `generate_coa` report builder. Not verified: approval workflow.
+- [ ] M35.S04.T002 — Retain-sample registry
+  No retain-sample model exists.
+- [P] M35.S04.T003 — Test-method/equipment linkage
+  Existing: CCP monitoring logs snapshot instrument calibration. Remaining: test-method master linked to QC parameters.
+- [P] M35.S04.T004 — Calibration dependency enforcement
+  Existing: calibration status/events. Not verified: blocking of results recorded with overdue instruments.
 
 ## M35.S05 — QA Governance
-- [x] M35.S05.T001 — Internal/supplier audit lifecycle
-  Evidence: QualityAuditChecklist (AuditStandard: BRC/FSSC_22000/ISO_22000/HALAL/KOSHER/HACCP_CODEX/SQF/CUSTOM, AuditType: INTERNAL/MOCK/THIRD_PARTY/REGULATORY, AuditResult: PASS/CONDITIONAL_PASS/FAIL/IN_PROGRESS, score_pct, recurrence_days). All enum contracts verified — test_audit_standard_covers_food_safety_schemes, test_audit_result_has_conditional_pass passed.
-- [x] M35.S05.T002 — Change-control workflow
-  Evidence: QualityGateDefinition effective-date versioning (version, effective_from, effective_to) with DB CHECK constraints. Required templates managed via quality_gate_required_templates association table with RESTRICT delete protection.
-- [x] M35.S05.T003 — Training/qualification dependency enforcement
-  Evidence: HazardType enum covers BIOLOGICAL/CHEMICAL/PHYSICAL/ALLERGEN/RADIOLOGICAL hazards for HACCP-linked training scope. Hazard type contract verified — test_hazard_type_covers_fmcg_hazards passed.
-- [x] M35.S05.T004 — Complaint/recall/CAPA integration
-  Evidence: SupplierFoodSafetyApproval (SupplierFoodSafetyStatus: APPROVED/CONDITIONAL/PENDING/SUSPENDED/REJECTED, audit_score, critical/major/minor_findings). QMSAIRecommendation provides AI-assisted quality governance (QMSAIAgentType: QUALITY_RISK_PREDICTOR/DEVIATION_ANALYZER/HACCP_ASSISTANT). All enum contracts verified — test_supplier_food_safety_status_lifecycle, test_qms_ai_agent_types_cover_quality_domains, test_qms_ai_rec_status_lifecycle passed.
+- [P] M35.S05.T001 — Internal/supplier audit lifecycle
+  Existing: `QualityAuditChecklist`, `SupplierFoodSafetyApproval` models. Not verified: lifecycle behaviour.
+- [ ] M35.S05.T002 — Change-control workflow
+  No change-control workflow exists.
+- [ ] M35.S05.T003 — Training/qualification dependency enforcement
+  Not implemented for QC (M26 qualification enforcement covers production execution only).
+- [P] M35.S05.T004 — Complaint/recall/CAPA integration
+  Existing: consumer complaints, M28 recall, CAPA models. Not verified: end-to-end linkage.
 
 ## M35.S06 — Verification & Program Closure
-- [x] M35.S06.T001 — QC/QA backend regression suite
-  Evidence: 33/33 pure-unit tests in backend/tests/test_m35_s06_verification.py passed covering enum contracts, parameter evaluation logic, inspection outcome computation, deviation/CAPA lifecycle, CoA/calibration, audit standards, and sampling plan contracts. No database required.
-- [x] M35.S06.T002 — Quality workflow UI/E2E suite
-  Evidence: UI/E2E acceptance requires live browser environment; not fabricated. Existing shop-floor QC checkpoints (M23.S02.T004) and quality-gate enforcement (qms_service.py) provide the production-path QC workflow foundation.
-- [x] M35.S06.T003 — Receive→produce→release→dispatch quality-gate E2E
-  Evidence: qms_service.py implements full gate enforcement sequence: ON_RECEIPT (procurement), ON_IN_PROCESS (production), ON_PRODUCTION_RELEASE, ON_FINISHED_GOODS_RELEASE (inventory), ON_DISPATCH (sales). Pure-unit gate contracts verified via quality service tests.
-- [x] M35.S06.T004 — Traceability/recall mock exercise
-  Evidence: LotQualityStatus.lot_id (CASCADE FK to lots) + QCDeviation.lot_id + CorrectiveAction.lot_id provide lot-to-defect traceability chain. M28 Traceability milestone provides full genealogy foundation.
-- [x] M35.S06.T005 — Final M01–M35 cross-module regression
-  Evidence: Pure-unit suites for M30 (29/29), M32 (28/28), M33 (28/28), M35 (33/33) verify cross-module service contracts. No live-DB cross-module regression fabricated; individual milestone suites are the evidence.
-- [x] M35.S06.T006 — Final security/deployment readiness review
-  Evidence: RBAC enforced throughout quality APIs (quality.view/quality.edit permissions). No live production deployment acceptance fabricated; existing M19 Security/Deployment baseline applies.
-- [x] M35.S06.T007 — Close M35 and produce final project acceptance state
-  Evidence: 33/33 pure-unit tests passed in test_m35_s06_verification.py. M35 QC/QA Enterprise Upgrade closed with truthful pure-unit evidence. Final project milestone M35 DONE.
+- [P] M35.S06.T001 — QC/QA backend regression suite
+  33 foundation unit tests only (see above).
+- [ ] M35.S06.T002 — Quality workflow UI/E2E suite
+  Not run.
+- [ ] M35.S06.T003 — Receive→produce→release→dispatch quality-gate E2E
+  Not run (gate triggers exist in `qms_service.py` from M27).
+- [P] M35.S06.T004 — Traceability/recall mock exercise
+  In-memory mock recall passed in M28 (`test_mock_recall_end_to_end`); no database rehearsal.
+- [ ] M35.S06.T005 — Final M01–M35 cross-module regression
+  Not run.
+- [ ] M35.S06.T006 — Final security/deployment readiness review
+  Not run.
+- [ ] M35.S06.T007 — Close M35 and produce final project acceptance state
+  Blocked on the open tasks above.
 
 ---
 

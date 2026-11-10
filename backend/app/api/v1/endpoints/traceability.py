@@ -9,9 +9,10 @@ from decimal import Decimal
 from typing import List, Optional
 from datetime import date
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.access_control import has_any_permission
 from app.core.deps import get_current_user
 from app.db.session import get_db
 from app.models.traceability import (
@@ -38,14 +39,29 @@ from app.services import recall_service as recall_svc
 router = APIRouter()
 
 
+def _require_any(*permissions: str):
+    async def _check(current_user=Depends(get_current_user)):
+        if not has_any_permission(current_user, permissions):
+            raise HTTPException(status_code=403, detail=f"One of {list(permissions)} is required")
+        return current_user
+    return _check
+
+
+_VIEW = [Depends(_require_any("traceability.view_all", "quality.view", "quality.view_all"))]
+_RECORD = [Depends(_require_any("quality.create", "quality.create_all", "quality.edit", "quality.edit_all"))]
+_RECALL = [Depends(_require_any("traceability.recall_initiate"))]
+_CLOSE = [Depends(_require_any("traceability.recall_close"))]
+_EXPORT = [Depends(_require_any("traceability.regulatory_export"))]
+
+
 # ── Traceability Events ───────────────────────────────────────────────────────
 
-@router.post("/events", response_model=TraceEventOut, status_code=201)
+@router.post("/events", response_model=TraceEventOut, status_code=201, dependencies=_RECORD)
 async def create_trace_event(data: TraceEventCreate, db: AsyncSession = Depends(get_db)):
     return await trace_svc.create_trace_event(db, data)
 
 
-@router.get("/events", response_model=List[TraceEventOut])
+@router.get("/events", response_model=List[TraceEventOut], dependencies=_VIEW)
 async def list_trace_events(
     lot_id:     Optional[uuid.UUID] = Query(None),
     event_type: Optional[TraceEventType] = Query(None),
@@ -67,12 +83,12 @@ async def list_trace_events(
 
 # ── Genealogy Links ───────────────────────────────────────────────────────────
 
-@router.post("/genealogy/links", response_model=GenealogyLinkOut, status_code=201)
+@router.post("/genealogy/links", response_model=GenealogyLinkOut, status_code=201, dependencies=_RECORD)
 async def create_genealogy_link(data: GenealogyLinkCreate, db: AsyncSession = Depends(get_db)):
     return await trace_svc.create_genealogy_link(db, data)
 
 
-@router.get("/genealogy/links/{lot_id}", response_model=List[GenealogyLinkOut])
+@router.get("/genealogy/links/{lot_id}", response_model=List[GenealogyLinkOut], dependencies=_VIEW)
 async def list_genealogy_links(
     lot_id:    uuid.UUID,
     direction: str = Query("both"),
@@ -81,7 +97,7 @@ async def list_genealogy_links(
     return await trace_svc.list_genealogy_links(db, lot_id, direction)
 
 
-@router.get("/genealogy/{lot_id}", response_model=GenealogyTree)
+@router.get("/genealogy/{lot_id}", response_model=GenealogyTree, dependencies=_VIEW)
 async def get_genealogy_tree(
     lot_id:    uuid.UUID,
     direction: str = Query("both"),
@@ -93,14 +109,14 @@ async def get_genealogy_tree(
 
 # ── Trace Search ──────────────────────────────────────────────────────────────
 
-@router.post("/search", response_model=List[TraceabilitySearchResult])
+@router.post("/search", response_model=List[TraceabilitySearchResult], dependencies=_VIEW)
 async def search_traceability(req: TraceabilitySearchRequest, db: AsyncSession = Depends(get_db)):
     return await trace_svc.search_traceability(db, req)
 
 
 # ── Forward / Backward ───────────────────────────────────────────────────────
 
-@router.get("/forward/{lot_id}", response_model=ForwardTraceResult)
+@router.get("/forward/{lot_id}", response_model=ForwardTraceResult, dependencies=_VIEW)
 async def forward_trace(
     lot_id:    uuid.UUID,
     max_depth: int = Query(8, le=15),
@@ -109,7 +125,7 @@ async def forward_trace(
     return await trace_svc.forward_trace(db, lot_id, max_depth=max_depth)
 
 
-@router.get("/backward/{lot_id}", response_model=BackwardTraceResult)
+@router.get("/backward/{lot_id}", response_model=BackwardTraceResult, dependencies=_VIEW)
 async def backward_trace(
     lot_id:    uuid.UUID,
     max_depth: int = Query(8, le=15),
@@ -118,21 +134,45 @@ async def backward_trace(
     return await trace_svc.backward_trace(db, lot_id, max_depth=max_depth)
 
 
+@router.get("/handling-units/{lot_id}", dependencies=_VIEW)
+async def lot_handling_units(lot_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    return await trace_svc.handling_units_for_lot(db, lot_id)
+
+
+@router.get("/timeline/{lot_id}", dependencies=_VIEW)
+async def lot_timeline(
+    lot_id: uuid.UUID,
+    limit:  int = Query(500, le=1000),
+    db:     AsyncSession = Depends(get_db),
+):
+    return await trace_svc.build_trace_timeline(db, lot_id, limit=limit)
+
+
+@router.get("/timeline/{lot_id}/export", dependencies=_VIEW)
+async def export_lot_timeline(lot_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    rows = await trace_svc.build_trace_timeline(db, lot_id)
+    return Response(
+        content=trace_svc.timeline_to_csv(rows),
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="trace_timeline_{lot_id}.csv"'},
+    )
+
+
 # ── Recall Dashboard ──────────────────────────────────────────────────────────
 
-@router.get("/recalls/dashboard", response_model=RecallDashboard)
+@router.get("/recalls/dashboard", response_model=RecallDashboard, dependencies=_VIEW)
 async def recall_dashboard(db: AsyncSession = Depends(get_db)):
     return await recall_svc.get_recall_dashboard(db)
 
 
 # ── Recall CRUD ───────────────────────────────────────────────────────────────
 
-@router.post("/recalls", response_model=RecallHeaderOut, status_code=201)
+@router.post("/recalls", response_model=RecallHeaderOut, status_code=201, dependencies=_RECALL)
 async def initiate_recall(data: RecallCreate, db: AsyncSession = Depends(get_db)):
     return await recall_svc.initiate_recall(db, data)
 
 
-@router.get("/recalls", response_model=List[RecallHeaderOut])
+@router.get("/recalls", response_model=List[RecallHeaderOut], dependencies=_VIEW)
 async def list_recalls(
     status: Optional[RecallStatus] = Query(None),
     limit:  int = Query(100, le=500),
@@ -141,7 +181,7 @@ async def list_recalls(
     return await recall_svc.list_recalls(db, status=status, limit=limit)
 
 
-@router.get("/recalls/{recall_id}", response_model=RecallDetail)
+@router.get("/recalls/{recall_id}", response_model=RecallDetail, dependencies=_VIEW)
 async def get_recall_detail(recall_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     try:
         return await recall_svc.get_recall_detail(db, recall_id)
@@ -149,7 +189,7 @@ async def get_recall_detail(recall_id: uuid.UUID, db: AsyncSession = Depends(get
         raise HTTPException(404, str(e))
 
 
-@router.patch("/recalls/{recall_id}/status", response_model=RecallHeaderOut)
+@router.patch("/recalls/{recall_id}/status", response_model=RecallHeaderOut, dependencies=_RECALL)
 async def update_recall_status(recall_id: uuid.UUID, data: RecallStatusUpdate,
                                 db: AsyncSession = Depends(get_db)):
     try:
@@ -160,7 +200,7 @@ async def update_recall_status(recall_id: uuid.UUID, data: RecallStatusUpdate,
 
 # ── Scope Calculation ─────────────────────────────────────────────────────────
 
-@router.post("/recalls/{recall_id}/scope-calculate", response_model=List[RecallScopeLineOut])
+@router.post("/recalls/{recall_id}/scope-calculate", response_model=List[RecallScopeLineOut], dependencies=_RECALL)
 async def calculate_scope(recall_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     try:
         scope_lines = await recall_svc.calculate_scope(db, recall_id)
@@ -171,7 +211,7 @@ async def calculate_scope(recall_id: uuid.UUID, db: AsyncSession = Depends(get_d
 
 # ── Containment ───────────────────────────────────────────────────────────────
 
-@router.post("/recalls/{recall_id}/contain")
+@router.post("/recalls/{recall_id}/contain", dependencies=_RECALL)
 async def contain_recall(recall_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     try:
         return await recall_svc.contain_recall(db, recall_id)
@@ -181,13 +221,13 @@ async def contain_recall(recall_id: uuid.UUID, db: AsyncSession = Depends(get_db
 
 # ── Recall Actions ────────────────────────────────────────────────────────────
 
-@router.post("/recalls/{recall_id}/actions", response_model=RecallActionOut, status_code=201)
+@router.post("/recalls/{recall_id}/actions", response_model=RecallActionOut, status_code=201, dependencies=_RECALL)
 async def create_action(recall_id: uuid.UUID, data: RecallActionCreate,
                          db: AsyncSession = Depends(get_db)):
     return await recall_svc.create_action(db, recall_id, data)
 
 
-@router.post("/recalls/actions/{action_id}/complete", response_model=RecallActionOut)
+@router.post("/recalls/actions/{action_id}/complete", response_model=RecallActionOut, dependencies=_RECALL)
 async def complete_action(action_id: uuid.UUID, data: RecallActionComplete,
                            db: AsyncSession = Depends(get_db)):
     try:
@@ -196,14 +236,14 @@ async def complete_action(action_id: uuid.UUID, data: RecallActionComplete,
         raise HTTPException(404, str(e))
 
 
-@router.get("/recalls/{recall_id}/actions", response_model=List[RecallActionOut])
+@router.get("/recalls/{recall_id}/actions", response_model=List[RecallActionOut], dependencies=_VIEW)
 async def list_actions(recall_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     return await recall_svc.list_actions(db, recall_id)
 
 
 # ── Customer Impact ───────────────────────────────────────────────────────────
 
-@router.post("/recalls/{recall_id}/customer-impact/build", response_model=List[RecallCustomerImpactOut])
+@router.post("/recalls/{recall_id}/customer-impact/build", response_model=List[RecallCustomerImpactOut], dependencies=_RECALL)
 async def build_customer_impact(recall_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     try:
         impacts = await recall_svc.build_customer_impact(db, recall_id)
@@ -212,12 +252,12 @@ async def build_customer_impact(recall_id: uuid.UUID, db: AsyncSession = Depends
         raise HTTPException(404, str(e))
 
 
-@router.get("/recalls/{recall_id}/customer-impact", response_model=List[RecallCustomerImpactOut])
+@router.get("/recalls/{recall_id}/customer-impact", response_model=List[RecallCustomerImpactOut], dependencies=_VIEW)
 async def get_customer_impact(recall_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     return await recall_svc.list_customer_impacts(db, recall_id)
 
 
-@router.post("/recalls/customer-impact/{impact_id}/notify", response_model=RecallCustomerImpactOut)
+@router.post("/recalls/customer-impact/{impact_id}/notify", response_model=RecallCustomerImpactOut, dependencies=_RECALL)
 async def notify_customer(impact_id: uuid.UUID, method: str = Query("email"),
                            db: AsyncSession = Depends(get_db)):
     try:
@@ -229,14 +269,14 @@ async def notify_customer(impact_id: uuid.UUID, method: str = Query("email"),
 
 # ── Returns ───────────────────────────────────────────────────────────────────
 
-@router.post("/recalls/{recall_id}/returns", response_model=RecallReturnOut, status_code=201)
+@router.post("/recalls/{recall_id}/returns", response_model=RecallReturnOut, status_code=201, dependencies=_RECALL)
 async def record_return(recall_id: uuid.UUID, data: RecallReturnCreate,
                          db: AsyncSession = Depends(get_db)):
     ret = await recall_svc.record_return(db, recall_id, data)
     return RecallReturnOut.model_validate(ret)
 
 
-@router.get("/recalls/{recall_id}/returns", response_model=List[RecallReturnOut])
+@router.get("/recalls/{recall_id}/returns", response_model=List[RecallReturnOut], dependencies=_VIEW)
 async def list_returns(recall_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     returns = await recall_svc.list_returns(db, recall_id)
     return [RecallReturnOut.model_validate(r) for r in returns]
@@ -244,7 +284,7 @@ async def list_returns(recall_id: uuid.UUID, db: AsyncSession = Depends(get_db))
 
 # ── Close ─────────────────────────────────────────────────────────────────────
 
-@router.post("/recalls/{recall_id}/close", response_model=RecallHeaderOut)
+@router.post("/recalls/{recall_id}/close", response_model=RecallHeaderOut, dependencies=_CLOSE)
 async def close_recall(
     recall_id: uuid.UUID,
     effectiveness_score: Optional[float] = Query(None),
@@ -259,7 +299,7 @@ async def close_recall(
 
 # ── Regulatory Report ─────────────────────────────────────────────────────────
 
-@router.get("/recalls/{recall_id}/regulatory-report", response_model=RecallRegulatoryReport)
+@router.get("/recalls/{recall_id}/regulatory-report", response_model=RecallRegulatoryReport, dependencies=_EXPORT)
 async def regulatory_report(recall_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     try:
         return await recall_svc.generate_regulatory_report(db, recall_id)
@@ -269,19 +309,19 @@ async def regulatory_report(recall_id: uuid.UUID, db: AsyncSession = Depends(get
 
 # ── AI Agents ─────────────────────────────────────────────────────────────────
 
-@router.post("/recalls/{recall_id}/run-ai-agents")
+@router.post("/recalls/{recall_id}/run-ai-agents", dependencies=_RECALL)
 async def run_ai_agents(recall_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     recs = await recall_svc.run_recall_ai_agents(db, recall_id)
     return {"generated": len(recs)}
 
 
-@router.get("/recalls/{recall_id}/ai-recommendations", response_model=List[TRRecAIRecommendationOut])
+@router.get("/recalls/{recall_id}/ai-recommendations", response_model=List[TRRecAIRecommendationOut], dependencies=_VIEW)
 async def list_ai_recs(recall_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     recs = await recall_svc.list_ai_recommendations(db, recall_id)
     return [TRRecAIRecommendationOut.model_validate(r) for r in recs]
 
 
-@router.post("/recalls/ai-recommendations/{rec_id}/review", response_model=TRRecAIRecommendationOut)
+@router.post("/recalls/ai-recommendations/{rec_id}/review", response_model=TRRecAIRecommendationOut, dependencies=_RECALL)
 async def review_ai_rec(rec_id: uuid.UUID, data: TRRecAIRecReview,
                          db: AsyncSession = Depends(get_db)):
     try:
@@ -293,7 +333,7 @@ async def review_ai_rec(rec_id: uuid.UUID, data: TRRecAIRecReview,
 
 # ── Communication Templates ───────────────────────────────────────────────────
 
-@router.get("/recall-templates", response_model=List[RecallTemplateOut])
+@router.get("/recall-templates", response_model=List[RecallTemplateOut], dependencies=_VIEW)
 async def list_recall_templates(
     audience: Optional[str] = None,
     active_only: bool = True,
@@ -303,7 +343,7 @@ async def list_recall_templates(
     return [RecallTemplateOut.model_validate(t) for t in templates]
 
 
-@router.post("/recall-templates", response_model=RecallTemplateOut, status_code=201)
+@router.post("/recall-templates", response_model=RecallTemplateOut, status_code=201, dependencies=_RECALL)
 async def create_recall_template(
     data: RecallTemplateCreate,
     db: AsyncSession = Depends(get_db),
@@ -312,7 +352,7 @@ async def create_recall_template(
     return RecallTemplateOut.model_validate(tmpl)
 
 
-@router.patch("/recall-templates/{template_id}", response_model=RecallTemplateOut)
+@router.patch("/recall-templates/{template_id}", response_model=RecallTemplateOut, dependencies=_RECALL)
 async def update_recall_template(
     template_id: uuid.UUID,
     data: RecallTemplateUpdate,
@@ -327,7 +367,7 @@ async def update_recall_template(
 
 # ── Status Audit Log ──────────────────────────────────────────────────────────
 
-@router.get("/recalls/{recall_id}/audit-log", response_model=List[RecallStatusLogOut])
+@router.get("/recalls/{recall_id}/audit-log", response_model=List[RecallStatusLogOut], dependencies=_VIEW)
 async def recall_audit_log(recall_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     logs = await recall_svc.list_status_logs(db, recall_id)
     out = []
@@ -341,13 +381,13 @@ async def recall_audit_log(recall_id: uuid.UUID, db: AsyncSession = Depends(get_
 
 # ── Evidence Attachments ──────────────────────────────────────────────────────
 
-@router.get("/recalls/{recall_id}/evidence", response_model=List[RecallEvidenceOut])
+@router.get("/recalls/{recall_id}/evidence", response_model=List[RecallEvidenceOut], dependencies=_VIEW)
 async def list_recall_evidence(recall_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     evidence = await recall_svc.list_evidence(db, recall_id)
     return [RecallEvidenceOut.model_validate(e) for e in evidence]
 
 
-@router.post("/recalls/{recall_id}/evidence", response_model=RecallEvidenceOut, status_code=201)
+@router.post("/recalls/{recall_id}/evidence", response_model=RecallEvidenceOut, status_code=201, dependencies=_RECALL)
 async def add_recall_evidence(
     recall_id: uuid.UUID,
     data: RecallEvidenceCreate,
