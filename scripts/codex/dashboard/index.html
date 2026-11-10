@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <title>Codex Projects</title>
+    <link rel="stylesheet" href="/dashboard.css">
+    <script src="/dashboard.js" defer></script>
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <div class="brand"><span class="brand-mark">C</span><span>Codex <span class="muted">/ Projects</span></span></div>
+        <div class="top-actions"><span class="live"><span></span>Local view</span><button id="theme-toggle" class="icon-button" type="button" aria-label="Switch to dark mode" aria-pressed="false">Dark mode</button><button id="refresh" class="icon-button" type="button" aria-label="Refresh project data">Refresh</button></div>
+      </header>
+
+      <section class="intro">
+        <div>
+          <p class="eyebrow">WORKSPACE OVERVIEW</p>
+          <h1>Selected projects</h1>
+          <p class="subtitle">Read-only Codex activity and TASKS.md state for the selected project. Owner answers are appended only to that project’s inbox.</p>
+        </div>
+        <div class="updated"><span class="pulse"></span><span id="updated">Connecting to Codex…</span></div>
+      </section>
+
+      <section class="summary" aria-label="Overview">
+        <article class="summary-card"><span class="summary-label">Projects</span><strong id="project-count">—</strong></article>
+        <article class="summary-card"><span class="summary-label">Codex threads</span><strong id="thread-count">—</strong></article>
+        <article id="task-summary" class="summary-card current"><span class="summary-label">Current project task</span><strong id="task-id">—</strong><span id="task-title" class="current-title">Reading TASKS.md</span></article>
+      </section>
+
+      <section id="task-details" class="task-details" aria-label="Current project task">
+        <div class="task-detail"><span>Task status</span><strong id="task-status">—</strong></div>
+        <div class="task-detail"><span>Milestone / sprint</span><strong id="task-scope">—</strong></div>
+        <div class="task-detail"><span>Next task</span><strong id="next-task">—</strong></div>
+        <div class="task-detail"><span>Completion</span><strong id="completion">—</strong></div>
+      </section>
+
+      <section id="owner-questions" class="owner-questions" aria-label="Questions for Şekip" hidden>
+        <div class="questions-heading"><div><h2>Questions for Şekip</h2><p>Answers are saved for the automation to apply at the next task boundary.</p></div></div>
+        <div id="questions-list" class="questions-list"></div>
+      </section>
+
+      <section id="notice" class="notice" hidden></section>
+
+      <section id="selected-project" class="selected-project" aria-live="polite"></section>
+
+      <section class="list-header">
+        <div><h2>Project activity</h2><p id="project-subtitle">Choose a project to see its latest Codex work</p></div>
+        <div class="project-controls">
+          <label class="project-picker">Project<select id="project-select" aria-label="Select active project"><option value="">Loading projects…</option></select></label>
+          <label class="search"><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="Filter this project's tasks" autocomplete="off"></label>
+        </div>
+      </section>
+
+      <section id="projects" class="projects" aria-live="polite">
+        <div class="loading-card">Loading project activity…</div>
+      </section>
+
+      <section class="threads-section" aria-label="Recent Codex threads">
+        <div class="threads-heading"><h2>Recent Codex threads</h2><p>Live status from the read-only Codex App Server list</p></div>
+        <div id="threads" class="threads" aria-live="polite"><div class="loading-card">Loading Codex threads…</div></div>
+      </section>
+
+      <footer><span>Local dashboard · 127.0.0.1 · Codex data remains read-only</span><span id="source">Codex App Server</span></footer>
+    </main>
+  </body>
+</html>

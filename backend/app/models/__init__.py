@@ -5,6 +5,8 @@ from app.models.utilities import (
 from app.models.ai import (
     AIRequest, AIPrediction, AIRecommendation, AIFormulation, AIScenario,
     AIRequestStatus, AIRequestType, AIProvider as AIProviderEnum,
+    AIDecisionDomain, AIRiskTier, AIDecisionStatus,
+    AIDecisionTypeRegistry, AIApprovalPolicy, AIProviderConfig, AIDecisionLog,
 )
 from app.models.role import AccessScope, Role, Permission, role_permission
 from app.models.user import User, user_role

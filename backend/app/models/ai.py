@@ -250,3 +250,131 @@ class AIPrompt(Base, TimestampMixin):
     is_active = Column(Boolean, default=True, nullable=False)
     notes = Column(Text, nullable=True)
     created_by = Column(String(200), nullable=True)
+
+
+# ── M30: AI Decision Governance ───────────────────────────────────────────────
+
+class AIDecisionDomain(str, enum.Enum):
+    PRODUCTION_SCHEDULE   = "PRODUCTION_SCHEDULE"
+    PROCUREMENT_ORDER     = "PROCUREMENT_ORDER"
+    MAINTENANCE_ACTION    = "MAINTENANCE_ACTION"
+    PRICING_ADJUSTMENT    = "PRICING_ADJUSTMENT"
+    INVENTORY_REORDER     = "INVENTORY_REORDER"
+    QUALITY_DISPOSITION   = "QUALITY_DISPOSITION"
+    RESOURCE_ALLOCATION   = "RESOURCE_ALLOCATION"
+    GENERAL               = "GENERAL"
+
+
+class AIRiskTier(str, enum.Enum):
+    LOW      = "LOW"
+    MEDIUM   = "MEDIUM"
+    HIGH     = "HIGH"
+    CRITICAL = "CRITICAL"
+
+
+class AIDecisionStatus(str, enum.Enum):
+    PENDING_APPROVAL  = "PENDING_APPROVAL"
+    APPROVED          = "APPROVED"
+    REJECTED          = "REJECTED"
+    EXECUTING         = "EXECUTING"
+    EXECUTED          = "EXECUTED"
+    ROLLED_BACK       = "ROLLED_BACK"
+    EXPIRED           = "EXPIRED"
+    AUTO_APPROVED     = "AUTO_APPROVED"
+
+
+class AIDecisionTypeRegistry(Base, TimestampMixin):
+    """M30.S01.T001 — Catalogue of AI decision types with default risk tiers."""
+    __tablename__ = "ai_decision_type_registry"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    domain = Column(Enum(AIDecisionDomain), nullable=False, unique=True, index=True)
+    default_risk_tier = Column(Enum(AIRiskTier), nullable=False, default=AIRiskTier.MEDIUM)
+    description = Column(Text, nullable=True)
+    example_actions = Column(JSON, nullable=True)   # list of example action strings
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_by = Column(String(200), nullable=True)
+
+
+class AIApprovalPolicy(Base, TimestampMixin):
+    """M30.S01.T002 — Human approval policy keyed on risk tier."""
+    __tablename__ = "ai_approval_policies"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    risk_tier = Column(Enum(AIRiskTier), nullable=False, unique=True, index=True)
+    requires_human_approval = Column(Boolean, nullable=False, default=True)
+    # Minimum confidence score (0.0–1.0) to auto-approve without human review
+    auto_approve_min_confidence = Column(Numeric(5, 4), nullable=True)
+    required_approver_role = Column(String(100), nullable=True)   # e.g. "production_manager"
+    approval_timeout_hours = Column(Integer, nullable=True, default=24)
+    escalation_hours = Column(Integer, nullable=True)
+    notes = Column(Text, nullable=True)
+
+
+class AIProviderConfig(Base, TimestampMixin):
+    """M30.S01.T004 — Provider/model/version provenance registry."""
+    __tablename__ = "ai_provider_configs"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    provider = Column(Enum(AIProvider), nullable=False, index=True)
+    model_name = Column(String(100), nullable=False)
+    model_version = Column(String(50), nullable=True)
+    capability_flags = Column(JSON, nullable=True)   # {"function_calling": true, "vision": false, ...}
+    max_tokens = Column(Integer, nullable=True)
+    cost_per_1k_input_tokens = Column(Numeric(10, 6), nullable=True)
+    cost_per_1k_output_tokens = Column(Numeric(10, 6), nullable=True)
+    is_active = Column(Boolean, default=True, nullable=False)
+    notes = Column(Text, nullable=True)
+
+
+class AIDecisionLog(Base, TimestampMixin):
+    """M30.S02-S04 — Full governance audit log for one AI decision lifecycle."""
+    __tablename__ = "ai_decision_logs"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    # Idempotency: prevents duplicate executions
+    idempotency_key = Column(String(255), nullable=True, unique=True, index=True)
+
+    # S01: classification
+    domain = Column(Enum(AIDecisionDomain), nullable=False, index=True)
+    risk_tier = Column(Enum(AIRiskTier), nullable=False, index=True)
+    provider_config_id = Column(UUID(as_uuid=True), ForeignKey("ai_provider_configs.id", ondelete="SET NULL"), nullable=True)
+
+    # S02: Observe → Decide
+    observation_payload = Column(JSON, nullable=True)      # structured context fed to AI
+    constraint_violations = Column(JSON, nullable=True)    # list of violated constraints
+    recommendation = Column(Text, nullable=True)           # primary recommendation text
+    alternatives = Column(JSON, nullable=True)             # list of alternative recommendations
+    confidence_score = Column(Numeric(5, 4), nullable=True)   # 0.0–1.0
+    explanation = Column(Text, nullable=True)              # human-readable rationale
+    evidence = Column(JSON, nullable=True)                 # supporting data/citations
+
+    # S03: Simulate → Approve → Execute
+    predicted_kpis = Column(JSON, nullable=True)           # {kpi_name: value} before execution
+    simulation_data = Column(JSON, nullable=True)          # full scenario output
+    status = Column(Enum(AIDecisionStatus), nullable=False, default=AIDecisionStatus.PENDING_APPROVAL, index=True)
+    requires_approval = Column(Boolean, nullable=False, default=True)
+    approved_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    approved_at = Column(DateTime, nullable=True)
+    rejected_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    rejected_at = Column(DateTime, nullable=True)
+    rejection_reason = Column(Text, nullable=True)
+    executed_at = Column(DateTime, nullable=True)
+    execution_result = Column(JSON, nullable=True)         # what actually changed
+    rolled_back_at = Column(DateTime, nullable=True)
+    rollback_reason = Column(Text, nullable=True)
+    expires_at = Column(DateTime, nullable=True)           # approval window deadline
+
+    # S04: Learn
+    actual_kpis = Column(JSON, nullable=True)              # {kpi_name: value} measured after execution
+    acceptance_reason = Column(Text, nullable=True)
+    kpi_feedback = Column(JSON, nullable=True)             # predicted-vs-actual per KPI
+    outcome_recorded_at = Column(DateTime, nullable=True)
+
+    # Audit
+    initiated_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
+    provider_config = relationship("AIProviderConfig", foreign_keys=[provider_config_id])
+    approved_by = relationship("User", foreign_keys=[approved_by_id])
+    rejected_by = relationship("User", foreign_keys=[rejected_by_id])
+    initiated_by = relationship("User", foreign_keys=[initiated_by_id])
