@@ -13,10 +13,20 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 - Current Task: M22.S04.T002 — Split/merge/rework tests
 - Current Task Status: IMPLEMENTED
 - Next Task/Action: M22.S04.T003 — Cross-module transaction tests
-- Required Actor: CODEX
+- Required Actor: CLAUDE
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
 - M00 Gate: COMPLETE
+
+
+## Claude Handoff — 2026-11-10
+
+- Owner directive: all remaining tasks transfer to Claude. Codex is no longer the active runner. The previous ChatGPT-only task-closure gate is superseded by `coordination/CLAUDE_AUTONOMOUS_EXECUTION_POLICY.md`.
+- Snapshot at handoff: 368 DONE; 5 IMPLEMENTED awaiting milestone verification; 161 PLANNED; 4 PARTIAL; 11 BLOCKED; 3 DEFERRED; 0 IN_PROGRESS; **184 not DONE** across all task states. This is a static handoff count, not a live counter; recount the task rows before each milestone.
+- Next: M22.S04.T003 cross-module transaction tests; M22.S04.T004 milestone closure. First reconcile the five `[v]` M22 tasks against real evidence and complete M22 acceptance, then advance by dependency order.
+- Do not relabel historical completed tasks, silently unblock external credentials, or mark untested work DONE. Maintain owner decision M03.S02.T004.
+- Testing: lightweight checks within tasks; consolidated full validation and independent review at milestone transitions, with earlier targeted checks for critical risks.
+- Session recovery: Claude must update Project Status and concise next-action/evidence notes before stopping.
 
 ## Status Legend
 
@@ -39,9 +49,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 6. Cross-module changes must preserve RBAC, auditability, migrations, API contracts, frontend/backend consistency and tenant/company boundaries.
 7. M20–M35 are enterprise upgrades layered on M01–M19 foundations.
 8. Graphify is reference tooling only. Do not run refreshes without an explicit project need; no hooks, watchers or competing tracker state.
-9. The owner authorizes the active Codex task runner as the tracker writer for this project. Update `TASKS.md` only for explicit current-task claims, accepted transitions, and matching owner answers; the dashboard and independent reviewer are read-only. Keep `TASKS_HISTORY.md` immutable.
+9. The owner authorizes Claude as the sole active autonomous task runner and TASKS.md writer. Claude may select and implement all remaining dependency-ready tasks, update implemented/blocked/accepted statuses against real evidence, and advance milestones. Independent reviewers are read-only. Keep `TASKS_HISTORY.md` immutable. See `coordination/CLAUDE_AUTONOMOUS_EXECUTION_POLICY.md`.
 10. Builder logs are evidence claims, not acceptance by themselves.
-11. `main` is the only authorized branch. Builders must not create, restore, push, or work on legacy `hiveai*` branches unless ChatGPT explicitly authorizes a temporary branch.
+11. `main` is the only authorized branch. Claude must not create, restore, push, or work on legacy `hiveai*` branches; owner approval is required for any exception.
 
 ---
 
