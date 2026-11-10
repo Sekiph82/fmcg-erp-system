@@ -54,6 +54,8 @@ class QCParameterRead(BaseModel):
 class QCTestResultCreate(BaseModel):
     parameter_id: Optional[uuid.UUID] = None
     template_parameter_id: Optional[uuid.UUID] = None
+    test_method_id: Optional[uuid.UUID] = None
+    instrument_calibration_id: Optional[uuid.UUID] = None
     parameter_name: str
     parameter_type: ParameterType
     unit: Optional[str] = None

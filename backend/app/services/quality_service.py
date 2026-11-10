@@ -150,6 +150,28 @@ async def make_decision(
                 detail="Inspection cannot be accepted while any test result has failed or is incomplete.",
             )
 
+    if decision == QCDecision.CONDITIONAL_RELEASE:
+        from app.models.quality import QCDeviation, QualityConcession
+        from app.services.qa_enterprise_service import concession_is_active
+
+        if getattr(insp, "lot_id", None) is None:
+            raise HTTPException(status_code=422, detail="Conditional release applies only to an identified lot.")
+        deviation_ids = (await db.execute(
+            select(QCDeviation.id).where(QCDeviation.inspection_id == insp.id)
+        )).scalars().all()
+        concessions = (await db.execute(
+            select(QualityConcession).where(
+                QualityConcession.lot_id == insp.lot_id, QualityConcession.status == "APPROVED",
+                QualityConcession.deviation_id.in_(deviation_ids),
+            )
+        )).scalars().all() if deviation_ids else []
+        if not any(concession_is_active(c) for c in concessions):
+            raise HTTPException(
+                status_code=422,
+                detail="Conditional release requires an approved, unexpired concession for a deviation "
+                       "raised on this inspection.",
+            )
+
     insp.decision = decision
     insp.decided_by_id = decided_by_id
     insp.decided_at = datetime.now(timezone.utc)

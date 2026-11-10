@@ -194,6 +194,7 @@ class QCTemplateParameter(Base, TimestampMixin):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     template_id = Column(UUID(as_uuid=True), ForeignKey("qc_templates.id", ondelete="CASCADE"), nullable=False)
     parameter_id = Column(UUID(as_uuid=True), ForeignKey("qc_parameters.id", ondelete="SET NULL"), nullable=True)
+    test_method_id = Column(UUID(as_uuid=True), ForeignKey("qc_test_methods.id", ondelete="SET NULL"), nullable=True, index=True)
     parameter_name = Column(String(100), nullable=False)
     parameter_type = Column(Enum(ParameterType), nullable=False, default=ParameterType.NUMERIC)
     unit = Column(String(30), nullable=True)
@@ -280,6 +281,10 @@ class QCTestResult(Base, TimestampMixin):
     parameter_id = Column(UUID(as_uuid=True), ForeignKey("qc_parameters.id", ondelete="SET NULL"), nullable=True)
     template_parameter_id = Column(
         UUID(as_uuid=True), ForeignKey("qc_template_parameters.id", ondelete="SET NULL"), nullable=True, index=True,
+    )
+    test_method_id = Column(UUID(as_uuid=True), ForeignKey("qc_test_methods.id", ondelete="SET NULL"), nullable=True, index=True)
+    instrument_calibration_id = Column(
+        UUID(as_uuid=True), ForeignKey("instrument_calibrations.id", ondelete="SET NULL"), nullable=True, index=True,
     )
 
     parameter_name = Column(String(100), nullable=False)
@@ -839,6 +844,17 @@ class InstrumentCalibrationEvent(Base, TimestampMixin):
 
 class AQLSamplingPlan(Base, TimestampMixin):
     __tablename__ = "aql_sampling_plans"
+    __table_args__ = (
+        CheckConstraint("sample_size > 0", name="ck_aql_sampling_plans_sample_positive"),
+        CheckConstraint(
+            "acceptance_number >= 0 AND rejection_number > acceptance_number",
+            name="ck_aql_sampling_plans_ac_re",
+        ),
+        CheckConstraint(
+            "lot_size_min >= 1 AND (lot_size_max IS NULL OR lot_size_max >= lot_size_min)",
+            name="ck_aql_sampling_plans_lot_range",
+        ),
+    )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     plan_code = Column(String(50), unique=True, nullable=False, index=True)
@@ -946,6 +962,9 @@ class QualityAuditChecklist(Base, TimestampMixin):
     next_audit_date = Column(Date, nullable=True)
     certificate_issued = Column(Boolean, default=False, nullable=False)
     notes = Column(Text, nullable=True)
+    closed_at = Column(DateTime(timezone=True), nullable=True)
+    closed_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    corrective_action_id = Column(UUID(as_uuid=True), ForeignKey("corrective_actions.id", ondelete="SET NULL"), nullable=True)
 
 
 class SupplierFoodSafetyStatus(str, enum.Enum):
@@ -976,3 +995,297 @@ class SupplierFoodSafetyApproval(Base, TimestampMixin):
     major_findings = Column(Integer, default=0, nullable=False)
     minor_findings = Column(Integer, default=0, nullable=False)
     notes = Column(Text, nullable=True)
+
+
+# ── M35 QC/QA Enterprise ──────────────────────────────────────────────────────
+
+_USER_FK = "users.id"
+
+
+class QCTestMethod(Base, TimestampMixin):
+    """Versioned laboratory test method with instrument and skill requirements."""
+    __tablename__ = "qc_test_methods"
+    __table_args__ = (
+        UniqueConstraint("method_code", "version", name="uq_qc_test_methods_code_version"),
+        CheckConstraint("version >= 1", name="ck_qc_test_methods_version_positive"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    method_code = Column(String(50), nullable=False, index=True)
+    version = Column(Integer, nullable=False, default=1)
+    name = Column(String(200), nullable=False)
+    standard_reference = Column(String(200), nullable=True)
+    description = Column(Text, nullable=True)
+    instrument_type = Column(String(100), nullable=True)
+    requires_instrument = Column(Boolean, nullable=False, default=False)
+    required_skill_id = Column(
+        UUID(as_uuid=True), ForeignKey("training_skills.skill_id", ondelete="SET NULL"), nullable=True,
+    )
+    is_active = Column(Boolean, nullable=False, default=True)
+
+
+class QualityChangeRequest(Base, TimestampMixin):
+    """Quality change control: DRAFT → SUBMITTED → APPROVED → IMPLEMENTED → CLOSED."""
+    __tablename__ = "quality_change_requests"
+    __table_args__ = (
+        CheckConstraint(
+            "change_type IN ('SPECIFICATION', 'QC_PLAN', 'TEST_METHOD', 'PROCESS', 'OTHER')",
+            name="ck_quality_change_requests_type",
+        ),
+        CheckConstraint(
+            "status IN ('DRAFT', 'SUBMITTED', 'APPROVED', 'REJECTED', 'IMPLEMENTED', 'CLOSED', 'CANCELLED')",
+            name="ck_quality_change_requests_status",
+        ),
+        CheckConstraint(
+            "status NOT IN ('APPROVED', 'REJECTED', 'IMPLEMENTED', 'CLOSED') "
+            "OR (decided_by_id IS NOT NULL AND decided_by_id != requested_by_id)",
+            name="ck_quality_change_requests_segregation",
+        ),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    cr_no = Column(String(50), nullable=False, unique=True, index=True)
+    title = Column(String(300), nullable=False)
+    change_type = Column(String(20), nullable=False)
+    target_reference = Column(String(100), nullable=True, index=True)
+    description = Column(Text, nullable=False)
+    risk_assessment = Column(Text, nullable=True)
+    status = Column(String(16), nullable=False, default="DRAFT", server_default="DRAFT")
+    requested_by_id = Column(UUID(as_uuid=True), ForeignKey(_USER_FK, ondelete="RESTRICT"), nullable=False)
+    decided_by_id = Column(UUID(as_uuid=True), ForeignKey(_USER_FK, ondelete="RESTRICT"), nullable=True)
+    decided_at = Column(DateTime(timezone=True), nullable=True)
+    decision_notes = Column(Text, nullable=True)
+    implemented_by_id = Column(UUID(as_uuid=True), ForeignKey(_USER_FK, ondelete="SET NULL"), nullable=True)
+    implemented_at = Column(DateTime(timezone=True), nullable=True)
+    verification_notes = Column(Text, nullable=True)
+    closed_at = Column(DateTime(timezone=True), nullable=True)
+
+
+class QCSpecification(Base, TimestampMixin):
+    """Versioned, effective-dated specification for a product, material or process stage."""
+    __tablename__ = "qc_specifications"
+    __table_args__ = (
+        UniqueConstraint("spec_code", "version", name="uq_qc_specifications_code_version"),
+        CheckConstraint("version >= 1", name="ck_qc_specifications_version_positive"),
+        CheckConstraint(
+            "status IN ('DRAFT', 'APPROVED', 'SUPERSEDED', 'RETIRED')", name="ck_qc_specifications_status",
+        ),
+        CheckConstraint(
+            "effective_to IS NULL OR effective_to >= effective_from", name="ck_qc_specifications_window",
+        ),
+        CheckConstraint(
+            "(scope_type = 'PRODUCT' AND product_id IS NOT NULL) "
+            "OR (scope_type = 'MATERIAL' AND material_id IS NOT NULL) "
+            "OR (scope_type = 'PROCESS' AND process_stage IS NOT NULL)",
+            name="ck_qc_specifications_scope",
+        ),
+        CheckConstraint(
+            "status = 'DRAFT' OR (approved_by_id IS NOT NULL AND approved_by_id != created_by_id)",
+            name="ck_qc_specifications_segregation",
+        ),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    spec_code = Column(String(50), nullable=False, index=True)
+    version = Column(Integer, nullable=False, default=1)
+    name = Column(String(200), nullable=False)
+    scope_type = Column(String(16), nullable=False)
+    product_id = Column(UUID(as_uuid=True), ForeignKey("products.id", ondelete="RESTRICT"), nullable=True, index=True)
+    material_id = Column(UUID(as_uuid=True), ForeignKey("materials.id", ondelete="RESTRICT"), nullable=True, index=True)
+    process_stage = Column(String(100), nullable=True)
+    template_id = Column(UUID(as_uuid=True), ForeignKey("qc_templates.id", ondelete="RESTRICT"), nullable=False)
+    status = Column(String(16), nullable=False, default="DRAFT", server_default="DRAFT")
+    effective_from = Column(Date, nullable=False)
+    effective_to = Column(Date, nullable=True)
+    change_request_id = Column(
+        UUID(as_uuid=True), ForeignKey("quality_change_requests.id", ondelete="RESTRICT"), nullable=True,
+    )
+    change_reason = Column(Text, nullable=True)
+    parameter_snapshot = Column(JSON, nullable=True)
+    created_by_id = Column(UUID(as_uuid=True), ForeignKey(_USER_FK, ondelete="RESTRICT"), nullable=False)
+    approved_by_id = Column(UUID(as_uuid=True), ForeignKey(_USER_FK, ondelete="RESTRICT"), nullable=True)
+    approved_at = Column(DateTime(timezone=True), nullable=True)
+
+    template = relationship("QCTemplate", foreign_keys=[template_id])
+
+
+class QCPlan(Base, TimestampMixin):
+    """Ordered QC plan (incoming → in-process → finished goods) for an item."""
+    __tablename__ = "qc_plans"
+    __table_args__ = (
+        UniqueConstraint("plan_code", "version", name="uq_qc_plans_code_version"),
+        CheckConstraint("status IN ('DRAFT', 'ACTIVE', 'RETIRED')", name="ck_qc_plans_status"),
+        CheckConstraint("product_id IS NOT NULL OR material_id IS NOT NULL", name="ck_qc_plans_item"),
+        CheckConstraint(
+            "status = 'DRAFT' OR (approved_by_id IS NOT NULL AND approved_by_id != created_by_id)",
+            name="ck_qc_plans_segregation",
+        ),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    plan_code = Column(String(50), nullable=False, index=True)
+    version = Column(Integer, nullable=False, default=1)
+    name = Column(String(200), nullable=False)
+    product_id = Column(UUID(as_uuid=True), ForeignKey("products.id", ondelete="RESTRICT"), nullable=True, index=True)
+    material_id = Column(UUID(as_uuid=True), ForeignKey("materials.id", ondelete="RESTRICT"), nullable=True, index=True)
+    status = Column(String(16), nullable=False, default="DRAFT", server_default="DRAFT")
+    created_by_id = Column(UUID(as_uuid=True), ForeignKey(_USER_FK, ondelete="RESTRICT"), nullable=False)
+    approved_by_id = Column(UUID(as_uuid=True), ForeignKey(_USER_FK, ondelete="RESTRICT"), nullable=True)
+    approved_at = Column(DateTime(timezone=True), nullable=True)
+
+    steps = relationship("QCPlanStep", back_populates="plan", cascade="all, delete-orphan",
+                         order_by="QCPlanStep.sequence")
+
+
+class QCPlanStep(Base, TimestampMixin):
+    __tablename__ = "qc_plan_steps"
+    __table_args__ = (
+        UniqueConstraint("plan_id", "sequence", name="uq_qc_plan_steps_sequence"),
+        CheckConstraint(
+            "qc_type IN ('INCOMING', 'IN_PROCESS', 'FINISHED_GOODS', 'RETEST')", name="ck_qc_plan_steps_type",
+        ),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    plan_id = Column(UUID(as_uuid=True), ForeignKey("qc_plans.id", ondelete="CASCADE"), nullable=False, index=True)
+    sequence = Column(Integer, nullable=False)
+    qc_type = Column(String(20), nullable=False)
+    qc_sub_type = Column(String(50), nullable=True)
+    spec_code = Column(String(50), nullable=True)
+    is_mandatory = Column(Boolean, nullable=False, default=True)
+    blocks_progression = Column(Boolean, nullable=False, default=True)
+
+    plan = relationship("QCPlan", back_populates="steps")
+
+
+class SPCSignal(Base, TimestampMixin):
+    """One out-of-control rule hit on one measured result (deduplicated)."""
+    __tablename__ = "spc_signals"
+    __table_args__ = (UniqueConstraint("test_result_id", "rule", name="uq_spc_signals_result_rule"),)
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    product_id = Column(UUID(as_uuid=True), ForeignKey("products.id", ondelete="SET NULL"), nullable=True, index=True)
+    parameter_name = Column(String(100), nullable=False, index=True)
+    test_result_id = Column(UUID(as_uuid=True), ForeignKey("qc_test_results.id", ondelete="CASCADE"), nullable=False)
+    rule = Column(String(40), nullable=False)
+    value = Column(Numeric(14, 4), nullable=False)
+    center_line = Column(Numeric(14, 4), nullable=False)
+    ucl = Column(Numeric(14, 4), nullable=False)
+    lcl = Column(Numeric(14, 4), nullable=False)
+    deviation_id = Column(UUID(as_uuid=True), ForeignKey("qc_deviations.id", ondelete="SET NULL"), nullable=True)
+    detected_by_id = Column(UUID(as_uuid=True), ForeignKey(_USER_FK, ondelete="SET NULL"), nullable=True)
+
+
+class QualityConcession(Base, TimestampMixin):
+    """Time-limited, conditioned acceptance of a nonconforming lot."""
+    __tablename__ = "quality_concessions"
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('PENDING', 'APPROVED', 'REJECTED', 'REVOKED')", name="ck_quality_concessions_status",
+        ),
+        CheckConstraint(
+            "status = 'PENDING' OR (decided_by_id IS NOT NULL AND decided_by_id != requested_by_id)",
+            name="ck_quality_concessions_segregation",
+        ),
+        CheckConstraint(
+            "status != 'APPROVED' OR (valid_until IS NOT NULL AND length(trim(conditions)) > 0)",
+            name="ck_quality_concessions_approved_terms",
+        ),
+        CheckConstraint("quantity_limit IS NULL OR quantity_limit > 0", name="ck_quality_concessions_qty"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    concession_no = Column(String(50), nullable=False, unique=True, index=True)
+    deviation_id = Column(UUID(as_uuid=True), ForeignKey("qc_deviations.id", ondelete="RESTRICT"), nullable=False)
+    lot_id = Column(UUID(as_uuid=True), ForeignKey("lots.id", ondelete="RESTRICT"), nullable=False, index=True)
+    quantity_limit = Column(Numeric(14, 3), nullable=True)
+    uom = Column(String(20), nullable=True)
+    justification = Column(Text, nullable=False)
+    conditions = Column(Text, nullable=True)
+    status = Column(String(16), nullable=False, default="PENDING", server_default="PENDING")
+    valid_until = Column(DateTime(timezone=True), nullable=True)
+    requested_by_id = Column(UUID(as_uuid=True), ForeignKey(_USER_FK, ondelete="RESTRICT"), nullable=False)
+    decided_by_id = Column(UUID(as_uuid=True), ForeignKey(_USER_FK, ondelete="RESTRICT"), nullable=True)
+    decided_at = Column(DateTime(timezone=True), nullable=True)
+    decision_notes = Column(Text, nullable=True)
+
+
+class QualityCostEntry(Base, TimestampMixin):
+    """Prevention / appraisal / internal / external failure cost linked to quality events."""
+    __tablename__ = "quality_cost_entries"
+    __table_args__ = (
+        CheckConstraint(
+            "category IN ('PREVENTION', 'APPRAISAL', 'INTERNAL_FAILURE', 'EXTERNAL_FAILURE')",
+            name="ck_quality_cost_entries_category",
+        ),
+        CheckConstraint("amount > 0", name="ck_quality_cost_entries_amount_positive"),
+        CheckConstraint(
+            "risk_level IS NULL OR risk_level IN ('LOW', 'MEDIUM', 'HIGH', 'CRITICAL')",
+            name="ck_quality_cost_entries_risk",
+        ),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    entry_no = Column(String(50), nullable=False, unique=True, index=True)
+    category = Column(String(20), nullable=False, index=True)
+    amount = Column(Numeric(14, 2), nullable=False)
+    currency = Column(String(3), nullable=False, default="KES", server_default="KES")
+    cost_date = Column(Date, nullable=False, index=True)
+    description = Column(Text, nullable=False)
+    risk_level = Column(String(16), nullable=True)
+    deviation_id = Column(UUID(as_uuid=True), ForeignKey("qc_deviations.id", ondelete="SET NULL"), nullable=True)
+    corrective_action_id = Column(UUID(as_uuid=True), ForeignKey("corrective_actions.id", ondelete="SET NULL"), nullable=True)
+    recall_id = Column(UUID(as_uuid=True), ForeignKey("recall_headers.id", ondelete="SET NULL"), nullable=True)
+    complaint_id = Column(UUID(as_uuid=True), ForeignKey("consumer_complaints.id", ondelete="SET NULL"), nullable=True)
+    lot_id = Column(UUID(as_uuid=True), ForeignKey("lots.id", ondelete="SET NULL"), nullable=True)
+    supplier_id = Column(UUID(as_uuid=True), ForeignKey("suppliers.id", ondelete="SET NULL"), nullable=True)
+    recorded_by_id = Column(UUID(as_uuid=True), ForeignKey(_USER_FK, ondelete="SET NULL"), nullable=True)
+
+
+class RetainSample(Base, TimestampMixin):
+    """Retained reference sample of a lot, kept until `retain_until`."""
+    __tablename__ = "retain_samples"
+    __table_args__ = (
+        CheckConstraint("quantity > 0", name="ck_retain_samples_qty_positive"),
+        CheckConstraint(
+            "quantity_remaining >= 0 AND quantity_remaining <= quantity", name="ck_retain_samples_remaining",
+        ),
+        CheckConstraint("status IN ('STORED', 'DEPLETED', 'DISPOSED')", name="ck_retain_samples_status"),
+        CheckConstraint("retain_until >= collected_on", name="ck_retain_samples_window"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    sample_no = Column(String(50), nullable=False, unique=True, index=True)
+    lot_id = Column(UUID(as_uuid=True), ForeignKey("lots.id", ondelete="RESTRICT"), nullable=False, index=True)
+    product_id = Column(UUID(as_uuid=True), ForeignKey("products.id", ondelete="SET NULL"), nullable=True)
+    material_id = Column(UUID(as_uuid=True), ForeignKey("materials.id", ondelete="SET NULL"), nullable=True)
+    quantity = Column(Numeric(14, 3), nullable=False)
+    quantity_remaining = Column(Numeric(14, 3), nullable=False)
+    uom = Column(String(20), nullable=False)
+    storage_location = Column(String(200), nullable=False)
+    storage_condition = Column(String(200), nullable=True)
+    collected_on = Column(Date, nullable=False)
+    retain_until = Column(Date, nullable=False, index=True)
+    status = Column(String(16), nullable=False, default="STORED", server_default="STORED")
+    created_by_id = Column(UUID(as_uuid=True), ForeignKey(_USER_FK, ondelete="SET NULL"), nullable=True)
+
+    movements = relationship("RetainSampleMovement", back_populates="sample", cascade="all, delete-orphan",
+                             order_by="RetainSampleMovement.created_at")
+
+
+class RetainSampleMovement(Base, TimestampMixin):
+    """Append-only withdrawal / disposal record."""
+    __tablename__ = "retain_sample_movements"
+    __table_args__ = (
+        CheckConstraint("movement_type IN ('WITHDRAW', 'DISPOSE')", name="ck_retain_sample_movements_type"),
+        CheckConstraint("quantity >= 0", name="ck_retain_sample_movements_qty"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    retain_sample_id = Column(UUID(as_uuid=True), ForeignKey("retain_samples.id", ondelete="CASCADE"), nullable=False, index=True)
+    movement_type = Column(String(10), nullable=False)
+    quantity = Column(Numeric(14, 3), nullable=False)
+    reason = Column(Text, nullable=False)
+    performed_by_id = Column(UUID(as_uuid=True), ForeignKey(_USER_FK, ondelete="SET NULL"), nullable=True)
+
+    sample = relationship("RetainSample", back_populates="movements")

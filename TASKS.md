@@ -8,11 +8,11 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 ## Project Status
 
-- Current Milestone: M28 — Full Traceability (closed, software scope)
-- Current Sprint: M28.S04 — Verification
-- Current Task: M28.S04.T004 — Close M28
-- Current Task Status: DONE (71 M28 tests passed; DB performance deferred)
-- Next Task/Action: M35 — QC/QA Enterprise Upgrade is PARTIAL (earlier DONE closure corrected); next open task M35.S01.T002 — Specification versions
+- Current Milestone: M35 — QC / QA Enterprise Upgrade
+- Current Sprint: M35.S06 — Verification & Program Closure
+- Current Task: M35.S06.T002 — Quality workflow UI/E2E suite
+- Current Task Status: PLANNED (M35 backend scope implemented: 109 new tests, zero regressions vs HEAD)
+- Next Task/Action: Build frontend pages for /quality-enterprise routes, then run UI/E2E; PostgreSQL rehearsal of migration 20261110_0028 and S06.T003 wait for a database environment
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -1334,76 +1334,76 @@ Shared evidence: `backend/tests/test_m28_traceability_verification.py` (27 passe
 
 # M35 — QC / QA Enterprise Upgrade
 
-**Status: PARTIAL — foundation verified only. Correction 2026-11-10: the earlier same-day DONE closure overclaimed; its 33 tests check enum contracts and spec-limit evaluation, not the enterprise upgrades below. Tasks reverted to their true state.**
+**Status: PARTIAL — backend QC/QA enterprise scope implemented and verified on an in-memory session; no UI for the new routes, no PostgreSQL rehearsal of migration 20261110_0028, and no browser/E2E runs. (2026-11-10: the earlier same-day DONE closure was withdrawn as overclaimed.)**
 **Depends on:** M10, M27, M28, M29, M31, M33.
 
-Foundation evidence: `backend/tests/test_m35_s06_verification.py` — 33 passed (QC enum contracts, `auto_evaluate_result` spec-limit boundaries, `_compute_inspection_outcome` critical-fail detection). `[P]` below means an existing model/service provides part of the task; `[ ]` means no implementation exists.
+Shared evidence (2026-11-10): `app/services/qa_enterprise_service.py`, router `app/api/v1/endpoints/quality_enterprise.py` (`/api/v1/quality-enterprise`, 24 paths), hardening in `qms.py` / `quality.py` / `quality_service.py` / `recall_service.py`, models in `app/models/quality.py`, migration `20261110_0028` (single head; offline SQL renders; table/column/FK/check parity with models checked by script — not applied to a database). Tests: `test_m35_qa_enterprise_rules.py` 44 passed, `test_m35_qa_enterprise_api.py` 65 passed (in-memory `fake_async_db.py`; it does not exercise SQL, row locks or DB constraints). Full backend suite 1652 passed / 8 failed / 309 skipped; the 8 failures also fail on unchanged HEAD (login rate-limit and PostgreSQL concurrency tests); 309 skipped are PostgreSQL-gated. Independent read-only review found 6 defects (SPC deviations unresolvable, CAPA owner reassign-then-verify, CoA lot/status holes, concession reuse, missing locks, SPC race → 500); all fixed with regression tests.
 
 ## M35.S01 — Specifications & Quality Control Plans
-- [P] M35.S01.T001 — Unified specification master
-  Existing: `QCParameter` / `QCTemplate` / `QCTemplateParameter` hold limits, units and critical/CCP flags. Remaining: single unified spec master across product/material/process.
-- [ ] M35.S01.T002 — Product/material/process specification versions
-  No specification versioning exists (only quality-gate definitions are versioned).
-- [P] M35.S01.T003 — Quality Control Plan model
-  Existing: `QCTemplate` sampling method/size, mandatory, blocks-progression, release-required flags. Remaining: plan-level model linking stages.
-- [P] M35.S01.T004 — Effective-date/change-control governance
-  Existing: `QualityGateDefinition` version/effective window with DB checks (M27). Remaining: effective-dated specifications and change control.
+- [x] M35.S01.T001 — Unified specification master
+  Evidence: `QCSpecification` gives one spec record per product, material or process stage over the existing template parameters; approval snapshots the parameter set.
+- [x] M35.S01.T002 — Product/material/process specification versions
+  Evidence: auto-incremented versions per spec code; author ≠ approver (code + DB check); `/specifications/effective?as_of=` resolves the version in force.
+- [x] M35.S01.T003 — Quality Control Plan model
+  Evidence: `QCPlan` + ordered `QCPlanStep`s; activation by a second person retires the prior active version; `/qc-plans/{id}/coverage` reports missing/failed mandatory steps for an order or lot.
+- [x] M35.S01.T004 — Effective-date/change-control governance
+  Evidence: no back-dated approval; version >1 needs an approved change request targeting the same spec; approval end-dates and supersedes the previous version.
 
 ## M35.S02 — Sampling / AQL / SPC
-- [P] M35.S02.T001 — Sampling-plan engine
-  Existing: `AQLSamplingPlan` model. Not verified: lot-size → sample-size selection logic.
-- [P] M35.S02.T002 — AQL rules
-  Existing: acceptance/rejection numbers stored per plan. Not verified: accept/reject evaluation; no DB check that acceptance < rejection.
-- [ ] M35.S02.T003 — SPC control-chart data model/calculations
-  No SPC model or control-limit/Cpk calculation exists; spec-limit pass/fail is not SPC.
-- [ ] M35.S02.T004 — Out-of-control escalation
-  No SPC rule detection or escalation exists.
+- [x] M35.S02.T001 — Sampling-plan engine
+  Evidence: `select_aql_plan` (item-specific first, then narrowest lot range) + `POST /aql/evaluate`.
+- [x] M35.S02.T002 — AQL rules
+  Evidence: accept/reject/second-sample/incomplete evaluation; plan validation on create/update (now permission-checked); DB checks added `NOT VALID` so legacy rows don't block migration.
+- [x] M35.S02.T003 — SPC control-chart data model/calculations
+  Evidence: individuals (I-MR) and X̄-R limits, Pp/Ppk (overall sigma), Western Electric rules 1–4 on recorded results; `GET /spc/chart` (optional QC-type filter). Known limit: series ordered by recording time, not measurement time.
+- [x] M35.S02.T004 — Out-of-control escalation
+  Evidence: `POST /spc/evaluate` stores each rule hit once (`spc_signals`) and opens one scoped deviation per evaluation (HIGH → automatic CAPA); concurrent duplicate → 409.
 
 ## M35.S03 — NCR / CAPA / Deviation
-- [P] M35.S03.T001 — NCR lifecycle
-  Existing: `QCDeviation` OPEN→UNDER_REVIEW→RESOLVED→CLOSED. Remaining: transition guards/tests for an NCR lifecycle.
-- [P] M35.S03.T002 — CAPA root-cause/action/effectiveness lifecycle
-  Existing: `CorrectiveAction` + steps, root cause, effectiveness, verification fields. Remaining: lifecycle enforcement tests.
-- [P] M35.S03.T003 — Deviation/concession workflow
-  Existing: M27 quality-gate waivers (accepted in M27). Remaining: concession workflow beyond gate waivers.
-- [ ] M35.S03.T004 — Quality cost/risk linkage
-  No quality-cost model exists; only risk-level enums.
+- [x] M35.S03.T001 — NCR lifecycle
+  Evidence: deviation transition map (no backwards moves; RESOLVED → UNDER_REVIEW reopen clears resolver); create/edit permission; RESOLVED records immutable until reopened; unscoped deviations need global approve.
+- [x] M35.S03.T002 — CAPA root-cause/action/effectiveness lifecycle
+  Evidence: PATCH cannot set VERIFIED, completion needs root cause + all steps, verify needs COMPLETED and a verifier other than the owner, no reassignment after completion, effectiveness only via verify, verified CAPA immutable, row locks on update/verify.
+- [x] M35.S03.T003 — Deviation/concession workflow
+  Evidence: `QualityConcession` (requester ≠ decider, conditions + future expiry, revoke); CONDITIONAL_RELEASE requires an identified lot and an active concession for a deviation raised on that inspection.
+- [x] M35.S03.T004 — Quality cost/risk linkage
+  Evidence: `QualityCostEntry` (prevention/appraisal/internal/external failure) linked to deviation/CAPA/recall/complaint/lot/supplier, risk inherited from deviation; COPQ summary.
 
 ## M35.S04 — Laboratory & Release Evidence
-- [P] M35.S04.T001 — COA generation/approval
-  Existing: `CertificateOfAnalysis` model and `generate_coa` report builder. Not verified: approval workflow.
-- [ ] M35.S04.T002 — Retain-sample registry
-  No retain-sample model exists.
-- [P] M35.S04.T003 — Test-method/equipment linkage
-  Existing: CCP monitoring logs snapshot instrument calibration. Remaining: test-method master linked to QC parameters.
-- [P] M35.S04.T004 — Calibration dependency enforcement
-  Existing: calibration status/events. Not verified: blocking of results recorded with overdue instruments.
+- [x] M35.S04.T001 — COA generation/approval
+  Evidence: issue needs quality.approve, approver ≠ preparer, PASSED inspection of the same lot, an existing non-held lot status; older ISSUED CoA for same lot/customer superseded; create permission-checked.
+- [x] M35.S04.T002 — Retain-sample registry
+  Evidence: `RetainSample` + append-only movements; over-withdrawal blocked; early disposal needs approve permission and reason; due list.
+- [x] M35.S04.T003 — Test-method/equipment linkage
+  Evidence: versioned `QCTestMethod` (instrument type, skill); linked on template parameters and stored on each result with the instrument used.
+- [x] M35.S04.T004 — Calibration dependency enforcement
+  Evidence: recording a result blocks missing/inactive/overdue/out-of-service/not-verified/past-due/wrong-type instruments.
 
 ## M35.S05 — QA Governance
 - [P] M35.S05.T001 — Internal/supplier audit lifecycle
-  Existing: `QualityAuditChecklist`, `SupplierFoodSafetyApproval` models. Not verified: lifecycle behaviour.
-- [ ] M35.S05.T002 — Change-control workflow
-  No change-control workflow exists.
-- [ ] M35.S05.T003 — Training/qualification dependency enforcement
-  Not implemented for QC (M26 qualification enforcement covers production execution only).
-- [P] M35.S05.T004 — Complaint/recall/CAPA integration
-  Existing: consumer complaints, M28 recall, CAPA models. Not verified: end-to-end linkage.
+  Done: audit checklist permissions, failed items need findings, close requires all items scored, no certificate for failed audit, immutable after close, CAPA auto-raised for failed items, collision-free audit refs. Remaining: supplier audit lifecycle (`SupplierFoodSafetyApproval` unchanged).
+- [x] M35.S05.T002 — Change-control workflow
+  Evidence: `QualityChangeRequest` DRAFT→SUBMITTED→APPROVED/REJECTED→IMPLEMENTED→CLOSED; risk assessment before submit, requester ≠ decider (code + DB check), verification notes to close; gates spec version approval.
+- [x] M35.S05.T003 — Training/qualification dependency enforcement
+  Evidence: a test method's required skill is checked against the tester's approved, current M26 skill certificate (user → employee → operator profile) when recording results.
+- [x] M35.S05.T004 — Complaint/recall/CAPA integration
+  Evidence: idempotent CAPA from complaint/recall, `/capa-links`; live recalls cannot close without a verified CAPA and with any unverified linked CAPA (409).
 
 ## M35.S06 — Verification & Program Closure
-- [P] M35.S06.T001 — QC/QA backend regression suite
-  33 foundation unit tests only (see above).
+- [x] M35.S06.T001 — QC/QA backend regression suite
+  Evidence: 109 new M35 tests + 33 foundation tests; full backend suite compared against unchanged HEAD with zero new failures.
 - [ ] M35.S06.T002 — Quality workflow UI/E2E suite
-  Not run.
-- [ ] M35.S06.T003 — Receive→produce→release→dispatch quality-gate E2E
-  Not run (gate triggers exist in `qms_service.py` from M27).
+  Not done: no frontend pages exist for the new `/quality-enterprise` routes; no browser run.
+- [D] M35.S06.T003 — Receive→produce→release→dispatch quality-gate E2E
+  Deferred: needs a PostgreSQL environment (Docker daemon not running).
 - [P] M35.S06.T004 — Traceability/recall mock exercise
-  In-memory mock recall passed in M28 (`test_mock_recall_end_to_end`); no database rehearsal.
-- [ ] M35.S06.T005 — Final M01–M35 cross-module regression
-  Not run.
-- [ ] M35.S06.T006 — Final security/deployment readiness review
-  Not run.
+  In-memory mock recall passed (M28); no database rehearsal.
+- [P] M35.S06.T005 — Final M01–M35 cross-module regression
+  Backend: 1652 passed, 8 failures pre-existing on HEAD, 309 PostgreSQL-gated skipped. Frontend checks and DB-gated suites not run.
+- [P] M35.S06.T006 — Final security/deployment readiness review
+  M35 change set independently reviewed and findings fixed. Whole-system security and deployment readiness review not done.
 - [ ] M35.S06.T007 — Close M35 and produce final project acceptance state
-  Blocked on the open tasks above.
+  Blocked on S06.T002, S06.T003 and the partial items above.
 
 ---
 

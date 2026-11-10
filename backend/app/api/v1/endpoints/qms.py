@@ -3,7 +3,8 @@ from __future__ import annotations
 
 import uuid
 from datetime import date, timedelta
-from typing import List, Optional
+from types import SimpleNamespace
+from typing import List, Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select, func
@@ -50,6 +51,7 @@ from app.schemas.qms import (
     QualityGateAuditEventRead,
 )
 from app.services import qms_service as svc
+from app.services import qa_enterprise_service as qa
 from app.services import procurement_service as procurement_svc
 from app.crud import quality as qc_crud
 from app.services import quality_service as qc_svc
@@ -82,6 +84,20 @@ def _require_supplier_capa_permission(user, action: str) -> None:
         raise HTTPException(
             status_code=403,
             detail={"error": "forbidden", "detail": f"Quality {action} permission is required for supplier corrective actions."},
+        )
+
+
+def _require_quality_action(user, action: str, subject: str) -> None:
+    permissions = {
+        "view": ("quality.view", "quality.view_all"),
+        "create": ("quality.create", "quality.create_all"),
+        "edit": ("quality.edit", "quality.edit_all"),
+        "approve": ("quality.approve", "quality.approve_all"),
+    }[action]
+    if not has_any_permission(user, permissions):
+        raise HTTPException(
+            status_code=403,
+            detail={"error": "forbidden", "detail": f"Quality {action} permission is required for {subject}."},
         )
 
 
@@ -912,7 +928,12 @@ async def create_deviation(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    d = await svc.create_deviation(db, body.model_dump(), current_user.id)
+    data = body.model_dump()
+    await _require_deviation_capa_create_permission(db, current_user, QCDeviation(
+        lot_id=data.get("lot_id"), production_order_id=data.get("production_order_id"),
+        inspection_id=data.get("inspection_id"),
+    ))
+    d = await svc.create_deviation(db, data, current_user.id)
     await db.commit()
     r = await db.execute(select(QCDeviation).where(QCDeviation.id == d.id))
     return _build_deviation_read(r.scalar_one())
@@ -983,6 +1004,17 @@ async def update_deviation(
     next_status = updates.get("status")
     if d.status == DeviationStatus.CLOSED and updates:
         raise HTTPException(status_code=409, detail="A closed deviation is immutable.")
+    if next_status is not None:
+        transition_error = qa.deviation_transition_error(d.status, next_status)
+        if transition_error:
+            raise HTTPException(status_code=409, detail=transition_error)
+    if d.status == DeviationStatus.RESOLVED and next_status is None and updates:
+        raise HTTPException(status_code=409, detail="Reopen a resolved deviation (UNDER_REVIEW) before editing it.")
+    if next_status not in (DeviationStatus.RESOLVED, DeviationStatus.CLOSED):
+        await _require_deviation_capa_create_permission(db, current_user, d)
+    if next_status == DeviationStatus.UNDER_REVIEW and d.status == DeviationStatus.RESOLVED:
+        updates["resolved_at"] = None
+        updates["resolved_by_id"] = None
     if next_status == DeviationStatus.RESOLVED:
         await _require_linked_capa_verified(
             db, d, candidate_capa_id=updates.get("corrective_action_id", d.corrective_action_id)
@@ -990,10 +1022,11 @@ async def update_deviation(
         approval_scope_type = "LOT" if d.lot_id else "PRODUCTION_ORDER" if d.production_order_id else None
         approval_scope_id = d.lot_id or d.production_order_id
         if approval_scope_type is None or approval_scope_id is None:
-            raise HTTPException(status_code=403, detail="A scoped quality approval permission is required.")
-        await _require_quality_scope_permission(
-            db, current_user, "approve", approval_scope_type, approval_scope_id
-        )
+            _require_quality_action(current_user, "approve", "an unscoped deviation")
+        else:
+            await _require_quality_scope_permission(
+                db, current_user, "approve", approval_scope_type, approval_scope_id
+            )
         if d.status not in {DeviationStatus.OPEN, DeviationStatus.UNDER_REVIEW}:
             raise HTTPException(status_code=409, detail="Only an open or under-review deviation can be resolved.")
         if d.reported_by_id == current_user.id:
@@ -1012,10 +1045,11 @@ async def update_deviation(
         approval_scope_type = "LOT" if d.lot_id else "PRODUCTION_ORDER" if d.production_order_id else None
         approval_scope_id = d.lot_id or d.production_order_id
         if approval_scope_type is None or approval_scope_id is None:
-            raise HTTPException(status_code=403, detail="A scoped quality approval permission is required.")
-        await _require_quality_scope_permission(
-            db, current_user, "approve", approval_scope_type, approval_scope_id
-        )
+            _require_quality_action(current_user, "approve", "an unscoped deviation")
+        else:
+            await _require_quality_scope_permission(
+                db, current_user, "approve", approval_scope_type, approval_scope_id
+            )
         if d.status != DeviationStatus.RESOLVED:
             raise HTTPException(status_code=409, detail="Only a resolved deviation can be closed.")
         if current_user.id in {d.reported_by_id, d.resolved_by_id}:
@@ -1135,21 +1169,36 @@ async def update_corrective_action(
     current_user=Depends(get_current_user),
 ):
     r = await db.execute(
-        select(CorrectiveAction).options(*_corrective_action_read_options()).where(CorrectiveAction.id == ca_id)
+        select(CorrectiveAction).options(*_corrective_action_read_options())
+        .where(CorrectiveAction.id == ca_id).with_for_update()
     )
     ca = r.scalar_one_or_none()
     if not ca:
         raise HTTPException(404, "Corrective action not found")
     updates = body.model_dump(exclude_unset=True)
+    if "effectiveness_check" in updates:
+        raise HTTPException(status_code=409, detail="Effectiveness evidence is recorded only by the verification action.")
+    if "assigned_to_id" in updates and ca.status == CorrectiveActionStatus.COMPLETED \
+            and updates["assigned_to_id"] != ca.assigned_to_id:
+        raise HTTPException(status_code=409, detail="A completed CAPA cannot be reassigned before verification.")
     if ca.supplier_id is not None:
         _require_supplier_capa_permission(current_user, "edit")
-        if "status" in updates and (
-            ca.status == CorrectiveActionStatus.VERIFIED
-            or updates.get("status") == CorrectiveActionStatus.VERIFIED
-        ):
-            raise HTTPException(status_code=409, detail="Use the verification action to record verifier and effectiveness evidence.")
-        if "pdca_closed_at" in updates:
-            raise HTTPException(status_code=409, detail="Use the PDCA closure action to record the audited closure transition.")
+    else:
+        _require_quality_action(current_user, "edit", "corrective actions")
+    if ca.status == CorrectiveActionStatus.VERIFIED and updates:
+        raise HTTPException(status_code=409, detail="A verified CAPA is immutable.")
+    if "pdca_closed_at" in updates:
+        raise HTTPException(status_code=409, detail="Use the PDCA closure action to record the audited closure transition.")
+    for field in ("verified_at", "verified_by_id", "completed_at"):
+        updates.pop(field, None)
+    if "status" in updates:
+        candidate = SimpleNamespace(
+            status=ca.status, steps=ca.steps,
+            root_cause_analysis=updates.get("root_cause_analysis", ca.root_cause_analysis),
+        )
+        errors = qa.capa_transition_errors(candidate, updates["status"])
+        if errors:
+            raise HTTPException(status_code=409, detail=" ".join(errors))
     if updates.get("status") == CorrectiveActionStatus.COMPLETED:
         from datetime import datetime, timezone
         updates["completed_at"] = datetime.now(timezone.utc)
@@ -1181,6 +1230,10 @@ async def complete_ca_step(
         raise HTTPException(404, "Corrective action step not found")
     if ca.supplier_id is not None:
         _require_supplier_capa_permission(current_user, "edit")
+    else:
+        _require_quality_action(current_user, "edit", "corrective actions")
+    if ca.status == CorrectiveActionStatus.VERIFIED:
+        raise HTTPException(status_code=409, detail="A verified CAPA is immutable.")
     await svc.complete_ca_step(db, step_id, completion_notes)
     await db.commit()
     r = await db.execute(
@@ -1201,13 +1254,19 @@ async def verify_corrective_action(
 ):
     from datetime import datetime, timezone
     r = await db.execute(
-        select(CorrectiveAction).options(*_corrective_action_read_options()).where(CorrectiveAction.id == ca_id)
+        select(CorrectiveAction).options(*_corrective_action_read_options())
+        .where(CorrectiveAction.id == ca_id).with_for_update()
     )
     ca = r.scalar_one_or_none()
     if not ca:
         raise HTTPException(404, "Corrective action not found")
     if ca.supplier_id is not None:
         _require_supplier_capa_permission(current_user, "approve")
+    else:
+        _require_quality_action(current_user, "approve", "CAPA verification")
+    errors = qa.capa_verification_errors(ca, current_user.id, effectiveness_check)
+    if errors:
+        raise HTTPException(status_code=409, detail=" ".join(errors))
     ca.status = CorrectiveActionStatus.VERIFIED
     ca.verified_at = datetime.now(timezone.utc)
     ca.verified_by_id = current_user.id
@@ -1924,9 +1983,18 @@ async def list_aql_plans(
 async def create_aql_plan(
     body: dict,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    current_user=Depends(get_current_user),
 ):
     from decimal import Decimal
+    _require_quality_action(current_user, "create", "AQL sampling plans")
+    try:
+        values = {k: int(body[k]) if body.get(k) is not None else None
+                  for k in ("lot_size_min", "lot_size_max", "sample_size", "acceptance_number", "rejection_number")}
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(status_code=422, detail="AQL plan numbers must be integers.") from exc
+    errors = qa.aql_plan_errors(values)
+    if errors:
+        raise HTTPException(status_code=422, detail=" ".join(errors))
     plan = AQLSamplingPlan(
         plan_code=body["plan_code"],
         plan_name=body["plan_name"],
@@ -1955,8 +2023,9 @@ async def update_aql_plan(
     plan_id: uuid.UUID,
     body: dict,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    current_user=Depends(get_current_user),
 ):
+    _require_quality_action(current_user, "edit", "AQL sampling plans")
     r = await db.execute(select(AQLSamplingPlan).where(AQLSamplingPlan.id == plan_id))
     plan = r.scalar_one_or_none()
     if not plan:
@@ -1966,6 +2035,11 @@ async def update_aql_plan(
     for k in allowed:
         if k in body:
             setattr(plan, k, body[k])
+    errors = qa.aql_plan_errors({k: getattr(plan, k) for k in (
+        "lot_size_min", "lot_size_max", "sample_size", "acceptance_number", "rejection_number")})
+    if errors:
+        await db.rollback()
+        raise HTTPException(status_code=422, detail=" ".join(errors))
     await db.commit()
     return {"id": str(plan.id), "plan_code": plan.plan_code}
 
@@ -2020,6 +2094,7 @@ async def create_coa(
     current_user=Depends(get_current_user),
 ):
     from datetime import date as date_cls
+    _require_quality_action(current_user, "create", "certificates of analysis")
     test_snapshot = None
     inspection_id = uuid.UUID(body["inspection_id"]) if body.get("inspection_id") else None
     if inspection_id:
@@ -2075,10 +2150,31 @@ async def issue_coa(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    r = await db.execute(select(CertificateOfAnalysis).where(CertificateOfAnalysis.id == coa_id))
+    _require_quality_action(current_user, "approve", "certificate of analysis issue")
+    r = await db.execute(
+        select(CertificateOfAnalysis).where(CertificateOfAnalysis.id == coa_id).with_for_update()
+    )
     coa = r.scalar_one_or_none()
     if not coa:
         raise HTTPException(404, "CoA not found")
+    inspection = await db.get(QCInspection, coa.inspection_id) if coa.inspection_id else None
+    lot_status = (await db.execute(
+        select(LotQualityStatus).where(LotQualityStatus.lot_id == coa.lot_id)
+    )).scalar_one_or_none()
+    errors = qa.coa_issue_errors(coa, current_user.id, inspection, lot_status)
+    if errors:
+        raise HTTPException(status_code=409, detail=" ".join(errors))
+    previous = await db.execute(
+        select(CertificateOfAnalysis).where(
+            CertificateOfAnalysis.lot_id == coa.lot_id,
+            CertificateOfAnalysis.status == "ISSUED",
+            CertificateOfAnalysis.id != coa.id,
+            CertificateOfAnalysis.customer_id.is_(None) if coa.customer_id is None
+            else CertificateOfAnalysis.customer_id == coa.customer_id,
+        )
+    )
+    for old in previous.scalars().all():
+        old.status = "SUPERSEDED"
     coa.status = "ISSUED"
     coa.approved_by_id = current_user.id
     await db.commit()
@@ -2087,16 +2183,10 @@ async def issue_coa(
 
 # ── HACCP Expansion: Audit Checklists ────────────────────────────────────────
 
-from datetime import datetime as _dt
 from pydantic import BaseModel as _BM
 
-_SEQ_AUDIT = 0
-
-
 def _audit_ref() -> str:
-    global _SEQ_AUDIT
-    _SEQ_AUDIT += 1
-    return f"AUD-{_dt.utcnow().strftime('%Y%m%d')}-{_SEQ_AUDIT:04d}"
+    return qa.new_reference("AUD")
 
 
 # Default checklist items per standard
@@ -2156,7 +2246,7 @@ class AuditChecklistIn(_BM):
 
 class AuditItemResult(_BM):
     item_index: int
-    result: str    # pass | fail | na
+    result: Literal["pass", "fail", "na"]
     finding: Optional[str] = None
 
 
@@ -2164,9 +2254,10 @@ class AuditItemResult(_BM):
 async def create_audit_checklist(
     payload: AuditChecklistIn,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    current_user=Depends(get_current_user),
 ):
     """Create a new audit checklist with pre-populated items for the chosen standard."""
+    _require_quality_action(current_user, "create", "quality audits")
     items = [
         {**item, "result": "pending", "finding": None}
         for item in _STANDARD_ITEMS.get(payload.standard.value, [])
@@ -2235,22 +2326,28 @@ async def update_checklist_items(
     checklist_id: str,
     results: list[AuditItemResult],
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    current_user=Depends(get_current_user),
 ):
     """Record pass/fail/na for each checklist item and recompute score."""
+    _require_quality_action(current_user, "edit", "quality audits")
     r = await db.execute(
-        select(QualityAuditChecklist).where(QualityAuditChecklist.id == uuid.UUID(checklist_id))
+        select(QualityAuditChecklist).where(QualityAuditChecklist.id == uuid.UUID(checklist_id)).with_for_update()
     )
     checklist = r.scalar_one_or_none()
     if not checklist:
         raise HTTPException(404, "Checklist not found")
+    if checklist.closed_at is not None:
+        raise HTTPException(status_code=409, detail="A closed audit is immutable.")
 
-    items = list(checklist.items or [])
+    items = [dict(item) for item in (checklist.items or [])]
     for res in results:
-        if 0 <= res.item_index < len(items):
-            items[res.item_index]["result"] = res.result
-            if res.finding:
-                items[res.item_index]["finding"] = res.finding
+        if not 0 <= res.item_index < len(items):
+            raise HTTPException(status_code=422, detail=f"Checklist item {res.item_index} does not exist.")
+        if res.result == "fail" and not (res.finding or items[res.item_index].get("finding") or "").strip():
+            raise HTTPException(status_code=422, detail="A failed checklist item requires a finding.")
+        items[res.item_index]["result"] = res.result
+        if res.finding:
+            items[res.item_index]["finding"] = res.finding
 
     passed = sum(1 for i in items if i.get("result") == "pass")
     total_scored = sum(1 for i in items if i.get("result") in ("pass", "fail"))
@@ -2279,21 +2376,47 @@ async def close_audit(
     next_audit_date: Optional[date] = None,
     certificate_issued: bool = False,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    current_user=Depends(get_current_user),
 ):
+    from datetime import datetime, timezone
+    _require_quality_action(current_user, "approve", "quality audit closure")
     r = await db.execute(
-        select(QualityAuditChecklist).where(QualityAuditChecklist.id == uuid.UUID(checklist_id))
+        select(QualityAuditChecklist).where(QualityAuditChecklist.id == uuid.UUID(checklist_id)).with_for_update()
     )
     checklist = r.scalar_one_or_none()
     if not checklist:
         raise HTTPException(404, "Checklist not found")
+    errors = qa.audit_close_errors(checklist)
+    if certificate_issued and checklist.result == AuditResult.FAIL:
+        errors.append("A certificate cannot be issued for a failed audit.")
+    if errors:
+        raise HTTPException(status_code=409, detail=" ".join(errors))
     checklist.major_findings = major_findings
     checklist.minor_findings = minor_findings
     checklist.recommendations = recommendations
     checklist.next_audit_date = next_audit_date
     checklist.certificate_issued = certificate_issued
+    checklist.closed_at = datetime.now(timezone.utc)
+    checklist.closed_by_id = current_user.id
+    failed = qa.audit_failed_items(checklist)
+    if failed:
+        ca = await svc.create_corrective_action(db, {
+            "title": f"Audit {checklist.audit_ref} findings",
+            "description": "\n".join(f"[{i.get('section')}] {i.get('item')}: {i.get('finding')}" for i in failed),
+            "severity": RiskLevel.HIGH if checklist.result == AuditResult.FAIL else RiskLevel.MEDIUM,
+            "trigger_type": "AUDIT",
+            "trigger_id": checklist.id,
+            "steps": [
+                {"step_no": n, "step_description": f"Address finding [{i.get('section')}] {i.get('item')}"}
+                for n, i in enumerate(failed, start=1)
+            ],
+        })
+        checklist.corrective_action_id = ca.id
     await db.commit()
-    return {"id": checklist_id, "result": checklist.result, "score_pct": float(checklist.score_pct or 0)}
+    return {
+        "id": checklist_id, "result": checklist.result, "score_pct": float(checklist.score_pct or 0),
+        "corrective_action_id": str(checklist.corrective_action_id) if checklist.corrective_action_id else None,
+    }
 
 
 @router.get("/audit-checklists/stats")

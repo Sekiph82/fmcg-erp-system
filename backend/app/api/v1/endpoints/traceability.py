@@ -293,6 +293,8 @@ async def close_recall(
     try:
         score = Decimal(str(effectiveness_score)) if effectiveness_score else None
         return await recall_svc.close_recall(db, recall_id, effectiveness_score=score)
+    except recall_svc.RecallClosureBlocked as e:
+        raise HTTPException(409, str(e))
     except ValueError as e:
         raise HTTPException(404, str(e))
 

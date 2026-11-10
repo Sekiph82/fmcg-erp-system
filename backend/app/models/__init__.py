@@ -56,6 +56,8 @@ from app.models.quality import (
     CorrectiveAction, CorrectiveActionStep,
     QCDeviation, LotQualityStatus, QualityGateDefinition, QualityGateWaiver, QualityGateAuditEvent,
     AllergenValidationRecord, QMSAIRecommendation,
+    QCTestMethod, QualityChangeRequest, QCSpecification, QCPlan, QCPlanStep, SPCSignal,
+    QualityConcession, QualityCostEntry, RetainSample, RetainSampleMovement,
 )
 
 # ── Distribution layer (must load before sales) ───────────────────────────────

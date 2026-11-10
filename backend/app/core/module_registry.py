@@ -467,6 +467,7 @@ ENDPOINT_ROUTE_DEFINITIONS: tuple[EndpointRouteDefinition, ...] = (
     # shelf_life promoted to MODULE_DEFINITIONS — see above
     EndpointRouteDefinition(key="traceability", route_prefix="/traceability", import_path="app.api.v1.endpoints.traceability", tags=('traceability',)),
     EndpointRouteDefinition(key="qms", route_prefix="/qms", import_path="app.api.v1.endpoints.qms", tags=('qms',)),
+    EndpointRouteDefinition(key="quality_enterprise", route_prefix="/quality-enterprise", import_path="app.api.v1.endpoints.quality_enterprise", tags=('quality-enterprise',)),
     # gs1 promoted to MODULE_DEFINITIONS — see above
     EndpointRouteDefinition(key="allergen", route_prefix="/allergen", import_path="app.api.v1.endpoints.allergen", tags=('allergen',)),
     EndpointRouteDefinition(key="procurement_suggestion", route_prefix="/procurement/suggestions", import_path="app.api.v1.endpoints.procurement_suggestion", tags=('procurement-suggestions',)),

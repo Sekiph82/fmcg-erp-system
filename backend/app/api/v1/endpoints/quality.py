@@ -83,6 +83,33 @@ def _require_inspection_action(user, inspection: QCInspection, action: str) -> N
     raise _quality_forbidden("You can view this quality record but cannot modify it in this scope.")
 
 
+async def _measurement_control_errors(db: AsyncSession, data: dict, user_id) -> list[str]:
+    """Resolve the test method, then require a current instrument and a qualified tester."""
+    from app.models.quality import InstrumentCalibration, QCTemplateParameter, QCTestMethod
+    from app.services import qa_enterprise_service as qa
+
+    template_method_id = None
+    if data.get("template_parameter_id"):
+        template_param = await db.get(QCTemplateParameter, data["template_parameter_id"])
+        template_method_id = template_param.test_method_id if template_param else None
+    if template_method_id and data.get("test_method_id") not in (None, template_method_id):
+        return ["The result must use the test method defined on its template parameter."]
+    method_id = data.get("test_method_id") or template_method_id
+    data["test_method_id"] = method_id
+    method = await db.get(QCTestMethod, method_id) if method_id else None
+    if method_id and (method is None or not method.is_active):
+        return ["The test method is missing or inactive."]
+    instrument = None
+    if data.get("instrument_calibration_id"):
+        instrument = await db.get(InstrumentCalibration, data["instrument_calibration_id"])
+        if instrument is None:
+            return ["The measuring instrument does not exist."]
+    errors = qa.instrument_usage_errors(instrument, method)
+    if method is not None:
+        errors += await qa.tester_skill_errors(db, user_id, method.required_skill_id)
+    return errors
+
+
 # ── QC Parameters ─────────────────────────────────────────────────────────────
 
 @router.get("/parameters/", response_model=List[QCParameterRead])
@@ -251,6 +278,9 @@ async def add_test_result(
         data = await qms_svc.prepare_receiving_gate_test_result(db, insp, data)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+    errors = await _measurement_control_errors(db, data, current_user.id)
+    if errors:
+        raise HTTPException(status_code=422, detail=" ".join(errors))
     # Auto-evaluate is_passed from spec limits if not explicitly set
     tr_obj = QCTestResult(inspection_id=inspection_id, tested_by_id=current_user.id, **data)
     if tr_obj.is_passed is None:

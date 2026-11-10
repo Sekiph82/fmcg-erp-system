@@ -15,7 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.traceability import (
     RecallHeader, RecallScopeLine, RecallAction, RecallCustomerImpact,
     RecallReturnRecord, TRRecAIRecommendation,
-    RecallStatus, RecallActionStatus, RecallRiskStatus,
+    RecallStatus, RecallActionStatus, RecallRiskStatus, RecallType,
     RecallActionType, TRRecAIAgentType, TRRecAIRecStatus,
     TraceEventType, TraceEventLine, LotGenealogyLink,
     RecallCommunicationTemplate, RecallStatusLog, RecallEvidence,
@@ -470,11 +470,29 @@ async def list_returns(db: AsyncSession, recall_id: uuid.UUID) -> List[RecallRet
 # Close Recall
 # ─────────────────────────────────────────────────────────────────────────────
 
+class RecallClosureBlocked(Exception):
+    pass
+
+
 async def close_recall(db: AsyncSession, recall_id: uuid.UUID,
                         effectiveness_score: Optional[Decimal] = None) -> RecallHeader:
-    recall = await db.get(RecallHeader, recall_id)
+    recall = (await db.execute(
+        select(RecallHeader).where(RecallHeader.id == recall_id).with_for_update()
+    )).scalar_one_or_none()
     if not recall:
         raise ValueError("Recall not found")
+
+    from app.models.quality import CorrectiveAction, CorrectiveActionStatus
+    capas = (await db.execute(
+        select(CorrectiveAction).where(
+            CorrectiveAction.trigger_type == "RECALL", CorrectiveAction.trigger_id == recall_id,
+        ).with_for_update()
+    )).scalars().all()
+    open_capas = [c.ca_no for c in capas if c.status != CorrectiveActionStatus.VERIFIED]
+    if open_capas:
+        raise RecallClosureBlocked(f"Linked CAPAs {open_capas} must be verified before the recall is closed.")
+    if not capas and recall.recall_type != RecallType.mock_recall:
+        raise RecallClosureBlocked("A live recall needs a verified CAPA before it can be closed.")
 
     now = datetime.utcnow()
     recall.status       = RecallStatus.closed
