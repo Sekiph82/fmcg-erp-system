@@ -26,7 +26,8 @@ class LandedCostLineCreate(BaseModel):
     vendor_name: Optional[str] = None
     amount_fc: Decimal = Decimal("0")
     estimated_amount_fc: Optional[Decimal] = None
-    currency_code: str = "KES"
+    # None inherits the document currency; a line is never silently valued as KES.
+    currency_code: Optional[str] = None
     allocation_method: Optional[AllocationMethodInput] = None
     is_included_in_valuation: bool = True
     account_code: Optional[str] = None
@@ -44,7 +45,9 @@ class LandedCostLineCreate(BaseModel):
 
     @field_validator("currency_code")
     @classmethod
-    def normalize_currency_code(cls, value: str) -> str:
+    def normalize_currency_code(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
         normalized = value.strip().upper()
         if not re.fullmatch(r"[A-Z]{3}", normalized):
             raise ValueError("Currency must be a three-letter ISO code")

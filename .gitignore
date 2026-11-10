@@ -67,3 +67,4 @@ backend/graphify-out/
 frontend/graphify-out/
 docs/graphify-out/
 scripts/graphify-out/
+.env.staging

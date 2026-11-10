@@ -53,7 +53,8 @@ def test_database_guard_rejects_wrong_task_or_non_loopback_database():
 def _actor(user: User, *, permissions: tuple[str, ...] = ()):
     role_permissions = [SimpleNamespace(is_active=True, code=code) for code in permissions]
     roles = [SimpleNamespace(is_active=True, permissions=role_permissions)] if role_permissions else []
-    return SimpleNamespace(id=user.id, is_superuser=False, roles=roles, access_scopes=[])
+    return SimpleNamespace(id=user.id, email=user.email, full_name=user.full_name, username=user.username,
+                           is_superuser=False, roles=roles, access_scopes=[])
 
 
 async def _new_user(email: str, *, superuser: bool = True) -> User:

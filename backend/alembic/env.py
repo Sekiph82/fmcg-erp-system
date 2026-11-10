@@ -136,6 +136,8 @@ def do_run_migrations(connection: Connection) -> None:
     _orig_ac = Operations.add_column
     _orig_ci = Operations.create_index
     _orig_fk = Operations.create_foreign_key
+    _orig_dc = Operations.drop_constraint
+    _orig_di = Operations.drop_index
 
     def _create_table(self, table_name: str, *cols, **kw):
         if _has_table(table_name):
@@ -184,7 +186,26 @@ def do_run_migrations(connection: Connection) -> None:
         return _orig_fk(self, constraint_name, source_table, referent_table,
                         local_cols, remote_cols, **kw)
 
+    def _drop_constraint(self, constraint_name, table_name: str, type_=None, **kw):
+        # Databases bootstrapped by the baseline carry SQLAlchemy's default
+        # constraint names, not the names a later migration gave them, so a
+        # downgrade must not fail on a constraint that was never created by name.
+        if not _has_table(table_name) or not _exists(
+            "SELECT EXISTS(SELECT 1 FROM pg_constraint c JOIN pg_class t ON t.oid = c.conrelid "
+            "WHERE t.relname = :t AND c.conname = :n)",
+            t=table_name, n=str(constraint_name),
+        ):
+            return None
+        return _orig_dc(self, constraint_name, table_name, type_=type_, **kw)
+
+    def _drop_index(self, index_name, table_name=None, **kw):
+        if not _has_index(str(index_name)):
+            return None
+        return _orig_di(self, index_name, table_name=table_name, **kw)
+
     Operations.create_table = _create_table
+    Operations.drop_constraint = _drop_constraint
+    Operations.drop_index = _drop_index
     Operations.add_column = _add_column
     Operations.create_index = _create_index
     Operations.create_foreign_key = _create_foreign_key
@@ -211,6 +232,8 @@ def do_run_migrations(connection: Connection) -> None:
             context.run_migrations()
     finally:
         Operations.create_table = _orig_ct
+        Operations.drop_constraint = _orig_dc
+        Operations.drop_index = _orig_di
         Operations.add_column = _orig_ac
         Operations.create_index = _orig_ci
         Operations.create_foreign_key = _orig_fk

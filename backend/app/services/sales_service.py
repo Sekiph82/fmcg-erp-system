@@ -596,6 +596,38 @@ async def dispatch_shipment(
     shipment.dispatched_date = dispatch_date
     shipment.dispatched_by_id = user_id
 
+    # Record the dispatch on the traceability ledger so forward trace and recall
+    # customer impact see which customer received which lot.
+    traced_lines = [line for line in shipment.lines if line.lot_id is not None]
+    if traced_lines:
+        from app.models.traceability import TraceEvent, TraceEventLine, TraceEventType, TraceItemStage
+
+        trace_event = TraceEvent(
+            trace_event_type=TraceEventType.shipment,
+            event_datetime=datetime.now(timezone.utc),
+            reference_number=shipment.shipment_no,
+            source_document_type="shipment",
+            source_document_id=shipment.id,
+            warehouse_id=shipment.warehouse_id,
+            performed_by_id=user_id,
+            notes=f"Dispatch of shipment {shipment.shipment_no}",
+        )
+        db.add(trace_event)
+        await db.flush()
+        for line in traced_lines:
+            db.add(TraceEventLine(
+                event_id=trace_event.id,
+                product_id=line.product_id,
+                source_lot_id=line.lot_id,
+                quantity=line.quantity,
+                uom=line.unit,
+                source_stage=TraceItemStage.finished_good,
+                dest_stage=TraceItemStage.shipped,
+                movement_reason="customer dispatch",
+                linked_customer_id=so.customer_id,
+                linked_shipment_id=shipment.id,
+            ))
+
     # Persist the increments in this transaction before refreshing cached lines;
     # this session disables autoflush, so populate_existing would otherwise erase
     # the just-computed shipped_quantity values from the identity map.

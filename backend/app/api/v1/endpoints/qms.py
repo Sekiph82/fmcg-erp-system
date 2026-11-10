@@ -2183,7 +2183,7 @@ async def issue_coa(
 
 # ── HACCP Expansion: Audit Checklists ────────────────────────────────────────
 
-from pydantic import BaseModel as _BM
+from pydantic import BaseModel as _BM, Field
 
 def _audit_ref() -> str:
     return qa.new_reference("AUD")
@@ -2242,6 +2242,18 @@ class AuditChecklistIn(_BM):
     lead_auditor: Optional[str] = None
     scope: Optional[str] = None
     notes: Optional[str] = None
+    supplier_id: Optional[uuid.UUID] = None
+
+
+async def _require_supplier(db: AsyncSession, supplier_id) -> Supplier:
+    try:
+        sid = supplier_id if isinstance(supplier_id, uuid.UUID) else uuid.UUID(str(supplier_id))
+    except ValueError:
+        raise HTTPException(status_code=422, detail="supplier_id is not a valid identifier.")
+    supplier = (await db.execute(select(Supplier).where(Supplier.id == sid))).scalar_one_or_none()
+    if supplier is None:
+        raise HTTPException(status_code=404, detail="Supplier not found.")
+    return supplier
 
 
 class AuditItemResult(_BM):
@@ -2258,6 +2270,8 @@ async def create_audit_checklist(
 ):
     """Create a new audit checklist with pre-populated items for the chosen standard."""
     _require_quality_action(current_user, "create", "quality audits")
+    if payload.supplier_id is not None:
+        await _require_supplier(db, payload.supplier_id)
     items = [
         {**item, "result": "pending", "finding": None}
         for item in _STANDARD_ITEMS.get(payload.standard.value, [])
@@ -2275,6 +2289,7 @@ async def create_audit_checklist(
         passed_items=0,
         score_pct=0.0,
         notes=payload.notes,
+        supplier_id=payload.supplier_id,
     )
     db.add(checklist)
     await db.commit()
@@ -2288,6 +2303,7 @@ async def create_audit_checklist(
         "result": checklist.result,
         "total_items": checklist.total_items,
         "items": checklist.items,
+        "supplier_id": str(checklist.supplier_id) if checklist.supplier_id else None,
     }
 
 
@@ -2296,11 +2312,15 @@ async def list_audit_checklists(
     standard: Optional[str] = None,
     audit_type: Optional[str] = None,
     result: Optional[str] = None,
+    supplier_id: Optional[uuid.UUID] = None,
     limit: int = Query(50, le=200),
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    current_user=Depends(get_current_user),
 ):
+    _require_quality_action(current_user, "view", "quality audits")
     q = select(QualityAuditChecklist)
+    if supplier_id:
+        q = q.where(QualityAuditChecklist.supplier_id == supplier_id)
     if standard:
         q = q.where(QualityAuditChecklist.standard == standard)
     if audit_type:
@@ -2316,6 +2336,8 @@ async def list_audit_checklists(
             "conducted_by": c.conducted_by, "score_pct": float(c.score_pct) if c.score_pct else None,
             "result": c.result, "total_items": c.total_items, "passed_items": c.passed_items,
             "certificate_issued": c.certificate_issued, "next_audit_date": str(c.next_audit_date) if c.next_audit_date else None,
+            "supplier_id": str(c.supplier_id) if c.supplier_id else None,
+            "closed_at": c.closed_at.isoformat() if c.closed_at else None,
         }
         for c in rows
     ]
@@ -2387,6 +2409,8 @@ async def close_audit(
     if not checklist:
         raise HTTPException(404, "Checklist not found")
     errors = qa.audit_close_errors(checklist)
+    if checklist.supplier_id is not None and next_audit_date is None:
+        errors.append("A supplier audit must set the next audit date when it is closed.")
     if certificate_issued and checklist.result == AuditResult.FAIL:
         errors.append("A certificate cannot be issued for a failed audit.")
     if errors:
@@ -2406,21 +2430,40 @@ async def close_audit(
             "severity": RiskLevel.HIGH if checklist.result == AuditResult.FAIL else RiskLevel.MEDIUM,
             "trigger_type": "AUDIT",
             "trigger_id": checklist.id,
+            "supplier_id": checklist.supplier_id,
             "steps": [
                 {"step_no": n, "step_description": f"Address finding [{i.get('section')}] {i.get('item')}"}
                 for n, i in enumerate(failed, start=1)
             ],
         })
         checklist.corrective_action_id = ca.id
+    suspended = []
+    if checklist.supplier_id is not None and checklist.result == AuditResult.FAIL:
+        active = (await db.execute(
+            select(SupplierFoodSafetyApproval).where(
+                SupplierFoodSafetyApproval.supplier_id == str(checklist.supplier_id),
+                SupplierFoodSafetyApproval.status.in_(
+                    (SupplierFoodSafetyStatus.APPROVED, SupplierFoodSafetyStatus.CONDITIONAL)),
+            ).with_for_update()
+        )).scalars().all()
+        for approval in active:
+            approval.status = SupplierFoodSafetyStatus.SUSPENDED
+            approval.audit_checklist_id = checklist.id
+            approval.decided_by_id = current_user.id
+            approval.decided_at = checklist.closed_at
+            approval.decision_notes = f"Suspended automatically: supplier audit {checklist.audit_ref} failed."
+            suspended.append(str(approval.id))
     await db.commit()
     return {
         "id": checklist_id, "result": checklist.result, "score_pct": float(checklist.score_pct or 0),
         "corrective_action_id": str(checklist.corrective_action_id) if checklist.corrective_action_id else None,
+        "suspended_approval_ids": suspended,
     }
 
 
 @router.get("/audit-checklists/stats")
-async def audit_stats(db: AsyncSession = Depends(get_db), _=Depends(get_current_user)):
+async def audit_stats(db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    _require_quality_action(current_user, "view", "quality audits")
     by_result_r = await db.execute(
         select(QualityAuditChecklist.result, func.count().label("cnt"))
         .group_by(QualityAuditChecklist.result)
@@ -2443,32 +2486,34 @@ async def audit_stats(db: AsyncSession = Depends(get_db), _=Depends(get_current_
 # ── HACCP Expansion: Supplier Food Safety Approvals ──────────────────────────
 
 class SupplierFSAIn(_BM):
-    supplier_name: str
-    supplier_id: Optional[str] = None
+    supplier_id: uuid.UUID
+    supplier_name: Optional[str] = None
     approval_type: str
     status: SupplierFoodSafetyStatus = SupplierFoodSafetyStatus.PENDING
-    audit_score: Optional[float] = None
-    auditor: Optional[str] = None
-    last_audit_date: Optional[date] = None
-    approval_date: Optional[date] = None
-    expiry_date: Optional[date] = None
     certificate_number: Optional[str] = None
     certificate_url: Optional[str] = None
-    critical_findings: int = 0
-    major_findings: int = 0
-    minor_findings: int = 0
+    critical_findings: int = Field(0, ge=0)
+    major_findings: int = Field(0, ge=0)
+    minor_findings: int = Field(0, ge=0)
+    notes: Optional[str] = None
+
+
+class SupplierFSADecisionIn(_BM):
+    status: SupplierFoodSafetyStatus
+    audit_checklist_id: Optional[uuid.UUID] = None
+    expiry_date: Optional[date] = None
     notes: Optional[str] = None
 
 
 def _fsa_out(f: SupplierFoodSafetyApproval) -> dict:
-    from datetime import date as _d
-    days_to_expiry = None
-    if f.expiry_date:
-        days_to_expiry = (f.expiry_date - _d.today()).days
+    today = date.today()
+    days_to_expiry = (f.expiry_date - today).days if f.expiry_date else None
+    status = getattr(f.status, "value", f.status)
     return {
         "id": str(f.id), "supplier_name": f.supplier_name, "supplier_id": f.supplier_id,
-        "approval_type": f.approval_type, "status": f.status,
-        "audit_score": float(f.audit_score) if f.audit_score else None,
+        "approval_type": f.approval_type, "status": status,
+        "is_current": status in {"APPROVED", "CONDITIONAL"} and f.expiry_date is not None and f.expiry_date >= today,
+        "audit_score": float(f.audit_score) if f.audit_score is not None else None,
         "auditor": f.auditor,
         "last_audit_date": str(f.last_audit_date) if f.last_audit_date else None,
         "approval_date": str(f.approval_date) if f.approval_date else None,
@@ -2479,6 +2524,10 @@ def _fsa_out(f: SupplierFoodSafetyApproval) -> dict:
         "major_findings": f.major_findings,
         "minor_findings": f.minor_findings,
         "notes": f.notes,
+        "audit_checklist_id": str(f.audit_checklist_id) if f.audit_checklist_id else None,
+        "decided_by_id": str(f.decided_by_id) if f.decided_by_id else None,
+        "decided_at": f.decided_at.isoformat() if f.decided_at else None,
+        "decision_notes": f.decision_notes,
         "created_at": f.created_at.isoformat() if f.created_at else "",
     }
 
@@ -2487,9 +2536,17 @@ def _fsa_out(f: SupplierFoodSafetyApproval) -> dict:
 async def create_supplier_fsa(
     payload: SupplierFSAIn,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    current_user=Depends(get_current_user),
 ):
-    fsa = SupplierFoodSafetyApproval(**payload.model_dump())
+    """Register a supplier approval request; it starts PENDING and is granted only via /decision."""
+    _require_quality_action(current_user, "create", "supplier approvals")
+    if payload.status != SupplierFoodSafetyStatus.PENDING:
+        raise HTTPException(status_code=422, detail="A supplier approval starts PENDING; use the decision endpoint.")
+    supplier = await _require_supplier(db, payload.supplier_id)
+    values = payload.model_dump()
+    values["supplier_id"] = str(supplier.id)
+    values["supplier_name"] = payload.supplier_name or supplier.name
+    fsa = SupplierFoodSafetyApproval(**values)
     db.add(fsa)
     await db.commit()
     await db.refresh(fsa)
@@ -2500,19 +2557,22 @@ async def create_supplier_fsa(
 async def list_supplier_fsa(
     status: Optional[str] = None,
     approval_type: Optional[str] = None,
+    supplier_id: Optional[str] = None,
     expiring_days: Optional[int] = Query(None, ge=1, le=365),
     limit: int = Query(100, le=500),
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    current_user=Depends(get_current_user),
 ):
-    from datetime import date as _d, timedelta
+    _require_quality_action(current_user, "view", "supplier approvals")
     q = select(SupplierFoodSafetyApproval)
     if status:
         q = q.where(SupplierFoodSafetyApproval.status == status)
     if approval_type:
         q = q.where(SupplierFoodSafetyApproval.approval_type == approval_type)
+    if supplier_id:
+        q = q.where(SupplierFoodSafetyApproval.supplier_id == supplier_id)
     if expiring_days is not None:
-        cutoff = _d.today() + timedelta(days=expiring_days)
+        cutoff = date.today() + timedelta(days=expiring_days)
         q = q.where(
             SupplierFoodSafetyApproval.expiry_date.isnot(None),
             SupplierFoodSafetyApproval.expiry_date <= cutoff,
@@ -2522,28 +2582,100 @@ async def list_supplier_fsa(
     return [_fsa_out(f) for f in rows]
 
 
+async def _locked_fsa(db: AsyncSession, fsa_id: uuid.UUID) -> SupplierFoodSafetyApproval:
+    r = await db.execute(
+        select(SupplierFoodSafetyApproval).where(SupplierFoodSafetyApproval.id == fsa_id).with_for_update()
+    )
+    fsa = r.scalar_one_or_none()
+    if not fsa:
+        raise HTTPException(404, "Record not found")
+    return fsa
+
+
 @router.patch("/supplier-food-safety/{fsa_id}")
 async def update_supplier_fsa(
-    fsa_id: str,
+    fsa_id: uuid.UUID,
     status: Optional[SupplierFoodSafetyStatus] = None,
     audit_score: Optional[float] = None,
     expiry_date: Optional[date] = None,
     notes: Optional[str] = None,
+    critical_findings: Optional[int] = Query(None, ge=0),
+    major_findings: Optional[int] = Query(None, ge=0),
+    minor_findings: Optional[int] = Query(None, ge=0),
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    current_user=Depends(get_current_user),
 ):
-    r = await db.execute(select(SupplierFoodSafetyApproval).where(SupplierFoodSafetyApproval.id == uuid.UUID(fsa_id)))
-    fsa = r.scalar_one_or_none()
-    if not fsa:
-        raise HTTPException(404, "Record not found")
-    if status is not None:
-        fsa.status = status
-    if audit_score is not None:
-        fsa.audit_score = audit_score
-    if expiry_date is not None:
-        fsa.expiry_date = expiry_date
+    """Edit notes and open finding counts; status, score and validity change through audits and /decision."""
+    _require_quality_action(current_user, "edit", "supplier approvals")
+    if status is not None or audit_score is not None or expiry_date is not None:
+        raise HTTPException(
+            status_code=409,
+            detail="Status, audit score and expiry are set by a supplier audit and the decision endpoint.",
+        )
+    fsa = await _locked_fsa(db, fsa_id)
+    counts = {"critical_findings": critical_findings, "major_findings": major_findings, "minor_findings": minor_findings}
+    if any(v is not None for v in counts.values()) and getattr(fsa.status, "value", fsa.status) in {"APPROVED", "CONDITIONAL"}:
+        raise HTTPException(status_code=409, detail="Finding counts of an active approval change only via suspension and re-audit.")
+    for field, value in counts.items():
+        if value is not None:
+            setattr(fsa, field, value)
     if notes is not None:
         fsa.notes = notes
+    await db.commit()
+    return _fsa_out(fsa)
+
+
+@router.post("/supplier-food-safety/{fsa_id}/decision")
+async def decide_supplier_fsa(
+    fsa_id: uuid.UUID,
+    payload: SupplierFSADecisionIn,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    """Approve, approve with conditions, reject, suspend or send back for re-audit."""
+    from datetime import datetime, timezone
+    target = payload.status.value
+    _require_quality_action(current_user, "edit" if target == "PENDING" else "approve", "supplier approval decisions")
+    fsa = await _locked_fsa(db, fsa_id)
+    current = getattr(fsa.status, "value", fsa.status)
+    audit = None
+    if payload.audit_checklist_id is not None:
+        audit = (await db.execute(
+            select(QualityAuditChecklist).where(QualityAuditChecklist.id == payload.audit_checklist_id)
+        )).scalar_one_or_none()
+        if audit is None:
+            raise HTTPException(status_code=404, detail="Audit not found.")
+    latest_audit_id = None
+    if fsa.supplier_id:
+        try:
+            supplier_uuid = uuid.UUID(str(fsa.supplier_id))
+        except ValueError:
+            supplier_uuid = None
+        if supplier_uuid is not None:
+            latest_audit_id = (await db.execute(
+                select(QualityAuditChecklist.id)
+                .where(QualityAuditChecklist.supplier_id == supplier_uuid, QualityAuditChecklist.closed_at.isnot(None))
+                .order_by(QualityAuditChecklist.closed_at.desc())
+                .limit(1)
+            )).scalar_one_or_none()
+    today = date.today()
+    errors = qa.supplier_approval_decision_errors(
+        fsa, target, audit=audit, actor_id=current_user.id,
+        expiry_date=payload.expiry_date, notes=payload.notes, today=today, latest_audit_id=latest_audit_id,
+    )
+    if errors:
+        raise HTTPException(status_code=409, detail=" ".join(errors))
+    if qa.supplier_approval_needs_audit(current, target):
+        fsa.audit_checklist_id = audit.id
+        fsa.last_audit_date = audit.audit_date
+        fsa.audit_score = audit.score_pct
+        fsa.auditor = audit.lead_auditor or audit.conducted_by
+        fsa.approval_date = today
+        fsa.expiry_date = payload.expiry_date
+    fsa.status = payload.status
+    fsa.decided_by_id = current_user.id
+    fsa.decided_at = datetime.now(timezone.utc)
+    fsa.decision_notes = payload.notes
     await db.commit()
     return _fsa_out(fsa)
 
@@ -2554,8 +2686,9 @@ async def update_supplier_fsa(
 async def get_audit_checklist(
     checklist_id: str,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    current_user=Depends(get_current_user),
 ):
+    _require_quality_action(current_user, "view", "quality audits")
     r = await db.execute(
         select(QualityAuditChecklist).where(QualityAuditChecklist.id == uuid.UUID(checklist_id))
     )
@@ -2576,6 +2709,9 @@ async def get_audit_checklist(
         'next_audit_date': str(c.next_audit_date) if c.next_audit_date else None,
         'certificate_issued': c.certificate_issued, 'notes': c.notes,
         'created_at': c.created_at.isoformat() if c.created_at else None,
+        'supplier_id': str(c.supplier_id) if c.supplier_id else None,
+        'closed_at': c.closed_at.isoformat() if c.closed_at else None,
+        'corrective_action_id': str(c.corrective_action_id) if c.corrective_action_id else None,
     }
 
 
@@ -2586,14 +2722,17 @@ async def patch_audit_checklist(
     recurrence_days: Optional[int] = Query(None, ge=1),
     notes: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    current_user=Depends(get_current_user),
 ):
+    _require_quality_action(current_user, "edit", "quality audits")
     r = await db.execute(
-        select(QualityAuditChecklist).where(QualityAuditChecklist.id == uuid.UUID(checklist_id))
+        select(QualityAuditChecklist).where(QualityAuditChecklist.id == uuid.UUID(checklist_id)).with_for_update()
     )
     c = r.scalar_one_or_none()
     if not c:
         raise HTTPException(404, 'Checklist not found')
+    if c.closed_at is not None:
+        raise HTTPException(status_code=409, detail='A closed audit is immutable.')
     if scheduled_date is not None:
         c.scheduled_date = scheduled_date
     if recurrence_days is not None:

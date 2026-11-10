@@ -219,6 +219,76 @@ export const qaEnterpriseApi = {
     get<CapaLink[]>("/capa-links", { trigger_type: triggerType, trigger_id: triggerId }),
 };
 
+export type SupplierApprovalStatus = "PENDING" | "APPROVED" | "CONDITIONAL" | "SUSPENDED" | "REJECTED";
+export type AuditItemResult = "pass" | "fail" | "na" | "pending";
+
+export interface SupplierApproval {
+  id: string;
+  supplier_id: string | null;
+  supplier_name: string;
+  approval_type: string;
+  status: SupplierApprovalStatus;
+  is_current: boolean;
+  audit_score: number | null;
+  auditor: string | null;
+  last_audit_date: string | null;
+  approval_date: string | null;
+  expiry_date: string | null;
+  days_to_expiry: number | null;
+  critical_findings: number;
+  major_findings: number;
+  minor_findings: number;
+  notes: string | null;
+  audit_checklist_id: string | null;
+  decided_by_id: string | null;
+  decided_at: string | null;
+  decision_notes: string | null;
+}
+
+export interface SupplierAudit {
+  id: string;
+  audit_ref: string;
+  standard: string;
+  audit_type: string;
+  audit_date: string;
+  score_pct: number | null;
+  result: "PASS" | "CONDITIONAL_PASS" | "FAIL" | "IN_PROGRESS";
+  next_audit_date: string | null;
+  supplier_id: string | null;
+  closed_at: string | null;
+  items?: Array<{ section: string; item: string; requirement?: string; result: AuditItemResult; finding: string | null }>;
+  corrective_action_id?: string | null;
+}
+
+/** Transitions the server accepts (mirror of SUPPLIER_APPROVAL_TRANSITIONS). */
+export const SUPPLIER_APPROVAL_NEXT: Record<SupplierApprovalStatus, SupplierApprovalStatus[]> = {
+  PENDING: ["APPROVED", "CONDITIONAL", "REJECTED"],
+  APPROVED: ["CONDITIONAL", "SUSPENDED"],
+  CONDITIONAL: ["APPROVED", "SUSPENDED"],
+  SUSPENDED: ["PENDING", "REJECTED"],
+  REJECTED: ["PENDING"],
+};
+
+const QMS = "/api/v1/qms";
+
+export const supplierAuditApi = {
+  listApprovals: async () => (await apiClient.get<SupplierApproval[]>(`${QMS}/supplier-food-safety`)).data,
+  createApproval: async (body: Record<string, unknown>) =>
+    (await apiClient.post<SupplierApproval>(`${QMS}/supplier-food-safety`, body)).data,
+  decide: async (id: string, body: { status: SupplierApprovalStatus; audit_checklist_id?: string; expiry_date?: string; notes?: string }) =>
+    (await apiClient.post<SupplierApproval>(`${QMS}/supplier-food-safety/${id}/decision`, body)).data,
+  listAudits: async () => (await apiClient.get<SupplierAudit[]>(`${QMS}/audit-checklists`, { params: { limit: 200 } })).data
+    .filter((a) => a.supplier_id),
+  getAudit: async (id: string) => (await apiClient.get<SupplierAudit>(`${QMS}/audit-checklists/${id}`)).data,
+  createAudit: async (body: Record<string, unknown>) =>
+    (await apiClient.post<SupplierAudit>(`${QMS}/audit-checklists`, body)).data,
+  scoreAudit: async (id: string, results: Array<{ item_index: number; result: AuditItemResult; finding?: string }>) =>
+    (await apiClient.patch(`${QMS}/audit-checklists/${id}/items`, results)).data,
+  closeAudit: async (id: string, nextAuditDate?: string) =>
+    (await apiClient.post<{ result: string; corrective_action_id: string | null; suspended_approval_ids: string[] }>(
+      `${QMS}/audit-checklists/${id}/close`, undefined, { params: nextAuditDate ? { next_audit_date: nextAuditDate } : {} })).data,
+};
+
 export function apiErrorMessage(error: unknown): string {
   const candidate = error as { response?: { data?: { detail?: unknown } }; message?: string };
   const detail = candidate.response?.data?.detail;

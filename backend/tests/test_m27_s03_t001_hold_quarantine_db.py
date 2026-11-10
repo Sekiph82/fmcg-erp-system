@@ -107,8 +107,8 @@ async def test_hold_release_and_dispatch_share_physical_lot_disposition(monkeypa
 
         monkeypatch.setattr(qms_service, "list_dispatch_quality_gates", no_dispatch_gates)
         shipment = SimpleNamespace(
-            shipment_no=f"M27-T001-SHIP-{suffix}",
-            lines=[SimpleNamespace(lot_id=lot_id, product_id=product_id)],
+            id=uuid4(), shipment_no=f"M27-T001-SHIP-{suffix}",
+            lines=[SimpleNamespace(id=uuid4(), lot_id=lot_id, product_id=product_id)],
         )
         with pytest.raises(ValueError, match="held, quarantined, or unreleased"):
             await qms_service.ensure_dispatch_quality_gates_pass(db, shipment, date.today())

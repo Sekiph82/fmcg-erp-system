@@ -32,7 +32,7 @@ def upgrade() -> None:
         )
 
     foreign_keys = {fk["name"] for fk in sa.inspect(bind).get_foreign_keys("ccp_monitoring_logs")}
-    fk_name = "fk_ccp_monitoring_logs_instrument_calibration_id_instrument_calibrations"
+    fk_name = "fk_ccp_monitoring_logs_instrument_calibration_id"
     if fk_name not in foreign_keys:
         op.create_foreign_key(
             fk_name,
@@ -60,7 +60,7 @@ def downgrade() -> None:
         op.drop_index("ix_ccp_monitoring_logs_instrument_calibration_id", table_name="ccp_monitoring_logs")
 
     foreign_keys = {fk["name"] for fk in sa.inspect(bind).get_foreign_keys("ccp_monitoring_logs")}
-    fk_name = "fk_ccp_monitoring_logs_instrument_calibration_id_instrument_calibrations"
+    fk_name = "fk_ccp_monitoring_logs_instrument_calibration_id"
     if fk_name in foreign_keys:
         op.drop_constraint(fk_name, "ccp_monitoring_logs", type_="foreignkey")
 

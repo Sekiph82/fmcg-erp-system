@@ -31,7 +31,12 @@ test("synthetic Developer Portal states remain readable and errors stay safe", a
     redoc_ui: "/redoc",
     postman_collection_note: "Use the synthetic sample collection.",
     authentication: { token_type: "Bearer", cookie: "HttpOnly session cookie" },
-    rate_limits: { default: "60 requests per minute" },
+    rate_limits: { default: "60 requests per minute", minimum: 1, maximum: 600, window: "1 minute",
+      enforcement: "per API key" },
+    api_key_scopes: { read: "Read ERP data", write: "Create and update ERP data" },
+    partner_audit: { endpoint: "/api/v1/developer/audit", visibility: "owner", maximum_limit: 100 },
+    partner_usage_analytics: { endpoint: "/api/v1/developer/usage/analytics", default_days: 30, minimum_days: 1,
+      maximum_days: 90, collection_enabled: true, collection_note: "Synthetic usage window." },
     sdk_note: "No SDK package is installed by this visual test.",
     webhooks: { available: "Tenant-managed webhooks" },
   };
@@ -42,6 +47,12 @@ test("synthetic Developer Portal states remain readable and errors stay safe", a
     planned_queries: ["product(id: ID!)"],
     planned_mutations: ["createProduct(input: ProductInput!)"],
     rest_api_base: "/api/v1",
+  };
+
+  // M31 usage analytics contract (synthetic, empty window).
+  const usage = {
+    days: 30, total_calls: 0, success_calls: 0, error_calls: 0, unclassified_calls: 0,
+    average_response_ms: null, daily_usage: [], collection_enabled: true, collection_note: "Synthetic usage window.",
   };
 
   await page.route("**/api/v1/**", async (route) => {
@@ -82,6 +93,7 @@ test("synthetic Developer Portal states remain readable and errors stay safe", a
     else if (path.endsWith("/developer/resources")) body = resources;
     else if (path.endsWith("/developer/graphql/schema")) body = graphql;
     else if (path.endsWith("/developer/keys")) body = [];
+    else if (path.endsWith("/developer/usage/analytics")) body = usage;
 
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
   });
@@ -89,7 +101,7 @@ test("synthetic Developer Portal states remain readable and errors stay safe", a
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/dashboard/developer");
   await expect(page.getByRole("heading", { name: "Developer Portal" })).toBeVisible();
-  await expect(page.getByText("Total API Calls")).toBeVisible();
+  await expect(page.getByText("Recorded calls (30d)")).toBeVisible();
   await expect(page.getByRole("link", { name: /API Keys/ })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(391);
   await page.screenshot({ path: "test-results/m20-current-developer-portal-mobile.png", fullPage: true });

@@ -552,6 +552,65 @@ def audit_failed_items(checklist: Any) -> list[dict]:
     return [item for item in (checklist.items or []) if item.get("result") == "fail"]
 
 
+SUPPLIER_APPROVAL_TRANSITIONS = {
+    "PENDING": {"APPROVED", "CONDITIONAL", "REJECTED"},
+    "APPROVED": {"CONDITIONAL", "SUSPENDED"},
+    "CONDITIONAL": {"APPROVED", "SUSPENDED"},
+    "SUSPENDED": {"PENDING", "REJECTED"},
+    "REJECTED": {"PENDING"},
+}
+_AUDIT_RESULTS_FOR = {"APPROVED": {"PASS"}, "CONDITIONAL": {"PASS", "CONDITIONAL_PASS"}}
+
+
+def supplier_approval_needs_audit(current: str, target: str) -> bool:
+    """Granting or upgrading an approval needs audit evidence; a downgrade does not."""
+    return target == "APPROVED" or (target == "CONDITIONAL" and current == "PENDING")
+
+
+def supplier_approval_decision_errors(
+    approval: Any, target: str, *, audit: Any, actor_id: Any,
+    expiry_date: Optional[date], notes: Optional[str], today: date, latest_audit_id: Any = None,
+) -> list[str]:
+    """``latest_audit_id`` is the supplier's most recently closed audit; only that one is valid evidence."""
+    cur = _v(approval.status)
+    if target not in SUPPLIER_APPROVAL_TRANSITIONS.get(cur, set()):
+        return [f"A supplier approval cannot move from {cur} to {target}."]
+    errors = []
+    if target in {"CONDITIONAL", "SUSPENDED", "REJECTED"} and not (notes or "").strip():
+        errors.append(f"Moving a supplier approval to {target} requires notes (conditions or reason).")
+    if not supplier_approval_needs_audit(cur, target):
+        return errors
+    if not approval.supplier_id:
+        errors.append("The approval must be linked to a supplier record.")
+    if approval.critical_findings:
+        errors.append("A supplier with open critical findings cannot be approved.")
+    if audit is None:
+        errors.append(f"{target} requires a closed supplier audit as evidence.")
+    else:
+        if str(audit.supplier_id) != str(approval.supplier_id):
+            errors.append("The audit was not performed on this supplier.")
+        if audit.closed_at is None:
+            errors.append("The supplier audit is not closed.")
+        if _v(audit.result) not in _AUDIT_RESULTS_FOR[target]:
+            errors.append(f"A {_v(audit.result)} audit does not support {target}.")
+        if audit.closed_by_id is not None and audit.closed_by_id == actor_id:
+            errors.append("The person who closed the audit cannot approve the supplier.")
+        if audit.next_audit_date is None:
+            errors.append("The evidence audit must set a next audit date.")
+        elif audit.next_audit_date < today:
+            errors.append("The supplier is overdue for re-audit.")
+        if latest_audit_id is not None and audit.id != latest_audit_id:
+            errors.append("Only the supplier's most recent closed audit can be used as evidence.")
+        decided_at = getattr(approval, "decided_at", None)
+        if decided_at is not None and audit.closed_at is not None and audit.closed_at <= decided_at:
+            errors.append("The evidence audit predates the last decision on this approval.")
+    if expiry_date is None or expiry_date <= today:
+        errors.append("An approval needs a future expiry date.")
+    elif audit is not None and audit.next_audit_date is not None and expiry_date > audit.next_audit_date:
+        errors.append("The approval cannot outlast the next scheduled audit.")
+    return errors
+
+
 CHANGE_TRANSITIONS = {
     "DRAFT": {"SUBMITTED", "CANCELLED"},
     "SUBMITTED": {"APPROVED", "REJECTED", "CANCELLED"},

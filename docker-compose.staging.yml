@@ -1,0 +1,27 @@
+# Local staging rehearsal (LOCAL-STAGING-001): the production images and validators on
+# alternate host ports, next to the development stack. Never points at production data.
+#
+#   python scripts/make_staging_env.py            # writes .env.staging with random local-only secrets
+#   docker compose -p fmcg-erp-staging --env-file .env.staging \
+#     -f docker-compose.prod.yml -f docker-compose.staging.yml up -d --build
+#   docker compose -p fmcg-erp-staging --env-file .env.staging \
+#     -f docker-compose.prod.yml -f docker-compose.staging.yml down -v   # tear down, drop volumes
+services:
+  db:
+    env_file:
+      - path: .env.staging
+        required: true
+
+  backend:
+    env_file:
+      - path: .env.staging
+        required: true
+    ports: !override
+      - "127.0.0.1:18000:8000"
+
+  frontend:
+    env_file:
+      - path: .env.staging
+        required: true
+    ports: !override
+      - "127.0.0.1:13000:3000"

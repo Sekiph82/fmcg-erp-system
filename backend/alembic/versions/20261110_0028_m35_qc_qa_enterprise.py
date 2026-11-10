@@ -5,7 +5,7 @@ from alembic import op
 import sqlalchemy as sa
 
 revision = "20261110_0028"
-down_revision = "20261110_0027"
+down_revision = "20261110_0027b"
 branch_labels = None
 depends_on = None
 
@@ -274,12 +274,17 @@ def upgrade() -> None:
     op.add_column("qms_audit_checklists", _fk("corrective_action_id", "corrective_actions.id", "SET NULL"))
 
     # NOT VALID: enforce for new/updated rows without failing on legacy plans.
-    op.execute("ALTER TABLE aql_sampling_plans ADD CONSTRAINT ck_aql_sampling_plans_sample_positive "
-               "CHECK (sample_size > 0) NOT VALID")
-    op.execute("ALTER TABLE aql_sampling_plans ADD CONSTRAINT ck_aql_sampling_plans_ac_re "
-               "CHECK (acceptance_number >= 0 AND rejection_number > acceptance_number) NOT VALID")
-    op.execute("ALTER TABLE aql_sampling_plans ADD CONSTRAINT ck_aql_sampling_plans_lot_range "
-               "CHECK (lot_size_min >= 1 AND (lot_size_max IS NULL OR lot_size_max >= lot_size_min)) NOT VALID")
+    # Skipped when the constraint already exists (fresh databases get it from the squashed baseline).
+    for name, check in (
+        ("ck_aql_sampling_plans_sample_positive", "sample_size > 0"),
+        ("ck_aql_sampling_plans_ac_re", "acceptance_number >= 0 AND rejection_number > acceptance_number"),
+        ("ck_aql_sampling_plans_lot_range",
+         "lot_size_min >= 1 AND (lot_size_max IS NULL OR lot_size_max >= lot_size_min)"),
+    ):
+        op.execute(
+            f"DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = '{name}') THEN "
+            f"ALTER TABLE aql_sampling_plans ADD CONSTRAINT {name} CHECK ({check}) NOT VALID; END IF; END $$"
+        )
 
 
 def downgrade() -> None:

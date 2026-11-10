@@ -10,9 +10,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --upgrade "pip>=26.2" \
+    && pip install --no-cache-dir -r requirements.txt
 
 COPY . .
+
+# Run as an unprivileged user; the document volume inherits this ownership on first mount.
+RUN useradd --create-home --uid 10001 erp \
+    && mkdir -p /var/lib/fmcg-erp/documents \
+    && chown -R erp:erp /var/lib/fmcg-erp /app
+USER erp
 
 EXPOSE 8000
 

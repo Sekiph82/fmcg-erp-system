@@ -22,12 +22,12 @@ interface CostLineForm {
   account_code: string;
 }
 
-const defaultLine = (): CostLineForm => ({
+const defaultLine = (currency = "KES"): CostLineForm => ({
   cost_type: "FREIGHT_SEA",
   description: "",
   vendor_name: "",
   amount_fc: "",
-  currency_code: "KES",
+  currency_code: currency,
   is_included_in_valuation: true,
   account_code: "",
 });
@@ -55,7 +55,7 @@ export default function NewLandedCostPage() {
   });
 
   function addLine() {
-    setLines((prev) => [...prev, defaultLine()]);
+    setLines((prev) => [...prev, defaultLine(form.currency_code || "KES")]);
   }
 
   function removeLine(i: number) {
@@ -122,7 +122,12 @@ export default function NewLandedCostPage() {
             <label className="block text-xs text-gray-500 mb-1">Document total currency</label>
             <input className="border rounded-lg px-3 py-2 text-sm w-full uppercase"
               value={form.currency_code} maxLength={10}
-              onChange={(e) => setForm({ ...form, currency_code: e.target.value.toUpperCase() })} />
+              onChange={(e) => {
+                const next = e.target.value.toUpperCase();
+                // Lines still on the document currency follow it, so a USD bill is not costed as KES.
+                setLines((prev) => prev.map((l) => (l.currency_code === form.currency_code ? { ...l, currency_code: next } : l)));
+                setForm({ ...form, currency_code: next });
+              }} />
           </div>
           <div>
             <label className="block text-xs text-gray-500 mb-1">Allocation Method</label>

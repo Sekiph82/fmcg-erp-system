@@ -637,6 +637,14 @@ from app.models.material_flow import (
     BatchReconciliation, BatchReconciliationLine, MFAIRecommendation,
 )
 
+# Model modules that are not re-exported above but must still be registered on
+# Base.metadata so the squashed baseline and dev bootstrap create their tables.
+from app.models import (  # noqa: F401,E402
+    brand_assets, consumer_complaints, containers, copacking, dynamic_pricing, email_integration, iot,
+    knowledge_base, loyalty, market_intelligence, meetings, messaging, mobile, npd, nps, receipt_ocr,
+    regulatory_certs, surveys, voip, whatsapp, workflow,
+)
+
 __all__ = [
     # Utilities (system configs, currencies, UOM, number series)
     "ConfigCategory", "SystemConfig", "UomConversion", "NumberSeries", "Currency",

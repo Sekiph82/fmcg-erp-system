@@ -165,7 +165,10 @@ class TestJWTBehavior:
         token = create_access_token("user-123")
         parts = token.split(".")
         sig = parts[2]
-        parts[2] = sig[:-1] + ("A" if sig[-1] != "A" else "B")
+        # Change a middle character: the last base64url character carries padding bits, so
+        # replacing it can leave the decoded signature bytes unchanged (flaky ~5% of runs).
+        mid = len(sig) // 2
+        parts[2] = sig[:mid] + ("A" if sig[mid] != "A" else "B") + sig[mid + 1:]
         assert decode_token(".".join(parts)) is None
 
     def test_wrong_secret_returns_none(self):

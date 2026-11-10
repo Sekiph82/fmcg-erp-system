@@ -78,6 +78,16 @@ class _RollbackFixture(Exception):
     pass
 
 
+
+def _delete_users_without_audit_history(user_ids):
+    """Delete synthetic users unless append-only production history references them (cannot be deleted)."""
+    from app.models.production_transition import ProductionTransitionEvent
+
+    return delete(User).where(
+        User.id.in_(list(user_ids)),
+        ~select(ProductionTransitionEvent.id).where(ProductionTransitionEvent.actor_id == User.id).exists(),
+    )
+
 def _suffix() -> str:
     return uuid4().hex[:10]
 
@@ -2003,7 +2013,7 @@ async def test_postgres_mps_supply_projection_scopes_and_nets_dated_receipts():
                 )
                 other_warehouse_work = ProductionOrder(
                     order_no=f"M20-S-WIP-B-{suffix}", product_id=product.id, recipe_id=recipe.id,
-                    planned_quantity=Decimal("100"), actual_quantity=Decimal("0"), uom="KG",
+                    planned_quantity=Decimal("100"), actual_quantity=None, uom="KG",
                     status=ProductionOrderStatus.IN_PROGRESS, target_warehouse_id=other_warehouse.id,
                     scheduled_start=datetime(2026, 1, 1, 8), scheduled_end=datetime(2026, 1, 1, 16),
                 )
@@ -2403,7 +2413,7 @@ async def test_postgres_seeded_mrp_bom_inventory_diagnostics_snapshot_and_releas
                     if seeded_product is not None:
                         seeded_product.is_active = True
                 if user_id is not None:
-                    await cleanup.execute(delete(User).where(User.id == user_id))
+                    await cleanup.execute(_delete_users_without_audit_history([user_id]))
                 if warehouse_id is not None:
                     await cleanup.execute(delete(Warehouse).where(Warehouse.id == warehouse_id))
                 if foreign_warehouse_id is not None:
@@ -2678,7 +2688,7 @@ async def test_postgres_virtual_factory_minimum_run_cip_capacity_and_kes_costing
                 if company_id is not None:
                     await cleanup.execute(delete(Company).where(Company.id == company_id))
                 if user_id is not None:
-                    await cleanup.execute(delete(User).where(User.id == user_id))
+                    await cleanup.execute(_delete_users_without_audit_history([user_id]))
         await engine.dispose()
 
 
@@ -2898,7 +2908,7 @@ async def test_postgres_whatif_http_permissions_scope_lifecycle_and_comparison()
                 if company_id is not None:
                     await cleanup.execute(delete(Company).where(Company.id == company_id))
                 if user_id is not None:
-                    await cleanup.execute(delete(User).where(User.id == user_id))
+                    await cleanup.execute(_delete_users_without_audit_history([user_id]))
         await engine.dispose()
 
 
@@ -3209,7 +3219,7 @@ async def test_postgres_mps_scoped_plan_list_create_and_cross_plan_line_edit_iso
                 if company_ids:
                     await cleanup.execute(delete(Company).where(Company.id.in_(company_ids)))
                 if user_id is not None:
-                    await cleanup.execute(delete(User).where(User.id == user_id))
+                    await cleanup.execute(_delete_users_without_audit_history([user_id]))
         await engine.dispose()
 
 
@@ -3508,7 +3518,7 @@ async def test_postgres_mps_approval_reopen_and_release_integrity():
                 if product_id is not None:
                     await cleanup.execute(delete(Product).where(Product.id == product_id))
                 if actor_id is not None:
-                    await cleanup.execute(delete(User).where(User.id == actor_id))
+                    await cleanup.execute(_delete_users_without_audit_history([actor_id]))
                 if alternate_warehouse_id is not None:
                     await cleanup.execute(delete(Warehouse).where(Warehouse.id == alternate_warehouse_id))
                 if warehouse_id is not None:
@@ -3893,7 +3903,7 @@ async def test_postgres_release_http_permission_company_warehouse_and_atomic_rol
                     if approve_own_permission is not None:
                         await cleanup.delete(approve_own_permission)
                 if actor_ids:
-                    await cleanup.execute(delete(User).where(User.id.in_(actor_ids)))
+                    await cleanup.execute(_delete_users_without_audit_history(actor_ids))
                 if warehouse_ids:
                     await cleanup.execute(delete(Warehouse).where(Warehouse.id.in_(warehouse_ids)))
                 if company_ids:

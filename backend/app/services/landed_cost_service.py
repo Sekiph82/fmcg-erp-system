@@ -231,8 +231,9 @@ async def create_header(db: AsyncSession, payload: LandedCostHeaderCreate) -> La
     created_lines = []
     for cl in payload.cost_lines:
         estimate = cl.estimated_amount_fc if cl.estimated_amount_fc is not None else cl.amount_fc
+        line_currency = cl.currency_code or payload.currency_code
         line_rate, line_rate_id, line_rate_date, line_rate_source = await _resolve_rate_snapshot(
-            db, cl.currency_code, payload.bill_date,
+            db, line_currency, payload.bill_date,
         )
         line = LandedCostLine(
             header_id=hdr.id,
@@ -241,7 +242,7 @@ async def create_header(db: AsyncSession, payload: LandedCostHeaderCreate) -> La
             vendor_name=cl.vendor_name,
             amount_fc=_R(estimate),
             estimated_amount_fc=_R(estimate),
-            currency_code=cl.currency_code,
+            currency_code=line_currency,
             exchange_rate=line_rate,
             exchange_rate_id=line_rate_id,
             exchange_rate_date=line_rate_date,
@@ -816,8 +817,9 @@ async def add_cost_line(db: AsyncSession, header_id: UUID, payload: LandedCostLi
         raise ValueError(f"Cannot add a cost line in status {hdr.status}")
 
     estimate = payload.estimated_amount_fc if payload.estimated_amount_fc is not None else payload.amount_fc
+    line_currency = payload.currency_code or hdr.currency_code
     line_rate, line_rate_id, line_rate_date, line_rate_source = await _resolve_rate_snapshot(
-        db, payload.currency_code, hdr.bill_date,
+        db, line_currency, hdr.bill_date,
     )
     line = LandedCostLine(
         header_id=header_id,
@@ -826,7 +828,7 @@ async def add_cost_line(db: AsyncSession, header_id: UUID, payload: LandedCostLi
         vendor_name=payload.vendor_name,
         amount_fc=_R(estimate),
         estimated_amount_fc=_R(estimate),
-        currency_code=payload.currency_code,
+        currency_code=line_currency,
         exchange_rate=line_rate,
         exchange_rate_id=line_rate_id,
         exchange_rate_date=line_rate_date,

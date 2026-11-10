@@ -129,6 +129,20 @@ class FakeDB:
             raise NotImplementedError("joins are not supported by FakeDB")
         entity, expr = self._entity(stmt)
         matched = [r for r in self.rows[entity] if _match(stmt.whereclause, r)]
+        for clause in reversed(getattr(stmt, "_order_by_clauses", ())):  # stable sort, last key first
+            modifier = getattr(clause, "modifier", None)
+            column = clause.element if modifier is not None else clause
+            descending = getattr(modifier, "__name__", "") == "desc_op"
+            key = getattr(column, "key", None)
+            if key is None:
+                continue
+            present = [r for r in matched if getattr(r, key, None) is not None]
+            missing = [r for r in matched if getattr(r, key, None) is None]
+            present.sort(key=lambda r: getattr(r, key), reverse=descending)
+            matched = present + missing if not descending else missing + present  # PostgreSQL NULL ordering
+        limit = getattr(stmt, "_limit", None)
+        if limit is not None:
+            matched = matched[:limit]
         if isinstance(expr, FunctionElement):
             if expr.name == "count":
                 return _Result([len(matched)])

@@ -203,8 +203,13 @@ async def test_migration_replaces_weak_checks_on_an_existing_sourcing_line_table
         if result.returncode:
             raise AssertionError(f"alembic {' '.join(args)} failed ({result.returncode}):\n{result.stdout}")
 
-    run_alembic("downgrade", "-1")
+    # Pinned to the revision before sourcing lines (20261030_0005); "-1" only held while it was head.
+    run_alembic("downgrade", "20261030_0004")
     async with engine.begin() as connection:
+        # A baseline-bootstrapped database keeps the table (later revisions adopted dependants), so
+        # recreate the legacy weak shape explicitly (later revisions recreate the dependent quotes table).
+        await connection.execute(text("DROP TABLE IF EXISTS rfq_award_allocations, rfq_response_line_quotes"))
+        await connection.execute(text("DROP TABLE IF EXISTS rfq_request_lines CASCADE"))
         await connection.execute(
             text(
                 """

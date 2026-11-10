@@ -449,11 +449,14 @@ async def test_finished_goods_qc_quarantines_and_releases_exact_production_lot()
             rework_candidate=False, apply_quarantine=False,
         )
         await db.flush()
-        await quality_service.release_qc_quarantine(db, retest, user.id, "Synthetic retest passed")
-        await db.flush()
-        assert stock.is_blocked is False
-        assert stock.quantity_reserved == Decimal("0")
-        assert stock.quantity_available == Decimal("4")
+        # A passing retest cannot silently override a recorded rejection ("testing into
+        # compliance"): since M27/M35 the rejected inspection stays unresolved and release
+        # requires disposition (rework/re-inspection) or an approved concession.
+        with pytest.raises(HTTPException) as retest_release:
+            await quality_service.release_qc_quarantine(db, retest, user.id, "Synthetic retest passed")
+        assert retest_release.value.status_code == 422
+        assert "unresolved" in str(retest_release.value.detail)
+        assert stock.is_blocked is True
         await db.rollback()
 
 

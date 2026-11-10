@@ -145,6 +145,13 @@ async def test_supplier_evaluation_and_inspection_links_are_consistent_and_permi
             linked.id, linked.steps[0].id, "Synthetic containment documented", db, quality_editor
         )
         assert completed.steps_completed == 1
+        # Since M35 a CAPA is verified only after it is COMPLETED with a documented root cause.
+        done = await qms_endpoint.update_corrective_action(
+            linked.id,
+            CorrectiveActionUpdate(status="COMPLETED", root_cause_analysis="Synthetic supplier root cause"),
+            db, quality_editor,
+        )
+        assert done.status == "COMPLETED"
         verified = await qms_endpoint.verify_corrective_action(
             linked.id, "Synthetic effectiveness evidence", db, actor
         )

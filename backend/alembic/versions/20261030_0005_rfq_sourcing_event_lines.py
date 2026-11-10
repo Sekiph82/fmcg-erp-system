@@ -151,8 +151,15 @@ def downgrade() -> None:
     if sa.inspect(bind).has_table("rfq_request_lines"):
         if bind.execute(sa.text("SELECT EXISTS (SELECT 1 FROM rfq_request_lines)")).scalar():
             raise RuntimeError("Cannot downgrade: sourcing-event line data would be destroyed.")
-        op.drop_index("ix_rfq_request_lines_rfq_id", table_name="rfq_request_lines")
-        op.drop_table("rfq_request_lines")
+        referenced_by_other_tables = bind.execute(sa.text(
+            "SELECT EXISTS (SELECT 1 FROM pg_constraint c WHERE c.contype = 'f' "
+            "AND c.confrelid = 'rfq_request_lines'::regclass AND c.conrelid <> c.confrelid)"
+        )).scalar()
+        if not referenced_by_other_tables:
+            # A baseline-bootstrapped database also holds tables (e.g. RFQ response quotes) that
+            # later revisions adopted instead of created; leave the table rather than cascade.
+            op.drop_index("ix_rfq_request_lines_rfq_id", table_name="rfq_request_lines")
+            op.drop_table("rfq_request_lines")
 
     rfq_columns = _columns("rfq_requests")
     if "quantity" in rfq_columns and rfq_columns["quantity"]["nullable"]:

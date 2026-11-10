@@ -9,6 +9,7 @@ import { ConcessionsCostsPanel } from "./ConcessionsCostsPanel";
 import { LabPanel } from "./LabPanel";
 import { PlansPanel } from "./PlansPanel";
 import { SpecsPanel } from "./SpecsPanel";
+import { SupplierAuditsPanel } from "./SupplierAuditsPanel";
 import { ReadOnlyNotice, useQualityPermissions } from "./shared";
 
 const SECTIONS = [
@@ -17,6 +18,7 @@ const SECTIONS = [
   { key: "aql-spc", label: "AQL & SPC", Panel: AqlSpcPanel },
   { key: "concessions", label: "Concessions & cost", Panel: ConcessionsCostsPanel },
   { key: "lab", label: "Retain samples & methods", Panel: LabPanel },
+  { key: "suppliers", label: "Supplier audits", Panel: SupplierAuditsPanel },
   { key: "capa", label: "CAPA links", Panel: CapaLinksPanel },
 ] as const;
 
@@ -31,7 +33,7 @@ export function QAEnterpriseWorkspace() {
     <div data-testid="qa-enterprise-workspace" className="space-y-4">
       <div>
         <h2 className="text-lg font-semibold text-gray-900">QA governance</h2>
-        <p className="text-sm text-gray-500">Specifications, QC plans, sampling and SPC, concessions, quality cost, laboratory evidence and CAPA links.</p>
+        <p className="text-sm text-gray-500">Specifications, QC plans, sampling and SPC, concessions, quality cost, laboratory evidence, supplier audits and CAPA links.</p>
       </div>
       {!canView ? (
         <ReadOnlyNotice>QA governance requires quality.view.</ReadOnlyNotice>

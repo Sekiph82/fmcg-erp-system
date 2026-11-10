@@ -123,7 +123,7 @@ async def test_noncritical_waiver_requires_independent_approval_expires_and_neve
         await db.commit()
 
         inspection_context = SimpleNamespace(
-            production_order_id=order_id, lot_id=lot_id, lot_number=lot_number,
+            id=uuid4(), production_order_id=order_id, lot_id=lot_id, lot_number=lot_number,
         )
         with pytest.raises(ValueError, match="no accepted, passed inspection"):
             await ensure_finished_goods_quality_gates_pass(db, inspection_context, date.today())

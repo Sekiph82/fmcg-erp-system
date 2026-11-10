@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
@@ -241,6 +242,14 @@ async def test_concurrent_postgres_mps_releases_allocate_distinct_order_numbers(
 
     if "postgresql" not in str(settings.DATABASE_URL):
         pytest.skip("V04 concurrency proof requires the PostgreSQL CI service")
+    # Never write into whatever database DATABASE_URL happens to point at (e.g. a dev stack).
+    import re as _re
+    expected_name = os.environ.get("M20_DISPOSABLE_TEST_DATABASE_NAME", "")
+    if os.environ.get("M20_DISPOSABLE_TEST_DATABASE") != "1":
+        pytest.skip("Set M20_DISPOSABLE_TEST_DATABASE=1 only for a task-owned disposable PostgreSQL database.")
+    if (engine.url.host not in {"127.0.0.1", "localhost", "::1"} or engine.url.database != expected_name
+            or not _re.fullmatch(r"fmcg_m20_[a-z0-9]+_[a-f0-9]{20,32}", expected_name)):
+        pytest.fail("Refusing integration writes: DATABASE_URL must target the task-owned disposable M20 database.")
 
     await engine.dispose()
     async with AsyncSessionLocal() as probe:
@@ -329,7 +338,13 @@ async def test_concurrent_postgres_mps_releases_allocate_distinct_order_numbers(
             await cleanup.execute(delete(Product).where(Product.id.in_(product_ids)))
             await cleanup.execute(delete(Product).where(Product.id == extra_product_id))
             await cleanup.execute(delete(MRPRun).where(MRPRun.id == source_run_id))
-            await cleanup.execute(delete(User).where(User.id == user_id))
+            from app.models.production_transition import ProductionTransitionEvent
+
+            # Append-only production history keeps referencing the actor; delete it only if unreferenced.
+            await cleanup.execute(delete(User).where(
+                User.id == user_id,
+                ~select(ProductionTransitionEvent.id).where(ProductionTransitionEvent.actor_id == User.id).exists(),
+            ))
             await cleanup.execute(delete(Warehouse).where(Warehouse.id == warehouse_id))
     # This test owns concurrent PostgreSQL sessions. Dispose pooled asyncpg
     # connections on this pytest-asyncio loop so the shared engine cannot leak

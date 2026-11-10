@@ -32,10 +32,9 @@ def _is_task_owned_database(url, expected_name: str | None) -> bool:
 
 def _require_task_owned_database() -> str:
     expected = os.environ.get("M23_S04_T003_DISPOSABLE_TEST_DATABASE_NAME")
-    if (
-        os.environ.get("M23_S04_T003_DISPOSABLE_TEST_DATABASE") != "1"
-        or not _is_task_owned_database(engine.url, expected)
-    ):
+    if os.environ.get("M23_S04_T003_DISPOSABLE_TEST_DATABASE") != "1":
+        pytest.skip("Set M23_S04_T003_DISPOSABLE_TEST_DATABASE=1 only for its task-owned disposable PostgreSQL database.")
+    if not _is_task_owned_database(engine.url, expected):
         pytest.fail("Refusing integration writes unless DATABASE_URL targets the exact loopback M23.S04.T003 database.")
     return expected
 

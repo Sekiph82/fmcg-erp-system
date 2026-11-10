@@ -383,7 +383,7 @@ class CCPMonitoringLog(Base, TimestampMixin):
     ccp_id = Column(UUID(as_uuid=True), ForeignKey("critical_control_points.id", ondelete="CASCADE"), nullable=False, index=True)
     instrument_calibration_id = Column(
         UUID(as_uuid=True),
-        ForeignKey("instrument_calibrations.id", name="fk_ccp_monitoring_logs_instrument_calibration_id_instrument_calibrations", ondelete="SET NULL"),
+        ForeignKey("instrument_calibrations.id", name="fk_ccp_monitoring_logs_instrument_calibration_id", ondelete="SET NULL"),
         nullable=True,
         index=True,
     )
@@ -965,6 +965,7 @@ class QualityAuditChecklist(Base, TimestampMixin):
     closed_at = Column(DateTime(timezone=True), nullable=True)
     closed_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     corrective_action_id = Column(UUID(as_uuid=True), ForeignKey("corrective_actions.id", ondelete="SET NULL"), nullable=True)
+    supplier_id = Column(UUID(as_uuid=True), ForeignKey("suppliers.id", ondelete="SET NULL"), nullable=True, index=True)
 
 
 class SupplierFoodSafetyStatus(str, enum.Enum):
@@ -995,6 +996,12 @@ class SupplierFoodSafetyApproval(Base, TimestampMixin):
     major_findings = Column(Integer, default=0, nullable=False)
     minor_findings = Column(Integer, default=0, nullable=False)
     notes = Column(Text, nullable=True)
+    audit_checklist_id = Column(
+        UUID(as_uuid=True), ForeignKey("qms_audit_checklists.id", ondelete="SET NULL"), nullable=True,
+    )
+    decided_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    decided_at = Column(DateTime(timezone=True), nullable=True)
+    decision_notes = Column(Text, nullable=True)
 
 
 # ── M35 QC/QA Enterprise ──────────────────────────────────────────────────────
