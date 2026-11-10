@@ -1,3 +1,9 @@
+# ACTIVE OWNER DIRECTIVE — 2026-11-10
+
+Claude owns the entire remaining FMCG ERP backlog. Read `coordination/CLAUDE_AUTONOMOUS_EXECUTION_POLICY.md`, root `TASKS.md`, and `AGENTS.md` before implementation. The legacy H!veAI .hiveai adapter instructions below are superseded; do not create/read/update .hiveai state. Do not wait for ChatGPT approval or task-by-task prompts. Use milestone-batched comprehensive tests and independent audits. Preserve owner changes, work only on existing main checkout, and update TASKS.md honestly.
+
+---
+
 # H!veAI mandatory control-plane adapter
 
 Before doing project work, read `.hiveai/RULES.md`, `.hiveai/PROJECT.json`, and the v3 machine block in `.hiveai/TASKS.md`. The tracked GitHub branch is current-state authority; local folders are execution workspaces.
