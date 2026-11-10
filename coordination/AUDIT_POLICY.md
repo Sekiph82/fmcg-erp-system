@@ -1,3 +1,5 @@
+> **ACTIVE 2026-11-10 OVERRIDE:** Owner transferred all remaining work to Claude. See `coordination/CLAUDE_AUTONOMOUS_EXECUTION_POLICY.md`. Claude writes TASKS.md after evidence-backed acceptance; separate reviewers independently audit milestone gates. ChatGPT is not a mandatory gate. The former role restrictions below are historical only.
+
 # FMCG ERP / MES Audit Policy
 
 Canonical repository: `Sekiph82/fmcg-erp-system`
