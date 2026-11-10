@@ -952,6 +952,8 @@ async def complete_work_order(
         raise ValueError("Work order changed production order during transition")
     if parent.status != "IN_PROGRESS":
         raise ValueError("Production order must be IN_PROGRESS to complete a work order")
+    if wo.qc_required_flag and wo.qc_passed is not True:
+        raise ValueError("Required in-process QC checkpoints must all pass before work-order completion")
     previous_status = wo.status
     wo.status = "COMPLETED"
     wo.completed_qty = completed_qty
@@ -962,7 +964,8 @@ async def complete_work_order(
     wo.cleanup_time_actual = cleanup_time_actual
     wo.scrap_category = scrap_category
     wo.scrap_reason = scrap_reason
-    wo.qc_passed = qc_passed
+    if not wo.qc_required_flag:
+        wo.qc_passed = qc_passed
     wo.notes = notes
     wo.completed_at = _now()
     record_transition(
@@ -1074,6 +1077,16 @@ async def add_material(
 ) -> ExecOrderMaterial:
     order = await _load_order(db, order_id, for_update=True)
     _require_order_unapproved_for_planning_changes(order)
+    work_order_id = data.get("work_order_id")
+    if work_order_id is not None:
+        work_order_result = await db.execute(
+            select(ExecWorkOrder.id).where(
+                ExecWorkOrder.id == work_order_id,
+                ExecWorkOrder.production_order_id == order.id,
+            )
+        )
+        if work_order_result.scalar_one_or_none() is None:
+            raise ValueError("Material work order must belong to this production order")
     mat = ExecOrderMaterial(production_order_id=order_id, **data, status="RESERVED")
     db.add(mat)
     await db.commit()
@@ -1091,7 +1104,7 @@ async def issue_material(
     order = await _load_order(db, order_id, for_update=True)
     if order.status not in {"RELEASED", "IN_PROGRESS"}:
         raise ValueError("Materials can be issued only after order release and before completion")
-    if qty <= 0:
+    if not qty.is_finite() or qty <= 0:
         raise ValueError("Material issue quantity must be positive")
     result = await db.execute(
         select(ExecOrderMaterial)
@@ -1122,7 +1135,7 @@ async def return_material(
     order = await _load_order(db, order_id, for_update=True)
     if order.status not in {"RELEASED", "IN_PROGRESS", "CANCELLED"}:
         raise ValueError("Materials can be returned only for a released, active, or cancelled order")
-    if qty <= 0:
+    if not qty.is_finite() or qty <= 0:
         raise ValueError("Material return quantity must be positive")
     result = await db.execute(
         select(ExecOrderMaterial)
@@ -1142,7 +1155,10 @@ async def return_material(
         raise ValueError("Material return quantity cannot exceed the unreturned issued quantity")
     mat.returned_qty = (mat.returned_qty or Decimal("0")) + qty
     settled_qty = (mat.consumed_qty or Decimal("0")) + mat.returned_qty
-    mat.status = "RETURNED" if settled_qty >= (mat.issued_qty or Decimal("0")) else "ISSUED"
+    if settled_qty >= (mat.issued_qty or Decimal("0")):
+        mat.status = "CONSUMED" if (mat.consumed_qty or Decimal("0")) > 0 else "RETURNED"
+    else:
+        mat.status = "ISSUED"
     await db.commit()
     await db.refresh(mat)
     return mat

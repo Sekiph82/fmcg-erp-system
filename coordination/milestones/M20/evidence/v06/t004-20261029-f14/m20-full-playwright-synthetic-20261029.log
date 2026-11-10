@@ -1,0 +1,381 @@
+
+[1A[2K[WebServer] (node:50812) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[1A[2K[WebServer] (node:50236) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[1A[2K[WebServer] ⚠ Warning: Next.js ignored package-lock.json in C:\Users\sekip because it is outside the current Git repository (C:\Users\sekip\Desktop\fmcg-erp-system).
+[WebServer]  To use this directory, set `turbopack.root` in your Next.js config.
+[WebServer] 
+
+[1A[2K[WebServer] ⚠ React 18 support is deprecated in Next.js 16 and will be removed in Next.js 17. Please upgrade to React 19. Learn more: https://nextjs.org/docs/messages/react-version
+
+[1A[2K[WebServer] ⚠ The "middleware" file convention is deprecated. Please use "proxy" instead.
+[WebServer] 
+[WebServer]   To migrate automatically, run:
+[WebServer]   npx @next/codemod@canary middleware-to-proxy .
+[WebServer] 
+[WebServer]   Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+
+Running 612 tests using 1 worker
+
+
+
+[1A[2K(node:54844) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:54844) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[1A[2K[1/612] [setup] › e2e\auth.setup.ts:150:6 › authenticate as admin
+
+[1A[2K[WebServer] [browser] Image with src "/povu-logo.jpg" has either width or height modified, but not the other. If you use CSS to change the size of your image, also include the styles 'width: "auto"' or 'height: "auto"' to maintain the aspect ratio.
+
+[1A[2K(node:30364) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+
+[1A[2K(node:30364) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[1A[2K[2/612] [chromium] › e2e\action-card-health.spec.ts:32:9 › Inventory → Cycle Count action cards › "Count Plans" navigates to /dashboard/cycle-count/plans
+[1A[2K[3/612] [chromium] › e2e\action-card-health.spec.ts:32:9 › Inventory → Cycle Count action cards › "Count Tasks" navigates to /dashboard/cycle-count/tasks
+[1A[2K[4/612] [chromium] › e2e\action-card-health.spec.ts:32:9 › Inventory → Cycle Count action cards › "Count Entries" navigates to /dashboard/cycle-count/entries
+[1A[2K[5/612] [chromium] › e2e\action-card-health.spec.ts:32:9 › Inventory → Cycle Count action cards › "Variance Review" navigates to /dashboard/cycle-count/variances
+[1A[2K[6/612] [chromium] › e2e\action-card-health.spec.ts:32:9 › Inventory → Cycle Count action cards › "Reports & AI" navigates to /dashboard/cycle-count/reports
+[1A[2K[7/612] [chromium] › e2e\action-card-health.spec.ts:51:7 › Logistics → Overview KPI tiles stay in workspace › KPI tile navigates to shipments tab (stays in /dashboard/logistics)
+[1A[2K  1) [chromium] › e2e\action-card-health.spec.ts:51:7 › Logistics → Overview KPI tiles stay in workspace › KPI tile navigates to shipments tab (stays in /dashboard/logistics) 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoContain[2m([22m[32mexpected[39m[2m) // indexOf[22m
+
+    Expected substring: [32m"tab=shipments"[39m
+    Received string:    [31m"http://localhost:3217/dashboard/logistics?tab=overview"[39m
+
+      55 |     await page.waitForURL(`**/dashboard/logistics**`, { timeout: 5000 });
+      56 |     expect(page.url()).toContain("/dashboard/logistics");
+    > 57 |     expect(page.url()).toContain("tab=shipments");
+         |                        ^
+      58 |   });
+      59 |
+      60 |   test("Quick nav 'Shipment Planning' stays in /dashboard/logistics", async ({ page }) => {
+        at C:\Users\sekip\Desktop\fmcg-erp-system\frontend\e2e\action-card-health.spec.ts:57:24
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\action-card-health-Logisti-9bafc-ays-in-dashboard-logistics--chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results\action-card-health-Logisti-9bafc-ays-in-dashboard-logistics--chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\action-card-health-Logisti-9bafc-ays-in-dashboard-logistics--chromium\error-context.md
+
+
+
+
+[1A[2K(node:50188) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:50188) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[1A[2K[8/612] [chromium] › e2e\action-card-health.spec.ts:60:7 › Logistics → Overview KPI tiles stay in workspace › Quick nav 'Shipment Planning' stays in /dashboard/logistics
+[1A[2K  2) [chromium] › e2e\action-card-health.spec.ts:60:7 › Logistics → Overview KPI tiles stay in workspace › Quick nav 'Shipment Planning' stays in /dashboard/logistics 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoContain[2m([22m[32mexpected[39m[2m) // indexOf[22m
+
+    Expected substring: [32m"tab=shipments"[39m
+    Received string:    [31m"http://localhost:3217/dashboard/logistics?tab=overview"[39m
+
+      64 |     await page.waitForURL(`**/dashboard/logistics**`, { timeout: 5000 });
+      65 |     expect(page.url()).toContain("/dashboard/logistics");
+    > 66 |     expect(page.url()).toContain("tab=shipments");
+         |                        ^
+      67 |   });
+      68 |
+      69 |   test("Quick nav 'Container Tracking' stays in /dashboard/logistics", async ({ page }) => {
+        at C:\Users\sekip\Desktop\fmcg-erp-system\frontend\e2e\action-card-health.spec.ts:66:24
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\action-card-health-Logisti-2a9d2-tays-in-dashboard-logistics-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results\action-card-health-Logisti-2a9d2-tays-in-dashboard-logistics-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\action-card-health-Logisti-2a9d2-tays-in-dashboard-logistics-chromium\error-context.md
+
+
+
+
+[1A[2K(node:3736) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:3736) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[1A[2K[9/612] [chromium] › e2e\action-card-health.spec.ts:69:7 › Logistics → Overview KPI tiles stay in workspace › Quick nav 'Container Tracking' stays in /dashboard/logistics
+[1A[2K  3) [chromium] › e2e\action-card-health.spec.ts:69:7 › Logistics → Overview KPI tiles stay in workspace › Quick nav 'Container Tracking' stays in /dashboard/logistics 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoContain[2m([22m[32mexpected[39m[2m) // indexOf[22m
+
+    Expected substring: [32m"tab=containers"[39m
+    Received string:    [31m"http://localhost:3217/dashboard/logistics?tab=overview"[39m
+
+      73 |     await page.waitForURL(`**/dashboard/logistics**`, { timeout: 5000 });
+      74 |     expect(page.url()).toContain("/dashboard/logistics");
+    > 75 |     expect(page.url()).toContain("tab=containers");
+         |                        ^
+      76 |   });
+      77 |
+      78 |   test("Quick nav 'Arrival & Clearance' stays in /dashboard/logistics", async ({ page }) => {
+        at C:\Users\sekip\Desktop\fmcg-erp-system\frontend\e2e\action-card-health.spec.ts:75:24
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\action-card-health-Logisti-2557a-tays-in-dashboard-logistics-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results\action-card-health-Logisti-2557a-tays-in-dashboard-logistics-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\action-card-health-Logisti-2557a-tays-in-dashboard-logistics-chromium\error-context.md
+
+
+
+[1A[2K(node:54688) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:54688) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+[1A[2K[10/612] [chromium] › e2e\action-card-health.spec.ts:78:7 › Logistics → Overview KPI tiles stay in workspace › Quick nav 'Arrival & Clearance' stays in /dashboard/logistics
+[1A[2K  4) [chromium] › e2e\action-card-health.spec.ts:78:7 › Logistics → Overview KPI tiles stay in workspace › Quick nav 'Arrival & Clearance' stays in /dashboard/logistics 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoContain[2m([22m[32mexpected[39m[2m) // indexOf[22m
+
+    Expected substring: [32m"tab=arrivals"[39m
+    Received string:    [31m"http://localhost:3217/dashboard/logistics?tab=overview"[39m
+
+      82 |     await page.waitForURL(`**/dashboard/logistics**`, { timeout: 5000 });
+      83 |     expect(page.url()).toContain("/dashboard/logistics");
+    > 84 |     expect(page.url()).toContain("tab=arrivals");
+         |                        ^
+      85 |   });
+      86 | });
+      87 |
+        at C:\Users\sekip\Desktop\fmcg-erp-system\frontend\e2e\action-card-health.spec.ts:84:24
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\action-card-health-Logisti-0680e-tays-in-dashboard-logistics-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results\action-card-health-Logisti-0680e-tays-in-dashboard-logistics-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\action-card-health-Logisti-0680e-tays-in-dashboard-logistics-chromium\error-context.md
+
+
+
+[1A[2K(node:52852) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+[1A[2K(node:52852) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[11/612] [chromium] › e2e\action-card-health.spec.ts:96:7 › Maintenance → Overview KPI tiles stay in workspace › Quick nav 'Asset Register' stays in /dashboard/maintenance
+[1A[2K  5) [chromium] › e2e\action-card-health.spec.ts:96:7 › Maintenance → Overview KPI tiles stay in workspace › Quick nav 'Asset Register' stays in /dashboard/maintenance 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoContain[2m([22m[32mexpected[39m[2m) // indexOf[22m
+
+    Expected substring: [32m"tab=assets"[39m
+    Received string:    [31m"http://localhost:3217/dashboard/maintenance?tab=overview"[39m
+
+      100 |     await page.waitForURL(`**/dashboard/maintenance**`, { timeout: 5000 });
+      101 |     expect(page.url()).toContain("/dashboard/maintenance");
+    > 102 |     expect(page.url()).toContain("tab=assets");
+          |                        ^
+      103 |   });
+      104 |
+      105 |   test("Quick nav 'PM Plans & Work Orders' stays in /dashboard/maintenance", async ({ page }) => {
+        at C:\Users\sekip\Desktop\fmcg-erp-system\frontend\e2e\action-card-health.spec.ts:102:24
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\action-card-health-Mainten-66153-ys-in-dashboard-maintenance-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results\action-card-health-Mainten-66153-ys-in-dashboard-maintenance-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\action-card-health-Mainten-66153-ys-in-dashboard-maintenance-chromium\error-context.md
+
+
+
+
+[1A[2K(node:55128) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[1A[2K(node:55128) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K[12/612] [chromium] › e2e\action-card-health.spec.ts:105:7 › Maintenance → Overview KPI tiles stay in workspace › Quick nav 'PM Plans & Work Orders' stays in /dashboard/maintenance
+[1A[2K  6) [chromium] › e2e\action-card-health.spec.ts:105:7 › Maintenance → Overview KPI tiles stay in workspace › Quick nav 'PM Plans & Work Orders' stays in /dashboard/maintenance 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoContain[2m([22m[32mexpected[39m[2m) // indexOf[22m
+
+    Expected substring: [32m"tab=plans"[39m
+    Received string:    [31m"http://localhost:3217/dashboard/maintenance?tab=overview"[39m
+
+      109 |     await page.waitForURL(`**/dashboard/maintenance**`, { timeout: 5000 });
+      110 |     expect(page.url()).toContain("/dashboard/maintenance");
+    > 111 |     expect(page.url()).toContain("tab=plans");
+          |                        ^
+      112 |   });
+      113 |
+      114 |   test("Quick nav 'Predictive Maintenance' stays in /dashboard/maintenance", async ({ page }) => {
+        at C:\Users\sekip\Desktop\fmcg-erp-system\frontend\e2e\action-card-health.spec.ts:111:24
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\action-card-health-Mainten-fd5da-ys-in-dashboard-maintenance-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results\action-card-health-Mainten-fd5da-ys-in-dashboard-maintenance-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\action-card-health-Mainten-fd5da-ys-in-dashboard-maintenance-chromium\error-context.md
+
+
+[1A[2K(node:28592) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+
+[1A[2K(node:28592) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+[1A[2K[13/612] [chromium] › e2e\action-card-health.spec.ts:114:7 › Maintenance → Overview KPI tiles stay in workspace › Quick nav 'Predictive Maintenance' stays in /dashboard/maintenance
+[1A[2K  7) [chromium] › e2e\action-card-health.spec.ts:114:7 › Maintenance → Overview KPI tiles stay in workspace › Quick nav 'Predictive Maintenance' stays in /dashboard/maintenance 
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoContain[2m([22m[32mexpected[39m[2m) // indexOf[22m
+
+    Expected substring: [32m"tab=predictive"[39m
+    Received string:    [31m"http://localhost:3217/dashboard/maintenance?tab=overview"[39m
+
+      118 |     await page.waitForURL(`**/dashboard/maintenance**`, { timeout: 5000 });
+      119 |     expect(page.url()).toContain("/dashboard/maintenance");
+    > 120 |     expect(page.url()).toContain("tab=predictive");
+          |                        ^
+      121 |   });
+      122 | });
+      123 |
+        at C:\Users\sekip\Desktop\fmcg-erp-system\frontend\e2e\action-card-health.spec.ts:120:24
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\action-card-health-Mainten-98615-ys-in-dashboard-maintenance-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results\action-card-health-Mainten-98615-ys-in-dashboard-maintenance-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\action-card-health-Mainten-98615-ys-in-dashboard-maintenance-chromium\error-context.md
+
+
+
+
+[1A[2K(node:53968) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+[1A[2K(node:53968) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+[1A[2K[14/612] [chromium] › e2e\action-card-health.spec.ts:132:7 › Allergen dashboard action cards › Quick nav 'Allergen Master' navigates to /dashboard/allergen/allergens
+[1A[2K  8) [chromium] › e2e\action-card-health.spec.ts:132:7 › Allergen dashboard action cards › Quick nav 'Allergen Master' navigates to /dashboard/allergen/allergens 
+
+    TimeoutError: page.waitForURL: Timeout 5000ms exceeded.
+    =========================== logs ===========================
+    waiting for navigation to "**/dashboard/allergen/allergens**" until "load"
+    ============================================================
+
+      134 |     await expect(card).toBeVisible({ timeout: 5000 });
+      135 |     await card.click();
+    > 136 |     await page.waitForURL(`**/dashboard/allergen/allergens**`, { timeout: 5000 });
+          |                ^
+      137 |     expect(page.url()).toContain("/dashboard/allergen/allergens");
+      138 |   });
+      139 |
+        at C:\Users\sekip\Desktop\fmcg-erp-system\frontend\e2e\action-card-health.spec.ts:136:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\action-card-health-Allerge-965f1-ashboard-allergen-allergens-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results\action-card-health-Allerge-965f1-ashboard-allergen-allergens-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\action-card-health-Allerge-965f1-ashboard-allergen-allergens-chromium\error-context.md
+
+
+
+[1A[2K(node:51900) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+
+[1A[2K(node:51900) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[1A[2K[15/612] [chromium] › e2e\action-card-health.spec.ts:140:7 › Allergen dashboard action cards › Action card 'Missing allergen profiles' navigates to material-profiles
+[1A[2K[16/612] [chromium] › e2e\action-card-health.spec.ts:157:7 › Cycle Count standalone dashboard cards › "Count Plans" navigates to plans page
+[1A[2K[17/612] [chromium] › e2e\action-card-health.spec.ts:165:7 › Cycle Count standalone dashboard cards › "Reports & AI" navigates to reports page
+[1A[2K[18/612] [chromium] › e2e\action-card-health.spec.ts:187:9 › MPS sub-route pages (redirect-stub regression) › /dashboard/mps/planning-board stays on route and shows unique content
+[1A[2K[19/612] [chromium] › e2e\action-card-health.spec.ts:187:9 › MPS sub-route pages (redirect-stub regression) › /dashboard/mps/capacity stays on route and shows unique content
+[1A[2K[20/612] [chromium] › e2e\action-card-health.spec.ts:187:9 › MPS sub-route pages (redirect-stub regression) › /dashboard/mps/campaigns stays on route and shows unique content
+[1A[2K[21/612] [chromium] › e2e\action-card-health.spec.ts:187:9 › MPS sub-route pages (redirect-stub regression) › /dashboard/mps/whatif stays on route and shows unique content
+[1A[2K[22/612] [chromium] › e2e\action-card-health.spec.ts:231:9 › actionRegistry hrefs resolve to reachable workspace pages › contracts drawer: /dashboard/sales?tab=contracts&drawer=create resolves without redirect or error
+[1A[2K[23/612] [chromium] › e2e\action-card-health.spec.ts:231:9 › actionRegistry hrefs resolve to reachable workspace pages › expenses drawer: /dashboard/hr?tab=expenses&drawer=create resolves without redirect or error
+[1A[2K[24/612] [chromium] › e2e\action-card-health.spec.ts:231:9 › actionRegistry hrefs resolve to reachable workspace pages › recruitment tab: /dashboard/hr?tab=recruitment resolves without redirect or error
+[1A[2K[25/612] [chromium] › e2e\action-card-health.spec.ts:231:9 › actionRegistry hrefs resolve to reachable workspace pages › kanban tab: /dashboard/planning?tab=kanban resolves without redirect or error
+[1A[2K[26/612] [chromium] › e2e\action-card-health.spec.ts:231:9 › actionRegistry hrefs resolve to reachable workspace pages › van-sales tab: /dashboard/sales?tab=van-sales resolves without redirect or error
+[1A[2K[27/612] [chromium] › e2e\action-card-health.spec.ts:231:9 › actionRegistry hrefs resolve to reachable workspace pages › bank-recon tab: /dashboard/finance?tab=bank-recon resolves without redirect or error
+[1A[2K[28/612] [chromium] › e2e\action-card-health.spec.ts:231:9 › actionRegistry hrefs resolve to reachable workspace pages › mrp tab: /dashboard/planning?tab=mrp resolves without redirect or error
+[1A[2K[29/612] [chromium] › e2e\action-card-health.spec.ts:231:9 › actionRegistry hrefs resolve to reachable workspace pages › procurement suggest: /dashboard/procurement?tab=suggestions resolves without redirect or error
+[1A[2K[30/612] [chromium] › e2e\action-card-health.spec.ts:231:9 › actionRegistry hrefs resolve to reachable workspace pages › production plans tab: /dashboard/production?tab=plans resolves without redirect or error
+[1A[2K[31/612] [chromium] › e2e\action-card-health.spec.ts:231:9 › actionRegistry hrefs resolve to reachable workspace pages › report-builder tab: /dashboard/analytics?tab=report-builder resolves without redirect or error
+
+[1A[2K[WebServer] [browser] ⨯ unhandledRejection: Error: Not authenticated
+[WebServer]     at req (src/lib/report_builder.ts:10:11)
+[WebServer]    8 |   if (!r.ok) {
+[WebServer]    9 |     const err = await r.json().catch(() => ({}));
+[WebServer] > 10 |     throw new Error((err as { detail?: string }).detail ?? r.statusText);
+[WebServer]      |           ^
+[WebServer]   11 |   }
+[WebServer]   12 |   if (r.status === 204) return undefined as T;
+[WebServer]   13 |   return r.json();
+
+[1A[2K[WebServer] [browser] ⨯ unhandledRejection: Error: Not authenticated
+[WebServer]     at req (src/lib/report_builder.ts:10:11)
+[WebServer]    8 |   if (!r.ok) {
+[WebServer]    9 |     const err = await r.json().catch(() => ({}));
+[WebServer] > 10 |     throw new Error((err as { detail?: string }).detail ?? r.statusText);
+[WebServer]      |           ^
+[WebServer]   11 |   }
+[WebServer]   12 |   if (r.status === 204) return undefined as T;
+[WebServer]   13 |   return r.json();
+[1A[2K[32/612] [chromium] › e2e\action-card-health.spec.ts:231:9 › actionRegistry hrefs resolve to reachable workspace pages › dunning tab: /dashboard/finance?tab=dunning resolves without redirect or error
+[1A[2K[33/612] [chromium] › e2e\action-card-health.spec.ts:231:9 › actionRegistry hrefs resolve to reachable workspace pages › esg tab: /dashboard/utility-management?tab=esg resolves without redirect or error
+[1A[2K[34/612] [chromium] › e2e\action-card-health.spec.ts:231:9 › actionRegistry hrefs resolve to reachable workspace pages › payroll tab: /dashboard/hr?tab=payroll resolves without redirect or error
+[1A[2K[35/612] [chromium] › e2e\action-card-health.spec.ts:231:9 › actionRegistry hrefs resolve to reachable workspace pages › invoice-match tab: /dashboard/finance?tab=invoice-match resolves without redirect or error
+[1A[2K[36/612] [chromium] › e2e\action-card-health.spec.ts:250:7 › Marketing workspace create buttons include drawer=create param › + New Campaign links to marketing?tab=campaigns&drawer=create
+[1A[2K[37/612] [chromium] › e2e\action-card-health.spec.ts:256:7 › Marketing workspace create buttons include drawer=create param › + New Promotion links to marketing?tab=promotions&drawer=create
+[1A[2K[38/612] [chromium] › e2e\action-card-health.spec.ts:266:7 › CRM workspace quick links use direct tab URLs › CRM Overdue Queue links to crm?tab=pipeline (not crm/overdue stub)
+[1A[2K[39/612] [chromium] › e2e\action-card-health.spec.ts:276:7 › CRM workspace quick links use direct tab URLs › CRM AI Agents links to crm?tab=overview (not crm/ai stub)
+[1A[2K[40/612] [chromium] › e2e\audit-action-cards.spec.ts:193:9 › Action Card Health Audit › audit: Main Dashboard
+[1A[2K[41/612] [chromium] › e2e\audit-action-cards.spec.ts:193:9 › Action Card Health Audit › audit: Inventory

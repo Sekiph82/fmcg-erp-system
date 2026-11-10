@@ -1,0 +1,25 @@
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\calendar\events\page.tsx
+  20:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\crm\records\[id]\page.tsx
+  42:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\custom-fields\[id]\page.tsx
+  44:40  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\custom-fields\fields\page.tsx
+  26:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\esg\reports\page.tsx
+  38:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\gs1\page.tsx
+  656:17  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  663:17  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\webhooks\deliveries\page.tsx
+  14:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+✖ 8 problems (0 errors, 8 warnings)
+

@@ -44,7 +44,7 @@ def _D(v) -> Decimal:
     return Decimal(str(v))
 
 def _R(v: Decimal, dp: int = 3) -> Decimal:
-    return v.quantize(Decimal("0." + "0" * dp), rounding=ROUND_HALF_UP)
+    return _D(v).quantize(Decimal("0." + "0" * dp), rounding=ROUND_HALF_UP)
 
 def _now() -> datetime:
     return datetime.now(tz=timezone.utc)
@@ -550,7 +550,11 @@ async def _recalculate_yield(db: AsyncSession, order: SubcontractOrder) -> None:
         total_issued_overall   += _D(row.total_issued)
         total_scrapped_overall += _D(row.total_scrapped)
 
-    for ol in order.lines if hasattr(order, "lines") and order.lines else []:
+    order_lines_result = await db.execute(
+        select(SubcontractOrderLine).where(SubcontractOrderLine.order_id == order.id)
+    )
+    order_lines = list(order_lines_result.scalars().all())
+    for ol in order_lines:
         existing = (await db.execute(
             select(SubcontractYieldRecord).where(
                 SubcontractYieldRecord.order_id == order.id,
@@ -601,7 +605,9 @@ async def _recalculate_yield(db: AsyncSession, order: SubcontractOrder) -> None:
 
 # ── Complete / Close order ────────────────────────────────────────────────────
 
-async def complete_order(db: AsyncSession, order_id: UUID) -> SubcontractOrder:
+async def complete_order(db: AsyncSession, order_id: UUID, user_id: UUID) -> SubcontractOrder:
+    if user_id is None:
+        raise ValueError("An authenticated actor is required to complete a subcontracting order")
     candidate_order = await db.get(SubcontractOrder, order_id)
     if not candidate_order:
         raise ValueError(f"Order {order_id} not found")
@@ -666,6 +672,7 @@ async def complete_order(db: AsyncSession, order_id: UUID) -> SubcontractOrder:
 
     order.status = SCOrderStatus.COMPLETED
     order.actual_completion_date = _today()
+    order.completed_by_id = user_id
 
     # Compute service cost from receipt lines
     receipts_q = (
@@ -734,10 +741,14 @@ async def _upsert_performance(db: AsyncSession, order: SubcontractOrder) -> None
         SubcontractYieldRecord.order_id == order.id)
     avg_yield = _D((await db.execute(yield_q)).scalar())
 
-    total_budget = (
-        sum(_D(l.quantity_ordered) * _D(l.service_unit_cost)
-            for l in order.lines if hasattr(order, "lines") and l.service_unit_cost)
-        if hasattr(order, "lines") else Decimal("0")
+    order_lines_result = await db.execute(
+        select(SubcontractOrderLine).where(SubcontractOrderLine.order_id == order.id)
+    )
+    order_lines = list(order_lines_result.scalars().all())
+    total_budget = sum(
+        (_D(line.quantity_ordered) * _D(line.service_unit_cost)
+         for line in order_lines if line.service_unit_cost),
+        Decimal("0"),
     )
     actual_cost = (_D(order.total_service_cost) + _D(order.total_material_cost)
                    + _D(order.total_wastage_cost))
@@ -761,8 +772,9 @@ async def _upsert_performance(db: AsyncSession, order: SubcontractOrder) -> None
         actual_completion=actual,
         delay_days=delay,
         on_time=on_time,
-        total_qty_ordered=_D(sum(l.quantity_ordered for l in order.lines))
-        if hasattr(order, "lines") else Decimal("0"),
+        total_qty_ordered=sum(
+            (_D(line.quantity_ordered) for line in order_lines), Decimal("0")
+        ),
         total_qty_received=_D(r.acc) if r.acc else Decimal("0"),
         total_qty_rejected=total_rej,
         rejection_rate_pct=rej_rate,

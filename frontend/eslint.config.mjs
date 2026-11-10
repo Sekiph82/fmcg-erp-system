@@ -3,7 +3,9 @@ import nextVitals from "eslint-config-next/core-web-vitals";
 const eslintConfig = [
   ...nextVitals,
   {
-    ignores: [".next/**", "node_modules/**", "out/**", "build/**", "next-env.d.ts"],
+    ignores: [".next/**", ".next*/**", "node_modules/**", "out/**", "build/**", "next-env.d.ts"],
+  },
+  {
     rules: {
       // The upgraded plugin enabled React Compiler diagnostics across this
       // legacy app; keep the established hook and navigation lint baseline.

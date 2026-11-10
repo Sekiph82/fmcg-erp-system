@@ -15,6 +15,15 @@ branch_labels = None
 depends_on = None
 
 
+def _create_check_constraint_if_missing(name: str, table: str, expression: str) -> None:
+    # The fresh-database squashed baseline is built from current ORM metadata,
+    # which can already contain checks introduced by this historical revision.
+    existing = sa.inspect(op.get_bind()).get_check_constraints(table)
+    if any(constraint.get("name") == name for constraint in existing):
+        return
+    op.create_check_constraint(name, table, expression)
+
+
 def upgrade() -> None:
     op.execute(
         """
@@ -66,17 +75,17 @@ def upgrade() -> None:
         "production_orders",
         ["backorder_of_id"],
     )
-    op.create_check_constraint(
+    _create_check_constraint_if_missing(
         "ck_production_orders_backordered_quantity_range",
         "production_orders",
         "backordered_quantity >= 0 AND backordered_quantity <= planned_quantity",
     )
-    op.create_check_constraint(
+    _create_check_constraint_if_missing(
         "ck_production_orders_actual_quantity_range",
         "production_orders",
         "actual_quantity IS NULL OR (actual_quantity > 0 AND actual_quantity <= planned_quantity)",
     )
-    op.create_check_constraint(
+    _create_check_constraint_if_missing(
         "ck_work_orders_actual_quantity_range",
         "work_orders",
         "actual_quantity IS NULL OR (actual_quantity > 0 AND (planned_quantity IS NULL OR actual_quantity <= planned_quantity))",

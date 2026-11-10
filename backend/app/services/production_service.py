@@ -23,9 +23,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models.production import (
-    ProductionPlan, ProductionPlanLine, ProductionOrder,
+    ProductionOrder,
     MaterialConsumption, FinishedGoodsReceipt, DowntimeLog,
-    ProductionPlanStatus, ProductionOrderStatus, DowntimeReason,
+    ProductionOrderStatus,
 )
 from app.models.production_advanced import WorkOrder, WorkOrderStatus
 from app.models.production_advanced import RoutingStep
@@ -41,11 +41,11 @@ from app.models.traceability import (
     TraceEventType,
     TraceItemStage,
 )
+from app.services.oee_calculation import calculate_oee_components
 from app.models.quality import QCType
 from app.schemas.production import (
     CompleteOrderRequest, DowntimeLogCreate, DowntimeLogClose,
     OEEMetrics, ProductionReportRow, DowntimeSummaryRow, ProductionSummary,
-    MaterialConsumptionRead, FinishedGoodsReceiptRead, DowntimeLogRead,
 )
 from app.crud import production as crud
 from app.services.inventory_locking import lot_identity, lock_inventory_identity, stock_identity
@@ -489,16 +489,18 @@ def _compute_oee(order: ProductionOrder) -> OEEMetrics:
         (log.duration_minutes or 0) for log in order.downtime_logs
     )
 
-    available_minutes = max(scheduled_minutes - downtime_minutes, 0.0)
-    availability = (available_minutes / scheduled_minutes * 100) if scheduled_minutes > 0 else 100.0
-
-    planned = float(order.planned_quantity) if order.planned_quantity else 0.0
-    actual = float(order.actual_quantity) if order.actual_quantity else 0.0
-    performance = min((actual / planned * 100) if planned > 0 else 0.0, 100.0)
-
-    quality = 100.0  # no reject tracking yet
-
-    oee = (availability / 100) * (performance / 100) * (quality / 100) * 100
+    components = calculate_oee_components(
+        planned_time_min=Decimal(str(scheduled_minutes)),
+        downtime_min=Decimal(str(downtime_minutes)),
+        actual_run_time_min=(
+            Decimal(str(actual_minutes)) - Decimal(str(downtime_minutes))
+            if actual_minutes is not None
+            else None
+        ),
+        ideal_cycle_time_sec=None,
+        total_units=None,
+        good_units=None,
+    )
 
     return OEEMetrics(
         order_id=order.id,
@@ -506,10 +508,10 @@ def _compute_oee(order: ProductionOrder) -> OEEMetrics:
         scheduled_minutes=scheduled_minutes,
         actual_minutes=actual_minutes,
         downtime_minutes=downtime_minutes,
-        availability=round(availability, 2),
-        performance=round(performance, 2),
-        quality=round(quality, 2),
-        oee=round(oee, 2),
+        availability=float(components["availability"]) if components["availability"] is not None else None,
+        performance=float(components["performance"]) if components["performance"] is not None else None,
+        quality=float(components["quality"]) if components["quality"] is not None else None,
+        oee=float(components["oee"]) if components["oee"] is not None else None,
     )
 
 
@@ -920,6 +922,51 @@ async def complete_order(
     source_wh_id = req.source_warehouse_id or order.source_warehouse_id
 
     # ── Material consumption ──────────────────────────────────────────────────
+    from app.models.material_flow import (
+        FlowStatus,
+        FlowType,
+        MaterialFlowLine,
+        MaterialFlowTransaction,
+        ProductionConsumption,
+    )
+
+    reserved_issue_result = await db.execute(
+        select(MaterialFlowLine, MaterialFlowTransaction.flow_type)
+        .join(MaterialFlowTransaction, MaterialFlowTransaction.id == MaterialFlowLine.transaction_id)
+        .where(
+            MaterialFlowTransaction.production_order_id == order.id,
+            MaterialFlowTransaction.flow_type.in_((FlowType.RAW_ISSUE, FlowType.PKG_ISSUE)),
+            MaterialFlowTransaction.status == FlowStatus.POSTED,
+            MaterialFlowTransaction.source_document_type == "MATERIAL_RESERVATION",
+            MaterialFlowLine.issue_flag.is_(True),
+            MaterialFlowLine.item_type == "material",
+            MaterialFlowLine.reservation_line_id.is_not(None),
+        )
+        .order_by(MaterialFlowTransaction.transaction_datetime, MaterialFlowLine.line_no)
+        .with_for_update()
+    )
+    reserved_issue_rows = reserved_issue_result.all()
+    reserved_issue_lines = {
+        line.id: (line, flow_type) for line, flow_type in reserved_issue_rows
+    }
+    reserved_issue_material_ids = {
+        line.material_id for line, _ in reserved_issue_rows if line.material_id is not None
+    }
+    material_consumptions: list[ProductionConsumption] = []
+    reserved_issue_line_ids = list(reserved_issue_lines)
+    if reserved_issue_line_ids:
+        material_consumption_result = await db.execute(
+            select(ProductionConsumption)
+            .where(
+                ProductionConsumption.production_order_id == order.id,
+                ProductionConsumption.flow_line_id.in_(reserved_issue_line_ids),
+                ProductionConsumption.quantity_consumed > 0,
+            )
+            .order_by(ProductionConsumption.consumed_at, ProductionConsumption.id)
+            .with_for_update()
+        )
+        material_consumptions = list(material_consumption_result.scalars().all())
+
     genealogy_inputs: list[tuple[uuid.UUID, uuid.UUID, Decimal, str]] = []
     if req.consume_materials and source_wh_id:
         # Load recipe items
@@ -948,6 +995,10 @@ async def complete_order(
                 continue
             material = item.material
             if not material:
+                continue
+            if material.id in reserved_issue_material_ids:
+                # Reservation-based issue already reduced stock; its actual
+                # consumption event is the authority for genealogy at close.
                 continue
 
             loss_factor = 1 + float(item.loss_percentage or 0) / 100
@@ -988,6 +1039,25 @@ async def complete_order(
                 genealogy_inputs.append((material.id, source_lot_id, actual_qty_with_loss, item.unit))
 
     # ── Finished goods receipt ────────────────────────────────────────────────
+    from app.services.material_flow_service import (
+        cancel_reservations_for_order,
+        receive_wip_finished_goods,
+    )
+
+    # If this order used the M24 WIP ledger, consume its exact available stage and
+    # location balances in the same transaction as the canonical stock receipt.
+    # Orders without recorded WIP retain the established production completion path.
+    await receive_wip_finished_goods(
+        db,
+        order.id,
+        quantity=requested_quantity,
+        destination_warehouse_id=order.target_warehouse_id,
+        created_by=user_id,
+    )
+    # Release unused reservation balances in the same unit of work as stock,
+    # WIP, finished-goods, genealogy, and order completion changes.
+    await cancel_reservations_for_order(db, order.id)
+
     movement, lot_id = await _receipt_finished_goods(
         db=db,
         order=order,
@@ -1012,7 +1082,7 @@ async def complete_order(
     )
     db.add(fg_receipt)
 
-    if lot_id is not None and genealogy_inputs:
+    if lot_id is not None and (genealogy_inputs or material_consumptions):
         trace_event = TraceEvent(
             trace_event_type=TraceEventType.transformation,
             event_datetime=_now(),
@@ -1022,7 +1092,7 @@ async def complete_order(
             production_order_id=order.id,
             warehouse_id=order.target_warehouse_id,
             performed_by_id=user_id,
-            notes="Production transformation from explicitly issued material lots to finished-goods lot.",
+            notes="Production transformation with raw-material and packaging consumption linked to the finished-goods lot.",
         )
         db.add(trace_event)
         await db.flush()
@@ -1053,6 +1123,47 @@ async def complete_order(
                 child_stage=TraceItemStage.finished_good,
                 notes=f"Produced by {order.order_no}",
             ))
+        for consumption in material_consumptions:
+            if consumption.material_id is None:
+                continue
+            issue_line, flow_type = reserved_issue_lines[consumption.flow_line_id]
+            is_packaging = flow_type == FlowType.PKG_ISSUE
+            source_stage = TraceItemStage.packaging if is_packaging else TraceItemStage.raw_stock
+            relationship_type = (
+                GenealogyRelType.packed_from if is_packaging else GenealogyRelType.intermediate_from
+            )
+            db.add(TraceEventLine(
+                event_id=trace_event.id,
+                product_id=order.product_id,
+                material_id=consumption.material_id,
+                source_lot_id=consumption.lot_id,
+                child_lot_id=lot_id,
+                quantity=consumption.quantity_consumed,
+                uom=consumption.uom,
+                source_stage=source_stage,
+                dest_stage=TraceItemStage.finished_good,
+                source_location_id=issue_line.source_location_id,
+                quality_status=issue_line.quality_status.value if hasattr(issue_line.quality_status, "value") else issue_line.quality_status,
+                movement_reason="packaging consumption" if is_packaging else "raw material consumption",
+                notes=(
+                    f"Reserved issue line {consumption.flow_line_id}; "
+                    f"actual consumption event {consumption.id}; order {order.order_no}."
+                ),
+            ))
+            if consumption.lot_id is not None:
+                db.add(LotGenealogyLink(
+                    parent_lot_id=consumption.lot_id,
+                    child_lot_id=lot_id,
+                    relationship_type=relationship_type,
+                    source_document_type="production_order",
+                    source_document_id=order.id,
+                    production_order_id=order.id,
+                    quantity_linked=consumption.quantity_consumed,
+                    uom=consumption.uom,
+                    parent_stage=source_stage,
+                    child_stage=TraceItemStage.finished_good,
+                    notes=f"{'Packaging' if is_packaging else 'Raw material'} consumed by {order.order_no}; event {consumption.id}.",
+                ))
 
     # ── Finalise order ────────────────────────────────────────────────────────
     previous_status = order.status
@@ -1098,6 +1209,9 @@ async def cancel_order(
 ) -> ProductionOrder:
     order = await _lock_order_for_transition(db, order.id)
     _require_order_transition(order, ProductionOrderStatus.CANCELLED)
+    from app.services.material_flow_service import cancel_reservations_for_order
+
+    await cancel_reservations_for_order(db, order.id)
     previous_status = order.status
     order.status = ProductionOrderStatus.CANCELLED
     record_transition(
@@ -1183,7 +1297,8 @@ async def get_production_report(
 
         if o.status == ProductionOrderStatus.COMPLETED:
             oee = _compute_oee(o)
-            oee_values.append(oee.oee)
+            if oee.oee is not None:
+                oee_values.append(oee.oee)
 
         rows.append(ProductionReportRow(
             date=o.scheduled_start.strftime("%Y-%m-%d") if o.scheduled_start else "",
@@ -1211,7 +1326,7 @@ async def get_production_report(
         actual_quantity_total=total_actual,
         overall_variance=total_actual - total_planned,
         total_downtime_minutes=total_downtime,
-        avg_oee=round(sum(oee_values) / len(oee_values), 2) if oee_values else None,
+        avg_oee=round(sum(oee_values) / len(oee_values), 4) if oee_values else None,
         orders=rows,
         downtime_summary=[DowntimeSummaryRow(**v) for v in downtime_map.values()],
     )

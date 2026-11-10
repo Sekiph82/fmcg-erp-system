@@ -7,7 +7,10 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.session import get_db
+from app.core.access_control import can_modify_scope, forbidden_detail, require_any_permission
+from app.core.deps import get_current_user, get_db
+from app.models.production import ProductionOrder
+from app.models.production_advanced import WorkOrder
 from app.models.subcontracting import SCOrderStatus
 from app.schemas.subcontracting import (
     SCDashboard, SCIssueCreate, SCIssueOut, SCIssueLineOut,
@@ -19,7 +22,35 @@ from app.schemas.subcontracting import (
 )
 from app.services import subcontracting_service as svc
 
-router = APIRouter()
+PROCUREMENT_VIEW_PERMISSIONS = ("procurement.view", "procurement.view_all")
+PROCUREMENT_CREATE_PERMISSIONS = ("procurement.create", "procurement.create_all")
+PROCUREMENT_EDIT_PERMISSIONS = ("procurement.edit", "procurement.edit_all")
+PROCUREMENT_APPROVE_PERMISSIONS = ("procurement.approve", "procurement.approve_all")
+
+# This API currently returns cross-record summaries and does not apply per-row
+# warehouse filtering. Require broad read permission rather than treating an
+# own-scope grant as permission to read every subcontracting record.
+router = APIRouter(dependencies=[Depends(require_any_permission(PROCUREMENT_VIEW_PERMISSIONS))])
+
+
+def _require_production_work_order_edit(user, order: ProductionOrder) -> None:
+    warehouse_ids = {
+        value for value in (
+            getattr(order, "source_warehouse_id", None),
+            getattr(order, "target_warehouse_id", None),
+        ) if value is not None
+    }
+    if any(
+        can_modify_scope(user, "production", "edit", "warehouse", warehouse_id)
+        for warehouse_id in warehouse_ids
+    ):
+        return
+    raise HTTPException(
+        status_code=403,
+        detail=forbidden_detail(
+            "Production edit permission and warehouse scope are required to link a work order."
+        ),
+    )
 
 
 def _loc_out(loc) -> SubcontractorLocationOut:
@@ -90,7 +121,11 @@ async def list_locations(db: AsyncSession = Depends(get_db)):
     return [_loc_out(l) for l in locs]
 
 
-@router.post("/locations", response_model=SubcontractorLocationOut, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/locations", response_model=SubcontractorLocationOut,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_any_permission(PROCUREMENT_CREATE_PERMISSIONS))],
+)
 async def create_location(
     payload: SubcontractorLocationCreate,
     db: AsyncSession = Depends(get_db),
@@ -119,16 +154,30 @@ async def list_orders(
     return [_order_out(o) for o in orders]
 
 
-@router.post("/orders", response_model=SCOrderOut, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/orders", response_model=SCOrderOut, status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_any_permission(PROCUREMENT_CREATE_PERMISSIONS))],
+)
 async def create_order(
     payload: SCOrderCreate,
+    current_user=Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     try:
-        order = await svc.create_order(db, payload, None)
+        if payload.work_order_id is not None:
+            work_order = await db.get(WorkOrder, payload.work_order_id)
+            if work_order is None:
+                raise HTTPException(404, "Linked work order not found")
+            production_order = await db.get(ProductionOrder, work_order.production_order_id)
+            if production_order is None:
+                raise HTTPException(404, "Linked production order not found")
+            _require_production_work_order_edit(current_user, production_order)
+        order = await svc.create_order(db, payload, current_user.id)
         await db.commit()
         fresh = await svc.get_order(db, order.id)
         return _order_out(fresh)
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(400, str(e))
 
@@ -141,10 +190,17 @@ async def get_order(order_id: UUID, db: AsyncSession = Depends(get_db)):
     return _order_out(order)
 
 
-@router.post("/orders/{order_id}/approve", response_model=SCOrderOut)
-async def approve_order(order_id: UUID, db: AsyncSession = Depends(get_db)):
+@router.post(
+    "/orders/{order_id}/approve", response_model=SCOrderOut,
+    dependencies=[Depends(require_any_permission(PROCUREMENT_APPROVE_PERMISSIONS))],
+)
+async def approve_order(
+    order_id: UUID,
+    current_user=Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
     try:
-        order = await svc.approve_order(db, order_id, None)
+        order = await svc.approve_order(db, order_id, current_user.id)
         await db.commit()
         fresh = await svc.get_order(db, order.id)
         return _order_out(fresh)
@@ -152,10 +208,17 @@ async def approve_order(order_id: UUID, db: AsyncSession = Depends(get_db)):
         raise HTTPException(400, str(e))
 
 
-@router.post("/orders/{order_id}/complete", response_model=SCOrderOut)
-async def complete_order(order_id: UUID, db: AsyncSession = Depends(get_db)):
+@router.post(
+    "/orders/{order_id}/complete", response_model=SCOrderOut,
+    dependencies=[Depends(require_any_permission(PROCUREMENT_EDIT_PERMISSIONS))],
+)
+async def complete_order(
+    order_id: UUID,
+    current_user=Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
     try:
-        order = await svc.complete_order(db, order_id)
+        order = await svc.complete_order(db, order_id, current_user.id)
         await db.commit()
         fresh = await svc.get_order(db, order.id)
         return _order_out(fresh)
@@ -166,15 +229,17 @@ async def complete_order(order_id: UUID, db: AsyncSession = Depends(get_db)):
 # ── Material Issue ────────────────────────────────────────────────────────────
 
 @router.post("/orders/{order_id}/issue-material",
-             response_model=SCIssueOut, status_code=status.HTTP_201_CREATED)
+             response_model=SCIssueOut, status_code=status.HTTP_201_CREATED,
+             dependencies=[Depends(require_any_permission(PROCUREMENT_EDIT_PERMISSIONS))])
 async def issue_material(
     order_id: UUID,
     payload:  SCIssueCreate,
+    current_user=Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     payload.order_id = order_id
     try:
-        issue = await svc.issue_materials(db, payload, None)
+        issue = await svc.issue_materials(db, payload, current_user.id)
         await db.commit()
         await db.refresh(issue)
         return _issue_out(issue)
@@ -205,15 +270,17 @@ async def list_issues(order_id: UUID, db: AsyncSession = Depends(get_db)):
 # ── Goods Receipt ─────────────────────────────────────────────────────────────
 
 @router.post("/orders/{order_id}/receive",
-             response_model=SCReceiptOut, status_code=status.HTTP_201_CREATED)
+             response_model=SCReceiptOut, status_code=status.HTTP_201_CREATED,
+             dependencies=[Depends(require_any_permission(PROCUREMENT_EDIT_PERMISSIONS))])
 async def receive_goods(
     order_id: UUID,
     payload:  SCReceiptCreate,
+    current_user=Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     payload.order_id = order_id
     try:
-        receipt = await svc.receive_goods(db, payload, None)
+        receipt = await svc.receive_goods(db, payload, current_user.id)
         await db.commit()
         await db.refresh(receipt)
         return _receipt_out(receipt)
@@ -284,14 +351,23 @@ async def get_performance(
 
 # ── AI Agents ─────────────────────────────────────────────────────────────────
 
-@router.post("/orders/{order_id}/ai/run")
-async def run_ai_for_order(order_id: UUID, db: AsyncSession = Depends(get_db)):
+@router.post(
+    "/orders/{order_id}/ai/run",
+    dependencies=[Depends(require_any_permission(PROCUREMENT_EDIT_PERMISSIONS))],
+)
+async def run_ai_for_order(
+    order_id: UUID,
+    db: AsyncSession = Depends(get_db),
+):
     counts = await svc.run_ai_agents(db, order_id=order_id)
     await db.commit()
     return {"generated": sum(counts.values()), "by_agent": counts}
 
 
-@router.post("/ai/run")
+@router.post(
+    "/ai/run",
+    dependencies=[Depends(require_any_permission(PROCUREMENT_EDIT_PERMISSIONS))],
+)
 async def run_all_ai_agents(db: AsyncSession = Depends(get_db)):
     counts = await svc.run_ai_agents(db, order_id=None)
     await db.commit()
@@ -314,7 +390,10 @@ async def list_ai_recs(
     return result
 
 
-@router.post("/ai/recommendations/{rec_id}/action", response_model=SCAIRecOut)
+@router.post(
+    "/ai/recommendations/{rec_id}/action", response_model=SCAIRecOut,
+    dependencies=[Depends(require_any_permission(PROCUREMENT_EDIT_PERMISSIONS))],
+)
 async def action_ai_rec(
     rec_id: UUID,
     notes:  Optional[str] = Query(None),

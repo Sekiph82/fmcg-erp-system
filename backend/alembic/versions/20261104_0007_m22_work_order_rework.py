@@ -15,6 +15,14 @@ branch_labels = None
 depends_on = None
 
 
+def _create_check_constraint_if_missing(name: str, table: str, expression: str) -> None:
+    # The squashed fresh-database baseline may already include current-model checks.
+    existing = sa.inspect(op.get_bind()).get_check_constraints(table)
+    if any(constraint.get("name") == name for constraint in existing):
+        return
+    op.create_check_constraint(name, table, expression)
+
+
 def upgrade() -> None:
     op.add_column(
         "work_orders",
@@ -34,18 +42,18 @@ def upgrade() -> None:
         ondelete="RESTRICT",
     )
     op.create_index("ix_work_orders_rework_of_id", "work_orders", ["rework_of_id"])
-    op.create_check_constraint(
+    _create_check_constraint_if_missing(
         "ck_work_orders_rework_quantity_range",
         "work_orders",
         "rework_quantity >= 0 AND (planned_quantity IS NULL OR rework_quantity <= planned_quantity) "
         "AND (actual_quantity IS NULL OR rework_quantity <= actual_quantity)",
     )
-    op.create_check_constraint(
+    _create_check_constraint_if_missing(
         "ck_work_orders_rework_not_self",
         "work_orders",
         "rework_of_id IS NULL OR rework_of_id <> id",
     )
-    op.create_check_constraint(
+    _create_check_constraint_if_missing(
         "ck_work_orders_rework_reason_required",
         "work_orders",
         "(rework_of_id IS NULL AND rework_reason IS NULL) OR "

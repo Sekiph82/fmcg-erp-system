@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { moApi, DowntimeIntel, DowntimeClass, Machine, DOWNTIME_CLASS_LABELS } from "@/lib/machineOperator";
+import { moApi, DowntimeIntel, DowntimeClass, DowntimeReasonCode, Machine, DOWNTIME_CLASS_LABELS } from "@/lib/machineOperator";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 const DOWNTIME_CLASSES: DowntimeClass[] = [
@@ -19,7 +19,7 @@ export default function DowntimePage() {
   const [filterClass, setFilterClass] = useState<DowntimeClass | "">("");
   const [showLog, setShowLog] = useState(false);
   const [form, setForm] = useState({
-    machine_id: "", downtime_class: "MECHANICAL_BREAKDOWN" as DowntimeClass,
+    machine_id: "", downtime_class: "OTHER" as DowntimeClass, reason_code: "",
     start_time: "", end_time: "", root_cause: "", units_lost: "", notes: "",
   });
   const [success, setSuccess] = useState("");
@@ -27,6 +27,11 @@ export default function DowntimePage() {
   const { data: machines } = useQuery<Machine[]>({
     queryKey: ["mo-machines"],
     queryFn: () => moApi.listMachines(),
+  });
+
+  const { data: reasonCodes = [] } = useQuery<DowntimeReasonCode[]>({
+    queryKey: ["downtime-reason-codes"],
+    queryFn: () => moApi.listDowntimeReasonCodes(),
   });
 
   const { data, isLoading } = useQuery<DowntimeIntel[]>({
@@ -41,6 +46,7 @@ export default function DowntimePage() {
     mutationFn: () => moApi.logDowntime({
       machine_id: form.machine_id,
       downtime_class: form.downtime_class,
+      reason_code: form.reason_code,
       start_time: form.start_time,
       end_time: form.end_time || undefined,
       root_cause: form.root_cause,
@@ -57,6 +63,7 @@ export default function DowntimePage() {
   });
 
   const list = data || [];
+  const reasonCategories = reasonCodes.filter((reasonCode) => reasonCode.parent_code == null);
   const totalMin = list.reduce((s, d) => s + (Number(d.duration_minutes) || 0), 0);
   const totalCost = list.reduce((s, d) => s + (Number(d.cost_impact) || 0), 0);
   const repeats = list.filter((d) => d.repeat_occurrence).length;
@@ -168,8 +175,15 @@ export default function DowntimePage() {
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Downtime Class *</label>
-              <select value={form.downtime_class} onChange={(e) => setForm((p) => ({ ...p, downtime_class: e.target.value as DowntimeClass }))} className="w-full border rounded px-3 py-2 text-sm">
-                {DOWNTIME_CLASSES.map((c) => <option key={c} value={c}>{DOWNTIME_CLASS_LABELS[c] || c}</option>)}
+              <select value={form.reason_code} onChange={(e) => setForm((p) => ({ ...p, reason_code: e.target.value, downtime_class: e.target.value as DowntimeClass }))} className="w-full border rounded px-3 py-2 text-sm">
+                <option value="">— select reason —</option>
+                {reasonCategories.map((category) => (
+                  <optgroup key={category.code} label={category.label}>
+                    {reasonCodes.filter((reasonCode) => reasonCode.parent_code === category.code && reasonCode.is_selectable).map((reasonCode) => (
+                      <option key={reasonCode.code} value={reasonCode.code}>{reasonCode.label}</option>
+                    ))}
+                  </optgroup>
+                ))}
               </select>
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -192,7 +206,7 @@ export default function DowntimePage() {
             </div>
             <div className="flex gap-2 justify-end pt-2">
               <button onClick={() => setShowLog(false)} className="px-4 py-2 text-sm text-gray-600 border rounded-lg hover:bg-gray-50">Cancel</button>
-              <button onClick={() => logDt.mutate()} disabled={!form.machine_id || !form.start_time} className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50">
+              <button onClick={() => logDt.mutate()} disabled={!form.machine_id || !form.start_time || !form.reason_code} className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50">
                 {logDt.isPending ? "Logging…" : "Log Downtime"}
               </button>
             </div>

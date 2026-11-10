@@ -22,6 +22,7 @@ from app.models.production_advanced import (
     AdvQCInspection, AdvQCResult, WasteRecord, BatchLot, LaborLog, OEERecord,
 )
 from app.models.production_work_order_genealogy import ProductionWorkOrderGenealogy
+from app.services.oee_calculation import calculate_oee_components
 from app.models.subcontracting import (
     SCOrderStatus,
     SCReceiptStatus,
@@ -1513,38 +1514,24 @@ def _compute_oee(
     planned_time: int,
     actual_time: Optional[int],
     downtime: int,
-    total_units: int,
-    good_units: int,
+    total_units: Optional[int],
+    good_units: Optional[int],
     ideal_cycle_sec: Optional[Decimal],
 ) -> dict:
-    result: dict = {}
-    if not planned_time:
-        return result
-    net_time = (actual_time or planned_time) - downtime
-    availability = Decimal(net_time) / Decimal(planned_time)
-    result["availability"] = round(min(availability, Decimal("1.0")), 4)
-
-    if ideal_cycle_sec and net_time > 0:
-        ideal_output = Decimal(net_time * 60) / ideal_cycle_sec
-        perf = Decimal(total_units) / ideal_output if ideal_output > 0 else Decimal(0)
-        result["performance"] = round(min(perf, Decimal("1.0")), 4)
-    else:
-        result["performance"] = None
-
-    if total_units and total_units > 0:
-        quality = Decimal(good_units) / Decimal(total_units)
-        result["quality"] = round(min(quality, Decimal("1.0")), 4)
-    else:
-        result["quality"] = None
-
-    if result.get("performance") and result.get("quality"):
-        result["oee_score"] = round(
-            result["availability"] * result["performance"] * result["quality"], 4
-        )
-    else:
-        result["oee_score"] = None
-
-    return result
+    components = calculate_oee_components(
+        planned_time_min=planned_time,
+        downtime_min=downtime,
+        actual_run_time_min=actual_time,
+        ideal_cycle_time_sec=ideal_cycle_sec,
+        total_units=total_units,
+        good_units=good_units,
+    )
+    return {
+        "availability": components["availability"],
+        "performance": components["performance"],
+        "quality": components["quality"],
+        "oee_score": components["oee"],
+    }
 
 
 async def list_oee_records(
@@ -1578,24 +1565,22 @@ async def get_oee_record(db: AsyncSession, pk: UUID) -> Optional[OEERecord]:
 async def create_oee_record(db: AsyncSession, data: OEERecordCreate) -> OEERecord:
     d = data.model_dump()
     obj = OEERecord(**d)
-    # Auto-compute if not provided
-    if obj.availability is None:
-        kpis = _compute_oee(
-            obj.planned_production_time_min,
-            obj.actual_production_time_min,
-            obj.downtime_min or 0,
-            obj.total_units_produced or 0,
-            obj.good_units_produced or 0,
-            obj.ideal_cycle_time_sec,
-        )
-        for k, v in kpis.items():
-            setattr(obj, k, v)
+    kpis = _compute_oee(
+        obj.planned_production_time_min,
+        obj.actual_production_time_min,
+        obj.downtime_min or 0,
+        obj.total_units_produced,
+        obj.good_units_produced,
+        obj.ideal_cycle_time_sec,
+    )
+    for k, v in kpis.items():
+        setattr(obj, k, v)
     # Anomaly flags
-    if obj.oee_score is not None:
-        obj.is_low_oee = obj.oee_score < OEE_LOW_THRESHOLD
-    if obj.planned_production_time_min and obj.downtime_min:
-        ratio = Decimal(obj.downtime_min) / Decimal(obj.planned_production_time_min)
-        obj.is_high_downtime = ratio > DOWNTIME_HIGH_RATIO
+    obj.is_low_oee = obj.oee_score is not None and obj.oee_score < OEE_LOW_THRESHOLD
+    obj.is_high_downtime = bool(
+        obj.planned_production_time_min > 0
+        and Decimal(obj.downtime_min or 0) / Decimal(obj.planned_production_time_min) > DOWNTIME_HIGH_RATIO
+    )
     db.add(obj)
     await db.flush()
     await db.refresh(obj)
@@ -1604,18 +1589,29 @@ async def create_oee_record(db: AsyncSession, data: OEERecordCreate) -> OEERecor
 async def update_oee_record(db: AsyncSession, obj: OEERecord, data: OEERecordUpdate) -> OEERecord:
     for k, v in data.model_dump(exclude_unset=True).items():
         setattr(obj, k, v)
+    if (obj.downtime_min or 0) > obj.planned_production_time_min:
+        raise ValueError("Downtime cannot exceed planned production time.")
+    if obj.actual_production_time_min is not None and obj.actual_production_time_min > obj.planned_production_time_min - (obj.downtime_min or 0):
+        raise ValueError("Actual run time cannot exceed planned time less downtime.")
+    if obj.good_units_produced is not None and (
+        obj.total_units_produced is None or obj.good_units_produced > obj.total_units_produced
+    ):
+        raise ValueError("Good units cannot exceed total units.")
     kpis = _compute_oee(
         obj.planned_production_time_min,
         obj.actual_production_time_min,
         obj.downtime_min or 0,
-        obj.total_units_produced or 0,
-        obj.good_units_produced or 0,
+        obj.total_units_produced,
+        obj.good_units_produced,
         obj.ideal_cycle_time_sec,
     )
     for k, v in kpis.items():
         setattr(obj, k, v)
-    if obj.oee_score is not None:
-        obj.is_low_oee = obj.oee_score < OEE_LOW_THRESHOLD
+    obj.is_low_oee = obj.oee_score is not None and obj.oee_score < OEE_LOW_THRESHOLD
+    obj.is_high_downtime = bool(
+        obj.planned_production_time_min > 0
+        and Decimal(obj.downtime_min or 0) / Decimal(obj.planned_production_time_min) > DOWNTIME_HIGH_RATIO
+    )
     await db.flush()
     await db.refresh(obj)
     return obj

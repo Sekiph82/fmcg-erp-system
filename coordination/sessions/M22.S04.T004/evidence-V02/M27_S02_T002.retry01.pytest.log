@@ -1,0 +1,175 @@
+F                                                                        [100%]
+================================== FAILURES ===================================
+_ test_configured_production_gates_block_transitions_until_each_template_passes _
+
+    @pytest.mark.asyncio
+    async def test_configured_production_gates_block_transitions_until_each_template_passes():
+        suffix = uuid4().hex[:20]
+        async with AsyncSessionLocal() as db:
+            await _assert_task_database(db)
+            product = Product(
+                sku=f"M27-T002-P-{suffix}", name=f"Synthetic production product {suffix}",
+                category=ProductCategory.FOOD, uom=UnitOfMeasure.KG,
+            )
+            warehouse = Warehouse(
+                code=f"M27-T002-W-{suffix}", name=f"Synthetic production warehouse {suffix}",
+                warehouse_type=WarehouseType.FINISHED_GOODS,
+            )
+            db.add_all([product, warehouse])
+            await db.flush()
+            actor = User(
+                email=f"m27-t002-{suffix}@example.invalid",
+                username=f"m27-t002-{suffix}",
+                full_name=f"Synthetic M27 actor {suffix}",
+                hashed_password="test-only",
+            )
+            approver = User(
+                email=f"m27-t002-approver-{suffix}@example.invalid",
+                username=f"m27-t002-approver-{suffix}",
+                full_name=f"Synthetic M27 approver {suffix}",
+                hashed_password="test-only",
+            )
+            db.add_all([actor, approver])
+            await db.flush()
+            recipe = Recipe(
+                product_id=product.id, version="1", name=f"Synthetic approved recipe {suffix}",
+                status=RecipeStatus.APPROVED, is_active=True,
+            )
+            db.add(recipe)
+            await db.flush()
+            order = ProductionOrder(
+                order_no=f"M27-T002-PO-{suffix}", product_id=product.id, recipe_id=recipe.id,
+                planned_quantity=Decimal("2"), uom="KG", status=ProductionOrderStatus.PLANNED,
+                target_warehouse_id=warehouse.id,
+                created_by=actor.id,
+                scheduled_start=datetime.now(timezone.utc),
+                scheduled_end=datetime.now(timezone.utc),
+                batch_no=f"M27-T002-B-{suffix}",
+            )
+            db.add(order)
+            await db.flush()
+            order_id = order.id
+    
+            release_template = await _template(db, f"Synthetic release QC {suffix}")
+            process_template = await _template(db, f"Synthetic completion QC {suffix}")
+            release_template_id = release_template.id
+            process_template_id = process_template.id
+            product_id = product.id
+            warehouse_id = warehouse.id
+            batch_no = order.batch_no
+            for index, (event, template) in enumerate((
+                (PRODUCTION_RELEASE_GATE_TRIGGER_EVENT, release_template),
+                (PRODUCTION_IN_PROCESS_GATE_TRIGGER_EVENT, process_template),
+            )):
+                await create_quality_gate_definition(db, {
+                    "code": f"M27T002_{index}_{suffix}",
+                    "name": f"Synthetic production gate {index} {suffix}",
+                    "gate_type": "IN_PROCESS_QUALITY",
+                    "trigger_event": event.lower(),
+                    "target_module": " Production ",
+                    "effective_from": date.today(),
+                    "is_active": True,
+                    "is_mandatory": True,
+                    "required_template_ids": [template.id],
+                })
+            await db.commit()
+    
+            order = await db.get(ProductionOrder, order_id)
+            await production_service.approve_order(db, order, approver.id)
+            await db.commit()
+    
+            with pytest.raises(HTTPException) as release_error:
+                await production_service.release_order(db, order, actor.id)
+            assert release_error.value.status_code == 422
+            assert "accepted, passed inspection" in release_error.value.detail
+            await db.rollback()
+            order = await db.get(ProductionOrder, order_id)
+            assert order.status == ProductionOrderStatus.PLANNED
+    
+            db.add(QCInspection(
+                inspection_no=f"M27-T002-QC-R-{suffix}", qc_type=QCType.IN_PROCESS,
+                status=QCStatus.PASSED, decision=QCDecision.ACCEPT,
+                production_order_id=order_id, template_id=release_template_id,
+                product_id=product_id, warehouse_id=warehouse_id, batch_no=batch_no,
+                inspection_date=date.today(), is_mandatory=True,
+                blocks_progression=True, release_required=True,
+            ))
+            await db.commit()
+            order = await db.get(ProductionOrder, order_id)
+            await ensure_production_quality_gates_pass(
+                db, order, PRODUCTION_RELEASE_GATE_TRIGGER_EVENT, date.today()
+            )
+>           await production_service.release_order(db, order, actor.id)
+                                                              ^^^^^^^^
+
+tests\test_m27_s02_t002_production_gate_db.py:176: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\attributes.py:566: in __get__
+    return self.impl.get(state, dict_)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\attributes.py:1086: in get
+    value = self._fire_loader_callables(state, key, passive)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\attributes.py:1116: in _fire_loader_callables
+    return state._load_expired(state, passive)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\state.py:803: in _load_expired
+    self.manager.expired_attribute_loader(self, toload, passive)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\loading.py:1670: in load_scalar_attributes
+    result = load_on_ident(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\loading.py:509: in load_on_ident
+    return load_on_pk_identity(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\loading.py:694: in load_on_pk_identity
+    session.execute(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\session.py:2365: in execute
+    return self._execute_internal(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\session.py:2251: in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\context.py:306: in orm_execute_statement
+    result = conn.execute(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\base.py:1415: in execute
+    return meth(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\sql\elements.py:523: in _execute_on_connection
+    return connection._execute_clauseelement(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\base.py:1637: in _execute_clauseelement
+    ret = self._execute_context(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\base.py:1842: in _execute_context
+    return self._exec_single_context(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\base.py:1982: in _exec_single_context
+    self._handle_dbapi_exception(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\base.py:2354: in _handle_dbapi_exception
+    raise exc_info[1].with_traceback(exc_info[2])
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\base.py:1963: in _exec_single_context
+    self.dialect.do_execute(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\default.py:943: in do_execute
+    cursor.execute(statement, parameters)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:580: in execute
+    self._adapt_connection.await_(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+awaitable = <coroutine object AsyncAdapt_asyncpg_cursor._prepare_and_execute at 0x000001F91CFE2500>
+
+    def await_only(awaitable: Awaitable[_T]) -> _T:
+        """Awaits an async function in a sync method.
+    
+        The sync method must be inside a :func:`greenlet_spawn` context.
+        :func:`await_only` calls cannot be nested.
+    
+        :param awaitable: The coroutine to call.
+    
+        """
+        # this is called in the context greenlet while running fn
+        current = getcurrent()
+        if not getattr(current, "__sqlalchemy_greenlet_provider__", False):
+            _safe_cancel_awaitable(awaitable)
+    
+>           raise exc.MissingGreenlet(
+                "greenlet_spawn has not been called; can't call await_only() "
+                "here. Was IO attempted in an unexpected place?"
+            )
+E           sqlalchemy.exc.MissingGreenlet: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py:123: MissingGreenlet
+=========================== short test summary info ===========================
+FAILED tests/test_m27_s02_t002_production_gate_db.py::test_configured_production_gates_block_transitions_until_each_template_passes
+1 failed in 21.33s

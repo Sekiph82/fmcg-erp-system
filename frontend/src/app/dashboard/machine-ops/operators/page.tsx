@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { moApi, OperatorProfile, SkillLevel } from "@/lib/machineOperator";
+import { moApi, OperatorProductivity, OperatorProfile, SkillLevel } from "@/lib/machineOperator";
 
 const SKILL_COLORS: Record<SkillLevel, string> = {
   TRAINEE: "bg-gray-100 text-gray-600",
@@ -15,6 +15,7 @@ const SKILL_COLORS: Record<SkillLevel, string> = {
 export default function OperatorsPage() {
   const qc = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
+  const [productivityOperatorId, setProductivityOperatorId] = useState<string | null>(null);
   const [form, setForm] = useState({
     operator_code: "", full_name: "", department: "",
     skill_level: "BASIC" as SkillLevel,
@@ -24,6 +25,12 @@ export default function OperatorsPage() {
   const { data, isLoading } = useQuery<OperatorProfile[]>({
     queryKey: ["mo-operators"],
     queryFn: () => moApi.listOperators(),
+  });
+
+  const productivityQuery = useQuery<OperatorProductivity>({
+    queryKey: ["mo-operator-productivity", productivityOperatorId],
+    queryFn: () => moApi.getOperatorProductivity(productivityOperatorId!),
+    enabled: Boolean(productivityOperatorId),
   });
 
   const create = useMutation({
@@ -91,6 +98,7 @@ export default function OperatorsPage() {
                 </td>
                 <td className="px-4 py-2.5">
                   <a href={`/dashboard/machine-ops/certs?operator_id=${op.id}`} className="text-xs text-indigo-600 hover:underline">Certs</a>
+                  <button onClick={() => setProductivityOperatorId(op.id)} className="ml-3 text-xs text-teal-700 hover:underline">KPIs</button>
                 </td>
               </tr>
             ))}
@@ -100,6 +108,45 @@ export default function OperatorsPage() {
           </tbody>
         </table>
       </div>
+
+      {productivityOperatorId && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-40 p-4">
+          <section className="bg-white rounded-xl shadow-xl p-6 w-full max-w-3xl max-h-[85vh] overflow-y-auto space-y-4" aria-label="Operator productivity KPIs">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="font-bold text-gray-900">Operator productivity KPIs</h2>
+                <p className="text-xs text-gray-500">{productivityQuery.data?.period_start} – {productivityQuery.data?.period_end}</p>
+              </div>
+              <button onClick={() => setProductivityOperatorId(null)} className="text-sm text-gray-500 hover:text-gray-800">Close</button>
+            </div>
+            {productivityQuery.isLoading && <p className="text-sm text-gray-500">Loading KPI data…</p>}
+            {productivityQuery.isError && <p className="text-sm text-red-600">KPI data could not be loaded.</p>}
+            {productivityQuery.data && (
+              <>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div className="rounded border p-3"><p className="text-xs text-gray-500">Approved labor</p><p className="font-semibold">{productivityQuery.data.approved_labor_hours} h</p></div>
+                  <div className="rounded border p-3"><p className="text-xs text-gray-500">Approved logs</p><p className="font-semibold">{productivityQuery.data.approved_labor_log_count}</p></div>
+                  <div className="rounded border p-3"><p className="text-xs text-gray-500">Pending logs</p><p className="font-semibold">{productivityQuery.data.unapproved_labor_log_count}</p></div>
+                  <div className="rounded border p-3"><p className="text-xs text-gray-500">Completed work orders</p><p className="font-semibold">{productivityQuery.data.completed_work_order_count}</p></div>
+                </div>
+                <div className="overflow-x-auto rounded border">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50"><tr><th className="p-2 text-left">Output UOM</th><th className="p-2 text-right">Allocated output</th><th className="p-2 text-right">Lifetime labor h (linked orders)</th><th className="p-2 text-right">Output / linked labor h</th></tr></thead>
+                    <tbody>
+                      {productivityQuery.data.output_by_uom.map((row) => (
+                        <tr key={row.uom} className="border-t"><td className="p-2">{row.uom}</td><td className="p-2 text-right">{row.allocated_output_quantity}</td><td className="p-2 text-right">{(row.operator_labor_minutes_for_completed_orders / 60).toFixed(2)}</td><td className="p-2 text-right">{row.output_quantity_per_operator_labor_hour ?? "—"}</td></tr>
+                      ))}
+                      {!productivityQuery.data.output_by_uom.length && <tr><td colSpan={4} className="p-4 text-center text-gray-500">No completed work-order output can be attributed from approved labor records in this period.</td></tr>}
+                    </tbody>
+                  </table>
+                </div>
+                {productivityQuery.data.unavailable_output_work_order_ids.length > 0 && <p className="text-xs text-amber-700">{productivityQuery.data.unavailable_output_work_order_ids.length} completed work order(s) lacked a usable quantity, UOM, or approved labor basis.</p>}
+                <details className="text-xs text-gray-500"><summary className="cursor-pointer">Source IDs and calculation notes</summary><div className="mt-2 space-y-3">{productivityQuery.data.output_by_uom.map((row) => <div key={row.uom}><p className="font-medium">{row.uom} — work orders: {row.source_work_order_ids.join(", ") || "none"}</p><p>Operator labor logs: {row.source_labor_log_ids.join(", ") || "none"}</p><p>Allocation labor logs: {row.allocation_labor_log_ids.join(", ") || "none"}</p></div>)}<p>Period labor logs: {productivityQuery.data.period_labor_log_ids.join(", ") || "none"}</p><ul className="list-disc pl-5 space-y-1">{productivityQuery.data.data_notes.map((note) => <li key={note}>{note}</li>)}</ul></div></details>
+              </>
+            )}
+          </section>
+        </div>
+      )}
 
       {showCreate && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">

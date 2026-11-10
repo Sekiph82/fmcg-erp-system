@@ -7,8 +7,8 @@ import uuid
 from enum import Enum
 
 from sqlalchemy import (
-    Boolean, Column, DateTime, ForeignKey, Integer,
-    Numeric, String, Text,
+    Boolean, CheckConstraint, Column, DateTime, ForeignKey, Integer,
+    Numeric, String, Text, UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
@@ -103,6 +103,7 @@ class SFSession(Base):
 
     id                    = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     session_code          = Column(String(60), unique=True, nullable=False, index=True)
+    authenticated_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=True, index=True)
     operator_id           = Column(UUID(as_uuid=True), nullable=True)
     operator_name         = Column(String(200), nullable=False)
     team_id               = Column(UUID(as_uuid=True), nullable=True)
@@ -124,16 +125,29 @@ class SFSession(Base):
 class WOActivityLog(Base):
     """Timestamped event log for every shop floor action on a work order."""
     __tablename__ = "sf_activity_logs"
+    __table_args__ = (
+        UniqueConstraint(
+            "work_order_id", "actor_user_id", "idempotency_key",
+            name="uq_sf_activity_logs_actor_idempotency",
+        ),
+        CheckConstraint(
+            "(idempotency_key IS NULL AND idempotency_fingerprint IS NULL) OR "
+            "(idempotency_key IS NOT NULL AND idempotency_fingerprint IS NOT NULL)",
+            name="ck_sf_activity_logs_idempotency_pair",
+        ),
+    )
 
     id                  = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     work_order_id       = Column(UUID(as_uuid=True), ForeignKey("exec_work_orders.id", ondelete="CASCADE"), nullable=False, index=True)
     production_order_id = Column(UUID(as_uuid=True), ForeignKey("exec_production_orders.id", ondelete="CASCADE"), nullable=True, index=True)
     session_id          = Column(UUID(as_uuid=True), ForeignKey("sf_sessions.id", ondelete="SET NULL"), nullable=True)
+    actor_user_id       = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=True, index=True)
     operator_id         = Column(UUID(as_uuid=True), nullable=True)
     operator_name       = Column(String(200), nullable=True)
     team_id             = Column(UUID(as_uuid=True), nullable=True)
     machine_id          = Column(UUID(as_uuid=True), nullable=True)
     line_id             = Column(String(50), nullable=True)
+    shift_id             = Column(UUID(as_uuid=True), ForeignKey("shifts.id", ondelete="SET NULL"), nullable=True)
 
     event_type       = Column(String(30), nullable=False, index=True)
     timestamp_start  = Column(DateTime(timezone=True), server_default=func.now())
@@ -149,6 +163,8 @@ class WOActivityLog(Base):
     reason_code = Column(String(100), nullable=True)
     remarks     = Column(Text, nullable=True)
     extra_data  = Column(JSONB, nullable=True)  # for future extensibility
+    idempotency_key = Column(String(128), nullable=True)
+    idempotency_fingerprint = Column(String(64), nullable=True)
 
     created_at  = Column(DateTime(timezone=True), server_default=func.now())
 
@@ -158,16 +174,36 @@ class WOActivityLog(Base):
 class SFDowntimeLog(Base):
     """Shop floor downtime record — tracks interruptions with duration and reason."""
     __tablename__ = "sf_downtime_logs"
+    __table_args__ = (
+        UniqueConstraint(
+            "created_by_user_id", "start_idempotency_key",
+            name="uq_sf_downtime_logs_creator_start_idempotency",
+        ),
+        CheckConstraint(
+            "(start_idempotency_key IS NULL AND start_idempotency_fingerprint IS NULL) OR "
+            "(start_idempotency_key IS NOT NULL AND start_idempotency_fingerprint IS NOT NULL)",
+            name="ck_sf_downtime_logs_start_idempotency_pair",
+        ),
+        CheckConstraint(
+            "(stop_idempotency_key IS NULL AND stop_idempotency_fingerprint IS NULL) OR "
+            "(stop_idempotency_key IS NOT NULL AND stop_idempotency_fingerprint IS NOT NULL)",
+            name="ck_sf_downtime_logs_stop_idempotency_pair",
+        ),
+    )
 
     id                  = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     work_order_id       = Column(UUID(as_uuid=True), ForeignKey("exec_work_orders.id", ondelete="CASCADE"), nullable=True, index=True)
     production_order_id = Column(UUID(as_uuid=True), ForeignKey("exec_production_orders.id", ondelete="SET NULL"), nullable=True, index=True)
+    session_id          = Column(UUID(as_uuid=True), ForeignKey("sf_sessions.id", ondelete="SET NULL"), nullable=True)
+    created_by_user_id  = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=True, index=True)
+    closed_by_user_id   = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=True, index=True)
     machine_id          = Column(UUID(as_uuid=True), nullable=True)
     machine_name        = Column(String(200), nullable=True)
     line_id             = Column(String(50), nullable=True, index=True)
     operator_id         = Column(UUID(as_uuid=True), nullable=True)
     operator_name       = Column(String(200), nullable=True)
     team_id             = Column(UUID(as_uuid=True), nullable=True)
+    shift_id            = Column(UUID(as_uuid=True), ForeignKey("shifts.id", ondelete="SET NULL"), nullable=True)
 
     start_time        = Column(DateTime(timezone=True), server_default=func.now())
     end_time          = Column(DateTime(timezone=True), nullable=True)
@@ -180,6 +216,10 @@ class SFDowntimeLog(Base):
 
     linked_maintenance_ticket_id = Column(UUID(as_uuid=True), nullable=True)
     comments          = Column(Text, nullable=True)
+    start_idempotency_key = Column(String(128), nullable=True)
+    start_idempotency_fingerprint = Column(String(64), nullable=True)
+    stop_idempotency_key = Column(String(128), nullable=True)
+    stop_idempotency_fingerprint = Column(String(64), nullable=True)
     created_at        = Column(DateTime(timezone=True), server_default=func.now())
     updated_at        = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
@@ -217,6 +257,8 @@ class ShiftHandover(Base):
     handover_time          = Column(DateTime(timezone=True), server_default=func.now())
     is_approved            = Column(Boolean, default=False)
     approved_by            = Column(String(200), nullable=True)
+    created_by_user_id     = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=True, index=True)
+    approved_by_user_id    = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=True, index=True)
     approved_at            = Column(DateTime(timezone=True), nullable=True)
 
     created_at             = Column(DateTime(timezone=True), server_default=func.now())
@@ -230,6 +272,7 @@ class SupervisorOverride(Base):
     work_order_id       = Column(UUID(as_uuid=True), ForeignKey("exec_work_orders.id", ondelete="SET NULL"), nullable=True, index=True)
     production_order_id = Column(UUID(as_uuid=True), ForeignKey("exec_production_orders.id", ondelete="SET NULL"), nullable=True)
     supervisor_id       = Column(UUID(as_uuid=True), nullable=True)
+    actor_user_id       = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=True, index=True)
     supervisor_name     = Column(String(200), nullable=False)
     override_type       = Column(String(40), nullable=False)
     reason              = Column(Text, nullable=True)
@@ -255,4 +298,5 @@ class SFAIRec(Base):
     impact_summary      = Column(Text, nullable=True)
     confidence_score    = Column(Numeric(4, 3), nullable=True)
     actioned_at         = Column(DateTime(timezone=True), nullable=True)
+    actioned_by_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=True, index=True)
     created_at          = Column(DateTime(timezone=True), server_default=func.now())

@@ -106,6 +106,9 @@ export interface CriticalControlPoint {
 export interface CCPMonitoringLog {
   id: string;
   ccp_id: string;
+  instrument_calibration_id: string | null;
+  calibration_instrument_code: string | null;
+  calibration_status_at_record: string | null;
   production_order_id: string | null;
   lot_id: string | null;
   monitoring_datetime: string;
@@ -346,7 +349,12 @@ export interface CalibrationRecord {
   instrument_id: string;
   instrument_name: string;
   instrument_type: string;
+  asset_id?: string | null;
+  asset_no?: string | null;
+  asset_name?: string | null;
   location?: string;
+  manufacturer?: string;
+  model_no?: string;
   serial_no?: string;
   last_calibration_date?: string;
   next_calibration_due?: string;
@@ -358,6 +366,31 @@ export interface CalibrationRecord {
   is_overdue: boolean;
   is_active: boolean;
   notes?: string;
+}
+
+export interface CalibrationScheduleReport {
+  as_of: string;
+  due_from: string;
+  due_to: string;
+  due_in_range: CalibrationRecord[];
+  overdue: CalibrationRecord[];
+  not_verified: CalibrationRecord[];
+  out_of_service_count: number;
+  data_notes: string[];
+}
+
+export interface CalibrationHistoryRecord {
+  id: string;
+  instrument_calibration_id: string;
+  calibration_date: string;
+  calibration_interval_days: number;
+  next_calibration_due: string;
+  calibration_authority: string;
+  certificate_ref: string;
+  result: "PASS" | "FAIL";
+  notes: string | null;
+  recorded_by_id: string | null;
+  created_at: string;
 }
 
 export interface AQLPlan {
@@ -577,12 +610,25 @@ export const qmsApi = {
     const q = status ? `?status=${status}` : "";
     return apiFetch<CalibrationRecord[]>(`${BASE}/calibration${q}`);
   },
+  getCalibrationSchedule: (due_from?: string, due_to?: string) => {
+    const q = new URLSearchParams();
+    if (due_from) q.set("due_from", due_from);
+    if (due_to) q.set("due_to", due_to);
+    const query = q.toString();
+    return apiFetch<CalibrationScheduleReport>(`${BASE}/calibration/schedule${query ? `?${query}` : ""}`);
+  },
+  getCalibrationHistory: (instrumentId: string) =>
+    apiFetch<CalibrationHistoryRecord[]>(BASE + "/calibration/" + instrumentId + "/history"),
+  recordCalibrationEvent: (instrumentId: string, body: Record<string, unknown>) =>
+    apiFetch<CalibrationHistoryRecord>(BASE + "/calibration/" + instrumentId + "/history", {
+      method: "POST", body: JSON.stringify(body),
+    }),
   createCalibration: (body: Record<string, unknown>) =>
-    apiFetch<{ id: string; instrument_id: string; status: string }>(`${BASE}/calibration`, {
+    apiFetch<{ id: string; instrument_id: string; status: string; asset_id?: string | null }>(`${BASE}/calibration`, {
       method: "POST", body: JSON.stringify(body),
     }),
   updateCalibration: (id: string, body: Record<string, unknown>) =>
-    apiFetch<{ id: string; status: string }>(`${BASE}/calibration/${id}`, {
+    apiFetch<{ id: string; status: string; asset_id?: string | null }>(`${BASE}/calibration/${id}`, {
       method: "PATCH", body: JSON.stringify(body),
     }),
 

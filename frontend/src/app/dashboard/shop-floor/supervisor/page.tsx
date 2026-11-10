@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/context/AuthContext";
 import {
   sfApi, LiveWOItem, SFAIRec, SupervisorOverride,
   LIVE_STATUS_COLOR, DOWNTIME_CAT_LABEL,
@@ -14,7 +15,8 @@ const OVERRIDE_TYPES = [
 
 export default function SupervisorConsole() {
   const qc = useQueryClient();
-  const [supervisorName, setSupervisorName] = useState("");
+  const { user } = useAuth();
+  const canApprove = Boolean(user?.is_superuser || user?.permission_codes.includes("production.approve"));
   const [selectedWO, setSelectedWO] = useState<LiveWOItem | null>(null);
   const [overrideType, setOverrideType] = useState("UNBLOCK");
   const [overrideReason, setOverrideReason] = useState("");
@@ -52,7 +54,7 @@ export default function SupervisorConsole() {
   const overrideMut = useMutation({
     mutationFn: () => sfApi.createOverride({
       work_order_id: selectedWO?.work_order_id || null,
-      supervisor_name: supervisorName,
+      supervisor_name: user?.full_name,
       override_type: overrideType,
       reason: overrideReason,
     }),
@@ -90,13 +92,8 @@ export default function SupervisorConsole() {
           <p className="text-sm text-gray-500 mt-0.5">Monitor and intervene across all lines</p>
         </div>
         <div className="flex gap-2 items-center">
-          <input
-            className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm"
-            placeholder="Supervisor name"
-            value={supervisorName}
-            onChange={(e) => setSupervisorName(e.target.value)}
-          />
-          <button onClick={() => runAI.mutate()} disabled={runAI.isPending} className="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50">
+          <span className="text-sm text-gray-600">{user?.full_name ?? "Authenticated supervisor"}</span>
+          <button onClick={() => runAI.mutate()} disabled={!canApprove || runAI.isPending} className="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50">
             {runAI.isPending ? "Running…" : "Run AI"}
           </button>
         </div>
@@ -160,6 +157,7 @@ export default function SupervisorConsole() {
                     <div className="mt-2 flex gap-2">
                       <button
                         onClick={(e) => { e.stopPropagation(); setShowOverrideModal(true); }}
+                        disabled={!canApprove}
                         className="flex-1 py-1.5 bg-orange-500 text-white rounded-lg text-xs font-medium hover:bg-orange-600"
                       >
                         Supervisor Override
@@ -212,8 +210,8 @@ export default function SupervisorConsole() {
                     </div>
                   </div>
                   <div className="flex gap-1">
-                    <button onClick={() => actionRec.mutate({ id: rec.id, status: "ACCEPTED" })} className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700">Accept</button>
-                    <button onClick={() => actionRec.mutate({ id: rec.id, status: "REJECTED" })} className="px-2 py-1 bg-gray-300 text-gray-700 text-xs rounded hover:bg-gray-400">Dismiss</button>
+                    <button disabled={!canApprove || actionRec.isPending} onClick={() => actionRec.mutate({ id: rec.id, status: "ACCEPTED" })} className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 disabled:opacity-40">Accept</button>
+                    <button disabled={!canApprove || actionRec.isPending} onClick={() => actionRec.mutate({ id: rec.id, status: "REJECTED" })} className="px-2 py-1 bg-gray-300 text-gray-700 text-xs rounded hover:bg-gray-400 disabled:opacity-40">Dismiss</button>
                   </div>
                 </div>
               </div>
@@ -269,7 +267,7 @@ export default function SupervisorConsole() {
               <button onClick={() => setShowOverrideModal(false)} className="flex-1 py-2 border border-gray-200 rounded-lg text-sm">Cancel</button>
               <button
                 onClick={() => overrideMut.mutate()}
-                disabled={!supervisorName || overrideMut.isPending}
+                disabled={!canApprove || !overrideReason.trim() || overrideMut.isPending}
                 className="flex-1 py-2 bg-orange-600 text-white rounded-lg text-sm font-medium disabled:opacity-40"
               >
                 Apply Override

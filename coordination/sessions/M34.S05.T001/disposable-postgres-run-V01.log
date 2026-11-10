@@ -1,0 +1,8 @@
+﻿database=fmcg_m34_s05_t001_f141363b9cb14ae9ad61dc45
+container=fmcg-m34-s05-t001-f141363b9cb14ae9ad61dc45
+image=postgres:16.6
+host_bind=127.0.0.1
+password=none
+fba61d3dceed6ef43a9a729ba105c1bd83451a7fa6a21b105e19530f24b88d4d
+host_port=64614
+runner_error=INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.

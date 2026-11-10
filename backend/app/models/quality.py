@@ -101,6 +101,7 @@ class ReleaseStatus(str, enum.Enum):
 
 
 class CalibrationStatus(str, enum.Enum):
+    NOT_VERIFIED = "NOT_VERIFIED"
     CURRENT = "CURRENT"
     DUE_SOON = "DUE_SOON"
     OVERDUE = "OVERDUE"
@@ -375,6 +376,14 @@ class CCPMonitoringLog(Base, TimestampMixin):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     ccp_id = Column(UUID(as_uuid=True), ForeignKey("critical_control_points.id", ondelete="CASCADE"), nullable=False, index=True)
+    instrument_calibration_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("instrument_calibrations.id", name="fk_ccp_monitoring_logs_instrument_calibration_id_instrument_calibrations", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    calibration_status_at_record = Column(String(30), nullable=True)
+    calibration_instrument_code_at_record = Column(String(50), nullable=True)
     production_order_id = Column(UUID(as_uuid=True), ForeignKey("production_orders.id", ondelete="SET NULL"), nullable=True)
     work_order_id = Column(UUID(as_uuid=True), nullable=True)
     lot_id = Column(UUID(as_uuid=True), ForeignKey("lots.id", ondelete="SET NULL"), nullable=True)
@@ -391,6 +400,7 @@ class CCPMonitoringLog(Base, TimestampMixin):
     notes = Column(Text, nullable=True)
 
     ccp = relationship("CriticalControlPoint", back_populates="monitoring_logs")
+    instrument_calibration = relationship("InstrumentCalibration", foreign_keys=[instrument_calibration_id])
     production_order = relationship("ProductionOrder", foreign_keys=[production_order_id])
     lot = relationship("Lot", foreign_keys=[lot_id])
     recorded_by = relationship("User", foreign_keys=[recorded_by_id])
@@ -765,6 +775,9 @@ class QMSAIRecommendation(Base, TimestampMixin):
 
 class InstrumentCalibration(Base, TimestampMixin):
     __tablename__ = "instrument_calibrations"
+    __table_args__ = (
+        CheckConstraint("calibration_interval_days > 0", name="ck_instrument_calibration_interval_positive"),
+    )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     instrument_id = Column(String(50), unique=True, nullable=False, index=True)
@@ -783,8 +796,43 @@ class InstrumentCalibration(Base, TimestampMixin):
     is_active = Column(Boolean, default=True, nullable=False)
     notes = Column(Text, nullable=True)
     calibrated_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    asset_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("assets.id", name="fk_instrument_calibrations_asset_id_assets", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
 
     calibrated_by = relationship("User", foreign_keys=[calibrated_by_id])
+    asset = relationship("Asset", back_populates="calibration_instruments")
+
+
+class InstrumentCalibrationEvent(Base, TimestampMixin):
+    """Append-only calibration event with entered certificate reference and result."""
+    __tablename__ = "instrument_calibration_events"
+    __table_args__ = (
+        CheckConstraint("calibration_interval_days > 0", name="ck_instrument_calibration_event_interval_positive"),
+        CheckConstraint("result IN ('PASS', 'FAIL')", name="ck_instrument_calibration_event_result"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    instrument_calibration_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("instrument_calibrations.id", name="fk_instrument_calibration_events_instrument_id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    calibration_date = Column(Date, nullable=False)
+    calibration_interval_days = Column(Integer, nullable=False)
+    next_calibration_due = Column(Date, nullable=False)
+    calibration_authority = Column(String(200), nullable=False)
+    certificate_ref = Column(String(200), nullable=False)
+    result = Column(String(10), nullable=False)
+    notes = Column(Text, nullable=True)
+    recorded_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
+    instrument = relationship("InstrumentCalibration", foreign_keys=[instrument_calibration_id])
+    recorded_by = relationship("User", foreign_keys=[recorded_by_id])
 
 
 # ── AQL Sampling Plan ──────────────────────────────────────────────────────────

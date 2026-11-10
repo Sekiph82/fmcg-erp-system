@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import date
+from datetime import date, timedelta
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.access_control import can_modify_scope, has_any_permission
 from app.core.deps import get_current_user, get_db
+from app.models.maintenance import Asset
 from app.models.inventory import Stock
 from app.models.master import Supplier
 from app.models.procurement import GoodsReceipt, GRNLine, SupplierEvaluation
@@ -28,10 +29,12 @@ from app.models.quality import (
     QMSAIRecommendation, QMSAIAgentType, QMSAIRecStatus,
     QualityAuditChecklist, AuditStandard, AuditType, AuditResult,
     SupplierFoodSafetyApproval, SupplierFoodSafetyStatus,
-    InstrumentCalibration, AQLSamplingPlan, CertificateOfAnalysis, QualityGateWaiver,
+    InstrumentCalibration, InstrumentCalibrationEvent, CalibrationStatus, AQLSamplingPlan, CertificateOfAnalysis, QualityGateWaiver,
     QualityGateAuditEvent,
 )
 from app.schemas.qms import (
+    InstrumentCalibrationCreate, InstrumentCalibrationUpdate, InstrumentCalibrationRead,
+    CalibrationScheduleReport, InstrumentCalibrationEventCreate, InstrumentCalibrationEventRead,
     QCTemplateCreate, QCTemplateUpdate, QCTemplateRead,
     HazardAnalysisCreate, HazardAnalysisUpdate, HazardAnalysisRead,
     CCPCreate, CCPUpdate, CCPRead,
@@ -52,6 +55,18 @@ from app.crud import quality as qc_crud
 from app.services import quality_service as qc_svc
 
 router = APIRouter()
+
+
+def _require_calibration_permission(user, action: str) -> None:
+    permissions = {
+        "view": ("quality.view", "quality.view_all"),
+        "create": ("quality.create", "quality.create_all"),
+        "edit": ("quality.edit", "quality.edit_all"),
+    }.get(action)
+    if permissions is None:
+        raise ValueError(f"Unsupported calibration permission action: {action}")
+    if not has_any_permission(user, permissions):
+        raise HTTPException(status_code=403, detail=f"Quality {action} permission is required for calibration instruments.")
 
 
 def _require_supplier_capa_permission(user, action: str) -> None:
@@ -776,6 +791,7 @@ async def list_ccp_logs(
 ):
     r = await db.execute(
         select(CCPMonitoringLog)
+        .options(selectinload(CCPMonitoringLog.instrument_calibration))
         .where(CCPMonitoringLog.ccp_id == ccp_id)
         .order_by(CCPMonitoringLog.monitoring_datetime.desc())
         .limit(limit)
@@ -797,9 +813,51 @@ async def record_ccp_monitoring(
     ccp = r.scalar_one_or_none()
     if not ccp:
         raise HTTPException(404, "CCP not found")
-    log = await svc.record_ccp_monitoring(db, ccp, body.model_dump(), current_user.id)
+    data = body.model_dump()
+    if body.recorded_value is not None and body.instrument_calibration_id is None:
+        raise HTTPException(
+            status_code=422,
+            detail="Numeric CCP readings require a linked calibration instrument.",
+        )
+    if body.instrument_calibration_id is not None:
+        _require_calibration_permission(current_user, "view")
+        instrument_result = await db.execute(
+            select(InstrumentCalibration)
+            .where(InstrumentCalibration.id == body.instrument_calibration_id)
+            .with_for_update()
+        )
+        instrument = instrument_result.scalar_one_or_none()
+        if instrument is None:
+            raise HTTPException(status_code=404, detail="Calibration instrument not found")
+        event_date = body.monitoring_datetime.date()
+        if instrument.status == CalibrationStatus.OUT_OF_SERVICE.value:
+            calibration_status = CalibrationStatus.OUT_OF_SERVICE.value
+        elif not instrument.is_active or instrument.last_calibration_date is None:
+            calibration_status = CalibrationStatus.NOT_VERIFIED.value
+        elif event_date < instrument.last_calibration_date:
+            calibration_status = CalibrationStatus.NOT_VERIFIED.value
+        else:
+            due_date = instrument.last_calibration_date + timedelta(days=instrument.calibration_interval_days)
+            days_until_due = (due_date - event_date).days
+            calibration_status = (
+                CalibrationStatus.OVERDUE.value if days_until_due < 0
+                else CalibrationStatus.DUE_SOON.value if days_until_due <= 30
+                else CalibrationStatus.CURRENT.value
+            )
+        if calibration_status not in (CalibrationStatus.CURRENT.value, CalibrationStatus.DUE_SOON.value):
+            raise HTTPException(
+                status_code=409,
+                detail=f"CCP measurement blocked: selected instrument calibration status is {calibration_status}.",
+            )
+        data["calibration_status_at_record"] = calibration_status
+        data["calibration_instrument_code_at_record"] = instrument.instrument_id
+    log = await svc.record_ccp_monitoring(db, ccp, data, current_user.id)
     await db.commit()
-    r2 = await db.execute(select(CCPMonitoringLog).where(CCPMonitoringLog.id == log.id))
+    r2 = await db.execute(
+        select(CCPMonitoringLog)
+        .options(selectinload(CCPMonitoringLog.instrument_calibration))
+        .where(CCPMonitoringLog.id == log.id)
+    )
     log = r2.scalar_one()
     return _build_monitoring_read(log, ccp)
 
@@ -812,6 +870,7 @@ async def list_violations(
 ):
     r = await db.execute(
         select(CCPMonitoringLog)
+        .options(selectinload(CCPMonitoringLog.instrument_calibration))
         .where(CCPMonitoringLog.is_violation == True)
         .order_by(CCPMonitoringLog.monitoring_datetime.desc())
         .limit(limit)
@@ -1491,6 +1550,10 @@ def _build_monitoring_read(l: CCPMonitoringLog, ccp: Optional[CriticalControlPoi
     r = CCPMonitoringRead.model_validate(l)
     r.ccp_name = ccp.ccp_name if ccp else None
     r.recorded_by_name = l.recorded_by.full_name if l.recorded_by else None
+    r.calibration_instrument_code = (
+        l.calibration_instrument_code_at_record
+        or (l.instrument_calibration.instrument_id if l.instrument_calibration else None)
+    )
     return r
 
 
@@ -1521,62 +1584,133 @@ def _build_av_read(rec: AllergenValidationRecord) -> AllergenValidationRead:
 
 # ── Instrument Calibration ────────────────────────────────────────────────────
 
-@router.get("/calibration", response_model=list)
+def _calibration_instrument_read(inst: InstrumentCalibration, as_of: date) -> dict:
+    from datetime import timedelta
+
+    next_due = None
+    days_until_due = None
+    if inst.last_calibration_date is not None:
+        next_due = inst.last_calibration_date + timedelta(days=inst.calibration_interval_days)
+        days_until_due = (next_due - as_of).days
+
+    if inst.status == CalibrationStatus.OUT_OF_SERVICE.value:
+        effective_status = CalibrationStatus.OUT_OF_SERVICE.value
+    elif next_due is None:
+        effective_status = CalibrationStatus.NOT_VERIFIED.value
+    elif days_until_due < 0:
+        effective_status = CalibrationStatus.OVERDUE.value
+    elif days_until_due <= 30:
+        effective_status = CalibrationStatus.DUE_SOON.value
+    else:
+        effective_status = CalibrationStatus.CURRENT.value
+
+    return {
+        "id": str(inst.id),
+        "instrument_id": inst.instrument_id,
+        "instrument_name": inst.instrument_name,
+        "instrument_type": inst.instrument_type,
+        "asset_id": str(inst.asset_id) if inst.asset_id else None,
+        "asset_no": inst.asset.asset_no if inst.asset else None,
+        "asset_name": inst.asset.name if inst.asset else None,
+        "location": inst.location,
+        "manufacturer": inst.manufacturer,
+        "model_no": inst.model_no,
+        "serial_no": inst.serial_no,
+        "last_calibration_date": inst.last_calibration_date,
+        "next_calibration_due": next_due,
+        "calibration_interval_days": inst.calibration_interval_days,
+        "calibration_authority": inst.calibration_authority,
+        "certificate_ref": inst.certificate_ref,
+        "status": effective_status,
+        "days_until_due": days_until_due,
+        "is_overdue": effective_status == CalibrationStatus.OVERDUE.value,
+        "is_active": inst.is_active,
+        "notes": inst.notes,
+    }
+
+
+@router.get("/calibration", response_model=List[InstrumentCalibrationRead])
 async def list_calibrations(
     status: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    current_user=Depends(get_current_user),
 ):
-    from datetime import datetime, timedelta
-    today = date.today()
-    q = select(InstrumentCalibration)
-    if status:
-        q = q.where(InstrumentCalibration.status == status)
+    _require_calibration_permission(current_user, "view")
+    q = select(InstrumentCalibration).options(selectinload(InstrumentCalibration.asset))
     r = await db.execute(q.order_by(InstrumentCalibration.next_calibration_due))
-    instruments = list(r.scalars())
-    rows = []
-    for inst in instruments:
-        days_until_due = None
-        if inst.next_calibration_due:
-            days_until_due = (inst.next_calibration_due - today).days
-        rows.append({
-            "id": str(inst.id),
-            "instrument_id": inst.instrument_id,
-            "instrument_name": inst.instrument_name,
-            "instrument_type": inst.instrument_type,
-            "location": inst.location,
-            "serial_no": inst.serial_no,
-            "last_calibration_date": inst.last_calibration_date.isoformat() if inst.last_calibration_date else None,
-            "next_calibration_due": inst.next_calibration_due.isoformat() if inst.next_calibration_due else None,
-            "calibration_interval_days": inst.calibration_interval_days,
-            "calibration_authority": inst.calibration_authority,
-            "certificate_ref": inst.certificate_ref,
-            "status": inst.status,
-            "days_until_due": days_until_due,
-            "is_overdue": days_until_due is not None and days_until_due < 0,
-            "is_active": inst.is_active,
-            "notes": inst.notes,
-        })
-    return rows
+    rows = [_calibration_instrument_read(inst, date.today()) for inst in r.scalars()]
+    return [row for row in rows if not status or row["status"] == status]
+
+
+@router.get("/calibration/schedule", response_model=CalibrationScheduleReport)
+async def calibration_schedule(
+    due_from: Optional[date] = None,
+    due_to: Optional[date] = None,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    _require_calibration_permission(current_user, "view")
+    as_of = date.today()
+    start_date = due_from or as_of
+    end_date = due_to or (as_of + timedelta(days=90))
+    if end_date < start_date:
+        raise HTTPException(status_code=422, detail="due_to must be on or after due_from")
+
+    result = await db.execute(
+        select(InstrumentCalibration)
+        .options(selectinload(InstrumentCalibration.asset))
+        .where(InstrumentCalibration.is_active.is_(True))
+        .order_by(InstrumentCalibration.next_calibration_due, InstrumentCalibration.instrument_id)
+    )
+    due_in_range: list[dict] = []
+    overdue: list[dict] = []
+    not_verified: list[dict] = []
+    out_of_service_count = 0
+    for instrument in result.scalars():
+        row = _calibration_instrument_read(instrument, as_of)
+        if row["status"] == CalibrationStatus.OUT_OF_SERVICE.value:
+            out_of_service_count += 1
+        elif row["status"] == CalibrationStatus.NOT_VERIFIED.value:
+            not_verified.append(row)
+        elif row["status"] == CalibrationStatus.OVERDUE.value:
+            overdue.append(row)
+        elif start_date <= row["next_calibration_due"] <= end_date:
+            due_in_range.append(row)
+
+    return CalibrationScheduleReport(
+        as_of=as_of,
+        due_from=start_date,
+        due_to=end_date,
+        due_in_range=due_in_range,
+        overdue=overdue,
+        not_verified=not_verified,
+        out_of_service_count=out_of_service_count,
+        data_notes=[
+            "Status and next due date are derived from the last recorded calibration date and configured interval; GET requests do not update stored records.",
+            "The existing 365-day software default is configurable per instrument and is not a regulatory or owner-approved interval.",
+            "DUE_SOON means due within 30 calendar days; OVERDUE means the due date has passed. These are software defaults, not regulatory thresholds.",
+            "The report is read-only. It creates no calibration appointment, event, certificate, or external notification.",
+            "Active instruments without a recorded calibration date are returned as NOT_VERIFIED, not as CURRENT.",
+        ],
+    )
 
 
 @router.post("/calibration", status_code=201)
 async def create_calibration(
-    body: dict,
+    body: InstrumentCalibrationCreate,
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
     from datetime import timedelta
+    _require_calibration_permission(current_user, "create")
+    values = body.model_dump()
+    asset_id = values.get("asset_id")
+    if asset_id and await db.get(Asset, asset_id) is None:
+        raise HTTPException(status_code=404, detail="Maintenance asset not found")
     last_date = None
-    if body.get("last_calibration_date"):
-        from datetime import date as date_cls
-        last_date = date_cls.fromisoformat(body["last_calibration_date"])
-    interval = body.get("calibration_interval_days", 365)
-    next_due = None
-    if last_date:
-        from datetime import timedelta
-        next_due = last_date + timedelta(days=interval)
-    status = "CURRENT"
+    interval = values["calibration_interval_days"]
+    next_due = last_date + timedelta(days=interval) if last_date else None
+    status = "NOT_VERIFIED" if next_due is None else "CURRENT"
     if next_due:
         days = (next_due - date.today()).days
         if days < 0:
@@ -1584,57 +1718,164 @@ async def create_calibration(
         elif days <= 30:
             status = "DUE_SOON"
     inst = InstrumentCalibration(
-        instrument_id=body["instrument_id"],
-        instrument_name=body["instrument_name"],
-        instrument_type=body.get("instrument_type", ""),
-        location=body.get("location"),
-        manufacturer=body.get("manufacturer"),
-        model_no=body.get("model_no"),
-        serial_no=body.get("serial_no"),
+        instrument_id=values["instrument_id"],
+        instrument_name=values["instrument_name"],
+        instrument_type=values["instrument_type"],
+        asset_id=asset_id,
+        location=values.get("location"),
+        manufacturer=values.get("manufacturer"),
+        model_no=values.get("model_no"),
+        serial_no=values.get("serial_no"),
         last_calibration_date=last_date,
         next_calibration_due=next_due,
         calibration_interval_days=interval,
-        calibration_authority=body.get("calibration_authority"),
-        certificate_ref=body.get("certificate_ref"),
+        calibration_authority=None,
+        certificate_ref=None,
         status=status,
-        notes=body.get("notes"),
-        calibrated_by_id=current_user.id,
+        notes=values.get("notes"),
     )
     db.add(inst)
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError as exc:
+        await db.rollback()
+        raise HTTPException(status_code=409, detail="Instrument ID already exists or the asset link is invalid") from exc
     await db.refresh(inst)
-    return {"id": str(inst.id), "instrument_id": inst.instrument_id, "status": inst.status}
+    if asset_id:
+        inst.asset = await db.get(Asset, asset_id)
+    return {
+        "id": str(inst.id),
+        "instrument_id": inst.instrument_id,
+        "status": inst.status,
+        "asset_id": str(inst.asset_id) if inst.asset_id else None,
+        "asset_no": inst.asset.asset_no if inst.asset else None,
+        "asset_name": inst.asset.name if inst.asset else None,
+    }
 
 
 @router.patch("/calibration/{instrument_id}")
 async def update_calibration(
     instrument_id: uuid.UUID,
-    body: dict,
+    body: InstrumentCalibrationUpdate,
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
     from datetime import timedelta
-    r = await db.execute(select(InstrumentCalibration).where(InstrumentCalibration.id == instrument_id))
+    _require_calibration_permission(current_user, "edit")
+    r = await db.execute(
+        select(InstrumentCalibration)
+        .where(InstrumentCalibration.id == instrument_id)
+        .with_for_update()
+    )
     inst = r.scalar_one_or_none()
     if not inst:
         raise HTTPException(404, "Instrument not found")
-    allowed = ["instrument_name", "instrument_type", "location", "manufacturer", "model_no",
-               "serial_no", "calibration_interval_days", "calibration_authority", "certificate_ref",
-               "status", "is_active", "notes"]
-    for k in allowed:
-        if k in body:
-            setattr(inst, k, body[k])
-    if "last_calibration_date" in body and body["last_calibration_date"]:
-        from datetime import date as date_cls
-        last_date = date_cls.fromisoformat(body["last_calibration_date"])
-        inst.last_calibration_date = last_date
-        inst.next_calibration_due = last_date + timedelta(days=inst.calibration_interval_days)
-        days = (inst.next_calibration_due - date.today()).days
-        inst.status = "OVERDUE" if days < 0 else "DUE_SOON" if days <= 30 else "CURRENT"
-        inst.calibrated_by_id = current_user.id
+    values = body.model_dump(exclude_unset=True)
+    if "asset_id" in values and values["asset_id"] and await db.get(Asset, values["asset_id"]) is None:
+        raise HTTPException(status_code=404, detail="Maintenance asset not found")
+    if "asset_id" in values:
+        inst.asset_id = values.pop("asset_id")
+    for field_name in (
+        "instrument_name", "instrument_type", "location", "manufacturer", "model_no",
+        "serial_no", "calibration_interval_days", "is_active", "notes",
+    ):
+        if field_name in values:
+            setattr(inst, field_name, values[field_name])
+
+    calibration_changed = "calibration_interval_days" in values
+    if calibration_changed and inst.status != CalibrationStatus.OUT_OF_SERVICE.value:
+        if inst.last_calibration_date is None:
+            inst.next_calibration_due = None
+            inst.status = "NOT_VERIFIED"
+        else:
+            inst.next_calibration_due = inst.last_calibration_date + timedelta(days=inst.calibration_interval_days)
+            days = (inst.next_calibration_due - date.today()).days
+            inst.status = "OVERDUE" if days < 0 else "DUE_SOON" if days <= 30 else "CURRENT"
     await db.commit()
     await db.refresh(inst)
-    return {"id": str(inst.id), "status": inst.status}
+    asset = await db.get(Asset, inst.asset_id) if inst.asset_id else None
+    return {
+        "id": str(inst.id),
+        "status": inst.status,
+        "asset_id": str(inst.asset_id) if inst.asset_id else None,
+        "asset_no": asset.asset_no if asset else None,
+        "asset_name": asset.name if asset else None,
+    }
+
+
+@router.get("/calibration/{instrument_id}/history", response_model=List[InstrumentCalibrationEventRead])
+async def list_calibration_history(
+    instrument_id: uuid.UUID,
+    limit: int = Query(100, le=200),
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    _require_calibration_permission(current_user, "view")
+    if await db.get(InstrumentCalibration, instrument_id) is None:
+        raise HTTPException(status_code=404, detail="Instrument not found")
+    result = await db.execute(
+        select(InstrumentCalibrationEvent)
+        .where(InstrumentCalibrationEvent.instrument_calibration_id == instrument_id)
+        .order_by(InstrumentCalibrationEvent.calibration_date.desc(), InstrumentCalibrationEvent.created_at.desc())
+        .limit(limit)
+    )
+    return list(result.scalars())
+
+
+@router.post(
+    "/calibration/{instrument_id}/history",
+    response_model=InstrumentCalibrationEventRead,
+    status_code=201,
+)
+async def record_calibration_history(
+    instrument_id: uuid.UUID,
+    body: InstrumentCalibrationEventCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    _require_calibration_permission(current_user, "create")
+    result = await db.execute(
+        select(InstrumentCalibration)
+        .where(InstrumentCalibration.id == instrument_id)
+        .with_for_update()
+    )
+    instrument = result.scalar_one_or_none()
+    if instrument is None:
+        raise HTTPException(status_code=404, detail="Instrument not found")
+    if not instrument.is_active:
+        raise HTTPException(status_code=409, detail="Inactive instruments cannot receive new calibration events")
+
+    next_due = body.calibration_date + timedelta(days=instrument.calibration_interval_days)
+    event = InstrumentCalibrationEvent(
+        instrument_calibration_id=instrument.id,
+        calibration_date=body.calibration_date,
+        calibration_interval_days=instrument.calibration_interval_days,
+        next_calibration_due=next_due,
+        calibration_authority=body.calibration_authority,
+        certificate_ref=body.certificate_ref,
+        result=body.result,
+        notes=body.notes,
+        recorded_by_id=current_user.id,
+    )
+    if instrument.last_calibration_date is None or body.calibration_date >= instrument.last_calibration_date:
+        instrument.last_calibration_date = body.calibration_date
+        instrument.next_calibration_due = next_due
+        instrument.calibration_authority = body.calibration_authority
+        instrument.certificate_ref = body.certificate_ref
+        instrument.calibrated_by_id = current_user.id
+        if body.result == "FAIL":
+            instrument.status = CalibrationStatus.OUT_OF_SERVICE.value
+        else:
+            days_until_due = (next_due - date.today()).days
+            instrument.status = (
+                CalibrationStatus.OVERDUE.value if days_until_due < 0
+                else CalibrationStatus.DUE_SOON.value if days_until_due <= 30
+                else CalibrationStatus.CURRENT.value
+            )
+    db.add(event)
+    await db.commit()
+    await db.refresh(event)
+    return event
 
 
 # ── AQL Sampling Plans ────────────────────────────────────────────────────────

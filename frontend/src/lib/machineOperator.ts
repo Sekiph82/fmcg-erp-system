@@ -10,6 +10,15 @@ export type LaborActivity = "SETUP" | "RUN" | "CLEANUP" | "DOWNTIME_SUPPORT" | "
 export type MOAIAgentType = "PERFORMANCE_ANOMALY" | "PRODUCTIVITY_OPTIMIZER" | "COST_VARIANCE";
 export type MOAIRecStatus = "PENDING" | "ACCEPTED" | "REJECTED" | "APPLIED";
 
+export interface DowntimeReasonCode {
+  code: string;
+  label: string;
+  parent_code?: string | null;
+  is_selectable: boolean;
+  is_active: boolean;
+  sort_order: number;
+}
+
 export interface Machine {
   id: string;
   machine_code: string;
@@ -132,6 +141,25 @@ export interface RuntimeLog {
   operator_name?: string;
 }
 
+export interface MachineRuntimeActivityKpi {
+  activity_type: RuntimeActivity;
+  duration_minutes: number;
+  log_count: number;
+  source_runtime_log_ids: string[];
+}
+
+export interface MachineRuntimeKpis {
+  machine_id: string;
+  machine_code: string;
+  machine_name: string;
+  period_start: string;
+  period_end: string;
+  recorded_activity_log_minutes: number;
+  activities: MachineRuntimeActivityKpi[];
+  unavailable_runtime_log_ids: string[];
+  data_notes: string[];
+}
+
 export interface LaborTimeLog {
   id: string;
   operator_id: string;
@@ -145,6 +173,168 @@ export interface LaborTimeLog {
   overtime_minutes?: number;
   approved_flag: boolean;
   operator_name?: string;
+}
+
+export interface OperatorProductivityByUom {
+  uom: string;
+  allocated_output_quantity: number;
+  operator_labor_minutes_for_completed_orders: number;
+  output_quantity_per_operator_labor_hour?: number | null;
+  source_work_order_ids: string[];
+  source_labor_log_ids: string[];
+  allocation_labor_log_ids: string[];
+}
+
+export interface OperatorProductivity {
+  operator_id: string;
+  period_start: string;
+  period_end: string;
+  approved_labor_log_count: number;
+  unapproved_labor_log_count: number;
+  approved_labor_minutes: number;
+  approved_labor_hours: number;
+  completed_work_order_count: number;
+  unavailable_output_work_order_ids: string[];
+  output_by_uom: OperatorProductivityByUom[];
+  period_labor_log_ids: string[];
+  data_notes: string[];
+}
+
+export interface ComparisonOutputByUom {
+  uom: string;
+  allocated_output_quantity: number;
+  labor_minutes_for_completed_orders: number;
+  output_quantity_per_labor_hour?: number | null;
+  source_work_order_ids: string[];
+  source_labor_log_ids: string[];
+  allocation_labor_log_ids: string[];
+}
+
+export interface ComparisonRuntimeActivity {
+  activity_type: RuntimeActivity;
+  duration_minutes: number;
+  source_runtime_log_ids: string[];
+}
+
+export interface ShiftTeamComparisonGroup {
+  group_id?: string | null;
+  group_code: string;
+  group_name: string;
+  approved_labor_log_count: number;
+  unapproved_labor_log_count: number;
+  approved_labor_minutes: number;
+  approved_labor_hours: number;
+  runtime_log_count: number;
+  recorded_runtime_minutes: number;
+  unavailable_runtime_log_ids: string[];
+  runtime_by_activity: ComparisonRuntimeActivity[];
+  source_labor_log_ids: string[];
+  source_runtime_log_ids: string[];
+  output_by_uom: ComparisonOutputByUom[];
+}
+
+export interface ShiftTeamComparisons {
+  period_start: string;
+  period_end: string;
+  teams: ShiftTeamComparisonGroup[];
+  shifts: ShiftTeamComparisonGroup[];
+  unavailable_output_work_order_ids: string[];
+  period_labor_log_ids: string[];
+  period_runtime_log_ids: string[];
+  data_notes: string[];
+}
+
+export interface MachinePerformanceAnomaly {
+  machine_id: string;
+  machine_code: string;
+  machine_name: string;
+  runtime_log_id: string;
+  event_start: string;
+  event_end: string;
+  observed_downtime_minutes: number;
+  baseline_event_count: number;
+  baseline_median_minutes: number;
+  baseline_mad_minutes: number;
+  alert_threshold_minutes: number;
+  source_baseline_runtime_log_ids: string[];
+}
+
+export interface PerformanceAnomalyReport {
+  period_start: string;
+  period_end: string;
+  baseline_start: string;
+  anomalies: MachinePerformanceAnomaly[];
+  insufficient_baseline_machine_ids: string[];
+  unavailable_runtime_log_ids: string[];
+  overlapping_runtime_log_ids: string[];
+  data_notes: string[];
+}
+
+export interface CorrelatedQualityInspection {
+  inspection_id: string;
+  qc_id: string;
+  status: string;
+  inspection_type: string;
+  inspected_at?: string | null;
+  work_order_id?: string | null;
+  production_order_id?: string | null;
+  results: { result_id: string; test_type: string; result: string; actual_value?: number | null; unit?: string | null }[];
+}
+
+export interface CorrelatedWasteRecord {
+  waste_record_id: string;
+  waste_id: string;
+  work_order_id?: string | null;
+  production_order_id: string;
+  waste_type: string;
+  waste_category: string;
+  expected_qty: number;
+  actual_qty: number;
+  loss_qty: number;
+  loss_pct?: number | null;
+  uom?: string | null;
+  is_anomaly: boolean;
+}
+
+export interface DowntimeProductionCorrelation {
+  downtime_id: string;
+  machine_id: string;
+  machine_code: string;
+  machine_name: string;
+  work_order_id?: string | null;
+  production_order_id?: string | null;
+  downtime_class: string;
+  start_time: string;
+  end_time?: string | null;
+  duration_minutes?: number | null;
+  reported_by_operator_id?: string | null;
+  observed_operator_ids: string[];
+  runtime_log_ids: string[];
+  labor_logs: { labor_log_id: string; operator_id: string; approved_flag: boolean; start_time: string; end_time?: string | null; duration_minutes?: number | null }[];
+  quality_inspections: CorrelatedQualityInspection[];
+  waste_records: CorrelatedWasteRecord[];
+  correlation_basis: string[];
+}
+
+export interface DowntimeProductionCorrelationReport {
+  period_start: string;
+  period_end: string;
+  events: DowntimeProductionCorrelation[];
+  follow_up_handoffs: {
+    handoff_id: string;
+    destination: "maintenance" | "training" | "planning";
+    destination_path: string;
+    title: string;
+    rationale: string;
+    machine_id: string;
+    machine_code: string;
+    downtime_id: string;
+    work_order_id?: string | null;
+    production_order_id?: string | null;
+    source_ids: string[];
+    attribution_note: string;
+  }[];
+  data_notes: string[];
 }
 
 export interface PerformanceSnapshot {
@@ -183,6 +373,7 @@ export interface DowntimeIntel {
   work_order_id?: string;
   downtime_class: DowntimeClass;
   downtime_subclass?: string;
+  reason_code?: string | null;
   start_time: string;
   end_time?: string;
   duration_minutes?: number;
@@ -195,20 +386,59 @@ export interface DowntimeIntel {
   machine_name?: string;
 }
 
+export interface MachineCostAttribution {
+  machine_id: string;
+  machine_code: string;
+  runtime_hours: number;
+  setup_hours: number;
+  hourly_cost_rate_used?: number | null;
+  energy_cost_per_hour_used?: number | null;
+  runtime_cost?: number | null;
+  setup_cost?: number | null;
+  energy_cost?: number | null;
+  total_cost?: number | null;
+  source_runtime_log_ids: string[];
+  unavailable_runtime_log_ids: string[];
+  overlapping_runtime_log_ids: string[];
+}
+
+export interface LaborCostAttribution {
+  labor_log_id: string;
+  operator_id: string;
+  approved_flag: boolean;
+  duration_minutes?: number | null;
+  overtime_minutes?: number | null;
+  cost_rate_per_hour?: number | null;
+  direct_cost?: number | null;
+  overtime_cost?: number | null;
+  included: boolean;
+  exclusion_reason?: string | null;
+}
+
 export interface CostContribution {
   production_order_id: string;
   machine_runtime_hours: number;
   machine_setup_hours: number;
-  machine_cost_runtime: number;
-  machine_cost_setup: number;
-  machine_cost_energy: number;
-  machine_cost_total: number;
+  machine_cost_runtime?: number | null;
+  machine_cost_setup?: number | null;
+  machine_cost_energy?: number | null;
+  machine_cost_total?: number | null;
   labor_direct_hours: number;
   labor_overtime_hours: number;
-  labor_cost_direct: number;
-  labor_cost_overtime: number;
-  labor_cost_total: number;
-  total_cost: number;
+  labor_cost_direct?: number | null;
+  labor_cost_overtime?: number | null;
+  labor_cost_total?: number | null;
+  total_cost?: number | null;
+  attribution_complete: boolean;
+  machine_attributions: MachineCostAttribution[];
+  labor_attributions: LaborCostAttribution[];
+  unavailable_runtime_log_ids: string[];
+  overlapping_runtime_log_ids: string[];
+  unapproved_labor_log_ids: string[];
+  unpriced_labor_log_ids: string[];
+  overlapping_labor_log_ids: string[];
+  cost_unit_note: string;
+  data_notes: string[];
   variance_pct?: number;
 }
 
@@ -309,6 +539,9 @@ export const moApi = {
   createMachine: (d: Partial<Machine>) => apiClient.post<Machine>(`${BASE}/machines`, d).then((r) => r.data),
   updateMachine: (id: string, d: Partial<Machine>) => apiClient.patch<Machine>(`${BASE}/machines/${id}`, d).then((r) => r.data),
   getMachineRuntime: (id: string, params?: Record<string, string>) => apiClient.get<RuntimeLog[]>(`${BASE}/machines/${id}/runtime`, { params }).then((r) => r.data),
+  getMachineRuntimeKpis: (id: string, params?: Record<string, string>) => apiClient.get<MachineRuntimeKpis>(`${BASE}/machines/${id}/runtime-kpis`, { params }).then((r) => r.data),
+  getPerformanceAnomalies: (params?: Record<string, string>) => apiClient.get<PerformanceAnomalyReport>(`${BASE}/performance/anomalies`, { params }).then((r) => r.data),
+  getDowntimeProductionCorrelations: (params?: Record<string, string>) => apiClient.get<DowntimeProductionCorrelationReport>(`${BASE}/performance/downtime-correlations`, { params }).then((r) => r.data),
   getMachinePerformance: (id: string, params?: Record<string, string>) => apiClient.get<PerformanceSnapshot[]>(`${BASE}/machines/${id}/performance`, { params }).then((r) => r.data),
   computePerformance: (id: string, snapshot_date?: string) => apiClient.post<PerformanceSnapshot>(`${BASE}/machines/${id}/performance/compute`, {}, { params: snapshot_date ? { snapshot_date } : {} }).then((r) => r.data),
 
@@ -317,6 +550,8 @@ export const moApi = {
   getOperator: (id: string) => apiClient.get<OperatorProfile>(`${BASE}/operators/${id}`).then((r) => r.data),
   createOperator: (d: Partial<OperatorProfile>) => apiClient.post<OperatorProfile>(`${BASE}/operators`, d).then((r) => r.data),
   getOperatorPerformance: (id: string) => apiClient.get<LaborTimeLog[]>(`${BASE}/operators/${id}/performance`).then((r) => r.data),
+  getOperatorProductivity: (id: string, params?: Record<string, string>) => apiClient.get<OperatorProductivity>(`${BASE}/operators/${id}/productivity`, { params }).then((r) => r.data),
+  getShiftTeamComparisons: (params?: Record<string, string>) => apiClient.get<ShiftTeamComparisons>(`${BASE}/performance/shift-team-comparisons`, { params }).then((r) => r.data),
 
   // Teams
   listTeams: () => apiClient.get<ProductionTeam[]>(`${BASE}/teams`).then((r) => r.data),
@@ -345,6 +580,7 @@ export const moApi = {
   approveLabor: (id: string) => apiClient.post<LaborTimeLog>(`${BASE}/labor/${id}/approve`, {}).then((r) => r.data),
 
   // Downtime
+  listDowntimeReasonCodes: () => apiClient.get<DowntimeReasonCode[]>(`${BASE}/downtime/reason-codes`).then((r) => r.data),
   logDowntime: (d: Partial<DowntimeIntel>) => apiClient.post<DowntimeIntel>(`${BASE}/downtime`, d).then((r) => r.data),
   listDowntime: (params?: Record<string, string>) => apiClient.get<DowntimeIntel[]>(`${BASE}/downtime`, { params }).then((r) => r.data),
   getDowntimeIntelligence: () => apiClient.get<DowntimeIntel[]>(`${BASE}/downtime/intelligence`).then((r) => r.data),

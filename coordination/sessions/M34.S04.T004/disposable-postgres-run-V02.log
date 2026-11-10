@@ -1,0 +1,520 @@
+database=fmcg_m34_s04_t004_7e9af1bd32694a1ab9c76be2
+container=fmcg-m34-s04-t004-7e9af1bd32694a1ab9c76be2
+image=postgres:16.6
+host_bind=127.0.0.1
+password=none
+531c1e17bdf84de37f53e40238794f58439821dd0f1c618861b0ff1e4f609d85
+host_port=52589
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 20260517_0000, squashed baseline � creates all tables for fresh-DB initialisation via alembic upgrade head.
+INFO  [alembic.runtime.migration] Running upgrade 20260517_0000 -> 3c45d9071c98, initial schema
+INFO  [alembic.runtime.migration] Running upgrade 3c45d9071c98 -> a1b2c3d4e5f6, finance accounting module - purchase invoices, purchase payments, payment method
+INFO  [alembic.runtime.migration] Running upgrade a1b2c3d4e5f6 -> b2c3d4e5f6a7, ai intelligence module - predictions, recommendations, formulations, scenarios
+INFO  [alembic.runtime.migration] Running upgrade b2c3d4e5f6a7 -> d4e5f6a7b8c9, Advanced Production Module � 11 sub-modules
+INFO  [alembic.runtime.migration] Running upgrade d4e5f6a7b8c9 -> e5f6a7b8c9d0, utilities module - system configs, uom conversions, number series, currencies
+INFO  [alembic.runtime.migration] Running upgrade e5f6a7b8c9d0 -> f6a7b8c9d0e1, utility management module � full utility infrastructure schema
+INFO  [alembic.runtime.migration] Running upgrade d4e5f6a7b8c9 -> a2b3c4d5e6f7, Extend boiler_steam_records with period-total and operational columns.
+INFO  [alembic.runtime.migration] Running upgrade a2b3c4d5e6f7 -> b7c8d9e0f1a2, compressor_air_extended
+INFO  [alembic.runtime.migration] Running upgrade b7c8d9e0f1a2 -> c8d9e0f1a2b3, production_costing
+INFO  [alembic.runtime.migration] Running upgrade c8d9e0f1a2b3 -> d9e0f1a2b3c4, production_ai_intelligence
+INFO  [alembic.runtime.migration] Running upgrade d9e0f1a2b3c4 -> e0f1a2b3c4d5, chemical_water_treatment
+INFO  [alembic.runtime.migration] Running upgrade e0f1a2b3c4d5 -> f1a2b3c4d5e6, QMS + HACCP / Food Safety System
+INFO  [alembic.runtime.migration] Running upgrade f1a2b3c4d5e6 -> a3b4c5d6e7f8, GS1 Barcode + Label Printing System
+INFO  [alembic.runtime.migration] Running upgrade a3b4c5d6e7f8 -> b4c5d6e7f8a9, Allergen + Nutrition Management System
+INFO  [alembic.runtime.migration] Running upgrade f6a7b8c9d0e1 -> b1c2d3e4f5a0, extend utility_devices and utility_readings with device-typing and reading-validation columns
+INFO  [alembic.runtime.migration] Running upgrade b1c2d3e4f5a0 -> c2d3e4f5a0b1, utility_transactions backbone � add transaction_time, reference linkage, variance columns
+INFO  [alembic.runtime.migration] Running upgrade c2d3e4f5a0b1 -> d4e5f6a7b8cc, Extend soft_water_records with additional operational columns.
+INFO  [alembic.runtime.migration] Running upgrade f6a7b8c9d0e1 -> a0b1c2d3e4f5, extend utility asset categories and utility assets with additional fields
+INFO  [alembic.runtime.migration] Running upgrade a0b1c2d3e4f5, b4c5d6e7f8a9, d4e5f6a7b8cc -> 87ad3195d2c5, merge_all_heads
+INFO  [alembic.runtime.migration] Running upgrade 87ad3195d2c5 -> 4cddbd375e74, procurement_suggestion_engine
+INFO  [alembic.runtime.migration] Running upgrade 4cddbd375e74 -> 4a1b1eba5eed, subcontracting_system
+INFO  [alembic.runtime.migration] Running upgrade 4a1b1eba5eed -> c5d6e7f8a9b0, Landed Cost Allocation System
+INFO  [alembic.runtime.migration] Running upgrade c5d6e7f8a9b0 -> d6e7f8a9b0c1, 3-Way Invoice Matching System
+INFO  [alembic.runtime.migration] Running upgrade d6e7f8a9b0c1 -> e7f8a9b0c1d2, bank_reconciliation
+INFO  [alembic.runtime.migration] Running upgrade e7f8a9b0c1d2 -> f9a0b1c2d3e4, crm_pipeline
+INFO  [alembic.runtime.migration] Running upgrade f9a0b1c2d3e4 -> a9b0c1d2e3f4, customer_distributor_portal
+INFO  [alembic.runtime.migration] Running upgrade a9b0c1d2e3f4 -> b1c2d3e4f5a6, supplier_portal
+INFO  [alembic.runtime.migration] Running upgrade b1c2d3e4f5a6 -> c2d3e4f5a6b7, dunning_overdue_collection
+INFO  [alembic.runtime.migration] Running upgrade c2d3e4f5a6b7 -> d3e4f5a6b7c8, price_list_enhancement
+INFO  [alembic.runtime.migration] Running upgrade d3e4f5a6b7c8 -> e4f5a6b7c8d9, subscription_recurring_orders
+INFO  [alembic.runtime.migration] Running upgrade e4f5a6b7c8d9 -> f5a6b7c8d9e0, van_sales_mobile_pos
+INFO  [alembic.runtime.migration] Running upgrade f5a6b7c8d9e0 -> a6b7c8d9e0f1, contract_management
+INFO  [alembic.runtime.migration] Running upgrade a6b7c8d9e0f1 -> b8c9d0e1f2a3, moto_sales_mpesa_fraud_performance
+INFO  [alembic.runtime.migration] Running upgrade b8c9d0e1f2a3 -> c9d0e1f2a3b4, sales_commission_tracking
+INFO  [alembic.runtime.migration] Running upgrade c9d0e1f2a3b4 -> d0e1f2a3b4c5, expense_claims
+INFO  [alembic.runtime.migration] Running upgrade d0e1f2a3b4c5 -> e1f2a3b4c5d6, recruitment_ats
+INFO  [alembic.runtime.migration] Running upgrade e1f2a3b4c5d6 -> f2a3b4c5d6e7, employee_self_service
+INFO  [alembic.runtime.migration] Running upgrade f2a3b4c5d6e7 -> a3b4c5d6e8f7, performance_appraisals
+INFO  [alembic.runtime.migration] Running upgrade a3b4c5d6e8f7 -> b4c5d6e7a8f9, training_skills_management
+INFO  [alembic.runtime.migration] Running upgrade b4c5d6e7a8f9 -> c5d6e7f8b0a9, timesheet_approval_workflow
+INFO  [alembic.runtime.migration] Running upgrade c5d6e7f8b0a9 -> d6e7f8a9c0b1, notification_center
+INFO  [alembic.runtime.migration] Running upgrade d6e7f8a9c0b1 -> e7f8a9b0d1c2, kanban_boards
+INFO  [alembic.runtime.migration] Running upgrade e7f8a9b0d1c2 -> f8a9b0c1d2e3, custom_report_builder
+INFO  [alembic.runtime.migration] Running upgrade f8a9b0c1d2e3 -> a9b0c1d2f3e4, calendar_resource_scheduling
+INFO  [alembic.runtime.migration] Running upgrade a9b0c1d2f3e4 -> b0c1d2e3f4a5, chatter_activity_timeline
+INFO  [alembic.runtime.migration] Running upgrade b0c1d2e3f4a5 -> c1d2e3f4a5b6, custom_fields
+INFO  [alembic.runtime.migration] Running upgrade c1d2e3f4a5b6 -> d2e3f4a5b6c7, two_factor_auth
+INFO  [alembic.runtime.migration] Running upgrade d2e3f4a5b6c7 -> e3f4a5b6c7d8, webhook_event_engine
+INFO  [alembic.runtime.migration] Running upgrade e3f4a5b6c7d8 -> f4a5b6c7d8e9, fleet_management
+INFO  [alembic.runtime.migration] Running upgrade f4a5b6c7d8e9 -> a5b6c7d8e9f0, cycle_count
+INFO  [alembic.runtime.migration] Running upgrade a5b6c7d8e9f0 -> b6c7d8e9f0a1, putaway_rules
+INFO  [alembic.runtime.migration] Running upgrade b6c7d8e9f0a1 -> c7d8e9f0a1b2, secondary_sales_distributor_sell_through
+INFO  [alembic.runtime.migration] Running upgrade c7d8e9f0a1b2 -> d8e9f0a1b2c3, esg_sustainability_reporting
+INFO  [alembic.runtime.migration] Running upgrade d8e9f0a1b2c3 -> e9f0a1b2c3d4, kenya_payroll_localization
+INFO  [alembic.runtime.migration] Running upgrade e9f0a1b2c3d4 -> f0a1b2c3d4e5, esg_intelligence_gap69
+INFO  [alembic.runtime.migration] Running upgrade f0a1b2c3d4e5 -> f1a2b3c4e5d6, plugin_marketplace_gap70
+INFO  [alembic.runtime.migration] Running upgrade f1a2b3c4e5d6 -> 1a2b3c4d5e6f, audit_logs_schema_repair
+INFO  [alembic.runtime.migration] Running upgrade 1a2b3c4d5e6f -> 20260510_0700, add user must_change_password flag
+INFO  [alembic.runtime.migration] Running upgrade 20260510_0700 -> 20260510_0710, fix fixed asset depreciation schedule enum type
+INFO  [alembic.runtime.migration] Running upgrade 20260510_0710 -> 20260511_0010, enterprise accounting core foundations
+INFO  [alembic.runtime.migration] Running upgrade 20260511_0010 -> 20260511_0020, operational posting integration foundations
+INFO  [alembic.runtime.migration] Running upgrade 20260511_0020 -> 20260511_0030, erp-wide access scopes
+INFO  [alembic.runtime.migration] Running upgrade 20260511_0030 -> 20260511_0040, Add scoped access fields to finance journals.
+INFO  [alembic.runtime.migration] Running upgrade 20260511_0040 -> 20260514_0010, Add APS planning tables.
+INFO  [alembic.runtime.migration] Running upgrade 20260514_0010 -> 20260514_0020, Add WMS depth reconciliation tables.
+INFO  [alembic.runtime.migration] Running upgrade 20260514_0020 -> 20260514_0030, Add procurement scope and supplier governance reconciliation.
+INFO  [alembic.runtime.migration] Running upgrade 20260514_0030 -> 20260515_0010, crm sales scope reconciliation
+INFO  [alembic.runtime.migration] Running upgrade 20260515_0010 -> 20260515_0020, hrms payroll reconciliation
+INFO  [alembic.runtime.migration] Running upgrade 20260515_0020 -> 20260515_0030, document knowledge reconciliation
+INFO  [alembic.runtime.migration] Running upgrade 20260515_0030 -> 20260515_0050, haccp pdca audit scheduling
+INFO  [alembic.runtime.migration] Running upgrade 20260515_0050 -> 20260515_0060, gs1 product config fields
+INFO  [alembic.runtime.migration] Running upgrade 20260515_0030 -> 20260515_0040, report builder schedule run log
+INFO  [alembic.runtime.migration] Running upgrade 20260515_0040, 20260515_0060 -> 20260516_0010, npd formula governance reconciliation
+INFO  [alembic.runtime.migration] Running upgrade 20260516_0010 -> 20260516_0020, iot machine streaming reconciliation
+INFO  [alembic.runtime.migration] Running upgrade 20260516_0020 -> 20260516_0030, maintenance predictive reconciliation
+INFO  [alembic.runtime.migration] Running upgrade 20260516_0030 -> 20260516_0040, AI Prompt Registry reconciliation (GAP-024C)
+INFO  [alembic.runtime.migration] Running upgrade 20260516_0040 -> 20260516_0050, Multi-company warehouse reconciliation (GAP-025C)
+INFO  [alembic.runtime.migration] Running upgrade 20260516_0050 -> 20260516_0060, Add performance indexes for FK/date/status fields
+INFO  [alembic.runtime.migration] Running upgrade 20260516_0060 -> 20260518_0001, OTP delivery: expand challenge_code column to store bcrypt hash
+INFO  [alembic.runtime.migration] Running upgrade 20260518_0001 -> 20260602_0001, eTIMS provider config model + submission tracking fields (TASK-005.1A)
+INFO  [alembic.runtime.migration] Running upgrade 20260602_0001 -> 20261019_0010, Add a monotonic allocator for MPS production-order numbers.
+INFO  [alembic.runtime.migration] Running upgrade 20261019_0010 -> 20261020_0010, Persist reproducible MPS constraint and what-if evidence.
+INFO  [alembic.runtime.migration] Running upgrade 20261020_0010 -> 20261021_0010, Create storage for Developer Portal API keys and usage logs.
+INFO  [alembic.runtime.migration] Running upgrade 20261021_0010 -> 20261022_0011, Use database sequences for globally unique MPS plan and line numbers.
+INFO  [alembic.runtime.migration] Running upgrade 20261022_0011 -> 20261023_0012, persist hashed refresh tokens for single-use rotation
+INFO  [alembic.runtime.migration] Running upgrade 20261023_0012 -> 20261023_0013, track auth session activity for inactivity expiry
+INFO  [alembic.runtime.migration] Running upgrade 20261023_0013 -> 20261023_0014, add user-wide authentication session version
+INFO  [alembic.runtime.migration] Running upgrade 20261023_0014 -> 20261027_0015, standardize master merge and deactivation semantics
+INFO  [alembic.runtime.migration] Running upgrade 20261027_0015 -> 20261028_0016, govern recipe version identifiers and effective date windows
+INFO  [alembic.runtime.migration] Running upgrade 20261028_0016 -> 20261028_0017, Enforce warehouse branch/company ownership across master references.
+INFO  [alembic.runtime.migration] Running upgrade 20261028_0017 -> 20261028_0018, add conversion profile versions and inclusive effective-date windows
+INFO  [alembic.runtime.migration] Running upgrade 20261028_0018 -> 20261028_0019, store expected process yield against BOM input base quantity
+INFO  [alembic.runtime.migration] Running upgrade 20261028_0019 -> 20261028_0020, add a distinct spillage yield/loss category
+INFO  [alembic.runtime.migration] Running upgrade 20261028_0020 -> 20261028_0021, snapshot recipe standard loss on waste records
+INFO  [alembic.runtime.migration] Running upgrade 20261028_0021 -> 20261028_0022, add batch-specific BOM substitution approvals
+INFO  [alembic.runtime.migration] Running upgrade 20261028_0022 -> 20261028_0023, add MPS minimum-run and CIP transition inputs
+INFO  [alembic.runtime.migration] Running upgrade 20261028_0023 -> 20261028_0024, persist scenario cost currency for truthful API and UI labels
+INFO  [alembic.runtime.migration] Running upgrade 20261028_0024 -> 20261029_0025, require alphabetic ISO currency codes for MPS costs
+INFO  [alembic.runtime.migration] Running upgrade 20261029_0025 -> 20261029_0026, govern Advanced BOM version identifiers and effective date windows
+INFO  [alembic.runtime.migration] Running upgrade 20261029_0026 -> 20261029_0027, add configurable quality gate definitions
+INFO  [alembic.runtime.migration] Running upgrade 20261029_0027 -> 20261029_0028, link quality gates to required QC specifications
+INFO  [alembic.runtime.migration] Running upgrade 20261029_0028 -> 20261029_0029, add quality gate severity, mandatory, and waiver safeguards
+INFO  [alembic.runtime.migration] Running upgrade 20261029_0029 -> 20261029_0030, add versioned quality gate definitions with inclusive effective dates
+INFO  [alembic.runtime.migration] Running upgrade 20261029_0030 -> 20261029_0031, link QC results to their exact template parameter
+INFO  [alembic.runtime.migration] Running upgrade 20261029_0031 -> 20261029_0032, add auditable quality gate waiver approval records
+INFO  [alembic.runtime.migration] Running upgrade 20261029_0032 -> 20261029_0033, persist append-only quality gate evaluation history
+INFO  [alembic.runtime.migration] Running upgrade 20261029_0033 -> 20261029_0034, make purchase-order links unique within an international shipment
+INFO  [alembic.runtime.migration] Running upgrade 20261029_0034 -> 20261029_0035, track evidence-backed inventory ownership for shipment PO links
+INFO  [alembic.runtime.migration] Running upgrade 20261029_0035 -> 20261029_0036, add evidence-linked customs clearance status history
+INFO  [alembic.runtime.migration] Running upgrade 20261029_0036 -> 20261029_0037, record immutable Kenya warehouse receipt closure against posted GRNs
+INFO  [alembic.runtime.migration] Running upgrade 20261029_0037 -> 20261029_0038, record accepted receipt volume for volume-based landed-cost allocation
+INFO  [alembic.runtime.migration] Running upgrade 20261029_0038 -> 20261029_0039, track estimated and actual landed-cost line amounts
+INFO  [alembic.runtime.migration] Running upgrade 20261029_0039 -> 20261029_0040, snapshot dated finance exchange rates on landed-cost documents
+INFO  [alembic.runtime.migration] Running upgrade 20261029_0040 -> 20261029_0041, post landed-cost actual variances without rewriting original postings
+INFO  [alembic.runtime.migration] Running upgrade 20261029_0041 -> 20261029_0042, add owner-scoped API client application registry
+INFO  [alembic.runtime.migration] Running upgrade 20261029_0042 -> 20261029_0043, add application-linked API keys and one-time OAuth client secret records
+INFO  [alembic.runtime.migration] Running upgrade 20261029_0043 -> 20261030_0001, Add governed, immutable webhook event schema versions.
+INFO  [alembic.runtime.migration] Running upgrade 20261030_0001 -> 20261030_0002, Persist event idempotency keys and request fingerprints.
+INFO  [alembic.runtime.migration] Running upgrade 20261030_0002 -> 20261030_0003, Link a delivery attempt to its explicitly replayed successor.
+INFO  [alembic.runtime.migration] Running upgrade 20261030_0003 -> 20261030_0004, Add versioned webhook secret rotation with a bounded previous-key window.
+INFO  [alembic.runtime.migration] Running upgrade 20261030_0004 -> 20261030_0005, Add multi-line sourcing-event requirements to the existing RFQ aggregate.
+INFO  [alembic.runtime.migration] Running upgrade 20261030_0005 -> 20261030_0006, Track issued RFQ invitations and attributed supplier quotations.
+INFO  [alembic.runtime.migration] Running upgrade 20261030_0006 -> 20261030_0007, Add weighted technical/commercial RFQ bid evaluation matrices.
+INFO  [alembic.runtime.migration] Running upgrade 20261030_0007 -> 20261030_0008, Add RFQ award allocation proposals and configured approval routing.
+INFO  [alembic.runtime.migration] Running upgrade 20261030_0008 -> 20261030_0009, Add dated quantity price breaks to blanket purchase agreements.
+INFO  [alembic.runtime.migration] Running upgrade 20261030_0009 -> 20261030_0010, Link BPA release purchase orders to their source agreement.
+INFO  [alembic.runtime.migration] Running upgrade 20261030_0010 -> 20261104_0001, Link QMS corrective actions to supplier records and evaluations.
+.F.                                                                      [100%]
+================================== FAILURES ===================================
+______ test_price_tolerance_posts_variance_to_configured_expense_account ______
+
+    @pytest.mark.asyncio
+    async def test_price_tolerance_posts_variance_to_configured_expense_account():
+        expected_database = _require_task_database()
+        suffix = uuid4().hex[:16]
+        async with AsyncSessionLocal() as db:
+            assert (await db.execute(text("SELECT current_database()"))).scalar_one() == expected_database
+            user, _, _, invoice, ap, tax, variance = await _ready_invoice(db, suffix, price="25.25")
+    
+>           event = await finance_service.post_purchase_invoice(db, invoice.id, user.id)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_m34_s04_t004_purchase_invoice_posting_db.py:180: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+db = <sqlalchemy.ext.asyncio.session.AsyncSession object at 0x0000018D80126F60>
+invoice_id = UUID('d5c9f8d7-5c5b-4e35-9711-6ba1945538fc')
+user_id = UUID('f07e55b5-906c-4a57-8823-7dc874057baa')
+
+    async def post_purchase_invoice(
+        db: AsyncSession,
+        invoice_id: uuid.UUID,
+        user_id: uuid.UUID,
+    ) -> OperationalPostingEvent:
+        """Clear posted GRNI to AP for a payable, three-way-matched supplier invoice.
+    
+        The service uses only configured posting rules and item mappings. It refuses
+        incomplete source receipts, stale matching snapshots, missing account setup,
+        and closed periods so an invoice cannot create accounting without its
+        operational evidence.
+        """
+        from decimal import ROUND_HALF_UP
+    
+        from app.models.company import Company
+        from app.models.finance import (
+            AccountingPostingRule,
+            AccountType,
+            PurchaseInvoice,
+            PurchaseInvoiceLine,
+            PurchaseInvoiceStatus,
+        )
+        from app.models.invoice_match import InvoiceMatchHeader, InvoiceMatchLine, MatchOverallStatus
+        from app.models.procurement import GoodsReceipt, GRNLine, GRNStatus, POLine, PurchaseOrder
+    
+        money_quantum = Decimal("0.0001")
+    
+        def money(value: Decimal) -> Decimal:
+            return value.quantize(money_quantum, rounding=ROUND_HALF_UP)
+    
+        try:
+            invoice = await db.scalar(
+                select(PurchaseInvoice)
+                .where(PurchaseInvoice.id == invoice_id)
+                .with_for_update()
+                .execution_options(populate_existing=True)
+            )
+            if not invoice:
+                raise ValueError("Purchase invoice not found")
+    
+            event_result = await db.execute(
+                select(OperationalPostingEvent)
+                .where(
+                    OperationalPostingEvent.source_module == "procurement",
+                    OperationalPostingEvent.source_event == "PURCHASE_INVOICE_POSTED",
+                    OperationalPostingEvent.source_id == str(invoice.id),
+                    OperationalPostingEvent.source_line_id.is_(None),
+                )
+                .with_for_update()
+            )
+            existing_event = event_result.scalar_one_or_none()
+            if existing_event:
+                batch = await db.get(AccountingPostingBatch, existing_event.posting_batch_id) \
+                    if existing_event.posting_batch_id else None
+                journal = await db.get(JournalEntry, existing_event.journal_entry_id) \
+                    if existing_event.journal_entry_id else None
+                if (
+                    existing_event.status != OperationalPostingStatus.POSTED
+                    or not batch or batch.status != PostingBatchStatus.POSTED
+                    or batch.journal_entry_id != existing_event.journal_entry_id
+                    or not journal or not journal.is_posted or journal.status != JournalStatus.POSTED
+                    or journal.source_module != "procurement"
+                    or journal.source_event != "PURCHASE_INVOICE_POSTED"
+                    or journal.source_id != invoice.id
+                ):
+                    raise ValueError("Purchase invoice has an inconsistent prior posting; manual reconciliation is required")
+                return existing_event
+    
+            if invoice.status not in {PurchaseInvoiceStatus.DRAFT, PurchaseInvoiceStatus.RECEIVED}:
+                raise ValueError(f"Purchase invoice cannot be posted from status {invoice.status.value}")
+            if Decimal(str(invoice.paid_amount or 0)) != 0:
+                raise ValueError("A purchase invoice with recorded payments cannot be posted")
+            if not invoice.po_id:
+                raise ValueError("Purchase invoice posting requires a linked purchase order and GRN evidence")
+    
+            po = await db.scalar(
+                select(PurchaseOrder)
+                .where(PurchaseOrder.id == invoice.po_id)
+                .with_for_update()
+                .execution_options(populate_existing=True)
+            )
+            if not po:
+                raise ValueError("Purchase invoice purchase order not found")
+            if po.supplier_id != invoice.supplier_id:
+                raise ValueError("Purchase invoice supplier does not match its purchase order")
+            company = await db.get(Company, po.company_id) if po.company_id else None
+            if not company or not (company.base_currency or "").strip():
+                raise ValueError("Purchase order needs a company with a configured base currency")
+    
+            invoice_currency = (invoice.currency or "").strip().upper()
+            po_currency = (po.currency or "").strip().upper()
+            base_currency = company.base_currency.strip().upper()
+            if not invoice_currency or invoice_currency != po_currency:
+                raise ValueError("Purchase invoice currency must match its purchase order currency")
+            exchange_rate = Decimal(str(po.exchange_rate or 0))
+            if not exchange_rate.is_finite() or exchange_rate <= 0:
+                raise ValueError("Purchase order needs a positive saved exchange rate")
+            if po_currency == base_currency and exchange_rate != Decimal("1"):
+                raise ValueError("Purchase order base-currency exchange rate must be 1")
+            if po_currency != base_currency and exchange_rate == Decimal("1"):
+                raise ValueError("Foreign-currency purchase order needs a saved non-default exchange rate")
+    
+            match = await db.scalar(
+                select(InvoiceMatchHeader)
+                .where(InvoiceMatchHeader.invoice_id == invoice.id)
+                .order_by(InvoiceMatchHeader.run_at.desc(), InvoiceMatchHeader.created_at.desc())
+                .limit(1)
+                .with_for_update()
+                .execution_options(populate_existing=True)
+            )
+            payable_statuses = {
+                MatchOverallStatus.FULLY_MATCHED,
+                MatchOverallStatus.MATCHED_WITHIN_TOLERANCE,
+                MatchOverallStatus.APPROVED_EXCEPTION,
+            }
+            if (
+                not match or match.po_id != po.id or match.supplier_id != invoice.supplier_id
+                or not match.is_payable or match.duplicate_flag
+                or match.overall_status not in payable_statuses
+            ):
+                raise ValueError("Purchase invoice needs a current payable three-way match with no unresolved duplicate")
+            if match.overall_status == MatchOverallStatus.APPROVED_EXCEPTION and not (match.approved_by and match.approved_at):
+                raise ValueError("Payable exception match has no recorded approver")
+    
+            rule_result = await db.execute(
+                select(AccountingPostingRule)
+                .where(
+                    AccountingPostingRule.source_module == "procurement",
+                    AccountingPostingRule.source_event == "PURCHASE_INVOICE_POSTED",
+                    AccountingPostingRule.is_active.is_(True),
+                )
+                .order_by(AccountingPostingRule.priority, AccountingPostingRule.id)
+            )
+            rules = list(rule_result.scalars().all())
+            if not rules:
+                raise ValueError("Configure an active procurement purchase-invoice posting rule before posting")
+            top_priority = rules[0].priority
+            top_rules = [rule for rule in rules if rule.priority == top_priority]
+            if len(top_rules) != 1:
+                raise ValueError("Purchase-invoice posting has ambiguous active rules at the highest priority")
+            rule = top_rules[0]
+            if not rule.credit_account_id:
+                raise ValueError("Purchase-invoice posting rule needs an accounts-payable credit account")
+            ap_account = await db.get(ChartOfAccount, rule.credit_account_id)
+            if not ap_account or ap_account.account_type != AccountType.LIABILITY:
+                raise ValueError("Purchase-invoice accounts-payable mapping must point to a liability account")
+    
+            invoice_lines_result = await db.execute(
+                select(PurchaseInvoiceLine)
+                .where(PurchaseInvoiceLine.invoice_id == invoice.id)
+                .order_by(PurchaseInvoiceLine.id)
+                .with_for_update()
+            )
+            invoice_lines = list(invoice_lines_result.scalars().all())
+            if not invoice_lines:
+                raise ValueError("Purchase invoice needs at least one line before posting")
+    
+            match_lines_result = await db.execute(
+                select(InvoiceMatchLine)
+                .options(selectinload(InvoiceMatchLine.grn_links))
+                .where(InvoiceMatchLine.header_id == match.id)
+                .order_by(InvoiceMatchLine.invoice_line_id, InvoiceMatchLine.id)
+                .with_for_update()
+            )
+            match_lines = list(match_lines_result.scalars().all())
+            if len(match_lines) != len(invoice_lines):
+                raise ValueError("Three-way match lines are incomplete; rerun matching before posting")
+            match_by_invoice_line: dict[uuid.UUID, Any] = {}
+            for match_line in match_lines:
+                if not match_line.invoice_line_id or match_line.invoice_line_id in match_by_invoice_line:
+                    raise ValueError("Three-way match must contain exactly one result for each invoice line")
+                if match_line.match_status not in {
+                    "FULLY_MATCHED", "MATCHED_WITHIN_TOLERANCE", "APPROVED_EXCEPTION",
+                }:
+                    raise ValueError("Every invoice line must be matched or explicitly approved before posting")
+                match_by_invoice_line[match_line.invoice_line_id] = match_line
+    
+            po_lines_result = await db.execute(
+                select(POLine).where(POLine.po_id == po.id).order_by(POLine.line_no, POLine.id)
+            )
+            po_lines = list(po_lines_result.scalars().all())
+            po_line_by_id = {line.id: line for line in po_lines}
+    
+            grn_result = await db.execute(
+                select(GRNLine)
+                .join(GoodsReceipt, GoodsReceipt.id == GRNLine.grn_id)
+                .options(selectinload(GRNLine.grn))
+                .where(GoodsReceipt.po_id == po.id, GoodsReceipt.status == GRNStatus.POSTED)
+                .order_by(GoodsReceipt.received_date, GoodsReceipt.id, GRNLine.id)
+                .with_for_update(of=GRNLine)
+            )
+            grn_lines = list(grn_result.scalars().all())
+            grn_by_po_line: dict[uuid.UUID, list[GRNLine]] = {}
+            for grn_line in grn_lines:
+                if grn_line.po_line_id in po_line_by_id:
+                    grn_by_po_line.setdefault(grn_line.po_line_id, []).append(grn_line)
+    
+            prior_result = await db.execute(
+                select(InvoiceMatchLine.po_line_id, func.sum(InvoiceMatchLine.invoiced_qty))
+                .join(InvoiceMatchHeader, InvoiceMatchHeader.id == InvoiceMatchLine.header_id)
+                .where(
+                    InvoiceMatchHeader.po_id == po.id,
+                    InvoiceMatchHeader.invoice_id != invoice.id,
+                    InvoiceMatchHeader.overall_status.in_([status.value for status in payable_statuses]),
+                )
+                .group_by(InvoiceMatchLine.po_line_id)
+            )
+            prior_billed = {row[0]: Decimal(str(row[1] or 0)) for row in prior_result.all()}
+    
+            journal_lines: dict[uuid.UUID, dict[str, Any]] = {}
+    
+            def add_line(account: ChartOfAccount, description: str, *, debit: Decimal = Decimal("0"),
+                         credit: Decimal = Decimal("0")) -> None:
+                if account.id not in journal_lines:
+                    journal_lines[account.id] = {
+                        "account": account,
+                        "description": description[:255],
+                        "debit": Decimal("0"),
+                        "credit": Decimal("0"),
+                    }
+                journal_lines[account.id]["debit"] += debit
+                journal_lines[account.id]["credit"] += credit
+    
+            subtotal_doc = Decimal("0")
+            tax_doc = Decimal("0")
+            ap_base_total = Decimal("0")
+            has_tax = False
+    
+            # Verify that match quantities still reflect the posted receipt set and
+            # previous payable bills, then clear each source's remaining GRNI value.
+            for invoice_line in invoice_lines:
+                match_line = match_by_invoice_line.get(invoice_line.id)
+                if not match_line:
+                    raise ValueError("Three-way match is missing an invoice line")
+                if not match_line.po_line_id or match_line.po_line_id not in po_line_by_id:
+                    raise ValueError("Matched invoice line has no purchase-order line")
+                po_line = po_line_by_id[match_line.po_line_id]
+                if (
+                    (invoice_line.material_id, invoice_line.product_id)
+                    != (po_line.material_id, po_line.product_id)
+                ):
+                    raise ValueError("Matched invoice line item differs from its purchase-order line")
+    
+                sources = grn_by_po_line.get(po_line.id, [])
+                link_by_grn_line = {
+                    link.grn_line_id: link for link in match_line.grn_links if link.grn_line_id
+                }
+                source_ids = {source.id for source in sources}
+                if set(link_by_grn_line) != source_ids:
+                    raise ValueError("Three-way match receipt links are stale; rerun matching before posting")
+                for source in sources:
+                    link = link_by_grn_line[source.id]
+                    if Decimal(str(link.accepted_qty or 0)) != Decimal(str(source.accepted_quantity)):
+                        raise ValueError("Matched receipt quantity changed; rerun matching before posting")
+                    if (
+                        source.accounting_status != OperationalPostingStatus.POSTED
+                        or not source.posting_batch_id or not source.journal_entry_id
+                    ):
+                        raise ValueError(f"GRN line {source.id} must have posted inventory/GRNI accounting first")
+                    batch = await db.get(AccountingPostingBatch, source.posting_batch_id)
+                    journal = await db.get(JournalEntry, source.journal_entry_id)
+                    if (
+                        not batch or batch.status != PostingBatchStatus.POSTED
+                        or batch.journal_entry_id != source.journal_entry_id
+                        or not journal or not journal.is_posted or journal.status != JournalStatus.POSTED
+                        or journal.source_module != "procurement"
+                        or journal.source_event != "GRN_INVENTORY_VALUATION_POSTED"
+                        or journal.source_id != source.id
+                    ):
+                        raise ValueError(f"GRN line {source.id} has inconsistent accounting links")
+    
+                received_qty = sum((Decimal(str(source.accepted_quantity)) for source in sources), Decimal("0"))
+                previous_qty = prior_billed.get(po_line.id, Decimal("0"))
+                if Decimal(str(match_line.prev_invoiced_qty or 0)) != previous_qty:
+                    raise ValueError("Previous billed quantity changed; rerun matching before posting")
+                billable_qty = max(received_qty - previous_qty, Decimal("0"))
+                if Decimal(str(match_line.billable_qty or 0)) != billable_qty:
+                    raise ValueError("Billable receipt quantity changed; rerun matching before posting")
+    
+                quantity = Decimal(str(invoice_line.quantity))
+                unit_price = Decimal(str(invoice_line.unit_price))
+                tax_rate = Decimal(str(invoice_line.tax_rate))
+                if not quantity.is_finite() or quantity <= 0:
+                    raise ValueError("Purchase invoice line quantities must be positive")
+                if not unit_price.is_finite() or unit_price < 0:
+                    raise ValueError("Purchase invoice line unit prices cannot be negative")
+                if not tax_rate.is_finite() or tax_rate < 0:
+                    raise ValueError("Purchase invoice line tax rates cannot be negative")
+    
+                line_net_doc = money(quantity * unit_price)
+                line_total_doc = money(Decimal(str(invoice_line.line_total)))
+                line_tax_doc = money(line_total_doc - line_net_doc)
+                expected_tax_doc = money(line_net_doc * tax_rate)
+                if line_tax_doc < 0 or abs(line_tax_doc - expected_tax_doc) > money_quantum:
+                    raise ValueError("Purchase invoice line totals do not reconcile to its saved tax rate")
+                subtotal_doc += line_net_doc
+                tax_doc += line_tax_doc
+                net_base = money(line_net_doc * exchange_rate)
+                tax_base = money(line_tax_doc * exchange_rate)
+                ap_base_total += net_base + tax_base
+                has_tax = has_tax or tax_base > 0
+    
+                remaining_prior = previous_qty
+                remaining_invoice_qty = quantity
+                grni_amount = Decimal("0")
+                variance_account = None
+                for source in sources:
+                    accepted_qty = Decimal(str(source.accepted_quantity))
+                    prior_on_source = min(accepted_qty, remaining_prior)
+                    remaining_prior -= prior_on_source
+                    available_qty = accepted_qty - prior_on_source
+                    allocated_qty = min(available_qty, remaining_invoice_qty)
+                    remaining_invoice_qty -= allocated_qty
+                    if allocated_qty <= 0:
+                        continue
+    
+                    mapping = await find_inventory_account_mapping(
+                        db,
+                        stock_type="MATERIAL" if source.material_id else "PRODUCT",
+                        material_id=source.material_id,
+                        product_id=source.product_id,
+                    )
+                    if not mapping or not mapping.grni_account_id:
+                        raise ValueError(f"GRN item on line {source.id} needs an active GRNI account mapping")
+                    grni_account = await db.get(ChartOfAccount, mapping.grni_account_id)
+                    if not grni_account or grni_account.account_type != AccountType.LIABILITY:
+                        raise ValueError(f"GRNI mapping for GRN line {source.id} must point to a liability account")
+                    receipt_unit_cost = money(Decimal(str(po_line.unit_price)) * exchange_rate)
+                    source_accrual = money(allocated_qty * receipt_unit_cost)
+                    grni_amount += source_accrual
+                    add_line(grni_account, f"Clear GRNI for supplier invoice {invoice.invoice_no}", debit=source_accrual)
+                    if mapping.variance_account_id:
+                        variance_account = await db.get(ChartOfAccount, mapping.variance_account_id)
+    
+                variance = net_base - grni_amount
+                if variance:
+                    if not variance_account or variance_account.account_type != AccountType.EXPENSE:
+>                       raise ValueError(
+                            f"Invoice price/quantity variance on PO line {po_line.line_no} needs an expense variance mapping"
+                        )
+E                       ValueError: Invoice price/quantity variance on PO line 1 needs an expense variance mapping
+
+app\services\finance_service.py:778: ValueError
+============================== warnings summary ===============================
+tests/test_m34_s04_t004_purchase_invoice_posting_db.py::test_payable_invoice_clears_grni_and_tax_to_ap_once
+tests/test_m34_s04_t004_purchase_invoice_posting_db.py::test_price_tolerance_posts_variance_to_configured_expense_account
+tests/test_m34_s04_t004_purchase_invoice_posting_db.py::test_invoice_without_payable_receipt_match_is_not_posted
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\services\invoice_match_service.py:211: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    run_at=datetime.utcnow(),
+
+tests/test_m34_s04_t004_purchase_invoice_posting_db.py::test_payable_invoice_clears_grni_and_tax_to_ap_once
+tests/test_m34_s04_t004_purchase_invoice_posting_db.py::test_price_tolerance_posts_variance_to_configured_expense_account
+tests/test_m34_s04_t004_purchase_invoice_posting_db.py::test_invoice_without_payable_receipt_match_is_not_posted
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\services\invoice_match_service.py:217: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    hdr.run_at = datetime.utcnow()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_m34_s04_t004_purchase_invoice_posting_db.py::test_price_tolerance_posts_variance_to_configured_expense_account
+1 failed, 2 passed, 6 warnings in 10.25s
+ERROR: M34.S04.T004 PostgreSQL integration tests failed.

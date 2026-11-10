@@ -1,0 +1,68 @@
+﻿**********************
+Windows PowerShell transcript start
+Start time: 20261030002934
+Username: SEKIPH\sekip
+RunAs User: SEKIPH\sekip
+Configuration Name: 
+Machine: SEKIPH (Microsoft Windows NT 10.0.26300.0)
+Host Application: C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -ExecutionPolicy Bypass -File coordination\sessions\M31.S01.T003\run_scope_policy_tests.ps1
+Process ID: 34580
+PSVersion: 5.1.26100.9711
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.9711
+BuildVersion: 10.0.26100.9711
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+..                                                                       [100%]
+============================== warnings summary ===============================
+venv\Lib\site-packages\pydantic\_internal\_fields.py:160
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\venv\Lib\site-packages\pydantic\_internal\_fields.py:160: UserWarning: Field "model_params" has conflict with protected namespace "model_".
+
+  You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+    warnings.warn(
+
+venv\Lib\site-packages\pydantic\_internal\_config.py:284: 65 warnings
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\venv\Lib\site-packages\pydantic\_internal\_config.py:284: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.7/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+venv\Lib\site-packages\pydantic\_internal\_fields.py:160
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\venv\Lib\site-packages\pydantic\_internal\_fields.py:160: UserWarning: Field "model_no" has conflict with protected namespace "model_".
+
+  You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+    warnings.warn(
+
+app\api\v1\endpoints\allergen.py:133
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\api\v1\endpoints\allergen.py:133: DeprecationWarning: `regex` has been deprecated, please use `pattern` instead
+    entity_type: str = Query("material", regex="^(material|product)$"),
+
+app\api\v1\endpoints\allergen.py:402
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\api\v1\endpoints\allergen.py:402: DeprecationWarning: `regex` has been deprecated, please use `pattern` instead
+    review_type: str = Query(..., regex="^(label|qc)$"),
+
+tests/test_m31_s01_t003_scope_rate_policy.py::test_scope_and_rate_policy_is_validated_stored_rotated_and_documented
+tests/test_m31_s01_t003_scope_rate_policy.py::test_scope_and_rate_policy_is_validated_stored_rotated_and_documented
+tests/test_m31_s01_t003_scope_rate_policy.py::test_scope_and_rate_policy_is_validated_stored_rotated_and_documented
+tests/test_m31_s01_t003_scope_rate_policy.py::test_scope_and_rate_policy_is_validated_stored_rotated_and_documented
+tests/test_m31_s01_t003_scope_rate_policy.py::test_scope_and_rate_policy_is_validated_stored_rotated_and_documented
+tests/test_m31_s01_t003_scope_rate_policy.py::test_scope_and_rate_policy_is_validated_stored_rotated_and_documented
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\venv\Lib\site-packages\sqlalchemy\sql\schema.py:3585: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    return util.wrap_callable(lambda ctx: fn(), fn)  # type: ignore
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+2 passed, 75 warnings in 23.67s
+RESULT=PASS
+POSTGRES_IMAGE=postgres:16-alpine
+POSTGRES_IMAGE_ID=sha256:16bc17c64a573ef34162af9298258d1aec548232985b33ed7b1eac33ba35c229
+CONTAINER=codex-m31-s01-t003-e27586a2ebdc4303be69
+DATABASE=fmcg_m31_s01_t003_e27586a2ebdc4303be69
+TRANSCRIPT=C:\Users\sekip\Desktop\fmcg-erp-system\coordination\sessions\M31.S01.T003\postgres-test-run-e27586a2ebdc4303be69.log
+PYTEST_OUTPUT=C:\Users\sekip\Desktop\fmcg-erp-system\coordination\sessions\M31.S01.T003\pytest-output-e27586a2ebdc4303be69.log
+DATA=synthetic only
+NETWORK=host port bound to 127.0.0.1 only; no volume mounts
+**********************
+Windows PowerShell transcript end
+End time: 20261030003132
+**********************

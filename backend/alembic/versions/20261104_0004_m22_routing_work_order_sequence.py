@@ -50,11 +50,21 @@ def upgrade() -> None:
         $$;
         """
     )
-    op.drop_constraint(
-        "work_orders_routing_step_id_fkey",
-        "work_orders",
-        type_="foreignkey",
-    )
+    # The FK is unnamed in the original table-creation migration, so its
+    # persisted name follows the active SQLAlchemy naming convention rather
+    # than PostgreSQL's default ``*_fkey`` name. Inspect the actual schema so
+    # fresh databases and databases created under either naming convention
+    # can safely replace the same single-column FK.
+    for foreign_key in sa.inspect(op.get_bind()).get_foreign_keys("work_orders"):
+        if (
+            foreign_key.get("constrained_columns") == ["routing_step_id"]
+            and foreign_key.get("referred_table") == "routing_steps"
+        ):
+            op.drop_constraint(
+                foreign_key["name"],
+                "work_orders",
+                type_="foreignkey",
+            )
     op.create_foreign_key(
         "fk_work_orders_routing_step_id_routing_steps",
         "work_orders",

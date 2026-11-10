@@ -1,0 +1,33 @@
+**********************
+PowerShell transcript start
+Start time: 20261104034914
+Username: SEKIPH\sekip
+RunAs User: SEKIPH\sekip
+Configuration Name: 
+Machine: SEKIPH (Microsoft Windows NT 10.0.26300.0)
+Host Application: C:\Users\sekip\.cache\codex-runtimes\codex-primary-runtime\dependencies\native\powershell\pwsh.dll -Command try { [Console]::OutputEncoding=[System.Text.Encoding]::UTF8 } catch {}
+Set-Location -LiteralPath 'C:\Users\sekip\Desktop\fmcg-erp-system'; & .\coordination\sessions\M34.S04.T004\run_disposable_postgres.ps1
+Process ID: 61800
+PSVersion: 7.6.5
+PSEdition: Core
+GitCommitId: 7.6.5
+OS: Microsoft Windows 10.0.26300
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+database=fmcg_m34_s04_t004_986e0bf2aabd49faabec21db
+container=fmcg-m34-s04-t004-986e0bf2aabd49faabec21db
+image=postgres:16.6
+host_bind=127.0.0.1
+password=none
+
+host_port=55440
+
+
+**********************
+PowerShell transcript end
+End time: 20261104035005
+**********************

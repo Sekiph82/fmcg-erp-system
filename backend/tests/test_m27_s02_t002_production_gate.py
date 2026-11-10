@@ -37,6 +37,12 @@ class _ScalarResult:
     def scalar_one_or_none(self):
         return self.value
 
+    def scalar_one(self):
+        return self.value
+
+    def all(self):
+        return self.values
+
     def scalars(self):
         return SimpleNamespace(all=lambda: self.values)
 
@@ -74,7 +80,8 @@ async def _return_empty():
 @pytest.mark.asyncio
 async def test_production_release_gate_blocks_before_status_change(monkeypatch):
     order = SimpleNamespace(
-        id=uuid4(), recipe_id=uuid4(), status=ProductionOrderStatus.PLANNED, order_no="PO-1"
+        id=uuid4(), recipe_id=uuid4(), status=ProductionOrderStatus.PLANNED, order_no="PO-1",
+        approved_by=uuid4(), approved_at=datetime.now(timezone.utc),
     )
     recipe = SimpleNamespace(status=SimpleNamespace(value="APPROVED"))
     db = _ResultDB([_ScalarResult(order), _ScalarResult(recipe)])
@@ -102,7 +109,11 @@ async def test_production_release_gate_blocks_before_status_change(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_production_completion_gate_blocks_before_inventory_side_effects(monkeypatch):
-    order = SimpleNamespace(id=uuid4(), status=ProductionOrderStatus.IN_PROGRESS, order_no="PO-2")
+    order = SimpleNamespace(
+        id=uuid4(), status=ProductionOrderStatus.IN_PROGRESS, order_no="PO-2",
+        planned_quantity=Decimal("10"), actual_start=datetime.now(timezone.utc),
+        batch_no="SYNTHETIC-PO-2",
+    )
     db = _ResultDB([_ScalarResult(order)])
     events = []
 
@@ -127,7 +138,7 @@ async def test_production_completion_gate_blocks_before_inventory_side_effects(m
     assert raised.value.status_code == 422
     assert "missing in-process QC" in raised.value.detail
     assert db.added == []
-    assert len(db.statements) == 1  # order lock; the mocked scope lock performs no SQL
+    assert all(statement.is_select for statement in db.statements)
     assert events[0] == ("lock", "production", "ON_IN_PROCESS")
     assert events[1][0:3] == ("check", order, "ON_IN_PROCESS")
 

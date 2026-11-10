@@ -1,0 +1,510 @@
+..F.....FFF.FFF                                                          [100%]
+================================== FAILURES ===================================
+_ test_work_order_patch_rejects_engine_owned_state_and_started_rows_are_immutable _
+
+    @pytest.mark.asyncio
+    async def test_work_order_patch_rejects_engine_owned_state_and_started_rows_are_immutable():
+        _, work_order_id = await _seed_order_and_work_order(work_status="PENDING")
+        async with AsyncSessionLocal() as db:
+            with pytest.raises(ValueError, match="status"):
+                await service.update_work_order(db, work_order_id, {"status": "COMPLETED"})
+            await db.rollback()
+    
+        async with AsyncSessionLocal() as db:
+            work_order = await db.get(ExecWorkOrder, work_order_id)
+            work_order.status = "IN_PROGRESS"
+            await db.commit()
+>           with pytest.raises(ValueError, match="after production starts"):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AssertionError: Regex pattern did not match.
+E             Expected regex: 'after production starts'
+E             Actual message: 'Planning changes are not allowed in status IN_PROGRESS'
+
+tests\test_m08_s03_t001_transition_guards_db.py:189: AssertionError
+_ test_work_order_cannot_be_added_after_parent_starts_or_with_later_dependency _
+
+    @pytest.mark.asyncio
+    async def test_work_order_cannot_be_added_after_parent_starts_or_with_later_dependency():
+        _require_task_database()
+        suffix = uuid4().hex[:18]
+        async with AsyncSessionLocal() as db:
+            active_parent = await _order(db, f"{suffix}-active", "IN_PROGRESS")
+            planned_parent = await _order(db, f"{suffix}-planned", "PLANNED")
+            later = await _work_order(db, planned_parent, f"{suffix}-later", status="PENDING", step_sequence=3)
+            active_parent_id = active_parent.id
+            planned_parent_id = planned_parent.id
+            later_id = later.id
+            await db.commit()
+            with pytest.raises(ValueError, match="after production starts"):
+>               await service.add_work_order(
+                    db, active_parent_id,
+                    {"step_name": "Too late", "step_sequence": 1, "planned_qty": Decimal("10")},
+                )
+E               TypeError: add_work_order() missing 1 required positional argument: 'user_id'
+
+tests\test_m08_s03_t001_transition_guards_db.py:344: TypeError
+________ test_concurrent_duplicate_release_allows_only_one_transition _________
+
+    @pytest.mark.asyncio
+    async def test_concurrent_duplicate_release_allows_only_one_transition():
+        order_id, _ = await _seed_order_and_work_order(order_status="DRAFT")
+    
+        async def attempt_release():
+            async with AsyncSessionLocal() as db:
+                try:
+                    order = await service.get_order(db, order_id)
+                    return await service.release_order(db, order_id, order.created_by)
+                except ValueError as exc:
+                    await db.rollback()
+                    return exc
+    
+        results = await asyncio.gather(attempt_release(), attempt_release())
+>       assert sum(not isinstance(result, ValueError) for result in results) == 1
+E       assert 0 == 1
+E        +  where 0 = sum(<generator object test_concurrent_duplicate_release_allows_only_one_transition.<locals>.<genexpr> at 0x00000181E4C719A0>)
+
+tests\test_m08_s03_t001_transition_guards_db.py:375: AssertionError
+_________ test_completed_or_terminal_order_cannot_be_cancelled_again __________
+
+    @pytest.mark.asyncio
+    async def test_completed_or_terminal_order_cannot_be_cancelled_again():
+        _require_task_database()
+        suffix = uuid4().hex[:18]
+        async with AsyncSessionLocal() as db:
+            completed = await _order(db, f"{suffix}-completed", "COMPLETED")
+            closed = await _order(db, f"{suffix}-closed", "CLOSED")
+            cancelled = await _order(db, f"{suffix}-cancelled", "CANCELLED")
+            completed_id, closed_id, cancelled_id = completed.id, closed.id, cancelled.id
+            await db.commit()
+            for order_id in (completed_id, closed_id, cancelled_id):
+>               with pytest.raises(ValueError, match="cannot be cancelled"):
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E               AssertionError: Regex pattern did not match.
+E                 Expected regex: 'cannot be cancelled'
+E                 Actual message: 'Cannot transition order from COMPLETED to CANCELLED'
+
+tests\test_m08_s03_t001_transition_guards_db.py:393: AssertionError
+________ test_split_requires_two_positive_quantities_and_cannot_repeat ________
+
+self = <sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_cursor object at 0x00000181E480B040>
+operation = 'INSERT INTO production_transition_events (id, entity_type, entity_id, parent_entity_type, parent_entity_id, action, f...ID, $10::UUID, $11::VARCHAR) RETURNING production_transition_events.event_seq, production_transition_events.created_at'
+parameters = (UUID('97649ae3-ab3e-45ed-8430-51b09b0789d8'), 'EXEC_PRODUCTION_ORDER', UUID('214ef3c2-e714-45de-883a-8f2c9aa3dcaf'), 'EXEC_PRODUCTION_ORDER', UUID('214ef3c2-e714-45de-883a-8f2c9aa3dcaf'), 'CREATED_BY_SPLIT', ...)
+
+    async def _prepare_and_execute(self, operation, parameters):
+        adapt_connection = self._adapt_connection
+    
+        async with adapt_connection._execute_mutex:
+            if not adapt_connection._started:
+                await adapt_connection._start_transaction()
+    
+            if parameters is None:
+                parameters = ()
+    
+            try:
+                prepared_stmt, attributes = await adapt_connection._prepare(
+                    operation, self._invalidate_schema_cache_asof
+                )
+    
+                if attributes:
+                    self.description = [
+                        (
+                            attr.name,
+                            attr.type.oid,
+                            None,
+                            None,
+                            None,
+                            None,
+                            None,
+                        )
+                        for attr in attributes
+                    ]
+                else:
+                    self.description = None
+    
+                if self.server_side:
+                    self._cursor = await prepared_stmt.cursor(*parameters)
+                    self.rowcount = -1
+                else:
+>                   self._rows = deque(await prepared_stmt.fetch(*parameters))
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:545: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\asyncpg\prepared_stmt.py:176: in fetch
+    data = await self.__bind_execute(args, 0, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\asyncpg\prepared_stmt.py:267: in __bind_execute
+    data, status, _ = await self.__do_execute(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\asyncpg\prepared_stmt.py:256: in __do_execute
+    return await executor(protocol)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+>   ???
+E   asyncpg.exceptions.ForeignKeyViolationError: insert or update on table "production_transition_events" violates foreign key constraint "fk_production_transition_actor_users"
+E   DETAIL:  Key (actor_id)=(e5c0eaaf-8a17-45ae-9b6b-e2ab484c1fdc) is not present in table "users".
+
+asyncpg\\protocol\\protocol.pyx:206: ForeignKeyViolationError
+
+The above exception was the direct cause of the following exception:
+
+self = <sqlalchemy.engine.base.Connection object at 0x00000181E4C773B0>
+dialect = <sqlalchemy.dialects.postgresql.asyncpg.PGDialect_asyncpg object at 0x00000181DA41F140>
+context = <sqlalchemy.dialects.postgresql.asyncpg.PGExecutionContext_asyncpg object at 0x00000181E4C56570>
+statement = <sqlalchemy.dialects.postgresql.asyncpg.PGCompiler_asyncpg object at 0x00000181E4816FC0>
+parameters = [(UUID('97649ae3-ab3e-45ed-8430-51b09b0789d8'), 'EXEC_PRODUCTION_ORDER', UUID('214ef3c2-e714-45de-883a-8f2c9aa3dcaf'), 'EXEC_PRODUCTION_ORDER', UUID('214ef3c2-e714-45de-883a-8f2c9aa3dcaf'), 'CREATED_BY_SPLIT', ...)]
+
+    def _exec_single_context(
+        self,
+        dialect: Dialect,
+        context: ExecutionContext,
+        statement: Union[str, Compiled],
+        parameters: Optional[_AnyMultiExecuteParams],
+    ) -> CursorResult[Any]:
+        """continue the _execute_context() method for a single DBAPI
+        cursor.execute() or cursor.executemany() call.
+    
+        """
+        if dialect.bind_typing is BindTyping.SETINPUTSIZES:
+            generic_setinputsizes = context._prepare_set_input_sizes()
+    
+            if generic_setinputsizes:
+                try:
+                    dialect.do_set_input_sizes(
+                        context.cursor, generic_setinputsizes, context
+                    )
+                except BaseException as e:
+                    self._handle_dbapi_exception(
+                        e, str(statement), parameters, None, context
+                    )
+    
+        cursor, str_statement, parameters = (
+            context.cursor,
+            context.statement,
+            context.parameters,
+        )
+    
+        effective_parameters: Optional[_AnyExecuteParams]
+    
+        if not context.executemany:
+            effective_parameters = parameters[0]
+        else:
+            effective_parameters = parameters
+    
+        if self._has_events or self.engine._has_events:
+            for fn in self.dispatch.before_cursor_execute:
+                str_statement, effective_parameters = fn(
+                    self,
+                    cursor,
+                    str_statement,
+                    effective_parameters,
+                    context,
+                    context.executemany,
+                )
+    
+        if self._echo:
+            self._log_info(str_statement)
+    
+            stats = context._get_cache_stats()
+    
+            if not self.engine.hide_parameters:
+                self._log_info(
+                    "[%s] %r",
+                    stats,
+                    sql_util._repr_params(
+                        effective_parameters,
+                        batches=10,
+                        ismulti=context.executemany,
+                    ),
+                )
+            else:
+                self._log_info(
+                    "[%s] [SQL parameters hidden due to hide_parameters=True]",
+                    stats,
+                )
+    
+        evt_handled: bool = False
+        try:
+            if context.execute_style is ExecuteStyle.EXECUTEMANY:
+                effective_parameters = cast(
+                    "_CoreMultiExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_executemany:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_executemany(
+                        cursor,
+                        str_statement,
+                        effective_parameters,
+                        context,
+                    )
+            elif not effective_parameters and context.no_parameters:
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute_no_params:
+                        if fn(cursor, str_statement, context):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+                    self.dialect.do_execute_no_params(
+                        cursor, str_statement, context
+                    )
+            else:
+                effective_parameters = cast(
+                    "_CoreSingleExecuteParams", effective_parameters
+                )
+                if self.dialect._has_events:
+                    for fn in self.dialect.dispatch.do_execute:
+                        if fn(
+                            cursor,
+                            str_statement,
+                            effective_parameters,
+                            context,
+                        ):
+                            evt_handled = True
+                            break
+                if not evt_handled:
+>                   self.dialect.do_execute(
+                        cursor, str_statement, effective_parameters, context
+                    )
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\base.py:1963: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\default.py:943: in do_execute
+    cursor.execute(statement, parameters)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:580: in execute
+    self._adapt_connection.await_(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:558: in _prepare_and_execute
+    self._handle_exception(error)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:508: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <AdaptedConnection <asyncpg.connection.Connection object at 0x00000181E47695E0>>
+error = ForeignKeyViolationError('insert or update on table "production_transition_events" violates foreign key constraint "fk_production_transition_actor_users"')
+
+    def _handle_exception(self, error):
+        if self._connection.is_closed():
+            self._transaction = None
+            self._started = False
+    
+        if not isinstance(error, AsyncAdapt_asyncpg_dbapi.Error):
+            exception_mapping = self.dbapi._asyncpg_error_translate
+    
+            for super_ in type(error).__mro__:
+                if super_ in exception_mapping:
+                    translated_error = exception_mapping[super_](
+                        "%s: %s" % (type(error), error)
+                    )
+                    translated_error.pgcode = translated_error.sqlstate = (
+                        getattr(error, "sqlstate", None)
+                    )
+>                   raise translated_error from error
+E                   sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_dbapi.IntegrityError: <class 'asyncpg.exceptions.ForeignKeyViolationError'>: insert or update on table "production_transition_events" violates foreign key constraint "fk_production_transition_actor_users"
+E                   DETAIL:  Key (actor_id)=(e5c0eaaf-8a17-45ae-9b6b-e2ab484c1fdc) is not present in table "users".
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:792: IntegrityError
+
+The above exception was the direct cause of the following exception:
+
+    @pytest.mark.asyncio
+    async def test_split_requires_two_positive_quantities_and_cannot_repeat():
+        order_id, _ = await _seed_order_and_work_order(order_status="PLANNED")
+        async with AsyncSessionLocal() as db:
+            with pytest.raises(ValueError, match="at least two positive"):
+                await service.split_order(db, order_id, [Decimal("10")], "one child", uuid4())
+            with pytest.raises(ValueError, match="at least two positive"):
+                await service.split_order(db, order_id, [Decimal("0"), Decimal("10")], "zero child", uuid4())
+            await db.rollback()
+>           children = await service.split_order(
+                db, order_id, [Decimal("4"), Decimal("6")], "synthetic split", uuid4()
+            )
+
+tests\test_m08_s03_t001_transition_guards_db.py:423: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+app\services\production_execution_service.py:558: in split_order
+    await db.flush()
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\ext\asyncio\session.py:801: in flush
+    await greenlet_spawn(self.sync_session.flush, objects=objects)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py:203: in greenlet_spawn
+    result = context.switch(value)
+             ^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\session.py:4345: in flush
+    self._flush(objects)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\session.py:4480: in _flush
+    with util.safe_reraise():
+         ^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\util\langhelpers.py:224: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\session.py:4441: in _flush
+    flush_context.execute()
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\unitofwork.py:466: in execute
+    rec.execute(self)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\unitofwork.py:642: in execute
+    util.preloaded.orm_persistence.save_obj(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\persistence.py:93: in save_obj
+    _emit_insert_statements(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\persistence.py:1233: in _emit_insert_statements
+    result = connection.execute(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\base.py:1415: in execute
+    return meth(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\sql\elements.py:523: in _execute_on_connection
+    return connection._execute_clauseelement(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\base.py:1637: in _execute_clauseelement
+    ret = self._execute_context(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\base.py:1842: in _execute_context
+    return self._exec_single_context(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\base.py:1982: in _exec_single_context
+    self._handle_dbapi_exception(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\base.py:2351: in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\base.py:1963: in _exec_single_context
+    self.dialect.do_execute(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\default.py:943: in do_execute
+    cursor.execute(statement, parameters)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:580: in execute
+    self._adapt_connection.await_(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:558: in _prepare_and_execute
+    self._handle_exception(error)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:508: in _handle_exception
+    self._adapt_connection._handle_exception(error)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <AdaptedConnection <asyncpg.connection.Connection object at 0x00000181E47695E0>>
+error = ForeignKeyViolationError('insert or update on table "production_transition_events" violates foreign key constraint "fk_production_transition_actor_users"')
+
+    def _handle_exception(self, error):
+        if self._connection.is_closed():
+            self._transaction = None
+            self._started = False
+    
+        if not isinstance(error, AsyncAdapt_asyncpg_dbapi.Error):
+            exception_mapping = self.dbapi._asyncpg_error_translate
+    
+            for super_ in type(error).__mro__:
+                if super_ in exception_mapping:
+                    translated_error = exception_mapping[super_](
+                        "%s: %s" % (type(error), error)
+                    )
+                    translated_error.pgcode = translated_error.sqlstate = (
+                        getattr(error, "sqlstate", None)
+                    )
+>                   raise translated_error from error
+E                   sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) <class 'asyncpg.exceptions.ForeignKeyViolationError'>: insert or update on table "production_transition_events" violates foreign key constraint "fk_production_transition_actor_users"
+E                   DETAIL:  Key (actor_id)=(e5c0eaaf-8a17-45ae-9b6b-e2ab484c1fdc) is not present in table "users".
+E                   [SQL: INSERT INTO production_transition_events (id, entity_type, entity_id, parent_entity_type, parent_entity_id, action, from_status, to_status, actor_id, actor_session_id, actor_label) VALUES ($1::UUID, $2::VARCHAR, $3::UUID, $4::VARCHAR, $5::UUID, $6::VARCHAR, $7::VARCHAR, $8::VARCHAR, $9::UUID, $10::UUID, $11::VARCHAR) RETURNING production_transition_events.event_seq, production_transition_events.created_at]
+E                   [parameters: (UUID('97649ae3-ab3e-45ed-8430-51b09b0789d8'), 'EXEC_PRODUCTION_ORDER', UUID('214ef3c2-e714-45de-883a-8f2c9aa3dcaf'), 'EXEC_PRODUCTION_ORDER', UUID('214ef3c2-e714-45de-883a-8f2c9aa3dcaf'), 'CREATED_BY_SPLIT', None, 'PLANNED', UUID('e5c0eaaf-8a17-45ae-9b6b-e2ab484c1fdc'), None, 'e5c0eaaf-8a17-45ae-9b6b-e2ab484c1fdc')]
+E                   (Background on this error at: https://sqlalche.me/e/20/gkpj)
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:792: IntegrityError
+_ test_core_production_order_terminal_cancel_is_rejected_and_active_cancel_is_one_shot _
+
+    @pytest.mark.asyncio
+    async def test_core_production_order_terminal_cancel_is_rejected_and_active_cancel_is_one_shot():
+        _require_task_database()
+        suffix = uuid4().hex[:18]
+        async with AsyncSessionLocal() as db:
+            completed = await _seed_core_production_order(
+                db, f"{suffix}-completed", ProductionOrderStatus.COMPLETED
+            )
+            cancelled = await _seed_core_production_order(
+                db, f"{suffix}-cancelled", ProductionOrderStatus.CANCELLED
+            )
+            active = await _seed_core_production_order(
+                db, f"{suffix}-active", ProductionOrderStatus.IN_PROGRESS
+            )
+            completed_id, cancelled_id, active_id = completed.id, cancelled.id, active.id
+            downtime = DowntimeLog(
+                production_order_id=active_id,
+                reason=DowntimeReason.MATERIAL_SHORTAGE,
+                start_time=datetime.now(timezone.utc) - timedelta(minutes=5),
+            )
+            db.add(downtime)
+            await db.flush()
+            downtime_id = downtime.id
+            await db.commit()
+            for order_id in (completed_id, cancelled_id):
+                blocked_order = await db.get(ProductionOrder, order_id)
+                with pytest.raises(HTTPException) as denied:
+                    await production_service.cancel_order(db, blocked_order, blocked_order.created_by)
+                assert getattr(denied.value, "status_code", None) == 422
+                await db.rollback()
+            active_order = await db.get(ProductionOrder, active_id)
+>           result = await production_service.cancel_order(db, active_order, active_order.created_by)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_m08_s03_t001_transition_guards_db.py:463: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+app\services\production_service.py:1100: in cancel_order
+    _require_order_transition(order, ProductionOrderStatus.CANCELLED)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+order = <app.models.production.ProductionOrder object at 0x00000181E4C11D00>
+target = <ProductionOrderStatus.CANCELLED: 'CANCELLED'>
+
+    def _require_order_transition(order: ProductionOrder, target: ProductionOrderStatus) -> None:
+        allowed = PRODUCTION_ORDER_TRANSITIONS.get(order.status, set())
+        if target not in allowed:
+>           raise HTTPException(
+                status_code=422,
+                detail=f"Cannot transition production order from {order.status.value} to {target.value}.",
+            )
+E           fastapi.exceptions.HTTPException: 422: Cannot transition production order from IN_PROGRESS to CANCELLED.
+
+app\services\production_service.py:262: HTTPException
+___________ test_core_duplicate_release_serializes_on_the_order_row ___________
+
+    @pytest.mark.asyncio
+    async def test_core_duplicate_release_serializes_on_the_order_row():
+        _require_task_database()
+        suffix = uuid4().hex[:18]
+        async with AsyncSessionLocal() as db:
+            order = await _seed_core_production_order(db, suffix, ProductionOrderStatus.PLANNED)
+            order_id = order.id
+            await db.commit()
+    
+        async def attempt_release():
+            async with AsyncSessionLocal() as db:
+                order = await db.get(ProductionOrder, order_id)
+                try:
+                    result = await production_service.release_order(db, order, order.created_by)
+                    await db.commit()
+                    return result
+                except HTTPException as exc:
+                    await db.rollback()
+                    return exc
+    
+        results = await asyncio.gather(attempt_release(), attempt_release())
+>       assert sum(not isinstance(result, HTTPException) for result in results) == 1
+E       assert 0 == 1
+E        +  where 0 = sum(<generator object test_core_duplicate_release_serializes_on_the_order_row.<locals>.<genexpr> at 0x00000181E6B3DC40>)
+
+tests\test_m08_s03_t001_transition_guards_db.py:496: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_m08_s03_t001_transition_guards_db.py::test_work_order_patch_rejects_engine_owned_state_and_started_rows_are_immutable
+FAILED tests/test_m08_s03_t001_transition_guards_db.py::test_work_order_cannot_be_added_after_parent_starts_or_with_later_dependency
+FAILED tests/test_m08_s03_t001_transition_guards_db.py::test_concurrent_duplicate_release_allows_only_one_transition
+FAILED tests/test_m08_s03_t001_transition_guards_db.py::test_completed_or_terminal_order_cannot_be_cancelled_again
+FAILED tests/test_m08_s03_t001_transition_guards_db.py::test_split_requires_two_positive_quantities_and_cannot_repeat
+FAILED tests/test_m08_s03_t001_transition_guards_db.py::test_core_production_order_terminal_cancel_is_rejected_and_active_cancel_is_one_shot
+FAILED tests/test_m08_s03_t001_transition_guards_db.py::test_core_duplicate_release_serializes_on_the_order_row
+7 failed, 8 passed in 17.46s

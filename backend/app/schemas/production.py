@@ -202,10 +202,10 @@ class OEEMetrics(BaseModel):
     scheduled_minutes: float
     actual_minutes: Optional[float] = None
     downtime_minutes: float
-    availability: float
-    performance: float
-    quality: float
-    oee: float
+    availability: Optional[float] = None
+    performance: Optional[float] = None
+    quality: Optional[float] = None
+    oee: Optional[float] = None
 
 
 # ── Execution requests ────────────────────────────────────────────────────────

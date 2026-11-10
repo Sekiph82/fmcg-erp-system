@@ -2,7 +2,7 @@ import uuid
 import enum
 from sqlalchemy import (
     Column, String, Text, Numeric, Boolean, Integer,
-    ForeignKey, Enum, DateTime, Date, UniqueConstraint, JSON,
+    ForeignKey, Enum, DateTime, Date, UniqueConstraint, JSON, CheckConstraint,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
@@ -81,12 +81,19 @@ class Asset(Base, TimestampMixin):
     warranty_expiry = Column(Date, nullable=True)
     location = Column(String(255), nullable=True)
     status = Column(Enum(AssetStatus, name="assetstatus"), nullable=False, default=AssetStatus.ACTIVE)
+    work_center_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("work_centers.id", name="fk_assets_work_center_id_work_centers", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     notes = Column(Text, nullable=True)
 
     pm_plans = relationship("PMPlan", back_populates="asset", cascade="all, delete-orphan")
     breakdowns = relationship("BreakdownRecord", back_populates="asset", cascade="all, delete-orphan")
     spare_usages = relationship("SparePartUsage", back_populates="asset", cascade="all, delete-orphan")
     predictions = relationship("MaintenancePrediction", back_populates="asset", cascade="all, delete-orphan")
+    calibration_instruments = relationship("InstrumentCalibration", back_populates="asset")
 
 
 # ── Preventive Maintenance Plans ───────────────────────────────────────────────
@@ -109,15 +116,27 @@ class PMPlan(Base, TimestampMixin):
 
     asset = relationship("Asset", back_populates="pm_plans")
     work_orders = relationship("PMWorkOrder", back_populates="plan", cascade="all, delete-orphan")
+    spare_part_requirements = relationship(
+        "PMPlanSparePartRequirement", back_populates="plan", cascade="all, delete-orphan"
+    )
 
 
 class PMWorkOrder(Base, TimestampMixin):
     __tablename__ = "pm_work_orders"
+    __table_args__ = (
+        CheckConstraint(
+            "(window_start IS NULL AND window_end IS NULL) OR "
+            "(window_start IS NOT NULL AND window_end IS NOT NULL AND window_end > window_start)",
+            name="ck_pm_work_orders_window_order",
+        ),
+    )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     wo_no = Column(String(50), unique=True, nullable=False, index=True)
     plan_id = Column(UUID(as_uuid=True), ForeignKey("pm_plans.id", ondelete="CASCADE"), nullable=False, index=True)
     scheduled_date = Column(Date, nullable=False)
+    window_start = Column(DateTime(timezone=True), nullable=True)
+    window_end = Column(DateTime(timezone=True), nullable=True)
     status = Column(Enum(PMStatus), nullable=False, default=PMStatus.PENDING)
     started_at = Column(DateTime(timezone=True), nullable=True)
     completed_at = Column(DateTime(timezone=True), nullable=True)
@@ -128,9 +147,40 @@ class PMWorkOrder(Base, TimestampMixin):
 
     plan = relationship("PMPlan", back_populates="work_orders")
     completed_by = relationship("User")
+    spare_part_reservations = relationship(
+        "PMWorkOrderSparePartReservation", back_populates="work_order", cascade="all, delete-orphan"
+    )
 
 
 # ── Breakdown Records ──────────────────────────────────────────────────────────
+
+class DowntimeReasonCode(Base, TimestampMixin):
+    """System-maintained two-level downtime taxonomy, separate from incident data."""
+    __tablename__ = "maintenance_downtime_reason_codes"
+
+    code = Column(String(100), primary_key=True)
+    label = Column(String(150), nullable=False)
+    parent_code = Column(
+        String(100),
+        ForeignKey("maintenance_downtime_reason_codes.code", ondelete="RESTRICT"),
+        nullable=True,
+        index=True,
+    )
+    is_selectable = Column(Boolean, nullable=False, default=False, server_default="false")
+    is_active = Column(Boolean, nullable=False, default=True, server_default="true")
+    sort_order = Column(Integer, nullable=False, default=0, server_default="0")
+
+    parent = relationship(
+        "DowntimeReasonCode",
+        remote_side=[code],
+        back_populates="children",
+        foreign_keys=[parent_code],
+    )
+    children = relationship(
+        "DowntimeReasonCode",
+        back_populates="parent",
+        foreign_keys=[parent_code],
+    )
 
 class BreakdownRecord(Base, TimestampMixin):
     __tablename__ = "breakdown_records"
@@ -143,6 +193,12 @@ class BreakdownRecord(Base, TimestampMixin):
     end_time = Column(DateTime(timezone=True), nullable=True)
     downtime_minutes = Column(Integer, nullable=True)
     reason = Column(String(500), nullable=False)
+    reason_code = Column(
+        String(100),
+        ForeignKey("maintenance_downtime_reason_codes.code", ondelete="RESTRICT"),
+        nullable=True,
+        index=True,
+    )
     root_cause = Column(Text, nullable=True)
     severity = Column(Enum(BreakdownSeverity), nullable=False, default=BreakdownSeverity.MEDIUM)
     status = Column(Enum(BreakdownStatus), nullable=False, default=BreakdownStatus.OPEN)
@@ -151,6 +207,7 @@ class BreakdownRecord(Base, TimestampMixin):
     resolved_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
     asset = relationship("Asset", back_populates="breakdowns")
+    downtime_reason = relationship("DowntimeReasonCode", foreign_keys=[reason_code])
     production_order = relationship("ProductionOrder")
     reported_by = relationship("User", foreign_keys=[reported_by_id])
     resolved_by = relationship("User", foreign_keys=[resolved_by_id])
@@ -178,6 +235,67 @@ class SparePart(Base, TimestampMixin):
 
     material = relationship("Material")
     usages = relationship("SparePartUsage", back_populates="spare_part")
+    plan_requirements = relationship("PMPlanSparePartRequirement", back_populates="spare_part")
+    work_order_reservations = relationship("PMWorkOrderSparePartReservation", back_populates="spare_part")
+
+
+class PMPlanSparePartRequirement(Base, TimestampMixin):
+    """Explicit parts needed before a preventive-maintenance plan can be scheduled."""
+    __tablename__ = "pm_plan_spare_part_requirements"
+    __table_args__ = (
+        UniqueConstraint("plan_id", "spare_part_id", name="uq_pm_plan_spare_part_requirement"),
+        CheckConstraint("quantity_required > 0", name="ck_pm_plan_spare_part_requirement_quantity_positive"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    plan_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("pm_plans.id", name="fk_pm_plan_spare_req_plan", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    spare_part_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("spare_parts.id", name="fk_pm_plan_spare_req_part", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    quantity_required = Column(Numeric(16, 4), nullable=False)
+
+    plan = relationship("PMPlan", back_populates="spare_part_requirements")
+    spare_part = relationship("SparePart", back_populates="plan_requirements")
+
+
+class PMWorkOrderSparePartReservation(Base, TimestampMixin):
+    """Snapshot of spare stock reserved for one PM work order, with consumption history."""
+    __tablename__ = "pm_work_order_spare_part_reservations"
+    __table_args__ = (
+        UniqueConstraint("work_order_id", "spare_part_id", name="uq_pm_work_order_spare_part_reservation"),
+        CheckConstraint("quantity_reserved > 0", name="ck_pm_wo_spare_reservation_quantity_positive"),
+        CheckConstraint(
+            "quantity_consumed >= 0 AND quantity_consumed <= quantity_reserved",
+            name="ck_pm_wo_spare_reservation_consumed_range",
+        ),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    work_order_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("pm_work_orders.id", name="fk_pm_wo_spare_reservation_work_order", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    spare_part_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("spare_parts.id", name="fk_pm_wo_spare_reservation_part", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    quantity_reserved = Column(Numeric(16, 4), nullable=False)
+    quantity_consumed = Column(Numeric(16, 4), nullable=False, default=0)
+
+    work_order = relationship("PMWorkOrder", back_populates="spare_part_reservations")
+    spare_part = relationship("SparePart", back_populates="work_order_reservations")
 
 
 class SparePartUsage(Base, TimestampMixin):
@@ -223,5 +341,20 @@ class MaintenancePrediction(Base, TimestampMixin):
     reviewed_by = Column(String(200), nullable=True)
     reviewed_at = Column(DateTime, nullable=True)
     review_notes = Column(Text, nullable=True)
+    work_order_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("pm_work_orders.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    work_order_created_by_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    work_order_created_at = Column(DateTime(timezone=True), nullable=True)
 
     asset = relationship("Asset", back_populates="predictions")
+    work_order = relationship("PMWorkOrder", foreign_keys=[work_order_id])
+    work_order_created_by = relationship("User", foreign_keys=[work_order_created_by_id])

@@ -6,6 +6,7 @@ import { maintenanceApi, Asset, AssetStatus } from "@/lib/maintenance";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { RequirePermission } from "@/components/PermissionGuard";
+import { advProductionApi, WorkCenter } from "@/lib/productionAdvanced";
 
 const statusBadge = (s: AssetStatus) =>
   s === "ACTIVE" ? "green" : s === "UNDER_MAINTENANCE" ? "yellow" : s === "DECOMMISSIONED" ? "gray" : "blue";
@@ -21,6 +22,11 @@ export default function AssetsPage() {
     queryFn: () => maintenanceApi.listAssets(),
   });
 
+  const { data: workCenters = [] } = useQuery({
+    queryKey: ["adv-work-centers"],
+    queryFn: () => advProductionApi.listWorkCenters(),
+  });
+
   const createAsset = useMutation({
     mutationFn: (data: object) => maintenanceApi.createAsset(data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["maint-assets"] }); setShowNew(false); },
@@ -28,7 +34,7 @@ export default function AssetsPage() {
 
   const updateAsset = useMutation({
     mutationFn: ({ id, data }: { id: string; data: object }) => maintenanceApi.updateAsset(id, data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["maint-assets"] }); setEditAsset(null); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["maint-assets"] }); qc.invalidateQueries({ queryKey: ["maint-work-order-schedule-impact"] }); qc.invalidateQueries({ queryKey: ["maint-downtime-capacity-impact"] }); setEditAsset(null); },
   });
 
   const filtered = filterStatus === "ALL" ? assets : assets.filter((a) => a.status === filterStatus);
@@ -75,6 +81,7 @@ export default function AssetsPage() {
                 <th className="px-5 py-2 text-left">Name</th>
                 <th className="px-5 py-2 text-left">Type</th>
                 <th className="px-5 py-2 text-left">Line</th>
+                <th className="px-5 py-2 text-left">Production Work Center</th>
                 <th className="px-5 py-2 text-left">Serial No</th>
                 <th className="px-5 py-2 text-left">Install Date</th>
                 <th className="px-5 py-2 text-left">Location</th>
@@ -89,6 +96,7 @@ export default function AssetsPage() {
                   <td className="px-5 py-3 font-medium text-gray-900">{a.name}</td>
                   <td className="px-5 py-3 text-gray-600">{a.asset_type || "—"}</td>
                   <td className="px-5 py-3">{a.line || "—"}</td>
+                  <td className="px-5 py-3 text-gray-600">{workCenters.find((center) => center.id === a.work_center_id)?.name || "—"}</td>
                   <td className="px-5 py-3 font-mono text-xs text-gray-500">{a.serial_no || "—"}</td>
                   <td className="px-5 py-3 text-gray-500">{a.install_date || "—"}</td>
                   <td className="px-5 py-3 text-gray-500">{a.location || "—"}</td>
@@ -99,7 +107,7 @@ export default function AssetsPage() {
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={9} className="px-5 py-8 text-center text-gray-400">No assets</td></tr>
+                <tr><td colSpan={10} className="px-5 py-8 text-center text-gray-400">No assets</td></tr>
               )}
             </tbody>
           </table>
@@ -109,6 +117,7 @@ export default function AssetsPage() {
       {showNew && (
         <AssetModal
           title="Add Asset"
+          workCenters={workCenters}
           onClose={() => setShowNew(false)}
           onSubmit={(data) => createAsset.mutate(data)}
           loading={createAsset.isPending}
@@ -118,6 +127,7 @@ export default function AssetsPage() {
         <AssetModal
           title="Edit Asset"
           initial={editAsset}
+          workCenters={workCenters}
           onClose={() => setEditAsset(null)}
           onSubmit={(data) => updateAsset.mutate({ id: editAsset.id, data })}
           loading={updateAsset.isPending}
@@ -128,9 +138,10 @@ export default function AssetsPage() {
   );
 }
 
-function AssetModal({ title, initial, onClose, onSubmit, loading }: {
+function AssetModal({ title, initial, workCenters, onClose, onSubmit, loading }: {
   title: string;
   initial?: Asset;
+  workCenters: WorkCenter[];
   onClose: () => void;
   onSubmit: (d: object) => void;
   loading: boolean;
@@ -146,6 +157,7 @@ function AssetModal({ title, initial, onClose, onSubmit, loading }: {
     install_date: initial?.install_date ?? "",
     warranty_expiry: initial?.warranty_expiry ?? "",
     location: initial?.location ?? "",
+    work_center_id: initial?.work_center_id ?? "",
     status: initial?.status ?? "ACTIVE",
     notes: initial?.notes ?? "",
   });
@@ -185,6 +197,13 @@ function AssetModal({ title, initial, onClose, onSubmit, loading }: {
             <input type="date" className="w-full border rounded px-3 py-2 text-sm" value={form.warranty_expiry} onChange={(e) => set("warranty_expiry", e.target.value)} />
           </div>
           <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Production Work Center</label>
+            <select className="w-full border rounded px-3 py-2 text-sm" value={form.work_center_id} onChange={(e) => set("work_center_id", e.target.value)}>
+              <option value="">Not linked</option>
+              {workCenters.map((center) => <option key={center.id} value={center.id}>{center.work_center_id} — {center.name}</option>)}
+            </select>
+          </div>
+          <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Status</label>
             <select className="w-full border rounded px-3 py-2 text-sm" value={form.status} onChange={(e) => set("status", e.target.value)}>
               <option value="ACTIVE">Active</option>
@@ -200,7 +219,7 @@ function AssetModal({ title, initial, onClose, onSubmit, loading }: {
         </div>
         <div className="flex gap-2 justify-end">
           <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button loading={loading} onClick={() => onSubmit(form)}>Save</Button>
+          <Button loading={loading} onClick={() => onSubmit({ ...form, work_center_id: form.work_center_id || null })}>Save</Button>
         </div>
       </div>
     </div>

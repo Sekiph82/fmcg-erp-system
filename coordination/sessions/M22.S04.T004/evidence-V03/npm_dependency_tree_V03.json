@@ -1,0 +1,18 @@
+{
+  "version": "0.1.0",
+  "name": "fmcg-erp-frontend",
+  "dependencies": {
+    "axios": {
+      "version": "1.20.0",
+      "resolved": "https://registry.npmjs.org/axios/-/axios-1.20.0.tgz",
+      "overridden": false,
+      "dependencies": {
+        "follow-redirects": {
+          "version": "1.16.1",
+          "resolved": "https://registry.npmjs.org/follow-redirects/-/follow-redirects-1.16.1.tgz",
+          "overridden": false
+        }
+      }
+    }
+  }
+}

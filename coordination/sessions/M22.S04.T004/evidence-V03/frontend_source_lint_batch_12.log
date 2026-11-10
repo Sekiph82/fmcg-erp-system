@@ -1,0 +1,51 @@
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\recruitment\pipeline\page.tsx
+  26:40  warning  React Hook useEffect has a missing dependency: 'loadPipeline'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\recruitment\reports\page.tsx
+  19:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\recruitment\requisitions\page.tsx
+  16:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\secondary-sales\inventory\page.tsx
+  37:6  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\shelf-life\bulk-hold-monitor\page.tsx
+  23:42  warning  React Hook useEffect has a missing dependency: 'activeOnly'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\shelf-life\near-expiry\page.tsx
+  16:36  warning  React Hook useEffect has a missing dependency: 'days'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\surveys\[id]\page.tsx
+  17:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\traceability\backward\page.tsx
+  16:6  warning  React Hook useEffect has missing dependencies: 'handleTrace' and 'initialLotId'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\traceability\forward\page.tsx
+  13:69  warning  React Hook useEffect has missing dependencies: 'handleTrace' and 'initialLotId'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\traceability\genealogy\page.tsx
+  16:68  warning  React Hook useEffect has missing dependencies: 'handleLoad' and 'initialLotId'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\traceability\recalls\[id]\page.tsx
+  31:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\traceability\regulatory\page.tsx
+  17:6  warning  React Hook useEffect has missing dependencies: 'handleLoad' and 'initialRecallId'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\training\assignments\page.tsx
+  31:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\training\certifications\page.tsx
+  30:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\training\programs\page.tsx
+  26:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\training\reports\page.tsx
+  26:31  warning  React Hook useEffect has a missing dependency: 'run'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+✖ 16 problems (0 errors, 16 warnings)
+

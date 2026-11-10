@@ -2,7 +2,8 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { mfApi, Reservation, ReservationStatus } from "@/lib/materialFlow";
+import { mfApi, MaterialPickList, Reservation, ReservationStatus } from "@/lib/materialFlow";
+import { wmsApi } from "@/lib/wms";
 
 const STATUS_COLORS: Record<ReservationStatus, string> = {
   ACTIVE: "bg-green-100 text-green-700",
@@ -17,11 +18,21 @@ export default function ReservationsPage() {
   const [selected, setSelected] = useState<Reservation | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState({ production_order_id: "", notes: "" });
-  const [lines, setLines] = useState([{ material_id: "", warehouse_id: "", quantity_required: "", uom: "KG" }]);
+  const [lines, setLines] = useState([{ material_id: "", warehouse_id: "", staging_location_id: "", quantity_required: "", uom: "KG" }]);
+  const [pickList, setPickList] = useState<MaterialPickList | null>(null);
+  const [pickListError, setPickListError] = useState("");
+  const [generatingPickList, setGeneratingPickList] = useState(false);
 
   const { data } = useQuery<Reservation[]>({
     queryKey: ["mf-reservations"],
     queryFn: () => mfApi.listReservations(),
+  });
+  const { data: locations = [] } = useQuery({
+    queryKey: ["mf-staging-locations"],
+    queryFn: () => wmsApi.listLocations(),
+    select: (rows) => rows.filter((location) =>
+      location.zone_type === "STAGING" && location.is_active && !location.is_blocked
+    ),
   });
 
   const cancel = useMutation({
@@ -38,6 +49,7 @@ export default function ReservationsPage() {
           item_type: "material",
           material_id: l.material_id,
           warehouse_id: l.warehouse_id,
+          staging_location_id: l.staging_location_id || undefined,
           quantity_required: parseFloat(l.quantity_required),
           uom: l.uom,
         })),
@@ -46,9 +58,22 @@ export default function ReservationsPage() {
       qc.invalidateQueries({ queryKey: ["mf-reservations"] });
       setShowCreate(false);
       setForm({ production_order_id: "", notes: "" });
-      setLines([{ material_id: "", warehouse_id: "", quantity_required: "", uom: "KG" }]);
+      setLines([{ material_id: "", warehouse_id: "", staging_location_id: "", quantity_required: "", uom: "KG" }]);
     },
   });
+
+  async function generatePickList(reservationId: string) {
+    setGeneratingPickList(true);
+    setPickListError("");
+    try {
+      setPickList(await mfApi.generatePickList(reservationId));
+    } catch {
+      setPickList(null);
+      setPickListError("No pick list is available. Check access, reservation status, and production-order status.");
+    } finally {
+      setGeneratingPickList(false);
+    }
+  }
 
   const resList = data || [];
 
@@ -84,7 +109,7 @@ export default function ReservationsPage() {
                 <td className="px-4 py-2.5 text-xs">{r.lines.length}</td>
                 <td className="px-4 py-2.5 text-xs">{r.expiry_datetime ? new Date(r.expiry_datetime).toLocaleDateString() : "—"}</td>
                 <td className="px-4 py-2.5 flex gap-2">
-                  <button onClick={() => setSelected(r)} className="text-xs text-indigo-600 hover:underline">View</button>
+                  <button onClick={() => { setSelected(r); setPickList(null); setPickListError(""); }} className="text-xs text-indigo-600 hover:underline">View</button>
                   {r.status === "ACTIVE" && (
                     <button onClick={() => cancel.mutate(r.id)} className="text-xs text-red-500 hover:underline">Cancel</button>
                   )}
@@ -103,7 +128,16 @@ export default function ReservationsPage() {
         <div className="bg-white rounded-lg border p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-semibold text-gray-900">Reservation: {selected.reservation_no}</h2>
-            <button onClick={() => setSelected(null)} className="text-xs text-gray-500 hover:text-gray-700">✕ Close</button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => generatePickList(selected.id)}
+                disabled={generatingPickList}
+                className="text-xs text-indigo-600 hover:underline disabled:opacity-50"
+              >
+                {generatingPickList ? "Generating…" : "Generate pick list"}
+              </button>
+              <button onClick={() => { setSelected(null); setPickList(null); }} className="text-xs text-gray-500 hover:text-gray-700">✕ Close</button>
+            </div>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -129,6 +163,49 @@ export default function ReservationsPage() {
               </tbody>
             </table>
           </div>
+          {pickListError && <p role="alert" className="mt-3 text-sm text-red-600">{pickListError}</p>}
+          {pickList && (
+            <div className="mt-5 rounded-lg border border-indigo-100 bg-indigo-50/40 p-4">
+              <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
+                <div>
+                  <h3 className="font-semibold text-gray-900">Pick list · {pickList.production_order_no}</h3>
+                  <p className="text-xs text-gray-600">Source: {pickList.warehouse_name} · Generated {new Date(pickList.generated_at).toLocaleString()}</p>
+                </div>
+                <span className="text-xs text-gray-500">Read-only from the active reservation</span>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b text-left text-xs text-gray-600">
+                      <th className="py-2 pr-3">Material</th>
+                      <th className="py-2 pr-3">Lot</th>
+                      <th className="py-2 pr-3">Expiry</th>
+                      <th className="py-2 pr-3">Source location</th>
+                      <th className="py-2 pr-3">Staging location</th>
+                      <th className="py-2 pr-3 text-right">Pick quantity</th>
+                      <th className="py-2">UOM</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {pickList.lines.map((line) => (
+                      <tr key={`${line.material_id}:${line.lot_id ?? "bulk"}:${line.line_no}`}>
+                        <td className="py-2 pr-3">
+                          <div className="font-medium text-gray-800">{line.material_name}</div>
+                          <div className="font-mono text-xs text-gray-500">{line.material_code}</div>
+                        </td>
+                        <td className="py-2 pr-3 font-mono text-xs">{line.lot_number || "Untracked lot"}</td>
+                        <td className="py-2 pr-3 text-xs">{line.expiry_date ? new Date(line.expiry_date).toLocaleDateString() : "—"}</td>
+                        <td className="py-2 pr-3 font-mono text-xs">{line.source_location_code || "Unassigned"}</td>
+                        <td className="py-2 pr-3 font-mono text-xs">{line.staging_location_code || "Unassigned"}</td>
+                        <td className="py-2 pr-3 text-right font-semibold">{Number(line.quantity_to_pick).toLocaleString()}</td>
+                        <td className="py-2 text-xs">{line.uom}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -150,18 +227,25 @@ export default function ReservationsPage() {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-sm font-medium text-gray-700">Lines</h3>
-                <button onClick={() => setLines((p) => [...p, { material_id: "", warehouse_id: "", quantity_required: "", uom: "KG" }])} className="text-xs text-indigo-600 hover:underline">+ Add</button>
+                <button onClick={() => setLines((p) => [...p, { material_id: "", warehouse_id: "", staging_location_id: "", quantity_required: "", uom: "KG" }])} className="text-xs text-indigo-600 hover:underline">+ Add</button>
               </div>
               {lines.map((ln, i) => (
-                <div key={i} className="grid grid-cols-4 gap-2 mb-2">
+                <div key={i} className="grid grid-cols-5 gap-2 mb-2">
                   <input value={ln.material_id} onChange={(e) => setLines((p) => p.map((l, idx) => idx === i ? { ...l, material_id: e.target.value } : l))} className="border rounded px-2 py-1.5 text-xs" placeholder="Material UUID" />
-                  <input value={ln.warehouse_id} onChange={(e) => setLines((p) => p.map((l, idx) => idx === i ? { ...l, warehouse_id: e.target.value } : l))} className="border rounded px-2 py-1.5 text-xs" placeholder="Warehouse UUID" />
+                  <input value={ln.warehouse_id} onChange={(e) => setLines((p) => p.map((l, idx) => idx === i ? { ...l, warehouse_id: e.target.value, staging_location_id: "" } : l))} className="border rounded px-2 py-1.5 text-xs" placeholder="Warehouse UUID" />
+                  <select value={ln.staging_location_id} onChange={(e) => setLines((p) => p.map((l, idx) => idx === i ? { ...l, staging_location_id: e.target.value } : l))} className="border rounded px-2 py-1.5 text-xs">
+                    <option value="">Automatic when unique</option>
+                    {locations.filter((location) => location.warehouse_id === ln.warehouse_id).map((location) => (
+                      <option key={location.id} value={location.id}>{location.code} · {location.name}</option>
+                    ))}
+                  </select>
                   <input type="number" value={ln.quantity_required} onChange={(e) => setLines((p) => p.map((l, idx) => idx === i ? { ...l, quantity_required: e.target.value } : l))} className="border rounded px-2 py-1.5 text-xs" placeholder="Qty" />
                   <select value={ln.uom} onChange={(e) => setLines((p) => p.map((l, idx) => idx === i ? { ...l, uom: e.target.value } : l))} className="border rounded px-2 py-1.5 text-xs">
                     {["KG", "L", "PCS", "CTN"].map((u) => <option key={u}>{u}</option>)}
                   </select>
                 </div>
               ))}
+              <p className="text-xs text-gray-500">Source location comes from the allocated stock row. If a warehouse has multiple active staging locations, select one; no location is guessed.</p>
             </div>
             <div className="flex gap-2 justify-end pt-2">
               <button onClick={() => setShowCreate(false)} className="px-4 py-2 text-sm text-gray-600 border rounded-lg hover:bg-gray-50">Cancel</button>

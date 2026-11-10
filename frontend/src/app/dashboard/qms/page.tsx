@@ -104,6 +104,7 @@ export default function QMSDashboardPage() {
           { label: "Corrective Actions", href: "/dashboard/qms/corrective-actions", color: "border-purple-200 hover:bg-purple-50" },
           { label: "Quarantine / Hold", href: "/dashboard/qms/quarantine", color: "border-red-200 hover:bg-red-50" },
           { label: "Allergen Validation", href: "/dashboard/qms/allergen", color: "border-yellow-200 hover:bg-yellow-50" },
+          { label: "Calibration Instruments", href: "/dashboard/qms/calibration", color: "border-cyan-200 hover:bg-cyan-50" },
           { label: "QMS Reports", href: "/dashboard/qms/reports", color: "border-gray-200 hover:bg-gray-50" },
           { label: "AI Quality Agents", href: "/dashboard/qms/ai", color: "border-violet-200 hover:bg-violet-50" },
         ].map(n => (

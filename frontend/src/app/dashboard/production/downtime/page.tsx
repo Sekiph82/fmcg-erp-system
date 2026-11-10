@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { advProductionApi } from "@/lib/productionAdvanced";
+import { advProductionApi, DowntimeReasonCode } from "@/lib/productionAdvanced";
 import { extractApiError } from "@/lib/inventory";
 import { Table } from "@/components/ui/Table";
 import { Badge } from "@/components/ui/Badge";
@@ -25,10 +25,12 @@ export default function DowntimePage() {
   const [open, setOpen]       = useState(false);
   const [catFilter, setCat]   = useState("");
   const [deletingId, setDel]  = useState<string|null>(null);
-  const [form, setForm] = useState({ downtime_id:"", work_center_id:"", machine_id:"", start_time:"", end_time:"", reason:"", category:"unplanned", reported_by:"" });
+  const [form, setForm] = useState({ downtime_id:"", work_center_id:"", machine_id:"", start_time:"", end_time:"", reason:"", reason_code:"", category:"unplanned", reported_by:"" });
 
   const { data: wcs   = [] } = useQuery({ queryKey:["work-centers"], queryFn:()=>advProductionApi.listWorkCenters() });
   const { data: items = [], isLoading } = useQuery({ queryKey:["downtime",catFilter], queryFn:()=>advProductionApi.listDowntime(catFilter?{category:catFilter}:undefined) });
+  const { data: reasonCodes = [] } = useQuery<DowntimeReasonCode[]>({ queryKey:["downtime-reason-codes"], queryFn:()=>advProductionApi.listDowntimeReasonCodes() });
+  const reasonCategories = reasonCodes.filter((reasonCode) => reasonCode.parent_code == null);
 
   const totalMin = items.reduce((s,i)=>s+(i.duration_min??0),0);
   const create = useMutation({ mutationFn:()=>advProductionApi.createDowntime(form), onSuccess:()=>{ qc.invalidateQueries({queryKey:["downtime"]}); setOpen(false); toast("success","Logged","Downtime event recorded."); }, onError:(e)=>toast("error","Failed",extractApiError(e)) });
@@ -60,7 +62,7 @@ export default function DowntimePage() {
           { header:"End",         accessor:(r)=>r.end_time ? new Date(r.end_time).toLocaleString() : <span className="text-yellow-600 text-xs font-semibold">Ongoing</span> },
           { header:"Duration (min)", accessor:(r)=>r.duration_min??<span className="text-yellow-600">—</span> },
           { header:"Category",    accessor:(r)=><Badge label={r.category} variant={catVariant(r.category)}/> },
-          { header:"Reason",      accessor:(r)=><span className="text-xs text-gray-600 max-w-[200px] truncate block">{r.reason}</span> },
+          { header:"Reason",      accessor:(r)=><span className="text-xs text-gray-600 max-w-[200px] truncate block">{r.reason}{r.reason_code ? ` · ${reasonCodes.find((item) => item.code === r.reason_code)?.label || r.reason_code}` : ""}</span> },
           { header:"Reported By", accessor:(r)=>r.reported_by??"—" },
           { header:"", accessor:(r)=><button onClick={()=>setDel(r.id)} className="text-xs text-red-500 hover:underline">Delete</button> },
         ]}/>
@@ -81,6 +83,19 @@ export default function DowntimePage() {
             <Input label="End Time"     type="datetime-local" onChange={e=>setForm(f=>({...f,end_time:e.target.value}))}/>
           </div>
           <Input label="Reason *" value={form.reason} onChange={e=>setForm(f=>({...f,reason:e.target.value}))} required placeholder="Power outage, equipment failure…"/>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Reason Code *</label>
+            <select required className="w-full border rounded px-3 py-2 text-sm" value={form.reason_code} onChange={e=>setForm(f=>({...f,reason_code:e.target.value}))}>
+              <option value="">Select reason code…</option>
+              {reasonCategories.map((category) => (
+                <optgroup key={category.code} label={category.label}>
+                  {reasonCodes.filter((reasonCode) => reasonCode.parent_code === category.code && reasonCode.is_selectable).map((reasonCode) => (
+                    <option key={reasonCode.code} value={reasonCode.code}>{reasonCode.label}</option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+          </div>
           <Input label="Reported By" value={form.reported_by} onChange={e=>setForm(f=>({...f,reported_by:e.target.value}))}/>
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" type="button" onClick={()=>setOpen(false)}>Cancel</Button>

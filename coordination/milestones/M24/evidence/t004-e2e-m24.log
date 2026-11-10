@@ -1,0 +1,20 @@
+
+> fmcg-erp-frontend@0.1.0 test:e2e
+> playwright test e2e/m24-material-flow-issue.mocked.spec.ts --project=chromium --no-deps --reporter=list
+
+[WebServer] (node:44832) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:1740) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] ⨯ Failed to start server
+[WebServer] Error: listen EADDRINUSE: address already in use :::3000
+[WebServer]     at new Promise (<anonymous>) {
+[WebServer]   code: 'EADDRINUSE',
+[WebServer]   errno: -4091,
+[WebServer]   syscall: 'listen',
+[WebServer]   address: '::',
+[WebServer]   port: 3000
+[WebServer] }
+Error: Process from config.webServer was not able to start. Exit code: 1
+
+EXIT=1

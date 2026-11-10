@@ -1,0 +1,3 @@
+removed=fmcg-m34-s04-t004-986e0bf2aabd49faabec21db
+verified_absent=true
+verification=docker ps -a exact-name filter returned no container

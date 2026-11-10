@@ -1,0 +1,115 @@
+FF.......................................sss.ssss                        [100%]
+================================== FAILURES ===================================
+__________ test_production_release_gate_blocks_before_status_change ___________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000012A9C0B7170>
+
+    @pytest.mark.asyncio
+    async def test_production_release_gate_blocks_before_status_change(monkeypatch):
+        order = SimpleNamespace(
+            id=uuid4(), recipe_id=uuid4(), status=ProductionOrderStatus.PLANNED, order_no="PO-1"
+        )
+        recipe = SimpleNamespace(status=SimpleNamespace(value="APPROVED"))
+        db = _ResultDB([_ScalarResult(order), _ScalarResult(recipe)])
+        events = []
+    
+        async def lock(_db, module, event):
+            events.append(("lock", module, event))
+    
+        async def check(_db, got_order, event, as_of_date, actor_id=None):
+            events.append(("check", got_order, event, as_of_date))
+            raise ValueError("missing in-process QC")
+    
+        monkeypatch.setattr(qms_service, "lock_quality_gate_scope", lock)
+        monkeypatch.setattr(qms_service, "ensure_production_quality_gates_pass", check)
+    
+        with pytest.raises(HTTPException) as raised:
+>           await production_service.release_order(db, order, uuid4())
+
+tests\test_m27_s02_t002_production_gate.py:94: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+db = <tests.test_m27_s02_t002_production_gate._ResultDB object at 0x0000012A9D533020>
+order = namespace(id=UUID('6ddc2283-e4e9-42ff-9e2e-e12797337dd6'), recipe_id=UUID('7066370a-5069-4bcf-bc8a-f2a6932124ce'), status=<ProductionOrderStatus.PLANNED: 'PLANNED'>, order_no='PO-1')
+user_id = UUID('8875927a-2edb-430c-866f-a0795d2d47dc')
+
+    async def release_order(
+        db: AsyncSession, order: ProductionOrder, user_id: uuid.UUID
+    ) -> ProductionOrder:
+        order = await _lock_order_for_transition(db, order.id)
+        _require_order_transition(order, ProductionOrderStatus.RELEASED)
+>       if order.approved_by is None or order.approved_at is None:
+           ^^^^^^^^^^^^^^^^^
+E       AttributeError: 'types.SimpleNamespace' object has no attribute 'approved_by'
+
+app\services\production_service.py:553: AttributeError
+____ test_production_completion_gate_blocks_before_inventory_side_effects _____
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000012A9D533D70>
+
+    @pytest.mark.asyncio
+    async def test_production_completion_gate_blocks_before_inventory_side_effects(monkeypatch):
+        order = SimpleNamespace(id=uuid4(), status=ProductionOrderStatus.IN_PROGRESS, order_no="PO-2")
+        db = _ResultDB([_ScalarResult(order)])
+        events = []
+    
+        async def lock(_db, module, event):
+            events.append(("lock", module, event))
+    
+        async def check(_db, got_order, event, as_of_date, actor_id=None):
+            events.append(("check", got_order, event, as_of_date))
+            raise ValueError("missing in-process QC")
+    
+        monkeypatch.setattr(qms_service, "lock_quality_gate_scope", lock)
+        monkeypatch.setattr(qms_service, "ensure_production_quality_gates_pass", check)
+    
+        with pytest.raises(HTTPException) as raised:
+>           await production_service.complete_order(
+                db,
+                order,
+                SimpleNamespace(actual_quantity=Decimal("2")),
+                uuid4(),
+            )
+
+tests\test_m27_s02_t002_production_gate.py:120: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+db = <tests.test_m27_s02_t002_production_gate._ResultDB object at 0x0000012A9D532F00>
+order = namespace(id=UUID('bd14aab9-661b-4573-b4a3-02e15ee94e6b'), status=<ProductionOrderStatus.IN_PROGRESS: 'IN_PROGRESS'>, order_no='PO-2')
+req = namespace(actual_quantity=Decimal('2'))
+user_id = UUID('3e5f5a84-a2ad-4db4-8c64-5df89336a8a4')
+
+    async def complete_order(
+        db: AsyncSession,
+        order: ProductionOrder,
+        req: CompleteOrderRequest,
+        user_id: uuid.UUID,
+    ) -> ProductionOrder:
+        order_result = await db.execute(
+            select(ProductionOrder)
+            .where(ProductionOrder.id == order.id)
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        )
+        order = order_result.scalar_one_or_none()
+        if order is None:
+            raise HTTPException(404, detail="Production order not found")
+    
+        if order.status != ProductionOrderStatus.IN_PROGRESS:
+            raise HTTPException(422, detail=f"Order is {order.status.value}. Must be IN_PROGRESS to complete.")
+        _require_order_transition(order, ProductionOrderStatus.COMPLETED)
+    
+        requested_quantity = Decimal(req.actual_quantity)
+        if not requested_quantity.is_finite() or requested_quantity <= 0:
+            raise HTTPException(422, detail="actual_quantity must be a positive finite quantity.")
+        if requested_quantity != requested_quantity.quantize(Decimal("0.001")):
+            raise HTTPException(422, detail="actual_quantity must use no more than three decimal places.")
+>       if requested_quantity > Decimal(order.planned_quantity):
+                                        ^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'types.SimpleNamespace' object has no attribute 'planned_quantity'
+
+app\services\production_service.py:867: AttributeError
+=========================== short test summary info ===========================
+FAILED tests/test_m27_s02_t002_production_gate.py::test_production_release_gate_blocks_before_status_change
+FAILED tests/test_m27_s02_t002_production_gate.py::test_production_completion_gate_blocks_before_inventory_side_effects
+2 failed, 40 passed, 7 skipped in 20.40s

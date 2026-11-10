@@ -1,0 +1,30 @@
+......                                                                   [100%]
+============================== warnings summary ===============================
+tests/test_m34_s04_t002_tolerance_exception_db.py::test_configured_tolerance_role_controls_exception_approval
+tests/test_m34_s04_t002_tolerance_exception_db.py::test_auto_approval_flag_holds_in_tolerance_variance_until_role_approval
+tests/test_m34_s04_t002_tolerance_exception_db.py::test_explicit_policy_can_allow_payment_beyond_tolerance_without_overriding_hard_blocks
+tests/test_m34_s04_t002_tolerance_exception_db.py::test_absolute_quantity_tolerance_is_enforced_alongside_percentage
+tests/test_m34_s04_t002_tolerance_exception_db.py::test_overbilling_cannot_be_released_by_exception_approval
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\services\invoice_match_service.py:211: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    run_at=datetime.utcnow(),
+
+tests/test_m34_s04_t002_tolerance_exception_db.py::test_configured_tolerance_role_controls_exception_approval
+tests/test_m34_s04_t002_tolerance_exception_db.py::test_auto_approval_flag_holds_in_tolerance_variance_until_role_approval
+tests/test_m34_s04_t002_tolerance_exception_db.py::test_explicit_policy_can_allow_payment_beyond_tolerance_without_overriding_hard_blocks
+tests/test_m34_s04_t002_tolerance_exception_db.py::test_absolute_quantity_tolerance_is_enforced_alongside_percentage
+tests/test_m34_s04_t002_tolerance_exception_db.py::test_overbilling_cannot_be_released_by_exception_approval
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\services\invoice_match_service.py:217: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    hdr.run_at = datetime.utcnow()
+
+tests/test_m34_s04_t002_tolerance_exception_db.py::test_configured_tolerance_role_controls_exception_approval
+tests/test_m34_s04_t002_tolerance_exception_db.py::test_auto_approval_flag_holds_in_tolerance_variance_until_role_approval
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\services\invoice_match_service.py:760: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    hdr.approved_at = datetime.utcnow()
+
+tests/test_m34_s04_t002_tolerance_exception_db.py::test_configured_tolerance_role_controls_exception_approval
+tests/test_m34_s04_t002_tolerance_exception_db.py::test_auto_approval_flag_holds_in_tolerance_variance_until_role_approval
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\services\invoice_match_service.py:780: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    hdr.reviewed_at = datetime.utcnow()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+6 passed, 14 warnings in 8.59s

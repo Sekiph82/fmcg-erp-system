@@ -122,6 +122,8 @@ const REDIRECTS: Record<string, { p: string; t?: string; d?: string }> = {
 
 /** Real standalone pages — skip prefix-redirect so the page renders instead of redirecting */
 const BYPASS_PREFIX_REDIRECT = new Set([
+  // Calibration instrument register is now a real standalone QMS page.
+  "/dashboard/qms/calibration",
   // MPS real standalone pages (restored Round 13)
   "/dashboard/mps/planning-board",
   "/dashboard/mps/capacity",

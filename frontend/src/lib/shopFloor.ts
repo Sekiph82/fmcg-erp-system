@@ -7,7 +7,8 @@ export type SFSessionStatus = "ACTIVE" | "IDLE" | "LOGGED_OUT" | "EXPIRED";
 export type WOEventType =
   | "START" | "PAUSE" | "RESUME" | "FINISH"
   | "QTY_UPDATE" | "SCRAP" | "DOWNTIME_START" | "DOWNTIME_STOP"
-  | "QC_TRIGGER" | "HELP_REQUEST" | "HANDOVER" | "NOTE" | "SUPERVISOR_OVERRIDE";
+  | "QC_TRIGGER" | "QC_CHECKPOINT" | "MATERIAL_CONSUMPTION"
+  | "HELP_REQUEST" | "HANDOVER" | "NOTE" | "SUPERVISOR_OVERRIDE";
 
 export type SFLiveStatus =
   | "WAITING" | "READY" | "ASSIGNED" | "RUNNING"
@@ -46,7 +47,12 @@ export interface WOActivityLog {
   work_order_id: string;
   production_order_id: string | null;
   session_id: string | null;
+  actor_user_id?: string | null;
+  operator_id?: string | null;
   operator_name: string | null;
+  team_id?: string | null;
+  machine_id?: string | null;
+  shift_id?: string | null;
   line_id: string | null;
   event_type: WOEventType;
   timestamp_start: string;
@@ -61,14 +67,37 @@ export interface WOActivityLog {
   created_at: string;
 }
 
+export interface SFOperationMaterial {
+  id: string;
+  production_order_id: string;
+  work_order_id: string;
+  item_type: string;
+  item_id: string | null;
+  item_name: string | null;
+  item_code: string | null;
+  required_qty: number;
+  reserved_qty: number;
+  issued_qty: number;
+  consumed_qty: number;
+  returned_qty: number;
+  scrapped_qty: number;
+  uom: string;
+  status: string;
+  lot_numbers: string[] | null;
+}
+
 export interface SFDowntimeLog {
   id: string;
   work_order_id: string | null;
   production_order_id: string | null;
+  session_id?: string | null;
   machine_id: string | null;
   machine_name: string | null;
   line_id: string | null;
   operator_name: string | null;
+  operator_id?: string | null;
+  team_id?: string | null;
+  shift_id?: string | null;
   start_time: string;
   end_time: string | null;
   duration_minutes: number | null;
@@ -137,6 +166,7 @@ export interface LiveWOItem {
   product_name: string | null;
   batch_no: string | null;
   qc_required_flag: boolean;
+  qc_passed: boolean | null;
   has_active_downtime: boolean;
   last_event: string | null;
   last_event_time: string | null;
@@ -225,13 +255,89 @@ export const IMPACT_COLOR: Record<SFImpactLevel, string> = {
 
 // ── API client ─────────────────────────────────────────────────────────────────
 
+const inMemoryIdempotencyKeys = new Map<string, string>();
+
+export class ShopFloorRequestError extends Error {
+  constructor(
+    public readonly status: number | null,
+    public readonly hasIdempotencyKey = false,
+  ) {
+    super(status === null ? "The Shop Floor server could not be reached." : `Shop Floor request failed (${status}).`);
+    this.name = "ShopFloorRequestError";
+  }
+}
+
+export function describeShopFloorError(error: unknown): { message: string; requiresRefresh: boolean } {
+  const status = error instanceof ShopFloorRequestError ? error.status : null;
+  if (status === 401) return { message: "Your sign-in has expired. Sign in again before continuing.", requiresRefresh: false };
+  if (status === 403) return { message: "You do not have permission for this action. Contact a supervisor if you need access.", requiresRefresh: false };
+  if (status === 409) return { message: "The server reports a conflict. Refresh the latest Shop Floor state and resolve it before retrying.", requiresRefresh: true };
+  if (status !== null && status < 500) return { message: `The server rejected this request (${status}). Check the current record and your entries before trying again.`, requiresRefresh: false };
+  const retryGuidance = error instanceof ShopFloorRequestError && error.hasIdempotencyKey
+    ? "An unchanged retry reuses its request key."
+    : "Confirm the latest session or record state before resubmitting."
+  return {
+    message: `The result is not confirmed. The server may have saved this action. Refresh Shop Floor state before deciding what to do. ${retryGuidance} Offline changes are not stored on this device.`,
+    requiresRefresh: true,
+  };
+}
+
+async function pendingExecutionIdempotencyKey(path: string, body: string): Promise<{ storageKey: string; key: string }> {
+  const source = `${path}\n${body}`;
+  const bytes = new TextEncoder().encode(source);
+  const digest = await globalThis.crypto.subtle.digest("SHA-256", bytes);
+  const fingerprint = Array.from(new Uint8Array(digest), (value) => value.toString(16).padStart(2, "0")).join("");
+  const storageKey = `shop-floor:idempotency:${fingerprint}`;
+  let key: string | null = null;
+  try {
+    key = globalThis.sessionStorage.getItem(storageKey);
+  } catch {
+    key = inMemoryIdempotencyKeys.get(storageKey) || null;
+  }
+  if (!key) {
+    key = globalThis.crypto.randomUUID();
+    try {
+      globalThis.sessionStorage.setItem(storageKey, key);
+    } catch {
+      inMemoryIdempotencyKeys.set(storageKey, key);
+    }
+  }
+  return { storageKey, key };
+}
+
+function clearPendingExecutionIdempotencyKey(storageKey: string): void {
+  inMemoryIdempotencyKeys.delete(storageKey);
+  try {
+    globalThis.sessionStorage.removeItem(storageKey);
+  } catch {
+    // The in-memory entry is still cleared when session storage is unavailable.
+  }
+}
+
 async function req<T>(path: string, opts?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, {
-    headers: { "Content-Type": "application/json" },
-    ...opts,
-  });
-  if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
-  return res.json();
+  const method = (opts?.method || "GET").toUpperCase();
+  const requestBody = typeof opts?.body === "string" ? opts.body : "";
+  const idempotency = method === "POST" && (
+    path.startsWith("/work-orders/") || path === "/downtime" || path.startsWith("/downtime/")
+  )
+    ? await pendingExecutionIdempotencyKey(path, requestBody)
+    : null;
+  const headers = new Headers(opts?.headers);
+  headers.set("Content-Type", "application/json");
+  if (idempotency) headers.set("Idempotency-Key", idempotency.key);
+  let res: Response;
+  try {
+    res = await fetch(`${BASE}${path}`, {
+      ...opts,
+      headers,
+    });
+  } catch {
+    throw new ShopFloorRequestError(null, idempotency !== null);
+  }
+  if (!res.ok) throw new ShopFloorRequestError(res.status, idempotency !== null);
+  const result = await res.json();
+  if (idempotency) clearPendingExecutionIdempotencyKey(idempotency.storageKey);
+  return result;
 }
 
 export const sfApi = {
@@ -247,6 +353,7 @@ export const sfApi = {
   // Sessions
   createSession: (body: Partial<SFSession> & { operator_name: string }) =>
     req<SFSession>("/sessions", { method: "POST", body: JSON.stringify(body) }),
+  getSession: (id: string) => req<SFSession>(`/sessions/${id}`),
   listSessions: (status?: string) => {
     const qs = status ? `?status=${status}` : "";
     return req<SFSession[]>(`/sessions${qs}`);
@@ -268,14 +375,40 @@ export const sfApi = {
     req<WOActivityLog>(`/work-orders/${woId}/scrap`, { method: "POST", body: JSON.stringify(body) }),
   finishWO: (woId: string, body: Record<string, unknown>) =>
     req<WOActivityLog>(`/work-orders/${woId}/finish`, { method: "POST", body: JSON.stringify(body) }),
-  requestHelp: (woId: string, remarks: string, operatorName?: string) =>
-    req<WOActivityLog>(`/work-orders/${woId}/help`, { method: "POST", body: JSON.stringify({ remarks, operator_name: operatorName }) }),
+  requestHelp: (woId: string, remarks: string, operatorName?: string, sessionId?: string) =>
+    req<WOActivityLog>(`/work-orders/${woId}/help`, { method: "POST", body: JSON.stringify({ remarks, operator_name: operatorName, session_id: sessionId }) }),
   triggerQC: (woId: string, body: Record<string, unknown>) =>
     req<WOActivityLog>(`/work-orders/${woId}/qc-trigger`, { method: "POST", body: JSON.stringify(body) }),
-  addNote: (woId: string, remarks: string, operatorName?: string) =>
-    req<WOActivityLog>(`/work-orders/${woId}/note`, { method: "POST", body: JSON.stringify({ remarks, operator_name: operatorName }) }),
+  addNote: (woId: string, remarks: string, operatorName?: string, sessionId?: string) =>
+    req<WOActivityLog>(`/work-orders/${woId}/note`, { method: "POST", body: JSON.stringify({ remarks, operator_name: operatorName, session_id: sessionId }) }),
   getActivityLog: (woId: string) =>
     req<WOActivityLog[]>(`/work-orders/${woId}/activity`),
+  getWorkOrderMaterials: (woId: string, sessionId: string) =>
+    req<SFOperationMaterial[]>(`/work-orders/${woId}/materials?session_id=${encodeURIComponent(sessionId)}`),
+  consumeWorkOrderMaterial: (
+    woId: string,
+    materialId: string,
+    body: { qty: number; session_id: string; lot_no?: string },
+  ) => req<SFOperationMaterial>(
+    `/work-orders/${woId}/materials/${materialId}/consume`,
+    { method: "POST", body: JSON.stringify(body) },
+  ),
+  getWorkOrderQCCheckpoints: (woId: string, sessionId: string) =>
+    req<WOActivityLog[]>(`/work-orders/${woId}/qc-checkpoints?session_id=${encodeURIComponent(sessionId)}`),
+  recordWorkOrderQCCheckpoint: (
+    woId: string,
+    body: {
+      session_id: string;
+      checkpoint_name: string;
+      result: "PASS" | "FAIL";
+      measured_value?: string;
+      unit?: string;
+      notes?: string;
+    },
+  ) => req<WOActivityLog>(`/work-orders/${woId}/qc-checkpoints`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  }),
 
   // Downtime
   startDowntime: (body: Record<string, unknown>) =>

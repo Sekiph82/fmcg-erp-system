@@ -1,0 +1,29 @@
+
+> fmcg-erp-frontend@0.1.0 test:e2e
+> playwright test e2e/m24-material-flow-issue.mocked.spec.ts --project=chromium --no-deps --reporter=list --retries=0
+
+[WebServer] (node:50124) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:34004) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] ⚠ Warning: Next.js ignored package-lock.json in C:\Users\sekip because it is outside the current Git repository (C:\Users\sekip\Desktop\fmcg-erp-system).
+[WebServer]  To use this directory, set `turbopack.root` in your Next.js config.
+[WebServer] 
+[WebServer] ⚠ React 18 support is deprecated in Next.js 16 and will be removed in Next.js 17. Please upgrade to React 19. Learn more: https://nextjs.org/docs/messages/react-version
+[WebServer] ⚠ The "middleware" file convention is deprecated. Please use "proxy" instead.
+[WebServer] 
+[WebServer]   To migrate automatically, run:
+[WebServer]   npx @next/codemod@canary middleware-to-proxy .
+[WebServer] 
+[WebServer]   Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+
+Running 1 test using 1 worker
+
+(node:54592) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:54592) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 1 [chromium] › e2e\m24-material-flow-issue.mocked.spec.ts:122:7 › M24 material issue UI with synthetic API › posts only the selected reserved line and shows the confirmed issue (2.0s)
+
+  1 passed (8.1s)
+EXIT=0

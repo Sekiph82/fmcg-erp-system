@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { qmsApi, CriticalControlPoint, CCPMonitoringLog, RISK_BG } from "@/lib/qms";
+import { qmsApi, CriticalControlPoint, CCPMonitoringLog, CalibrationRecord, RISK_BG } from "@/lib/qms";
 
 export default function CCPMonitoringPage() {
   const [ccps, setCCPs] = useState<CriticalControlPoint[]>([]);
@@ -10,6 +10,8 @@ export default function CCPMonitoringPage() {
   const [logs, setLogs] = useState<CCPMonitoringLog[]>([]);
   const [logsLoading, setLogsLoading] = useState(false);
   const [monitorForm, setMonitorForm] = useState<Record<string, unknown>>({});
+  const [calibrationInstruments, setCalibrationInstruments] = useState<CalibrationRecord[]>([]);
+  const [monitorError, setMonitorError] = useState("");
   const [showMonitor, setShowMonitor] = useState(false);
   const [showNewCCP, setShowNewCCP] = useState(false);
   const [ccpForm, setCcpForm] = useState<Record<string, unknown>>({
@@ -23,6 +25,7 @@ export default function CCPMonitoringPage() {
     Promise.all([qmsApi.listCCPs(), qmsApi.listViolations(20)])
       .then(([c, v]) => { setCCPs(c); setViolations(v); })
       .finally(() => setLoading(false));
+    qmsApi.listCalibrations().then(setCalibrationInstruments).catch(() => setCalibrationInstruments([]));
   };
 
   useEffect(load, []);
@@ -35,12 +38,17 @@ export default function CCPMonitoringPage() {
 
   const handleMonitor = async () => {
     if (!selectedCCP) return;
+    setMonitorError("");
     const body = { ...monitorForm, ccp_id: selectedCCP.id,
       monitoring_datetime: new Date().toISOString() };
-    await qmsApi.recordMonitoring(body);
-    setShowMonitor(false);
-    loadLogs(selectedCCP);
-    load();
+    try {
+      await qmsApi.recordMonitoring(body);
+      setShowMonitor(false);
+      loadLogs(selectedCCP);
+      load();
+    } catch {
+      setMonitorError("The reading was not recorded. Check the selected instrument's calibration status and try again.");
+    }
   };
 
   const handleCreateCCP = async () => {
@@ -227,7 +235,12 @@ export default function CCPMonitoringPage() {
               {selectedCCP ? `${selectedCCP.ccp_no} — Monitoring Logs` : "Select a CCP to view logs"}
             </h2>
             {selectedCCP && (
-              <button onClick={() => setShowMonitor(!showMonitor)}
+              <button onClick={() => {
+                const next = !showMonitor;
+                setShowMonitor(next);
+                setMonitorError("");
+                setMonitorForm({ recorded_value: "", instrument_calibration_id: "", notes: "" });
+              }}
                 className="text-sm px-3 py-1.5 bg-teal-600 text-white rounded-lg hover:bg-teal-700">
                 + Record
               </button>
@@ -246,14 +259,32 @@ export default function CCPMonitoringPage() {
                     onChange={e => setMonitorForm(p => ({ ...p, recorded_value: parseFloat(e.target.value) }))} />
                 </div>
                 <div>
+                  <label className="text-xs text-gray-500 block mb-1">Calibration instrument *</label>
+                  <select className="border rounded-lg px-3 py-2 text-sm w-full"
+                    value={(monitorForm.instrument_calibration_id as string) || ""}
+                    onChange={e => setMonitorForm(p => ({ ...p, instrument_calibration_id: e.target.value }))}>
+                    <option value="">Select a verified instrument</option>
+                    {calibrationInstruments.map((instrument) => {
+                      const eligible = instrument.is_active && (instrument.status === "CURRENT" || instrument.status === "DUE_SOON");
+                      return <option key={instrument.id} value={instrument.id} disabled={!eligible}>
+                        {instrument.instrument_id} — {instrument.instrument_name} ({instrument.status.replaceAll("_", " ")})
+                      </option>;
+                    })}
+                  </select>
+                  <p className="mt-1 text-xs text-gray-500">Numeric CCP readings require a linked instrument that is verified and not expired. Due soon remains usable until its due date.</p>
+                </div>
+                <div>
                   <label className="text-xs text-gray-500 block mb-1">Notes</label>
                   <input className="border rounded-lg px-3 py-2 text-sm w-full"
                     value={(monitorForm.notes as string) || ""}
                     onChange={e => setMonitorForm(p => ({ ...p, notes: e.target.value }))} />
                 </div>
               </div>
+              {monitorError ? <p role="alert" className="text-sm text-red-700">{monitorError}</p> : null}
+              {calibrationInstruments.length === 0 ? <p className="text-sm text-amber-700">No calibration instruments are available. Register one in the calibration registry before recording a numeric reading.</p> : null}
               <div className="flex gap-3">
                 <button onClick={handleMonitor}
+                  disabled={typeof monitorForm.recorded_value !== "number" || !Number.isFinite(monitorForm.recorded_value) || !monitorForm.instrument_calibration_id}
                   className="px-3 py-1.5 bg-teal-600 text-white text-sm rounded-lg hover:bg-teal-700">
                   Record
                 </button>
@@ -284,6 +315,7 @@ export default function CCPMonitoringPage() {
                           VIOLATION +{l.deviation_amount}
                         </span>
                       )}
+                      {l.calibration_instrument_code && <span className="text-xs text-gray-500">Instrument {l.calibration_instrument_code} · {l.calibration_status_at_record?.replaceAll("_", " ")}</span>}
                     </div>
                     <span className="text-xs text-gray-400">{new Date(l.monitoring_datetime).toLocaleString()}</span>
                   </div>

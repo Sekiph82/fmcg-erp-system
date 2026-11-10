@@ -128,12 +128,12 @@ export interface OEEMetrics {
   order_id: string;
   order_no: string;
   scheduled_minutes: number;
-  actual_minutes?: number;
+  actual_minutes?: number | null;
   downtime_minutes: number;
-  availability: number;
-  performance: number;
-  quality: number;
-  oee: number;
+  availability: number | null;
+  performance: number | null;
+  quality: number | null;
+  oee: number | null;
 }
 
 export interface ProductionOrderDetail extends ProductionOrder {

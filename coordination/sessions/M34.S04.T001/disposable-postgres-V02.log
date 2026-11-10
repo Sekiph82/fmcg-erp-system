@@ -1,0 +1,81 @@
+**********************
+PowerShell transcript start
+Start time: 20261104021657
+Username: SEKIPH\sekip
+RunAs User: SEKIPH\sekip
+Configuration Name: 
+Machine: SEKIPH (Microsoft Windows NT 10.0.26300.0)
+Host Application: C:\Users\sekip\.cache\codex-runtimes\codex-primary-runtime\dependencies\native\powershell\pwsh.dll -Command try { [Console]::OutputEncoding=[System.Text.Encoding]::UTF8 } catch {}
+$ErrorActionPreference='Stop'
+Set-Location -LiteralPath 'C:\Users\sekip\Desktop\fmcg-erp-system'
+$session=Join-Path (Get-Location) 'coordination/sessions/M34.S04.T001'
+$log=Join-Path $session 'disposable-postgres-V02.log'
+$suffix=[Guid]::NewGuid().ToString('N').Substring(0,24)
+$db="fmcg_m34_s04_t001_$suffix"
+$name="fmcg-m34-s04-t001-$suffix"
+Start-Transcript -Path $log -Force | Out-Null
+$priorUrl=$env:DATABASE_URL
+$priorGate=$env:M34_S04_T001_DISPOSABLE_TEST_DATABASE
+$priorName=$env:M34_S04_T001_DISPOSABLE_TEST_DATABASE_NAME
+$started=$false
+try {
+  Write-Output "Disposable database: $db"
+  docker run --rm --detach --name $name --env POSTGRES_HOST_AUTH_METHOD=trust --env "POSTGRES_DB=$db" --publish 127.0.0.1::5432 postgres:16.6
+  if($LASTEXITCODE -ne 0){throw 'docker run failed'}
+  $started=$true
+  $ready=$false
+  for($i=0;$i -lt 75;$i++){
+    docker exec $name pg_isready -U postgres -d $db *> $null
+    if($LASTEXITCODE -eq 0){$ready=$true;break}
+    Start-Sleep -Seconds 1
+  }
+  if(-not $ready){throw 'PostgreSQL did not become ready'}
+  $portOutput=docker port $name 5432/tcp
+  if($LASTEXITCODE -ne 0){throw 'docker port failed'}
+  $port=[int](($portOutput.Trim() -split ':')[-1])
+  $env:DATABASE_URL="postgresql+asyncpg://postgres@127.0.0.1:$port/$db"
+  $env:M34_S04_T001_DISPOSABLE_TEST_DATABASE='1'
+  $env:M34_S04_T001_DISPOSABLE_TEST_DATABASE_NAME=$db
+  Set-Location -LiteralPath (Join-Path (Get-Location) 'backend')
+  python -m alembic upgrade head
+  if($LASTEXITCODE -ne 0){throw 'alembic upgrade head failed'}
+  python -m pytest tests/test_m34_s04_t001_invoice_match_db.py -q
+  if($LASTEXITCODE -ne 0){throw 'M34.S04.T001 PostgreSQL tests failed'}
+  python -m alembic current
+  if($LASTEXITCODE -ne 0){throw 'alembic current failed'}
+  Write-Output 'M34.S04.T001 PostgreSQL tests passed.'
+}
+finally {
+  Set-Location -LiteralPath 'C:\Users\sekip\Desktop\fmcg-erp-system'
+  if($started){
+    docker stop $name 2>$null | Out-Null
+    $remaining=docker ps -a --filter "name=^/$name$" --format '{{.Names}}'
+    if($remaining){Write-Output "Removing task-owned disposable container: $remaining"; docker rm --force $name | Out-Null}
+    $check=docker ps -a --filter "name=^/$name$" --format '{{.Names}}'
+    if($check){Write-Output "Container cleanup failed: $check"} else {Write-Output 'Disposable container cleanup verified.'}
+  }
+  $env:DATABASE_URL=$priorUrl
+  $env:M34_S04_T001_DISPOSABLE_TEST_DATABASE=$priorGate
+  $env:M34_S04_T001_DISPOSABLE_TEST_DATABASE_NAME=$priorName
+  Stop-Transcript | Out-Null
+}
+Process ID: 34876
+PSVersion: 7.6.5
+PSEdition: Core
+GitCommitId: 7.6.5
+OS: Microsoft Windows 10.0.26300
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+Disposable database: fmcg_m34_s04_t001_672ac748a0d94709a11ed063
+
+
+
+Disposable container cleanup verified.
+**********************
+PowerShell transcript end
+End time: 20261104021753
+**********************

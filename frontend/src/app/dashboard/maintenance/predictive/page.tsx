@@ -58,8 +58,10 @@ export default function PredictiveMaintenancePage() {
   const [statusFilter, setStatusFilter] = useState<MaintenancePredictionStatus | "">("OPEN");
   const [riskFilter, setRiskFilter] = useState<MaintenancePredictionRisk | "">("");
   const [horizonDays, setHorizonDays] = useState(30);
-  const [reviewer, setReviewer] = useState("maintenance_planner");
   const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({});
+  const [actionPrediction, setActionPrediction] = useState<MaintenancePrediction | null>(null);
+  const [actionPlanId, setActionPlanId] = useState("");
+  const [actionScheduledDate, setActionScheduledDate] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   const predictionsQuery = useQuery<MaintenancePrediction[]>({
@@ -69,6 +71,12 @@ export default function PredictiveMaintenancePage() {
       risk_level: riskFilter || undefined,
       limit: 150,
     }),
+  });
+
+  const actionPlansQuery = useQuery({
+    queryKey: ["maintenance-pm-plans", actionPrediction?.asset_id],
+    queryFn: () => maintenanceApi.listPMPlans({ asset_id: actionPrediction!.asset_id!, active_only: true }),
+    enabled: Boolean(actionPrediction?.asset_id),
   });
 
   const generate = useMutation({
@@ -81,17 +89,38 @@ export default function PredictiveMaintenancePage() {
   });
 
   const review = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: MaintenancePredictionStatus }) =>
+    mutationFn: ({ id, status }: { id: string; status: "REVIEWED" | "DISMISSED" }) =>
       maintenanceApi.reviewPrediction(id, {
         status,
-        reviewed_by: reviewer.trim() || "maintenance_planner",
         review_notes: reviewNotes[id] || undefined,
       }),
-    onSuccess: () => {
+    onSuccess: (_prediction, variables) => {
       setError(null);
+      if (variables.status === "REVIEWED") setStatusFilter("REVIEWED");
       qc.invalidateQueries({ queryKey: ["maintenance-predictions"] });
     },
     onError: (err) => setError(err instanceof Error ? err.message : "Failed to review prediction"),
+  });
+
+  const createWorkOrder = useMutation({
+    mutationFn: () => {
+      if (!actionPrediction || !actionPlanId || !actionScheduledDate) {
+        throw new Error("Select an active maintenance plan and scheduled date.");
+      }
+      return maintenanceApi.createPredictionWorkOrder(actionPrediction.id, {
+        plan_id: actionPlanId,
+        scheduled_date: actionScheduledDate,
+      });
+    },
+    onSuccess: () => {
+      setError(null);
+      setActionPrediction(null);
+      setActionPlanId("");
+      setActionScheduledDate("");
+      qc.invalidateQueries({ queryKey: ["maintenance-predictions"] });
+      qc.invalidateQueries({ queryKey: ["maintenance-work-orders"] });
+    },
+    onError: (err) => setError(err instanceof Error ? err.message : "Failed to plan maintenance work order"),
   });
 
   const predictions = useMemo(() => predictionsQuery.data ?? [], [predictionsQuery.data]);
@@ -162,15 +191,6 @@ export default function PredictiveMaintenancePage() {
           >
             {RISK_OPTIONS.map((risk) => <option key={risk || "ALL"} value={risk}>{risk || "All risks"}</option>)}
           </select>
-        </div>
-        <div className="min-w-56">
-          <label className="block text-xs font-semibold text-gray-500 mb-1">Reviewer</label>
-          <input
-            value={reviewer}
-            onChange={(event) => setReviewer(event.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-            placeholder="maintenance_planner"
-          />
         </div>
         <button
           onClick={() => predictionsQuery.refetch()}
@@ -271,13 +291,6 @@ export default function PredictiveMaintenancePage() {
                         Mark Reviewed
                       </button>
                       <button
-                        onClick={() => review.mutate({ id: prediction.id, status: "WORK_ORDER_CREATED" })}
-                        disabled={review.isPending}
-                        className="px-3 py-2 text-sm font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
-                      >
-                        Work Order Planned
-                      </button>
-                      <button
                         onClick={() => review.mutate({ id: prediction.id, status: "DISMISSED" })}
                         disabled={review.isPending}
                         className="px-3 py-2 text-sm font-medium border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 disabled:opacity-50"
@@ -287,6 +300,28 @@ export default function PredictiveMaintenancePage() {
                     </div>
                     </PermissionGuard>
                   )}
+                  {prediction.status === "REVIEWED" && !prediction.work_order_id && (
+                    <PermissionGuard permission="maintenance.review_prediction">
+                      <PermissionGuard permission="maintenance.create">
+                        <button
+                          onClick={() => {
+                            setActionPrediction(prediction);
+                            setActionPlanId("");
+                            setActionScheduledDate(prediction.predicted_failure_date);
+                          }}
+                          className="mt-3 px-3 py-2 text-sm font-medium bg-green-600 text-white rounded-lg hover:bg-green-700"
+                        >
+                          Plan PM work order
+                        </button>
+                      </PermissionGuard>
+                    </PermissionGuard>
+                  )}
+                  {prediction.work_order_id && (
+                    <p className="mt-3 text-xs text-green-700">Linked PM work order: {prediction.work_order_id}</p>
+                  )}
+                  {prediction.status === "WORK_ORDER_CREATED" && !prediction.work_order_id && (
+                    <p className="mt-3 text-xs text-amber-700">Legacy status has no linked work order; reconcile this prediction before taking another action.</p>
+                  )}
                 </div>
               );
             })}
@@ -294,6 +329,67 @@ export default function PredictiveMaintenancePage() {
         )}
       </div>
     </div>
+    {actionPrediction && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+        <div className="w-full max-w-lg space-y-4 rounded-xl bg-white p-6 shadow-xl">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">Plan maintenance action</h2>
+            <p className="mt-1 text-sm text-gray-600">
+              {actionPrediction.asset_name ?? actionPrediction.machine_name ?? actionPrediction.machine_id}: {actionPrediction.recommended_action}
+            </p>
+          </div>
+          {!actionPrediction.asset_id ? (
+            <p className="text-sm text-red-700">This prediction has no linked asset, so it cannot create a preventive work order.</p>
+          ) : actionPlansQuery.isLoading ? (
+            <p className="text-sm text-gray-500">Loading active plans…</p>
+          ) : actionPlansQuery.isError ? (
+            <p className="text-sm text-red-700">Active maintenance plans could not be loaded. Retry before scheduling work.</p>
+          ) : (actionPlansQuery.data ?? []).length === 0 ? (
+            <p className="text-sm text-amber-700">No active maintenance plan exists for this asset. Create a plan before scheduling work.</p>
+          ) : (
+            <>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-600">Active plan *</label>
+                <select
+                  value={actionPlanId}
+                  onChange={(event) => setActionPlanId(event.target.value)}
+                  className="w-full rounded border px-3 py-2 text-sm"
+                >
+                  <option value="">Select a plan…</option>
+                  {(actionPlansQuery.data ?? []).map((plan) => (
+                    <option key={plan.id} value={plan.id}>{plan.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-600">Scheduled date *</label>
+                <input
+                  type="date"
+                  value={actionScheduledDate}
+                  onChange={(event) => setActionScheduledDate(event.target.value)}
+                  className="w-full rounded border px-3 py-2 text-sm"
+                />
+              </div>
+            </>
+          )}
+          <div className="flex justify-end gap-2">
+            <button
+              onClick={() => setActionPrediction(null)}
+              className="rounded border px-3 py-2 text-sm text-gray-700"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => createWorkOrder.mutate()}
+              disabled={!actionPlanId || !actionScheduledDate || createWorkOrder.isPending || !actionPrediction.asset_id || !(actionPlansQuery.data ?? []).length}
+              className="rounded bg-green-600 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+            >
+              {createWorkOrder.isPending ? "Planning…" : "Create PM work order"}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
     </RequirePermission>
   );
 }

@@ -5,7 +5,7 @@ import uuid
 import re
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -13,10 +13,142 @@ from app.models.quality import (
     QCType, QCStatus, QCDecision, ParameterType,
     QualityGateSeverity,
     SamplingMethod, HazardType, RiskLevel,
-    DeviationStatus, CorrectiveActionStatus, ReleaseStatus,
+    DeviationStatus, CorrectiveActionStatus, ReleaseStatus, CalibrationStatus,
     QMSAIAgentType, QMSAIRecStatus,
     AuditStandard, AuditType, AuditResult,
 )
+
+
+class InstrumentCalibrationCreate(BaseModel):
+    instrument_id: str = Field(min_length=1, max_length=50, strip_whitespace=True)
+    instrument_name: str = Field(min_length=1, max_length=200, strip_whitespace=True)
+    instrument_type: str = Field(min_length=1, max_length=100, strip_whitespace=True)
+    asset_id: Optional[uuid.UUID] = None
+    location: Optional[str] = Field(default=None, max_length=200)
+    manufacturer: Optional[str] = Field(default=None, max_length=200)
+    model_no: Optional[str] = Field(default=None, max_length=100)
+    serial_no: Optional[str] = Field(default=None, max_length=100)
+    last_calibration_date: Optional[date] = None
+    calibration_interval_days: int = Field(default=365, ge=1, le=36500)
+    calibration_authority: Optional[str] = Field(default=None, max_length=200)
+    certificate_ref: Optional[str] = Field(default=None, max_length=200)
+    notes: Optional[str] = None
+
+    @field_validator("last_calibration_date")
+    @classmethod
+    def last_calibration_date_must_not_be_future(cls, value):
+        if value is not None and value > date.today():
+            raise ValueError("last_calibration_date cannot be in the future")
+        return value
+
+    @model_validator(mode="after")
+    def calibration_evidence_requires_history_event(self):
+        if any((self.last_calibration_date, self.calibration_authority, self.certificate_ref)):
+            raise ValueError("Record calibration dates and certificate references through calibration history.")
+        return self
+
+
+class InstrumentCalibrationUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    instrument_name: Optional[str] = Field(default=None, min_length=1, max_length=200, strip_whitespace=True)
+    instrument_type: Optional[str] = Field(default=None, min_length=1, max_length=100, strip_whitespace=True)
+    asset_id: Optional[uuid.UUID] = None
+    location: Optional[str] = Field(default=None, max_length=200)
+    manufacturer: Optional[str] = Field(default=None, max_length=200)
+    model_no: Optional[str] = Field(default=None, max_length=100)
+    serial_no: Optional[str] = Field(default=None, max_length=100)
+    last_calibration_date: Optional[date] = None
+    calibration_interval_days: Optional[int] = Field(default=None, ge=1, le=36500)
+    calibration_authority: Optional[str] = Field(default=None, max_length=200)
+    certificate_ref: Optional[str] = Field(default=None, max_length=200)
+    is_active: Optional[bool] = None
+    notes: Optional[str] = None
+
+    @field_validator("last_calibration_date")
+    @classmethod
+    def last_calibration_date_must_not_be_future(cls, value):
+        if value is not None and value > date.today():
+            raise ValueError("last_calibration_date cannot be in the future")
+        return value
+
+    @model_validator(mode="after")
+    def reject_null_required_updates(self):
+        if any(field_name in self.model_fields_set for field_name in (
+            "last_calibration_date", "calibration_authority", "certificate_ref",
+        )):
+            raise ValueError("Record calibration dates and certificate references through calibration history.")
+        for field_name in ("instrument_name", "instrument_type", "calibration_interval_days", "is_active"):
+            if field_name in self.model_fields_set and getattr(self, field_name) is None:
+                raise ValueError(f"{field_name} cannot be cleared")
+        if "status" in self.model_fields_set:
+            raise ValueError("Calibration status changes must be recorded through an append-only history event.")
+        return self
+
+
+class InstrumentCalibrationRead(BaseModel):
+    id: str
+    instrument_id: str
+    instrument_name: str
+    instrument_type: str
+    asset_id: Optional[str] = None
+    asset_no: Optional[str] = None
+    asset_name: Optional[str] = None
+    location: Optional[str] = None
+    manufacturer: Optional[str] = None
+    model_no: Optional[str] = None
+    serial_no: Optional[str] = None
+    last_calibration_date: Optional[date] = None
+    next_calibration_due: Optional[date] = None
+    calibration_interval_days: int
+    calibration_authority: Optional[str] = None
+    certificate_ref: Optional[str] = None
+    status: CalibrationStatus
+    days_until_due: Optional[int] = None
+    is_overdue: bool
+    is_active: bool
+    notes: Optional[str] = None
+
+
+class CalibrationScheduleReport(BaseModel):
+    as_of: date
+    due_from: date
+    due_to: date
+    due_in_range: List[InstrumentCalibrationRead] = Field(default_factory=list)
+    overdue: List[InstrumentCalibrationRead] = Field(default_factory=list)
+    not_verified: List[InstrumentCalibrationRead] = Field(default_factory=list)
+    out_of_service_count: int = 0
+    data_notes: List[str] = Field(default_factory=list)
+
+
+class InstrumentCalibrationEventCreate(BaseModel):
+    calibration_date: date
+    calibration_authority: str = Field(min_length=1, max_length=200, strip_whitespace=True)
+    certificate_ref: str = Field(min_length=1, max_length=200, strip_whitespace=True)
+    result: Literal["PASS", "FAIL"]
+    notes: Optional[str] = None
+
+    @field_validator("calibration_date")
+    @classmethod
+    def calibration_date_must_not_be_future(cls, value):
+        if value > date.today():
+            raise ValueError("calibration_date cannot be in the future")
+        return value
+
+
+class InstrumentCalibrationEventRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: uuid.UUID
+    instrument_calibration_id: uuid.UUID
+    calibration_date: date
+    calibration_interval_days: int
+    next_calibration_due: date
+    calibration_authority: str
+    certificate_ref: str
+    result: Literal["PASS", "FAIL"]
+    notes: Optional[str] = None
+    recorded_by_id: Optional[uuid.UUID] = None
+    created_at: datetime
 
 
 # ── QC Template ───────────────────────────────────────────────────────────────
@@ -210,6 +342,7 @@ class CCPRead(CCPBase):
 
 class CCPMonitoringCreate(BaseModel):
     ccp_id: uuid.UUID
+    instrument_calibration_id: Optional[uuid.UUID] = None
     production_order_id: Optional[uuid.UUID] = None
     work_order_id: Optional[uuid.UUID] = None
     lot_id: Optional[uuid.UUID] = None
@@ -224,6 +357,9 @@ class CCPMonitoringRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: uuid.UUID
     ccp_id: uuid.UUID
+    instrument_calibration_id: Optional[uuid.UUID] = None
+    calibration_instrument_code: Optional[str] = None
+    calibration_status_at_record: Optional[str] = None
     production_order_id: Optional[uuid.UUID] = None
     lot_id: Optional[uuid.UUID] = None
     monitoring_datetime: datetime

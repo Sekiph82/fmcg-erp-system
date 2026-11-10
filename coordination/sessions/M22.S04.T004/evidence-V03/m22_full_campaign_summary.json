@@ -1,0 +1,52 @@
+[
+  {
+    "task": "s02_t001",
+    "exit": 0,
+    "result": "2 passed in 11.69s"
+  },
+  {
+    "task": "s02_t002",
+    "exit": 0,
+    "result": "2 passed in 10.87s"
+  },
+  {
+    "task": "s02_t003",
+    "exit": 0,
+    "result": "4 passed in 12.55s"
+  },
+  {
+    "task": "s02_t004",
+    "exit": 0,
+    "result": "3 passed in 14.16s"
+  },
+  {
+    "task": "s03_t001",
+    "exit": 0,
+    "result": "2 passed in 11.95s"
+  },
+  {
+    "task": "s03_t002",
+    "exit": 0,
+    "result": "5 passed in 11.58s"
+  },
+  {
+    "task": "s03_t003",
+    "exit": 0,
+    "result": "6 passed in 12.84s"
+  },
+  {
+    "task": "s03_t004",
+    "exit": 0,
+    "result": "3 passed in 11.47s"
+  },
+  {
+    "task": "s04_t001",
+    "exit": 0,
+    "result": "2 passed in 8.33s"
+  },
+  {
+    "task": "s04_t003",
+    "exit": 0,
+    "result": "2 passed in 11.23s"
+  }
+]

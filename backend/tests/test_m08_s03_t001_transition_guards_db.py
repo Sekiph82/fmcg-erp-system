@@ -186,7 +186,7 @@ async def test_work_order_patch_rejects_engine_owned_state_and_started_rows_are_
         work_order = await db.get(ExecWorkOrder, work_order_id)
         work_order.status = "IN_PROGRESS"
         await db.commit()
-        with pytest.raises(ValueError, match="after production starts"):
+        with pytest.raises(ValueError, match="Planning changes are not allowed in status IN_PROGRESS"):
             await service.update_work_order(db, work_order_id, {"step_name": "Changed after start"})
         await db.rollback()
 
@@ -333,17 +333,21 @@ async def test_work_order_cannot_be_added_after_parent_starts_or_with_later_depe
     _require_task_database()
     suffix = uuid4().hex[:18]
     async with AsyncSessionLocal() as db:
+        actor_id = await _task_actor(db, suffix)
         active_parent = await _order(db, f"{suffix}-active", "IN_PROGRESS")
         planned_parent = await _order(db, f"{suffix}-planned", "PLANNED")
+        active_parent.created_by = actor_id
+        planned_parent.created_by = actor_id
         later = await _work_order(db, planned_parent, f"{suffix}-later", status="PENDING", step_sequence=3)
         active_parent_id = active_parent.id
         planned_parent_id = planned_parent.id
         later_id = later.id
         await db.commit()
-        with pytest.raises(ValueError, match="after production starts"):
+        with pytest.raises(ValueError, match="Planning changes are not allowed"):
             await service.add_work_order(
                 db, active_parent_id,
                 {"step_name": "Too late", "step_sequence": 1, "planned_qty": Decimal("10")},
+                actor_id,
             )
         await db.rollback()
         with pytest.raises(ValueError, match="earlier step"):
@@ -355,12 +359,16 @@ async def test_work_order_cannot_be_added_after_parent_starts_or_with_later_depe
                     "planned_qty": Decimal("10"),
                     "dependency_work_order_id": later_id,
                 },
+                actor_id,
             )
 
 
 @pytest.mark.asyncio
 async def test_concurrent_duplicate_release_allows_only_one_transition():
-    order_id, _ = await _seed_order_and_work_order(order_status="DRAFT")
+    order_id, _ = await _seed_order_and_work_order(order_status="PLANNED")
+    async with AsyncSessionLocal() as db:
+        approver_id = await _task_actor(db, f"release-approver-{uuid4().hex[:12]}")
+        await service.approve_order(db, order_id, approver_id)
 
     async def attempt_release():
         async with AsyncSessionLocal() as db:
@@ -390,7 +398,7 @@ async def test_completed_or_terminal_order_cannot_be_cancelled_again():
         completed_id, closed_id, cancelled_id = completed.id, closed.id, cancelled.id
         await db.commit()
         for order_id in (completed_id, closed_id, cancelled_id):
-            with pytest.raises(ValueError, match="cannot be cancelled"):
+            with pytest.raises(ValueError, match="Cannot transition order from"):
                 await service.cancel_order(db, order_id, uuid4())
             await db.rollback()
         assert (await service.get_order(db, completed_id)).status == "COMPLETED"
@@ -415,22 +423,23 @@ async def test_merge_rejects_one_or_repeated_order_before_writing():
 async def test_split_requires_two_positive_quantities_and_cannot_repeat():
     order_id, _ = await _seed_order_and_work_order(order_status="PLANNED")
     async with AsyncSessionLocal() as db:
+        actor_id = (await service.get_order(db, order_id)).created_by
         with pytest.raises(ValueError, match="at least two positive"):
-            await service.split_order(db, order_id, [Decimal("10")], "one child", uuid4())
+            await service.split_order(db, order_id, [Decimal("10")], "one child", actor_id)
         with pytest.raises(ValueError, match="at least two positive"):
-            await service.split_order(db, order_id, [Decimal("0"), Decimal("10")], "zero child", uuid4())
+            await service.split_order(db, order_id, [Decimal("0"), Decimal("10")], "zero child", actor_id)
         await db.rollback()
         children = await service.split_order(
-            db, order_id, [Decimal("4"), Decimal("6")], "synthetic split", uuid4()
+            db, order_id, [Decimal("4"), Decimal("6")], "synthetic split", actor_id
         )
         assert len(children) == 2
         assert sum(child.planned_qty for child in children) == Decimal("10")
-        with pytest.raises(ValueError, match="Only DRAFT/PLANNED/RELEASED"):
-            await service.split_order(db, order_id, [Decimal("5"), Decimal("5")], "repeat", uuid4())
+        with pytest.raises(ValueError, match="Cannot transition order from"):
+            await service.split_order(db, order_id, [Decimal("5"), Decimal("5")], "repeat", actor_id)
 
 
 @pytest.mark.asyncio
-async def test_core_production_order_terminal_cancel_is_rejected_and_active_cancel_is_one_shot():
+async def test_core_production_order_cancel_is_pre_execution_only_and_one_shot():
     _require_task_database()
     suffix = uuid4().hex[:18]
     async with AsyncSessionLocal() as db:
@@ -443,7 +452,12 @@ async def test_core_production_order_terminal_cancel_is_rejected_and_active_canc
         active = await _seed_core_production_order(
             db, f"{suffix}-active", ProductionOrderStatus.IN_PROGRESS
         )
-        completed_id, cancelled_id, active_id = completed.id, cancelled.id, active.id
+        planned = await _seed_core_production_order(
+            db, f"{suffix}-planned", ProductionOrderStatus.PLANNED
+        )
+        completed_id, cancelled_id, active_id, planned_id = (
+            completed.id, cancelled.id, active.id, planned.id
+        )
         downtime = DowntimeLog(
             production_order_id=active_id,
             reason=DowntimeReason.MATERIAL_SHORTAGE,
@@ -453,22 +467,25 @@ async def test_core_production_order_terminal_cancel_is_rejected_and_active_canc
         await db.flush()
         downtime_id = downtime.id
         await db.commit()
-        for order_id in (completed_id, cancelled_id):
+        for order_id in (completed_id, cancelled_id, active_id):
             blocked_order = await db.get(ProductionOrder, order_id)
             with pytest.raises(HTTPException) as denied:
                 await production_service.cancel_order(db, blocked_order, blocked_order.created_by)
             assert getattr(denied.value, "status_code", None) == 422
             await db.rollback()
         active_order = await db.get(ProductionOrder, active_id)
-        result = await production_service.cancel_order(db, active_order, active_order.created_by)
+        assert active_order.status == ProductionOrderStatus.IN_PROGRESS
+        persisted_downtime = await db.get(DowntimeLog, downtime_id)
+        assert persisted_downtime.end_time is None
+
+        planned_order = await db.get(ProductionOrder, planned_id)
+        result = await production_service.cancel_order(db, planned_order, planned_order.created_by)
         assert result.status == ProductionOrderStatus.CANCELLED
         await db.commit()
-        persisted_downtime = await db.get(DowntimeLog, downtime_id)
-        assert persisted_downtime.end_time is not None
-        assert persisted_downtime.duration_minutes is not None
-        assert persisted_downtime.duration_minutes >= 0
         with pytest.raises(HTTPException) as repeated:
-            await production_service.cancel_order(db, await db.get(ProductionOrder, active_id), active_order.created_by)
+            await production_service.cancel_order(
+                db, await db.get(ProductionOrder, planned_id), planned_order.created_by
+            )
         assert getattr(repeated.value, "status_code", None) == 422
 
 
@@ -479,6 +496,8 @@ async def test_core_duplicate_release_serializes_on_the_order_row():
     async with AsyncSessionLocal() as db:
         order = await _seed_core_production_order(db, suffix, ProductionOrderStatus.PLANNED)
         order_id = order.id
+        approver_id = await _task_actor(db, f"{suffix}-approver")
+        await production_service.approve_order(db, order, approver_id)
         await db.commit()
 
     async def attempt_release():

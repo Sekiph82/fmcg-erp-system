@@ -111,6 +111,11 @@ class SubcontractOrder(Base, TimestampMixin):
 
     approved_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     approved_at    = Column(DateTime(timezone=True), nullable=True)
+    completed_by_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="RESTRICT", name="fk_subcontract_orders_completed_by"),
+        nullable=True,
+    )
     created_by_id  = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     remarks        = Column(Text, nullable=True)
 
@@ -120,6 +125,7 @@ class SubcontractOrder(Base, TimestampMixin):
     work_order              = relationship("WorkOrder")
     linked_po               = relationship("PurchaseOrder")
     approved_by             = relationship("User", foreign_keys=[approved_by_id])
+    completed_by            = relationship("User", foreign_keys=[completed_by_id])
     created_by              = relationship("User", foreign_keys=[created_by_id])
     lines                   = relationship("SubcontractOrderLine", back_populates="order",
                                             cascade="all, delete-orphan")

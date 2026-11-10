@@ -554,14 +554,14 @@ export default function OrderDetailPage() {
           <h2 className="text-lg font-semibold text-gray-800 mb-4">OEE Metrics</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: "OEE", value: order.oee.oee, color: order.oee.oee >= 85 ? "text-green-600" : order.oee.oee >= 60 ? "text-yellow-600" : "text-red-500" },
-              { label: "Availability", value: order.oee.availability, color: "text-blue-600" },
-              { label: "Performance", value: order.oee.performance, color: "text-indigo-600" },
-              { label: "Quality", value: order.oee.quality, color: "text-purple-600" },
+              { label: "OEE", value: order.oee.oee, color: order.oee.oee == null ? "text-gray-500" : order.oee.oee >= 0.85 ? "text-green-600" : order.oee.oee >= 0.65 ? "text-yellow-600" : "text-red-500" },
+              { label: "Availability", value: order.oee.availability, color: order.oee.availability == null ? "text-gray-500" : "text-blue-600" },
+              { label: "Performance", value: order.oee.performance, color: order.oee.performance == null ? "text-gray-500" : "text-indigo-600" },
+              { label: "Quality", value: order.oee.quality, color: order.oee.quality == null ? "text-gray-500" : "text-purple-600" },
             ].map(({ label, value, color }) => (
               <div key={label} className="text-center p-4 rounded-lg bg-gray-50">
                 <p className="text-xs text-gray-500 mb-1">{label}</p>
-                <p className={`text-2xl font-bold ${color}`}>{value.toFixed(1)}%</p>
+                <p className={`text-2xl font-bold ${color}`}>{value == null ? "—" : String((value * 100).toFixed(1)) + "%"}</p>
               </div>
             ))}
           </div>
@@ -690,7 +690,7 @@ export default function OrderDetailPage() {
       <Modal open={completeOpen} onClose={() => setCompleteOpen(false)} title="Complete Production Order">
         <form onSubmit={(e) => { e.preventDefault(); complete.mutate(); }} className="space-y-4">
           <p className="text-sm text-gray-500">
-            Materials and finished goods are posted for the actual quantity. Any unproduced remainder becomes a linked planned backorder, which requires separate approval before release.
+            Materials and finished goods are posted for the actual quantity. If this order has recorded WIP, the quantity must match its available WIP balance. Any unproduced remainder becomes a linked planned backorder, which requires separate approval before release.
           </p>
           <Input
             label="Actual Quantity Produced *"

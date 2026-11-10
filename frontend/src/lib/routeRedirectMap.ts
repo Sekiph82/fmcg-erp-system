@@ -296,7 +296,6 @@ export const EXACT_REDIRECTS: Record<string, RedirectTarget> = {
   "/dashboard/qms/corrective-actions":          { pathname: "/dashboard/quality", tab: "qms" },
   "/dashboard/qms/quarantine":                  { pathname: "/dashboard/quality", tab: "qms" },
   "/dashboard/qms/allergen":                    { pathname: "/dashboard/quality", tab: "allergen" },
-  "/dashboard/qms/calibration":                 { pathname: "/dashboard/quality", tab: "qms" },
   "/dashboard/qms/aql":                         { pathname: "/dashboard/quality", tab: "qms" },
   "/dashboard/qms/coa":                         { pathname: "/dashboard/quality", tab: "qms" },
   "/dashboard/qms/audit-checklists":            { pathname: "/dashboard/quality", tab: "qms" },

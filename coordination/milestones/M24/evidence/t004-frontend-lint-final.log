@@ -1,0 +1,206 @@
+
+> fmcg-erp-frontend@0.1.0 lint
+> eslint .
+
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\appraisals\development-plans\page.tsx
+  18:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\appraisals\records\page.tsx
+  24:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\brand-assets\[id]\page.tsx
+  35:40  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\calendar\events\page.tsx
+  20:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\calendar\view\page.tsx
+  84:6  warning  React Hook useEffect has a missing dependency: 'monday'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\chatter\feed\page.tsx
+  41:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\crm\records\[id]\page.tsx
+  42:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\custom-fields\[id]\page.tsx
+  44:40  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\custom-fields\fields\page.tsx
+  26:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\cycle-count\entries\page.tsx
+  20:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\cycle-count\tasks\page.tsx
+  15:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\cycle-count\variances\page.tsx
+  17:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\dunning\cases\[id]\page.tsx
+  35:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\dunning\cases\page.tsx
+  20:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\esg\reports\page.tsx
+  38:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\ess\attendance\page.tsx
+  24:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\ess\notifications\page.tsx
+  12:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\expenses\approval\page.tsx
+  18:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\expenses\claims\page.tsx
+  19:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\expenses\reports\page.tsx
+  19:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\fleet\fuel\page.tsx
+  18:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\fleet\incidents\page.tsx
+  22:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\fleet\maintenance\page.tsx
+  20:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\fleet\trips\page.tsx
+  21:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\fleet\vehicles\page.tsx
+  20:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\gs1\page.tsx
+  656:17  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  663:17  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\kanban\boards\page.tsx
+  19:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\kanban\cards\page.tsx
+  21:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\notification-center\list\page.tsx
+  34:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\notification-center\preferences\page.tsx
+  18:44  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\portal\accounts\[id]\page.tsx
+  39:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\portal\accounts\page.tsx
+  20:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\portal\ai\page.tsx
+  25:54  warning  React Hook useEffect has a missing dependency: 'loadRecs'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\portal\claims\page.tsx
+  30:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\portal\drafts\page.tsx
+  30:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\price-lists\[id]\page.tsx
+  50:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\recruitment\pipeline\page.tsx
+  26:40  warning  React Hook useEffect has a missing dependency: 'loadPipeline'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\recruitment\reports\page.tsx
+  19:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\recruitment\requisitions\page.tsx
+  16:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\report-builder\saved\page.tsx
+  20:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\report-builder\viewer\page.tsx
+  27:6  warning  React Hook useEffect has a missing dependency: 'selectedId'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  45:6  warning  React Hook useEffect has a missing dependency: 'run'. Either include it or remove the dependency array         react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\secondary-sales\[id]\page.tsx
+  48:40  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\secondary-sales\inventory\page.tsx
+  37:6  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\shelf-life\bulk-hold-monitor\page.tsx
+  23:42  warning  React Hook useEffect has a missing dependency: 'activeOnly'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\shelf-life\near-expiry\page.tsx
+  16:36  warning  React Hook useEffect has a missing dependency: 'days'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\surveys\[id]\page.tsx
+  17:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\timesheets\approval-queue\page.tsx
+  20:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\timesheets\my-timesheets\page.tsx
+  22:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\timesheets\weekly-view\page.tsx
+  32:6  warning  React Hook useEffect has a missing dependency: 'weekEnd'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\traceability\backward\page.tsx
+  16:6  warning  React Hook useEffect has missing dependencies: 'handleTrace' and 'initialLotId'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\traceability\forward\page.tsx
+  13:69  warning  React Hook useEffect has missing dependencies: 'handleTrace' and 'initialLotId'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\traceability\genealogy\page.tsx
+  16:68  warning  React Hook useEffect has missing dependencies: 'handleLoad' and 'initialLotId'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\traceability\recalls\[id]\page.tsx
+  31:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\traceability\regulatory\page.tsx
+  17:6  warning  React Hook useEffect has missing dependencies: 'handleLoad' and 'initialRecallId'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\training\assignments\page.tsx
+  31:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\training\certifications\page.tsx
+  30:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\training\feedback\page.tsx
+  29:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\training\programs\page.tsx
+  26:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\training\reports\page.tsx
+  26:31  warning  React Hook useEffect has a missing dependency: 'run'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\training\sessions\page.tsx
+  21:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\training\skill-matrix\page.tsx
+  32:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\users\[id]\page.tsx
+  19:60  warning  React Hook useEffect has a missing dependency: 'router'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\webhooks\deliveries\page.tsx
+  14:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\components\Sidebar.tsx
+  533:3  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/exhaustive-deps')
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\lib\api.ts
+  60:9  warning  Do not use `window.location.href` to navigate to internal Next.js pages. Use `redirect()` in the render phase, or `useRouter().push()` in Client Components' event handlers instead. See: https://nextjs.org/docs/messages/no-location-assign-relative-destination  @next/next/no-location-assign-relative-destination
+
+✖ 67 problems (0 errors, 67 warnings)
+  0 errors and 1 warning potentially fixable with the `--fix` option.
+
+EXIT=0

@@ -1,0 +1,29 @@
+............F..                                                          [100%]
+================================== FAILURES ===================================
+________ test_split_requires_two_positive_quantities_and_cannot_repeat ________
+
+    @pytest.mark.asyncio
+    async def test_split_requires_two_positive_quantities_and_cannot_repeat():
+        order_id, _ = await _seed_order_and_work_order(order_status="PLANNED")
+        async with AsyncSessionLocal() as db:
+            actor_id = (await service.get_order(db, order_id)).created_by
+            with pytest.raises(ValueError, match="at least two positive"):
+                await service.split_order(db, order_id, [Decimal("10")], "one child", actor_id)
+            with pytest.raises(ValueError, match="at least two positive"):
+                await service.split_order(db, order_id, [Decimal("0"), Decimal("10")], "zero child", actor_id)
+            await db.rollback()
+            children = await service.split_order(
+                db, order_id, [Decimal("4"), Decimal("6")], "synthetic split", actor_id
+            )
+            assert len(children) == 2
+            assert sum(child.planned_qty for child in children) == Decimal("10")
+>           with pytest.raises(ValueError, match="Only DRAFT/PLANNED/RELEASED"):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AssertionError: Regex pattern did not match.
+E             Expected regex: 'Only DRAFT/PLANNED/RELEASED'
+E             Actual message: 'Cannot transition order from CANCELLED to CANCELLED'
+
+tests\test_m08_s03_t001_transition_guards_db.py:437: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_m08_s03_t001_transition_guards_db.py::test_split_requires_two_positive_quantities_and_cannot_repeat
+1 failed, 14 passed in 27.60s

@@ -1,15 +1,146 @@
 from __future__ import annotations
 
 import uuid
+from decimal import Decimal
 from typing import Optional, List
-from sqlalchemy import select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models.maintenance import (
     Asset, PMPlan, PMWorkOrder, BreakdownRecord, SparePart, SparePartUsage,
+    PMPlanSparePartRequirement, PMWorkOrderSparePartReservation,
     AssetStatus, PMStatus, BreakdownStatus,
 )
+
+
+class SparePartAvailabilityError(Exception):
+    def __init__(self, detail: dict):
+        self.detail = detail
+        super().__init__(detail.get("message", "Spare-part availability check failed"))
+
+
+ACTIVE_PM_STATUSES = (PMStatus.PENDING, PMStatus.IN_PROGRESS, PMStatus.OVERDUE)
+
+
+async def _active_reserved_quantities(
+    db: AsyncSession, spare_part_ids: Optional[list[uuid.UUID]] = None
+) -> dict[uuid.UUID, Decimal]:
+    query = (
+        select(
+            PMWorkOrderSparePartReservation.spare_part_id,
+            func.sum(
+                PMWorkOrderSparePartReservation.quantity_reserved
+                - PMWorkOrderSparePartReservation.quantity_consumed
+            ),
+        )
+        .join(PMWorkOrder, PMWorkOrder.id == PMWorkOrderSparePartReservation.work_order_id)
+        .where(PMWorkOrder.status.in_(ACTIVE_PM_STATUSES))
+        .group_by(PMWorkOrderSparePartReservation.spare_part_id)
+    )
+    if spare_part_ids is not None:
+        if not spare_part_ids:
+            return {}
+        query = query.where(PMWorkOrderSparePartReservation.spare_part_id.in_(spare_part_ids))
+    return {
+        part_id: Decimal(str(quantity or 0))
+        for part_id, quantity in (await db.execute(query)).all()
+    }
+
+
+async def get_plan_spare_part_requirements(
+    db: AsyncSession, plan_id: uuid.UUID
+) -> list[dict]:
+    reserved = (
+        select(
+            PMWorkOrderSparePartReservation.spare_part_id.label("spare_part_id"),
+            func.sum(
+                PMWorkOrderSparePartReservation.quantity_reserved
+                - PMWorkOrderSparePartReservation.quantity_consumed
+            ).label("reserved_quantity"),
+        )
+        .join(PMWorkOrder, PMWorkOrder.id == PMWorkOrderSparePartReservation.work_order_id)
+        .where(PMWorkOrder.status.in_(ACTIVE_PM_STATUSES))
+        .group_by(PMWorkOrderSparePartReservation.spare_part_id)
+        .subquery()
+    )
+    result = await db.execute(
+        select(
+            PMPlanSparePartRequirement,
+            SparePart,
+            func.coalesce(reserved.c.reserved_quantity, 0),
+        )
+        .join(SparePart, SparePart.id == PMPlanSparePartRequirement.spare_part_id)
+        .outerjoin(reserved, reserved.c.spare_part_id == SparePart.id)
+        .where(PMPlanSparePartRequirement.plan_id == plan_id)
+        .order_by(SparePart.part_no, SparePart.id)
+    )
+    rows = []
+    for requirement, part, reserved_quantity in result.all():
+        reserved_value = Decimal(str(reserved_quantity or 0))
+        available = Decimal(str(part.current_stock)) - reserved_value
+        required = Decimal(str(requirement.quantity_required))
+        rows.append({
+            "spare_part_id": str(part.id),
+            "part_no": part.part_no,
+            "name": part.name,
+            "unit": part.unit,
+            "is_active": part.is_active,
+            "quantity_required": float(required),
+            "current_stock": float(part.current_stock),
+            "reserved_quantity": float(reserved_value),
+            "available_quantity": float(available),
+            "is_available": part.is_active and available >= required,
+        })
+    return rows
+
+
+async def replace_plan_spare_part_requirements(
+    db: AsyncSession, plan_id: uuid.UUID, items: list[dict]
+) -> list[dict]:
+    plan = await db.execute(select(PMPlan.id).where(PMPlan.id == plan_id).with_for_update())
+    if plan.scalar_one_or_none() is None:
+        raise LookupError("PM Plan not found")
+
+    normalized_items = [
+        {
+            "spare_part_id": item["spare_part_id"]
+            if isinstance(item["spare_part_id"], uuid.UUID)
+            else uuid.UUID(str(item["spare_part_id"])),
+            "quantity_required": Decimal(str(item["quantity_required"])),
+        }
+        for item in items
+    ]
+    part_ids = sorted({item["spare_part_id"] for item in normalized_items}, key=str)
+    parts = {}
+    if part_ids:
+        parts = {
+            part.id: part
+            for part in (await db.execute(
+                select(SparePart).where(SparePart.id.in_(part_ids)).order_by(SparePart.id).with_for_update()
+            )).scalars().all()
+        }
+    unavailable = [
+        str(part_id) for part_id in part_ids
+        if part_id not in parts or not parts[part_id].is_active
+    ]
+    if unavailable:
+        raise SparePartAvailabilityError({
+            "message": "Requirements must reference existing active spare parts.",
+            "unavailable_part_ids": unavailable,
+        })
+
+    await db.execute(delete(PMPlanSparePartRequirement).where(PMPlanSparePartRequirement.plan_id == plan_id))
+    db.add_all([
+        PMPlanSparePartRequirement(
+            plan_id=plan_id,
+            spare_part_id=item["spare_part_id"],
+            quantity_required=item["quantity_required"],
+        )
+        for item in normalized_items
+    ])
+    await db.flush()
+    return await get_plan_spare_part_requirements(db, plan_id)
 
 
 # ── Assets ─────────────────────────────────────────────────────────────────────
@@ -44,7 +175,7 @@ async def create_asset(db: AsyncSession, data: dict) -> Asset:
 
 async def update_asset(db: AsyncSession, asset: Asset, data: dict) -> Asset:
     for k, v in data.items():
-        if v is not None:
+        if v is not None or k == "work_center_id":
             setattr(asset, k, v)
     await db.flush()
     await db.refresh(asset)
@@ -130,8 +261,66 @@ async def get_work_order(db: AsyncSession, wo_id: uuid.UUID) -> Optional[PMWorkO
 
 
 async def create_work_order(db: AsyncSession, data: dict, wo_no: str) -> PMWorkOrder:
-    wo = PMWorkOrder(**data, wo_no=wo_no)
+    plan_result = await db.execute(
+        select(PMPlan).where(PMPlan.id == data["plan_id"]).with_for_update()
+    )
+    plan = plan_result.scalar_one_or_none()
+    if plan is None:
+        raise LookupError("PM Plan not found")
+
+    requirements = list((await db.execute(
+        select(PMPlanSparePartRequirement)
+        .where(PMPlanSparePartRequirement.plan_id == plan.id)
+        .order_by(PMPlanSparePartRequirement.spare_part_id)
+    )).scalars().all())
+    required_part_ids = [requirement.spare_part_id for requirement in requirements]
+    parts = {}
+    if required_part_ids:
+        parts = {
+            part.id: part
+            for part in (await db.execute(
+                select(SparePart)
+                .where(SparePart.id.in_(required_part_ids))
+                .order_by(SparePart.id)
+                .with_for_update()
+            )).scalars().all()
+        }
+    reserved = await _active_reserved_quantities(db, required_part_ids)
+    shortages = []
+    for requirement in requirements:
+        part = parts.get(requirement.spare_part_id)
+        if part is None:
+            continue
+        available = Decimal(str(part.current_stock)) - reserved.get(part.id, Decimal("0"))
+        required = Decimal(str(requirement.quantity_required))
+        if not part.is_active or available < required:
+            shortages.append({
+                "spare_part_id": str(part.id),
+                "part_no": part.part_no,
+                "name": part.name,
+                "unit": part.unit,
+                "quantity_required": float(required),
+                "available_quantity": float(available),
+                "is_active": part.is_active,
+            })
+    if shortages:
+        raise SparePartAvailabilityError({
+            "message": "Work order was not scheduled because required spare parts are unavailable.",
+            "items": shortages,
+        })
+
+    wo = PMWorkOrder(**data, wo_no=wo_no, status=PMStatus.PENDING)
     db.add(wo)
+    await db.flush()
+    db.add_all([
+        PMWorkOrderSparePartReservation(
+            work_order_id=wo.id,
+            spare_part_id=requirement.spare_part_id,
+            quantity_reserved=requirement.quantity_required,
+            quantity_consumed=Decimal("0"),
+        )
+        for requirement in requirements
+    ])
     await db.flush()
     await db.refresh(wo)
     return wo
@@ -282,6 +471,33 @@ async def create_spare_part(db: AsyncSession, data: dict) -> SparePart:
 
 
 async def update_spare_part(db: AsyncSession, sp: SparePart, data: dict) -> SparePart:
+    locked_result = await db.execute(
+        select(SparePart).where(SparePart.id == sp.id).with_for_update()
+    )
+    sp = locked_result.scalar_one_or_none()
+    if sp is None:
+        raise LookupError("Spare part not found")
+    has_requirement = await db.scalar(
+        select(func.count())
+        .select_from(PMPlanSparePartRequirement)
+        .where(PMPlanSparePartRequirement.spare_part_id == sp.id)
+    )
+    reserved = (await _active_reserved_quantities(db, [sp.id])).get(sp.id, Decimal("0"))
+    if data.get("current_stock") is not None:
+        new_stock = Decimal(str(data["current_stock"]))
+        if new_stock < reserved:
+            raise SparePartAvailabilityError({
+                "message": "Stock cannot be reduced below the quantity reserved for active PM work orders.",
+                "spare_part_id": str(sp.id),
+                "requested_stock": float(new_stock),
+                "reserved_quantity": float(reserved),
+            })
+    if data.get("is_active") is False and (reserved > 0 or has_requirement):
+        raise SparePartAvailabilityError({
+            "message": "Remove PM plan requirements and release active work-order reservations before deactivating this spare part.",
+            "spare_part_id": str(sp.id),
+            "reserved_quantity": float(reserved),
+        })
     for k, v in data.items():
         if v is not None:
             setattr(sp, k, v)
@@ -317,16 +533,81 @@ async def list_spare_usages(
 async def record_spare_usage(
     db: AsyncSession, data: dict, user_id: uuid.UUID
 ) -> SparePartUsage:
-    usage = SparePartUsage(**data, used_by_id=user_id)
-    db.add(usage)
-    await db.flush()
-    # Deduct stock
+    quantity = Decimal(str(data["quantity_used"]))
+    if quantity <= 0:
+        raise SparePartAvailabilityError({"message": "quantity_used must be greater than zero."})
+
+    work_order = None
+    own_reservation = None
+    if data.get("pm_work_order_id"):
+        work_order_result = await db.execute(
+            select(PMWorkOrder).where(PMWorkOrder.id == data["pm_work_order_id"]).with_for_update()
+        )
+        work_order = work_order_result.scalar_one_or_none()
+        if work_order is None:
+            raise LookupError("PM work order not found")
+        if work_order.status not in ACTIVE_PM_STATUSES:
+            raise SparePartAvailabilityError({
+                "message": "Spare parts can only be recorded against an active PM work order.",
+                "work_order_id": str(work_order.id),
+                "status": work_order.status.value,
+            })
+        plan = await db.get(PMPlan, work_order.plan_id)
+        if plan is None or plan.asset_id != data["asset_id"]:
+            raise SparePartAvailabilityError({
+                "message": "The supplied asset does not match the PM work order asset.",
+                "work_order_id": str(work_order.id),
+            })
+
+    if data.get("breakdown_id"):
+        breakdown = await db.get(BreakdownRecord, data["breakdown_id"])
+        if breakdown is None:
+            raise LookupError("Breakdown not found")
+        if breakdown.asset_id != data["asset_id"]:
+            raise SparePartAvailabilityError({
+                "message": "The supplied asset does not match the breakdown asset.",
+                "breakdown_id": str(breakdown.id),
+            })
+
     sp_result = await db.execute(
-        select(SparePart).where(SparePart.id == usage.spare_part_id).with_for_update()
+        select(SparePart).where(SparePart.id == data["spare_part_id"]).with_for_update()
     )
     sp = sp_result.scalar_one_or_none()
-    if sp:
-        sp.current_stock = max(0, float(sp.current_stock) - float(usage.quantity_used))
+    if sp is None:
+        raise LookupError("Spare part not found")
+    reserved = (await _active_reserved_quantities(db, [sp.id])).get(sp.id, Decimal("0"))
+    free_stock = Decimal(str(sp.current_stock)) - reserved
+
+    if work_order is not None:
+        reservation_result = await db.execute(
+            select(PMWorkOrderSparePartReservation)
+            .where(
+                PMWorkOrderSparePartReservation.work_order_id == work_order.id,
+                PMWorkOrderSparePartReservation.spare_part_id == sp.id,
+            )
+            .with_for_update()
+        )
+        own_reservation = reservation_result.scalar_one_or_none()
+    own_remaining = (
+        Decimal(str(own_reservation.quantity_reserved)) - Decimal(str(own_reservation.quantity_consumed))
+        if own_reservation is not None else Decimal("0")
+    )
+    available_to_consume = max(Decimal("0"), free_stock) + own_remaining
+    if quantity > available_to_consume:
+        raise SparePartAvailabilityError({
+            "message": "Spare-part usage exceeds unreserved stock and the work order's own reservation.",
+            "spare_part_id": str(sp.id),
+            "available_to_consume": float(available_to_consume),
+            "quantity_requested": float(quantity),
+        })
+
+    reserved_consumption = min(quantity, own_remaining)
+    if own_reservation is not None and reserved_consumption > 0:
+        own_reservation.quantity_consumed = Decimal(str(own_reservation.quantity_consumed)) + reserved_consumption
+
+    usage = SparePartUsage(**data, used_by_id=user_id)
+    db.add(usage)
+    sp.current_stock = Decimal(str(sp.current_stock)) - quantity
     await db.flush()
     await db.refresh(usage)
     return usage

@@ -165,7 +165,7 @@ async def test_subcontract_order_links_only_to_an_open_canonical_work_order():
         actor_id = actor.id
         await db.commit()
 
-        linked = await create_order(
+        linked = await subcontracting_service.create_order(
             db,
             SCOrderCreate(
                 supplier_id=supplier_id,
@@ -178,14 +178,14 @@ async def test_subcontract_order_links_only_to_an_open_canonical_work_order():
         linked.status = SCOrderStatus.ISSUED
         await db.commit()
         linked_id = linked.id
-        loaded = await get_order(db, linked_id)
+        loaded = await subcontracting_service.get_order(db, linked_id)
         assert loaded is not None
         assert loaded.work_order_id == work_order_id
         assert loaded.work_order.work_order_id == work_order_code
         assert loaded.status == SCOrderStatus.ISSUED
 
         with pytest.raises(ValueError, match="accepted product output"):
-            await subcontracting_service.complete_order(db, linked_id)
+            await subcontracting_service.complete_order(db, linked_id, actor_id)
         await db.rollback()
 
         receipt = await subcontracting_service.receive_goods(
@@ -213,8 +213,11 @@ async def test_subcontract_order_links_only_to_an_open_canonical_work_order():
         assert receipt_line.quantity_accepted == Decimal("9")
 
         # A single partial receipt is a valid completed subcontract operation at its accepted amount.
-        await subcontracting_service.complete_order(db, linked_id)
+        await subcontracting_service.complete_order(db, linked_id, actor_id)
         await db.commit()
+        completed_subcontract = await subcontracting_service.get_order(db, linked_id)
+        assert completed_subcontract is not None
+        assert completed_subcontract.completed_by_id == actor_id
         await production_crud.start_work_order(db, work_order_id, actor_id)
         with pytest.raises(ValueError, match="must equal accepted output"):
             await production_crud.complete_work_order(db, work_order_id, actor_id, Decimal("10"))
@@ -224,7 +227,7 @@ async def test_subcontract_order_links_only_to_an_open_canonical_work_order():
             db, await db.get(ProductionOrder, parent_id)
         ) == Decimal("9")
 
-        legacy_unlinked = await create_order(
+        legacy_unlinked = await subcontracting_service.create_order(
             db,
             SCOrderCreate(supplier_id=supplier_id, order_date=date(2026, 11, 4)),
             actor_id,

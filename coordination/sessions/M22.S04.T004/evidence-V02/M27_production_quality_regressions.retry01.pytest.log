@@ -1,0 +1,58 @@
+.F.......................................sss.ssss                        [100%]
+================================== FAILURES ===================================
+____ test_production_completion_gate_blocks_before_inventory_side_effects _____
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001C237871040>
+
+    @pytest.mark.asyncio
+    async def test_production_completion_gate_blocks_before_inventory_side_effects(monkeypatch):
+        order = SimpleNamespace(
+            id=uuid4(), status=ProductionOrderStatus.IN_PROGRESS, order_no="PO-2",
+            planned_quantity=Decimal("10"), actual_start=datetime.now(timezone.utc),
+            batch_no="SYNTHETIC-PO-2",
+        )
+        db = _ResultDB([_ScalarResult(order)])
+        events = []
+    
+        async def lock(_db, module, event):
+            events.append(("lock", module, event))
+    
+        async def check(_db, got_order, event, as_of_date, actor_id=None):
+            events.append(("check", got_order, event, as_of_date))
+            raise ValueError("missing in-process QC")
+    
+        monkeypatch.setattr(qms_service, "lock_quality_gate_scope", lock)
+        monkeypatch.setattr(qms_service, "ensure_production_quality_gates_pass", check)
+    
+        with pytest.raises(HTTPException) as raised:
+>           await production_service.complete_order(
+                db,
+                order,
+                SimpleNamespace(actual_quantity=Decimal("2")),
+                uuid4(),
+            )
+
+tests\test_m27_s02_t002_production_gate.py:125: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+app\services\production_service.py:870: in complete_order
+    final_operation_quantity = await _completed_work_order_output_quantity(db, order)
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+db = <tests.test_m27_s02_t002_production_gate._ResultDB object at 0x000001C2378710A0>
+order = namespace(id=UUID('74021100-07f5-45ae-bca2-483071eaff1d'), status=<ProductionOrderStatus.IN_PROGRESS: 'IN_PROGRESS'>, ...actual_start=datetime.datetime(2026, 11, 4, 9, 55, 1, 773023, tzinfo=datetime.timezone.utc), batch_no='SYNTHETIC-PO-2')
+
+    async def _completed_work_order_output_quantity(
+        db: AsyncSession, order: ProductionOrder
+    ) -> Optional[Decimal]:
+        all_count_result = await db.execute(
+            select(func.count(WorkOrder.id)).where(WorkOrder.production_order_id == order.id)
+        )
+>       all_count = all_count_result.scalar_one()
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: '_ScalarResult' object has no attribute 'scalar_one'
+
+app\services\production_service.py:702: AttributeError
+=========================== short test summary info ===========================
+FAILED tests/test_m27_s02_t002_production_gate.py::test_production_completion_gate_blocks_before_inventory_side_effects
+1 failed, 41 passed, 7 skipped in 21.49s

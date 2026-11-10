@@ -1,0 +1,200 @@
+F                                                                        [100%]
+================================== FAILURES ===================================
+_ test_configured_production_gates_block_transitions_until_each_template_passes _
+
+    @pytest.mark.asyncio
+    async def test_configured_production_gates_block_transitions_until_each_template_passes():
+        suffix = uuid4().hex[:20]
+        async with AsyncSessionLocal() as db:
+            await _assert_task_database(db)
+            product = Product(
+                sku=f"M27-T002-P-{suffix}", name=f"Synthetic production product {suffix}",
+                category=ProductCategory.FOOD, uom=UnitOfMeasure.KG,
+            )
+            warehouse = Warehouse(
+                code=f"M27-T002-W-{suffix}", name=f"Synthetic production warehouse {suffix}",
+                warehouse_type=WarehouseType.FINISHED_GOODS,
+            )
+            db.add_all([product, warehouse])
+            await db.flush()
+            actor = User(
+                email=f"m27-t002-{suffix}@example.invalid",
+                username=f"m27-t002-{suffix}",
+                full_name=f"Synthetic M27 actor {suffix}",
+                hashed_password="test-only",
+            )
+            approver = User(
+                email=f"m27-t002-approver-{suffix}@example.invalid",
+                username=f"m27-t002-approver-{suffix}",
+                full_name=f"Synthetic M27 approver {suffix}",
+                hashed_password="test-only",
+            )
+            db.add_all([actor, approver])
+            await db.flush()
+            actor_id = actor.id
+            approver_id = approver.id
+            recipe = Recipe(
+                product_id=product.id, version="1", name=f"Synthetic approved recipe {suffix}",
+                status=RecipeStatus.APPROVED, is_active=True,
+            )
+            db.add(recipe)
+            await db.flush()
+            order = ProductionOrder(
+                order_no=f"M27-T002-PO-{suffix}", product_id=product.id, recipe_id=recipe.id,
+                planned_quantity=Decimal("2"), uom="KG", status=ProductionOrderStatus.PLANNED,
+                target_warehouse_id=warehouse.id,
+                created_by=actor.id,
+                scheduled_start=datetime.now(timezone.utc),
+                scheduled_end=datetime.now(timezone.utc),
+                batch_no=f"M27-T002-B-{suffix}",
+            )
+            db.add(order)
+            await db.flush()
+            order_id = order.id
+    
+            release_template = await _template(db, f"Synthetic release QC {suffix}")
+            process_template = await _template(db, f"Synthetic completion QC {suffix}")
+            release_template_id = release_template.id
+            process_template_id = process_template.id
+            product_id = product.id
+            warehouse_id = warehouse.id
+            batch_no = order.batch_no
+            for index, (event, template) in enumerate((
+                (PRODUCTION_RELEASE_GATE_TRIGGER_EVENT, release_template),
+                (PRODUCTION_IN_PROCESS_GATE_TRIGGER_EVENT, process_template),
+            )):
+                await create_quality_gate_definition(db, {
+                    "code": f"M27T002_{index}_{suffix}",
+                    "name": f"Synthetic production gate {index} {suffix}",
+                    "gate_type": "IN_PROCESS_QUALITY",
+                    "trigger_event": event.lower(),
+                    "target_module": " Production ",
+                    "effective_from": date.today(),
+                    "is_active": True,
+                    "is_mandatory": True,
+                    "required_template_ids": [template.id],
+                })
+            await db.commit()
+    
+            order = await db.get(ProductionOrder, order_id)
+            await production_service.approve_order(db, order, approver_id)
+            await db.commit()
+    
+            with pytest.raises(HTTPException) as release_error:
+                await production_service.release_order(db, order, actor_id)
+            assert release_error.value.status_code == 422
+            assert "accepted, passed inspection" in release_error.value.detail
+            await db.rollback()
+            order = await db.get(ProductionOrder, order_id)
+            assert order.status == ProductionOrderStatus.PLANNED
+    
+            db.add(QCInspection(
+                inspection_no=f"M27-T002-QC-R-{suffix}", qc_type=QCType.IN_PROCESS,
+                status=QCStatus.PASSED, decision=QCDecision.ACCEPT,
+                production_order_id=order_id, template_id=release_template_id,
+                product_id=product_id, warehouse_id=warehouse_id, batch_no=batch_no,
+                inspection_date=date.today(), is_mandatory=True,
+                blocks_progression=True, release_required=True,
+            ))
+            await db.commit()
+            order = await db.get(ProductionOrder, order_id)
+>           await ensure_production_quality_gates_pass(
+                db, order, PRODUCTION_RELEASE_GATE_TRIGGER_EVENT, date.today()
+            )
+
+tests\test_m27_s02_t002_production_gate_db.py:175: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+db = <sqlalchemy.ext.asyncio.session.AsyncSession object at 0x000002068DA540B0>
+order = <app.models.production.ProductionOrder object at 0x0000020693475490>
+trigger_event = 'ON_PRODUCTION_RELEASE', as_of_date = datetime.date(2026, 11, 4)
+actor_id = None
+
+    async def ensure_production_quality_gates_pass(
+        db: AsyncSession, order, trigger_event: str, as_of_date: date,
+        actor_id: Optional[uuid.UUID] = None,
+    ) -> None:
+        """Require configured mandatory in-process QC before production release/completion."""
+        gates = [
+            gate for gate in await list_production_quality_gates(db, trigger_event, as_of_date)
+            if gate.is_mandatory
+        ]
+        evaluation_id = uuid.uuid4()
+        if not gates:
+            await _record_quality_gate_audit_event(
+                evaluation_id=evaluation_id, target_module=PRODUCTION_GATE_TARGET_MODULE,
+                trigger_event=trigger_event, scope_type="PRODUCTION_ORDER", scope_id=order.id,
+                business_type="PRODUCTION_ORDER", business_id=order.id, result="NO_GATE", actor_id=actor_id,
+                reason="No active mandatory production quality gate applied.",
+            )
+            return
+        process_started_at = getattr(order, "actual_start", None)
+        if trigger_event == PRODUCTION_IN_PROCESS_GATE_TRIGGER_EVENT and process_started_at is None:
+            for gate in gates:
+                for template in gate.required_templates:
+                    await _record_quality_gate_audit_event(
+                        evaluation_id=evaluation_id, target_module=PRODUCTION_GATE_TARGET_MODULE,
+                        trigger_event=trigger_event, scope_type="PRODUCTION_ORDER", scope_id=order.id,
+                        business_type="PRODUCTION_ORDER", business_id=order.id, gate=gate, template=template,
+                        result="BLOCKED", actor_id=actor_id,
+                        reason="In-process QC cannot be evaluated before production has a recorded start.",
+                    )
+            raise ValueError(
+                f"Production order {order.order_no} cannot continue: in-process QC requires a recorded production start."
+            )
+        for gate in gates:
+            found_template = False
+            for template in gate.required_templates:
+                found_template = True
+                query = select(QCInspection.id).where(
+                        QCInspection.production_order_id == order.id,
+                        QCInspection.template_id == template.id,
+                        QCInspection.qc_type == QCType.IN_PROCESS,
+                        QCInspection.status == QCStatus.PASSED,
+                        QCInspection.decision == QCDecision.ACCEPT,
+                        QCInspection.is_mandatory.is_(True),
+                        QCInspection.blocks_progression.is_(True),
+                        QCInspection.release_required.is_(True),
+                    )
+                if trigger_event == PRODUCTION_IN_PROCESS_GATE_TRIGGER_EVENT:
+                    query = query.where(QCInspection.created_at >= process_started_at)
+                result = await db.execute(query.limit(1))
+                inspection_id = result.scalar_one_or_none()
+                if inspection_id is not None:
+                    await _record_quality_gate_audit_event(
+                        evaluation_id=evaluation_id, target_module=PRODUCTION_GATE_TARGET_MODULE,
+                        trigger_event=trigger_event, scope_type="PRODUCTION_ORDER", scope_id=order.id,
+                        business_type="PRODUCTION_ORDER", business_id=order.id, gate=gate, template=template,
+                        inspection_id=inspection_id, result="PASS", actor_id=actor_id,
+                        reason="Required in-process inspection was accepted and passed.",
+                    )
+                    continue
+                waiver_id = await get_active_quality_gate_waiver_id(
+                    db, gate.id, "PRODUCTION_ORDER", order.id
+                )
+                if waiver_id is not None:
+                    await _record_quality_gate_audit_event(
+                        evaluation_id=evaluation_id, target_module=PRODUCTION_GATE_TARGET_MODULE,
+                        trigger_event=trigger_event, scope_type="PRODUCTION_ORDER", scope_id=order.id,
+                        business_type="PRODUCTION_ORDER", business_id=order.id, gate=gate, template=template,
+                        waiver_id=waiver_id, result="WAIVED", actor_id=actor_id,
+                        reason="Required in-process inspection was covered by an active approved waiver.",
+                    )
+                    continue
+                await _record_quality_gate_audit_event(
+                    evaluation_id=evaluation_id, target_module=PRODUCTION_GATE_TARGET_MODULE,
+                    trigger_event=trigger_event, scope_type="PRODUCTION_ORDER", scope_id=order.id,
+                    business_type="PRODUCTION_ORDER", business_id=order.id, gate=gate, template=template,
+                    result="BLOCKED", actor_id=actor_id,
+                    reason="Required in-process inspection has no accepted, passed result or active waiver.",
+                )
+>               raise ValueError(
+                    f"Production order {order.order_no} cannot continue: required in-process QC template "
+                    f"'{template.name}' for {trigger_event} has no accepted, passed inspection."
+                )
+E               ValueError: Production order M27-T002-PO-1dc8bb1efb9f452db07e cannot continue: required in-process QC template 'Synthetic release QC 45ffb07fecf64ebfb6d4' for ON_PRODUCTION_RELEASE has no accepted, passed inspection.
+
+app\services\qms_service.py:612: ValueError
+=========================== short test summary info ===========================
+FAILED tests/test_m27_s02_t002_production_gate_db.py::test_configured_production_gates_block_transitions_until_each_template_passes
+1 failed in 19.58s

@@ -1,6 +1,7 @@
 from __future__ import annotations
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
+from enum import Enum
 from typing import List, Optional
 from uuid import UUID
 from pydantic import BaseModel, Field
@@ -67,6 +68,7 @@ class FlowLineCreate(BaseModel):
 class FlowLineOut(FlowLineCreate):
     id: UUID
     transaction_id: UUID
+    reservation_line_id: Optional[UUID] = None
     material_name: Optional[str] = None
     product_name: Optional[str] = None
     lot_number: Optional[str] = None
@@ -97,7 +99,10 @@ class FlowTransactionOut(BaseModel):
     flow_mode: FlowMode
     status: FlowStatus
     production_order_id: Optional[UUID] = None
+    source_document_type: Optional[str] = None
+    source_document_id: Optional[UUID] = None
     transaction_datetime: datetime
+    idempotency_key: Optional[str] = None
     plant_id: Optional[str] = None
     created_by: Optional[UUID] = None
     approved_by: Optional[UUID] = None
@@ -112,6 +117,93 @@ class FlowTransactionApprove(BaseModel):
     notes: Optional[str] = None
 
 
+class MaterialIssueLineCreate(BaseModel):
+    reservation_line_id: UUID
+    quantity: Decimal = Field(gt=0)
+
+
+class MaterialIssueCreate(BaseModel):
+    idempotency_key: str = Field(min_length=16, max_length=120)
+    transaction_datetime: Optional[datetime] = None
+    notes: Optional[str] = None
+    lines: List[MaterialIssueLineCreate] = Field(min_length=1)
+
+
+class MaterialReturnCreate(BaseModel):
+    idempotency_key: str = Field(min_length=16, max_length=120)
+    quantity: Decimal = Field(gt=0)
+    notes: Optional[str] = None
+
+
+class MaterialScrapReasonCode(str, Enum):
+    SPILLAGE = "SPILLAGE"
+    CONTAMINATION = "CONTAMINATION"
+    DAMAGE = "DAMAGE"
+    PROCESS_LOSS = "PROCESS_LOSS"
+    OTHER = "OTHER"
+
+
+class MaterialScrapCreate(BaseModel):
+    idempotency_key: str = Field(min_length=16, max_length=120)
+    quantity: Decimal = Field(gt=0)
+    reason_code: MaterialScrapReasonCode
+    notes: str = Field(min_length=1, max_length=1000)
+
+
+class WIPOutputCreate(BaseModel):
+    """Record a measured in-process product quantity at its first process location."""
+    idempotency_key: str = Field(min_length=16, max_length=120)
+    production_order_id: UUID
+    quantity: Decimal = Field(gt=0)
+    uom: str = Field(min_length=1, max_length=20)
+    destination_stage_id: UUID
+    destination_location_id: UUID
+    notes: Optional[str] = Field(default=None, max_length=1000)
+
+
+class WIPTransferCreate(BaseModel):
+    """Move part of one recorded WIP output to another process location."""
+    idempotency_key: str = Field(min_length=16, max_length=120)
+    quantity: Decimal = Field(gt=0)
+    source_stage_id: UUID
+    source_location_id: UUID
+    destination_stage_id: UUID
+    destination_location_id: UUID
+    notes: Optional[str] = Field(default=None, max_length=1000)
+
+
+class WIPBulkTransferLineCreate(BaseModel):
+    origin_line_id: UUID
+    quantity: Decimal = Field(gt=0)
+    source_stage_id: UUID
+    source_location_id: UUID
+    destination_stage_id: UUID
+    destination_location_id: UUID
+
+
+class WIPBulkTransferCreate(BaseModel):
+    idempotency_key: str = Field(min_length=16, max_length=120)
+    lines: List[WIPBulkTransferLineCreate] = Field(min_length=1, max_length=100)
+    notes: Optional[str] = Field(default=None, max_length=1000)
+
+
+class WIPBalanceOut(BaseModel):
+    origin_line_id: UUID
+    production_order_id: UUID
+    production_order_no: str
+    product_id: UUID
+    product_name: Optional[str] = None
+    lot_id: Optional[UUID] = None
+    batch_id: str
+    quantity: Decimal
+    uom: str
+    stage_id: UUID
+    stage_name: str
+    location_id: UUID
+    location_code: str
+    quality_status: QualityStatus
+
+
 # ── Reservation ───────────────────────────────────────────────────────────────
 
 class ReservationLineCreate(BaseModel):
@@ -120,6 +212,7 @@ class ReservationLineCreate(BaseModel):
     material_id: Optional[UUID] = None
     product_id: Optional[UUID] = None
     lot_id: Optional[UUID] = None
+    staging_location_id: Optional[UUID] = None
     warehouse_id: UUID
     quantity_required: Decimal
     uom: str = "KG"
@@ -131,6 +224,8 @@ class ReservationLineCreate(BaseModel):
 class ReservationLineOut(ReservationLineCreate):
     id: UUID
     reservation_id: UUID
+    source_stock_id: Optional[UUID] = None
+    source_location_id: Optional[UUID] = None
     quantity_reserved: Decimal = Decimal("0")
     quantity_issued: Decimal = Decimal("0")
     fefo_lot_candidate: Optional[str] = None
@@ -161,30 +256,73 @@ class ReservationOut(BaseModel):
         from_attributes = True
 
 
+class MaterialPickListLineOut(BaseModel):
+    reservation_line_ids: List[UUID]
+    line_no: int
+    material_id: UUID
+    material_code: str
+    material_name: str
+    lot_id: Optional[UUID] = None
+    lot_number: Optional[str] = None
+    expiry_date: Optional[date] = None
+    warehouse_id: UUID
+    source_location_id: Optional[UUID] = None
+    source_location_code: Optional[str] = None
+    staging_location_id: Optional[UUID] = None
+    staging_location_code: Optional[str] = None
+    quantity_to_pick: Decimal
+    uom: str
+
+
+class MaterialPickListOut(BaseModel):
+    reservation_id: UUID
+    reservation_no: str
+    reservation_status: ReservationStatus
+    production_order_id: UUID
+    production_order_no: str
+    warehouse_id: UUID
+    warehouse_name: str
+    generated_at: datetime
+    lines: List[MaterialPickListLineOut]
+
+
 # ── Consumption ───────────────────────────────────────────────────────────────
 
 class ConsumptionCreate(BaseModel):
     production_order_id: UUID
+    flow_line_id: UUID
+    idempotency_key: str = Field(min_length=16, max_length=120)
     work_order_id: Optional[UUID] = None
-    item_type: str = "material"
-    material_id: Optional[UUID] = None
-    product_id: Optional[UUID] = None
-    lot_id: Optional[UUID] = None
-    quantity_consumed: Decimal
-    quantity_returned: Decimal = Decimal("0")
-    quantity_scrapped: Decimal = Decimal("0")
-    uom: str = "KG"
+    quantity_consumed: Decimal = Field(gt=0)
     stage_id: Optional[UUID] = None
     notes: Optional[str] = None
 
 
-class ConsumptionOut(ConsumptionCreate):
+class ConsumptionOut(BaseModel):
     id: UUID
+    production_order_id: UUID
+    flow_line_id: Optional[UUID] = None
+    idempotency_key: Optional[str] = None
+    return_flow_line_id: Optional[UUID] = None
+    scrap_flow_line_id: Optional[UUID] = None
+    scrap_reason_code: Optional[str] = None
+    work_order_id: Optional[UUID] = None
+    item_type: str
+    material_id: Optional[UUID] = None
+    product_id: Optional[UUID] = None
+    lot_id: Optional[UUID] = None
     quantity_issued: Decimal
+    quantity_consumed: Decimal
+    quantity_returned: Decimal
+    quantity_scrapped: Decimal
     quantity_variance: Decimal
+    uom: str
+    stage_id: Optional[UUID] = None
     variance_pct: Optional[Decimal] = None
     bom_quantity: Optional[Decimal] = None
     consumed_at: Optional[datetime] = None
+    operator_id: Optional[UUID] = None
+    notes: Optional[str] = None
     material_name: Optional[str] = None
 
     class Config:

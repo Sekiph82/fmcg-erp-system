@@ -15,7 +15,7 @@ from sqlalchemy.engine import URL
 
 from app.crud import production_advanced as production_crud
 from app.db.session import AsyncSessionLocal, engine
-from app.models.master import Product, ProductCategory, UnitOfMeasure
+from app.models.master import Product, ProductCategory, UnitOfMeasure, Warehouse, WarehouseType
 from app.models.production import ProductionOrder, ProductionOrderStatus
 from app.models.production_advanced import (
     Routing,
@@ -102,8 +102,14 @@ async def test_rework_is_linked_quantity_conserving_and_blocks_parent_close_unti
             category=ProductCategory.FOOD,
             uom=UnitOfMeasure.KG,
         )
-        db.add_all([actor, product])
+        warehouse = Warehouse(
+            code=f"M22-S02-T004-W-{suffix}",
+            name=f"Synthetic rework target {suffix}",
+            warehouse_type=WarehouseType.FINISHED_GOODS,
+        )
+        db.add_all([actor, product, warehouse])
         await db.flush()
+        actor_id = actor.id
         recipe = Recipe(
             product_id=product.id,
             version="1",
@@ -120,6 +126,7 @@ async def test_rework_is_linked_quantity_conserving_and_blocks_parent_close_unti
             planned_quantity=Decimal("10"),
             uom="KG",
             status=ProductionOrderStatus.IN_PROGRESS,
+            target_warehouse_id=warehouse.id,
             approved_by=actor.id,
             approved_at=datetime(2026, 11, 4, 8, tzinfo=timezone.utc),
             scheduled_start=datetime(2026, 11, 4, 8, tzinfo=timezone.utc),
@@ -202,7 +209,7 @@ async def test_rework_is_linked_quantity_conserving_and_blocks_parent_close_unti
         await db.commit()
         with pytest.raises(ValueError, match="Routed and manual"):
             await production_crud.create_work_order_rework(
-                db, source_id, Decimal("1.000"), "Correct mixed-route defect", actor.id
+                db, source_id, Decimal("1.000"), "Correct mixed-route defect", actor_id
             )
         await db.rollback()
         manual_operation = await db.get(WorkOrder, manual_operation_id)
@@ -211,11 +218,11 @@ async def test_rework_is_linked_quantity_conserving_and_blocks_parent_close_unti
 
         with pytest.raises(ValueError, match="terminal routing operation"):
             await production_crud.create_work_order_rework(
-                db, nonterminal_source_id, Decimal("1.000"), "Correct preparation defect", actor.id
+                db, nonterminal_source_id, Decimal("1.000"), "Correct preparation defect", actor_id
             )
         await db.rollback()
         result = await production_crud.create_work_order_rework(
-            db, source_id, Decimal("2.000"), "Seal inspection found a correctable defect", actor.id
+            db, source_id, Decimal("2.000"), "Seal inspection found a correctable defect", actor_id
         )
         await db.commit()
 
@@ -243,7 +250,7 @@ async def test_rework_is_linked_quantity_conserving_and_blocks_parent_close_unti
             )
         )).scalar_one()
         assert edge.transferred_quantity == Decimal("2.000")
-        assert edge.actor_id == actor.id
+        assert edge.actor_id == actor_id
         actions = set((await db.execute(
             select(ProductionTransitionEvent.action).where(
                 ProductionTransitionEvent.parent_entity_id == parent_id,
@@ -252,8 +259,8 @@ async def test_rework_is_linked_quantity_conserving_and_blocks_parent_close_unti
         )).scalars())
         assert actions >= {"REWORK_QUANTITY_ASSIGNED", "REWORK_CREATED"}
 
-        await production_crud.start_work_order(db, result_id, actor.id)
-        await production_crud.complete_work_order(db, result_id, actor.id, Decimal("2.000"))
+        await production_crud.start_work_order(db, result_id, actor_id)
+        await production_crud.complete_work_order(db, result_id, actor_id, Decimal("2.000"))
         await db.commit()
         assert await _completed_work_order_output_quantity(
             db, await db.get(ProductionOrder, parent_id)
@@ -277,7 +284,12 @@ async def test_rework_cannot_exceed_unreworked_output_or_reopen_terminal_parent(
             category=ProductCategory.FOOD,
             uom=UnitOfMeasure.KG,
         )
-        db.add_all([actor, product])
+        warehouse = Warehouse(
+            code=f"M22-S02-T004-GW-{suffix}",
+            name=f"Synthetic rework guard target {suffix}",
+            warehouse_type=WarehouseType.FINISHED_GOODS,
+        )
+        db.add_all([actor, product, warehouse])
         await db.flush()
         recipe = Recipe(
             product_id=product.id,
@@ -294,7 +306,10 @@ async def test_rework_cannot_exceed_unreworked_output_or_reopen_terminal_parent(
             recipe_id=recipe.id,
             planned_quantity=Decimal("10"),
             uom="KG",
-            status=ProductionOrderStatus.COMPLETED,
+            status=ProductionOrderStatus.IN_PROGRESS,
+            target_warehouse_id=warehouse.id,
+            approved_by=actor.id,
+            approved_at=datetime(2026, 11, 4, 8, tzinfo=timezone.utc),
             scheduled_start=datetime(2026, 11, 4, 8, tzinfo=timezone.utc),
             scheduled_end=datetime(2026, 11, 4, 16, tzinfo=timezone.utc),
             actual_quantity=Decimal("5"),
@@ -338,16 +353,21 @@ async def test_rework_cannot_exceed_unreworked_output_or_reopen_terminal_parent(
         )
         db.add(source)
         await db.flush()
+        actor_id = actor.id
         source_id = source.id
+        parent_id = parent.id
         await db.commit()
 
         with pytest.raises(ValueError, match="cannot exceed"):
             await production_crud.create_work_order_rework(
-                db, source_id, Decimal("2.000"), "A separate failed seal needs repair", actor.id
+                db, source_id, Decimal("2.000"), "A separate failed seal needs repair", actor_id
             )
         await db.rollback()
-        with pytest.raises(ValueError, match="completed"):
+        parent = await db.get(ProductionOrder, parent_id)
+        parent.status = ProductionOrderStatus.COMPLETED
+        await db.commit()
+        with pytest.raises(ValueError, match="production order is COMPLETED"):
             await production_crud.create_work_order_rework(
-                db, source_id, Decimal("1.000"), "Attempt to reopen terminal order", actor.id
+                db, source_id, Decimal("1.000"), "Attempt to reopen terminal order", actor_id
             )
         await db.rollback()

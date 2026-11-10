@@ -1,0 +1,19 @@
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\portal\ai\page.tsx
+  25:54  warning  React Hook useEffect has a missing dependency: 'loadRecs'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\portal\claims\page.tsx
+  30:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\portal\drafts\page.tsx
+  30:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\report-builder\saved\page.tsx
+  20:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\report-builder\viewer\page.tsx
+  27:6  warning  React Hook useEffect has a missing dependency: 'selectedId'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  45:6  warning  React Hook useEffect has a missing dependency: 'run'. Either include it or remove the dependency array         react-hooks/exhaustive-deps
+
+✖ 6 problems (0 errors, 6 warnings)
+

@@ -1,0 +1,30 @@
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\chatter\feed\page.tsx
+  41:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\dunning\cases\[id]\page.tsx
+  35:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\dunning\cases\page.tsx
+  20:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\expenses\reports\page.tsx
+  19:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\fleet\fuel\page.tsx
+  18:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\fleet\incidents\page.tsx
+  22:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\fleet\maintenance\page.tsx
+  20:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\fleet\trips\page.tsx
+  21:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\app\dashboard\fleet\vehicles\page.tsx
+  20:32  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+✖ 9 problems (0 errors, 9 warnings)
+

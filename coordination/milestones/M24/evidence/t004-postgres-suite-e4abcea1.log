@@ -1,0 +1,1670 @@
+M24 S04 T004 consolidated PostgreSQL acceptance run
+Container=fmcg-m24-t004-e4abcea1
+TemplateDatabase=fmcg_m24_s04_t004_e4abcea131cc487b85c6
+Created=2026-11-08T05:27:23.8549685+03:00
+
+=== Fresh migration on fmcg_m24_s04_t004_e4abcea131cc487b85c6 ===
+
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 20260517_0000, squashed baseline � creates all tables for fresh-DB initialisation via alembic upgrade head.
+INFO  [alembic.runtime.migration] Running upgrade 20260517_0000 -> 3c45d9071c98, initial schema
+INFO  [alembic.runtime.migration] Running upgrade 3c45d9071c98 -> a1b2c3d4e5f6, finance accounting module - purchase invoices, purchase payments, payment method
+INFO  [alembic.runtime.migration] Running upgrade a1b2c3d4e5f6 -> b2c3d4e5f6a7, ai intelligence module - predictions, recommendations, formulations, scenarios
+INFO  [alembic.runtime.migration] Running upgrade b2c3d4e5f6a7 -> d4e5f6a7b8c9, Advanced Production Module � 11 sub-modules
+INFO  [alembic.runtime.migration] Running upgrade d4e5f6a7b8c9 -> e5f6a7b8c9d0, utilities module - system configs, uom conversions, number series, currencies
+INFO  [alembic.runtime.migration] Running upgrade e5f6a7b8c9d0 -> f6a7b8c9d0e1, utility management module � full utility infrastructure schema
+INFO  [alembic.runtime.migration] Running upgrade d4e5f6a7b8c9 -> a2b3c4d5e6f7, Extend boiler_steam_records with period-total and operational columns.
+INFO  [alembic.runtime.migration] Running upgrade a2b3c4d5e6f7 -> b7c8d9e0f1a2, compressor_air_extended
+INFO  [alembic.runtime.migration] Running upgrade b7c8d9e0f1a2 -> c8d9e0f1a2b3, production_costing
+INFO  [alembic.runtime.migration] Running upgrade c8d9e0f1a2b3 -> d9e0f1a2b3c4, production_ai_intelligence
+INFO  [alembic.runtime.migration] Running upgrade d9e0f1a2b3c4 -> e0f1a2b3c4d5, chemical_water_treatment
+INFO  [alembic.runtime.migration] Running upgrade e0f1a2b3c4d5 -> f1a2b3c4d5e6, QMS + HACCP / Food Safety System
+INFO  [alembic.runtime.migration] Running upgrade f1a2b3c4d5e6 -> a3b4c5d6e7f8, GS1 Barcode + Label Printing System
+INFO  [alembic.runtime.migration] Running upgrade a3b4c5d6e7f8 -> b4c5d6e7f8a9, Allergen + Nutrition Management System
+INFO  [alembic.runtime.migration] Running upgrade f6a7b8c9d0e1 -> b1c2d3e4f5a0, extend utility_devices and utility_readings with device-typing and reading-validation columns
+INFO  [alembic.runtime.migration] Running upgrade b1c2d3e4f5a0 -> c2d3e4f5a0b1, utility_transactions backbone � add transaction_time, reference linkage, variance columns
+INFO  [alembic.runtime.migration] Running upgrade c2d3e4f5a0b1 -> d4e5f6a7b8cc, Extend soft_water_records with additional operational columns.
+INFO  [alembic.runtime.migration] Running upgrade f6a7b8c9d0e1 -> a0b1c2d3e4f5, extend utility asset categories and utility assets with additional fields
+INFO  [alembic.runtime.migration] Running upgrade a0b1c2d3e4f5, b4c5d6e7f8a9, d4e5f6a7b8cc -> 87ad3195d2c5, merge_all_heads
+INFO  [alembic.runtime.migration] Running upgrade 87ad3195d2c5 -> 4cddbd375e74, procurement_suggestion_engine
+INFO  [alembic.runtime.migration] Running upgrade 4cddbd375e74 -> 4a1b1eba5eed, subcontracting_system
+INFO  [alembic.runtime.migration] Running upgrade 4a1b1eba5eed -> c5d6e7f8a9b0, Landed Cost Allocation System
+INFO  [alembic.runtime.migration] Running upgrade c5d6e7f8a9b0 -> d6e7f8a9b0c1, 3-Way Invoice Matching System
+INFO  [alembic.runtime.migration] Running upgrade d6e7f8a9b0c1 -> e7f8a9b0c1d2, bank_reconciliation
+INFO  [alembic.runtime.migration] Running upgrade e7f8a9b0c1d2 -> f9a0b1c2d3e4, crm_pipeline
+INFO  [alembic.runtime.migration] Running upgrade f9a0b1c2d3e4 -> a9b0c1d2e3f4, customer_distributor_portal
+INFO  [alembic.runtime.migration] Running upgrade a9b0c1d2e3f4 -> b1c2d3e4f5a6, supplier_portal
+INFO  [alembic.runtime.migration] Running upgrade b1c2d3e4f5a6 -> c2d3e4f5a6b7, dunning_overdue_collection
+INFO  [alembic.runtime.migration] Running upgrade c2d3e4f5a6b7 -> d3e4f5a6b7c8, price_list_enhancement
+INFO  [alembic.runtime.migration] Running upgrade d3e4f5a6b7c8 -> e4f5a6b7c8d9, subscription_recurring_orders
+INFO  [alembic.runtime.migration] Running upgrade e4f5a6b7c8d9 -> f5a6b7c8d9e0, van_sales_mobile_pos
+INFO  [alembic.runtime.migration] Running upgrade f5a6b7c8d9e0 -> a6b7c8d9e0f1, contract_management
+INFO  [alembic.runtime.migration] Running upgrade a6b7c8d9e0f1 -> b8c9d0e1f2a3, moto_sales_mpesa_fraud_performance
+INFO  [alembic.runtime.migration] Running upgrade b8c9d0e1f2a3 -> c9d0e1f2a3b4, sales_commission_tracking
+INFO  [alembic.runtime.migration] Running upgrade c9d0e1f2a3b4 -> d0e1f2a3b4c5, expense_claims
+INFO  [alembic.runtime.migration] Running upgrade d0e1f2a3b4c5 -> e1f2a3b4c5d6, recruitment_ats
+INFO  [alembic.runtime.migration] Running upgrade e1f2a3b4c5d6 -> f2a3b4c5d6e7, employee_self_service
+INFO  [alembic.runtime.migration] Running upgrade f2a3b4c5d6e7 -> a3b4c5d6e8f7, performance_appraisals
+INFO  [alembic.runtime.migration] Running upgrade a3b4c5d6e8f7 -> b4c5d6e7a8f9, training_skills_management
+INFO  [alembic.runtime.migration] Running upgrade b4c5d6e7a8f9 -> c5d6e7f8b0a9, timesheet_approval_workflow
+INFO  [alembic.runtime.migration] Running upgrade c5d6e7f8b0a9 -> d6e7f8a9c0b1, notification_center
+INFO  [alembic.runtime.migration] Running upgrade d6e7f8a9c0b1 -> e7f8a9b0d1c2, kanban_boards
+INFO  [alembic.runtime.migration] Running upgrade e7f8a9b0d1c2 -> f8a9b0c1d2e3, custom_report_builder
+INFO  [alembic.runtime.migration] Running upgrade f8a9b0c1d2e3 -> a9b0c1d2f3e4, calendar_resource_scheduling
+INFO  [alembic.runtime.migration] Running upgrade a9b0c1d2f3e4 -> b0c1d2e3f4a5, chatter_activity_timeline
+INFO  [alembic.runtime.migration] Running upgrade b0c1d2e3f4a5 -> c1d2e3f4a5b6, custom_fields
+INFO  [alembic.runtime.migration] Running upgrade c1d2e3f4a5b6 -> d2e3f4a5b6c7, two_factor_auth
+INFO  [alembic.runtime.migration] Running upgrade d2e3f4a5b6c7 -> e3f4a5b6c7d8, webhook_event_engine
+INFO  [alembic.runtime.migration] Running upgrade e3f4a5b6c7d8 -> f4a5b6c7d8e9, fleet_management
+INFO  [alembic.runtime.migration] Running upgrade f4a5b6c7d8e9 -> a5b6c7d8e9f0, cycle_count
+INFO  [alembic.runtime.migration] Running upgrade a5b6c7d8e9f0 -> b6c7d8e9f0a1, putaway_rules
+INFO  [alembic.runtime.migration] Running upgrade b6c7d8e9f0a1 -> c7d8e9f0a1b2, secondary_sales_distributor_sell_through
+INFO  [alembic.runtime.migration] Running upgrade c7d8e9f0a1b2 -> d8e9f0a1b2c3, esg_sustainability_reporting
+INFO  [alembic.runtime.migration] Running upgrade d8e9f0a1b2c3 -> e9f0a1b2c3d4, kenya_payroll_localization
+INFO  [alembic.runtime.migration] Running upgrade e9f0a1b2c3d4 -> f0a1b2c3d4e5, esg_intelligence_gap69
+INFO  [alembic.runtime.migration] Running upgrade f0a1b2c3d4e5 -> f1a2b3c4e5d6, plugin_marketplace_gap70
+INFO  [alembic.runtime.migration] Running upgrade f1a2b3c4e5d6 -> 1a2b3c4d5e6f, audit_logs_schema_repair
+INFO  [alembic.runtime.migration] Running upgrade 1a2b3c4d5e6f -> 20260510_0700, add user must_change_password flag
+INFO  [alembic.runtime.migration] Running upgrade 20260510_0700 -> 20260510_0710, fix fixed asset depreciation schedule enum type
+INFO  [alembic.runtime.migration] Running upgrade 20260510_0710 -> 20260511_0010, enterprise accounting core foundations
+INFO  [alembic.runtime.migration] Running upgrade 20260511_0010 -> 20260511_0020, operational posting integration foundations
+INFO  [alembic.runtime.migration] Running upgrade 20260511_0020 -> 20260511_0030, erp-wide access scopes
+INFO  [alembic.runtime.migration] Running upgrade 20260511_0030 -> 20260511_0040, Add scoped access fields to finance journals.
+INFO  [alembic.runtime.migration] Running upgrade 20260511_0040 -> 20260514_0010, Add APS planning tables.
+INFO  [alembic.runtime.migration] Running upgrade 20260514_0010 -> 20260514_0020, Add WMS depth reconciliation tables.
+INFO  [alembic.runtime.migration] Running upgrade 20260514_0020 -> 20260514_0030, Add procurement scope and supplier governance reconciliation.
+INFO  [alembic.runtime.migration] Running upgrade 20260514_0030 -> 20260515_0010, crm sales scope reconciliation
+INFO  [alembic.runtime.migration] Running upgrade 20260515_0010 -> 20260515_0020, hrms payroll reconciliation
+INFO  [alembic.runtime.migration] Running upgrade 20260515_0020 -> 20260515_0030, document knowledge reconciliation
+INFO  [alembic.runtime.migration] Running upgrade 20260515_0030 -> 20260515_0050, haccp pdca audit scheduling
+INFO  [alembic.runtime.migration] Running upgrade 20260515_0050 -> 20260515_0060, gs1 product config fields
+INFO  [alembic.runtime.migration] Running upgrade 20260515_0030 -> 20260515_0040, report builder schedule run log
+INFO  [alembic.runtime.migration] Running upgrade 20260515_0040, 20260515_0060 -> 20260516_0010, npd formula governance reconciliation
+INFO  [alembic.runtime.migration] Running upgrade 20260516_0010 -> 20260516_0020, iot machine streaming reconciliation
+INFO  [alembic.runtime.migration] Running upgrade 20260516_0020 -> 20260516_0030, maintenance predictive reconciliation
+INFO  [alembic.runtime.migration] Running upgrade 20260516_0030 -> 20260516_0040, AI Prompt Registry reconciliation (GAP-024C)
+INFO  [alembic.runtime.migration] Running upgrade 20260516_0040 -> 20260516_0050, Multi-company warehouse reconciliation (GAP-025C)
+INFO  [alembic.runtime.migration] Running upgrade 20260516_0050 -> 20260516_0060, Add performance indexes for FK/date/status fields
+INFO  [alembic.runtime.migration] Running upgrade 20260516_0060 -> 20260518_0001, OTP delivery: expand challenge_code column to store bcrypt hash
+INFO  [alembic.runtime.migration] Running upgrade 20260518_0001 -> 20260602_0001, eTIMS provider config model + submission tracking fields (TASK-005.1A)
+INFO  [alembic.runtime.migration] Running upgrade 20260602_0001 -> 20261019_0010, Add a monotonic allocator for MPS production-order numbers.
+INFO  [alembic.runtime.migration] Running upgrade 20261019_0010 -> 20261020_0010, Persist reproducible MPS constraint and what-if evidence.
+INFO  [alembic.runtime.migration] Running upgrade 20261020_0010 -> 20261021_0010, Create storage for Developer Portal API keys and usage logs.
+INFO  [alembic.runtime.migration] Running upgrade 20261021_0010 -> 20261022_0011, Use database sequences for globally unique MPS plan and line numbers.
+INFO  [alembic.runtime.migration] Running upgrade 20261022_0011 -> 20261023_0012, persist hashed refresh tokens for single-use rotation
+INFO  [alembic.runtime.migration] Running upgrade 20261023_0012 -> 20261023_0013, track auth session activity for inactivity expiry
+INFO  [alembic.runtime.migration] Running upgrade 20261023_0013 -> 20261023_0014, add user-wide authentication session version
+INFO  [alembic.runtime.migration] Running upgrade 20261023_0014 -> 20261027_0015, standardize master merge and deactivation semantics
+INFO  [alembic.runtime.migration] Running upgrade 20261027_0015 -> 20261028_0016, govern recipe version identifiers and effective date windows
+INFO  [alembic.runtime.migration] Running upgrade 20261028_0016 -> 20261028_0017, Enforce warehouse branch/company ownership across master references.
+INFO  [alembic.runtime.migration] Running upgrade 20261028_0017 -> 20261028_0018, add conversion profile versions and inclusive effective-date windows
+INFO  [alembic.runtime.migration] Running upgrade 20261028_0018 -> 20261028_0019, store expected process yield against BOM input base quantity
+INFO  [alembic.runtime.migration] Running upgrade 20261028_0019 -> 20261028_0020, add a distinct spillage yield/loss category
+INFO  [alembic.runtime.migration] Running upgrade 20261028_0020 -> 20261028_0021, snapshot recipe standard loss on waste records
+INFO  [alembic.runtime.migration] Running upgrade 20261028_0021 -> 20261028_0022, add batch-specific BOM substitution approvals
+INFO  [alembic.runtime.migration] Running upgrade 20261028_0022 -> 20261028_0023, add MPS minimum-run and CIP transition inputs
+INFO  [alembic.runtime.migration] Running upgrade 20261028_0023 -> 20261028_0024, persist scenario cost currency for truthful API and UI labels
+INFO  [alembic.runtime.migration] Running upgrade 20261028_0024 -> 20261029_0025, require alphabetic ISO currency codes for MPS costs
+INFO  [alembic.runtime.migration] Running upgrade 20261029_0025 -> 20261029_0026, govern Advanced BOM version identifiers and effective date windows
+INFO  [alembic.runtime.migration] Running upgrade 20261029_0026 -> 20261029_0027, add configurable quality gate definitions
+INFO  [alembic.runtime.migration] Running upgrade 20261029_0027 -> 20261029_0028, link quality gates to required QC specifications
+INFO  [alembic.runtime.migration] Running upgrade 20261029_0028 -> 20261029_0029, add quality gate severity, mandatory, and waiver safeguards
+INFO  [alembic.runtime.migration] Running upgrade 20261029_0029 -> 20261029_0030, add versioned quality gate definitions with inclusive effective dates
+INFO  [alembic.runtime.migration] Running upgrade 20261029_0030 -> 20261029_0031, link QC results to their exact template parameter
+INFO  [alembic.runtime.migration] Running upgrade 20261029_0031 -> 20261029_0032, add auditable quality gate waiver approval records
+INFO  [alembic.runtime.migration] Running upgrade 20261029_0032 -> 20261029_0033, persist append-only quality gate evaluation history
+INFO  [alembic.runtime.migration] Running upgrade 20261029_0033 -> 20261029_0034, make purchase-order links unique within an international shipment
+INFO  [alembic.runtime.migration] Running upgrade 20261029_0034 -> 20261029_0035, track evidence-backed inventory ownership for shipment PO links
+INFO  [alembic.runtime.migration] Running upgrade 20261029_0035 -> 20261029_0036, add evidence-linked customs clearance status history
+INFO  [alembic.runtime.migration] Running upgrade 20261029_0036 -> 20261029_0037, record immutable Kenya warehouse receipt closure against posted GRNs
+INFO  [alembic.runtime.migration] Running upgrade 20261029_0037 -> 20261029_0038, record accepted receipt volume for volume-based landed-cost allocation
+INFO  [alembic.runtime.migration] Running upgrade 20261029_0038 -> 20261029_0039, track estimated and actual landed-cost line amounts
+INFO  [alembic.runtime.migration] Running upgrade 20261029_0039 -> 20261029_0040, snapshot dated finance exchange rates on landed-cost documents
+INFO  [alembic.runtime.migration] Running upgrade 20261029_0040 -> 20261029_0041, post landed-cost actual variances without rewriting original postings
+INFO  [alembic.runtime.migration] Running upgrade 20261029_0041 -> 20261029_0042, add owner-scoped API client application registry
+INFO  [alembic.runtime.migration] Running upgrade 20261029_0042 -> 20261029_0043, add application-linked API keys and one-time OAuth client secret records
+INFO  [alembic.runtime.migration] Running upgrade 20261029_0043 -> 20261030_0001, Add governed, immutable webhook event schema versions.
+INFO  [alembic.runtime.migration] Running upgrade 20261030_0001 -> 20261030_0002, Persist event idempotency keys and request fingerprints.
+INFO  [alembic.runtime.migration] Running upgrade 20261030_0002 -> 20261030_0003, Link a delivery attempt to its explicitly replayed successor.
+INFO  [alembic.runtime.migration] Running upgrade 20261030_0003 -> 20261030_0004, Add versioned webhook secret rotation with a bounded previous-key window.
+INFO  [alembic.runtime.migration] Running upgrade 20261030_0004 -> 20261030_0005, Add multi-line sourcing-event requirements to the existing RFQ aggregate.
+INFO  [alembic.runtime.migration] Running upgrade 20261030_0005 -> 20261030_0006, Track issued RFQ invitations and attributed supplier quotations.
+INFO  [alembic.runtime.migration] Running upgrade 20261030_0006 -> 20261030_0007, Add weighted technical/commercial RFQ bid evaluation matrices.
+INFO  [alembic.runtime.migration] Running upgrade 20261030_0007 -> 20261030_0008, Add RFQ award allocation proposals and configured approval routing.
+INFO  [alembic.runtime.migration] Running upgrade 20261030_0008 -> 20261030_0009, Add dated quantity price breaks to blanket purchase agreements.
+INFO  [alembic.runtime.migration] Running upgrade 20261030_0009 -> 20261030_0010, Link BPA release purchase orders to their source agreement.
+INFO  [alembic.runtime.migration] Running upgrade 20261030_0010 -> 20261104_0001, Link QMS corrective actions to supplier records and evaluations.
+INFO  [alembic.runtime.migration] Running upgrade 20261104_0001 -> 20261104_0002, Record production-order approval before release.
+INFO  [alembic.runtime.migration] Running upgrade 20261104_0002 -> 20261104_0003, Add attributable append-only production transition history.
+INFO  [alembic.runtime.migration] Running upgrade 20261104_0003 -> 20261104_0004, Preserve canonical routing-step identity on production work orders.
+INFO  [alembic.runtime.migration] Running upgrade 20261104_0004 -> 20261104_0005, Add immutable work-order split/merge lineage.
+INFO  [alembic.runtime.migration] Running upgrade 20261104_0005 -> 20261104_0006, Record partial production-order completion and linked backorders.
+INFO  [alembic.runtime.migration] Running upgrade 20261104_0006 -> 20261104_0007, Track canonical work-order rework without losing operation quantity lineage.
+INFO  [alembic.runtime.migration] Running upgrade 20261104_0007 -> 20261104_0008, Link subcontracting orders to canonical production work orders.
+INFO  [alembic.runtime.migration] Running upgrade 20261104_0008 -> 20261104_0009, Record the authenticated actor who completes a subcontracting order.
+INFO  [alembic.runtime.migration] Running upgrade 20261104_0009 -> 20261104_0010, Persist operator session context on shop-floor activity and downtime records.
+INFO  [alembic.runtime.migration] Running upgrade 20261104_0010 -> 20261104_0011, Persist authenticated ERP actors for shop-floor sessions and decisions.
+INFO  [alembic.runtime.migration] Running upgrade 20261104_0011 -> 20261104_0012, Persist operation-scoped Shop Floor idempotency keys.
+INFO  [alembic.runtime.migration] Running upgrade 20261104_0012 -> 20261108_0013, Add source and staging locations to material reservation lines.
+INFO  [alembic.runtime.migration] Running upgrade 20261108_0013 -> 20261108_0014, Link material issues to exact reservation and stock rows.
+INFO  [alembic.runtime.migration] Running upgrade 20261108_0014 -> 20261108_0015, Add an idempotency key to actual material consumption events.
+INFO  [alembic.runtime.migration] Running upgrade 20261108_0015 -> 20261108_0016, Link a production return event to its posted return flow line.
+INFO  [alembic.runtime.migration] Running upgrade 20261108_0016 -> 20261108_0017, Link production scrap events to their issue line and scrap flow line.
+
+=== test_m24_s01_t001_material_reservation_db.py / fmcg_m24_s01_t001_e4abcea131cc487b85c6 ===
+
+.........                                                                [100%]
+============================== warnings summary ===============================
+app\schemas\material_flow.py:31
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:31: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class FlowStageOut(FlowStageCreate):
+
+app\schemas\material_flow.py:68
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:68: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class FlowLineOut(FlowLineCreate):
+
+app\schemas\material_flow.py:95
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:95: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class FlowTransactionOut(BaseModel):
+
+app\schemas\material_flow.py:224
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:224: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ReservationLineOut(ReservationLineCreate):
+
+app\schemas\material_flow.py:247
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:247: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ReservationOut(BaseModel):
+
+app\schemas\material_flow.py:301
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:301: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ConsumptionOut(BaseModel):
+
+app\schemas\material_flow.py:351
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:351: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class PreparedLotOut(PreparedLotCreate):
+
+app\schemas\material_flow.py:391
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:391: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class TankOut(BaseModel):
+
+app\schemas\material_flow.py:421
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:421: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ReconciliationLineOut(BaseModel):
+
+app\schemas\material_flow.py:443
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:443: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ReconciliationOut(BaseModel):
+
+app\schemas\material_flow.py:474
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:474: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class MFAIRecOut(BaseModel):
+
+tests/test_m24_s01_t001_material_reservation_db.py::test_reservation_decrements_available_and_cancel_restores_unissued_balance
+tests/test_m24_s01_t001_material_reservation_db.py::test_pick_list_reports_only_outstanding_qty_without_changing_inventory
+tests/test_m24_s01_t001_material_reservation_db.py::test_multiple_staging_locations_require_explicit_selection_without_stock_mutation
+tests/test_m24_s01_t001_material_reservation_db.py::test_missing_staging_configuration_remains_explicitly_unassigned
+tests/test_m24_s01_t001_material_reservation_db.py::test_reservation_allocates_eligible_lots_in_fefo_order
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\services\material_flow_service.py:54: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    return f"RES-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}-{str(uuid.uuid4())[:6].upper()}"
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+9 passed, 16 warnings in 6.86s
+PYTEST_EXIT=0
+
+
+=== test_m24_s02_t001_material_issue_db.py / fmcg_m24_s02_t001_e4abcea131cc487b85c6 ===
+
+..FFF                                                                    [100%]
+================================== FAILURES ===================================
+_____ test_issue_rejects_overdrawn_and_reused_key_without_second_movement _____
+
+    @pytest.mark.asyncio
+    async def test_issue_rejects_overdrawn_and_reused_key_without_second_movement():
+        _require_task_database()
+        suffix = uuid4().hex[:20]
+        async with AsyncSessionLocal() as db:
+            reservation, stock_id, actor_id = await _make_issue_fixture(db, suffix)
+            key = f"m24-s02-t001-{suffix}-same-key"
+            first = await material_flow_service.issue_reserved_materials(
+                db, reservation.id, _issue(reservation, 0, "1.000", key), actor_id
+            )
+            await db.commit()
+    
+            reservation = await material_flow_service.get_reservation(db, reservation.id)
+            with pytest.raises(HTTPException) as reused:
+                await material_flow_service.issue_reserved_materials(
+                    db, reservation.id, _issue(reservation, 0, "2.000", key), actor_id
+                )
+            assert reused.value.status_code == 409
+            assert reused.value.detail["error"] == "MATERIAL_ISSUE_IDEMPOTENCY_KEY_REUSED"
+            await db.rollback()
+    
+>           reservation = await material_flow_service.get_reservation(db, reservation.id)
+                                                                          ^^^^^^^^^^^^^^
+
+tests\test_m24_s02_t001_material_issue_db.py:198: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\attributes.py:566: in __get__
+    return self.impl.get(state, dict_)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\attributes.py:1086: in get
+    value = self._fire_loader_callables(state, key, passive)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\attributes.py:1116: in _fire_loader_callables
+    return state._load_expired(state, passive)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\state.py:803: in _load_expired
+    self.manager.expired_attribute_loader(self, toload, passive)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\loading.py:1670: in load_scalar_attributes
+    result = load_on_ident(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\loading.py:509: in load_on_ident
+    return load_on_pk_identity(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\loading.py:694: in load_on_pk_identity
+    session.execute(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\session.py:2365: in execute
+    return self._execute_internal(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\session.py:2241: in _execute_internal
+    conn = self._connection_for_bind(bind)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\session.py:2110: in _connection_for_bind
+    return trans._connection_for_bind(engine, execution_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<string>:2: in _connection_for_bind
+    ???
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\state_changes.py:139: in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\session.py:1189: in _connection_for_bind
+    conn = bind.connect()
+           ^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\base.py:3273: in connect
+    return self._connection_cls(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\base.py:145: in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\base.py:3297: in raw_connection
+    return self.pool.connect()
+           ^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\pool\base.py:449: in connect
+    return _ConnectionFairy._checkout(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\pool\base.py:1363: in _checkout
+    with util.safe_reraise():
+         ^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\util\langhelpers.py:224: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\pool\base.py:1301: in _checkout
+    result = pool._dialect._do_ping_w_event(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\default.py:720: in _do_ping_w_event
+    return self.do_ping(dbapi_connection)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:1163: in do_ping
+    dbapi_connection.ping()
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:813: in ping
+    self._handle_exception(error)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:794: in _handle_exception
+    raise error
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:811: in ping
+    _ = self.await_(self._async_ping())
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+awaitable = <coroutine object AsyncAdapt_asyncpg_connection._async_ping at 0x000001725DFF11C0>
+
+    def await_only(awaitable: Awaitable[_T]) -> _T:
+        """Awaits an async function in a sync method.
+    
+        The sync method must be inside a :func:`greenlet_spawn` context.
+        :func:`await_only` calls cannot be nested.
+    
+        :param awaitable: The coroutine to call.
+    
+        """
+        # this is called in the context greenlet while running fn
+        current = getcurrent()
+        if not getattr(current, "__sqlalchemy_greenlet_provider__", False):
+            _safe_cancel_awaitable(awaitable)
+    
+>           raise exc.MissingGreenlet(
+                "greenlet_spawn has not been called; can't call await_only() "
+                "here. Was IO attempted in an unexpected place?"
+            )
+E           sqlalchemy.exc.MissingGreenlet: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py:123: MissingGreenlet
+_ test_past_event_timestamp_cannot_make_currently_expired_reserved_lot_issuable _
+
+    @pytest.mark.asyncio
+    async def test_past_event_timestamp_cannot_make_currently_expired_reserved_lot_issuable():
+        _require_task_database()
+        suffix = uuid4().hex[:20]
+        async with AsyncSessionLocal() as db:
+            order_id, material_id, warehouse_id, _, source_location_id, _ = await _seed_order(
+                db,
+                suffix,
+                status=ProductionOrderStatus.RELEASED,
+                stock_quantity=Decimal("0.000"),
+            )
+            lot_id, _, stock_id = await _add_lot_stock(
+                db,
+                suffix=f"EXPIRY-BOUNDARY-{suffix}",
+                material_id=material_id,
+                warehouse_id=warehouse_id,
+                location_id=source_location_id,
+                expiry_date=datetime.now(timezone.utc).date() + timedelta(days=2),
+                quantity=Decimal("3.000"),
+            )
+            actor = User(
+                email=f"m24-s02-t001-expiry-{suffix}@example.invalid",
+                username=f"m24s02t001expiry{suffix}",
+                full_name=f"Synthetic expiry checker {suffix}",
+                hashed_password="test-only",
+            )
+            db.add(actor)
+            await db.flush()
+            reservation = await material_flow_service.create_reservation(
+                db,
+                _reservation(order_id, material_id, warehouse_id, "1.000"),
+                actor.id,
+            )
+            lot = await db.get(Lot, lot_id)
+            assert lot is not None
+            lot.expiry_date = datetime.now(timezone.utc).date() - timedelta(days=1)
+            reservation_id = reservation.id
+            await db.commit()
+            reservation = await material_flow_service.get_reservation(db, reservation_id)
+            assert reservation is not None
+    
+            request = _issue(reservation, 0, "1.000", f"m24-s02-t001-{suffix}-past-date")
+            request.transaction_datetime = datetime.now(timezone.utc) - timedelta(days=2)
+            with pytest.raises(HTTPException) as raised:
+                await material_flow_service.issue_reserved_materials(
+                    db, reservation.id, request, actor.id
+                )
+            assert raised.value.status_code == 409
+            assert raised.value.detail["error"] == "MATERIAL_ISSUE_LOT_NOT_ELIGIBLE"
+            await db.rollback()
+    
+            stock = await db.get(Stock, stock_id)
+>           reservation = await material_flow_service.get_reservation(db, reservation.id)
+                                                                          ^^^^^^^^^^^^^^
+
+tests\test_m24_s02_t001_material_issue_db.py:277: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\attributes.py:566: in __get__
+    return self.impl.get(state, dict_)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\attributes.py:1086: in get
+    value = self._fire_loader_callables(state, key, passive)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\attributes.py:1116: in _fire_loader_callables
+    return state._load_expired(state, passive)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\state.py:803: in _load_expired
+    self.manager.expired_attribute_loader(self, toload, passive)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\loading.py:1670: in load_scalar_attributes
+    result = load_on_ident(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\loading.py:509: in load_on_ident
+    return load_on_pk_identity(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\loading.py:694: in load_on_pk_identity
+    session.execute(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\session.py:2365: in execute
+    return self._execute_internal(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\session.py:2251: in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\context.py:306: in orm_execute_statement
+    result = conn.execute(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\base.py:1415: in execute
+    return meth(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\sql\elements.py:523: in _execute_on_connection
+    return connection._execute_clauseelement(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\base.py:1637: in _execute_clauseelement
+    ret = self._execute_context(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\base.py:1842: in _execute_context
+    return self._exec_single_context(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\base.py:1982: in _exec_single_context
+    self._handle_dbapi_exception(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\base.py:2354: in _handle_dbapi_exception
+    raise exc_info[1].with_traceback(exc_info[2])
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\base.py:1963: in _exec_single_context
+    self.dialect.do_execute(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\default.py:943: in do_execute
+    cursor.execute(statement, parameters)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:580: in execute
+    self._adapt_connection.await_(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+awaitable = <coroutine object AsyncAdapt_asyncpg_cursor._prepare_and_execute at 0x000001725394E260>
+
+    def await_only(awaitable: Awaitable[_T]) -> _T:
+        """Awaits an async function in a sync method.
+    
+        The sync method must be inside a :func:`greenlet_spawn` context.
+        :func:`await_only` calls cannot be nested.
+    
+        :param awaitable: The coroutine to call.
+    
+        """
+        # this is called in the context greenlet while running fn
+        current = getcurrent()
+        if not getattr(current, "__sqlalchemy_greenlet_provider__", False):
+            _safe_cancel_awaitable(awaitable)
+    
+>           raise exc.MissingGreenlet(
+                "greenlet_spawn has not been called; can't call await_only() "
+                "here. Was IO attempted in an unexpected place?"
+            )
+E           sqlalchemy.exc.MissingGreenlet: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py:123: MissingGreenlet
+______ test_issue_rejects_line_from_another_reservation_without_mutation ______
+
+    @pytest.mark.asyncio
+    async def test_issue_rejects_line_from_another_reservation_without_mutation():
+        _require_task_database()
+        suffix = uuid4().hex[:20]
+        async with AsyncSessionLocal() as db:
+            reservation, stock_id, actor_id = await _make_issue_fixture(db, suffix)
+            wrong_line_id = uuid4()
+            request = MaterialIssueCreate(
+                idempotency_key=f"m24-s02-t001-{suffix}-wrong-line",
+                lines=[MaterialIssueLineCreate(reservation_line_id=wrong_line_id, quantity=Decimal("1.000"))],
+            )
+            with pytest.raises(HTTPException) as mismatch:
+                await material_flow_service.issue_reserved_materials(
+                    db, reservation.id, request, actor_id
+                )
+            assert mismatch.value.status_code == 422
+            assert mismatch.value.detail["error"] == "MATERIAL_ISSUE_RESERVATION_LINE_MISMATCH"
+            await db.rollback()
+            stock = await db.get(Stock, stock_id)
+>           reservation = await material_flow_service.get_reservation(db, reservation.id)
+                                                                          ^^^^^^^^^^^^^^
+
+tests\test_m24_s02_t001_material_issue_db.py:315: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\attributes.py:566: in __get__
+    return self.impl.get(state, dict_)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\attributes.py:1086: in get
+    value = self._fire_loader_callables(state, key, passive)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\attributes.py:1116: in _fire_loader_callables
+    return state._load_expired(state, passive)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\state.py:803: in _load_expired
+    self.manager.expired_attribute_loader(self, toload, passive)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\loading.py:1670: in load_scalar_attributes
+    result = load_on_ident(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\loading.py:509: in load_on_ident
+    return load_on_pk_identity(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\loading.py:694: in load_on_pk_identity
+    session.execute(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\session.py:2365: in execute
+    return self._execute_internal(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\session.py:2251: in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\context.py:306: in orm_execute_statement
+    result = conn.execute(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\base.py:1415: in execute
+    return meth(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\sql\elements.py:523: in _execute_on_connection
+    return connection._execute_clauseelement(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\base.py:1637: in _execute_clauseelement
+    ret = self._execute_context(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\base.py:1842: in _execute_context
+    return self._exec_single_context(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\base.py:1982: in _exec_single_context
+    self._handle_dbapi_exception(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\base.py:2354: in _handle_dbapi_exception
+    raise exc_info[1].with_traceback(exc_info[2])
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\base.py:1963: in _exec_single_context
+    self.dialect.do_execute(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\default.py:943: in do_execute
+    cursor.execute(statement, parameters)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:580: in execute
+    self._adapt_connection.await_(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+awaitable = <coroutine object AsyncAdapt_asyncpg_cursor._prepare_and_execute at 0x000001725394E3B0>
+
+    def await_only(awaitable: Awaitable[_T]) -> _T:
+        """Awaits an async function in a sync method.
+    
+        The sync method must be inside a :func:`greenlet_spawn` context.
+        :func:`await_only` calls cannot be nested.
+    
+        :param awaitable: The coroutine to call.
+    
+        """
+        # this is called in the context greenlet while running fn
+        current = getcurrent()
+        if not getattr(current, "__sqlalchemy_greenlet_provider__", False):
+            _safe_cancel_awaitable(awaitable)
+    
+>           raise exc.MissingGreenlet(
+                "greenlet_spawn has not been called; can't call await_only() "
+                "here. Was IO attempted in an unexpected place?"
+            )
+E           sqlalchemy.exc.MissingGreenlet: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py:123: MissingGreenlet
+============================== warnings summary ===============================
+app\schemas\material_flow.py:31
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:31: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class FlowStageOut(FlowStageCreate):
+
+app\schemas\material_flow.py:68
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:68: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class FlowLineOut(FlowLineCreate):
+
+app\schemas\material_flow.py:95
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:95: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class FlowTransactionOut(BaseModel):
+
+app\schemas\material_flow.py:224
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:224: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ReservationLineOut(ReservationLineCreate):
+
+app\schemas\material_flow.py:247
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:247: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ReservationOut(BaseModel):
+
+app\schemas\material_flow.py:301
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:301: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ConsumptionOut(BaseModel):
+
+app\schemas\material_flow.py:351
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:351: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class PreparedLotOut(PreparedLotCreate):
+
+app\schemas\material_flow.py:391
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:391: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class TankOut(BaseModel):
+
+app\schemas\material_flow.py:421
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:421: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ReconciliationLineOut(BaseModel):
+
+app\schemas\material_flow.py:443
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:443: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ReconciliationOut(BaseModel):
+
+app\schemas\material_flow.py:474
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:474: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class MFAIRecOut(BaseModel):
+
+tests/test_m24_s02_t001_material_issue_db.py::test_partial_and_final_issue_are_atomic_and_idempotent
+tests/test_m24_s02_t001_material_issue_db.py::test_issue_rejects_overdrawn_and_reused_key_without_second_movement
+tests/test_m24_s02_t001_material_issue_db.py::test_past_event_timestamp_cannot_make_currently_expired_reserved_lot_issuable
+tests/test_m24_s02_t001_material_issue_db.py::test_issue_rejects_line_from_another_reservation_without_mutation
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\services\material_flow_service.py:54: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    return f"RES-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}-{str(uuid.uuid4())[:6].upper()}"
+
+tests/test_m24_s02_t001_material_issue_db.py::test_partial_and_final_issue_are_atomic_and_idempotent
+tests/test_m24_s02_t001_material_issue_db.py::test_partial_and_final_issue_are_atomic_and_idempotent
+tests/test_m24_s02_t001_material_issue_db.py::test_issue_rejects_overdrawn_and_reused_key_without_second_movement
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\services\material_flow_service.py:50: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    return f"MF-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}-{str(uuid.uuid4())[:6].upper()}"
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_m24_s02_t001_material_issue_db.py::test_issue_rejects_overdrawn_and_reused_key_without_second_movement
+FAILED tests/test_m24_s02_t001_material_issue_db.py::test_past_event_timestamp_cannot_make_currently_expired_reserved_lot_issuable
+FAILED tests/test_m24_s02_t001_material_issue_db.py::test_issue_rejects_line_from_another_reservation_without_mutation
+3 failed, 2 passed, 18 warnings in 8.54s
+PYTEST_EXIT=1
+
+
+=== test_m24_s02_t002_actual_consumption_db.py / fmcg_m24_s02_t002_e4abcea131cc487b85c6 ===
+
+...                                                                      [100%]
+============================== warnings summary ===============================
+app\schemas\material_flow.py:31
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:31: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class FlowStageOut(FlowStageCreate):
+
+app\schemas\material_flow.py:68
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:68: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class FlowLineOut(FlowLineCreate):
+
+app\schemas\material_flow.py:95
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:95: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class FlowTransactionOut(BaseModel):
+
+app\schemas\material_flow.py:224
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:224: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ReservationLineOut(ReservationLineCreate):
+
+app\schemas\material_flow.py:247
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:247: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ReservationOut(BaseModel):
+
+app\schemas\material_flow.py:301
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:301: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ConsumptionOut(BaseModel):
+
+app\schemas\material_flow.py:351
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:351: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class PreparedLotOut(PreparedLotCreate):
+
+app\schemas\material_flow.py:391
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:391: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class TankOut(BaseModel):
+
+app\schemas\material_flow.py:421
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:421: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ReconciliationLineOut(BaseModel):
+
+app\schemas\material_flow.py:443
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:443: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ReconciliationOut(BaseModel):
+
+app\schemas\material_flow.py:474
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:474: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class MFAIRecOut(BaseModel):
+
+tests/test_m24_s02_t002_actual_consumption_db.py::test_consumption_links_to_posted_issue_and_leaves_stock_unchanged
+tests/test_m24_s02_t002_actual_consumption_db.py::test_consumption_retry_is_idempotent_and_overconsumption_is_rejected
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\services\material_flow_service.py:54: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    return f"RES-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}-{str(uuid.uuid4())[:6].upper()}"
+
+tests/test_m24_s02_t002_actual_consumption_db.py::test_consumption_links_to_posted_issue_and_leaves_stock_unchanged
+tests/test_m24_s02_t002_actual_consumption_db.py::test_consumption_retry_is_idempotent_and_overconsumption_is_rejected
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\services\material_flow_service.py:50: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    return f"MF-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}-{str(uuid.uuid4())[:6].upper()}"
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+3 passed, 15 warnings in 6.00s
+PYTEST_EXIT=0
+
+
+=== test_m24_s02_t003_material_return_db.py / fmcg_m24_s02_t003_e4abcea131cc487b85c6 ===
+
+...                                                                      [100%]
+============================== warnings summary ===============================
+app\schemas\material_flow.py:31
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:31: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class FlowStageOut(FlowStageCreate):
+
+app\schemas\material_flow.py:68
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:68: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class FlowLineOut(FlowLineCreate):
+
+app\schemas\material_flow.py:95
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:95: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class FlowTransactionOut(BaseModel):
+
+app\schemas\material_flow.py:224
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:224: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ReservationLineOut(ReservationLineCreate):
+
+app\schemas\material_flow.py:247
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:247: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ReservationOut(BaseModel):
+
+app\schemas\material_flow.py:301
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:301: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ConsumptionOut(BaseModel):
+
+app\schemas\material_flow.py:351
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:351: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class PreparedLotOut(PreparedLotCreate):
+
+app\schemas\material_flow.py:391
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:391: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class TankOut(BaseModel):
+
+app\schemas\material_flow.py:421
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:421: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ReconciliationLineOut(BaseModel):
+
+app\schemas\material_flow.py:443
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:443: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ReconciliationOut(BaseModel):
+
+app\schemas\material_flow.py:474
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:474: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class MFAIRecOut(BaseModel):
+
+tests/test_m24_s02_t003_material_return_db.py::test_return_posts_blocked_stock_movement_and_consumption_lineage
+tests/test_m24_s02_t003_material_return_db.py::test_return_retry_is_idempotent_and_cannot_return_consumed_quantity
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\services\material_flow_service.py:54: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    return f"RES-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}-{str(uuid.uuid4())[:6].upper()}"
+
+tests/test_m24_s02_t003_material_return_db.py::test_return_posts_blocked_stock_movement_and_consumption_lineage
+tests/test_m24_s02_t003_material_return_db.py::test_return_posts_blocked_stock_movement_and_consumption_lineage
+tests/test_m24_s02_t003_material_return_db.py::test_return_retry_is_idempotent_and_cannot_return_consumed_quantity
+tests/test_m24_s02_t003_material_return_db.py::test_return_retry_is_idempotent_and_cannot_return_consumed_quantity
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\services\material_flow_service.py:50: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    return f"MF-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}-{str(uuid.uuid4())[:6].upper()}"
+
+tests/test_m24_s02_t003_material_return_db.py::test_return_posts_blocked_stock_movement_and_consumption_lineage
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\services\material_flow_service.py:58: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    return f"REC-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}-{str(uuid.uuid4())[:6].upper()}"
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+3 passed, 18 warnings in 6.80s
+PYTEST_EXIT=0
+
+
+=== test_m24_s02_t004_material_scrap_db.py / fmcg_m24_s02_t004_e4abcea131cc487b85c6 ===
+
+.F.                                                                      [100%]
+================================== FAILURES ===================================
+_______ test_scrap_is_linked_and_does_not_deplete_warehouse_stock_twice _______
+
+    @pytest.mark.asyncio
+    async def test_scrap_is_linked_and_does_not_deplete_warehouse_stock_twice():
+        _require_task_database()
+        suffix = uuid4().hex[:20]
+        async with AsyncSessionLocal() as db:
+            order_id, issue, source_stock_id, actor_id = await _make_issued_line(db, suffix)
+            issue_line_id = issue.lines[0].id
+            await _consume(db, order_id, issue_line_id, actor_id, suffix)
+            await db.commit()
+            returned = await material_flow_service.return_excess_material(
+                db,
+                issue_line_id,
+                MaterialReturnCreate(
+                    idempotency_key=f"m24-s02-t004-{suffix}-return",
+                    quantity=Decimal("0.500"),
+                ),
+                actor_id,
+            )
+            await db.commit()
+    
+            stock_total_before = await db.scalar(
+                select(func.coalesce(func.sum(Stock.quantity_on_hand), 0)).where(
+>                   Stock.material_id == issue.lines[0].material_id
+                                         ^^^^^^^^^^^
+                )
+            )
+
+tests\test_m24_s02_t004_material_scrap_db.py:167: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\attributes.py:566: in __get__
+    return self.impl.get(state, dict_)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\attributes.py:1086: in get
+    value = self._fire_loader_callables(state, key, passive)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\attributes.py:1121: in _fire_loader_callables
+    return self.callable_(state, passive)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\strategies.py:978: in _load_for_state
+    return self._emit_lazyload(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\strategies.py:1141: in _emit_lazyload
+    result = session.execute(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\session.py:2365: in execute
+    return self._execute_internal(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\session.py:2241: in _execute_internal
+    conn = self._connection_for_bind(bind)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\session.py:2110: in _connection_for_bind
+    return trans._connection_for_bind(engine, execution_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<string>:2: in _connection_for_bind
+    ???
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\state_changes.py:139: in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\session.py:1189: in _connection_for_bind
+    conn = bind.connect()
+           ^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\base.py:3273: in connect
+    return self._connection_cls(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\base.py:145: in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\base.py:3297: in raw_connection
+    return self.pool.connect()
+           ^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\pool\base.py:449: in connect
+    return _ConnectionFairy._checkout(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\pool\base.py:1363: in _checkout
+    with util.safe_reraise():
+         ^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\util\langhelpers.py:224: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\pool\base.py:1301: in _checkout
+    result = pool._dialect._do_ping_w_event(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\default.py:720: in _do_ping_w_event
+    return self.do_ping(dbapi_connection)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:1163: in do_ping
+    dbapi_connection.ping()
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:813: in ping
+    self._handle_exception(error)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:794: in _handle_exception
+    raise error
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:811: in ping
+    _ = self.await_(self._async_ping())
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+awaitable = <coroutine object AsyncAdapt_asyncpg_connection._async_ping at 0x0000028F03A44900>
+
+    def await_only(awaitable: Awaitable[_T]) -> _T:
+        """Awaits an async function in a sync method.
+    
+        The sync method must be inside a :func:`greenlet_spawn` context.
+        :func:`await_only` calls cannot be nested.
+    
+        :param awaitable: The coroutine to call.
+    
+        """
+        # this is called in the context greenlet while running fn
+        current = getcurrent()
+        if not getattr(current, "__sqlalchemy_greenlet_provider__", False):
+            _safe_cancel_awaitable(awaitable)
+    
+>           raise exc.MissingGreenlet(
+                "greenlet_spawn has not been called; can't call await_only() "
+                "here. Was IO attempted in an unexpected place?"
+            )
+E           sqlalchemy.exc.MissingGreenlet: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py:123: MissingGreenlet
+============================== warnings summary ===============================
+app\schemas\material_flow.py:31
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:31: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class FlowStageOut(FlowStageCreate):
+
+app\schemas\material_flow.py:68
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:68: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class FlowLineOut(FlowLineCreate):
+
+app\schemas\material_flow.py:95
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:95: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class FlowTransactionOut(BaseModel):
+
+app\schemas\material_flow.py:224
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:224: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ReservationLineOut(ReservationLineCreate):
+
+app\schemas\material_flow.py:247
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:247: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ReservationOut(BaseModel):
+
+app\schemas\material_flow.py:301
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:301: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ConsumptionOut(BaseModel):
+
+app\schemas\material_flow.py:351
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:351: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class PreparedLotOut(PreparedLotCreate):
+
+app\schemas\material_flow.py:391
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:391: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class TankOut(BaseModel):
+
+app\schemas\material_flow.py:421
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:421: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ReconciliationLineOut(BaseModel):
+
+app\schemas\material_flow.py:443
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:443: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ReconciliationOut(BaseModel):
+
+app\schemas\material_flow.py:474
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:474: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class MFAIRecOut(BaseModel):
+
+tests/test_m24_s02_t004_material_scrap_db.py::test_scrap_is_linked_and_does_not_deplete_warehouse_stock_twice
+tests/test_m24_s02_t004_material_scrap_db.py::test_scrap_retry_is_idempotent_and_excess_is_rejected
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\services\material_flow_service.py:54: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    return f"RES-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}-{str(uuid.uuid4())[:6].upper()}"
+
+tests/test_m24_s02_t004_material_scrap_db.py::test_scrap_is_linked_and_does_not_deplete_warehouse_stock_twice
+tests/test_m24_s02_t004_material_scrap_db.py::test_scrap_is_linked_and_does_not_deplete_warehouse_stock_twice
+tests/test_m24_s02_t004_material_scrap_db.py::test_scrap_retry_is_idempotent_and_excess_is_rejected
+tests/test_m24_s02_t004_material_scrap_db.py::test_scrap_retry_is_idempotent_and_excess_is_rejected
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\services\material_flow_service.py:50: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    return f"MF-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}-{str(uuid.uuid4())[:6].upper()}"
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_m24_s02_t004_material_scrap_db.py::test_scrap_is_linked_and_does_not_deplete_warehouse_stock_twice
+1 failed, 2 passed, 17 warnings in 7.79s
+PYTEST_EXIT=1
+
+
+=== test_m24_s03_t001_wip_location_db.py / fmcg_m24_s03_t001_e4abcea131cc487b85c6 ===
+
+.FF                                                                      [100%]
+================================== FAILURES ===================================
+_ test_wip_output_and_partial_transfer_preserve_location_balances_and_idempotency _
+
+    @pytest.mark.asyncio
+    async def test_wip_output_and_partial_transfer_preserve_location_balances_and_idempotency():
+        _require_task_database()
+        suffix = uuid4().hex[:20]
+        async with AsyncSessionLocal() as db:
+            order_id, _, warehouse_id, _, _, _ = await _seed_order(
+                db, suffix, status=ProductionOrderStatus.IN_PROGRESS, stock_quantity=Decimal("0")
+            )
+            stages, locations, actor_id = await _make_wip_stages(db, warehouse_id, suffix, suffix)
+            output = await material_flow_service.record_wip_output(
+                db,
+>               WIPOutputCreate(
+                    idempotency_key=f"m24-s03-t001-{suffix}-output",
+                    production_order_id=order_id,
+                    quantity=Decimal("8.000"),
+                    uom="KG",
+                    destination_stage_id=stages[0],
+                    destination_location_id=locations[0],
+                ),
+                actor_id,
+            )
+E           pydantic_core._pydantic_core.ValidationError: 1 validation error for WIPOutputCreate
+E           destination_stage_id
+E             UUID input should be a string, bytes or UUID object [type=uuid_type, input_value=None, input_type=NoneType]
+E               For further information visit https://errors.pydantic.dev/2.13/v/uuid_type
+
+tests\test_m24_s03_t001_wip_location_db.py:133: ValidationError
+__ test_wip_output_rejects_quantity_over_plan_and_mismatched_stage_location ___
+
+    @pytest.mark.asyncio
+    async def test_wip_output_rejects_quantity_over_plan_and_mismatched_stage_location():
+        _require_task_database()
+        suffix = uuid4().hex[:20]
+        async with AsyncSessionLocal() as db:
+            order_id, _, warehouse_id, _, _, _ = await _seed_order(
+                db, suffix, status=ProductionOrderStatus.IN_PROGRESS, stock_quantity=Decimal("0")
+            )
+            stages, locations, actor_id = await _make_wip_stages(db, warehouse_id, suffix, suffix)
+            with pytest.raises(HTTPException) as over_plan:
+                await material_flow_service.record_wip_output(
+                    db,
+>                   WIPOutputCreate(
+                        idempotency_key=f"m24-s03-t001-{suffix}-overplan",
+                        production_order_id=order_id,
+                        quantity=Decimal("10.001"),
+                        uom="KG",
+                        destination_stage_id=stages[0],
+                        destination_location_id=locations[0],
+                    ),
+                    actor_id,
+                )
+E               pydantic_core._pydantic_core.ValidationError: 1 validation error for WIPOutputCreate
+E               destination_stage_id
+E                 UUID input should be a string, bytes or UUID object [type=uuid_type, input_value=None, input_type=NoneType]
+E                   For further information visit https://errors.pydantic.dev/2.13/v/uuid_type
+
+tests\test_m24_s03_t001_wip_location_db.py:228: ValidationError
+============================== warnings summary ===============================
+app\schemas\material_flow.py:31
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:31: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class FlowStageOut(FlowStageCreate):
+
+app\schemas\material_flow.py:68
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:68: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class FlowLineOut(FlowLineCreate):
+
+app\schemas\material_flow.py:95
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:95: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class FlowTransactionOut(BaseModel):
+
+app\schemas\material_flow.py:224
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:224: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ReservationLineOut(ReservationLineCreate):
+
+app\schemas\material_flow.py:247
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:247: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ReservationOut(BaseModel):
+
+app\schemas\material_flow.py:301
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:301: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ConsumptionOut(BaseModel):
+
+app\schemas\material_flow.py:351
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:351: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class PreparedLotOut(PreparedLotCreate):
+
+app\schemas\material_flow.py:391
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:391: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class TankOut(BaseModel):
+
+app\schemas\material_flow.py:421
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:421: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ReconciliationLineOut(BaseModel):
+
+app\schemas\material_flow.py:443
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:443: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ReconciliationOut(BaseModel):
+
+app\schemas\material_flow.py:474
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:474: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class MFAIRecOut(BaseModel):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_m24_s03_t001_wip_location_db.py::test_wip_output_and_partial_transfer_preserve_location_balances_and_idempotency
+FAILED tests/test_m24_s03_t001_wip_location_db.py::test_wip_output_rejects_quantity_over_plan_and_mismatched_stage_location
+2 failed, 1 passed, 11 warnings in 6.60s
+PYTEST_EXIT=1
+
+
+=== test_m24_s03_t002_bulk_transfer_db.py / fmcg_m24_s03_t002_e4abcea131cc487b85c6 ===
+
+.FF                                                                      [100%]
+================================== FAILURES ===================================
+__ test_bulk_transfer_is_atomic_idempotent_and_preserves_per_origin_balances __
+
+    @pytest.mark.asyncio
+    async def test_bulk_transfer_is_atomic_idempotent_and_preserves_per_origin_balances():
+        _require_task_database()
+        suffix = uuid4().hex[:20]
+        async with AsyncSessionLocal() as db:
+            order_id, _, warehouse_id, _, _, _ = await _seed_order(
+                db, suffix, status=ProductionOrderStatus.IN_PROGRESS, stock_quantity=Decimal("0")
+            )
+            stages, locations, actor_id = await _make_wip_stages(db, warehouse_id, suffix, suffix)
+            origins = []
+            for index, quantity in enumerate((Decimal("5.000"), Decimal("4.000")), start=1):
+                output = await material_flow_service.record_wip_output(
+                    db,
+>                   WIPOutputCreate(
+                        idempotency_key=f"m24-s03-t002-{suffix}-output-{index}",
+                        production_order_id=order_id,
+                        quantity=quantity,
+                        uom="KG",
+                        destination_stage_id=stages[0],
+                        destination_location_id=locations[0],
+                    ),
+                    actor_id,
+                )
+E               pydantic_core._pydantic_core.ValidationError: 1 validation error for WIPOutputCreate
+E               destination_stage_id
+E                 UUID input should be a string, bytes or UUID object [type=uuid_type, input_value=None, input_type=NoneType]
+E                   For further information visit https://errors.pydantic.dev/2.13/v/uuid_type
+
+tests\test_m24_s03_t002_bulk_transfer_db.py:91: ValidationError
+_ test_bulk_transfer_rejects_overdraw_without_creating_a_partial_transaction __
+
+    @pytest.mark.asyncio
+    async def test_bulk_transfer_rejects_overdraw_without_creating_a_partial_transaction():
+        _require_task_database()
+        suffix = uuid4().hex[:20]
+        async with AsyncSessionLocal() as db:
+            order_id, _, warehouse_id, _, _, _ = await _seed_order(
+                db, suffix, status=ProductionOrderStatus.IN_PROGRESS, stock_quantity=Decimal("0")
+            )
+            stages, locations, actor_id = await _make_wip_stages(db, warehouse_id, suffix, suffix)
+            origins = []
+            for index in (1, 2):
+                output = await material_flow_service.record_wip_output(
+                    db,
+>                   WIPOutputCreate(
+                        idempotency_key=f"m24-s03-t002-{suffix}-seed-{index}",
+                        production_order_id=order_id,
+                        quantity=Decimal("2.000"),
+                        uom="KG",
+                        destination_stage_id=stages[0],
+                        destination_location_id=locations[0],
+                    ),
+                    actor_id,
+                )
+E               pydantic_core._pydantic_core.ValidationError: 1 validation error for WIPOutputCreate
+E               destination_stage_id
+E                 UUID input should be a string, bytes or UUID object [type=uuid_type, input_value=None, input_type=NoneType]
+E                   For further information visit https://errors.pydantic.dev/2.13/v/uuid_type
+
+tests\test_m24_s03_t002_bulk_transfer_db.py:160: ValidationError
+============================== warnings summary ===============================
+app\schemas\material_flow.py:31
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:31: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class FlowStageOut(FlowStageCreate):
+
+app\schemas\material_flow.py:68
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:68: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class FlowLineOut(FlowLineCreate):
+
+app\schemas\material_flow.py:95
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:95: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class FlowTransactionOut(BaseModel):
+
+app\schemas\material_flow.py:224
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:224: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ReservationLineOut(ReservationLineCreate):
+
+app\schemas\material_flow.py:247
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:247: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ReservationOut(BaseModel):
+
+app\schemas\material_flow.py:301
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:301: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ConsumptionOut(BaseModel):
+
+app\schemas\material_flow.py:351
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:351: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class PreparedLotOut(PreparedLotCreate):
+
+app\schemas\material_flow.py:391
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:391: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class TankOut(BaseModel):
+
+app\schemas\material_flow.py:421
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:421: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ReconciliationLineOut(BaseModel):
+
+app\schemas\material_flow.py:443
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:443: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ReconciliationOut(BaseModel):
+
+app\schemas\material_flow.py:474
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:474: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class MFAIRecOut(BaseModel):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_m24_s03_t002_bulk_transfer_db.py::test_bulk_transfer_is_atomic_idempotent_and_preserves_per_origin_balances
+FAILED tests/test_m24_s03_t002_bulk_transfer_db.py::test_bulk_transfer_rejects_overdraw_without_creating_a_partial_transaction
+2 failed, 1 passed, 11 warnings in 7.04s
+PYTEST_EXIT=1
+
+
+=== test_m24_s03_t003_finished_goods_receipt_db.py / fmcg_m24_s03_t003_e4abcea131cc487b85c6 ===
+
+.FF                                                                      [100%]
+================================== FAILURES ===================================
+_ test_finished_goods_receipt_consumes_every_wip_origin_and_keeps_location_lineage _
+
+    @pytest.mark.asyncio
+    async def test_finished_goods_receipt_consumes_every_wip_origin_and_keeps_location_lineage():
+        _require_task_database()
+        suffix = uuid4().hex[:20]
+        async with AsyncSessionLocal() as db:
+            order_id, _, warehouse_id, _, _, _ = await _seed_order(
+                db, suffix, status=ProductionOrderStatus.IN_PROGRESS, stock_quantity=Decimal("0")
+            )
+            stages, locations, actor_id = await _make_wip_stages(db, warehouse_id, suffix, suffix)
+            origins = []
+            for index, quantity in enumerate((Decimal("5.000"), Decimal("4.000")), start=1):
+                output = await material_flow_service.record_wip_output(
+                    db,
+                    WIPOutputCreate(
+                        idempotency_key=f"m24-s03-t003-{suffix}-output-{index}",
+                        production_order_id=order_id,
+                        quantity=quantity,
+                        uom="KG",
+>                       destination_stage_id=stages[0].id,
+                                             ^^^^^^^^^^^^
+                        destination_location_id=locations[0].id,
+                    ),
+                    actor_id,
+                )
+E               AttributeError: 'NoneType' object has no attribute 'id'
+
+tests\test_m24_s03_t003_finished_goods_receipt_db.py:91: AttributeError
+____ test_finished_goods_receipt_rejects_quantity_mismatch_without_posting ____
+
+    @pytest.mark.asyncio
+    async def test_finished_goods_receipt_rejects_quantity_mismatch_without_posting():
+        _require_task_database()
+        suffix = uuid4().hex[:20]
+        async with AsyncSessionLocal() as db:
+            order_id, _, warehouse_id, _, _, _ = await _seed_order(
+                db, suffix, status=ProductionOrderStatus.IN_PROGRESS, stock_quantity=Decimal("0")
+            )
+            stages, locations, actor_id = await _make_wip_stages(db, warehouse_id, suffix, suffix)
+            await material_flow_service.record_wip_output(
+                db,
+                WIPOutputCreate(
+                    idempotency_key=f"m24-s03-t003-{suffix}-output",
+                    production_order_id=order_id,
+                    quantity=Decimal("6.000"),
+                    uom="KG",
+>                   destination_stage_id=stages[0].id,
+                                         ^^^^^^^^^^^^
+                    destination_location_id=locations[0].id,
+                ),
+                actor_id,
+            )
+E           AttributeError: 'NoneType' object has no attribute 'id'
+
+tests\test_m24_s03_t003_finished_goods_receipt_db.py:149: AttributeError
+============================== warnings summary ===============================
+app\schemas\material_flow.py:31
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:31: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class FlowStageOut(FlowStageCreate):
+
+app\schemas\material_flow.py:68
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:68: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class FlowLineOut(FlowLineCreate):
+
+app\schemas\material_flow.py:95
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:95: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class FlowTransactionOut(BaseModel):
+
+app\schemas\material_flow.py:224
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:224: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ReservationLineOut(ReservationLineCreate):
+
+app\schemas\material_flow.py:247
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:247: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ReservationOut(BaseModel):
+
+app\schemas\material_flow.py:301
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:301: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ConsumptionOut(BaseModel):
+
+app\schemas\material_flow.py:351
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:351: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class PreparedLotOut(PreparedLotCreate):
+
+app\schemas\material_flow.py:391
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:391: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class TankOut(BaseModel):
+
+app\schemas\material_flow.py:421
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:421: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ReconciliationLineOut(BaseModel):
+
+app\schemas\material_flow.py:443
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:443: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ReconciliationOut(BaseModel):
+
+app\schemas\material_flow.py:474
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:474: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class MFAIRecOut(BaseModel):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_m24_s03_t003_finished_goods_receipt_db.py::test_finished_goods_receipt_consumes_every_wip_origin_and_keeps_location_lineage
+FAILED tests/test_m24_s03_t003_finished_goods_receipt_db.py::test_finished_goods_receipt_rejects_quantity_mismatch_without_posting
+2 failed, 1 passed, 11 warnings in 9.13s
+PYTEST_EXIT=1
+
+
+=== test_m24_s03_t004_packaging_genealogy_db.py / fmcg_m24_s03_t004_e4abcea131cc487b85c6 ===
+
+.F                                                                       [100%]
+================================== FAILURES ===================================
+_ test_packaging_issue_and_actual_consumption_are_linked_to_exact_order_line __
+
+    @pytest.mark.asyncio
+    async def test_packaging_issue_and_actual_consumption_are_linked_to_exact_order_line():
+        _require_task_database()
+        suffix = uuid4().hex[:20]
+        async with AsyncSessionLocal() as db:
+            order_id, material_id, warehouse_id, _, _, _ = await _seed_order(
+                db, suffix, status=ProductionOrderStatus.IN_PROGRESS, stock_quantity=Decimal("12.000")
+            )
+            material = await db.get(Material, material_id)
+            assert material is not None
+            material.material_type = MaterialType.PACKAGING
+            actor = User(
+                email=f"m24-s03-t004-{suffix}@example.invalid",
+                username=f"m24s03t004{suffix}",
+                full_name=f"Synthetic packaging operator {suffix}",
+                hashed_password="test-only",
+            )
+            db.add(actor)
+            await db.flush()
+            reservation = await material_flow_service.create_reservation(
+                db,
+                ReservationCreate(
+                    production_order_id=order_id,
+                    lines=[ReservationLineCreate(
+                        line_no=1,
+                        material_id=material_id,
+                        warehouse_id=warehouse_id,
+                        quantity_required=Decimal("8.000"),
+                        uom="KG",
+                    )],
+                ),
+                actor.id,
+            )
+            reservation_id = reservation.id
+            reservation_line_id = reservation.lines[0].id
+            await db.commit()
+            issue = await material_flow_service.issue_reserved_materials(
+                db,
+                reservation_id,
+                MaterialIssueCreate(
+                    idempotency_key=f"m24-s03-t004-{suffix}-package-issue",
+                    lines=[MaterialIssueLineCreate(reservation_line_id=reservation_line_id, quantity=Decimal("6.000"))],
+                ),
+                actor.id,
+                flow_type=FlowType.PKG_ISSUE,
+            )
+            issue_id = issue.id
+            issue_line_id = issue.lines[0].id
+            await db.commit()
+            issue = await material_flow_service.get_flow_transaction(db, issue_id)
+            assert issue is not None
+            consumption = await material_flow_service.record_consumption(
+                db,
+                ConsumptionCreate(
+                    production_order_id=order_id,
+                    flow_line_id=issue_line_id,
+                    idempotency_key=f"m24-s03-t004-{suffix}-package-use",
+                    quantity_consumed=Decimal("4.000"),
+                    notes="Synthetic packaging use for acceptance coverage.",
+                ),
+                actor.id,
+            )
+    
+            assert issue.status == FlowStatus.POSTED
+            assert issue.flow_type == FlowType.PKG_ISSUE
+            assert issue.production_order_id == order_id
+>           assert issue.lines[0].reservation_line_id == reservation_line_id
+                   ^^^^^^^^^^^
+
+tests\test_m24_s03_t004_packaging_genealogy_db.py:138: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\attributes.py:566: in __get__
+    return self.impl.get(state, dict_)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\attributes.py:1086: in get
+    value = self._fire_loader_callables(state, key, passive)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\attributes.py:1121: in _fire_loader_callables
+    return self.callable_(state, passive)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\strategies.py:978: in _load_for_state
+    return self._emit_lazyload(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\strategies.py:1141: in _emit_lazyload
+    result = session.execute(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\session.py:2365: in execute
+    return self._execute_internal(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\session.py:2251: in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\context.py:306: in orm_execute_statement
+    result = conn.execute(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\base.py:1415: in execute
+    return meth(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\sql\elements.py:523: in _execute_on_connection
+    return connection._execute_clauseelement(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\base.py:1637: in _execute_clauseelement
+    ret = self._execute_context(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\base.py:1842: in _execute_context
+    return self._exec_single_context(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\base.py:1982: in _exec_single_context
+    self._handle_dbapi_exception(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\base.py:2354: in _handle_dbapi_exception
+    raise exc_info[1].with_traceback(exc_info[2])
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\base.py:1963: in _exec_single_context
+    self.dialect.do_execute(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\default.py:943: in do_execute
+    cursor.execute(statement, parameters)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:580: in execute
+    self._adapt_connection.await_(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+awaitable = <coroutine object AsyncAdapt_asyncpg_cursor._prepare_and_execute at 0x0000023FE7C55690>
+
+    def await_only(awaitable: Awaitable[_T]) -> _T:
+        """Awaits an async function in a sync method.
+    
+        The sync method must be inside a :func:`greenlet_spawn` context.
+        :func:`await_only` calls cannot be nested.
+    
+        :param awaitable: The coroutine to call.
+    
+        """
+        # this is called in the context greenlet while running fn
+        current = getcurrent()
+        if not getattr(current, "__sqlalchemy_greenlet_provider__", False):
+            _safe_cancel_awaitable(awaitable)
+    
+>           raise exc.MissingGreenlet(
+                "greenlet_spawn has not been called; can't call await_only() "
+                "here. Was IO attempted in an unexpected place?"
+            )
+E           sqlalchemy.exc.MissingGreenlet: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py:123: MissingGreenlet
+============================== warnings summary ===============================
+app\schemas\material_flow.py:31
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:31: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class FlowStageOut(FlowStageCreate):
+
+app\schemas\material_flow.py:68
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:68: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class FlowLineOut(FlowLineCreate):
+
+app\schemas\material_flow.py:95
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:95: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class FlowTransactionOut(BaseModel):
+
+app\schemas\material_flow.py:224
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:224: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ReservationLineOut(ReservationLineCreate):
+
+app\schemas\material_flow.py:247
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:247: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ReservationOut(BaseModel):
+
+app\schemas\material_flow.py:301
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:301: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ConsumptionOut(BaseModel):
+
+app\schemas\material_flow.py:351
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:351: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class PreparedLotOut(PreparedLotCreate):
+
+app\schemas\material_flow.py:391
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:391: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class TankOut(BaseModel):
+
+app\schemas\material_flow.py:421
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:421: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ReconciliationLineOut(BaseModel):
+
+app\schemas\material_flow.py:443
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:443: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ReconciliationOut(BaseModel):
+
+app\schemas\material_flow.py:474
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:474: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class MFAIRecOut(BaseModel):
+
+tests/test_m24_s03_t004_packaging_genealogy_db.py::test_packaging_issue_and_actual_consumption_are_linked_to_exact_order_line
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\services\material_flow_service.py:54: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    return f"RES-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}-{str(uuid.uuid4())[:6].upper()}"
+
+tests/test_m24_s03_t004_packaging_genealogy_db.py::test_packaging_issue_and_actual_consumption_are_linked_to_exact_order_line
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\services\material_flow_service.py:50: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    return f"MF-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}-{str(uuid.uuid4())[:6].upper()}"
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_m24_s03_t004_packaging_genealogy_db.py::test_packaging_issue_and_actual_consumption_are_linked_to_exact_order_line
+1 failed, 1 passed, 13 warnings in 8.27s
+PYTEST_EXIT=1
+
+
+=== test_m24_s04_t001_atomic_posting_db.py / fmcg_m24_s04_t001_e4abcea131cc487b85c6 ===
+
+..                                                                       [100%]
+============================== warnings summary ===============================
+app\schemas\material_flow.py:31
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:31: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class FlowStageOut(FlowStageCreate):
+
+app\schemas\material_flow.py:68
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:68: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class FlowLineOut(FlowLineCreate):
+
+app\schemas\material_flow.py:95
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:95: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class FlowTransactionOut(BaseModel):
+
+app\schemas\material_flow.py:224
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:224: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ReservationLineOut(ReservationLineCreate):
+
+app\schemas\material_flow.py:247
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:247: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ReservationOut(BaseModel):
+
+app\schemas\material_flow.py:301
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:301: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ConsumptionOut(BaseModel):
+
+app\schemas\material_flow.py:351
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:351: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class PreparedLotOut(PreparedLotCreate):
+
+app\schemas\material_flow.py:391
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:391: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class TankOut(BaseModel):
+
+app\schemas\material_flow.py:421
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:421: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ReconciliationLineOut(BaseModel):
+
+app\schemas\material_flow.py:443
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:443: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ReconciliationOut(BaseModel):
+
+app\schemas\material_flow.py:474
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:474: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class MFAIRecOut(BaseModel):
+
+tests/test_m24_s04_t001_atomic_posting_db.py::test_material_issue_rows_and_stock_balances_rollback_as_one_unit
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\services\material_flow_service.py:54: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    return f"RES-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}-{str(uuid.uuid4())[:6].upper()}"
+
+tests/test_m24_s04_t001_atomic_posting_db.py::test_material_issue_rows_and_stock_balances_rollback_as_one_unit
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\services\material_flow_service.py:50: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    return f"MF-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}-{str(uuid.uuid4())[:6].upper()}"
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+2 passed, 13 warnings in 6.35s
+PYTEST_EXIT=0
+
+
+=== test_m24_s04_t002_genealogy_db.py / fmcg_m24_s04_t002_e4abcea131cc487b85c6 ===
+
+..                                                                       [100%]
+============================== warnings summary ===============================
+app\schemas\material_flow.py:31
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:31: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class FlowStageOut(FlowStageCreate):
+
+app\schemas\material_flow.py:68
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:68: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class FlowLineOut(FlowLineCreate):
+
+app\schemas\material_flow.py:95
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:95: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class FlowTransactionOut(BaseModel):
+
+app\schemas\material_flow.py:224
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:224: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ReservationLineOut(ReservationLineCreate):
+
+app\schemas\material_flow.py:247
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:247: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ReservationOut(BaseModel):
+
+app\schemas\material_flow.py:301
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:301: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ConsumptionOut(BaseModel):
+
+app\schemas\material_flow.py:351
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:351: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class PreparedLotOut(PreparedLotCreate):
+
+app\schemas\material_flow.py:391
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:391: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class TankOut(BaseModel):
+
+app\schemas\material_flow.py:421
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:421: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ReconciliationLineOut(BaseModel):
+
+app\schemas\material_flow.py:443
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:443: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ReconciliationOut(BaseModel):
+
+app\schemas\material_flow.py:474
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:474: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class MFAIRecOut(BaseModel):
+
+tests/test_m24_s04_t002_genealogy_db.py::test_reserved_raw_consumption_creates_finished_lot_genealogy_without_double_issue
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\services\material_flow_service.py:54: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    return f"RES-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}-{str(uuid.uuid4())[:6].upper()}"
+
+tests/test_m24_s04_t002_genealogy_db.py::test_reserved_raw_consumption_creates_finished_lot_genealogy_without_double_issue
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\services\material_flow_service.py:50: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    return f"MF-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}-{str(uuid.uuid4())[:6].upper()}"
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+2 passed, 13 warnings in 6.24s
+PYTEST_EXIT=0
+
+
+=== test_m24_s04_t003_reversal_guards_db.py / fmcg_m24_s04_t003_e4abcea131cc487b85c6 ===
+
+..                                                                       [100%]
+============================== warnings summary ===============================
+app\schemas\material_flow.py:31
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:31: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class FlowStageOut(FlowStageCreate):
+
+app\schemas\material_flow.py:68
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:68: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class FlowLineOut(FlowLineCreate):
+
+app\schemas\material_flow.py:95
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:95: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class FlowTransactionOut(BaseModel):
+
+app\schemas\material_flow.py:224
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:224: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ReservationLineOut(ReservationLineCreate):
+
+app\schemas\material_flow.py:247
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:247: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ReservationOut(BaseModel):
+
+app\schemas\material_flow.py:301
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:301: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ConsumptionOut(BaseModel):
+
+app\schemas\material_flow.py:351
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:351: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class PreparedLotOut(PreparedLotCreate):
+
+app\schemas\material_flow.py:391
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:391: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class TankOut(BaseModel):
+
+app\schemas\material_flow.py:421
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:421: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ReconciliationLineOut(BaseModel):
+
+app\schemas\material_flow.py:443
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:443: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ReconciliationOut(BaseModel):
+
+app\schemas\material_flow.py:474
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:474: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class MFAIRecOut(BaseModel):
+
+tests/test_m24_s04_t003_reversal_guards_db.py::test_generic_reversal_service_paths_preserve_source_and_write_no_reversal
+tests/test_m24_s04_t003_reversal_guards_db.py::test_generic_reversal_service_paths_preserve_source_and_write_no_reversal
+  C:\Users\sekip\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\sql\schema.py:3624: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    return util.wrap_callable(lambda ctx: fn(), fn)  # type: ignore
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+2 passed, 13 warnings in 5.99s
+PYTEST_EXIT=0
+
+RESULT=FAIL
+test_m24_s02_t001_material_issue_db.py: pytest failed (1)
+test_m24_s02_t004_material_scrap_db.py: pytest failed (1)
+test_m24_s03_t001_wip_location_db.py: pytest failed (1)
+test_m24_s03_t002_bulk_transfer_db.py: pytest failed (1)
+test_m24_s03_t003_finished_goods_receipt_db.py: pytest failed (1)
+test_m24_s03_t004_packaging_genealogy_db.py: pytest failed (1)
+

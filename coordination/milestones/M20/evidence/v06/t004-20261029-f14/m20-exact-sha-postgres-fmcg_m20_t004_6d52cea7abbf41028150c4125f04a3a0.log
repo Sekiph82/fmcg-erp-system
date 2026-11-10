@@ -1,0 +1,9 @@
+# Exact-SHA disposable PostgreSQL rerun
+commit=93f28d9f74b1c2b1f102c29114e9e38b088a2b1b
+tracked_source_state=HEAD; only tracked worktree delta is frontend/next-env.d.ts documentation URL
+database=fmcg_m20_t004_6d52cea7abbf41028150c4125f04a3a0
+container=codex-m20-t004-9a097ae80dbd
+auth=loopback-only PostgreSQL trust; no password
+purpose=M20 bounded strict regression rerun
+container_absent_after_cleanup=true
+superseded_setup_attempt=failed_before_migration_or_tests because PowerShell log path was relative after changing to backend; task-owned container removed

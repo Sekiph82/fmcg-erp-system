@@ -152,6 +152,7 @@ async def test_partial_backorder_preserves_order_context_and_transition_lineage(
         backorder = await production_service._create_partial_backorder(
             db, source, Decimal("2.500"), actor.id
         )
+        await db.flush()
         assert source.backordered_quantity == Decimal("2.500")
         assert backorder.backorder_of_id == source.id
         assert backorder.planned_quantity == Decimal("2.500")
@@ -366,6 +367,9 @@ async def test_partial_order_completion_posts_actual_and_creates_unapproved_back
             ),
         ])
         await db.flush()
+        actor_id = actor.id
+        raw_warehouse_id = raw_warehouse.id
+        material_id = material.id
         source_id = order.id
         source_order_no = order.order_no
         await db.commit()
@@ -375,7 +379,7 @@ async def test_partial_order_completion_posts_actual_and_creates_unapproved_back
                 db,
                 await db.get(ProductionOrder, source_id),
                 CompleteOrderRequest(actual_quantity=Decimal("10.001"), consume_materials=True),
-                actor.id,
+                actor_id,
             )
         assert overplanned.value.status_code == 422
         assert "cannot exceed" in overplanned.value.detail
@@ -385,7 +389,7 @@ async def test_partial_order_completion_posts_actual_and_creates_unapproved_back
             db,
             await db.get(ProductionOrder, source_id),
             CompleteOrderRequest(actual_quantity=Decimal("7.500"), consume_materials=True),
-            actor.id,
+            actor_id,
         )
         await db.commit()
 
@@ -400,7 +404,7 @@ async def test_partial_order_completion_posts_actual_and_creates_unapproved_back
             select(FinishedGoodsReceipt).where(FinishedGoodsReceipt.production_order_id == source_id)
         )).scalar_one()
         stock = (await db.execute(
-            select(Stock).where(Stock.warehouse_id == raw_warehouse.id, Stock.material_id == material.id)
+            select(Stock).where(Stock.warehouse_id == raw_warehouse_id, Stock.material_id == material_id)
         )).scalar_one()
         events = list((await db.execute(
             select(ProductionTransitionEvent).where(

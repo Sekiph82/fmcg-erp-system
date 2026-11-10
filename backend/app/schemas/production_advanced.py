@@ -8,7 +8,7 @@ from decimal import Decimal
 from typing import List, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 # ── Work Center ────────────────────────────────────────────────────────────────
@@ -336,6 +336,7 @@ class DowntimeEventCreate(BaseModel):
     start_time:     datetime
     end_time:       Optional[datetime] = None
     reason:         str
+    reason_code:    Optional[str]      = None
     category:       str = "unplanned"
     reported_by:    Optional[str]      = None
     impact_units:   Optional[int]      = None
@@ -344,6 +345,7 @@ class DowntimeEventCreate(BaseModel):
 class DowntimeEventUpdate(BaseModel):
     end_time:     Optional[datetime] = None
     reason:       Optional[str]      = None
+    reason_code:  Optional[str]      = None
     category:     Optional[str]      = None
     impact_units: Optional[int]      = None
     notes:        Optional[str]      = None
@@ -359,6 +361,7 @@ class DowntimeEventRead(BaseModel):
     end_time:        Optional[datetime]
     duration_min:    Optional[int]
     reason:          str
+    reason_code:     Optional[str]      = None
     category:        str
     reported_by:     Optional[str]
 
@@ -556,29 +559,44 @@ class LaborLogRead(BaseModel):
 # ── OEE Records ────────────────────────────────────────────────────────────────
 
 class OEERecordCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     oee_id:                     str  = Field(..., max_length=50)
     work_center_id:             UUID
     machine_id:                 Optional[str]  = None
     shift_id:                   Optional[UUID] = None
     record_date:                date
-    planned_production_time_min: int
-    actual_production_time_min:  Optional[int]     = None
-    downtime_min:               Optional[int]      = 0
-    ideal_cycle_time_sec:       Optional[Decimal]  = None
-    total_units_produced:       Optional[int]      = 0
-    good_units_produced:        Optional[int]      = 0
-    # Accept pre-computed KPIs from CSV
-    availability:               Optional[Decimal]  = None
-    performance:                Optional[Decimal]  = None
-    quality:                    Optional[Decimal]  = None
-    oee_score:                  Optional[Decimal]  = None
+    planned_production_time_min: int = Field(gt=0)
+    actual_production_time_min:  Optional[int] = Field(default=None, ge=0)
+    downtime_min:               int = Field(default=0, ge=0)
+    ideal_cycle_time_sec:       Optional[Decimal] = Field(default=None, gt=0)
+    total_units_produced:       Optional[int] = Field(default=None, ge=0)
+    good_units_produced:        Optional[int] = Field(default=None, ge=0)
     notes:                      Optional[str]      = None
 
+
+    @model_validator(mode="after")
+    def validate_oee_source_facts(self):
+        if self.downtime_min > self.planned_production_time_min:
+            raise ValueError("Downtime cannot exceed planned production time.")
+        max_run_time = self.planned_production_time_min - self.downtime_min
+        if self.actual_production_time_min is not None and self.actual_production_time_min > max_run_time:
+            raise ValueError("Actual run time cannot exceed planned time less downtime.")
+        if self.good_units_produced is not None and (
+            self.total_units_produced is None or self.good_units_produced > self.total_units_produced
+        ):
+            raise ValueError("Good units cannot exceed total units.")
+        return self
+
+
 class OEERecordUpdate(BaseModel):
-    actual_production_time_min: Optional[int]     = None
-    downtime_min:               Optional[int]      = None
-    total_units_produced:       Optional[int]      = None
-    good_units_produced:        Optional[int]      = None
+    model_config = ConfigDict(extra="forbid")
+
+    actual_production_time_min: Optional[int] = Field(default=None, ge=0)
+    downtime_min:               Optional[int] = Field(default=None, ge=0)
+    ideal_cycle_time_sec:       Optional[Decimal] = Field(default=None, gt=0)
+    total_units_produced:       Optional[int] = Field(default=None, ge=0)
+    good_units_produced:        Optional[int] = Field(default=None, ge=0)
     notes:                      Optional[str]      = None
 
 class OEERecordRead(BaseModel):
@@ -595,6 +613,7 @@ class OEERecordRead(BaseModel):
     downtime_min:               Optional[int]
     total_units_produced:       Optional[int]
     good_units_produced:        Optional[int]
+    ideal_cycle_time_sec:       Optional[Decimal]
     availability:               Optional[Decimal]
     performance:                Optional[Decimal]
     quality:                    Optional[Decimal]

@@ -1,0 +1,12 @@
+
+> fmcg-erp-frontend@0.1.0 check:api-parity
+> node scripts/check-api-parity.mjs
+
+{
+  "manifest_entries": 35,
+  "dashboard_pages_scanned": 761,
+  "raw_api_pages": 29,
+  "uncovered_raw_api_pages": 0,
+  "strict": false
+}
+EXIT=0

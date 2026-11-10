@@ -1,0 +1,34 @@
+﻿..                                                                       [100%]
+============================== warnings summary ===============================
+venv\Lib\site-packages\pydantic\_internal\_fields.py:160
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\venv\Lib\site-packages\pydantic\_internal\_fields.py:160: UserWarning: Field "model_params" has conflict with protected namespace "model_".
+  
+  You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+    warnings.warn(
+
+venv\Lib\site-packages\pydantic\_internal\_config.py:284: 65 warnings
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\venv\Lib\site-packages\pydantic\_internal\_config.py:284: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.7/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+venv\Lib\site-packages\pydantic\_internal\_fields.py:160
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\venv\Lib\site-packages\pydantic\_internal\_fields.py:160: UserWarning: Field "model_no" has conflict with protected namespace "model_".
+  
+  You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+    warnings.warn(
+
+app\api\v1\endpoints\allergen.py:133
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\api\v1\endpoints\allergen.py:133: DeprecationWarning: `regex` has been deprecated, please use `pattern` instead
+    entity_type: str = Query("material", regex="^(material|product)$"),
+
+app\api\v1\endpoints\allergen.py:402
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\api\v1\endpoints\allergen.py:402: DeprecationWarning: `regex` has been deprecated, please use `pattern` instead
+    review_type: str = Query(..., regex="^(label|qc)$"),
+
+tests/test_m31_s01_t002_credential_lifecycle.py::test_api_key_and_oauth_client_secret_lifecycle_is_owner_scoped_and_hash_only
+tests/test_m31_s01_t002_credential_lifecycle.py::test_api_key_and_oauth_client_secret_lifecycle_is_owner_scoped_and_hash_only
+tests/test_m31_s01_t002_credential_lifecycle.py::test_api_key_and_oauth_client_secret_lifecycle_is_owner_scoped_and_hash_only
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\venv\Lib\site-packages\sqlalchemy\sql\schema.py:3585: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    return util.wrap_callable(lambda ctx: fn(), fn)  # type: ignore
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+2 passed, 72 warnings in 36.67s

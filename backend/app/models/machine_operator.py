@@ -18,7 +18,7 @@ import enum
 from datetime import datetime
 from sqlalchemy import (
     Column, String, Text, Numeric, Boolean, Integer,
-    ForeignKey, Enum, DateTime, Date, UniqueConstraint,
+    ForeignKey, Enum, DateTime, Date, UniqueConstraint, CheckConstraint, Index, text,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
@@ -185,6 +185,12 @@ class Machine(Base, TimestampMixin):
     runtime_logs = relationship("MachineRuntimeLog", back_populates="machine", cascade="all, delete-orphan")
     performance_snapshots = relationship("MachinePerformanceSnapshot", back_populates="machine", cascade="all, delete-orphan")
     downtime_intel = relationship("DowntimeIntelligence", back_populates="machine", cascade="all, delete-orphan")
+    skill_requirements = relationship(
+        "MachineSkillRequirement",
+        back_populates="machine",
+        cascade="all, delete-orphan",
+        foreign_keys="MachineSkillRequirement.machine_id",
+    )
 
 
 # ── 2. Operator Profile ───────────────────────────────────────────────────────
@@ -252,6 +258,16 @@ class OperatorSkillCert(Base, TimestampMixin):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     operator_id = Column(UUID(as_uuid=True), ForeignKey("operator_profiles.id", ondelete="CASCADE"), nullable=False, index=True)
+    skill_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey(
+            "training_skills.skill_id",
+            name="fk_operator_skill_certs_skill_id_training_skills",
+            ondelete="RESTRICT",
+        ),
+        nullable=True,
+        index=True,
+    )
     machine_id = Column(UUID(as_uuid=True), ForeignKey("machines.id", ondelete="SET NULL"), nullable=True)
     work_center_id = Column(UUID(as_uuid=True), ForeignKey("work_centers.id", ondelete="SET NULL"), nullable=True)
     operation_code = Column(String(100), nullable=True)
@@ -259,14 +275,111 @@ class OperatorSkillCert(Base, TimestampMixin):
     cert_status = Column(Enum(CertStatus, name="operator_certstatus"), nullable=False, default=CertStatus.VALID)
     certification_required = Column(Boolean, default=False, nullable=False)
     certification_expiry = Column(Date, nullable=True)
-    approved_flag = Column(Boolean, default=True, nullable=False)
+    approved_flag = Column(Boolean, default=False, nullable=False)
     approved_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     notes = Column(Text, nullable=True)
 
     operator = relationship("OperatorProfile", back_populates="skills")
+    skill = relationship("SkillMaster", foreign_keys=[skill_id])
     machine = relationship("Machine", foreign_keys=[machine_id])
     work_center = relationship("WorkCenter", foreign_keys=[work_center_id])
     approver = relationship("User", foreign_keys=[approved_by])
+
+
+class MachineSkillRequirement(Base, TimestampMixin):
+    """Configured operator qualification required for a machine or work center.
+
+    Requirements reference the canonical training skill registry. They are
+    configuration only; assignment enforcement and supervisor overrides are
+    handled by the later M26 qualification tasks.
+    """
+
+    __tablename__ = "machine_skill_requirements"
+    __table_args__ = (
+        CheckConstraint(
+            "(machine_id IS NOT NULL AND work_center_id IS NULL) OR "
+            "(machine_id IS NULL AND work_center_id IS NOT NULL)",
+            name="ck_machine_skill_requirements_exactly_one_resource",
+        ),
+        CheckConstraint(
+            "minimum_skill_level IN ('basic', 'intermediate', 'advanced', 'expert')",
+            name="ck_machine_skill_requirements_minimum_level",
+        ),
+        Index(
+            "uq_machine_skill_requirements_machine_skill",
+            "machine_id",
+            "skill_id",
+            unique=True,
+            postgresql_where=text("machine_id IS NOT NULL"),
+            sqlite_where=text("machine_id IS NOT NULL"),
+        ),
+        Index(
+            "uq_machine_skill_requirements_work_center_skill",
+            "work_center_id",
+            "skill_id",
+            unique=True,
+            postgresql_where=text("work_center_id IS NOT NULL"),
+            sqlite_where=text("work_center_id IS NOT NULL"),
+        ),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    machine_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey(
+            "machines.id",
+            name="fk_machine_skill_requirements_machine_id_machines",
+            ondelete="CASCADE",
+        ),
+        nullable=True,
+        index=True,
+    )
+    work_center_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey(
+            "work_centers.id",
+            name="fk_machine_skill_requirements_work_center_id_work_centers",
+            ondelete="CASCADE",
+        ),
+        nullable=True,
+        index=True,
+    )
+    skill_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey(
+            "training_skills.skill_id",
+            name="fk_machine_skill_requirements_skill_id_training_skills",
+            ondelete="RESTRICT",
+        ),
+        nullable=False,
+        index=True,
+    )
+    created_by = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", name="fk_machine_skill_requirements_created_by_users", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    updated_by = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", name="fk_machine_skill_requirements_updated_by_users", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    minimum_skill_level = Column(String(20), nullable=False, default="basic", server_default="basic")
+    certification_required = Column(Boolean, nullable=False, default=False, server_default="false")
+    active_flag = Column(Boolean, nullable=False, default=True, server_default="true")
+    notes = Column(Text, nullable=True)
+
+    machine = relationship("Machine", back_populates="skill_requirements", foreign_keys=[machine_id])
+    work_center = relationship(
+        "WorkCenter",
+        back_populates="skill_requirements",
+        foreign_keys=[work_center_id],
+    )
+    skill = relationship("SkillMaster", foreign_keys=[skill_id])
+    creator = relationship("User", foreign_keys=[created_by])
+    updater = relationship("User", foreign_keys=[updated_by])
 
 
 # ── 5. Work Order Assignment ──────────────────────────────────────────────────
@@ -428,6 +541,12 @@ class DowntimeIntelligence(Base, TimestampMixin):
 
     downtime_class = Column(Enum(DowntimeClass), nullable=False)
     downtime_subclass = Column(String(100), nullable=True)
+    reason_code = Column(
+        String(100),
+        ForeignKey("maintenance_downtime_reason_codes.code", ondelete="RESTRICT"),
+        nullable=True,
+        index=True,
+    )
     start_time = Column(DateTime(timezone=True), nullable=False)
     end_time = Column(DateTime(timezone=True), nullable=True)
     duration_minutes = Column(Numeric(10, 2), nullable=True)
@@ -443,6 +562,7 @@ class DowntimeIntelligence(Base, TimestampMixin):
     notes = Column(Text, nullable=True)
 
     machine = relationship("Machine", back_populates="downtime_intel")
+    downtime_reason = relationship("DowntimeReasonCode", foreign_keys=[reason_code])
     reported_by = relationship("OperatorProfile", foreign_keys=[reported_by_id])
     reviewed_by = relationship("User", foreign_keys=[reviewed_by_id])
 

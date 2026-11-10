@@ -21,6 +21,8 @@ build/
 # Node
 node_modules/
 .next/
+# Task-specific Next.js build/E2E output directories
+frontend/.next-m20-*/
 out/
 npm-debug.log*
 yarn-debug.log*

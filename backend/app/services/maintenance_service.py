@@ -1,12 +1,15 @@
 from __future__ import annotations
 
+import uuid
 from typing import List, Optional
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 
+from fastapi import HTTPException
 from sqlalchemy import select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+import app.crud.maintenance as maintenance_crud
 from app.models.maintenance import (
     Asset, PMPlan, PMWorkOrder, BreakdownRecord, PMStatus, BreakdownStatus, AssetStatus,
     MaintenancePrediction, MaintenancePredictionRisk, MaintenancePredictionStatus,
@@ -14,6 +17,77 @@ from app.models.maintenance import (
 from app.models.iot import SensorDataPoint, MachineStateEvent, IoTAlert, AlertSeverity, MachineState
 from app.models.production import DowntimeLog
 from app.schemas.maintenance import MtbfMttrRow, DowntimeByMachineRow, OverduePMRow
+
+
+BREAKDOWN_ESCALATION_POLICY_VERSION = "virtual-demo-v1"
+BREAKDOWN_ESCALATION_POLICY = {
+    "CRITICAL": {"priority": "P1", "escalate_after_minutes": 0},
+    "HIGH": {"priority": "P2", "escalate_after_minutes": 240},
+    "MEDIUM": {"priority": "P3", "escalate_after_minutes": 1440},
+    "LOW": {"priority": "P4", "escalate_after_minutes": 4320},
+}
+
+
+def assess_breakdown_priority(breakdown: BreakdownRecord, as_of: datetime) -> dict:
+    """Apply transparent demo defaults; assessment never sends notifications or changes records."""
+    severity = str(getattr(breakdown.severity, "value", breakdown.severity)).upper()
+    policy = BREAKDOWN_ESCALATION_POLICY.get(severity)
+    if policy is None:
+        return {
+            "breakdown_id": str(breakdown.id),
+            "priority": None,
+            "severity": severity,
+            "escalate_after_minutes": None,
+            "age_minutes": None,
+            "minutes_until_escalation": None,
+            "state": "DATA_INCOMPLETE",
+            "recommended_action": "Review the severity value before applying priority rules.",
+            "policy_version": BREAKDOWN_ESCALATION_POLICY_VERSION,
+        }
+
+    start = breakdown.start_time
+    if start.tzinfo is None:
+        state = "DATA_INCOMPLETE"
+        age_minutes = None
+    else:
+        end = as_of if breakdown.status in {BreakdownStatus.OPEN, BreakdownStatus.IN_REPAIR} else breakdown.end_time
+        if end is None:
+            state = "DATA_INCOMPLETE"
+            age_minutes = None
+        elif end.tzinfo is None or end < start:
+            state = "DATA_INCOMPLETE"
+            age_minutes = None
+        else:
+            age_minutes = round(max(0.0, (end - start).total_seconds() / 60), 2)
+            if breakdown.status == BreakdownStatus.RESOLVED:
+                state = "RESOLVED"
+            elif age_minutes >= policy["escalate_after_minutes"]:
+                state = "ESCALATE_NOW"
+            else:
+                state = "WITHIN_TARGET"
+
+    threshold = policy["escalate_after_minutes"]
+    minutes_until_escalation = round(max(0, threshold - age_minutes), 2) if age_minutes is not None and state == "WITHIN_TARGET" else None
+    if state == "RESOLVED":
+        action = "Breakdown is resolved; no active escalation is due."
+    elif state == "ESCALATE_NOW":
+        action = "Escalation review is due now under the virtual demo policy; no notification was sent."
+    elif state == "WITHIN_TARGET":
+        action = f"Continue monitoring; escalation review is due after {threshold} minutes if still open."
+    else:
+        action = "Correct missing or inconsistent timestamps before relying on escalation timing."
+
+    return {
+        "breakdown_id": str(breakdown.id),
+        "priority": policy["priority"],
+        "severity": severity,
+        "escalate_after_minutes": threshold,
+        "age_minutes": age_minutes,
+        "minutes_until_escalation": minutes_until_escalation,
+        "state": state,
+        "recommended_action": action,
+        "policy_version": BREAKDOWN_ESCALATION_POLICY_VERSION,
+    }
 
 
 async def compute_mtbf_mttr(db: AsyncSession) -> List[MtbfMttrRow]:
@@ -289,6 +363,13 @@ async def review_maintenance_prediction(
     reviewed_by: str,
     notes: Optional[str] = None,
 ) -> MaintenancePrediction:
+    if pred.status not in {MaintenancePredictionStatus.OPEN, MaintenancePredictionStatus.REVIEWED}:
+        raise HTTPException(status_code=409, detail="Only open or reviewed predictions can be reviewed.")
+    if status_value not in {MaintenancePredictionStatus.REVIEWED, MaintenancePredictionStatus.DISMISSED}:
+        raise HTTPException(
+            status_code=422,
+            detail="Create a maintenance work order through the explicit work-order action.",
+        )
     pred.status = status_value
     pred.reviewed_by = reviewed_by
     pred.reviewed_at = datetime.utcnow()
@@ -296,6 +377,68 @@ async def review_maintenance_prediction(
     await db.flush()
     await db.refresh(pred)
     return pred
+
+
+async def create_work_order_from_prediction(
+    db: AsyncSession,
+    prediction_id: uuid.UUID,
+    work_order_data,
+    actor_id: uuid.UUID,
+) -> MaintenancePrediction:
+    """Convert a reviewed prediction into one linked, planned PM work order."""
+    result = await db.execute(
+        select(MaintenancePrediction)
+        .options(selectinload(MaintenancePrediction.asset))
+        .where(MaintenancePrediction.id == prediction_id)
+        .with_for_update()
+    )
+    prediction = result.scalar_one_or_none()
+    if prediction is None:
+        raise HTTPException(status_code=404, detail="Prediction not found")
+
+    if prediction.status == MaintenancePredictionStatus.WORK_ORDER_CREATED:
+        if prediction.work_order_id is None:
+            raise HTTPException(
+                status_code=409,
+                detail="This legacy prediction is marked as planned but has no linked work order; reconcile it before retrying.",
+            )
+        return prediction
+    if prediction.status != MaintenancePredictionStatus.REVIEWED:
+        raise HTTPException(status_code=409, detail="Review the prediction before planning a work order.")
+    if prediction.asset_id is None:
+        raise HTTPException(status_code=409, detail="The prediction is not linked to a maintenance asset.")
+
+    try:
+        plan_id = uuid.UUID(str(work_order_data.plan_id))
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(status_code=422, detail="A valid preventive maintenance plan is required.") from exc
+    plan_result = await db.execute(
+        select(PMPlan).where(PMPlan.id == plan_id).with_for_update()
+    )
+    plan = plan_result.scalar_one_or_none()
+    if plan is None:
+        raise HTTPException(status_code=404, detail="Preventive maintenance plan not found")
+    if not plan.is_active:
+        raise HTTPException(status_code=409, detail="Select an active preventive maintenance plan.")
+    if plan.asset_id != prediction.asset_id:
+        raise HTTPException(status_code=422, detail="The plan must belong to the predicted asset.")
+
+    data = work_order_data.model_dump()
+    data["plan_id"] = plan_id
+    wo_no = f"WO-PRED-{prediction.id.hex[:12].upper()}"
+    try:
+        work_order = await maintenance_crud.create_work_order(db, data, wo_no)
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except maintenance_crud.SparePartAvailabilityError as exc:
+        raise HTTPException(status_code=409, detail=exc.detail) from exc
+
+    prediction.work_order_id = work_order.id
+    prediction.work_order_created_by_id = actor_id
+    prediction.work_order_created_at = datetime.now(timezone.utc)
+    prediction.status = MaintenancePredictionStatus.WORK_ORDER_CREATED
+    await db.flush()
+    return prediction
 
 
 async def _prediction_signal_for_machine(

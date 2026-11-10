@@ -43,6 +43,7 @@ from app.models.procurement import (
 )
 from app.models.landed_cost import LandedCostHeader, LandedCostLine, LandedCostLineActual
 from app.models.quality import (
+    CalibrationStatus, InstrumentCalibration, InstrumentCalibrationEvent,
     QCParameter, QCInspection, QCTestResult,
     QCType, QCStatus, QCDecision, ParameterType,
     QCTemplate, QCTemplateParameter,
@@ -93,7 +94,8 @@ from app.models.finance import (
     OperationalPostingStatus, OperationalPostingEvent, InventoryAccountMapping,
 )
 from app.models.maintenance import (
-    Asset, PMPlan, PMWorkOrder, BreakdownRecord, SparePart, SparePartUsage,
+    Asset, PMPlan, PMWorkOrder, DowntimeReasonCode, BreakdownRecord, SparePart, SparePartUsage,
+    PMPlanSparePartRequirement, PMWorkOrderSparePartReservation,
 )
 from app.models.logistics import (
     InternationalShipment, ShipmentContainer, ShipmentPOLink,
@@ -273,7 +275,7 @@ from app.models.machine_operator import (
     MachineStatus, MachineFamily, SkillLevel, CertStatus,
     AssignmentType, RuntimeActivity, DowntimeClass, LaborActivity,
     ReviewType, MOAIAgentType, MOAIRecStatus,
-    Machine, OperatorProfile, ProductionTeam, TeamMember,
+    Machine, OperatorProfile, ProductionTeam, TeamMember, MachineSkillRequirement,
     OperatorSkillCert, WorkOrderAssignment, AssignmentHistory,
     MachineRuntimeLog, LaborTimeLog, MachinePerformanceSnapshot,
     DowntimeIntelligence, SupervisorReview, MOAIRecommendation,
@@ -690,6 +692,8 @@ __all__ = [
     "PurchaseInvoiceStatus",
     "OperationalPostingStatus", "OperationalPostingEvent", "InventoryAccountMapping",
     "Asset", "PMPlan", "PMWorkOrder", "BreakdownRecord", "SparePart", "SparePartUsage",
+    "PMPlanSparePartRequirement", "PMWorkOrderSparePartReservation",
+    "CalibrationStatus", "InstrumentCalibration",
     "InternationalShipment", "ShipmentContainer", "ShipmentPOLink",
     "InventoryOwnerStatus", "ShipmentOwnershipEvent",
     "CustomsDocument", "CustomsClearance", "ArrivalNotification",

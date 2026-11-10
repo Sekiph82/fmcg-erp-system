@@ -1,0 +1,47 @@
+.F.......................................sss.ssss                        [100%]
+================================== FAILURES ===================================
+____ test_production_completion_gate_blocks_before_inventory_side_effects _____
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001A6133A0E60>
+
+    @pytest.mark.asyncio
+    async def test_production_completion_gate_blocks_before_inventory_side_effects(monkeypatch):
+        order = SimpleNamespace(
+            id=uuid4(), status=ProductionOrderStatus.IN_PROGRESS, order_no="PO-2",
+            planned_quantity=Decimal("10"), actual_start=datetime.now(timezone.utc),
+            batch_no="SYNTHETIC-PO-2",
+        )
+        db = _ResultDB([_ScalarResult(order)])
+        events = []
+    
+        async def lock(_db, module, event):
+            events.append(("lock", module, event))
+    
+        async def check(_db, got_order, event, as_of_date, actor_id=None):
+            events.append(("check", got_order, event, as_of_date))
+            raise ValueError("missing in-process QC")
+    
+        monkeypatch.setattr(qms_service, "lock_quality_gate_scope", lock)
+        monkeypatch.setattr(qms_service, "ensure_production_quality_gates_pass", check)
+    
+        with pytest.raises(HTTPException) as raised:
+            await production_service.complete_order(
+                db,
+                order,
+                SimpleNamespace(actual_quantity=Decimal("2")),
+                uuid4(),
+            )
+    
+        assert raised.value.status_code == 422
+        assert "missing in-process QC" in raised.value.detail
+        assert db.added == []
+>       assert len(db.statements) == 1  # order lock; the mocked scope lock performs no SQL
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       assert 4 == 1
+E        +  where 4 = len([<sqlalchemy.sql.selectable.Select object at 0x000001A6133A1310>, <sqlalchemy.sql.selectable.Select object at 0x000001...y.sql.selectable.Select object at 0x000001A6133A15B0>, <sqlalchemy.sql.selectable.Select object at 0x000001A6133A1910>])
+E        +    where [<sqlalchemy.sql.selectable.Select object at 0x000001A6133A1310>, <sqlalchemy.sql.selectable.Select object at 0x000001...y.sql.selectable.Select object at 0x000001A6133A15B0>, <sqlalchemy.sql.selectable.Select object at 0x000001A6133A1910>] = <tests.test_m27_s02_t002_production_gate._ResultDB object at 0x000001A6133A0EC0>.statements
+
+tests\test_m27_s02_t002_production_gate.py:141: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_m27_s02_t002_production_gate.py::test_production_completion_gate_blocks_before_inventory_side_effects
+1 failed, 41 passed, 7 skipped in 20.92s

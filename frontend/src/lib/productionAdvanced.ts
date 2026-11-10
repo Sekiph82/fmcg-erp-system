@@ -66,7 +66,12 @@ export interface DowntimeEvent {
   id: string; downtime_id: string; work_center_id: string; work_center_name?: string;
   machine_id?: string; work_order_id?: string;
   start_time: string; end_time?: string; duration_min?: number;
-  reason: string; category: string; reported_by?: string;
+  reason: string; reason_code?: string | null; category: string; reported_by?: string;
+}
+
+export interface DowntimeReasonCode {
+  code: string; label: string; parent_code?: string | null;
+  is_selectable: boolean; is_active: boolean; sort_order: number;
 }
 
 export interface QCInspection {
@@ -109,8 +114,8 @@ export interface OEERecord {
   machine_id?: string; shift_id?: string; shift_name?: string;
   record_date: string; planned_production_time_min: number;
   actual_production_time_min?: number; downtime_min?: number;
-  total_units_produced?: number; good_units_produced?: number;
-  availability?: number; performance?: number; quality?: number; oee_score?: number;
+  total_units_produced?: number | null; good_units_produced?: number | null; ideal_cycle_time_sec?: number | null;
+  availability?: number | null; performance?: number | null; quality?: number | null; oee_score?: number | null;
   is_low_oee: boolean; is_high_downtime: boolean;
 }
 
@@ -255,6 +260,10 @@ export const advProductionApi = {
   },
 
   // Downtime
+  async listDowntimeReasonCodes(): Promise<DowntimeReasonCode[]> {
+    const r = await apiClient.get<DowntimeReasonCode[]>(`${BASE}/downtime/reason-codes`);
+    return r.data;
+  },
   async listDowntime(p?: { work_center_id?: string; category?: string }): Promise<DowntimeEvent[]> {
     const r = await apiClient.get(`${BASE}/downtime`, { params: p });
     return r.data;

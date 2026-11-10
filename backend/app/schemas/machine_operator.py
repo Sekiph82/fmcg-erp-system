@@ -1,9 +1,9 @@
 from __future__ import annotations
 from datetime import date, datetime
 from decimal import Decimal
-from typing import List, Optional
+from typing import List, Optional, Literal
 from uuid import UUID
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.models.machine_operator import (
     MachineStatus, MachineFamily, SkillLevel, CertStatus,
@@ -133,13 +133,14 @@ class TeamMemberOut(BaseModel):
 
 class SkillCertCreate(BaseModel):
     operator_id: UUID
+    skill_id: Optional[UUID] = None
     machine_id: Optional[UUID] = None
     work_center_id: Optional[UUID] = None
     operation_code: Optional[str] = None
     skill_level: SkillLevel = SkillLevel.BASIC
     certification_required: bool = False
     certification_expiry: Optional[date] = None
-    approved_flag: bool = True
+    approved_flag: bool = False
     notes: Optional[str] = None
 
 
@@ -148,6 +149,44 @@ class SkillCertOut(SkillCertCreate):
     cert_status: CertStatus
     operator_name: Optional[str] = None
     machine_name: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class MachineSkillRequirementCreate(BaseModel):
+    machine_id: Optional[UUID] = None
+    work_center_id: Optional[UUID] = None
+    skill_id: UUID
+    minimum_skill_level: Literal["basic", "intermediate", "advanced", "expert"] = "basic"
+    certification_required: bool = False
+    active_flag: bool = True
+    notes: Optional[str] = None
+
+
+class MachineSkillRequirementUpdate(BaseModel):
+    machine_id: Optional[UUID] = None
+    work_center_id: Optional[UUID] = None
+    skill_id: Optional[UUID] = None
+    minimum_skill_level: Optional[Literal["basic", "intermediate", "advanced", "expert"]] = None
+    certification_required: Optional[bool] = None
+    active_flag: Optional[bool] = None
+    notes: Optional[str] = None
+
+
+class MachineSkillRequirementOut(BaseModel):
+    id: UUID
+    machine_id: Optional[UUID] = None
+    work_center_id: Optional[UUID] = None
+    skill_id: UUID
+    minimum_skill_level: Literal["basic", "intermediate", "advanced", "expert"]
+    certification_required: bool
+    active_flag: bool
+    notes: Optional[str] = None
+    created_by: Optional[UUID] = None
+    updated_by: Optional[UUID] = None
+    created_at: datetime
+    updated_at: datetime
 
     class Config:
         from_attributes = True
@@ -233,6 +272,25 @@ class RuntimeLogOut(RuntimeLogCreate):
         from_attributes = True
 
 
+class MachineRuntimeActivityKpi(BaseModel):
+    activity_type: RuntimeActivity
+    duration_minutes: Decimal
+    log_count: int
+    source_runtime_log_ids: List[UUID] = Field(default_factory=list)
+
+
+class MachineRuntimeKpisOut(BaseModel):
+    machine_id: UUID
+    machine_code: str
+    machine_name: str
+    period_start: date
+    period_end: date
+    recorded_activity_log_minutes: Decimal
+    activities: List[MachineRuntimeActivityKpi] = Field(default_factory=list)
+    unavailable_runtime_log_ids: List[UUID] = Field(default_factory=list)
+    data_notes: List[str] = Field(default_factory=list)
+
+
 # ── Labor Time Log ────────────────────────────────────────────────────────────
 
 class LaborTimeCreate(BaseModel):
@@ -296,12 +354,194 @@ class PerformanceSnapshotOut(BaseModel):
 
 # ── Downtime Intelligence ─────────────────────────────────────────────────────
 
+class OperatorProductivityByUom(BaseModel):
+    uom: str
+    allocated_output_quantity: Decimal
+    operator_labor_minutes_for_completed_orders: Decimal
+    output_quantity_per_operator_labor_hour: Optional[Decimal] = None
+    source_work_order_ids: List[UUID] = []
+    source_labor_log_ids: List[UUID] = []
+    allocation_labor_log_ids: List[UUID] = []
+
+
+class OperatorProductivityOut(BaseModel):
+    operator_id: UUID
+    period_start: date
+    period_end: date
+    approved_labor_log_count: int
+    unapproved_labor_log_count: int
+    approved_labor_minutes: Decimal
+    approved_labor_hours: Decimal
+    completed_work_order_count: int
+    unavailable_output_work_order_ids: List[UUID] = []
+    output_by_uom: List[OperatorProductivityByUom] = []
+    period_labor_log_ids: List[UUID] = []
+    data_notes: List[str] = []
+
+
+class ComparisonOutputByUom(BaseModel):
+    uom: str
+    allocated_output_quantity: Decimal
+    labor_minutes_for_completed_orders: Decimal
+    output_quantity_per_labor_hour: Optional[Decimal] = None
+    source_work_order_ids: List[UUID] = Field(default_factory=list)
+    source_labor_log_ids: List[UUID] = Field(default_factory=list)
+    allocation_labor_log_ids: List[UUID] = Field(default_factory=list)
+
+
+class ComparisonRuntimeActivity(BaseModel):
+    activity_type: RuntimeActivity
+    duration_minutes: Decimal
+    source_runtime_log_ids: List[UUID] = Field(default_factory=list)
+
+
+class ShiftTeamComparisonGroup(BaseModel):
+    group_id: Optional[UUID] = None
+    group_code: str
+    group_name: str
+    approved_labor_log_count: int = 0
+    unapproved_labor_log_count: int = 0
+    approved_labor_minutes: Decimal = Decimal("0")
+    approved_labor_hours: Decimal = Decimal("0")
+    runtime_log_count: int = 0
+    recorded_runtime_minutes: Decimal = Decimal("0")
+    unavailable_runtime_log_ids: List[UUID] = Field(default_factory=list)
+    runtime_by_activity: List[ComparisonRuntimeActivity] = Field(default_factory=list)
+    source_labor_log_ids: List[UUID] = Field(default_factory=list)
+    source_runtime_log_ids: List[UUID] = Field(default_factory=list)
+    output_by_uom: List[ComparisonOutputByUom] = Field(default_factory=list)
+
+
+class ShiftTeamComparisonsOut(BaseModel):
+    period_start: date
+    period_end: date
+    teams: List[ShiftTeamComparisonGroup] = Field(default_factory=list)
+    shifts: List[ShiftTeamComparisonGroup] = Field(default_factory=list)
+    unavailable_output_work_order_ids: List[UUID] = Field(default_factory=list)
+    period_labor_log_ids: List[UUID] = Field(default_factory=list)
+    period_runtime_log_ids: List[UUID] = Field(default_factory=list)
+    data_notes: List[str] = Field(default_factory=list)
+
+
+class MachinePerformanceAnomaly(BaseModel):
+    machine_id: UUID
+    machine_code: str
+    machine_name: str
+    runtime_log_id: UUID
+    event_start: datetime
+    event_end: datetime
+    observed_downtime_minutes: Decimal
+    baseline_event_count: int
+    baseline_median_minutes: Decimal
+    baseline_mad_minutes: Decimal
+    alert_threshold_minutes: Decimal
+    source_baseline_runtime_log_ids: List[UUID] = Field(default_factory=list)
+
+
+class PerformanceAnomalyReportOut(BaseModel):
+    period_start: date
+    period_end: date
+    baseline_start: date
+    anomalies: List[MachinePerformanceAnomaly] = Field(default_factory=list)
+    insufficient_baseline_machine_ids: List[UUID] = Field(default_factory=list)
+    unavailable_runtime_log_ids: List[UUID] = Field(default_factory=list)
+    overlapping_runtime_log_ids: List[UUID] = Field(default_factory=list)
+    data_notes: List[str] = Field(default_factory=list)
+
+
+class CorrelatedQualityResult(BaseModel):
+    result_id: UUID
+    test_type: str
+    result: str
+    actual_value: Optional[Decimal] = None
+    unit: Optional[str] = None
+
+
+class CorrelatedQualityInspection(BaseModel):
+    inspection_id: UUID
+    qc_id: str
+    status: str
+    inspection_type: str
+    inspected_at: Optional[datetime] = None
+    work_order_id: Optional[UUID] = None
+    production_order_id: Optional[UUID] = None
+    results: List[CorrelatedQualityResult] = Field(default_factory=list)
+
+
+class CorrelatedWasteRecord(BaseModel):
+    waste_record_id: UUID
+    waste_id: str
+    work_order_id: Optional[UUID] = None
+    production_order_id: UUID
+    waste_type: str
+    waste_category: str
+    expected_qty: Decimal
+    actual_qty: Decimal
+    loss_qty: Decimal
+    loss_pct: Optional[Decimal] = None
+    uom: Optional[str] = None
+    is_anomaly: bool
+
+
+class CorrelatedLaborLog(BaseModel):
+    labor_log_id: UUID
+    operator_id: UUID
+    approved_flag: bool
+    start_time: datetime
+    end_time: Optional[datetime] = None
+    duration_minutes: Optional[Decimal] = None
+
+
+class DowntimeProductionCorrelation(BaseModel):
+    downtime_id: UUID
+    machine_id: UUID
+    machine_code: str
+    machine_name: str
+    work_order_id: Optional[UUID] = None
+    production_order_id: Optional[UUID] = None
+    downtime_class: str
+    start_time: datetime
+    end_time: Optional[datetime] = None
+    duration_minutes: Optional[Decimal] = None
+    reported_by_operator_id: Optional[UUID] = None
+    observed_operator_ids: List[UUID] = Field(default_factory=list)
+    runtime_log_ids: List[UUID] = Field(default_factory=list)
+    labor_logs: List[CorrelatedLaborLog] = Field(default_factory=list)
+    quality_inspections: List[CorrelatedQualityInspection] = Field(default_factory=list)
+    waste_records: List[CorrelatedWasteRecord] = Field(default_factory=list)
+    correlation_basis: List[str] = Field(default_factory=list)
+
+
+class MachineInsightFollowUpHandoff(BaseModel):
+    handoff_id: str
+    destination: str
+    destination_path: str
+    title: str
+    rationale: str
+    machine_id: UUID
+    machine_code: str
+    downtime_id: UUID
+    work_order_id: Optional[UUID] = None
+    production_order_id: Optional[UUID] = None
+    source_ids: List[UUID] = Field(default_factory=list)
+    attribution_note: str
+
+
+class DowntimeProductionCorrelationReport(BaseModel):
+    period_start: date
+    period_end: date
+    events: List[DowntimeProductionCorrelation] = Field(default_factory=list)
+    follow_up_handoffs: List[MachineInsightFollowUpHandoff] = Field(default_factory=list)
+    data_notes: List[str] = Field(default_factory=list)
+
+
 class DowntimeIntelCreate(BaseModel):
     machine_id: UUID
     work_order_id: Optional[UUID] = None
     production_order_id: Optional[UUID] = None
     downtime_class: DowntimeClass
     downtime_subclass: Optional[str] = None
+    reason_code: Optional[str] = None
     start_time: datetime
     end_time: Optional[datetime] = None
     reported_by_id: Optional[UUID] = None
@@ -386,20 +626,59 @@ class MODashboard(BaseModel):
 
 # ── Cost Contribution ─────────────────────────────────────────────────────────
 
+class MachineCostAttribution(BaseModel):
+    machine_id: UUID
+    machine_code: str
+    runtime_hours: Decimal
+    setup_hours: Decimal
+    hourly_cost_rate_used: Optional[Decimal] = None
+    energy_cost_per_hour_used: Optional[Decimal] = None
+    runtime_cost: Optional[Decimal] = None
+    setup_cost: Optional[Decimal] = None
+    energy_cost: Optional[Decimal] = None
+    total_cost: Optional[Decimal] = None
+    source_runtime_log_ids: List[UUID] = Field(default_factory=list)
+    unavailable_runtime_log_ids: List[UUID] = Field(default_factory=list)
+    overlapping_runtime_log_ids: List[UUID] = Field(default_factory=list)
+
+
+class LaborCostAttribution(BaseModel):
+    labor_log_id: UUID
+    operator_id: UUID
+    approved_flag: bool
+    duration_minutes: Optional[Decimal] = None
+    overtime_minutes: Optional[Decimal] = None
+    cost_rate_per_hour: Optional[Decimal] = None
+    direct_cost: Optional[Decimal] = None
+    overtime_cost: Optional[Decimal] = None
+    included: bool
+    exclusion_reason: Optional[str] = None
+
+
 class CostContribution(BaseModel):
     production_order_id: UUID
     machine_runtime_hours: Decimal = Decimal("0")
     machine_setup_hours: Decimal = Decimal("0")
-    machine_cost_runtime: Decimal = Decimal("0")
-    machine_cost_setup: Decimal = Decimal("0")
-    machine_cost_energy: Decimal = Decimal("0")
-    machine_cost_total: Decimal = Decimal("0")
+    machine_cost_runtime: Optional[Decimal] = None
+    machine_cost_setup: Optional[Decimal] = None
+    machine_cost_energy: Optional[Decimal] = None
+    machine_cost_total: Optional[Decimal] = None
     labor_direct_hours: Decimal = Decimal("0")
     labor_overtime_hours: Decimal = Decimal("0")
-    labor_cost_direct: Decimal = Decimal("0")
-    labor_cost_overtime: Decimal = Decimal("0")
-    labor_cost_total: Decimal = Decimal("0")
-    total_cost: Decimal = Decimal("0")
+    labor_cost_direct: Optional[Decimal] = None
+    labor_cost_overtime: Optional[Decimal] = None
+    labor_cost_total: Optional[Decimal] = None
+    total_cost: Optional[Decimal] = None
+    attribution_complete: bool = False
+    machine_attributions: List[MachineCostAttribution] = Field(default_factory=list)
+    labor_attributions: List[LaborCostAttribution] = Field(default_factory=list)
+    unavailable_runtime_log_ids: List[UUID] = Field(default_factory=list)
+    overlapping_runtime_log_ids: List[UUID] = Field(default_factory=list)
+    unapproved_labor_log_ids: List[UUID] = Field(default_factory=list)
+    unpriced_labor_log_ids: List[UUID] = Field(default_factory=list)
+    overlapping_labor_log_ids: List[UUID] = Field(default_factory=list)
+    cost_unit_note: str = "Configured rate units; source rate records do not store a currency code."
+    data_notes: List[str] = Field(default_factory=list)
     std_machine_cost: Optional[Decimal] = None
     std_labor_cost: Optional[Decimal] = None
     variance_pct: Optional[Decimal] = None

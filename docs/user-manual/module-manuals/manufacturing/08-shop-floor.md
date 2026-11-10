@@ -1,7 +1,7 @@
 # Shop Floor Operations
 
 **Route:** `/dashboard/shop-floor`  
-**Permission required:** `production.view`  
+**Permission required:** authenticated ERP access plus `production.view`, or an assigned production-line scope with `shop_floor.view_own_scope` / `production.view_own_scope`
 **Workspace tabs:** Overview, Terminal, Supervisor, Queue, Downtime, Handover  
 **Auto-refresh:** Every 30 seconds
 
@@ -89,11 +89,29 @@ Shows the 4 most recent shift handover records with:
 
 The Operator Terminal is a full-screen, simplified interface designed for use on touch screens and shared factory tablets.
 
+Before recording an action, start an operator session. The session captures an operator name (optionally linked to an operator profile), line/station, work center, machine, and shift. The terminal shows the selected context and includes the session on work-order activity and downtime records. Equipment and shift choices come from the configured master records; those fields remain optional when no virtual-factory record is configured. End the session explicitly when leaving the shared terminal. A typed virtual operator name is contextual data, not authentication or proof of employee identity.
+
+### Connectivity requirement
+
+Shop Floor is online-only for current work-order reads and authoritative production, material, QC, scrap, downtime, and note writes. Offline actions are not queued or replayed. If connectivity fails during a save, treat the result as unconfirmed; reconnect, refresh the work order/session state, and reconcile the server record before retrying. This is the initial virtual ERP policy; no real factory network or device acceptance is implied. See [`M23_S03_T002_OFFLINE_POLICY_V01.md`](../../../../coordination/milestones/M23/M23_S03_T002_OFFLINE_POLICY_V01.md) for the implementation boundary.
+
+### Access and action permissions
+
+Every Shop Floor API request requires an authenticated ERP user. Aggregate dashboards, supervisor alerts, active-session listings, overrides, and AI recommendations require broad production view access. A scoped viewer must request a specific production line and have that line in their assigned `production_line` view scope.
+
+Starting an operator session or recording work-order activity requires `production.edit` / `production.edit_all`, or `production.edit_own_scope` / `production_execution.update_own_line` together with edit access to the assigned production line. The work order must match the active session's line, and the session is bound to the authenticated ERP user. A typed operator label and optional operator profile remain contextual fields; they cannot grant access or impersonate an ERP user.
+
+Approving a shift handover, applying a supervisor override, running shop-floor AI, or accepting/rejecting a recommendation requires `production.approve`. The authenticated user ID is retained separately from the virtual operator/supervisor display name on session, activity, downtime, handover, override, and recommendation action records. Frontend visibility and disabled controls improve usability; the API permission checks remain authoritative.
+
 Key functions:
-- **Start** a work order — operator selects their work center and the work order to begin; records start time and operator ID
+- **Start** a work order — operator selects the work order to begin; records start time and the active session context
 - **Pause** a work order — records pause time and reason (downtime category)
 - **Resume** a paused work order
-- **Finish** a work order — records completion time, good quantity produced, and scrap quantity
+- **Finish** a work order — records completion time, final good/scrap/rework quantities, and optional actual run time in minutes. The operation start and completion timestamps are captured by the system; an unknown actual runtime remains unset rather than being fabricated.
+- **Confirm material consumption** — the Materials panel lists only materials assigned to the started execution operation. Consumption requires an active authenticated operator session, a previously issued quantity, and (when multiple issued lot references exist) a selection from those recorded lots. It updates the separate `exec_*` material totals and appends an operation activity record; it does not post inventory movements or infer a link to the standard production-order model. Lot references are trace labels only because the current model does not allocate issued quantity per lot.
+- **Record in-process QC checkpoints** — a quality user with line and product-category permissions can append a named PASS/FAIL observation, optional measured value/unit, and notes to the active operation. Each checkpoint is actor-attributed; retesting a failed checkpoint updates its current outcome while preserving history. Operations marked QC-required cannot finish until at least one checkpoint exists and every recorded checkpoint currently passes. This lightweight execution record does not invent specification limits or replace configured QMS inspection templates; the entered result is the quality user's recorded observation.
+- **Record scrap / waste** — records a positive operation-level quantity, an optional normal/abnormal classification, and an optional reason against the active `exec_*` work order. Shop Floor keeps this separate from `waste_records`; no production-order crosswalk or duplicate posting is inferred.
+- **Log downtime** — an active operator session may record downtime against its matching work order and line. An authenticated user with line edit permission may also record line-level downtime without an operator session; work-order-linked downtime still requires the matching authenticated session. The system derives operation and parent execution links from the work order and calculates duration when the event is stopped.
 
 The terminal is accessible directly at `/dashboard/shop-floor/terminal` (standalone page, no sidebar).
 

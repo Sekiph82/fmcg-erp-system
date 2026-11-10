@@ -8,6 +8,15 @@ export type BreakdownStatus = "OPEN" | "IN_REPAIR" | "RESOLVED";
 export type MaintenancePredictionStatus = "OPEN" | "REVIEWED" | "WORK_ORDER_CREATED" | "DISMISSED";
 export type MaintenancePredictionRisk = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
 
+export interface DowntimeReasonCode {
+  code: string;
+  label: string;
+  parent_code?: string | null;
+  is_selectable: boolean;
+  is_active: boolean;
+  sort_order: number;
+}
+
 export interface Asset {
   id: string;
   asset_no: string;
@@ -21,6 +30,7 @@ export interface Asset {
   install_date?: string;
   warranty_expiry?: string;
   location?: string;
+  work_center_id?: string | null;
   status: AssetStatus;
   notes?: string;
   created_at: string;
@@ -44,6 +54,25 @@ export interface PMPlan {
   created_at: string;
 }
 
+export interface PMPlanSparePartRequirement {
+  spare_part_id: string;
+  part_no: string;
+  name: string;
+  unit: string;
+  is_active: boolean;
+  quantity_required: number;
+  current_stock: number;
+  reserved_quantity: number;
+  available_quantity: number;
+  is_available: boolean;
+}
+
+export interface PMPlanSparePartRequirementsReport {
+  plan_id: string;
+  requirements: PMPlanSparePartRequirement[];
+  data_notes: string[];
+}
+
 export interface PMWorkOrder {
   id: string;
   wo_no: string;
@@ -52,6 +81,9 @@ export interface PMWorkOrder {
   asset_id?: string;
   asset_name?: string;
   scheduled_date: string;
+  window_start?: string | null;
+  window_end?: string | null;
+  work_center_id?: string | null;
   status: PMStatus;
   started_at?: string;
   completed_at?: string;
@@ -59,6 +91,91 @@ export interface PMWorkOrder {
   technician?: string;
   checklist_notes?: string;
   created_at: string;
+}
+
+export interface PMWindowScheduleConflict {
+  schedule_id: string;
+  production_order_id: string;
+  work_center_id: string;
+  start_time: string;
+  end_time: string;
+  status: string;
+}
+
+export interface PMWindowScheduleImpact {
+  pm_work_order_id: string;
+  pm_work_order_no: string;
+  pm_status: PMStatus;
+  asset_id: string;
+  asset_no: string;
+  asset_name: string;
+  work_center_id?: string | null;
+  window_start?: string | null;
+  window_end?: string | null;
+  conflicts: PMWindowScheduleConflict[];
+  unavailable_reason?: string | null;
+}
+
+export interface PMWindowScheduleImpactReport {
+  date_from: string;
+  date_to: string;
+  windows: PMWindowScheduleImpact[];
+  data_notes: string[];
+}
+
+export interface MaintenanceScheduleOverlap {
+  schedule_id: string;
+  production_order_id: string;
+  start_time: string;
+  end_time: string;
+  overlap_minutes: number;
+}
+
+export interface MaintenanceDowntimeCapacityImpact {
+  source_type: "PREVENTIVE_MAINTENANCE" | "BREAKDOWN";
+  source_id: string;
+  source_number: string;
+  status: string;
+  asset_id: string;
+  asset_no: string;
+  asset_name: string;
+  work_center_id?: string | null;
+  start_time: string;
+  end_time?: string | null;
+  observed_through?: string | null;
+  ongoing: boolean;
+  schedule_minutes_at_risk: number;
+  affected_production_order_ids: string[];
+  overlaps: MaintenanceScheduleOverlap[];
+  unavailable_reason?: string | null;
+}
+
+export interface MaintenanceDowntimeCapacityReport {
+  date_from: string;
+  date_to: string;
+  as_of: string;
+  impacts: MaintenanceDowntimeCapacityImpact[];
+  total_schedule_minutes_at_risk: number;
+  data_notes: string[];
+}
+
+export interface BreakdownPriorityAssessment {
+  breakdown_id: string;
+  priority?: string | null;
+  severity: BreakdownSeverity;
+  escalate_after_minutes?: number | null;
+  age_minutes?: number | null;
+  minutes_until_escalation?: number | null;
+  state: "ESCALATE_NOW" | "WITHIN_TARGET" | "RESOLVED" | "DATA_INCOMPLETE";
+  recommended_action: string;
+  policy_version: string;
+}
+
+export interface BreakdownPriorityEscalationReport {
+  as_of: string;
+  policy_version: string;
+  assessments: BreakdownPriorityAssessment[];
+  data_notes: string[];
 }
 
 export interface BreakdownRecord {
@@ -72,6 +189,7 @@ export interface BreakdownRecord {
   end_time?: string;
   downtime_minutes?: number;
   reason: string;
+  reason_code?: string | null;
   root_cause?: string;
   severity: BreakdownSeverity;
   status: BreakdownStatus;
@@ -160,6 +278,9 @@ export interface MaintenancePrediction {
   reviewed_by?: string | null;
   reviewed_at?: string | null;
   review_notes?: string | null;
+  work_order_id?: string | null;
+  work_order_created_by_id?: string | null;
+  work_order_created_at?: string | null;
   created_at: string;
 }
 
@@ -191,10 +312,36 @@ export const maintenanceApi = {
     const res = await apiClient.patch<PMPlan>(`/api/v1/maintenance/pm-plans/${id}`, data);
     return res.data;
   },
+  async getPMPlanSpareParts(id: string): Promise<PMPlanSparePartRequirementsReport> {
+    const res = await apiClient.get<PMPlanSparePartRequirementsReport>(`/api/v1/maintenance/pm-plans/${id}/spare-parts`);
+    return res.data;
+  },
+  async updatePMPlanSpareParts(
+    id: string,
+    items: { spare_part_id: string; quantity_required: number }[],
+  ): Promise<PMPlanSparePartRequirementsReport> {
+    const res = await apiClient.put<PMPlanSparePartRequirementsReport>(
+      `/api/v1/maintenance/pm-plans/${id}/spare-parts`,
+      { items },
+    );
+    return res.data;
+  },
 
   // Work Orders
   async listWorkOrders(params?: { plan_id?: string; status?: PMStatus }): Promise<PMWorkOrder[]> {
     const res = await apiClient.get<PMWorkOrder[]>("/api/v1/maintenance/work-orders/", { params });
+    return res.data;
+  },
+  async getWorkOrderScheduleImpact(params?: { date_from?: string; date_to?: string }): Promise<PMWindowScheduleImpactReport> {
+    const res = await apiClient.get<PMWindowScheduleImpactReport>("/api/v1/maintenance/work-orders/schedule-impact", { params });
+    return res.data;
+  },
+  async getDowntimeCapacityImpact(params?: { date_from?: string; date_to?: string }): Promise<MaintenanceDowntimeCapacityReport> {
+    const res = await apiClient.get<MaintenanceDowntimeCapacityReport>("/api/v1/maintenance/reports/downtime-capacity-impact", { params });
+    return res.data;
+  },
+  async getBreakdownPriorityEscalation(): Promise<BreakdownPriorityEscalationReport> {
+    const res = await apiClient.get<BreakdownPriorityEscalationReport>("/api/v1/maintenance/reports/priority-escalation");
     return res.data;
   },
   async createWorkOrder(data: object): Promise<PMWorkOrder> {
@@ -207,6 +354,10 @@ export const maintenanceApi = {
   },
 
   // Breakdowns
+  async listDowntimeReasonCodes(): Promise<DowntimeReasonCode[]> {
+    const res = await apiClient.get<DowntimeReasonCode[]>("/api/v1/maintenance/downtime-reason-codes");
+    return res.data;
+  },
   async listBreakdowns(params?: { asset_id?: string; status?: BreakdownStatus }): Promise<BreakdownRecord[]> {
     const res = await apiClient.get<BreakdownRecord[]>("/api/v1/maintenance/breakdowns/", { params });
     return res.data;
@@ -272,8 +423,12 @@ export const maintenanceApi = {
     const res = await apiClient.get<MaintenancePrediction[]>("/api/v1/maintenance/predictions", { params });
     return res.data;
   },
-  async reviewPrediction(id: string, data: { status: MaintenancePredictionStatus; reviewed_by: string; review_notes?: string }): Promise<MaintenancePrediction> {
+  async reviewPrediction(id: string, data: { status: "REVIEWED" | "DISMISSED"; review_notes?: string }): Promise<MaintenancePrediction> {
     const res = await apiClient.patch<MaintenancePrediction>(`/api/v1/maintenance/predictions/${id}/review`, data);
+    return res.data;
+  },
+  async createPredictionWorkOrder(id: string, data: { plan_id: string; scheduled_date: string }): Promise<MaintenancePrediction> {
+    const res = await apiClient.post<MaintenancePrediction>(`/api/v1/maintenance/predictions/${id}/work-order`, data);
     return res.data;
   },
 };

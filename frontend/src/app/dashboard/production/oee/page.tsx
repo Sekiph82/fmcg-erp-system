@@ -15,7 +15,7 @@ import { ImportModal } from "@/components/import/ImportModal";
 import { PageHelpTooltip } from "@/components/help/PageHelpTooltip";
 
 const fmt = (v?: number | null) => v != null ? `${(Number(v)*100).toFixed(1)}%` : "—";
-const oeeColor = (v?: number | null) => !v ? "text-gray-500" : Number(v)>=0.85?"text-green-600":Number(v)>=0.65?"text-yellow-600":"text-red-600";
+const oeeColor = (v?: number | null) => v == null ? "text-gray-500" : Number(v)>=0.85?"text-green-600":Number(v)>=0.65?"text-yellow-600":"text-red-600";
 
 const today = new Date().toISOString().slice(0,10);
 
@@ -26,7 +26,7 @@ export default function OEEPage() {
   const [deletingId, setDel]  = useState<string|null>(null);
   const [showSummary, setShowSummary] = useState(false);
   const [showInsights, setShowInsights] = useState(false);
-  const [form, setForm] = useState({ oee_id:"", work_center_id:"", machine_id:"", record_date:today, planned_production_time_min:"480", actual_production_time_min:"", downtime_min:"0", total_units_produced:"", good_units_produced:"", availability:"", performance:"", quality:"", oee_score:"" });
+  const [form, setForm] = useState({ oee_id:"", work_center_id:"", machine_id:"", record_date:today, planned_production_time_min:"480", actual_production_time_min:"", downtime_min:"0", ideal_cycle_time_sec:"", total_units_produced:"", good_units_produced:"" });
 
   const { data: wcs     = [] } = useQuery({ queryKey:["work-centers"],  queryFn:()=>advProductionApi.listWorkCenters() });
   const { data: items   = [], isLoading } = useQuery({ queryKey:["oee"], queryFn:()=>advProductionApi.listOEE() });
@@ -35,7 +35,8 @@ export default function OEEPage() {
 
   const lowOEE    = items.filter(i=>i.is_low_oee).length;
   const highDT    = items.filter(i=>i.is_high_downtime).length;
-  const avgOEE    = items.length ? items.reduce((s,i)=>s+Number(i.oee_score??0),0)/items.length : null;
+  const knownOee  = items.map(i=>i.oee_score).filter((value): value is number => value != null);
+  const avgOEE    = knownOee.length ? knownOee.reduce((sum,value)=>sum+Number(value),0)/knownOee.length : null;
 
   const create = useMutation({
     mutationFn:()=>advProductionApi.createOEE({
@@ -44,12 +45,9 @@ export default function OEEPage() {
       planned_production_time_min: parseInt(form.planned_production_time_min)||480,
       actual_production_time_min:  form.actual_production_time_min  ? parseInt(form.actual_production_time_min)  : undefined,
       downtime_min:                form.downtime_min                ? parseInt(form.downtime_min)                : 0,
+      ideal_cycle_time_sec:        form.ideal_cycle_time_sec        ? parseFloat(form.ideal_cycle_time_sec)      : undefined,
       total_units_produced:        form.total_units_produced        ? parseInt(form.total_units_produced)        : undefined,
       good_units_produced:         form.good_units_produced         ? parseInt(form.good_units_produced)         : undefined,
-      availability:                form.availability                ? parseFloat(form.availability)              : undefined,
-      performance:                 form.performance                 ? parseFloat(form.performance)               : undefined,
-      quality:                     form.quality                     ? parseFloat(form.quality)                   : undefined,
-      oee_score:                   form.oee_score                   ? parseFloat(form.oee_score)                 : undefined,
     }),
     onSuccess:()=>{ qc.invalidateQueries({queryKey:["oee"]}); qc.invalidateQueries({queryKey:["oee-summary"]}); setOpen(false); toast("success","Saved","OEE record added."); },
     onError:(e)=>toast("error","Failed",extractApiError(e))
@@ -69,6 +67,7 @@ export default function OEEPage() {
             &nbsp;·&nbsp;<span className="text-red-600">{lowOEE} below 65%</span>
             &nbsp;·&nbsp;<span className="text-yellow-600">{highDT} high downtime</span>
           </p>
+          <p className="text-xs text-gray-500 mt-1">Availability = run time / planned time; performance uses actual run time and ideal cycle; quality = good / total units. Missing source facts show as —, and OEE is shown only when all three components are known.</p>
         </div>
         <div className="flex gap-2 items-center">
           <PageHelpTooltip topic="production-oee" />
@@ -162,16 +161,11 @@ export default function OEEPage() {
             <Input label="Downtime (min)"     type="number" value={form.downtime_min}                onChange={e=>setForm(f=>({...f,downtime_min:e.target.value}))}/>
           </div>
           <div className="grid grid-cols-2 gap-4">
+            <Input label="Ideal cycle (sec/unit)" type="number" step="0.001" min="0.001" value={form.ideal_cycle_time_sec} onChange={e=>setForm(f=>({...f,ideal_cycle_time_sec:e.target.value}))}/>
             <Input label="Total Units" type="number" value={form.total_units_produced} onChange={e=>setForm(f=>({...f,total_units_produced:e.target.value}))}/>
             <Input label="Good Units"  type="number" value={form.good_units_produced}  onChange={e=>setForm(f=>({...f,good_units_produced:e.target.value}))}/>
           </div>
-          <p className="text-xs text-gray-500">Optional: enter pre-computed KPIs from CSV (0–1 scale). If left blank, they are auto-calculated.</p>
-          <div className="grid grid-cols-4 gap-3">
-            <Input label="Availability" type="number" step="0.0001" placeholder="0.9"  value={form.availability} onChange={e=>setForm(f=>({...f,availability:e.target.value}))}/>
-            <Input label="Performance"  type="number" step="0.0001" placeholder="0.85" value={form.performance}  onChange={e=>setForm(f=>({...f,performance:e.target.value}))}/>
-            <Input label="Quality"      type="number" step="0.0001" placeholder="0.95" value={form.quality}      onChange={e=>setForm(f=>({...f,quality:e.target.value}))}/>
-            <Input label="OEE Score"    type="number" step="0.0001" placeholder="0.726" value={form.oee_score}   onChange={e=>setForm(f=>({...f,oee_score:e.target.value}))}/>
-          </div>
+          <p className="text-xs text-gray-500">KPIs are calculated from these source facts on a 0–1 ratio scale. Missing ideal-cycle or good-unit facts remain unavailable; no perfect score is assumed.</p>
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" type="button" onClick={()=>setOpen(false)}>Cancel</Button>
             <Button type="submit" loading={create.isPending}>Save OEE</Button>

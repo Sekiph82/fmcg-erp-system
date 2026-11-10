@@ -45,6 +45,7 @@ export interface FlowStage {
   plant_id?: string;
   warehouse_id?: string;
   warehouse_name?: string;
+  location_id?: string | null;
   quality_default_status: QualityStatus;
   sequence_no: number;
   active_flag: boolean;
@@ -59,6 +60,7 @@ export interface FlowLine {
   material_id?: string;
   product_id?: string;
   lot_id?: string;
+  reservation_line_id?: string | null;
   batch_id?: string;
   quantity: number;
   uom: string;
@@ -66,6 +68,8 @@ export interface FlowLine {
   destination_warehouse_id?: string;
   source_stage_id?: string;
   destination_stage_id?: string;
+  source_location_id?: string;
+  destination_location_id?: string;
   source_stage_name?: string;
   destination_stage_name?: string;
   quality_status: QualityStatus;
@@ -85,7 +89,10 @@ export interface FlowTransaction {
   flow_mode: FlowMode;
   status: FlowStatus;
   production_order_id?: string;
+  source_document_type?: string | null;
+  source_document_id?: string | null;
   transaction_datetime: string;
+  idempotency_key?: string | null;
   plant_id?: string;
   notes?: string;
   lines: FlowLine[];
@@ -115,18 +122,65 @@ export interface ReservationLine {
   item_type: string;
   material_id?: string;
   warehouse_id: string;
+  source_location_id?: string | null;
+  staging_location_id?: string | null;
   quantity_required: number;
   quantity_reserved: number;
   quantity_issued: number;
+  source_stock_id?: string | null;
   uom: string;
   material_name?: string;
   lot_number?: string;
 }
 
+export interface MaterialIssueCreate {
+  idempotency_key: string;
+  notes?: string;
+  lines: Array<{ reservation_line_id: string; quantity: number }>;
+}
+
+export interface MaterialPickListLine {
+  reservation_line_ids: string[];
+  line_no: number;
+  material_id: string;
+  material_code: string;
+  material_name: string;
+  lot_id?: string | null;
+  lot_number?: string | null;
+  expiry_date?: string | null;
+  warehouse_id: string;
+  source_location_id?: string | null;
+  source_location_code?: string | null;
+  staging_location_id?: string | null;
+  staging_location_code?: string | null;
+  quantity_to_pick: number;
+  uom: string;
+}
+
+export interface MaterialPickList {
+  reservation_id: string;
+  reservation_no: string;
+  reservation_status: ReservationStatus;
+  production_order_id: string;
+  production_order_no: string;
+  warehouse_id: string;
+  warehouse_name: string;
+  generated_at: string;
+  lines: MaterialPickListLine[];
+}
+
 export interface Consumption {
   id: string;
   production_order_id: string;
+  flow_line_id?: string | null;
+  idempotency_key?: string | null;
+  return_flow_line_id?: string | null;
+  scrap_flow_line_id?: string | null;
+  scrap_reason_code?: string | null;
+  work_order_id?: string;
   material_id?: string;
+  product_id?: string;
+  lot_id?: string;
   quantity_issued: number;
   quantity_consumed: number;
   quantity_returned: number;
@@ -134,8 +188,87 @@ export interface Consumption {
   quantity_variance: number;
   variance_pct?: number;
   uom: string;
+  stage_id?: string;
+  operator_id?: string;
   consumed_at?: string;
   material_name?: string;
+}
+
+export interface ConsumptionCreate {
+  production_order_id: string;
+  flow_line_id: string;
+  idempotency_key: string;
+  quantity_consumed: number;
+  work_order_id?: string;
+  stage_id?: string;
+  notes?: string;
+}
+
+export interface MaterialReturnCreate {
+  idempotency_key: string;
+  quantity: number;
+  notes?: string;
+}
+
+export type MaterialScrapReasonCode = "SPILLAGE" | "CONTAMINATION" | "DAMAGE" | "PROCESS_LOSS" | "OTHER";
+
+export interface MaterialScrapCreate {
+  idempotency_key: string;
+  quantity: number;
+  reason_code: MaterialScrapReasonCode;
+  notes: string;
+}
+
+export interface WIPBalance {
+  origin_line_id: string;
+  production_order_id: string;
+  production_order_no: string;
+  product_id: string;
+  product_name?: string | null;
+  lot_id?: string | null;
+  batch_id: string;
+  quantity: number;
+  uom: string;
+  stage_id: string;
+  stage_name: string;
+  location_id: string;
+  location_code: string;
+  quality_status: QualityStatus;
+}
+
+export interface WIPOutputCreate {
+  idempotency_key: string;
+  production_order_id: string;
+  quantity: number;
+  uom: string;
+  destination_stage_id: string;
+  destination_location_id: string;
+  notes?: string;
+}
+
+export interface WIPTransferCreate {
+  idempotency_key: string;
+  quantity: number;
+  source_stage_id: string;
+  source_location_id: string;
+  destination_stage_id: string;
+  destination_location_id: string;
+  notes?: string;
+}
+
+export interface WIPBulkTransferLineCreate {
+  origin_line_id: string;
+  quantity: number;
+  source_stage_id: string;
+  source_location_id: string;
+  destination_stage_id: string;
+  destination_location_id: string;
+}
+
+export interface WIPBulkTransferCreate {
+  idempotency_key: string;
+  lines: WIPBulkTransferLineCreate[];
+  notes?: string;
 }
 
 export interface PreparedLot {
@@ -323,6 +456,22 @@ export const mfApi = {
 
   // Issues / Returns / Transfers / FG
   issueMaterials: (d: FlowTransactionCreate) => apiClient.post<FlowTransaction>(`${BASE}/issues`, d).then((r) => r.data),
+  issueReservedMaterials: (reservationId: string, d: MaterialIssueCreate) =>
+    apiClient.post<FlowTransaction>(`${BASE}/reservations/${reservationId}/issue`, d).then((r) => r.data),
+  issueReservedPackaging: (reservationId: string, d: MaterialIssueCreate) =>
+    apiClient.post<FlowTransaction>(`${BASE}/reservations/${reservationId}/packaging-issue`, d).then((r) => r.data),
+  returnExcessMaterial: (issueLineId: string, d: MaterialReturnCreate) =>
+    apiClient.post<FlowTransaction>(`${BASE}/issue-lines/${issueLineId}/returns`, d).then((r) => r.data),
+  scrapIssuedMaterial: (issueLineId: string, d: MaterialScrapCreate) =>
+    apiClient.post<FlowTransaction>(`${BASE}/issue-lines/${issueLineId}/scrap`, d).then((r) => r.data),
+  recordWipOutput: (d: WIPOutputCreate) =>
+    apiClient.post<FlowTransaction>(`${BASE}/wip/outputs`, d).then((r) => r.data),
+  listWipBalances: (productionOrderId: string) =>
+    apiClient.get<WIPBalance[]>(`${BASE}/wip/balances`, { params: { production_order_id: productionOrderId } }).then((r) => r.data),
+  transferWip: (productionOrderId: string, originLineId: string, d: WIPTransferCreate) =>
+    apiClient.post<FlowTransaction>(`${BASE}/wip/orders/${productionOrderId}/outputs/${originLineId}/transfers`, d).then((r) => r.data),
+  transferWipBulk: (productionOrderId: string, d: WIPBulkTransferCreate) =>
+    apiClient.post<FlowTransaction>(`${BASE}/wip/orders/${productionOrderId}/bulk-transfers`, d).then((r) => r.data),
   returnMaterials: (d: FlowTransactionCreate) => apiClient.post<FlowTransaction>(`${BASE}/returns`, d).then((r) => r.data),
   transferMaterials: (d: FlowTransactionCreate) => apiClient.post<FlowTransaction>(`${BASE}/transfers`, d).then((r) => r.data),
   fgReceipt: (d: FlowTransactionCreate) => apiClient.post<FlowTransaction>(`${BASE}/fg-receipts`, d).then((r) => r.data),
@@ -331,11 +480,13 @@ export const mfApi = {
   listReservations: (params?: Record<string, string>) =>
     apiClient.get<Reservation[]>(`${BASE}/reservations`, { params }).then((r) => r.data),
   getReservation: (id: string) => apiClient.get<Reservation>(`${BASE}/reservations/${id}`).then((r) => r.data),
+  generatePickList: (id: string) =>
+    apiClient.get<MaterialPickList>(`${BASE}/reservations/${id}/pick-list`).then((r) => r.data),
   createReservation: (d: object) => apiClient.post<Reservation>(`${BASE}/reservations`, d).then((r) => r.data),
   cancelReservation: (id: string) => apiClient.post<Reservation>(`${BASE}/reservations/${id}/cancel`, {}).then((r) => r.data),
 
   // Consumptions
-  recordConsumption: (d: object) => apiClient.post<Consumption>(`${BASE}/consumptions`, d).then((r) => r.data),
+  recordConsumption: (d: ConsumptionCreate) => apiClient.post<Consumption>(`${BASE}/consumptions`, d).then((r) => r.data),
   listConsumptions: (orderId: string) => apiClient.get<Consumption[]>(`${BASE}/consumptions/${orderId}`).then((r) => r.data),
 
   // Prepared lots

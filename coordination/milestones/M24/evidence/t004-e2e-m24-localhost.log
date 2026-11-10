@@ -1,0 +1,82 @@
+
+> fmcg-erp-frontend@0.1.0 test:e2e
+> playwright test e2e/m24-material-flow-issue.mocked.spec.ts --project=chromium --no-deps --reporter=list --retries=0
+
+[WebServer] (node:36644) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:32792) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] ⚠ Warning: Next.js ignored package-lock.json in C:\Users\sekip because it is outside the current Git repository (C:\Users\sekip\Desktop\fmcg-erp-system).
+[WebServer]  To use this directory, set `turbopack.root` in your Next.js config.
+[WebServer] 
+[WebServer] ⚠ React 18 support is deprecated in Next.js 16 and will be removed in Next.js 17. Please upgrade to React 19. Learn more: https://nextjs.org/docs/messages/react-version
+[WebServer] ⚠ The "middleware" file convention is deprecated. Please use "proxy" instead.
+[WebServer] 
+[WebServer]   To migrate automatically, run:
+[WebServer]   npx @next/codemod@canary middleware-to-proxy .
+[WebServer] 
+[WebServer]   Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+
+Running 1 test using 1 worker
+
+(node:26588) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:26588) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] [browser] Encountered two children with the same key, `77777777-7777-4777-8777-777777777777`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 
+[WebServer] [browser] Encountered two children with the same key, `88888888-8888-4888-8888-888888888888`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 
+[WebServer] [browser] Encountered two children with the same key, `88888888-8888-4888-8888-888888888888`. Keys should be unique so that components maintain their identity across updates. Non-unique keys may cause children to be duplicated and/or omitted — the behavior is unsupported and could change in a future version. 
+  x  1 [chromium] › e2e\m24-material-flow-issue.mocked.spec.ts:122:7 › M24 material issue UI with synthetic API › posts only the selected reserved line and shows the confirmed issue (2.2s)
+
+
+  1) [chromium] › e2e\m24-material-flow-issue.mocked.spec.ts:122:7 › M24 material issue UI with synthetic API › posts only the selected reserved line and shows the confirmed issue 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: getByText('M24-SYNTHETIC-ISSUE-001')
+    Expected: visible
+    Error: strict mode violation: getByText('M24-SYNTHETIC-ISSUE-001') resolved to 8 elements:
+        1) <div role="status" class="rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-700">Material issue M24-SYNTHETIC-ISSUE-001 was posted.</div> aka getByText('Material issue M24-SYNTHETIC-')
+        2) <option value="88888888-8888-4888-8888-888888888888">M24-SYNTHETIC-ISSUE-001 · Synthetic ingredient · …</option> aka getByLabel('Posted packaging issue')
+        3) <td class="px-4 py-2 font-mono text-xs">M24-SYNTHETIC-ISSUE-001</td> aka getByRole('cell', { name: 'M24-SYNTHETIC-ISSUE-' }).first()
+        4) <td class="px-4 py-2 font-mono text-xs">M24-SYNTHETIC-ISSUE-001</td> aka getByRole('cell', { name: 'M24-SYNTHETIC-ISSUE-' }).nth(1)
+        5) <td class="px-3 py-2 font-mono text-xs">M24-SYNTHETIC-ISSUE-001</td> aka getByRole('cell', { name: 'M24-SYNTHETIC-ISSUE-' }).nth(2)
+        6) <td class="px-3 py-2 font-mono text-xs">M24-SYNTHETIC-ISSUE-001</td> aka getByRole('cell', { name: 'M24-SYNTHETIC-ISSUE-' }).nth(3)
+        7) <td class="px-3 py-2 font-mono text-xs">M24-SYNTHETIC-ISSUE-001</td> aka getByRole('cell', { name: 'M24-SYNTHETIC-ISSUE-' }).nth(4)
+        8) <td class="px-3 py-2 font-mono text-xs">M24-SYNTHETIC-ISSUE-001</td> aka getByRole('cell', { name: 'M24-SYNTHETIC-ISSUE-' }).nth(5)
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 10000ms[22m
+    [2m  - waiting for getByText('M24-SYNTHETIC-ISSUE-001')[22m
+
+
+      130 |
+      131 |     await expect(page.getByRole("status")).toContainText("M24-SYNTHETIC-ISSUE-001");
+    > 132 |     await expect(page.getByText("M24-SYNTHETIC-ISSUE-001")).toBeVisible();
+          |                                                             ^
+      133 |     expect(api.posts).toHaveLength(1);
+      134 |     expect(api.posts[0].path).toBe(`/api/v1/material-flow/reservations/${reservationId}/issue`);
+      135 |     expect(api.posts[0].body).toMatchObject({
+        at C:\Users\sekip\Desktop\fmcg-erp-system\frontend\e2e\m24-material-flow-issue.mocked.spec.ts:132:61
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\m24-material-flow-issue.mo-43a25-d-shows-the-confirmed-issue-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results\m24-material-flow-issue.mo-43a25-d-shows-the-confirmed-issue-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\m24-material-flow-issue.mo-43a25-d-shows-the-confirmed-issue-chromium\error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\m24-material-flow-issue.mo-43a25-d-shows-the-confirmed-issue-chromium\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\m24-material-flow-issue.mo-43a25-d-shows-the-confirmed-issue-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    [chromium] › e2e\m24-material-flow-issue.mocked.spec.ts:122:7 › M24 material issue UI with synthetic API › posts only the selected reserved line and shows the confirmed issue 
+EXIT=1

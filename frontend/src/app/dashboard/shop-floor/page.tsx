@@ -4,9 +4,12 @@ import dynamic from "next/dynamic";
 import { ModuleWorkspace } from "@/components/workspace";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { sfApi, SFDashboard, LIVE_STATUS_COLOR, IMPACT_COLOR, DOWNTIME_CAT_LABEL } from "@/lib/shopFloor";
+import { useAuth } from "@/context/AuthContext";
 
 function ShopFloorDashboardTab() {
   const qc = useQueryClient();
+  const { user } = useAuth();
+  const canApprove = Boolean(user?.is_superuser || user?.permission_codes.includes("production.approve"));
 
   const { data: dash, isLoading } = useQuery<SFDashboard>({
     queryKey: ["sf-dashboard"],
@@ -49,7 +52,7 @@ function ShopFloorDashboardTab() {
         <div className="flex gap-2">
           <button
             onClick={() => runAI.mutate()}
-            disabled={runAI.isPending}
+            disabled={!canApprove || runAI.isPending}
             className="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
           >
             {runAI.isPending ? "Running AI…" : "Run AI Agents"}
@@ -179,13 +182,20 @@ const SFDowntimePage   = dynamic(() => import("@/app/dashboard/shop-floor/downti
 const SFHandoverPage   = dynamic(() => import("@/app/dashboard/shop-floor/handover/page"),   { ssr: false });
 
 export default function ShopFloorPage() {
+  const { user } = useAuth();
+  const codes = new Set(user?.permission_codes ?? []);
+  const broadView = Boolean(user?.is_superuser || codes.has("production.view") || codes.has("production.view_all"));
+  const scopedView = Boolean(codes.has("shop_floor.view_own_scope") || codes.has("production.view_own_scope"));
+  const canApprove = Boolean(user?.is_superuser || codes.has("production.approve"));
   const tabs = [
-    { key: "overview",   label: "Overview",   permission: "production.view", content: <ShopFloorDashboardTab /> },
-    { key: "terminal",   label: "Terminal",   permission: "production.view", content: <SFTerminalPage /> },
-    { key: "supervisor", label: "Supervisor", permission: "production.view", content: <SFSupervisorPage /> },
-    { key: "queue",      label: "Queue",      permission: "production.view", content: <SFQueuePage /> },
-    { key: "downtime",   label: "Downtime",   permission: "production.view", content: <SFDowntimePage /> },
-    { key: "handover",   label: "Handover",   permission: "production.view", content: <SFHandoverPage /> },
+    ...(broadView ? [{ key: "overview", label: "Overview", permission: "production.view", content: <ShopFloorDashboardTab /> }] : []),
+    ...((broadView || scopedView) ? [{ key: "terminal", label: "Terminal", permission: "production.view", content: <SFTerminalPage /> }] : []),
+    ...(broadView && canApprove ? [{ key: "supervisor", label: "Supervisor", permission: "production.approve", content: <SFSupervisorPage /> }] : []),
+    ...(broadView ? [
+      { key: "queue", label: "Queue", permission: "production.view", content: <SFQueuePage /> },
+      { key: "downtime", label: "Downtime", permission: "production.view", content: <SFDowntimePage /> },
+      { key: "handover", label: "Handover", permission: "production.view", content: <SFHandoverPage /> },
+    ] : []),
   ];
   return (
     <ModuleWorkspace
@@ -193,7 +203,7 @@ export default function ShopFloorPage() {
       description="Operator terminal, supervisor console, queue board, downtime, handover"
       permission="production.view"
       tabs={tabs}
-      defaultTab="overview"
+      defaultTab={broadView ? "overview" : "terminal"}
     />
   );
 }

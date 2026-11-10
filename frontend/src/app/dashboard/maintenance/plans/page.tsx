@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { maintenanceApi, PMPlan, PMWorkOrder, PMFrequency, PMStatus } from "@/lib/maintenance";
+import { maintenanceApi, PMPlan, PMPlanSparePartRequirementsReport, PMWorkOrder, PMFrequency, PMStatus } from "@/lib/maintenance";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { RequirePermission } from "@/components/PermissionGuard";
+import { PermissionGuard, RequirePermission } from "@/components/PermissionGuard";
 
 const statusBadge = (s: PMStatus) =>
   s === "COMPLETED" ? "green" : s === "OVERDUE" ? "red" : s === "IN_PROGRESS" ? "blue" : s === "SKIPPED" ? "gray" : "yellow";
@@ -28,9 +28,21 @@ export default function PMPlansPage() {
     queryFn: () => maintenanceApi.listWorkOrders(),
   });
 
+  const { data: scheduleImpact, isLoading: scheduleImpactLoading, isError: scheduleImpactError } = useQuery({
+    queryKey: ["maint-work-order-schedule-impact"],
+    queryFn: () => maintenanceApi.getWorkOrderScheduleImpact(),
+    enabled: tab === "workorders",
+  });
+
   const { data: assets = [] } = useQuery({
     queryKey: ["maint-assets"],
     queryFn: () => maintenanceApi.listAssets(),
+  });
+
+  const planRequirementsQuery = useQuery({
+    queryKey: ["maint-plan-spare-parts", selectedPlan?.id],
+    queryFn: () => maintenanceApi.getPMPlanSpareParts(selectedPlan!.id),
+    enabled: Boolean(selectedPlan),
   });
 
   const createPlan = useMutation({
@@ -38,14 +50,24 @@ export default function PMPlansPage() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["maint-plans"] }); setShowNewPlan(false); },
   });
 
+  const updatePlanSpareParts = useMutation({
+    mutationFn: ({ planId, items }: { planId: string; items: { spare_part_id: string; quantity_required: number }[] }) =>
+      maintenanceApi.updatePMPlanSpareParts(planId, items),
+    onSuccess: (_, variables) => {
+      qc.invalidateQueries({ queryKey: ["maint-plan-spare-parts", variables.planId] });
+      qc.invalidateQueries({ queryKey: ["maint-plan-spare-parts"] });
+      setSelectedPlan(null);
+    },
+  });
+
   const createWO = useMutation({
     mutationFn: (data: object) => maintenanceApi.createWorkOrder(data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["maint-work-orders"] }); setShowNewWO(false); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["maint-work-orders"] }); qc.invalidateQueries({ queryKey: ["maint-work-order-schedule-impact"] }); qc.invalidateQueries({ queryKey: ["maint-downtime-capacity-impact"] }); qc.invalidateQueries({ queryKey: ["maint-plan-spare-parts"] }); setShowNewWO(false); },
   });
 
   const completeWO = useMutation({
     mutationFn: ({ id, data }: { id: string; data: object }) => maintenanceApi.completeWorkOrder(id, data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["maint-work-orders"] }); qc.invalidateQueries({ queryKey: ["maint-plans"] }); setShowComplete(null); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["maint-work-orders"] }); qc.invalidateQueries({ queryKey: ["maint-plans"] }); qc.invalidateQueries({ queryKey: ["maint-work-order-schedule-impact"] }); qc.invalidateQueries({ queryKey: ["maint-downtime-capacity-impact"] }); setShowComplete(null); },
   });
 
   const today = new Date().toISOString().slice(0, 10);
@@ -93,6 +115,7 @@ export default function PMPlansPage() {
                 <th className="px-5 py-2 text-left">Next Due</th>
                 <th className="px-5 py-2 text-left">Est. Duration</th>
                 <th className="px-5 py-2 text-left">Active</th>
+                <th className="px-5 py-2 text-right">Spare parts</th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -114,11 +137,16 @@ export default function PMPlansPage() {
                     </td>
                     <td className="px-5 py-3 text-gray-500">{p.estimated_duration_minutes ? `${p.estimated_duration_minutes} min` : "—"}</td>
                     <td className="px-5 py-3"><Badge label={p.is_active ? "Yes" : "No"} variant={p.is_active ? "green" : "gray"} /></td>
+                    <td className="px-5 py-3 text-right">
+                      <PermissionGuard permission="maintenance.edit">
+                        <Button variant="secondary" onClick={() => setSelectedPlan(p)}>Requirements</Button>
+                      </PermissionGuard>
+                    </td>
                   </tr>
                 );
               })}
               {plans.length === 0 && (
-                <tr><td colSpan={8} className="px-5 py-8 text-center text-gray-400">No PM plans</td></tr>
+                <tr><td colSpan={9} className="px-5 py-8 text-center text-gray-400">No PM plans</td></tr>
               )}
             </tbody>
           </table>
@@ -127,7 +155,15 @@ export default function PMPlansPage() {
 
       {/* Work Orders */}
       {tab === "workorders" && (
-        <div className="bg-white rounded-lg border">
+        <div className="space-y-3">
+          <div className="rounded-lg border bg-indigo-50 px-4 py-3 text-sm text-indigo-900">
+            PM windows are compared with production schedules on the asset&apos;s linked work center. Overlaps are advisory; this screen does not move or block production.
+            {scheduleImpact && <p className="mt-1 text-xs text-indigo-700">Impact review period: {scheduleImpact.date_from} through {scheduleImpact.date_to}.</p>}
+            {scheduleImpact?.data_notes.map((note) => <p key={note} className="mt-1 text-xs text-indigo-700">{note}</p>)}
+            {scheduleImpactLoading && <p className="mt-1 text-xs">Loading schedule impact…</p>}
+            {scheduleImpactError && <p className="mt-1 text-xs text-amber-800">Production schedule impact is unavailable for your current access.</p>}
+          </div>
+          <div className="bg-white rounded-lg border overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-gray-50 text-xs text-gray-500 uppercase">
@@ -135,6 +171,7 @@ export default function PMPlansPage() {
                 <th className="px-5 py-2 text-left">Asset</th>
                 <th className="px-5 py-2 text-left">Plan</th>
                 <th className="px-5 py-2 text-left">Scheduled</th>
+                <th className="px-5 py-2 text-left">PM Window / Production Impact</th>
                 <th className="px-5 py-2 text-left">Technician</th>
                 <th className="px-5 py-2 text-left">Status</th>
                 <th className="px-5 py-2 text-right">Duration</th>
@@ -142,12 +179,28 @@ export default function PMPlansPage() {
               </tr>
             </thead>
             <tbody className="divide-y">
-              {workOrders.map((wo) => (
+              {workOrders.map((wo) => {
+                const impact = scheduleImpact?.windows.find((window) => window.pm_work_order_id === wo.id);
+                return (
                 <tr key={wo.id} className="hover:bg-gray-50">
                   <td className="px-5 py-3 font-mono text-xs font-semibold text-indigo-700">{wo.wo_no}</td>
                   <td className="px-5 py-3 font-medium">{wo.asset_name || "—"}</td>
                   <td className="px-5 py-3 text-gray-600">{wo.plan_name || "—"}</td>
                   <td className="px-5 py-3">{wo.scheduled_date}</td>
+                  <td className="px-5 py-3 text-xs">
+                    {wo.window_start && wo.window_end ? (
+                      <>
+                        <div>{new Date(wo.window_start).toLocaleString()} – {new Date(wo.window_end).toLocaleString()}</div>
+                        {impact?.unavailable_reason ? <div className="mt-1 text-amber-700">{impact.unavailable_reason}</div> : null}
+                        {impact && impact.conflicts.length > 0 ? (
+                          <div className="mt-1 text-red-700">
+                            {impact.conflicts.length} overlapping production schedule{impact.conflicts.length === 1 ? "" : "s"}
+                            {impact.conflicts.map((conflict) => <div key={conflict.schedule_id}>{conflict.schedule_id}: {new Date(conflict.start_time).toLocaleString()} – {new Date(conflict.end_time).toLocaleString()}</div>)}
+                          </div>
+                        ) : impact && !impact.unavailable_reason ? <div className="mt-1 text-green-700">No scheduled overlap</div> : !impact && scheduleImpact ? <div className="mt-1 text-gray-500">Outside impact review period</div> : null}
+                      </>
+                    ) : <span className="text-gray-400">No explicit time window</span>}
+                  </td>
                   <td className="px-5 py-3 text-gray-500">{wo.technician || "—"}</td>
                   <td className="px-5 py-3"><Badge label={wo.status} variant={statusBadge(wo.status)} /></td>
                   <td className="px-5 py-3 text-right">{wo.actual_duration_minutes ? `${wo.actual_duration_minutes} min` : "—"}</td>
@@ -157,12 +210,14 @@ export default function PMPlansPage() {
                     ) : null}
                   </td>
                 </tr>
-              ))}
+                );
+              })}
               {workOrders.length === 0 && (
-                <tr><td colSpan={8} className="px-5 py-8 text-center text-gray-400">No work orders</td></tr>
+                <tr><td colSpan={9} className="px-5 py-8 text-center text-gray-400">No work orders</td></tr>
               )}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 
@@ -173,6 +228,20 @@ export default function PMPlansPage() {
           onClose={() => setShowNewPlan(false)}
           onSubmit={(d) => createPlan.mutate(d)}
           loading={createPlan.isPending}
+        />
+      )}
+
+      {selectedPlan && (
+        <PlanSparePartsModal
+          key={selectedPlan.id}
+          plan={selectedPlan}
+          report={planRequirementsQuery.data}
+          loading={planRequirementsQuery.isLoading}
+          error={planRequirementsQuery.isError}
+          saving={updatePlanSpareParts.isPending}
+          saveError={updatePlanSpareParts.isError}
+          onClose={() => setSelectedPlan(null)}
+          onSave={(items) => updatePlanSpareParts.mutate({ planId: selectedPlan.id, items })}
         />
       )}
 
@@ -197,6 +266,83 @@ export default function PMPlansPage() {
       )}
     </div>
     </RequirePermission>
+  );
+}
+
+function PlanSparePartsModal({
+  plan, report, loading, error, saving, saveError, onClose, onSave,
+}: {
+  plan: PMPlan;
+  report?: PMPlanSparePartRequirementsReport;
+  loading: boolean;
+  error: boolean;
+  saving: boolean;
+  saveError: boolean;
+  onClose: () => void;
+  onSave: (items: { spare_part_id: string; quantity_required: number }[]) => void;
+}) {
+  const [items, setItems] = useState<{ spare_part_id: string; quantity_required: string }[]>([]);
+  const { data: parts = [] } = useQuery({ queryKey: ["maint-spare-parts-active"], queryFn: () => maintenanceApi.listSpareParts() });
+
+  useEffect(() => {
+    if (report) {
+      setItems(report.requirements.map((item) => ({
+        spare_part_id: item.spare_part_id,
+        quantity_required: String(item.quantity_required),
+      })));
+    }
+  }, [report]);
+
+  const hasInvalidItems = items.some((item) =>
+    !item.spare_part_id || !Number.isFinite(Number(item.quantity_required)) || Number(item.quantity_required) <= 0
+  );
+  const hasDuplicates = new Set(items.map((item) => item.spare_part_id).filter(Boolean)).size !== items.filter((item) => item.spare_part_id).length;
+
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+        <div>
+          <h2 className="font-semibold text-lg">Required spare parts</h2>
+          <p className="text-xs text-gray-500 mt-1">{plan.asset_name} — {plan.name}</p>
+        </div>
+        <p className="text-sm text-gray-600">Only parts you add here become a scheduling prerequisite. Empty requirements mean no spare-part quantity is assumed.</p>
+        {loading ? <p className="text-sm text-gray-500">Loading availability…</p> : null}
+        {error ? <p className="text-sm text-red-700">Availability could not be loaded. Close and reopen this panel to retry.</p> : null}
+        {!loading && !error ? (
+          <div className="space-y-3">
+            {items.map((item, index) => {
+              const availability = report?.requirements.find((row) => row.spare_part_id === item.spare_part_id);
+              return (
+                <div key={`${item.spare_part_id}-${index}`} className="grid grid-cols-1 md:grid-cols-[2fr_1fr_2fr_auto] gap-2 items-end border rounded p-3">
+                  <label className="text-xs text-gray-600">Part
+                    <select className="mt-1 w-full border rounded px-2 py-2 text-sm" value={item.spare_part_id} onChange={(event) => setItems((current) => current.map((row, i) => i === index ? { ...row, spare_part_id: event.target.value } : row))}>
+                      <option value="">Select spare part…</option>
+                      {parts.map((part) => <option key={part.id} value={part.id}>{part.part_no} — {part.name}</option>)}
+                    </select>
+                  </label>
+                  <label className="text-xs text-gray-600">Required quantity
+                    <input className="mt-1 w-full border rounded px-2 py-2 text-sm" type="number" min="0.0001" step="0.0001" value={item.quantity_required} onChange={(event) => setItems((current) => current.map((row, i) => i === index ? { ...row, quantity_required: event.target.value } : row))} />
+                  </label>
+                  <div className="text-xs text-gray-600">
+                    {availability ? (
+                      <><div>Stock {availability.current_stock} · Reserved {availability.reserved_quantity} · Available {availability.available_quantity} {availability.unit}</div>
+                        <div className={availability.is_available ? "text-green-700" : "text-amber-700"}>{availability.is_available ? "Available for the next schedule check" : "Currently short; scheduling will be blocked"}</div></>
+                    ) : <span>Save to load stock and reservation totals.</span>}
+                  </div>
+                  <Button variant="secondary" onClick={() => setItems((current) => current.filter((_, i) => i !== index))}>Remove</Button>
+                </div>
+              );
+            })}
+            <Button variant="secondary" onClick={() => setItems((current) => [...current, { spare_part_id: "", quantity_required: "1" }])}>Add part</Button>
+          </div>
+        ) : null}
+        {saveError ? <p className="text-sm text-red-700">The requirements were not saved. Check the selected active parts and retry.</p> : null}
+        <div className="flex gap-2 justify-end">
+          <Button variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button loading={saving} disabled={loading || error || hasInvalidItems || hasDuplicates} onClick={() => onSave(items.map((item) => ({ spare_part_id: item.spare_part_id, quantity_required: Number(item.quantity_required) })))}>Save requirements</Button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -263,8 +409,18 @@ function NewPMPlanModal({ assets, onClose, onSubmit, loading }: { assets: { id: 
 
 function NewWOModal({ plans, onClose, onSubmit, loading }: { plans: PMPlan[]; onClose: () => void; onSubmit: (d: object) => void; loading: boolean }) {
   const today = new Date().toISOString().slice(0, 10);
-  const [form, setForm] = useState({ plan_id: "", scheduled_date: today, technician: "" });
+  const [form, setForm] = useState({ plan_id: "", scheduled_date: today, window_start: "", window_end: "", technician: "" });
+  const requirementsQuery = useQuery({
+    queryKey: ["maint-plan-spare-parts", form.plan_id],
+    queryFn: () => maintenanceApi.getPMPlanSpareParts(form.plan_id),
+    enabled: Boolean(form.plan_id),
+    refetchOnMount: "always",
+  });
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
+  const shortages = (requirementsQuery.data?.requirements ?? []).filter((item) => !item.is_available);
+  const windowIsValid = (!form.window_start && !form.window_end) || (
+    !!form.window_start && !!form.window_end && new Date(form.window_end).getTime() > new Date(form.window_start).getTime()
+  );
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
@@ -283,13 +439,43 @@ function NewWOModal({ plans, onClose, onSubmit, loading }: { plans: PMPlan[]; on
             <input type="date" className="w-full border rounded px-3 py-2 text-sm" value={form.scheduled_date} onChange={(e) => set("scheduled_date", e.target.value)} />
           </div>
           <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">PM Window Start (optional)</label>
+            <input type="datetime-local" className="w-full border rounded px-3 py-2 text-sm" value={form.window_start} onChange={(e) => set("window_start", e.target.value)} />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">PM Window End (optional)</label>
+            <input type="datetime-local" className="w-full border rounded px-3 py-2 text-sm" value={form.window_end} onChange={(e) => set("window_end", e.target.value)} />
+          </div>
+          {(!form.window_start && !!form.window_end) || (!!form.window_start && !form.window_end) || !windowIsValid ? (
+            <p className="col-span-2 text-xs text-red-600">Enter both window times and ensure the end is after the start.</p>
+          ) : null}
+          {form.plan_id && requirementsQuery.isFetching ? <p className="text-xs text-gray-500">Checking current spare-part availability…</p> : null}
+          {form.plan_id && requirementsQuery.isError ? <p className="text-xs text-red-700">Availability could not be checked. Retry before scheduling.</p> : null}
+          {form.plan_id && requirementsQuery.data?.requirements.length === 0 ? <p className="text-xs text-gray-500">No spare parts are configured as a prerequisite for this plan.</p> : null}
+          {shortages.length > 0 ? (
+            <div className="rounded border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
+              <p className="font-medium">Scheduling is blocked until required stock is available.</p>
+              {shortages.map((item) => <p key={item.spare_part_id}>{item.part_no}: need {item.quantity_required} {item.unit}, available {item.available_quantity} {item.unit}</p>)}
+            </div>
+          ) : null}
+          {requirementsQuery.data?.requirements.map((item) => item.is_available ? (
+            <p key={item.spare_part_id} className="text-xs text-green-700">{item.part_no}: {item.quantity_required} {item.unit} required; {item.available_quantity} available.</p>
+          ) : null)}
+          <div className="col-span-2 text-xs text-gray-500">Times are saved as UTC instants after conversion from your browser&apos;s local time.</div>
+          <div className="col-span-2">
             <label className="block text-xs font-medium text-gray-600 mb-1">Technician</label>
             <input className="w-full border rounded px-3 py-2 text-sm" value={form.technician} onChange={(e) => set("technician", e.target.value)} />
           </div>
         </div>
         <div className="flex gap-2 justify-end">
           <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button loading={loading} onClick={() => onSubmit(form)}>Schedule</Button>
+          <Button loading={loading} disabled={!form.plan_id || !windowIsValid || requirementsQuery.isFetching || requirementsQuery.isError || shortages.length > 0} onClick={() => onSubmit({
+            plan_id: form.plan_id,
+            scheduled_date: form.scheduled_date,
+            technician: form.technician || null,
+            window_start: form.window_start ? new Date(form.window_start).toISOString() : null,
+            window_end: form.window_end ? new Date(form.window_end).toISOString() : null,
+          })}>Schedule</Button>
         </div>
       </div>
     </div>

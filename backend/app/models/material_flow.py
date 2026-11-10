@@ -171,6 +171,7 @@ class MaterialFlowTransaction(Base, TimestampMixin):
     work_order_id = Column(UUID(as_uuid=True), nullable=True)
     source_document_type = Column(String(50), nullable=True)
     source_document_id = Column(UUID(as_uuid=True), nullable=True)
+    idempotency_key = Column(String(120), nullable=True, unique=True)
     transaction_datetime = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
     plant_id = Column(String(50), nullable=True)
     created_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
@@ -223,6 +224,7 @@ class MaterialFlowLine(Base, TimestampMixin):
     rework_flag = Column(Boolean, default=False, nullable=False)
 
     reference_line_id = Column(UUID(as_uuid=True), ForeignKey("material_flow_lines.id", ondelete="SET NULL"), nullable=True)
+    reservation_line_id = Column(UUID(as_uuid=True), ForeignKey("material_reservation_lines.id", ondelete="SET NULL"), nullable=True, index=True)
     notes = Column(Text, nullable=True)
 
     transaction = relationship("MaterialFlowTransaction", back_populates="lines")
@@ -234,6 +236,7 @@ class MaterialFlowLine(Base, TimestampMixin):
     source_stage = relationship("FlowStage", foreign_keys=[source_stage_id])
     destination_stage = relationship("FlowStage", foreign_keys=[destination_stage_id])
     reference_line = relationship("MaterialFlowLine", remote_side=[id], foreign_keys=[reference_line_id])
+    reservation_line = relationship("MaterialReservationLine", foreign_keys=[reservation_line_id])
 
 
 # ── Material Reservation ──────────────────────────────────────────────────────
@@ -273,6 +276,9 @@ class MaterialReservationLine(Base, TimestampMixin):
     quantity_issued = Column(Numeric(14, 3), nullable=False, default=0)
     uom = Column(String(20), nullable=False, default="KG")
     quality_status_required = Column(Enum(QualityStatus), nullable=False, default=QualityStatus.RELEASED)
+    source_stock_id = Column(UUID(as_uuid=True), ForeignKey("stocks.id", ondelete="SET NULL"), nullable=True, index=True)
+    source_location_id = Column(UUID(as_uuid=True), ForeignKey("storage_locations.id", ondelete="SET NULL"), nullable=True)
+    staging_location_id = Column(UUID(as_uuid=True), ForeignKey("storage_locations.id", ondelete="SET NULL"), nullable=True)
     fefo_lot_candidate = Column(String(100), nullable=True)
     lot_fixed = Column(Boolean, default=False, nullable=False)
     notes = Column(Text, nullable=True)
@@ -282,6 +288,9 @@ class MaterialReservationLine(Base, TimestampMixin):
     product = relationship("Product", foreign_keys=[product_id])
     lot = relationship("Lot", foreign_keys=[lot_id])
     warehouse = relationship("Warehouse", foreign_keys=[warehouse_id])
+    source_stock = relationship("Stock", foreign_keys=[source_stock_id])
+    source_location = relationship("StorageLocation", foreign_keys=[source_location_id])
+    staging_location = relationship("StorageLocation", foreign_keys=[staging_location_id])
 
 
 # ── Progressive Consumption Tracking ─────────────────────────────────────────
@@ -293,6 +302,10 @@ class ProductionConsumption(Base, TimestampMixin):
     production_order_id = Column(UUID(as_uuid=True), ForeignKey("production_orders.id", ondelete="CASCADE"), nullable=False, index=True)
     work_order_id = Column(UUID(as_uuid=True), nullable=True)
     flow_line_id = Column(UUID(as_uuid=True), ForeignKey("material_flow_lines.id", ondelete="SET NULL"), nullable=True)
+    idempotency_key = Column(String(120), nullable=True, unique=True, index=True)
+    return_flow_line_id = Column(UUID(as_uuid=True), ForeignKey("material_flow_lines.id", ondelete="SET NULL"), nullable=True, index=True)
+    scrap_flow_line_id = Column(UUID(as_uuid=True), ForeignKey("material_flow_lines.id", ondelete="SET NULL"), nullable=True, index=True)
+    scrap_reason_code = Column(String(40), nullable=True)
 
     item_type = Column(String(20), nullable=False, default="material")
     material_id = Column(UUID(as_uuid=True), ForeignKey("materials.id", ondelete="RESTRICT"), nullable=True)

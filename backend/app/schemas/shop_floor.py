@@ -1,7 +1,7 @@
 from __future__ import annotations
 from datetime import datetime
 from decimal import Decimal
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
@@ -11,6 +11,7 @@ from pydantic import BaseModel, ConfigDict
 
 class SFSessionCreate(BaseModel):
     operator_name: str
+    operator_id: Optional[UUID] = None
     work_center_id: Optional[UUID] = None
     line_id: Optional[str] = None
     shift_id: Optional[UUID] = None
@@ -49,7 +50,12 @@ class WOActivityLogOut(BaseModel):
     work_order_id: UUID
     production_order_id: Optional[UUID]
     session_id: Optional[UUID]
+    actor_user_id: Optional[UUID] = None
+    operator_id: Optional[UUID] = None
     operator_name: Optional[str]
+    team_id: Optional[UUID] = None
+    machine_id: Optional[UUID] = None
+    shift_id: Optional[UUID] = None
     line_id: Optional[str]
     event_type: str
     timestamp_start: datetime
@@ -69,13 +75,21 @@ class WOActivityLogOut(BaseModel):
 class SFDowntimeCreate(BaseModel):
     work_order_id: Optional[UUID] = None
     production_order_id: Optional[UUID] = None
+    session_id: Optional[UUID] = None
     machine_id: Optional[UUID] = None
     machine_name: Optional[str] = None
     line_id: Optional[str] = None
+    operator_id: Optional[UUID] = None
     operator_name: Optional[str] = None
-    downtime_category: str
+    team_id: Optional[UUID] = None
+    shift_id: Optional[UUID] = None
+    downtime_category: Literal[
+        "MACHINE_BREAKDOWN", "MATERIAL_SHORTAGE", "PACKAGING_SHORTAGE", "QC_WAITING",
+        "CHANGEOVER", "CLEANING", "POWER_ISSUE", "LABOR_SHORTAGE", "SUPERVISOR_HOLD",
+        "MAINTENANCE_STOP", "LABEL_MISMATCH", "IT_ISSUE", "OTHER",
+    ]
     root_reason: Optional[str] = None
-    impact_level: str = "MEDIUM"
+    impact_level: Literal["LOW", "MEDIUM", "HIGH", "CRITICAL"] = "MEDIUM"
     comments: Optional[str] = None
 
 
@@ -85,10 +99,16 @@ class SFDowntimeOut(BaseModel):
     id: UUID
     work_order_id: Optional[UUID]
     production_order_id: Optional[UUID]
+    session_id: Optional[UUID] = None
+    created_by_user_id: Optional[UUID] = None
+    closed_by_user_id: Optional[UUID] = None
     machine_id: Optional[UUID]
     machine_name: Optional[str]
     line_id: Optional[str]
+    operator_id: Optional[UUID] = None
     operator_name: Optional[str]
+    team_id: Optional[UUID] = None
+    shift_id: Optional[UUID] = None
     start_time: datetime
     end_time: Optional[datetime]
     duration_minutes: Optional[Decimal]
@@ -144,6 +164,8 @@ class ShiftHandoverOut(BaseModel):
     handover_time: datetime
     is_approved: bool
     approved_by: Optional[str]
+    created_by_user_id: Optional[UUID] = None
+    approved_by_user_id: Optional[UUID] = None
     approved_at: Optional[datetime]
     created_at: datetime
 
@@ -153,7 +175,7 @@ class ShiftHandoverOut(BaseModel):
 class SupervisorOverrideCreate(BaseModel):
     work_order_id: Optional[UUID] = None
     production_order_id: Optional[UUID] = None
-    supervisor_name: str
+    supervisor_name: Optional[str] = None
     override_type: str
     reason: Optional[str] = None
     target_operator_name: Optional[str] = None
@@ -166,6 +188,7 @@ class SupervisorOverrideOut(BaseModel):
     id: UUID
     work_order_id: Optional[UUID]
     production_order_id: Optional[UUID]
+    actor_user_id: Optional[UUID] = None
     supervisor_name: str
     override_type: str
     reason: Optional[str]
@@ -200,6 +223,8 @@ class QtyUpdateRequest(BaseModel):
     qty_good: Decimal
     qty_scrap: Decimal = Decimal("0")
     qty_rework: Decimal = Decimal("0")
+    scrap_category: Optional[Literal["normal", "abnormal"]] = None
+    scrap_reason: Optional[str] = None
     session_id: Optional[UUID] = None
     operator_name: Optional[str] = None
     remarks: Optional[str] = None
@@ -207,6 +232,8 @@ class QtyUpdateRequest(BaseModel):
 
 class ScrapRequest(BaseModel):
     qty_scrap: Decimal
+    scrap_category: Optional[Literal["normal", "abnormal"]] = None
+    scrap_reason: Optional[str] = None
     reason_code: Optional[str] = None
     remarks: Optional[str] = None
     session_id: Optional[UUID] = None
@@ -218,9 +245,48 @@ class FinishWORequest(BaseModel):
     qty_scrap: Decimal = Decimal("0")
     qty_rework: Decimal = Decimal("0")
     run_time_actual: Optional[Decimal] = None
+    scrap_category: Optional[Literal["normal", "abnormal"]] = None
+    scrap_reason: Optional[str] = None
     session_id: Optional[UUID] = None
     operator_name: Optional[str] = None
     remarks: Optional[str] = None
+
+
+class SFMaterialConsumptionRequest(BaseModel):
+    qty: Decimal
+    session_id: UUID
+    lot_no: Optional[str] = None
+
+
+class SFOperationMaterialOut(BaseModel):
+    """Operation material quantities for scoped Shop Floor operators; never expose costing."""
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    production_order_id: UUID
+    work_order_id: UUID
+    item_type: str
+    item_id: Optional[UUID]
+    item_name: Optional[str]
+    item_code: Optional[str]
+    required_qty: Decimal
+    reserved_qty: Decimal
+    issued_qty: Decimal
+    consumed_qty: Decimal
+    returned_qty: Decimal
+    scrapped_qty: Decimal
+    uom: str
+    status: str
+    lot_numbers: Optional[list]
+
+
+class SFQCCheckpointRequest(BaseModel):
+    session_id: UUID
+    checkpoint_name: str
+    result: Literal["PASS", "FAIL"]
+    measured_value: Optional[str] = None
+    unit: Optional[str] = None
+    notes: Optional[str] = None
 
 
 class HelpRequest(BaseModel):
@@ -267,6 +333,7 @@ class LiveWOItem(BaseModel):
     product_name: Optional[str]
     batch_no: Optional[str]
     qc_required_flag: bool
+    qc_passed: Optional[bool] = None
     has_active_downtime: bool
     last_event: Optional[str]
     last_event_time: Optional[str]
@@ -301,6 +368,7 @@ class SFAIRecOut(BaseModel):
     impact_summary: Optional[str]
     confidence_score: Optional[Decimal]
     actioned_at: Optional[datetime]
+    actioned_by_user_id: Optional[UUID] = None
     created_at: datetime
 
 

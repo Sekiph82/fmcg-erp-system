@@ -139,6 +139,12 @@ class WorkCenter(Base, TimestampMixin):
     schedules      = relationship("ProductionSchedule", back_populates="work_center")
     downtime_events = relationship("DowntimeEvent", back_populates="work_center", cascade="all, delete-orphan")
     oee_records    = relationship("OEERecord", back_populates="work_center", cascade="all, delete-orphan")
+    skill_requirements = relationship(
+        "MachineSkillRequirement",
+        back_populates="work_center",
+        cascade="all, delete-orphan",
+        foreign_keys="MachineSkillRequirement.work_center_id",
+    )
 
 
 # ── 2. Routing ─────────────────────────────────────────────────────────────────
@@ -348,6 +354,12 @@ class DowntimeEvent(Base, TimestampMixin):
     end_time        = Column(DateTime(timezone=True), nullable=True)
     duration_min    = Column(Integer, nullable=True)                  # auto-calculated on close
     reason          = Column(String(500), nullable=False)
+    reason_code     = Column(
+        String(100),
+        ForeignKey("maintenance_downtime_reason_codes.code", ondelete="RESTRICT"),
+        nullable=True,
+        index=True,
+    )
     category        = Column(Enum(DowntimeCategory), nullable=False, default=DowntimeCategory.UNPLANNED)
     reported_by     = Column(String(255), nullable=True)
     impact_units    = Column(Integer, nullable=True)                  # units lost due to downtime
@@ -355,6 +367,7 @@ class DowntimeEvent(Base, TimestampMixin):
 
     work_center = relationship("WorkCenter", back_populates="downtime_events")
     work_order  = relationship("WorkOrder")
+    downtime_reason = relationship("DowntimeReasonCode", foreign_keys=[reason_code])
 
 
 # ── 7. QC Inspections ──────────────────────────────────────────────────────────

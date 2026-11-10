@@ -1,0 +1,175 @@
+
+> fmcg-erp-frontend@0.1.0 test:e2e
+> playwright test e2e/m24-material-flow-issue.mocked.spec.ts --project=chromium --no-deps --reporter=list
+
+[WebServer] (node:66016) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:25696) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] ⚠ Warning: Next.js ignored package-lock.json in C:\Users\sekip because it is outside the current Git repository (C:\Users\sekip\Desktop\fmcg-erp-system).
+[WebServer]  To use this directory, set `turbopack.root` in your Next.js config.
+[WebServer] 
+[WebServer] ⚠ React 18 support is deprecated in Next.js 16 and will be removed in Next.js 17. Please upgrade to React 19. Learn more: https://nextjs.org/docs/messages/react-version
+[WebServer] ⚠ The "middleware" file convention is deprecated. Please use "proxy" instead.
+[WebServer] 
+[WebServer]   To migrate automatically, run:
+[WebServer]   npx @next/codemod@canary middleware-to-proxy .
+[WebServer] 
+[WebServer]   Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+
+Running 1 test using 1 worker
+
+(node:17040) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:17040) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] ⚠ Blocked cross-origin request to Next.js dev resource /_next/hmr from "127.0.0.1".
+[WebServer] Cross-origin access to Next.js dev resources is blocked by default for safety.
+[WebServer] 
+[WebServer] To allow this host in development, add it to "allowedDevOrigins" in next.config.js and restart the dev server:
+[WebServer] 
+[WebServer] // next.config.js
+[WebServer] module.exports = {
+[WebServer]   allowedDevOrigins: ['127.0.0.1'],
+[WebServer] }
+[WebServer] 
+[WebServer] Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+  x  1 [chromium] › e2e\m24-material-flow-issue.mocked.spec.ts:122:7 › M24 material issue UI with synthetic API › posts only the selected reserved line and shows the confirmed issue (11.5s)
+(node:64564) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:64564) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  2 [chromium] › e2e\m24-material-flow-issue.mocked.spec.ts:122:7 › M24 material issue UI with synthetic API › posts only the selected reserved line and shows the confirmed issue (retry #1) (11.0s)
+(node:42236) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:42236) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  3 [chromium] › e2e\m24-material-flow-issue.mocked.spec.ts:122:7 › M24 material issue UI with synthetic API › posts only the selected reserved line and shows the confirmed issue (retry #2) (11.0s)
+
+
+  1) [chromium] › e2e\m24-material-flow-issue.mocked.spec.ts:122:7 › M24 material issue UI with synthetic API › posts only the selected reserved line and shows the confirmed issue 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: getByRole('heading', { name: 'Issue Reserved Materials' })
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 10000ms[22m
+    [2m  - waiting for getByRole('heading', { name: 'Issue Reserved Materials' })[22m
+
+
+      124 |     await page.goto("/dashboard/material-flow/issue");
+      125 |
+    > 126 |     await expect(page.getByRole("heading", { name: "Issue Reserved Materials" })).toBeVisible();
+          |                                                                                   ^
+      127 |     await page.getByLabel("Reservation").selectOption(reservationId);
+      128 |     await page.getByLabel("Issue quantity for reservation line 1").fill("2.5");
+      129 |     await page.getByRole("button", { name: "Post raw-material issue" }).click();
+        at C:\Users\sekip\Desktop\fmcg-erp-system\frontend\e2e\m24-material-flow-issue.mocked.spec.ts:126:83
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\m24-material-flow-issue.mo-43a25-d-shows-the-confirmed-issue-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results\m24-material-flow-issue.mo-43a25-d-shows-the-confirmed-issue-chromium\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\m24-material-flow-issue.mo-43a25-d-shows-the-confirmed-issue-chromium\error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\m24-material-flow-issue.mo-43a25-d-shows-the-confirmed-issue-chromium\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\m24-material-flow-issue.mo-43a25-d-shows-the-confirmed-issue-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: getByRole('heading', { name: 'Issue Reserved Materials' })
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 10000ms[22m
+    [2m  - waiting for getByRole('heading', { name: 'Issue Reserved Materials' })[22m
+
+
+      124 |     await page.goto("/dashboard/material-flow/issue");
+      125 |
+    > 126 |     await expect(page.getByRole("heading", { name: "Issue Reserved Materials" })).toBeVisible();
+          |                                                                                   ^
+      127 |     await page.getByLabel("Reservation").selectOption(reservationId);
+      128 |     await page.getByLabel("Issue quantity for reservation line 1").fill("2.5");
+      129 |     await page.getByRole("button", { name: "Post raw-material issue" }).click();
+        at C:\Users\sekip\Desktop\fmcg-erp-system\frontend\e2e\m24-material-flow-issue.mocked.spec.ts:126:83
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\m24-material-flow-issue.mo-43a25-d-shows-the-confirmed-issue-chromium-retry1\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results\m24-material-flow-issue.mo-43a25-d-shows-the-confirmed-issue-chromium-retry1\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\m24-material-flow-issue.mo-43a25-d-shows-the-confirmed-issue-chromium-retry1\error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\m24-material-flow-issue.mo-43a25-d-shows-the-confirmed-issue-chromium-retry1\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\m24-material-flow-issue.mo-43a25-d-shows-the-confirmed-issue-chromium-retry1\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Retry #2 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoBeVisible[2m([22m[2m)[22m failed
+
+    Locator: getByRole('heading', { name: 'Issue Reserved Materials' })
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+    [2m  - Expect "toBeVisible" with timeout 10000ms[22m
+    [2m  - waiting for getByRole('heading', { name: 'Issue Reserved Materials' })[22m
+
+
+      124 |     await page.goto("/dashboard/material-flow/issue");
+      125 |
+    > 126 |     await expect(page.getByRole("heading", { name: "Issue Reserved Materials" })).toBeVisible();
+          |                                                                                   ^
+      127 |     await page.getByLabel("Reservation").selectOption(reservationId);
+      128 |     await page.getByLabel("Issue quantity for reservation line 1").fill("2.5");
+      129 |     await page.getByRole("button", { name: "Post raw-material issue" }).click();
+        at C:\Users\sekip\Desktop\fmcg-erp-system\frontend\e2e\m24-material-flow-issue.mocked.spec.ts:126:83
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results\m24-material-flow-issue.mo-43a25-d-shows-the-confirmed-issue-chromium-retry2\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results\m24-material-flow-issue.mo-43a25-d-shows-the-confirmed-issue-chromium-retry2\video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results\m24-material-flow-issue.mo-43a25-d-shows-the-confirmed-issue-chromium-retry2\error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\m24-material-flow-issue.mo-43a25-d-shows-the-confirmed-issue-chromium-retry2\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\m24-material-flow-issue.mo-43a25-d-shows-the-confirmed-issue-chromium-retry2\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    [chromium] › e2e\m24-material-flow-issue.mocked.spec.ts:122:7 › M24 material issue UI with synthetic API › posts only the selected reserved line and shows the confirmed issue 
+EXIT=1

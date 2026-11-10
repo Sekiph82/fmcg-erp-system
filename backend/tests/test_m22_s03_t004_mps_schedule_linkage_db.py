@@ -83,7 +83,7 @@ async def _seed_mps_release(db, suffix: str, *, source_active: bool = True):
         code=f"M22-S03-T004-S-{suffix}",
         name=f"Synthetic MRP source {suffix}",
         warehouse_type=WarehouseType.RAW_MATERIAL,
-        is_active=source_active,
+        is_active=True,
     )
     target = Warehouse(
         code=f"M22-S03-T004-T-{suffix}",
@@ -145,6 +145,11 @@ async def _seed_mps_release(db, suffix: str, *, source_active: bool = True):
     )
     db.add(line)
     await db.flush()
+    if not source_active:
+        # A completed MRP run must have used an active warehouse. Deactivate it
+        # only after the planning snapshot exists, then verify MPS release fails closed.
+        source.is_active = False
+        await db.flush()
     return plan, line, source, target, actor
 
 

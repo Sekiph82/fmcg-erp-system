@@ -97,8 +97,16 @@ async def test_configured_production_gates_block_transitions_until_each_template
             full_name=f"Synthetic M27 actor {suffix}",
             hashed_password="test-only",
         )
-        db.add(actor)
+        approver = User(
+            email=f"m27-t002-approver-{suffix}@example.invalid",
+            username=f"m27-t002-approver-{suffix}",
+            full_name=f"Synthetic M27 approver {suffix}",
+            hashed_password="test-only",
+        )
+        db.add_all([actor, approver])
         await db.flush()
+        actor_id = actor.id
+        approver_id = approver.id
         recipe = Recipe(
             product_id=product.id, version="1", name=f"Synthetic approved recipe {suffix}",
             status=RecipeStatus.APPROVED, is_active=True,
@@ -142,8 +150,12 @@ async def test_configured_production_gates_block_transitions_until_each_template
             })
         await db.commit()
 
+        order = await db.get(ProductionOrder, order_id)
+        await production_service.approve_order(db, order, approver_id)
+        await db.commit()
+
         with pytest.raises(HTTPException) as release_error:
-            await production_service.release_order(db, order, actor.id)
+            await production_service.release_order(db, order, actor_id)
         assert release_error.value.status_code == 422
         assert "accepted, passed inspection" in release_error.value.detail
         await db.rollback()
@@ -163,7 +175,7 @@ async def test_configured_production_gates_block_transitions_until_each_template
         await ensure_production_quality_gates_pass(
             db, order, PRODUCTION_RELEASE_GATE_TRIGGER_EVENT, date.today()
         )
-        await production_service.release_order(db, order, actor.id)
+        await production_service.release_order(db, order, actor_id)
         assert order.status == ProductionOrderStatus.RELEASED
 
         order.status = ProductionOrderStatus.IN_PROGRESS
@@ -183,7 +195,7 @@ async def test_configured_production_gates_block_transitions_until_each_template
         await db.commit()
         with pytest.raises(HTTPException) as process_error:
             await production_service.complete_order(
-                db, order, SimpleNamespace(actual_quantity=Decimal("2")), uuid4(),
+                db, order, SimpleNamespace(actual_quantity=Decimal("2")), actor_id,
             )
         assert process_error.value.status_code == 422
         assert "accepted, passed inspection" in process_error.value.detail

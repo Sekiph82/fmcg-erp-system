@@ -90,7 +90,7 @@ export default function ProductionReportsPage() {
             />
             <StatCard
               label="Avg OEE"
-              value={report.avg_oee != null ? `${report.avg_oee.toFixed(1)}%` : "—"}
+              value={report.avg_oee != null ? String((report.avg_oee * 100).toFixed(1)) + "%" : "—"}
             />
             <StatCard
               label="Total Downtime"

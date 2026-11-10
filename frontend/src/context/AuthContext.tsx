@@ -10,6 +10,7 @@ interface AuthContextValue {
   loading: boolean;
   login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<User>;
   hasPermission: (code: string) => boolean;
   hasAnyPermission: (codes: string[]) => boolean;
   hasModule: (moduleKey: string) => boolean;
@@ -38,6 +39,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  const refreshUser = useCallback(async () => {
+    const me = await getMe();
+    setUser(me);
+    return me;
   }, []);
 
   useEffect(() => { loadUser(); }, [loadUser]);
@@ -228,6 +235,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         loading,
         login,
         logout,
+        refreshUser,
         hasPermission,
         hasAnyPermission,
         hasModule,

@@ -1,0 +1,7 @@
+
+C:\Users\sekip\Desktop\fmcg-erp-system\frontend\src\components\Sidebar.tsx
+  533:3  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/exhaustive-deps')
+
+✖ 1 problem (0 errors, 1 warning)
+  0 errors and 1 warning potentially fixable with the `--fix` option.
+

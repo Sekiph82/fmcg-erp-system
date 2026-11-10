@@ -1,0 +1,9 @@
+M24 S04 T004 consolidated PostgreSQL acceptance run
+Container=fmcg-m24-t004-225bdd27
+Created=2026-11-08T05:05:23.8259921+03:00
+
+PORT=60291
+
+
+=== test_m24_s01_t001_material_reservation_db.py / fmcg_m24_s01_t001_225bdd271641438bbc10 ===
+

@@ -28,8 +28,10 @@ from fastapi.responses import Response
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.access_control import can_modify_scope, forbidden_detail
+from app.core.access_control import can_modify_scope, can_view_scope, forbidden_detail
 from app.core.deps import get_current_user, get_db
+from app.services.downtime_reason_service import list_downtime_reason_codes, validate_downtime_reason_code
+from app.schemas.maintenance import DowntimeReasonCodeRead
 from app.crud import production_advanced as crud
 from app.schemas.production_advanced import (
     # Work Centers
@@ -63,6 +65,7 @@ from app.models.production_advanced import (
     Shift, ProductionSchedule, TimeTracking, DowntimeEvent,
     AdvQCInspection, WasteRecord, BatchLot, LaborLog, OEERecord,
 )
+from app.models.production import ProductionOrder
 
 
 def _work_order_error(exc: ValueError) -> None:
@@ -80,10 +83,17 @@ def _require_canonical_order_action(user, order, action: str) -> None:
             getattr(order, "target_warehouse_id", None),
         ) if value is not None
     }
-    if any(
-        can_modify_scope(user, "production", action, "warehouse", warehouse_id)
-        for warehouse_id in warehouse_ids
-    ):
+    if action == "view":
+        allowed = any(
+            can_view_scope(user, "production", "warehouse", warehouse_id)
+            for warehouse_id in warehouse_ids
+        )
+    else:
+        allowed = any(
+            can_modify_scope(user, "production", action, "warehouse", warehouse_id)
+            for warehouse_id in warehouse_ids
+        )
+    if allowed:
         return
     raise HTTPException(
         status_code=403,
@@ -344,10 +354,15 @@ async def merge_work_orders(
 async def get_work_order_genealogy(
     pk: _uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    current_user=Depends(get_current_user),
 ):
-    if await crud.get_work_order(db, pk) is None:
+    work_order = await crud.get_work_order(db, pk)
+    if work_order is None:
         raise HTTPException(404, "Work order not found")
+    parent = await db.get(ProductionOrder, work_order.production_order_id)
+    if parent is None:
+        raise HTTPException(404, "Production order not found")
+    _require_canonical_order_action(current_user, parent, "view")
     return [
         WorkOrderGenealogyRead(
             id=row.id,
@@ -378,18 +393,35 @@ async def create_work_order(data: WorkOrderCreate, db: AsyncSession = Depends(ge
 
 
 @router.get("/work-orders/{pk}", response_model=WorkOrderRead, tags=["work-orders"])
-async def get_work_order(pk: _uuid.UUID, db: AsyncSession = Depends(get_db), _=Depends(get_current_user)):
+async def get_work_order(
+    pk: _uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
     obj = await crud.get_work_order(db, pk)
     if not obj:
         raise HTTPException(404, "Work order not found")
+    parent = await db.get(ProductionOrder, obj.production_order_id)
+    if parent is None:
+        raise HTTPException(404, "Production order not found")
+    _require_canonical_order_action(current_user, parent, "view")
     return _enrich_wo(obj)
 
 
 @router.patch("/work-orders/{pk}", response_model=WorkOrderRead, tags=["work-orders"])
-async def update_work_order(pk: _uuid.UUID, data: WorkOrderUpdate, db: AsyncSession = Depends(get_db), _=Depends(get_current_user)):
-    obj = await crud.get_work_order(db, pk)
+async def update_work_order(
+    pk: _uuid.UUID,
+    data: WorkOrderUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    try:
+        parent, obj = await crud._lock_work_order_context(db, pk)
+    except ValueError as exc:
+        _work_order_error(exc)
     if not obj:
         raise HTTPException(404, "Work order not found")
+    _require_canonical_order_action(current_user, parent, "edit")
     try:
         obj = await crud.update_work_order(db, obj, data)
     except ValueError as exc:
@@ -605,8 +637,16 @@ async def list_downtime_events(
     return [_enrich_dt(e) for e in events]
 
 
+@router.get("/downtime/reason-codes", response_model=List[DowntimeReasonCodeRead], tags=["downtime"])
+async def get_production_downtime_reason_codes(
+    db: AsyncSession = Depends(get_db), _=Depends(get_current_user),
+):
+    return await list_downtime_reason_codes(db)
+
+
 @router.post("/downtime", response_model=DowntimeEventRead, status_code=201, tags=["downtime"])
 async def create_downtime_event(data: DowntimeEventCreate, db: AsyncSession = Depends(get_db), _=Depends(get_current_user)):
+    data.reason_code = await validate_downtime_reason_code(db, data.reason_code)
     obj = await crud.create_downtime_event(db, data)
     await db.commit()
     return _enrich_dt(obj)
@@ -617,6 +657,8 @@ async def update_downtime_event(pk: _uuid.UUID, data: DowntimeEventUpdate, db: A
     obj = await crud.get_downtime_event(db, pk)
     if not obj:
         raise HTTPException(404, "Downtime event not found")
+    if "reason_code" in data.model_fields_set:
+        data.reason_code = await validate_downtime_reason_code(db, data.reason_code)
     obj = await crud.update_downtime_event(db, obj, data)
     await db.commit()
     return _enrich_dt(obj)
@@ -833,7 +875,11 @@ async def update_oee_record(pk: _uuid.UUID, data: OEERecordUpdate, db: AsyncSess
     obj = await crud.get_oee_record(db, pk)
     if not obj:
         raise HTTPException(404, "OEE record not found")
-    obj = await crud.update_oee_record(db, obj, data)
+    try:
+        obj = await crud.update_oee_record(db, obj, data)
+    except ValueError as exc:
+        await db.rollback()
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     await db.commit()
     return _enrich_oee(obj)
 
@@ -884,11 +930,11 @@ async def oee_summary(
         result.append({
             "work_center_id": str(row.work_center_id),
             "work_center_name": wc.name if wc else None,
-            "avg_availability": float(row.avg_availability) if row.avg_availability else None,
-            "avg_performance":  float(row.avg_performance)  if row.avg_performance  else None,
-            "avg_quality":      float(row.avg_quality)      if row.avg_quality      else None,
-            "avg_oee":          float(row.avg_oee)          if row.avg_oee          else None,
-            "total_downtime_min": int(row.total_downtime_min) if row.total_downtime_min else 0,
+            "avg_availability": float(row.avg_availability) if row.avg_availability is not None else None,
+            "avg_performance":  float(row.avg_performance)  if row.avg_performance is not None else None,
+            "avg_quality":      float(row.avg_quality)      if row.avg_quality is not None else None,
+            "avg_oee":          float(row.avg_oee)          if row.avg_oee is not None else None,
+            "total_downtime_min": int(row.total_downtime_min) if row.total_downtime_min is not None else 0,
             "records_count":    row.records_count,
         })
     return result
