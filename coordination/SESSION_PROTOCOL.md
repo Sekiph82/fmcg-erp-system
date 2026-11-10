@@ -1,3 +1,5 @@
+> **ACTIVE 2026-11-10 OVERRIDE:** `coordination/CLAUDE_AUTONOMOUS_EXECUTION_POLICY.md` governs all new work. Claude now selects tasks, updates TASKS.md and coordinates independent milestone review without ChatGPT-issued prompts. The versioned ChatGPT/Codex workflow below is retained for historical reference only.
+
 # FMCG ERP / MES Session Protocol
 
 This repository uses GitHub session directories as the communication bus between ChatGPT and Claude/Codex.
