@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 const BASE = `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/v1/expenses`;
 
 export type ExpenseStatus = "draft" | "submitted" | "manager_approved" | "finance_approved" | "rejected" | "paid" | "cancelled";
@@ -177,7 +178,7 @@ export function fmtCurrency(v: number | string, currency = "KES") {
 // ── API client ────────────────────────────────────────────────────────────────
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, {
+  const res = await apiFetch(`${BASE}${path}`, {
     headers: { "Content-Type": "application/json" },
     ...init,
   });

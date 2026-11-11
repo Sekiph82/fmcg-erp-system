@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 const BASE = `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/v1/price-lists`;
 
 async function r<T>(res: Response): Promise<T> {
@@ -205,8 +206,8 @@ export const MARGIN_STATUS_COLORS: Record<string, string> = {
 // ── API Client ────────────────────────────────────────────────────────────────
 
 const j = { "Content-Type": "application/json" };
-const post = (url: string, body: any) => fetch(url, { method: "POST", headers: j, body: JSON.stringify(body) });
-const put = (url: string, body: any) => fetch(url, { method: "PUT", headers: j, body: JSON.stringify(body) });
+const post = (url: string, body: any) => apiFetch(url, { method: "POST", headers: j, body: JSON.stringify(body) });
+const put = (url: string, body: any) => apiFetch(url, { method: "PUT", headers: j, body: JSON.stringify(body) });
 
 export const plApi = {
   // Headers
@@ -215,10 +216,10 @@ export const plApi = {
     if (params?.status) p.set("status", params.status);
     if (params?.pl_type) p.set("pl_type", params.pl_type);
     if (params?.active_only) p.set("active_only", "true");
-    return fetch(`${BASE}/?${p}`).then(r<PLHeader[]>);
+    return apiFetch(`${BASE}/?${p}`).then(r<PLHeader[]>);
   },
   createHeader: (body: Partial<PLHeader>) => post(`${BASE}/`, body).then(r<PLHeader>),
-  getHeader: (id: string) => fetch(`${BASE}/${id}`).then(r<PLHeader>),
+  getHeader: (id: string) => apiFetch(`${BASE}/${id}`).then(r<PLHeader>),
   updateHeader: (id: string, body: Partial<PLHeader>, updatedBy = "admin") =>
     put(`${BASE}/${id}?updated_by=${encodeURIComponent(updatedBy)}`, body).then(r<PLHeader>),
   submitForApproval: (id: string, submitted_by: string) =>
@@ -229,32 +230,32 @@ export const plApi = {
     post(`${BASE}/${id}/activate?activated_by=${encodeURIComponent(activatedBy)}`, {}).then(r<PLHeader>),
   archive: (id: string, archivedBy = "admin") =>
     post(`${BASE}/${id}/archive?archived_by=${encodeURIComponent(archivedBy)}`, {}).then(r<PLHeader>),
-  pendingApproval: () => fetch(`${BASE}/pending-approval`).then(r<PLHeader[]>),
-  getHistory: (id: string) => fetch(`${BASE}/${id}/history`).then(r<PLChangeHistory[]>),
-  getApprovals: (id: string) => fetch(`${BASE}/${id}/approvals`).then(r<PLApproval[]>),
+  pendingApproval: () => apiFetch(`${BASE}/pending-approval`).then(r<PLHeader[]>),
+  getHistory: (id: string) => apiFetch(`${BASE}/${id}/history`).then(r<PLChangeHistory[]>),
+  getApprovals: (id: string) => apiFetch(`${BASE}/${id}/approvals`).then(r<PLApproval[]>),
 
   // Lines
-  listLines: (headerId: string) => fetch(`${BASE}/${headerId}/lines`).then(r<PLLine[]>),
+  listLines: (headerId: string) => apiFetch(`${BASE}/${headerId}/lines`).then(r<PLLine[]>),
   addLine: (headerId: string, body: Partial<PLLine>, addedBy = "admin") =>
     post(`${BASE}/${headerId}/lines?added_by=${encodeURIComponent(addedBy)}`, body).then(r<PLLine>),
   updateLine: (lineId: string, body: Partial<PLLine>, updatedBy = "admin") =>
     put(`${BASE}/lines/${lineId}?updated_by=${encodeURIComponent(updatedBy)}`, body).then(r<PLLine>),
 
   // Tiers
-  listTiers: (lineId: string) => fetch(`${BASE}/lines/${lineId}/tiers`).then(r<PLTier[]>),
+  listTiers: (lineId: string) => apiFetch(`${BASE}/lines/${lineId}/tiers`).then(r<PLTier[]>),
   addTier: (lineId: string, body: Partial<PLTier>) =>
     post(`${BASE}/lines/${lineId}/tiers`, body).then(r<PLTier>),
 
   // Assignments
-  listAssignments: (headerId: string) => fetch(`${BASE}/${headerId}/assignments`).then(r<PLAssignment[]>),
+  listAssignments: (headerId: string) => apiFetch(`${BASE}/${headerId}/assignments`).then(r<PLAssignment[]>),
   addAssignment: (headerId: string, body: Partial<PLAssignment>) =>
     post(`${BASE}/${headerId}/assignments`, body).then(r<PLAssignment>),
   customerAssignments: (customerId: string) =>
-    fetch(`${BASE}/customer/${customerId}/assignments`).then(r<PLAssignment[]>),
+    apiFetch(`${BASE}/customer/${customerId}/assignments`).then(r<PLAssignment[]>),
 
   // Discount Rules
   listDiscountRules: (activeOnly = true) =>
-    fetch(`${BASE}/discount-rules?active_only=${activeOnly}`).then(r<PLDiscountRule[]>),
+    apiFetch(`${BASE}/discount-rules?active_only=${activeOnly}`).then(r<PLDiscountRule[]>),
   createDiscountRule: (body: Partial<PLDiscountRule>) =>
     post(`${BASE}/discount-rules`, body).then(r<PLDiscountRule>),
 
@@ -274,16 +275,16 @@ export const plApi = {
   downloadTemplate: () => `${BASE}/template`,
 
   // Reports
-  getDashboard: () => fetch(`${BASE}/reports/dashboard`).then(r<any>),
-  getExpiring: (days = 30) => fetch(`${BASE}/reports/expiring?days=${days}`).then(r<PLHeader[]>),
-  getBelowMargin: () => fetch(`${BASE}/reports/below-margin`).then(r<any[]>),
+  getDashboard: () => apiFetch(`${BASE}/reports/dashboard`).then(r<any>),
+  getExpiring: (days = 30) => apiFetch(`${BASE}/reports/expiring?days=${days}`).then(r<PLHeader[]>),
+  getBelowMargin: () => apiFetch(`${BASE}/reports/below-margin`).then(r<any[]>),
   versionCompare: (idA: string, idB: string) =>
-    fetch(`${BASE}/reports/version-compare?header_id_a=${idA}&header_id_b=${idB}`).then(r<any>),
+    apiFetch(`${BASE}/reports/version-compare?header_id_a=${idA}&header_id_b=${idB}`).then(r<any>),
 
   // AI
   runAI: () => post(`${BASE}/ai/run`, {}).then(r<{ generated: number }>),
   listAIRecs: (headerId?: string) =>
-    fetch(`${BASE}/ai/recommendations${headerId ? `?header_id=${headerId}` : ""}`).then(r<PLAIRec[]>),
+    apiFetch(`${BASE}/ai/recommendations${headerId ? `?header_id=${headerId}` : ""}`).then(r<PLAIRec[]>),
   ackAIRec: (recId: string, status: PLAIRecStatus, actioned_by: string) =>
     post(`${BASE}/ai/recommendations/${recId}/ack`, { status, actioned_by }).then(r<PLAIRec>),
 };

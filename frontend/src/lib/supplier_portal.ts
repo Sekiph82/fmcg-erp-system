@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 const BASE = `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/v1/supplier-portal`;
 
 async function r<T>(res: Response): Promise<T> {
@@ -169,44 +170,44 @@ export const SP_SEVERITY_COLORS: Record<string, string> = {
 export const spApi = {
   // Accounts
   listAccounts: (status?: string) =>
-    fetch(`${BASE}/accounts${status ? `?status=${status}` : ""}`).then(r<SPAccount[]>),
-  getAccount: (id: string) => fetch(`${BASE}/accounts/${id}`).then(r<SPAccount>),
+    apiFetch(`${BASE}/accounts${status ? `?status=${status}` : ""}`).then(r<SPAccount[]>),
+  getAccount: (id: string) => apiFetch(`${BASE}/accounts/${id}`).then(r<SPAccount>),
   createAccount: (body: Partial<SPAccount>) =>
-    fetch(`${BASE}/accounts`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).then(r<SPAccount>),
+    apiFetch(`${BASE}/accounts`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).then(r<SPAccount>),
   updateAccount: (id: string, body: Partial<SPAccount>) =>
-    fetch(`${BASE}/accounts/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).then(r<SPAccount>),
+    apiFetch(`${BASE}/accounts/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).then(r<SPAccount>),
 
   // Users
-  listUsers: (accountId: string) => fetch(`${BASE}/accounts/${accountId}/users`).then(r<SPUser[]>),
+  listUsers: (accountId: string) => apiFetch(`${BASE}/accounts/${accountId}/users`).then(r<SPUser[]>),
   inviteUser: (accountId: string, body: Partial<SPUser>, invitedBy = "internal") =>
-    fetch(`${BASE}/accounts/${accountId}/users/invite?invited_by=${encodeURIComponent(invitedBy)}`, {
+    apiFetch(`${BASE}/accounts/${accountId}/users/invite?invited_by=${encodeURIComponent(invitedBy)}`, {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
     }).then(r<SPUser>),
   deactivateUser: (userId: string) =>
-    fetch(`${BASE}/users/${userId}/deactivate`, { method: "POST" }).then(r<SPUser>),
+    apiFetch(`${BASE}/users/${userId}/deactivate`, { method: "POST" }).then(r<SPUser>),
 
   // Dashboard
-  getDashboard: (accountId: string) => fetch(`${BASE}/accounts/${accountId}/dashboard`).then(r<SPDashboard>),
+  getDashboard: (accountId: string) => apiFetch(`${BASE}/accounts/${accountId}/dashboard`).then(r<SPDashboard>),
 
   // Purchase Orders
   listPOs: (accountId: string, status?: string) =>
-    fetch(`${BASE}/accounts/${accountId}/purchase-orders${status ? `?status=${status}` : ""}`).then(r<any[]>),
+    apiFetch(`${BASE}/accounts/${accountId}/purchase-orders${status ? `?status=${status}` : ""}`).then(r<any[]>),
   getPO: (accountId: string, poId: string) =>
-    fetch(`${BASE}/accounts/${accountId}/purchase-orders/${poId}`).then(r<any>),
+    apiFetch(`${BASE}/accounts/${accountId}/purchase-orders/${poId}`).then(r<any>),
   acknowledgePO: (accountId: string, poId: string, body: Partial<SPPOResponse>) =>
-    fetch(`${BASE}/accounts/${accountId}/purchase-orders/${poId}/acknowledge`, {
+    apiFetch(`${BASE}/accounts/${accountId}/purchase-orders/${poId}/acknowledge`, {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
     }).then(r<SPPOResponse>),
 
   // ETA
   proposeETA: (accountId: string, body: { po_id: string; proposed_date: string; supplier_reason?: string }) =>
-    fetch(`${BASE}/accounts/${accountId}/propose-eta`, {
+    apiFetch(`${BASE}/accounts/${accountId}/propose-eta`, {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
     }).then(r<SPETALog>),
   getETAHistory: (accountId: string, poId: string) =>
-    fetch(`${BASE}/accounts/${accountId}/eta-history?po_id=${poId}`).then(r<SPETALog[]>),
+    apiFetch(`${BASE}/accounts/${accountId}/eta-history?po_id=${poId}`).then(r<SPETALog[]>),
   reviewETA: (etaId: string, body: { eta_status: string; reviewed_by: string; buyer_notes?: string }) =>
-    fetch(`${BASE}/eta/${etaId}/review`, {
+    apiFetch(`${BASE}/eta/${etaId}/review`, {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
     }).then(r<SPETALog>),
 
@@ -216,48 +217,48 @@ export const spApi = {
     if (uploadType) p.set("upload_type", uploadType);
     if (reviewStatus) p.set("review_status", reviewStatus);
     const qs = p.toString() ? `?${p}` : "";
-    return fetch(`${BASE}/accounts/${accountId}/documents${qs}`).then(r<SPDocument[]>);
+    return apiFetch(`${BASE}/accounts/${accountId}/documents${qs}`).then(r<SPDocument[]>);
   },
   uploadDocument: (accountId: string, body: Partial<SPDocument>) =>
-    fetch(`${BASE}/accounts/${accountId}/documents`, {
+    apiFetch(`${BASE}/accounts/${accountId}/documents`, {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
     }).then(r<SPDocument>),
   reviewDocument: (docId: string, body: { review_status: string; reviewed_by: string; notes?: string }) =>
-    fetch(`${BASE}/documents/${docId}/review`, {
+    apiFetch(`${BASE}/documents/${docId}/review`, {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
     }).then(r<SPDocument>),
-  expiringDocuments: (days = 30) => fetch(`${BASE}/documents/expiring?days=${days}`).then(r<SPDocument[]>),
+  expiringDocuments: (days = 30) => apiFetch(`${BASE}/documents/expiring?days=${days}`).then(r<SPDocument[]>),
 
   // Payment Status
   getPaymentStatus: (accountId: string) =>
-    fetch(`${BASE}/accounts/${accountId}/payment-status`).then(r<any[]>),
+    apiFetch(`${BASE}/accounts/${accountId}/payment-status`).then(r<any[]>),
 
   // Activity
   listActivity: (accountId: string, limit = 100) =>
-    fetch(`${BASE}/accounts/${accountId}/activity?limit=${limit}`).then(r<SPActivityLog[]>),
+    apiFetch(`${BASE}/accounts/${accountId}/activity?limit=${limit}`).then(r<SPActivityLog[]>),
 
   // AI
-  runAI: () => fetch(`${BASE}/ai/run`, { method: "POST" }).then(r<{ generated: number }>),
+  runAI: () => apiFetch(`${BASE}/ai/run`, { method: "POST" }).then(r<{ generated: number }>),
   listAIRecs: (accountId?: string) =>
-    fetch(`${BASE}/ai/recommendations${accountId ? `?account_id=${accountId}` : ""}`).then(r<SPAIRec[]>),
+    apiFetch(`${BASE}/ai/recommendations${accountId ? `?account_id=${accountId}` : ""}`).then(r<SPAIRec[]>),
   ackAIRec: (recId: string, body: { status: string; actioned_by: string }) =>
-    fetch(`${BASE}/ai/recommendations/${recId}/ack`, {
+    apiFetch(`${BASE}/ai/recommendations/${recId}/ack`, {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
     }).then(r<SPAIRec>),
 
   // Auth
   login: (email: string, password: string) =>
-    fetch(`${BASE}/auth/login`, {
+    apiFetch(`${BASE}/auth/login`, {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, password }),
     }).then(r<any>),
   resetPassword: (email: string, new_password: string) =>
-    fetch(`${BASE}/auth/reset-password`, {
+    apiFetch(`${BASE}/auth/reset-password`, {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, new_password }),
     }).then(r<{ detail: string }>),
 
   // Reports
-  reportAckTime: () => fetch(`${BASE}/reports/po-acknowledgment-time`).then(r<any[]>),
-  reportETA: () => fetch(`${BASE}/reports/eta-revisions`).then(r<any[]>),
-  reportAdoption: () => fetch(`${BASE}/reports/adoption`).then(r<any[]>),
-  reportNotResponding: () => fetch(`${BASE}/reports/not-responding`).then(r<any[]>),
+  reportAckTime: () => apiFetch(`${BASE}/reports/po-acknowledgment-time`).then(r<any[]>),
+  reportETA: () => apiFetch(`${BASE}/reports/eta-revisions`).then(r<any[]>),
+  reportAdoption: () => apiFetch(`${BASE}/reports/adoption`).then(r<any[]>),
+  reportNotResponding: () => apiFetch(`${BASE}/reports/not-responding`).then(r<any[]>),
 };

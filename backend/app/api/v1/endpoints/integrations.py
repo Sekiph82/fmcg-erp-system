@@ -9,6 +9,7 @@ import json
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status, Request
+from app.core.callback_security import verify_mpesa_callback
 from sqlalchemy import Integer, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -324,7 +325,7 @@ async def check_mpesa_status(
     )
 
 
-@router.post("/mpesa/callback", status_code=200)
+@router.post("/mpesa/callback", status_code=200, dependencies=[Depends(verify_mpesa_callback)])
 async def mpesa_callback(
     request: Request,
     db: AsyncSession = Depends(get_db),
@@ -439,19 +440,18 @@ async def print_label(
 # CRM
 # ═══════════════════════════════════════════════════════════════════════════════
 
+def _reject_unconnected(provider: str, detail: str) -> None:
+    """Stub-only providers must not report success or write mapping rows."""
+    raise HTTPException(status_code=501, detail={"provider": provider, "status": "STUB_ONLY", "detail": detail})
+
+
 @router.post("/crm/sync/customers", response_model=CrmSyncResult,
              dependencies=[Depends(require_permission("integrations", "edit"))])
 async def sync_crm_customers(
     body: CrmSyncRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    total, synced, errors = await crm_svc.sync_customers(
-        db,
-        direction=body.direction,
-        customer_ids=body.customer_ids,
-    )
-    await db.commit()
-    return CrmSyncResult(total=total, synced=synced, failed=len(errors), errors=errors[:10])
+    _reject_unconnected("CRM_SYNC", "No CRM provider connector is implemented; no customers were synchronised.")
 
 
 @router.get("/crm/mappings", response_model=List[CrmMappingRead],
@@ -500,14 +500,7 @@ async def import_ecommerce_orders(
     body: EcommerceImportRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    imported, mapped, errors = await ecomm_svc.import_orders(
-        db, platform=body.platform, since_date=body.since_date, limit=body.limit
-    )
-    await db.commit()
-    return EcommerceImportResult(
-        platform=body.platform, imported=imported, mapped=mapped,
-        failed=len(errors), errors=errors[:10]
-    )
+    _reject_unconnected("ECOMMERCE_SYNC", f"No {body.platform} store connector is implemented; no orders were imported.")
 
 
 @router.post("/ecommerce/sync-inventory", response_model=InventorySyncResult,
@@ -516,12 +509,7 @@ async def sync_ecommerce_inventory(
     platform: str = Query(..., description="SHOPIFY | WOOCOMMERCE"),
     db: AsyncSession = Depends(get_db),
 ):
-    total, synced, errors = await ecomm_svc.sync_inventory(db, platform=platform)
-    await db.commit()
-    return InventorySyncResult(
-        platform=platform, products_synced=synced,
-        failed=len(errors), errors=errors[:10]
-    )
+    _reject_unconnected("ECOMMERCE_SYNC", f"No {platform} store connector is implemented; no inventory was pushed.")
 
 
 @router.get("/ecommerce/orders", response_model=List[EcommerceOrderMappingRead],
@@ -550,15 +538,13 @@ async def list_ecommerce_orders(
 # IoT / MACHINE
 # ═══════════════════════════════════════════════════════════════════════════════
 
-@router.post("/iot/events", response_model=MachineEventRead, status_code=201)
+@router.post("/iot/events", response_model=MachineEventRead, status_code=201,
+             dependencies=[Depends(require_permission("iot", "ingest"))])
 async def ingest_machine_event(
     body: MachineEventCreate,
     db: AsyncSession = Depends(get_db),
 ):
-    """
-    Receive a single machine event.
-    No auth required (machine tokens handled at network layer — placeholder).
-    """
+    """Receive a single machine event (legacy path; same ingest permission as /iot/ingest)."""
     event = await iot_svc.ingest_event(
         db,
         machine_id=body.machine_id,

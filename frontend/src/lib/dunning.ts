@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 const BASE = `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/v1/dunning`;
 
 async function r<T>(res: Response): Promise<T> {
@@ -207,20 +208,20 @@ export const SEVERITY_COLORS: Record<string, string> = {
 // ── API Client ────────────────────────────────────────────────────────────────
 
 const j = { "Content-Type": "application/json" };
-const post = (url: string, body: any) => fetch(url, { method: "POST", headers: j, body: JSON.stringify(body) });
-const patch = (url: string, body: any) => fetch(url, { method: "PATCH", headers: j, body: JSON.stringify(body) });
-const put = (url: string, body: any) => fetch(url, { method: "PUT", headers: j, body: JSON.stringify(body) });
+const post = (url: string, body: any) => apiFetch(url, { method: "POST", headers: j, body: JSON.stringify(body) });
+const patch = (url: string, body: any) => apiFetch(url, { method: "PATCH", headers: j, body: JSON.stringify(body) });
+const put = (url: string, body: any) => apiFetch(url, { method: "PUT", headers: j, body: JSON.stringify(body) });
 
 export const dunningApi = {
   // Policies
-  listPolicies: (activeOnly = false) => fetch(`${BASE}/policies?active_only=${activeOnly}`).then(r<DunningPolicy[]>),
+  listPolicies: (activeOnly = false) => apiFetch(`${BASE}/policies?active_only=${activeOnly}`).then(r<DunningPolicy[]>),
   createPolicy: (body: Partial<DunningPolicy>) => post(`${BASE}/policies`, body).then(r<DunningPolicy>),
   updatePolicy: (id: string, body: Partial<DunningPolicy>) => put(`${BASE}/policies/${id}`, body).then(r<DunningPolicy>),
-  listLevels: (policyId: string) => fetch(`${BASE}/policies/${policyId}/levels`).then(r<DunningLevel[]>),
+  listLevels: (policyId: string) => apiFetch(`${BASE}/policies/${policyId}/levels`).then(r<DunningLevel[]>),
   addLevel: (policyId: string, body: Partial<DunningLevel>) => post(`${BASE}/policies/${policyId}/levels`, body).then(r<DunningLevel>),
 
   // Templates
-  listTemplates: () => fetch(`${BASE}/templates`).then(r<DunningTemplate[]>),
+  listTemplates: () => apiFetch(`${BASE}/templates`).then(r<DunningTemplate[]>),
   createTemplate: (body: Partial<DunningTemplate>) => post(`${BASE}/templates`, body).then(r<DunningTemplate>),
 
   // Detection
@@ -233,15 +234,15 @@ export const dunningApi = {
     if (params?.status) p.set("status", params.status);
     if (params?.credit_hold !== undefined) p.set("credit_hold", String(params.credit_hold));
     if (params?.limit) p.set("limit", String(params.limit));
-    return fetch(`${BASE}/cases?${p}`).then(r<DunningCase[]>);
+    return apiFetch(`${BASE}/cases?${p}`).then(r<DunningCase[]>);
   },
-  getCase: (id: string) => fetch(`${BASE}/cases/${id}`).then(r<DunningCase>),
+  getCase: (id: string) => apiFetch(`${BASE}/cases/${id}`).then(r<DunningCase>),
   updateNotes: (id: string, collector_notes: string) => patch(`${BASE}/cases/${id}/notes`, { collector_notes }).then(r<DunningCase>),
   assignCase: (id: string, collector_id: string) => post(`${BASE}/cases/${id}/assign`, { assigned_collector_id: collector_id }).then(r<DunningCase>),
   closeCase: (id: string) => post(`${BASE}/cases/${id}/close`, {}).then(r<DunningCase>),
 
   // Case Invoices
-  getCaseInvoices: (caseId: string) => fetch(`${BASE}/cases/${caseId}/invoices`).then(r<DunningCaseInvoice[]>),
+  getCaseInvoices: (caseId: string) => apiFetch(`${BASE}/cases/${caseId}/invoices`).then(r<DunningCaseInvoice[]>),
   setDispute: (caseId: string, body: { invoice_id: string; dispute_flag: boolean; dispute_reason?: string }) =>
     post(`${BASE}/cases/${caseId}/dispute`, body).then(r<DunningCaseInvoice>),
 
@@ -250,17 +251,17 @@ export const dunningApi = {
     post(`${BASE}/cases/${caseId}/send-reminder`, { channel, manual_note: note }).then(r<DunningActionLog>),
   addNote: (caseId: string, notes: string) =>
     post(`${BASE}/cases/${caseId}/add-note`, { notes }).then(r<DunningActionLog>),
-  listActions: (caseId: string) => fetch(`${BASE}/cases/${caseId}/actions`).then(r<DunningActionLog[]>),
+  listActions: (caseId: string) => apiFetch(`${BASE}/cases/${caseId}/actions`).then(r<DunningActionLog[]>),
 
   // PTPs
-  listPTPs: (caseId: string) => fetch(`${BASE}/cases/${caseId}/ptps`).then(r<DunningPTP[]>),
+  listPTPs: (caseId: string) => apiFetch(`${BASE}/cases/${caseId}/ptps`).then(r<DunningPTP[]>),
   createPTP: (caseId: string, body: { promised_amount: number; promised_date: string; recorded_by: string; notes?: string }) =>
     post(`${BASE}/cases/${caseId}/set-promise-to-pay`, body).then(r<DunningPTP>),
   updatePTP: (ptpId: string, status: PTPStatus, notes?: string) =>
     patch(`${BASE}/ptps/${ptpId}`, { status, notes }).then(r<DunningPTP>),
 
   // Exceptions
-  listExceptions: (caseId: string) => fetch(`${BASE}/cases/${caseId}/exceptions`).then(r<DunningException[]>),
+  listExceptions: (caseId: string) => apiFetch(`${BASE}/cases/${caseId}/exceptions`).then(r<DunningException[]>),
   createException: (caseId: string, body: Partial<DunningException>) =>
     post(`${BASE}/cases/${caseId}/exceptions`, body).then(r<DunningException>),
 
@@ -273,15 +274,15 @@ export const dunningApi = {
   // AI
   runAI: () => post(`${BASE}/ai/run`, {}).then(r<{ generated: number }>),
   listAIRecs: (caseId?: string) =>
-    fetch(`${BASE}/ai/recommendations${caseId ? `?case_id=${caseId}` : ""}`).then(r<DunningAIRec[]>),
+    apiFetch(`${BASE}/ai/recommendations${caseId ? `?case_id=${caseId}` : ""}`).then(r<DunningAIRec[]>),
   ackAIRec: (recId: string, status: DunningAIRecStatus, actioned_by: string) =>
     post(`${BASE}/ai/recommendations/${recId}/ack`, { status, actioned_by }).then(r<DunningAIRec>),
 
   // Reports
-  getDashboard: () => fetch(`${BASE}/reports/dashboard`).then(r<DunningDashboard>),
-  getAging: () => fetch(`${BASE}/reports/aging`).then(r<AgingRow[]>),
-  getEffectiveness: () => fetch(`${BASE}/reports/effectiveness`).then(r<any[]>),
+  getDashboard: () => apiFetch(`${BASE}/reports/dashboard`).then(r<DunningDashboard>),
+  getAging: () => apiFetch(`${BASE}/reports/aging`).then(r<AgingRow[]>),
+  getEffectiveness: () => apiFetch(`${BASE}/reports/effectiveness`).then(r<any[]>),
   getWorkqueue: (collectorId?: string) =>
-    fetch(`${BASE}/reports/workqueue${collectorId ? `?collector_id=${collectorId}` : ""}`).then(r<any[]>),
-  getPTPFulfillment: () => fetch(`${BASE}/reports/ptp-fulfillment`).then(r<any>),
+    apiFetch(`${BASE}/reports/workqueue${collectorId ? `?collector_id=${collectorId}` : ""}`).then(r<any[]>),
+  getPTPFulfillment: () => apiFetch(`${BASE}/reports/ptp-fulfillment`).then(r<any>),
 };

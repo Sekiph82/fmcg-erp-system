@@ -1,4 +1,5 @@
 "use client";
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
@@ -64,8 +65,8 @@ export default function BrandAssetsPage() {
     if (filterStatus) p.set("status", filterStatus);
     if (bomAlertOnly) p.set("bom_change_flag", "true");
     Promise.all([
-      fetch(`/api/v1/brand-assets/?${p}`).then((r) => r.json()),
-      fetch("/api/v1/brand-assets/stats").then((r) => r.json()),
+      apiFetch(`/api/v1/brand-assets/?${p}`).then((r) => r.json()),
+      apiFetch("/api/v1/brand-assets/stats").then((r) => r.json()),
     ]).then(([a, s]) => { setAssets(a); setStats(s); })
       .finally(() => setLoading(false));
   };
@@ -75,7 +76,7 @@ export default function BrandAssetsPage() {
   const save = async () => {
     setSaving(true); setError(null);
     try {
-      const r = await fetch("/api/v1/brand-assets/", {
+      const r = await apiFetch("/api/v1/brand-assets/", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: form.name, asset_type: form.asset_type,

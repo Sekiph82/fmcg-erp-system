@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 const BASE = "/api/v1/mobile";
 
 export type MobilePlatform = "ios" | "android" | "web";
@@ -38,7 +39,7 @@ export interface DeviceStats {
 }
 
 async function req<T>(path: string, opts?: RequestInit): Promise<T> {
-  const res = await fetch(BASE + path, {
+  const res = await apiFetch(BASE + path, {
     headers: { "Content-Type": "application/json" },
     ...opts,
   });

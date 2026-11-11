@@ -102,3 +102,19 @@ def require_permission(module: str, action: str):
         return current_user
 
     return _check
+
+
+def require_module_access(module: str, *, read: str = "view", write: str = "edit"):
+    """Router-level guard: '{module}.{read}' for safe methods, '{module}.{write}' otherwise."""
+
+    async def _check(request: Request, current_user=Depends(get_current_user)):
+        action = read if request.method in {"GET", "HEAD", "OPTIONS"} else write
+        codes = (f"{module}.{action}", f"{module}.{action}_all", f"{module}.{action}_own_scope")
+        if not any(has_permission(current_user, code) for code in codes):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=forbidden_detail(f"Permission '{module}.{action}' required"),
+            )
+        return current_user
+
+    return _check

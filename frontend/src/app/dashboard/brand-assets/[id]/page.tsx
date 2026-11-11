@@ -1,4 +1,5 @@
 "use client";
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
@@ -30,7 +31,7 @@ export default function BrandAssetDetailPage() {
 
   const load = () => {
     setLoading(true);
-    fetch(`/api/v1/brand-assets/${id}`).then((r) => r.json()).then(setAsset).finally(() => setLoading(false));
+    apiFetch(`/api/v1/brand-assets/${id}`).then((r) => r.json()).then(setAsset).finally(() => setLoading(false));
   };
   useEffect(() => { if (id) load(); }, [id]);
 
@@ -38,7 +39,7 @@ export default function BrandAssetDetailPage() {
     if (!approver.trim()) { setError("Enter approver name first."); return; }
     setApproving(stageId);
     try {
-      await fetch(`/api/v1/brand-assets/${id}/stages/${stageId}/${action}`, {
+      await apiFetch(`/api/v1/brand-assets/${id}/stages/${stageId}/${action}`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ approved_by: approver }),
       });
@@ -48,7 +49,7 @@ export default function BrandAssetDetailPage() {
   };
 
   const toggleCompliance = async (key: string, val: boolean) => {
-    await fetch(`/api/v1/brand-assets/${id}/compliance`, {
+    await apiFetch(`/api/v1/brand-assets/${id}/compliance`, {
       method: "PATCH", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ key, value: val }),
     });
@@ -56,7 +57,7 @@ export default function BrandAssetDetailPage() {
   };
 
   const flagBomChange = async () => {
-    await fetch(`/api/v1/brand-assets/${id}/flag-bom-change`, { method: "POST" });
+    await apiFetch(`/api/v1/brand-assets/${id}/flag-bom-change`, { method: "POST" });
     load();
   };
 

@@ -1,4 +1,5 @@
 "use client";
+import { apiFetch } from "@/lib/api";
 
 import dynamic from "next/dynamic";
 import { ModuleWorkspace } from "@/components/workspace";
@@ -67,8 +68,8 @@ function NPDTab() {
     const params = new URLSearchParams({ limit: "100" });
     if (filterStage) params.set("stage", filterStage);
     Promise.all([
-      fetch(`/api/v1/npd-workflow/projects?${params}`).then((r) => r.json()),
-      fetch("/api/v1/npd-workflow/dashboard").then((r) => r.json()),
+      apiFetch(`/api/v1/npd-workflow/projects?${params}`).then((r) => r.json()),
+      apiFetch("/api/v1/npd-workflow/dashboard").then((r) => r.json()),
     ]).then(([p, d]) => { setProjects(p); setDash(d); }).finally(() => setLoading(false));
   };
 
@@ -78,7 +79,7 @@ function NPDTab() {
     setSaving(true);
     setError(null);
     try {
-      const r = await fetch("/api/v1/npd-workflow/projects", {
+      const r = await apiFetch("/api/v1/npd-workflow/projects", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

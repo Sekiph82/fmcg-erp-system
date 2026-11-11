@@ -1,4 +1,5 @@
 "use client";
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { PermissionGuard, RequirePermission } from "@/components/PermissionGuard";
 
@@ -93,8 +94,8 @@ export default function ConsumerComplaintsPage() {
     if (filterStatus) p.set("status", filterStatus);
     if (filterLot) p.set("lot_number", filterLot);
     Promise.all([
-      fetch(`/api/v1/consumer-complaints/?${p}`).then((r) => r.json()),
-      fetch("/api/v1/consumer-complaints/stats").then((r) => r.json()),
+      apiFetch(`/api/v1/consumer-complaints/?${p}`).then((r) => r.json()),
+      apiFetch("/api/v1/consumer-complaints/stats").then((r) => r.json()),
     ]).then(([c, s]) => { setComplaints(c); setStats(s); }).finally(() => setLoading(false));
   };
 
@@ -104,7 +105,7 @@ export default function ConsumerComplaintsPage() {
     setSaving(true);
     setError(null);
     try {
-      const r = await fetch("/api/v1/consumer-complaints/", {
+      const r = await apiFetch("/api/v1/consumer-complaints/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -138,7 +139,7 @@ export default function ConsumerComplaintsPage() {
     if (updateForm.assigned_to) body.assigned_to = updateForm.assigned_to;
     if (updateForm.root_cause) body.root_cause = updateForm.root_cause;
     if (updateForm.corrective_action) body.corrective_action = updateForm.corrective_action;
-    await fetch(`/api/v1/consumer-complaints/${selected.id}`, {
+    await apiFetch(`/api/v1/consumer-complaints/${selected.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),

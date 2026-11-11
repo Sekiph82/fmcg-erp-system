@@ -23,6 +23,7 @@ from typing import Any, List, Optional, Tuple
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
+from app.core.callback_security import verify_meta_signature
 from sqlalchemy import select, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -283,7 +284,7 @@ async def verify_webhook(request: Request, db: AsyncSession = Depends(get_db)):
     raise HTTPException(403, "Webhook verification failed")
 
 
-@router.post("/webhook", status_code=200)
+@router.post("/webhook", status_code=200, dependencies=[Depends(verify_meta_signature)])
 async def receive_webhook(request: Request, db: AsyncSession = Depends(get_db)):
     """Process inbound WhatsApp messages from Meta webhook."""
     try:

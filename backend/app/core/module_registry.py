@@ -5,7 +5,8 @@ from importlib import import_module
 import logging
 from typing import Iterable
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+from fastapi.routing import APIRoute
 
 from app.core.ai_modes import AIMode, MODULE_AI_MODES
 
@@ -589,6 +590,50 @@ def permission_coverage_report(
     return {"covered": covered, "missing": missing}
 
 
+# Endpoints reachable without an ERP session. Everything else registered through this
+# registry requires an authenticated user (``get_current_user``) at the router level, so a
+# route that forgets its own auth dependency is not left open. Keys are (path, method)
+# relative to the API version prefix.
+PUBLIC_ROUTES: frozenset[tuple[str, str]] = frozenset({
+    ("/health", "GET"),
+    ("/auth/login", "POST"),
+    ("/auth/refresh", "POST"),
+    ("/auth/2fa/required-setup", "POST"),            # pre-session TOTP enrolment (session token in body)
+    ("/auth/2fa/required-setup/verify", "POST"),
+    ("/auth/2fa/login-verify", "POST"),
+    ("/auth/2fa/use-recovery-code", "POST"),
+    ("/auth/2fa/resend-otp", "POST"),
+    ("/ess/login", "POST"),
+    ("/portal/auth/login", "POST"),
+    ("/portal/auth/activate", "POST"),               # invitation token in body
+    ("/supplier-portal/auth/login", "POST"),
+    ("/integrations/mpesa/callback", "POST"),        # Safaricom Daraja callbacks (shared-secret token)
+    ("/sales/mpesa/callback", "POST"),
+    ("/moto-sales/mpesa/callback", "POST"),
+    ("/whatsapp/webhook", "GET"),                    # Meta verify-token handshake
+    ("/whatsapp/webhook", "POST"),                   # X-Hub-Signature-256 verified
+    ("/webhooks/inbound/{endpoint_path:path}", "GET"),   # per-endpoint secret verified in handler
+    ("/webhooks/inbound/{endpoint_path:path}", "POST"),
+    ("/webhooks/inbound/{endpoint_path:path}", "PUT"),
+    ("/traceability/blockchain/public/{qr_token}", "GET"),  # consumer QR verification
+})
+
+
+def _is_public_route(route: object, prefix: str) -> bool:
+    if not isinstance(route, APIRoute):
+        return False
+    methods = set(route.methods or ()) - {"HEAD", "OPTIONS"}
+    return bool(methods) and all((prefix + route.path, method) in PUBLIC_ROUTES for method in methods)
+
+
+def _split_public_routes(router: APIRouter, prefix: str) -> tuple[APIRouter, APIRouter]:
+    """Return (public, protected) routers holding the same route objects as ``router``."""
+    public, protected = APIRouter(), APIRouter()
+    for route in router.routes:
+        (public if _is_public_route(route, prefix) else protected).routes.append(route)
+    return public, protected
+
+
 def _register_routes(
     api_router: APIRouter,
     definitions: Iterable[ModuleDefinition | EndpointRouteDefinition],
@@ -606,10 +651,16 @@ def _register_routes(
             endpoint_module = import_module(definition.import_path)
             router = getattr(endpoint_module, "router")
             tags = getattr(definition, "tags", (definition.key,))
+            from app.core.deps import get_current_user  # local import: deps imports settings only at call time
+
+            public, protected = _split_public_routes(router, definition.route_prefix)
+            if public.routes:
+                api_router.include_router(public, prefix=definition.route_prefix, tags=list(tags))
             api_router.include_router(
-                router,
+                protected,
                 prefix=definition.route_prefix,
                 tags=list(tags),
+                dependencies=[Depends(get_current_user)],
             )
             diagnostics.append({"module": definition.key, "status": "registered"})
         except Exception as exc:

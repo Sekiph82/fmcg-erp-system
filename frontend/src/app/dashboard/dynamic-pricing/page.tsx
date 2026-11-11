@@ -1,4 +1,5 @@
 "use client";
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 
 interface Dashboard {
@@ -89,9 +90,9 @@ export default function DynamicPricingPage() {
     setLoading(true);
     try {
       const [d, r, o] = await Promise.all([
-        fetch("/api/v1/dynamic-pricing/dashboard").then((x) => x.json()),
-        fetch("/api/v1/dynamic-pricing/recommendations?limit=30").then((x) => x.json()),
-        fetch("/api/v1/dynamic-pricing/competitor-prices?limit=50").then((x) => x.json()),
+        apiFetch("/api/v1/dynamic-pricing/dashboard").then((x) => x.json()),
+        apiFetch("/api/v1/dynamic-pricing/recommendations?limit=30").then((x) => x.json()),
+        apiFetch("/api/v1/dynamic-pricing/competitor-prices?limit=50").then((x) => x.json()),
       ]);
       setDash(d); setRecs(r); setObs(o);
     } finally { setLoading(false); }
@@ -102,7 +103,7 @@ export default function DynamicPricingPage() {
   const logPrice = async () => {
     setSaving(true); setError(null);
     try {
-      const r = await fetch("/api/v1/dynamic-pricing/competitor-prices", {
+      const r = await apiFetch("/api/v1/dynamic-pricing/competitor-prices", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           product_name: logForm.product_name, our_sku: logForm.our_sku || undefined,
@@ -121,7 +122,7 @@ export default function DynamicPricingPage() {
   const generate = async () => {
     setSaving(true); setError(null); setGenResult(null);
     try {
-      const r = await fetch("/api/v1/dynamic-pricing/recommendations/generate", {
+      const r = await apiFetch("/api/v1/dynamic-pricing/recommendations/generate", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           product_name: genForm.product_name, our_sku: genForm.our_sku || undefined,
@@ -140,12 +141,12 @@ export default function DynamicPricingPage() {
   };
 
   const applyRec = async (id: string) => {
-    await fetch(`/api/v1/dynamic-pricing/recommendations/${id}/apply?applied_by=PricingManager`, { method: "POST" });
+    await apiFetch(`/api/v1/dynamic-pricing/recommendations/${id}/apply?applied_by=PricingManager`, { method: "POST" });
     load();
   };
 
   const rejectRec = async (id: string) => {
-    await fetch(`/api/v1/dynamic-pricing/recommendations/${id}/reject`, { method: "POST" });
+    await apiFetch(`/api/v1/dynamic-pricing/recommendations/${id}/reject`, { method: "POST" });
     load();
   };
 

@@ -1,4 +1,5 @@
 "use client";
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
@@ -17,7 +18,7 @@ interface ExpiringDoc {
 }
 
 async function fetchExpiring(days: number): Promise<ExpiringDoc[]> {
-  const r = await fetch(`/api/v1/documents/expiring/list?days=${days}&include_expired=true`);
+  const r = await apiFetch(`/api/v1/documents/expiring/list?days=${days}&include_expired=true`);
   if (!r.ok) throw new Error(await r.text());
   return r.json();
 }

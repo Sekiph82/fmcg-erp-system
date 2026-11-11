@@ -5,6 +5,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.deps import require_module_access
 from app.db.session import get_db
 from app.models.bank_reconciliation import BRStatementStatus, BRAIRecStatus
 from app.schemas.bank_reconciliation import (
@@ -21,7 +22,7 @@ from app.schemas.bank_reconciliation import (
 )
 from app.services import bank_reconciliation_service as svc
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(require_module_access("finance"))])
 
 
 # ─── Dashboard ────────────────────────────────────────────────────────────────

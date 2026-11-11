@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from app.core.callback_security import verify_mpesa_callback
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -53,7 +54,7 @@ async def stk_push(payload: StkPushRequest, db: AsyncSession = Depends(get_db)):
     return await svc.initiate_stk_push(db, payload.txn_id, payload.phone_number, payload.amount)
 
 
-@router.post("/mpesa/callback")
+@router.post("/mpesa/callback", dependencies=[Depends(verify_mpesa_callback)])
 async def stk_callback(payload: StkCallbackRequest, db: AsyncSession = Depends(get_db)):
     result = await svc.handle_stk_callback(
         db,

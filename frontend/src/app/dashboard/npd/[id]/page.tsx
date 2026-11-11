@@ -1,4 +1,5 @@
 "use client";
+import { apiFetch } from "@/lib/api";
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
@@ -33,7 +34,7 @@ export default function NPDProjectDetailPage() {
 
   const load = useCallback(() => {
     setLoading(true);
-    fetch(`/api/v1/npd-workflow/projects/${id}`).then((r) => r.json()).then(setProj).finally(() => setLoading(false));
+    apiFetch(`/api/v1/npd-workflow/projects/${id}`).then((r) => r.json()).then(setProj).finally(() => setLoading(false));
   }, [id]);
   useEffect(() => { if (id) load(); }, [id, load]);
 
@@ -41,7 +42,7 @@ export default function NPDProjectDetailPage() {
     setAdvancing(true);
     setError(null);
     try {
-      const r = await fetch(`/api/v1/npd-workflow/projects/${id}/advance-stage`, { method: "POST" });
+      const r = await apiFetch(`/api/v1/npd-workflow/projects/${id}/advance-stage`, { method: "POST" });
       const data = await r.json();
       if (!r.ok) throw new Error(data.detail || JSON.stringify(data));
       load();
@@ -53,7 +54,7 @@ export default function NPDProjectDetailPage() {
     if (!approver.trim()) { setError("Enter approver name first."); return; }
     setApproving(gateId);
     try {
-      await fetch(`/api/v1/npd-workflow/projects/${id}/gates/${gateId}/approve`, {
+      await apiFetch(`/api/v1/npd-workflow/projects/${id}/gates/${gateId}/approve`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ approved_by: approver }),
       });
@@ -63,7 +64,7 @@ export default function NPDProjectDetailPage() {
   };
 
   const toggleChecklist = async (type: string, key: string, val: boolean) => {
-    await fetch(`/api/v1/npd-workflow/projects/${id}/checklist`, {
+    await apiFetch(`/api/v1/npd-workflow/projects/${id}/checklist`, {
       method: "PATCH", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ checklist_type: type, key, value: val }),
     });
@@ -73,7 +74,7 @@ export default function NPDProjectDetailPage() {
   const addBatch = async () => {
     setAddingBatch(true);
     try {
-      await fetch(`/api/v1/npd-workflow/projects/${id}/pilot-batches`, {
+      await apiFetch(`/api/v1/npd-workflow/projects/${id}/pilot-batches`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ batch_ref: batchForm.batch_ref, qty_produced: batchForm.qty_produced ? Number(batchForm.qty_produced) : undefined, outcome: batchForm.outcome, notes: batchForm.notes || undefined }),
       });

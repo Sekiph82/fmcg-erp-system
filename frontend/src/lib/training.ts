@@ -1,7 +1,8 @@
+import { apiFetch } from "@/lib/api";
 const BASE = `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/v1/training`;
 
 async function req<T>(path: string, opts?: RequestInit): Promise<T> {
-  const r = await fetch(`${BASE}${path}`, {
+  const r = await apiFetch(`${BASE}${path}`, {
     headers: { "Content-Type": "application/json" },
     ...opts,
   });

@@ -1,4 +1,5 @@
 "use client";
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
@@ -31,7 +32,7 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 async function fetchDocs(category: string): Promise<DocShort[]> {
-  const r = await fetch(`/api/v1/documents/?category=${category}&latest_only=true&limit=200`);
+  const r = await apiFetch(`/api/v1/documents/?category=${category}&latest_only=true&limit=200`);
   if (!r.ok) throw new Error(await r.text());
   return r.json();
 }

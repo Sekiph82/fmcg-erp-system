@@ -1,4 +1,5 @@
 "use client";
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 
 interface Dash { total_observations: number; observations_last_30d: number; oos_incidents_30d: number; avg_shelf_share_30d: number | null; market_share_estimates: number; }
@@ -30,10 +31,10 @@ export default function MarketIntelligencePage() {
     setLoading(true);
     try {
       const [d, s, o, sh] = await Promise.all([
-        fetch("/api/v1/market-intel/dashboard").then(r => r.json()),
-        fetch("/api/v1/market-intel/shelf-share/summary").then(r => r.json()),
-        fetch("/api/v1/market-intel/observations?limit=50").then(r => r.json()),
-        fetch("/api/v1/market-intel/market-share?limit=30").then(r => r.json()),
+        apiFetch("/api/v1/market-intel/dashboard").then(r => r.json()),
+        apiFetch("/api/v1/market-intel/shelf-share/summary").then(r => r.json()),
+        apiFetch("/api/v1/market-intel/observations?limit=50").then(r => r.json()),
+        apiFetch("/api/v1/market-intel/market-share?limit=30").then(r => r.json()),
       ]);
       setDash(d); setShelf(s); setObs(o); setShares(sh);
     } finally { setLoading(false); }
@@ -44,7 +45,7 @@ export default function MarketIntelligencePage() {
   const logObs = async () => {
     setSaving(true); setError(null);
     try {
-      const r = await fetch("/api/v1/market-intel/observations", {
+      const r = await apiFetch("/api/v1/market-intel/observations", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           outlet_name: obsForm.outlet_name, outlet_type: obsForm.outlet_type,
@@ -70,7 +71,7 @@ export default function MarketIntelligencePage() {
   const logShare = async () => {
     setSaving(true); setError(null);
     try {
-      const r = await fetch("/api/v1/market-intel/market-share", {
+      const r = await apiFetch("/api/v1/market-intel/market-share", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           category: shareForm.category, period_month: shareForm.period_month,

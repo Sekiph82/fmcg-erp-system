@@ -121,6 +121,10 @@ class Settings(BaseSettings):
     MPESA_SHORTCODE: str = ""
     MPESA_PASSKEY: str = ""
     MPESA_CALLBACK_URL: str = "https://yourapp.example.com/api/v1/integrations/mpesa/callback"
+    # Shared secret appended to MPESA_CALLBACK_URL as ?token=...; callbacks without it are rejected.
+    MPESA_CALLBACK_SECRET: str = ""
+    # Meta app secret used to verify X-Hub-Signature-256 on WhatsApp webhooks.
+    WHATSAPP_APP_SECRET: str = ""
     MPESA_ENV: str = "sandbox"           # "sandbox" | "production"
     MPESA_TRANSACTION_TYPE: str = "CustomerPayBillOnline"  # or CustomerBuyGoodsOnline
 

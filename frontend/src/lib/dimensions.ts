@@ -1,8 +1,8 @@
-import axios from "axios";
+import { apiV1Client } from "@/lib/api";
 
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
 const r = <T>(p: Promise<{ data: T }>) => p.then((res) => res.data);
-const ax = axios.create({ baseURL: API });
+// Session cookie + refresh handling; paths below are relative to /api/v1.
+const ax = apiV1Client;
 
 // ── Enums & Types ──────────────────────────────────────────────────────────────
 

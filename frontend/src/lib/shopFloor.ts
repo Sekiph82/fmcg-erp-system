@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 const BASE = "/api/v1/shop-floor";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -327,7 +328,7 @@ async function req<T>(path: string, opts?: RequestInit): Promise<T> {
   if (idempotency) headers.set("Idempotency-Key", idempotency.key);
   let res: Response;
   try {
-    res = await fetch(`${BASE}${path}`, {
+    res = await apiFetch(`${BASE}${path}`, {
       ...opts,
       headers,
     });

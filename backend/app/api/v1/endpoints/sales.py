@@ -6,6 +6,7 @@ from typing import List, Optional
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from app.core.callback_security import verify_mpesa_callback
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_
 
@@ -633,7 +634,7 @@ async def initiate_mpesa_payment(
     return tx
 
 
-@router.post("/mpesa/callback", response_model=dict)
+@router.post("/mpesa/callback", response_model=dict, dependencies=[Depends(verify_mpesa_callback)])
 async def mpesa_callback(
     body: MpesaCallbackPayload,
     db: AsyncSession = Depends(get_db),

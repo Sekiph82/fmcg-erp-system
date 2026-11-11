@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 const BASE = `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/v1/ess`;
 
 export type ESSAccountStatus = "active" | "inactive" | "suspended";
@@ -210,7 +211,7 @@ export const AI_AGENT_LABEL: Record<ESSAIAgentType, string> = {
 // ── API client ────────────────────────────────────────────────────────────────
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, {
+  const res = await apiFetch(`${BASE}${path}`, {
     headers: { "Content-Type": "application/json" },
     ...init,
   });

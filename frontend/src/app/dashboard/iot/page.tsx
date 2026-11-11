@@ -1,4 +1,5 @@
 "use client";
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { PermissionGuard, RequirePermission } from "@/components/PermissionGuard";
 
@@ -34,10 +35,10 @@ export default function IoTDashboardPage() {
     setLoading(true);
     try {
       const [d, s, a, sr] = await Promise.all([
-        fetch("/api/v1/iot/dashboard").then(r => r.json()),
-        fetch("/api/v1/iot/machines/current-states").then(r => r.json()),
-        fetch("/api/v1/iot/alerts?status=OPEN&limit=20").then(r => r.json()),
-        fetch("/api/v1/iot/sensors/summary?hours=1").then(r => r.json()),
+        apiFetch("/api/v1/iot/dashboard").then(r => r.json()),
+        apiFetch("/api/v1/iot/machines/current-states").then(r => r.json()),
+        apiFetch("/api/v1/iot/alerts?status=OPEN&limit=20").then(r => r.json()),
+        apiFetch("/api/v1/iot/sensors/summary?hours=1").then(r => r.json()),
       ]);
       setDash(d); setStates(s); setAlerts(a); setSensors(sr);
     } finally { setLoading(false); }
@@ -48,7 +49,7 @@ export default function IoTDashboardPage() {
   const ingest = async () => {
     setSaving(true); setError(null); setIngestResult(null);
     try {
-      const r = await fetch("/api/v1/iot/ingest", {
+      const r = await apiFetch("/api/v1/iot/ingest", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ machine_id: ingestForm.machine_id, metric_name: ingestForm.metric_name, value: Number(ingestForm.value), unit: ingestForm.unit || undefined, source: ingestForm.source }),
       });
@@ -63,7 +64,7 @@ export default function IoTDashboardPage() {
   const addThreshold = async () => {
     setSaving(true); setError(null);
     try {
-      const r = await fetch("/api/v1/iot/thresholds", {
+      const r = await apiFetch("/api/v1/iot/thresholds", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           machine_id: thresholdForm.machine_id, metric_name: thresholdForm.metric_name,
@@ -80,7 +81,7 @@ export default function IoTDashboardPage() {
   };
 
   const ackAlert = async (id: string) => {
-    await fetch(`/api/v1/iot/alerts/${id}/acknowledge?acknowledged_by=Operator`, { method: "POST" });
+    await apiFetch(`/api/v1/iot/alerts/${id}/acknowledge?acknowledged_by=Operator`, { method: "POST" });
     load();
   };
 

@@ -8,7 +8,10 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import get_current_user, get_db
+from app.core.deps import get_current_user, get_db, require_module_access
+from app.core.integration_capabilities import (
+    can_execute_in_environment, get_integration_capability, production_block_reason,
+)
 from app.models.user import User
 from app.schemas.bank_api import (
     BankApiDashboard, BankConnectionCreate, BankConnectionRead, BankSyncResult,
@@ -16,7 +19,7 @@ from app.schemas.bank_api import (
 )
 from app.services import bank_api_service as svc
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(require_module_access("finance"))])
 
 
 @router.post("/connections", response_model=BankConnectionRead, status_code=201)
@@ -54,6 +57,10 @@ async def sync_connection(
     db: AsyncSession = Depends(get_db),
     _: User = Depends(get_current_user),
 ):
+    capability = get_integration_capability("BANK_API")
+    if capability is not None and not can_execute_in_environment(capability):
+        # Mock sync generates random demo transactions; never in production.
+        raise HTTPException(status_code=503, detail=production_block_reason(capability))
     try:
         return await svc.sync_connection(db, connection_id)
     except ValueError as exc:

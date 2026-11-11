@@ -1,4 +1,5 @@
 "use client";
+import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { mobileApi, MobileApprovalItem } from "@/lib/mobile_api";
 
@@ -6,7 +7,7 @@ const API_BASE = "/api/v1/approvals";
 
 async function actionApproval(requestId: string, action: "approve" | "reject", comment: string) {
   const endpoint = action === "approve" ? `${API_BASE}/${requestId}/approve` : `${API_BASE}/${requestId}/reject`;
-  const res = await fetch(endpoint, {
+  const res = await apiFetch(endpoint, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ comment }),
