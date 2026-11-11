@@ -2,6 +2,8 @@ import { apiClient } from "@/lib/api";
 
 const BASE = "/api/v1/bank-reconciliation";
 
+export type StatementFileFormat = "CAMT053" | "MT940" | "OFX" | "CSV";
+
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
 export type BRAccountType = "CURRENT" | "SAVINGS" | "MOBILE_MONEY" | "OVERDRAFT";
@@ -268,6 +270,16 @@ export const brApi = {
     apiClient.post<BRStatement>(`${BASE}/statements`, data).then((r) => r.data),
   importStatement: (data: object) =>
     apiClient.post<BRStatement>(`${BASE}/statements/import`, data).then((r) => r.data),
+  /** Bank-exported file (camt.053 XML, MT940, OFX or CSV); balances and account are verified server-side. */
+  importStatementFile: (bankAccountId: string, fileFormat: StatementFileFormat, file: File) => {
+    const body = new FormData();
+    body.append("bank_account_id", bankAccountId);
+    body.append("file_format", fileFormat);
+    body.append("file", file);
+    return apiClient
+      .post<BRStatement>(`${BASE}/statements/import-file`, body, { headers: { "Content-Type": "multipart/form-data" } })
+      .then((r) => r.data);
+  },
   getStatement: (id: string) =>
     apiClient.get<BRStatement>(`${BASE}/statements/${id}`).then((r) => r.data),
   getLines: (id: string) =>

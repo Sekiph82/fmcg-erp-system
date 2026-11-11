@@ -236,6 +236,69 @@ async def import_statement(db: AsyncSession, data: CSVImportRequest) -> BRStatem
     return stmt
 
 
+async def import_statement_file(
+    db: AsyncSession, bank_account_id: uuid.UUID, fmt: str, data: bytes, file_name: Optional[str],
+    imported_by: Optional[str] = None,
+) -> BRStatement:
+    """Parse a bank statement file and import it after integrity checks.
+
+    Rejects files whose currency or account number does not match the bank account, and
+    statements whose opening balance + credits - debits does not equal the closing balance.
+    """
+    from app.services.bank_statement_parsers import parse_statement
+
+    account = await db.get(BRBankAccount, bank_account_id)
+    if account is None:
+        raise ValueError("Bank account not found.")
+    parsed = parse_statement(fmt, data)
+    if parsed.currency and account.currency and parsed.currency.upper() != account.currency.upper():
+        raise ValueError(f"Statement currency {parsed.currency} does not match account currency {account.currency}.")
+    masked_digits = "".join(ch for ch in (account.account_number_masked or "") if ch.isdigit())
+    file_digits = "".join(ch for ch in (parsed.account or "") if ch.isdigit())
+    if masked_digits and file_digits and not file_digits.endswith(masked_digits[-4:]):
+        raise ValueError("The statement's account number does not match the selected bank account.")
+    if parsed.opening_balance is None or parsed.closing_balance is None:
+        raise ValueError("The file does not state both opening and closing balances; it cannot be verified.")
+    credits, debits = parsed.totals()
+    expected = parsed.opening_balance + credits - debits
+    if abs(expected - parsed.closing_balance) > Decimal("0.005"):
+        raise ValueError(
+            f"Statement does not balance: opening {parsed.opening_balance} + credits {credits} - debits {debits} "
+            f"= {expected}, but closing is {parsed.closing_balance}."
+        )
+    overlapping = (await db.execute(
+        select(BRStatement.statement_no).where(
+            BRStatement.bank_account_id == bank_account_id,
+            BRStatement.status != BRStatementStatus.DRAFT,
+            BRStatement.period_start_date <= parsed.period_end,
+            BRStatement.period_end_date >= parsed.period_start,
+        ).limit(1)
+    )).scalar_one_or_none()
+    if overlapping:
+        raise ValueError(
+            f"Statement {overlapping} already covers part of {parsed.period_start}..{parsed.period_end}; "
+            "this period has already been imported."
+        )
+    request = CSVImportRequest(
+        bank_account_id=bank_account_id,
+        statement_date=parsed.statement_date,
+        period_start_date=parsed.period_start,
+        period_end_date=parsed.period_end,
+        opening_balance=float(parsed.opening_balance),
+        closing_balance=float(parsed.closing_balance),
+        statement_currency=(parsed.currency or account.currency or "KES").upper(),
+        import_source=BRImportSource(parsed.format),
+        imported_by=imported_by,
+        lines=[BRStatementLineCreate(**line) for line in parsed.lines],
+    )
+    statement = await import_statement(db, request)
+    if file_name:
+        statement.import_file_name = file_name[:255]
+        await db.commit()
+        await db.refresh(statement)
+    return statement
+
+
 async def add_manual_line(
     db: AsyncSession,
     stmt_id: uuid.UUID,

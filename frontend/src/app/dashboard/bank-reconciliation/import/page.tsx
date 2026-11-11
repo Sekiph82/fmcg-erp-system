@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { brApi } from "@/lib/bank_reconciliation";
+import { brApi, type StatementFileFormat } from "@/lib/bank_reconciliation";
 
 interface LineRow {
   transaction_date: string;
@@ -63,6 +63,20 @@ export default function BRImportPage() {
     onError: (e: unknown) => setError(e instanceof Error ? e.message : "Import failed"),
   });
 
+  const [fileFormat, setFileFormat] = useState<StatementFileFormat>("CAMT053");
+  const [file, setFile] = useState<File | null>(null);
+  const upload = useMutation({
+    mutationFn: () => brApi.importStatementFile(form.bank_account_id, fileFormat, file as File),
+    onSuccess: (stmt) => {
+      qc.invalidateQueries({ queryKey: ["br-dashboard"] });
+      router.push(`/dashboard/bank-reconciliation/statements/${stmt.id}`);
+    },
+    onError: (e: unknown) => {
+      const detail = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
+      setError(typeof detail === "string" ? detail : e instanceof Error ? e.message : "Import failed");
+    },
+  });
+
   const updateLine = (i: number, field: keyof LineRow, val: string) => {
     setLines((prev) => prev.map((l, idx) => idx === i ? { ...l, [field]: val } : l));
   };
@@ -73,9 +87,52 @@ export default function BRImportPage() {
 
       {error && <p className="text-red-600 text-sm bg-red-50 px-3 py-2 rounded">{error}</p>}
 
+      {/* File upload */}
+      <form aria-label="Upload bank statement file" className="bg-white border rounded-xl p-5 space-y-4"
+        onSubmit={(e) => { e.preventDefault(); setError(null); upload.mutate(); }}>
+        <div>
+          <h2 className="text-sm font-semibold text-gray-700">Upload bank file</h2>
+          <p className="text-xs text-gray-500">ISO 20022 camt.053, SWIFT MT940, OFX or CSV as exported by the bank. Opening + credits − debits must equal the closing balance, and the currency and account number must match the selected account.</p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label htmlFor="upload-account" className="text-xs text-gray-500 font-medium">Bank Account *</label>
+            <select id="upload-account" value={form.bank_account_id} onChange={(e) => setForm({ ...form, bank_account_id: e.target.value })}
+              className="mt-1 w-full border rounded-lg px-3 py-2 text-sm">
+              <option value="">Select account…</option>
+              {accounts.map((a) => (
+                <option key={a.id} value={a.id}>{a.account_name} — {a.bank_name} ({a.currency})</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="upload-format" className="text-xs text-gray-500 font-medium">File format</label>
+            <select id="upload-format" value={fileFormat} onChange={(e) => setFileFormat(e.target.value as StatementFileFormat)}
+              className="mt-1 w-full border rounded-lg px-3 py-2 text-sm">
+              <option value="CAMT053">ISO 20022 camt.053 (XML)</option>
+              <option value="MT940">SWIFT MT940</option>
+              <option value="OFX">OFX</option>
+              <option value="CSV">CSV</option>
+            </select>
+          </div>
+          <div>
+            <label htmlFor="upload-file" className="text-xs text-gray-500 font-medium">Statement file *</label>
+            <input id="upload-file" type="file" accept=".xml,.sta,.mt940,.txt,.ofx,.qfx,.csv"
+              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+              className="mt-1 w-full text-sm" />
+          </div>
+        </div>
+        <div className="flex justify-end">
+          <button type="submit" disabled={!form.bank_account_id || !file || upload.isPending}
+            className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
+            {upload.isPending ? "Importing…" : "Import file"}
+          </button>
+        </div>
+      </form>
+
       {/* Header */}
       <div className="bg-white border rounded-xl p-5 space-y-4">
-        <h2 className="text-sm font-semibold text-gray-700">Statement Header</h2>
+        <h2 className="text-sm font-semibold text-gray-700">Or enter the statement manually</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="text-xs text-gray-500 font-medium">Bank Account *</label>

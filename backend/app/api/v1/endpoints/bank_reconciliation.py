@@ -2,10 +2,10 @@
 from typing import List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import require_module_access
+from app.core.deps import get_current_user, require_module_access
 from app.db.session import get_db
 from app.models.bank_reconciliation import BRStatementStatus, BRAIRecStatus
 from app.schemas.bank_reconciliation import (
@@ -76,6 +76,27 @@ async def import_statement(data: CSVImportRequest, db: AsyncSession = Depends(ge
         return await svc.import_statement(db, data)
     except ValueError as e:
         raise HTTPException(400, str(e))
+
+
+@router.post("/statements/import-file", response_model=BRStatementOut, status_code=201)
+async def import_statement_file(
+    bank_account_id: UUID = Form(...),
+    file_format: str = Form(..., description="CAMT053 | MT940 | OFX | CSV"),
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    """Import a bank-exported statement file; balances and account are verified before saving."""
+    from app.services.bank_statement_parsers import MAX_STATEMENT_BYTES, StatementParseError
+
+    data = await file.read(MAX_STATEMENT_BYTES + 1)
+    try:
+        return await svc.import_statement_file(
+            db, bank_account_id, file_format, data, file.filename,
+            imported_by=getattr(current_user, "username", None),
+        )
+    except (ValueError, StatementParseError) as e:
+        raise HTTPException(422, str(e))
 
 
 @router.get("/statements", response_model=List[BRStatementOut])

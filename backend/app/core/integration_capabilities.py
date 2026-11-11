@@ -164,7 +164,17 @@ CAPABILITIES: tuple[IntegrationCapability, ...] = (
         status=IntegrationCapabilityStatus.SIMULATED_ONLY,
         simulation_supported=True,
         frontend_route="/dashboard/bank-api",
-        notes="Current service describes mock Kenyan bank sync.",
+        notes="Direct bank API sync is simulated (mock Kenyan transactions) and refused in production; "
+              "use statement file import (BANK_STATEMENT_FILES) for real bank data.",
+    ),
+    IntegrationCapability(
+        provider="BANK_STATEMENT_FILES",
+        label="Bank statement files (camt.053 / MT940 / OFX / CSV)",
+        status=IntegrationCapabilityStatus.LIVE_READY,
+        production_execution_allowed=True,
+        frontend_route="/dashboard/bank-reconciliation/import",
+        notes="Bank-exported files are parsed and imported after balance, currency and account checks; "
+              "no bank credentials are needed.",
     ),
     IntegrationCapability(
         provider="GRAPHQL_API",

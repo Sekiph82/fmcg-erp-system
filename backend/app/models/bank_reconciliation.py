@@ -31,6 +31,8 @@ class BRImportSource(str, enum.Enum):
     MANUAL = "MANUAL"
     MPESA  = "MPESA"
     API    = "API"
+    MT940  = "MT940"
+    CAMT053 = "CAMT053"
 
 
 class BRStatementStatus(str, enum.Enum):
@@ -147,7 +149,7 @@ class BRStatement(Base, TimestampMixin):
     opening_balance    = Column(Numeric(14, 4), nullable=False, default=0)
     closing_balance    = Column(Numeric(14, 4), nullable=False, default=0)
     statement_currency = Column(String(3), nullable=False, default="KES")
-    import_source      = Column(Enum(BRImportSource, native_enum=False), nullable=False, default=BRImportSource.MANUAL)
+    import_source      = Column(Enum(BRImportSource, native_enum=False, length=20), nullable=False, default=BRImportSource.MANUAL)
     import_file_name   = Column(String(255), nullable=True)
     status             = Column(Enum(BRStatementStatus, native_enum=False), nullable=False, default=BRStatementStatus.DRAFT)
     imported_by        = Column(String(100), nullable=True)

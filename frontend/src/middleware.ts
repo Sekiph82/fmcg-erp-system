@@ -451,6 +451,11 @@ function matchRedirect(pathname: string): { p: string; t?: string; d?: string } 
   // Exact match
   if (REDIRECTS[pathname]) return REDIRECTS[pathname];
 
+  // A one-segment child of a real standalone page (its [id] detail page) is not redirected;
+  // otherwise e.g. /dashboard/bank-reconciliation/statements/<id> fell through to the module prefix.
+  const parent = pathname.slice(0, pathname.lastIndexOf("/"));
+  if (BYPASS_PREFIX_REDIRECT.has(parent)) return null;
+
   // Prefix match — longest prefix wins
   const parts = pathname.split("/");
   for (let i = parts.length - 1; i >= 2; i--) {
