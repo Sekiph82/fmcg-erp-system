@@ -140,6 +140,9 @@ class FakeDB:
             missing = [r for r in matched if getattr(r, key, None) is None]
             present.sort(key=lambda r: getattr(r, key), reverse=descending)
             matched = present + missing if not descending else missing + present  # PostgreSQL NULL ordering
+        offset = getattr(stmt, "_offset", None)
+        if offset:
+            matched = matched[offset:]
         limit = getattr(stmt, "_limit", None)
         if limit is not None:
             matched = matched[:limit]

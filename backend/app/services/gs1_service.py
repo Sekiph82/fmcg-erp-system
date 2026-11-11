@@ -14,7 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.gs1 import (
     GS1CompanyConfig, ProductGS1Config, LotBarcodeRecord,
     SSCCPallet, SSCCPalletLot, GS1LabelTemplate, LabelPrintJob,
-    LabelPrintJobItem, GS1AIRecommendation,
+    LabelPrintJobItem, GS1AIRecommendation, LabelPrinter,
     BarcodeType, PackagingLevel, PrintJobStatus, SSCCStatus,
     LabelTemplateStatus, PrintTrigger, GS1AIAgentType, GS1AIRecStatus,
 )
@@ -215,7 +215,7 @@ def _generate_svg_barcode(value: str) -> str:
     bars = []
     x = 10
     for i, ch in enumerate(value):
-        w = 2 if int(ch) % 2 == 0 else 3
+        w = 2 if ord(ch) % 2 == 0 else 3  # GS1 AI strings contain letters and brackets
         if i % 2 == 0:
             bars.append(f'<rect x="{x}" y="10" width="{w}" height="60" fill="black"/>')
         x += w + 1
@@ -520,6 +520,10 @@ async def update_label_template(
     return t
 
 
+def _utcnow_naive() -> datetime:
+    """GS1 timestamp columns are TIMESTAMP WITHOUT TIME ZONE: store UTC wall time (asyncpg rejects aware values)."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
 # ── Print Job ─────────────────────────────────────────────────────────────────
 
 async def create_print_job(db: AsyncSession, data: dict) -> LabelPrintJob:
@@ -537,15 +541,113 @@ async def create_print_job(db: AsyncSession, data: dict) -> LabelPrintJob:
 
 
 async def complete_print_job(db: AsyncSession, job_id: uuid.UUID, printed_by: str) -> Optional[LabelPrintJob]:
-    r = await db.execute(select(LabelPrintJob).where(LabelPrintJob.id == job_id))
+    from sqlalchemy.orm import selectinload
+
+    # items must be loaded eagerly: lazy loading is not possible on an AsyncSession.
+    r = await db.execute(
+        select(LabelPrintJob).where(LabelPrintJob.id == job_id).options(selectinload(LabelPrintJob.items))
+    )
     job = r.scalar_one_or_none()
     if not job:
         return None
     job.status = PrintJobStatus.COMPLETED
     job.printed_by = printed_by
-    job.printed_at = datetime.now(timezone.utc)
+    job.printed_at = _utcnow_naive()
     for item in job.items:
         item.status = PrintJobStatus.COMPLETED
+    return job
+
+
+STALE_PRINTING_MINUTES = 5
+
+
+async def _locked_job(db: AsyncSession, job_id: uuid.UUID) -> Optional[LabelPrintJob]:
+    from sqlalchemy.orm import selectinload
+
+    return (await db.execute(
+        select(LabelPrintJob).where(LabelPrintJob.id == job_id)
+        .options(selectinload(LabelPrintJob.items).selectinload(LabelPrintJobItem.lot_barcode),
+                 selectinload(LabelPrintJob.items).selectinload(LabelPrintJobItem.sscc_pallet))
+        .with_for_update(of=LabelPrintJob)
+        .execution_options(populate_existing=True)
+    )).scalar_one_or_none()
+
+
+async def dispatch_print_job(
+    db: AsyncSession, job_id: uuid.UUID, printer_id: uuid.UUID, actor: str,
+) -> LabelPrintJob:
+    """Render the job's lot/SSCC labels and stream them to a network printer.
+
+    The job is claimed (PRINTING) and committed before any network I/O, so no row lock or
+    transaction is held while talking to the printer and concurrent dispatches see the claim.
+    A PRINTING job older than STALE_PRINTING_MINUTES (crash mid-send) may be claimed again.
+    Raises LookupError / ValueError for invalid requests; printer failures leave the job
+    FAILED with the error recorded (caller commits) and re-raise PrinterError.
+    """
+    from app.services import label_printer_service as lp
+
+    job = await _locked_job(db, job_id)
+    if job is None:
+        raise LookupError("Print job not found")
+    stale = (
+        job.status == PrintJobStatus.PRINTING and job.updated_at is not None
+        and (datetime.now(timezone.utc) - job.updated_at.replace(tzinfo=job.updated_at.tzinfo or timezone.utc)).total_seconds()
+        > STALE_PRINTING_MINUTES * 60
+    )
+    if job.status not in (PrintJobStatus.PENDING, PrintJobStatus.FAILED) and not stale:
+        raise ValueError(f"Print job is {job.status.value}; only PENDING or FAILED jobs can be sent to a printer.")
+    printer = await db.get(LabelPrinter, printer_id)
+    if printer is None or not printer.is_active:
+        raise ValueError("Printer not found or inactive.")
+
+    labels = []
+    for item in job.items:
+        if item.lot_barcode is not None:
+            rec = item.lot_barcode
+            labels.append(lp.lot_label(rec.gtin, rec.lot_number, rec.gs1_ai_string, rec.expiry_date, None, item.copies))
+        elif item.sscc_pallet is not None:
+            pallet = item.sscc_pallet
+            labels.append(lp.sscc_label(pallet.sscc_code, pallet.pallet_id, pallet.shipment_reference, item.copies))
+    if not labels:
+        raise ValueError("The print job has no lot or SSCC labels to print.")
+    spec = lp.PrinterSpec(printer.protocol, printer.dpi, printer.label_width_mm, printer.label_height_mm)
+    try:
+        payload = lp.render(spec, labels)
+    except lp.PrinterError as exc:
+        raise ValueError(str(exc)) from exc  # unprintable data: nothing was claimed or sent
+
+    job.printer_id = printer.id
+    job.printer_name = printer.name
+    job.status = PrintJobStatus.PRINTING
+    job.error_message = None
+    host, port = printer.host, printer.port
+    await db.commit()  # publish the claim and release the row lock before network I/O
+
+    error: Optional[lp.PrinterError] = None
+    try:
+        await lp.send_raw(host, port, payload)
+    except lp.PrinterError as exc:
+        error = exc
+
+    job = await _locked_job(db, job_id)
+    if error is not None:
+        job.status = PrintJobStatus.FAILED
+        job.error_message = str(error)[:1000]
+        for item in job.items:
+            item.status = PrintJobStatus.FAILED
+        raise error
+    now = _utcnow_naive()
+    job.status = PrintJobStatus.COMPLETED
+    job.printed_by = actor
+    job.printed_at = now
+    for item in job.items:
+        item.status = PrintJobStatus.COMPLETED
+        if item.lot_barcode is not None:
+            item.lot_barcode.is_printed = True
+            item.lot_barcode.printed_at = now
+        if item.sscc_pallet is not None:
+            item.sscc_pallet.label_printed = True
+            item.sscc_pallet.label_printed_at = now
     return job
 
 
@@ -823,7 +925,7 @@ async def review_ai_recommendation(
         return None
     rec.status = status
     rec.reviewed_by = reviewed_by
-    rec.reviewed_at = datetime.now(timezone.utc)
+    rec.reviewed_at = _utcnow_naive()
     return rec
 
 

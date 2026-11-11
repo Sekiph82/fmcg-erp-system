@@ -5,7 +5,7 @@ from datetime import date, datetime
 
 from sqlalchemy import (
     Column, String, Text, Numeric, Integer, Boolean,
-    ForeignKey, Enum, Date, DateTime, JSON, UniqueConstraint,
+    ForeignKey, Enum, Date, DateTime, JSON, UniqueConstraint, CheckConstraint,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
@@ -223,6 +223,27 @@ class GS1LabelTemplate(Base, TimestampMixin):
 
 # ── Label Print Job ───────────────────────────────────────────────────────────
 
+class LabelPrinter(Base, TimestampMixin):
+    """A network label printer reachable on the plant LAN (raw TCP, usually port 9100)."""
+    __tablename__ = "label_printers"
+    __table_args__ = (
+        CheckConstraint("protocol IN ('ZPL', 'TSPL')", name="ck_label_printers_protocol"),
+        CheckConstraint("port BETWEEN 1 AND 65535", name="ck_label_printers_port"),
+        CheckConstraint("dpi IN (203, 300, 600)", name="ck_label_printers_dpi"),
+    )
+
+    id               = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name             = Column(String(100), nullable=False, unique=True)
+    protocol         = Column(String(10), nullable=False, default="ZPL")
+    host             = Column(String(255), nullable=False)
+    port             = Column(Integer, nullable=False, default=9100)
+    dpi              = Column(Integer, nullable=False, default=203)
+    label_width_mm   = Column(Integer, nullable=False, default=100)
+    label_height_mm  = Column(Integer, nullable=False, default=150)
+    location         = Column(String(200), nullable=True)
+    is_active        = Column(Boolean, nullable=False, default=True)
+
+
 class LabelPrintJob(Base, TimestampMixin):
     __tablename__ = "gs1_label_print_jobs"
 
@@ -237,6 +258,8 @@ class LabelPrintJob(Base, TimestampMixin):
     printer_name = Column(String(200), nullable=True)
     print_data   = Column(JSON, nullable=True)
     notes        = Column(Text, nullable=True)
+    printer_id   = Column(UUID(as_uuid=True), ForeignKey("label_printers.id", ondelete="SET NULL"), nullable=True)
+    error_message = Column(Text, nullable=True)
 
     template = relationship("GS1LabelTemplate", back_populates="print_jobs")
     items    = relationship("LabelPrintJobItem", back_populates="job", cascade="all, delete-orphan")

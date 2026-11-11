@@ -8,10 +8,10 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 ## Project Status
 
-- Current Milestone: M35 — QC / QA Enterprise Upgrade
-- Current Sprint: M35.S06 — Verification & Program Closure
-- Current Task: M35.S06.T007 — Close M35 and produce final project acceptance state
-- Current Task Status: DONE (2026-11-11) — every software task is closed; only externally blocked live-provider/production/device gates remain
+- Current Milestone: M17 — Integrations (software completion of remaining provider tasks)
+- Current Sprint: M17.S02 — Provider Completion
+- Current Task: M17.S02.T005 — IoT/CRM/e-commerce/GraphQL stub families
+- Current Task Status: PARTIAL (2026-11-11) — GraphQL delivered and fabricated CRM/e-commerce sync removed; vendor connectors (CRM, store, MQTT broker) need an owner vendor choice. M35 DONE; security default-auth fix shipped
 - Next Task/Action: None executable without external inputs: live KRA/eTIMS, M-Pesa, bank and AI-provider credentials, production deployment secrets, physical printers/devices (see Persistent External / Runtime Gates)
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
@@ -508,7 +508,7 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 # M17 — Integrations
 
-**Status: PARTIAL / externally blocked in places**
+**Status: PARTIAL — software for bank statement import, network label printing and read-only GraphQL is done (2026-11-11); live bank API, physical printer acceptance and CRM/store/MQTT vendor connectors remain external or await vendor choice**
 
 ## M17.S01 — Implemented Integration Foundations
 - [x] M17.S01.T001 — Capability registry
@@ -521,9 +521,12 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 ## M17.S02 — Provider Completion
 - [!] M17.S02.T001 — M-Pesa live credentials/acceptance
 - [!] M17.S02.T002 — eTIMS live credentials/acceptance
-- [P] M17.S02.T003 — Replace/complete bank simulation with production connector
-- [P] M17.S02.T004 — Complete physical printer execution
-- [D] M17.S02.T005 — IoT/CRM/e-commerce/GraphQL stub families until prioritized
+- [x] M17.S02.T003 — Replace/complete bank simulation with production connector
+  Evidence (2026-11-11, commit 4d6f681): real bank data now reaches reconciliation through bank-exported files — ISO 20022 camt.053, SWIFT MT940, OFX and CSV parsers (`app/services/bank_statement_parsers.py`) and `POST /bank-reconciliation/statements/import-file`, which rejects currency/account mismatches, unbalanced statements (opening + credits − debits ≠ closing) and periods overlapping an imported statement; upload form on the import page; capability BANK_STATEMENT_FILES = LIVE_READY. The simulated direct bank API is refused in production. Tests: parser suite 7, PostgreSQL import test 1, mocked Playwright upload 2. A direct API with a specific bank stays the external gate "Live bank connector credentials/provider acceptance".
+- [x] M17.S02.T004 — Complete physical printer execution
+  Evidence (2026-11-11): `app/services/label_printer_service.py` renders GS1 lot labels (GS1-128 via ZPL ^BC mode D / TSPL EAN128) and SSCC (00) pallet labels and streams them over raw TCP 9100; printer registry (`label_printers`, migration 20261111_0032), `POST /gs1/labels/print/{id}/dispatch` (claim PRINTING → commit → send → COMPLETED/FAILED with error, stale-PRINTING recovery, marks lot/SSCC printed), printer admin + test-label endpoints, legacy `/integrations/barcode/print` sends to a registered printer; UI "Send to" network printer + printer admin on the GS1 page. Safeguards from independent review: single DNS resolution with private/loopback/link-local-only addresses and connect-to-validated-IP (no rebinding, IPv4-mapped metadata blocked), barcode data never truncated/altered (invalid data fails the job), item/copy caps. Also fixed: GS1 browser-print completion crashed on PostgreSQL (aware datetime into naive column; lazy item load) and barcode previews used the PNG MIME type for SVG images. Tests: 21 unit (incl. a raw-TCP fake printer), PostgreSQL dispatch test, mocked Playwright 1. Physical printer/media acceptance stays the external gate.
+- [P] M17.S02.T005 — IoT/CRM/e-commerce/GraphQL stub families until prioritized
+  Done (2026-11-11): GraphQL — read-only `POST /api/v1/graphql` (graphql-core) for products, materials, customers, suppliers, sales/purchase/production orders and stock; REST-equivalent permissions with company-wide `*.view_all` for transactional data (no scope leakage), depth/size/limit caps, mutations refused (writes stay on REST); developer portal shows endpoint and SDL; resolvers serialised on the request session (concurrent root fields crashed on PostgreSQL). CRM and e-commerce sync no longer fabricate SYNCED mappings/ORD-SIM orders (501 until a connector exists); the legacy IoT event ingest requires iot.ingest. Tests: GraphQL unit 4 + PostgreSQL 1, stub guards. Remaining: real CRM (Salesforce/HubSpot/Zoho), store (Shopify/WooCommerce) and MQTT/OPC-UA bridge connectors need the owner's vendor/broker choice and credentials.
 
 ---
 
@@ -1405,9 +1408,10 @@ Shared evidence (2026-11-10): `app/services/qa_enterprise_service.py`, router `a
 - [x] M35.S06.T005 — Final M01–M35 cross-module regression
   Evidence (2026-11-11): backend full suite 1,664 passed / 0 failed / 315 skipped (skips are PostgreSQL-gated); every DB-gated file (108) run one by one on its own disposable PostgreSQL 16 database cloned from a freshly migrated head: 458 passed, 0 failed. Frontend: type-check clean, ESLint 0 errors (67 pre-existing warnings), all 11 mocked Playwright specs 27 passed, auth-refresh unit and API-parity checks pass. Fixed along the way: 21 model modules were never registered, so 55 tables (consumer complaints, IoT, NPD, loyalty, workflow approvals, WhatsApp, ...) existed in no database (`app/models/__init__.py` + `20261110_0027b`); a 74-character FK name broke fresh PostgreSQL bootstrap (0022 + model); M35 AQL checks were not idempotent (0028); stamp-bootstrapped databases had drifted tables (`20261110_0030` rebuilds drifted empty tables, refuses on data — applied to the development database); landed-cost lines without a currency were valued as KES at rate 1 inside USD bills (now inherit the document currency, API + UI); a passing retest could not override a recorded rejection (test aligned with the M27/M35 rule — no "testing into compliance"); stale test fixtures (M20, M24 runner naming, M27, M31, M34) updated; an unguarded MPS concurrency test wrote into the development database (now disposable-DB gated); the login limiter tests leaked through a local Redis (in-memory in tests); a 5%-flaky JWT tamper test made deterministic.
 - [x] M35.S06.T006 — Final security/deployment readiness review
+  Follow-up (2026-11-11, commit fc2aa30): a route scan found ~780 of 2,930 API routes without authentication (bank reconciliation, HR, price lists, portals, …). Every module router is now registered with `get_current_user` by default except an explicit public allowlist (login/refresh, 2FA steps, ESS/portal login, portal activation, signed/secret provider callbacks, health, public QR); `test_route_auth_coverage.py` asserts it. Supplier-portal password reset is no longer public; M-Pesa callbacks need a shared secret and WhatsApp webhooks a valid signature (fail closed in production); bank routes need finance permissions; frontend API callers send the session cookie. Independent review findings fixed.
   Evidence (2026-11-11): two independent read-only reviews of all 2026-11-10/11 changes (first: 1 material + 2 minor findings, fixed; second: no defects ≥80% confidence); dependency audits — frontend production `npm audit` 0 vulnerabilities, backend `pip-audit` of the production image 115 packages with only pip itself affected (fixed by upgrading pip in the image); production-image staging rehearsal with production validators (M01.S03.T003) — non-root containers, security headers, enforced TOTP for the seeded admin, no token in login body, `.env.staging` secrets never printed or committed. Scope: repository/container/configuration review and local rehearsal; no third-party penetration test and no production deployment are claimed.
 - [x] M35.S06.T007 — Close M35 and produce final project acceptance state
-  Evidence: all M35 rows above are [x]; project acceptance state is recorded in Project Status: every software task in this ledger is closed, and the remaining items are the [!] external gates (live KRA/eTIMS, M-Pesa, bank, AI-provider keys, production secrets, physical devices), M17.S02.T003/T004 (production bank connector, physical printers — external), M17.S02.T005 (stub families deferred until prioritized by the owner) and the live part of M19.S02.T005.
+  Evidence: all M35 rows above are [x]; project acceptance state is recorded in Project Status: every software task in this ledger is closed, and the remaining items are the [!] external gates (live KRA/eTIMS, M-Pesa, bank, AI-provider keys, production secrets, physical devices), the live bank API and physical printer acceptance (external gates; M17.S02.T003/T004 software done 2026-11-11), the M17.S02.T005 vendor connectors (CRM, store, MQTT broker — need owner vendor choice; GraphQL done) and the live part of M19.S02.T005.
 
 ---
 

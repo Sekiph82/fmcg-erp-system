@@ -514,6 +514,7 @@ ENDPOINT_ROUTE_DEFINITIONS: tuple[EndpointRouteDefinition, ...] = (
     EndpointRouteDefinition(key="project", route_prefix="/projects", import_path="app.api.v1.endpoints.project", tags=('projects',)),
     EndpointRouteDefinition(key="pos", route_prefix="/pos", import_path="app.api.v1.endpoints.pos", tags=('pos',)),
     EndpointRouteDefinition(key="bank_api", route_prefix="/bank-api", import_path="app.api.v1.endpoints.bank_api", tags=('bank-api',)),
+    EndpointRouteDefinition(key="graphql", route_prefix="/graphql", import_path="app.api.v1.endpoints.graphql_api", tags=('graphql',)),
     EndpointRouteDefinition(key="surveys", route_prefix="/surveys", import_path="app.api.v1.endpoints.surveys", tags=('surveys',)),
     EndpointRouteDefinition(key="voip", route_prefix="/calls", import_path="app.api.v1.endpoints.voip", tags=('voip',)),
     EndpointRouteDefinition(key="loyalty", route_prefix="/loyalty", import_path="app.api.v1.endpoints.loyalty", tags=('loyalty',)),

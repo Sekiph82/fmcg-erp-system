@@ -416,23 +416,40 @@ async def print_label(
     body: PrintRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    """
-    Enqueue a label for printing.
-    PLACEHOLDER: records the print request and increments print counter.
-    Connect to a ZPL/EPL printer SDK or cloud print service in production.
-    """
+    """Print a barcode label on a registered network printer (see /gs1/printers)."""
+    from sqlalchemy import select as _select
+
+    from app.models.gs1 import LabelPrinter
+    from app.services import label_printer_service as lp
+
     label = await barcode_svc.get_label(db, uuid.UUID(body.label_id))
     if not label:
         raise HTTPException(404, "Label not found")
+    printer = (await db.execute(_select(LabelPrinter).where(
+        LabelPrinter.name == (body.printer_name or ""), LabelPrinter.is_active.is_(True)))).scalar_one_or_none()
+    if printer is None:
+        raise HTTPException(422, "Unknown or inactive printer; register it under GS1 > printers first.")
+    copies = max(1, min(body.copies, 999))
+    content = lp.LabelContent(label.barcode_value, label.entity_name or label.entity_type,
+                              (f"{label.entity_type} {label.barcode_value}",), copies, gs1=False)
+    spec = lp.PrinterSpec(printer.protocol, printer.dpi, printer.label_width_mm, printer.label_height_mm)
+    try:
+        payload = lp.render(spec, [content])
+    except lp.PrinterError as exc:
+        raise HTTPException(422, str(exc))
+    try:
+        await lp.send_raw(printer.host, printer.port, payload)
+    except lp.PrinterError as exc:
+        raise HTTPException(502, str(exc))
     await barcode_svc.record_print(db, label)
     await db.commit()
     return PrintResponse(
-        job_id=f"PRINT-{str(label.id)[:8].upper()}",
+        job_id=f"PRINT-{str(label.id)[:8].upper()}-{label.print_count}",
         label_id=body.label_id,
-        printer_name=body.printer_name or "default",
-        copies=body.copies,
-        status="queued",
-        message="Print job queued (placeholder — connect to printer SDK for live printing)",
+        printer_name=printer.name,
+        copies=copies,
+        status="done",
+        message=f"Sent to {printer.name} ({printer.protocol})",
     )
 
 

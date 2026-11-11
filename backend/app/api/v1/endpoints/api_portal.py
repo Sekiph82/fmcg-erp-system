@@ -1040,33 +1040,29 @@ async def developer_dashboard(
     }
 
 
-# ── GraphQL Stub ──────────────────────────────────────────────────────────────
+# ── GraphQL ───────────────────────────────────────────────────────────────────
 
 @router.get("/graphql/schema")
 async def graphql_schema_info(_=Depends(get_current_user)):
-    """GraphQL layer information — stub. Integrate strawberry-graphql for production."""
+    """GraphQL layer information: endpoint, schema (SDL) and the queries it serves."""
+    from graphql import print_schema
+
+    from app.api.v1.endpoints.graphql_api import MAX_DEPTH, MAX_LIMIT, SCHEMA
+
+    query_type = SCHEMA.query_type
     return {
-        "status": "stub",
+        "status": "available",
+        "endpoint": "/api/v1/graphql",
         "note": (
-            "GraphQL endpoint not yet wired. "
-            "To enable: install strawberry-graphql[fastapi], define schema, "
-            "and mount router at /graphql. "
-            "All REST endpoints remain the primary API."
+            "Read-only GraphQL over POST /api/v1/graphql with the same session and permissions as REST. "
+            f"Lists are capped at {MAX_LIMIT} rows and queries at depth {MAX_DEPTH}. "
+            "Changes (orders, approvals) stay on the REST API so each business rule has one implementation."
         ),
-        "planned_types": [
-            "Product", "Material", "SalesOrder", "PurchaseOrder",
-            "Inventory", "Customer", "Supplier", "ProductionOrder",
-        ],
-        "planned_queries": [
-            "products(filter, limit, offset)",
-            "salesOrders(status, customer_id, date_from, date_to)",
-            "inventoryLevels(warehouse_id, sku)",
-            "customer(id)",
-        ],
-        "planned_mutations": [
-            "createSalesOrder(input)",
-            "approveRequest(requestId, comment)",
-        ],
+        "types": sorted(name for name, t in SCHEMA.type_map.items()
+                        if not name.startswith("__") and name != "Query" and hasattr(t, "fields")),
+        "queries": sorted(query_type.fields),
+        "mutations": [],
+        "sdl": print_schema(SCHEMA),
         "rest_api_base": "/api/v1",
     }
 

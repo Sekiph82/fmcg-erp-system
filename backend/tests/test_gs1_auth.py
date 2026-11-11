@@ -129,13 +129,13 @@ def test_all_gs1_routes_have_require_permission_guard():
     assert not unguarded, f"Routes missing require_permission guard: {unguarded}"
 
 
-def test_gs1_route_count_is_36():
-    """Confirm total route count matches audit (36)."""
+def test_gs1_route_count_is_41():
+    """Audit count: 36 original routes + M17.S02.T004 network printing (dispatch, printer list/create/update/test)."""
     from fastapi.routing import APIRoute
     from app.api.v1.endpoints.gs1 import router
 
     routes = [r for r in router.routes if isinstance(r, APIRoute)]
-    assert len(routes) == 36, f"Expected 36 routes, found {len(routes)}"
+    assert len(routes) == 41, f"Expected 41 routes, found {len(routes)}"
 
 
 def test_complete_print_job_has_no_printed_by_query_param():

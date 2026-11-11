@@ -18,7 +18,7 @@ def test_capability_registry_classifies_real_and_stub_providers():
     assert providers["MPESA_DARAJA"].production_execution_allowed is True
     assert providers["IOT"].status == IntegrationCapabilityStatus.STUB_ONLY
     assert providers["EMAIL_SYNC"].status == IntegrationCapabilityStatus.SIMULATED_ONLY
-    assert providers["GRAPHQL_API"].status == IntegrationCapabilityStatus.STUB_ONLY
+    assert providers["GRAPHQL_API"].status == IntegrationCapabilityStatus.LIVE_READY
 
 
 def test_get_integration_capability_is_case_insensitive():
@@ -69,7 +69,7 @@ def test_blocked_production_capability_report_includes_known_stub_providers():
 
     assert "IOT" in blocked
     assert "CRM_SYNC" in blocked
-    assert "GRAPHQL_API" in blocked
+    assert "GRAPHQL_API" not in blocked  # read-only GraphQL is implemented
 
 
 def test_production_block_reason_explains_stub_and_allowed_providers():

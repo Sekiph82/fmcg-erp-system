@@ -20,11 +20,12 @@ from app.schemas.gs1 import (
     LotBarcodeOut,
     SSCCGenerateRequest, SSCCPalletOut, SSCCAddLotRequest,
     LabelTemplateCreate, LabelTemplateUpdate, LabelTemplateOut,
-    PrintJobCreate, PrintJobOut,
+    PrintJobCreate, PrintJobOut, LabelPrinterIn, LabelPrinterOut, PrintDispatchIn,
     GS1AIRecOut, GS1AIRecReview,
     GS1DashboardOut,
     LabelPrintHistoryOut, SSCCTrackingOut, PackagingHierarchyOut,
 )
+from app.models.gs1 import LabelPrinter
 from app.services import gs1_service as svc
 
 router = APIRouter()
@@ -412,6 +413,97 @@ async def complete_print_job(
         raise HTTPException(404, "Print job not found")
     await db.commit()
     return {"job_no": job.job_no, "status": str(job.status)}
+
+
+@router.post("/labels/print/{job_id}/dispatch", response_model=PrintJobOut)
+async def dispatch_print_job(
+    job_id: uuid.UUID,
+    payload: PrintDispatchIn,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(require_permission("gs1", "print")),
+):
+    """Send the job's labels to a registered network printer (ZPL/TSPL over TCP)."""
+    from app.services.label_printer_service import PrinterError
+
+    try:
+        job = await svc.dispatch_print_job(db, job_id, payload.printer_id, current_user.username)
+    except LookupError as exc:
+        raise HTTPException(404, str(exc))
+    except ValueError as exc:
+        raise HTTPException(409, str(exc))
+    except PrinterError as exc:
+        await db.commit()  # keep the FAILED status and error for retry/audit
+        raise HTTPException(502, str(exc))
+    await db.commit()
+    await db.refresh(job)
+    return PrintJobOut.model_validate(
+        {**{c.name: getattr(job, c.name) for c in job.__table__.columns}, "item_count": len(job.items)}
+    )
+
+
+# ── Network label printers ────────────────────────────────────────────────────
+
+@router.get("/printers", response_model=List[LabelPrinterOut])
+async def list_printers(db: AsyncSession = Depends(get_db), _=Depends(require_permission("gs1", "view"))):
+    rows = (await db.execute(select(LabelPrinter).order_by(LabelPrinter.name))).scalars().all()
+    return [LabelPrinterOut.model_validate(r) for r in rows]
+
+
+async def _validated_printer_host(host: str) -> str:
+    from app.services.label_printer_service import PrinterError, resolve_printer_addresses
+
+    try:
+        await resolve_printer_addresses(host)
+    except PrinterError as exc:
+        raise HTTPException(422, str(exc))
+    return host.strip()
+
+
+@router.post("/printers", response_model=LabelPrinterOut, status_code=201)
+async def create_printer(payload: LabelPrinterIn, db: AsyncSession = Depends(get_db),
+                         _=Depends(require_permission("gs1", "admin"))):
+    data = payload.model_dump()
+    data["host"] = await _validated_printer_host(payload.host)
+    if (await db.execute(select(LabelPrinter).where(LabelPrinter.name == payload.name))).scalar_one_or_none():
+        raise HTTPException(409, "A printer with this name already exists.")
+    printer = LabelPrinter(**data)
+    db.add(printer)
+    await db.commit()
+    await db.refresh(printer)
+    return LabelPrinterOut.model_validate(printer)
+
+
+@router.put("/printers/{printer_id}", response_model=LabelPrinterOut)
+async def update_printer(printer_id: uuid.UUID, payload: LabelPrinterIn, db: AsyncSession = Depends(get_db),
+                         _=Depends(require_permission("gs1", "admin"))):
+    printer = await db.get(LabelPrinter, printer_id)
+    if printer is None:
+        raise HTTPException(404, "Printer not found")
+    data = payload.model_dump()
+    data["host"] = await _validated_printer_host(payload.host)
+    for key, value in data.items():
+        setattr(printer, key, value)
+    await db.commit()
+    await db.refresh(printer)
+    return LabelPrinterOut.model_validate(printer)
+
+
+@router.post("/printers/{printer_id}/test")
+async def test_printer(printer_id: uuid.UUID, db: AsyncSession = Depends(get_db),
+                       _=Depends(require_permission("gs1", "print"))):
+    """Print one test label (GS1-128 sample) to confirm connectivity, protocol and media size."""
+    from app.services import label_printer_service as lp
+
+    printer = await db.get(LabelPrinter, printer_id)
+    if printer is None:
+        raise HTTPException(404, "Printer not found")
+    spec = lp.PrinterSpec(printer.protocol, printer.dpi, printer.label_width_mm, printer.label_height_mm)
+    label = lp.LabelContent("(01)00000000000000(10)TEST", f"TEST {printer.name}", ("Printer test label",), 1)
+    try:
+        await lp.send_raw(printer.host, printer.port, lp.render(spec, [label]))
+    except lp.PrinterError as exc:
+        raise HTTPException(502, str(exc))
+    return {"printer": printer.name, "status": "SENT"}
 
 
 # ── AI Agents ─────────────────────────────────────────────────────────────────

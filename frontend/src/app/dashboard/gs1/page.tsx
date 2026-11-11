@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { gs1Api, statusColor, BarcodeGenerateResponse, BarcodeType, PrintJob } from "@/lib/gs1";
+import { gs1Api, statusColor, BarcodeGenerateResponse, BarcodeType, LabelPrinter, PrintJob } from "@/lib/gs1";
 import { productsApi, Product } from "@/lib/products";
 import { PageHelpTooltip } from "@/components/help/PageHelpTooltip";
 
@@ -74,7 +74,7 @@ function buildLabelHTML(cfg: PrintConfig & { index: number; isLast: boolean }): 
   const badge = copies > 1 ? `<div class="badge">${index + 1}/${copies}</div>` : "";
 
   const inner =
-    `<img src="data:image/png;base64,${b64}" alt="barcode" style="max-width:100%;max-height:${maxImgH};display:block;margin:0 auto 1.5mm"/>` +
+    `<img src="data:image/svg+xml;base64,${b64}" alt="barcode" style="max-width:100%;max-height:${maxImgH};display:block;margin:0 auto 1.5mm"/>` +
     `<div class="ai">${aiString}</div>${metaLines}${badge}`;
 
   if (isA4) return `<div class="cell">${inner}</div>`;
@@ -139,6 +139,80 @@ function StatCard({ label, value, sub }: { label: string; value: number | string
       <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
       {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
     </div>
+  );
+}
+
+// ── NetworkPrintersSection ─────────────────────────────────────────────────────
+
+function NetworkPrintersSection() {
+  const qc = useQueryClient();
+  const { data: printers = [], isError } = useQuery({
+    queryKey: ["gs1-printers"],
+    queryFn: () => gs1Api.listPrinters(),
+    retry: false,
+  });
+  const [form, setForm] = useState({ name: "", protocol: "ZPL" as LabelPrinter["protocol"], host: "", port: 9100 });
+  const [message, setMessage] = useState<string | null>(null);
+  const create = useMutation({
+    mutationFn: () => gs1Api.createPrinter({ ...form, dpi: 203, label_width_mm: 100, label_height_mm: 150,
+      location: null, is_active: true }),
+    onSuccess: (p) => {
+      setMessage(`Printer ${p.name} registered.`);
+      setForm({ ...form, name: "", host: "" });
+      qc.invalidateQueries({ queryKey: ["gs1-printers"] });
+    },
+    onError: (e: Error) => setMessage(e.message),
+  });
+  const test = useMutation({
+    mutationFn: (id: string) => gs1Api.testPrinter(id),
+    onSuccess: (r) => setMessage(`Test label sent to ${r.printer}.`),
+    onError: (e: Error) => setMessage(e.message),
+  });
+  if (isError) return null; // no gs1.view access
+
+  return (
+    <section className="bg-white border rounded-lg overflow-hidden" aria-label="Network label printers">
+      <div className="px-4 py-3 border-b">
+        <h2 className="text-sm font-medium text-gray-700">Network label printers</h2>
+        <p className="text-xs text-gray-400">
+          Zebra (ZPL) or TSC/Godex (TSPL) printers on the plant network, raw TCP port 9100. Private network addresses only.
+        </p>
+      </div>
+      {message && <p role="status" className="px-4 pt-3 text-xs text-gray-700">{message}</p>}
+      <ul className="divide-y">
+        {printers.map((p) => (
+          <li key={p.id} className="px-4 py-2 flex items-center justify-between text-sm">
+            <span>
+              {p.name} <span className="text-gray-400">· {p.protocol} · {p.host}:{p.port}{p.is_active ? "" : " · inactive"}</span>
+            </span>
+            <button type="button" onClick={() => test.mutate(p.id)} disabled={test.isPending}
+              aria-label={`Test ${p.name}`} className="text-xs px-2 py-1 border rounded hover:bg-gray-50">
+              Test label
+            </button>
+          </li>
+        ))}
+        {!printers.length && <li className="px-4 py-2 text-xs text-gray-400">No network printers registered.</li>}
+      </ul>
+      <form className="grid grid-cols-2 md:grid-cols-5 gap-2 p-4 border-t"
+        onSubmit={(e) => { e.preventDefault(); setMessage(null); create.mutate(); }}>
+        <input aria-label="Printer name" placeholder="Name" required value={form.name}
+          onChange={(e) => setForm({ ...form, name: e.target.value })} className="border rounded px-2 py-1.5 text-sm" />
+        <select aria-label="Printer protocol" value={form.protocol}
+          onChange={(e) => setForm({ ...form, protocol: e.target.value as LabelPrinter["protocol"] })}
+          className="border rounded px-2 py-1.5 text-sm">
+          <option value="ZPL">ZPL (Zebra)</option>
+          <option value="TSPL">TSPL (TSC / Godex)</option>
+        </select>
+        <input aria-label="Printer host" placeholder="192.168.1.50" required value={form.host}
+          onChange={(e) => setForm({ ...form, host: e.target.value })} className="border rounded px-2 py-1.5 text-sm" />
+        <input aria-label="Printer port" type="number" min={1} max={65535} value={form.port}
+          onChange={(e) => setForm({ ...form, port: Number(e.target.value) })} className="border rounded px-2 py-1.5 text-sm" />
+        <button type="submit" disabled={create.isPending || !form.name || !form.host}
+          className="text-sm bg-indigo-600 text-white rounded px-3 py-1.5 disabled:opacity-50">
+          Add printer
+        </button>
+      </form>
+    </section>
   );
 }
 
@@ -233,6 +307,13 @@ export default function GS1DashboardPage() {
   const [labelSize, setLabelSize]       = useState<LabelSize>("70x40");
   const [printerPreset, setPreset]      = useState<PrinterPreset>("browser");
   const [copies, setCopies]             = useState(1);
+  const [networkPrinterId, setNetworkPrinterId] = useState("");
+  const { data: networkPrinters = [] } = useQuery({
+    queryKey: ["gs1-printers"],
+    queryFn: () => gs1Api.listPrinters(),
+    retry: false,
+  });
+  const activePrinters = networkPrinters.filter((p) => p.is_active);
   // UI state
   const [formError, setFormError]       = useState("");
   const [generated, setGenerated]       = useState<BarcodeGenerateResponse | null>(null);
@@ -349,11 +430,21 @@ export default function GS1DashboardPage() {
         trigger: "MANUAL",
         items: [{ lot_barcode_id: recordId, copies }],
       });
+      if (networkPrinterId) {
+        const sent = await gs1Api.dispatchPrintJob(job.id, networkPrinterId);
+        return { sentTo: sent.printer_name ?? "printer" } as const;
+      }
       const barcode = await gs1Api.getBarcode(recordId);
       await gs1Api.completePrintJob(job.id);
       return barcode;
     },
     onSuccess: (barcode) => {
+      if ("sentTo" in barcode) {
+        alert(`Sent ${copies} label(s) to ${barcode.sentTo}.`);
+        qc.invalidateQueries({ queryKey: ["gs1-dashboard"] });
+        qc.invalidateQueries({ queryKey: ["gs1-print-jobs"] });
+        return;
+      }
       if (barcode.barcode_image_b64) {
         openPrintWindow({
           b64: barcode.barcode_image_b64,
@@ -384,10 +475,19 @@ export default function GS1DashboardPage() {
         trigger: "MANUAL",
         items: [{ lot_barcode_id: generated.record_id, copies }],
       });
+      if (networkPrinterId) {
+        const sent = await gs1Api.dispatchPrintJob(job.id, networkPrinterId);
+        return { sentTo: sent.printer_name ?? "printer" } as const;
+      }
       await gs1Api.completePrintJob(job.id);
       return generated;
     },
     onSuccess: (gen) => {
+      if ("sentTo" in gen) {
+        alert(`Sent ${copies} label(s) to ${gen.sentTo}.`);
+        qc.invalidateQueries({ queryKey: ["gs1-print-jobs"] });
+        return;
+      }
       if (!gen.barcode_image_b64) return;
       openPrintWindow({
         b64: gen.barcode_image_b64,
@@ -622,6 +722,20 @@ export default function GS1DashboardPage() {
               </select>
             </div>
             <div>
+              <label htmlFor="gs1-send-to" className="block text-xs text-gray-500 mb-1">Send to</label>
+              <select
+                id="gs1-send-to"
+                value={networkPrinterId}
+                onChange={(e) => setNetworkPrinterId(e.target.value)}
+                className="w-full border rounded px-2 py-1.5 text-sm"
+              >
+                <option value="">Browser print dialog</option>
+                {activePrinters.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name} — {p.protocol} {p.host}:{p.port}</option>
+                ))}
+              </select>
+            </div>
+            <div>
               <label className="block text-xs text-gray-500 mb-1">Copies (1–100)</label>
               <input
                 type="number"
@@ -654,7 +768,7 @@ export default function GS1DashboardPage() {
             <div className="mt-2 border-t pt-4 flex items-start gap-6 flex-wrap">
               {generated.barcode_image_b64 && (
                 <img
-                  src={`data:image/png;base64,${generated.barcode_image_b64}`}
+                  src={`data:image/svg+xml;base64,${generated.barcode_image_b64}`}
                   alt="barcode"
                   className="h-20 border rounded"
                 />
@@ -797,6 +911,7 @@ export default function GS1DashboardPage() {
       </div>
 
       {/* ── Print Job History ─────────────────────────────────────────────────── */}
+      <NetworkPrintersSection />
       <PrintHistorySection />
 
       {/* ── Recent SSCC ─────────────────────────────────────────────────────── */}

@@ -184,7 +184,7 @@ class PrintResponse(BaseModel):
     label_id: str
     printer_name: str
     copies: int
-    status: str          # "queued" | "printing" | "done" (placeholder)
+    status: str          # "done" once the printer accepted the data
     message: str
 
 

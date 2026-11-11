@@ -41,11 +41,13 @@ test("synthetic Developer Portal states remain readable and errors stay safe", a
     webhooks: { available: "Tenant-managed webhooks" },
   };
   const graphql = {
-    status: "STUB",
-    note: "GraphQL is a planned interface. Use the REST API for current ERP operations.",
-    planned_types: ["Product", "Material"],
-    planned_queries: ["product(id: ID!)"],
-    planned_mutations: ["createProduct(input: ProductInput!)"],
+    status: "available",
+    endpoint: "/api/v1/graphql",
+    note: "Read-only GraphQL over POST /api/v1/graphql with the same session and permissions as REST.",
+    types: ["Material", "Product"],
+    queries: ["materials", "products"],
+    mutations: [],
+    sdl: "type Query {\n  products(search: String, limit: Int, offset: Int): [Product!]!\n}",
     rest_api_base: "/api/v1",
   };
 
@@ -113,8 +115,9 @@ test("synthetic Developer Portal states remain readable and errors stay safe", a
 
   await page.goto("/dashboard/developer/graphql");
   await expect(page.getByRole("heading", { name: "GraphQL Layer" })).toBeVisible();
-  await expect(page.getByText("STUB", { exact: true })).toBeVisible();
-  await expect(page.getByText("GraphQL is a planned interface. Use the REST API for current ERP operations.")).toBeVisible();
+  await expect(page.getByText("available", { exact: true })).toBeVisible();
+  await expect(page.getByText("POST /api/v1/graphql", { exact: true })).toBeVisible();
+  await expect(page.getByText(/products\(search: String, limit: Int, offset: Int\)/)).toBeVisible();
   await page.screenshot({ path: "test-results/m20-current-developer-graphql-mobile.png", fullPage: true });
 
   failureStatus = 401;

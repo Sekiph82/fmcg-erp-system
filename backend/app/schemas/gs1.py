@@ -4,9 +4,9 @@ from __future__ import annotations
 import uuid
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Any, List, Optional
+from typing import Any, List, Literal, Optional
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 # ── Shared base ───────────────────────────────────────────────────────────────
@@ -261,13 +261,19 @@ class LabelTemplateOut(_Base):
 
 # ── Print Job ─────────────────────────────────────────────────────────────────
 
+class PrintJobItemIn(BaseModel):
+    lot_barcode_id: Optional[uuid.UUID] = None
+    sscc_id: Optional[uuid.UUID] = None
+    copies: int = Field(1, ge=1, le=999)
+
+
 class PrintJobCreate(_Base):
     trigger: str = "MANUAL"
     template_id: Optional[uuid.UUID] = None
     printer_name: Optional[str] = None
     printed_by: Optional[str] = None
     notes: Optional[str] = None
-    items: List[dict] = []
+    items: List[PrintJobItemIn] = Field(default_factory=list, max_length=500)
 
 
 class PrintJobOut(_Base):
@@ -281,8 +287,39 @@ class PrintJobOut(_Base):
     quantity: int
     printer_name: Optional[str]
     notes: Optional[str]
+    printer_id: Optional[uuid.UUID] = None
+    error_message: Optional[str] = None
     item_count: int = 0
     created_at: datetime
+
+
+class LabelPrinterIn(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+    protocol: Literal["ZPL", "TSPL"] = "ZPL"
+    host: str = Field(min_length=1, max_length=255)
+    port: int = Field(9100, ge=1, le=65535)
+    dpi: Literal[203, 300, 600] = 203
+    label_width_mm: int = Field(100, ge=20, le=220)
+    label_height_mm: int = Field(150, ge=10, le=400)
+    location: Optional[str] = None
+    is_active: bool = True
+
+
+class LabelPrinterOut(_Base):
+    id: uuid.UUID
+    name: str
+    protocol: str
+    host: str
+    port: int
+    dpi: int
+    label_width_mm: int
+    label_height_mm: int
+    location: Optional[str]
+    is_active: bool
+
+
+class PrintDispatchIn(BaseModel):
+    printer_id: uuid.UUID
 
 
 # ── AI Recommendations ────────────────────────────────────────────────────────

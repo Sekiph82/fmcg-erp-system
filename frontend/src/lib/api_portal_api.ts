@@ -149,10 +149,12 @@ export interface DevResources {
 
 export interface GraphQLSchemaInfo {
   status: string;
+  endpoint: string;
   note: string;
-  planned_types: string[];
-  planned_queries: string[];
-  planned_mutations: string[];
+  types: string[];
+  queries: string[];
+  mutations: string[];
+  sdl: string;
   rest_api_base: string;
 }
 

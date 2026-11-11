@@ -349,7 +349,7 @@ from app.models.gs1 import (
     LabelTemplateStatus, PrintTrigger, GS1AIAgentType, GS1AIRecStatus,
     GS1CompanyConfig, ProductGS1Config, LotBarcodeRecord,
     SSCCPallet, SSCCPalletLot, GS1LabelTemplate, LabelPrintJob,
-    LabelPrintJobItem, GS1AIRecommendation,
+    LabelPrintJobItem, GS1AIRecommendation, LabelPrinter,
 )
 
 # ── FEFO + Shelf-Life Control ─────────────────────────────────────────────────

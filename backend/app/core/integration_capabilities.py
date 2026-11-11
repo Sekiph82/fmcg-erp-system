@@ -152,11 +152,12 @@ CAPABILITIES: tuple[IntegrationCapability, ...] = (
     ),
     IntegrationCapability(
         provider="BARCODE_PRINTING",
-        label="Barcode / Label Printing",
-        status=IntegrationCapabilityStatus.STUB_ONLY,
-        simulation_supported=True,
-        frontend_route="/dashboard/integrations/barcode",
-        notes="Label generation exists; physical printer SDK integration is still a placeholder.",
+        label="Barcode / Label Printing (ZPL / TSPL over TCP 9100)",
+        status=IntegrationCapabilityStatus.SANDBOX_READY,
+        production_execution_allowed=True,
+        frontend_route="/dashboard/gs1/print-queue",
+        notes="GS1 lot (GS1-128) and SSCC labels are rendered as ZPL or TSPL and sent to registered private-network "
+              "printers; verified against a raw TCP test listener. Physical printer/media acceptance is pending.",
     ),
     IntegrationCapability(
         provider="BANK_API",
@@ -178,10 +179,12 @@ CAPABILITIES: tuple[IntegrationCapability, ...] = (
     ),
     IntegrationCapability(
         provider="GRAPHQL_API",
-        label="GraphQL Developer API",
-        status=IntegrationCapabilityStatus.STUB_ONLY,
+        label="GraphQL API (read-only)",
+        status=IntegrationCapabilityStatus.LIVE_READY,
+        production_execution_allowed=True,
         frontend_route="/dashboard/developer/graphql",
-        notes="API portal explicitly marks GraphQL as a stub.",
+        notes="POST /api/v1/graphql: read-only queries for products, materials, customers, suppliers, sales, "
+              "purchase and production orders and stock; same permissions as REST; mutations stay on REST.",
     ),
     IntegrationCapability(
         provider="MARKETING_SYNC",

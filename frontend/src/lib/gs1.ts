@@ -164,8 +164,23 @@ export interface PrintJob {
   quantity: number;
   printer_name: string | null;
   notes: string | null;
+  printer_id?: string | null;
+  error_message?: string | null;
   item_count: number;
   created_at: string;
+}
+
+export interface LabelPrinter {
+  id: string;
+  name: string;
+  protocol: "ZPL" | "TSPL";
+  host: string;
+  port: number;
+  dpi: 203 | 300 | 600;
+  label_width_mm: number;
+  label_height_mm: number;
+  location: string | null;
+  is_active: boolean;
 }
 
 export interface GS1AIRecommendation {
@@ -281,6 +296,13 @@ export const gs1Api = {
   listPrintJobs: (status?: string) => req<PrintJob[]>("GET", `/labels/print${status ? `?status=${status}` : ""}`),
   completePrintJob: (id: string, printed_by = "user") =>
     req("POST", `/labels/print/${id}/complete?printed_by=${printed_by}`),
+  dispatchPrintJob: (id: string, printer_id: string) =>
+    req<PrintJob>("POST", `/labels/print/${id}/dispatch`, { printer_id }),
+
+  // Network label printers (ZPL / TSPL over TCP 9100)
+  listPrinters: () => req<LabelPrinter[]>("GET", "/printers"),
+  createPrinter: (d: Omit<LabelPrinter, "id">) => req<LabelPrinter>("POST", "/printers", d),
+  testPrinter: (id: string) => req<{ printer: string; status: string }>("POST", `/printers/${id}/test`),
 
   // AI
   runLabelValidator: () => req<{ generated: number }>("POST", "/ai/run-label-validator"),
