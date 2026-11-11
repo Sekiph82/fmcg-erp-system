@@ -125,6 +125,13 @@ class Settings(BaseSettings):
     MPESA_CALLBACK_SECRET: str = ""
     # Meta app secret used to verify X-Hub-Signature-256 on WhatsApp webhooks.
     WHATSAPP_APP_SECRET: str = ""
+    # Shopify custom app (Admin API access token; never stored in the database).
+    SHOPIFY_SHOP_DOMAIN: str = ""          # <store>.myshopify.com
+    SHOPIFY_ACCESS_TOKEN: str = ""
+    SHOPIFY_API_VERSION: str = "2024-10"
+    SHOPIFY_LOCATION_ID: str = ""          # Shopify location whose stock the ERP sets
+    SHOPIFY_CUSTOMER_ID: str = ""          # ERP customer that web orders are booked against
+    SHOPIFY_WAREHOUSE_ID: str = ""         # ERP warehouse for web orders and stock
     MPESA_ENV: str = "sandbox"           # "sandbox" | "production"
     MPESA_TRANSACTION_TYPE: str = "CustomerPayBillOnline"  # or CustomerBuyGoodsOnline
 

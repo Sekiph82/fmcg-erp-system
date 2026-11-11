@@ -172,6 +172,9 @@ class CrmCustomerMapping(Base, TimestampMixin):
 class EcommerceOrderMapping(Base, TimestampMixin):
     """Maps external platform orders to internal SalesOrders."""
     __tablename__ = "ecommerce_order_mappings"
+    __table_args__ = (
+        UniqueConstraint("source_platform", "external_order_id", name="uq_ecommerce_order_mappings_platform_order"),
+    )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     source_platform = Column(String(50), nullable=False, index=True)  # SHOPIFY|WOOCOMMERCE|etc.

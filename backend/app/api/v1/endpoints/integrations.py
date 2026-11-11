@@ -511,13 +511,51 @@ async def crm_status(
 # E-COMMERCE
 # ═══════════════════════════════════════════════════════════════════════════════
 
+async def _shopify_client():
+    from app.services import shopify_service as shopify
+
+    if not shopify.shopify_configured():
+        _reject_unconnected("SHOPIFY", "Shopify is not configured (SHOPIFY_SHOP_DOMAIN / SHOPIFY_ACCESS_TOKEN); nothing was synchronised.")
+    try:
+        return shopify.ShopifyClient.from_settings()
+    except shopify.ShopifyError as exc:
+        raise HTTPException(503, str(exc))
+
+
 @router.post("/ecommerce/import-orders", response_model=EcommerceImportResult,
-             dependencies=[Depends(require_permission("integrations", "edit"))])
+             dependencies=[Depends(require_permission("integrations", "edit")),
+                           Depends(require_permission("sales", "create"))])  # it creates sales orders
 async def import_ecommerce_orders(
     body: EcommerceImportRequest,
     db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
 ):
-    _reject_unconnected("ECOMMERCE_SYNC", f"No {body.platform} store connector is implemented; no orders were imported.")
+    """Import Shopify orders as DRAFT sales orders (each order once; unknown SKUs are recorded as FAILED)."""
+    from datetime import datetime as _dt, timezone as _tz
+
+    from app.services import shopify_service as shopify
+
+    if body.platform.upper() != "SHOPIFY":
+        _reject_unconnected("ECOMMERCE_SYNC", f"No {body.platform} store connector is implemented; no orders were imported.")
+    since = None
+    if body.since_date:
+        try:
+            since = _dt.fromisoformat(body.since_date)
+        except ValueError:
+            raise HTTPException(422, "since_date must be an ISO date or datetime.")
+        if since.tzinfo is None:
+            since = since.replace(tzinfo=_tz.utc)
+    client = await _shopify_client()
+    try:
+        result = await shopify.import_orders(db, client, since, current_user.id, limit=body.limit)
+    except shopify.ShopifyError as exc:
+        await db.rollback()
+        raise HTTPException(502, str(exc))
+    finally:
+        await client.aclose()
+    await db.commit()
+    return EcommerceImportResult(platform="SHOPIFY", imported=result.imported, mapped=result.imported,
+                                 failed=result.failed, errors=result.errors[:10])
 
 
 @router.post("/ecommerce/sync-inventory", response_model=InventorySyncResult,
@@ -526,7 +564,23 @@ async def sync_ecommerce_inventory(
     platform: str = Query(..., description="SHOPIFY | WOOCOMMERCE"),
     db: AsyncSession = Depends(get_db),
 ):
-    _reject_unconnected("ECOMMERCE_SYNC", f"No {platform} store connector is implemented; no inventory was pushed.")
+    """Set Shopify location stock to the ERP warehouse's available quantity for every SKU-matched variant."""
+    from app.services import shopify_service as shopify
+
+    if platform.upper() != "SHOPIFY":
+        _reject_unconnected("ECOMMERCE_SYNC", f"No {platform} store connector is implemented; no inventory was pushed.")
+    client = await _shopify_client()
+    try:
+        result = await shopify.sync_inventory(db, client)
+    except shopify.ShopifyError as exc:
+        await db.rollback()
+        raise HTTPException(502, str(exc))
+    finally:
+        await client.aclose()
+    await db.commit()
+    return InventorySyncResult(platform="SHOPIFY", products_synced=result.synced, failed=result.failed,
+                               errors=(result.errors + ([f"{result.unmatched} Shopify variant(s) have no matching ERP SKU"]
+                                                        if result.unmatched else []))[:10])
 
 
 @router.get("/ecommerce/orders", response_model=List[EcommerceOrderMappingRead],

@@ -144,11 +144,15 @@ CAPABILITIES: tuple[IntegrationCapability, ...] = (
     ),
     IntegrationCapability(
         provider="ECOMMERCE_SYNC",
-        label="E-commerce Sync",
-        status=IntegrationCapabilityStatus.STUB_ONLY,
-        simulation_supported=True,
-        frontend_route="/dashboard/portal",
-        notes="Order import and inventory push are simulated placeholders.",
+        label="E-commerce Sync (Shopify)",
+        status=IntegrationCapabilityStatus.SANDBOX_READY,
+        live_env_vars=("SHOPIFY_SHOP_DOMAIN", "SHOPIFY_ACCESS_TOKEN", "SHOPIFY_LOCATION_ID",
+                       "SHOPIFY_CUSTOMER_ID", "SHOPIFY_WAREHOUSE_ID"),
+        production_execution_allowed=True,
+        frontend_route="/dashboard/integrations/sync",
+        notes="Shopify Admin API connector: orders import as draft sales orders (SKU-matched, once per order) and "
+              "warehouse stock is pushed to a Shopify location; verified against a mocked Admin API. Live store "
+              "acceptance needs the store's custom-app token. WooCommerce has no connector.",
     ),
     IntegrationCapability(
         provider="BARCODE_PRINTING",

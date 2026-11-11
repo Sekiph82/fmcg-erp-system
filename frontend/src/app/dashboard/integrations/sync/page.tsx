@@ -142,8 +142,15 @@ function CrmSection() {
 function EcommerceSection() {
   const qc = useQueryClient();
   const [platform, setPlatform] = useState("shopify");
-  const [importResult, setImportResult] = useState<{ imported: number; mapped: number; errors: string[] } | null>(null);
+  const [importResult, setImportResult] = useState<{ imported: number; mapped: number; failed?: number; errors: string[] } | null>(null);
   const [syncResult, setSyncResult] = useState<Record<string, unknown> | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const describe = (e: unknown) => {
+    const detail = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
+    if (typeof detail === "string") return detail;
+    if (detail && typeof detail === "object" && "detail" in detail) return String((detail as { detail: unknown }).detail);
+    return e instanceof Error ? e.message : "Request failed";
+  };
 
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ["ecommerce-orders"],
@@ -152,15 +159,19 @@ function EcommerceSection() {
 
   const importMut = useMutation({
     mutationFn: () => integrationsApi.importOrders({ platform, limit: 50 }),
+    onMutate: () => setActionError(null),
     onSuccess: (data) => {
       setImportResult(data);
       qc.invalidateQueries({ queryKey: ["ecommerce-orders"] });
     },
+    onError: (e) => setActionError(describe(e)),
   });
 
   const syncMut = useMutation({
     mutationFn: () => integrationsApi.syncInventory(platform),
+    onMutate: () => setActionError(null),
     onSuccess: (data) => setSyncResult(data),
+    onError: (e) => setActionError(describe(e)),
   });
 
   return (
@@ -179,9 +190,8 @@ function EcommerceSection() {
               onChange={(e) => setPlatform(e.target.value)}
               className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
             >
-              {["shopify", "woocommerce"].map((p) => (
-                <option key={p} value={p}>{p}</option>
-              ))}
+              <option value="shopify">Shopify</option>
+              <option value="woocommerce">WooCommerce (no connector)</option>
             </select>
           </div>
           <button
@@ -200,11 +210,18 @@ function EcommerceSection() {
           </button>
         </div>
 
+        {actionError && (
+          <p role="alert" className="rounded-lg p-3 text-sm bg-red-50 border border-red-200 text-red-700">{actionError}</p>
+        )}
         {importResult && (
           <div className="rounded-lg p-3 text-sm bg-blue-50 border border-blue-200">
-            <p className="font-medium">Import result: {importResult.imported} new orders</p>
+            <p className="font-medium">
+              Import result: {importResult.imported} new draft sales orders{importResult.failed ? `, ${importResult.failed} failed` : ""}
+            </p>
             {importResult.errors.length > 0 && (
-              <p className="text-xs text-red-600 mt-1">{importResult.errors.length} errors</p>
+              <ul className="text-xs text-red-600 mt-1 list-disc pl-4">
+                {importResult.errors.map((err) => <li key={err}>{err}</li>)}
+              </ul>
             )}
           </div>
         )}

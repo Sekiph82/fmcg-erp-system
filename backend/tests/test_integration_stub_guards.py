@@ -52,8 +52,11 @@ def test_crm_and_ecommerce_sync_refuse_instead_of_fabricating(client):
     c = client(_user("integrations.edit"))
     crm = c.post("/integrations/crm/sync/customers", json={"direction": "PUSH"})
     assert crm.status_code == 501 and crm.json()["detail"]["status"] == "STUB_ONLY"
-    orders = c.post("/integrations/ecommerce/import-orders", json={"platform": "SHOPIFY"})
-    assert orders.status_code == 501
+    # importing creates sales orders, so integrations.edit alone is not enough
+    assert c.post("/integrations/ecommerce/import-orders", json={"platform": "SHOPIFY"}).status_code == 403
+    orders = client(_user("integrations.edit", "sales.create")).post(
+        "/integrations/ecommerce/import-orders", json={"platform": "SHOPIFY"})
+    assert orders.status_code == 501  # Shopify not configured: nothing imported
     inventory = c.post("/integrations/ecommerce/sync-inventory", params={"platform": "WOOCOMMERCE"})
     assert inventory.status_code == 501
 
