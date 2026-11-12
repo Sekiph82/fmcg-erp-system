@@ -10,7 +10,7 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M36 — Native CRM HubSpot Capability Gap Audit & Delivery (new owner-approved scope; M17 existing software history preserved)
 - Current Sprint: M36.S02 — Sales intelligence (after M36.S00 audit accepted)
-- Current Task: M36 batch 5 — consent/suppression store + provider-agnostic outbox (foundation for S01.T002 sequences and S02.T005 campaigns), S04.T005 knowledge base visibility/feedback
+- Current Task: M36 batch 6 — consent/suppression store + provider-agnostic outbox (foundation for S01.T002 sequences, S02.T005 campaigns), S04.T003 quote approval↔e-sign link
 - Current Task Status: IN_PROGRESS (2026-11-12) — M36.S00 audit accepted with corrections by an independent reviewer (25 tasks: 17 PARTIAL, 8 MISSING, none complete); batch 1 security/defect fixes landed. Evidence: coordination/milestones/M36/M36_S00_AUDIT.md
 - Next Task/Action: Batch 4 — S01.T004 automation executor on CRM events (idempotent, worker-safe, recursion limit, audit), then consent/suppression store and provider-agnostic outbox for S01.T002/S02.T005; S04.T005 KB visibility/feedback; S04.T003 quote approval↔e-sign link. Live provider gates stay [!].
 - Required Actor: CLAUDE (sole active task runner and tracker writer; per coordination/CLAUDE_AUTONOMOUS_EXECUTION_POLICY.md)
@@ -1570,11 +1570,12 @@ Parallel work is allowed where dependencies are satisfied, but dependency integr
   - **Required audit:** Record existing DB model/migration, service, REST/GraphQL endpoint, UI route, RBAC, tests and live-screen evidence; classify existing/partial/missing before edits.
   - **Implementation:** Extend native CRM, create minimal migrations and API/UI changes only for verified gaps; preserve existing sales/customer records, scope rules, auditability and integration contracts.
   - **Acceptance:** Test customer/company isolation, attachment security and status synchronization. Include backend/DB/API tests, frontend checks, browser screenshot evidence, independent review and exact commit SHA. Any live-provider validation remains [!] until real access is available.
-- [ ] M36.S04.T005 — Customer knowledge base (P2)
+- [v] M36.S04.T005 — Customer knowledge base (P2)
   - **Scope:** Searchable versioned public/private support articles, editorial approvals and feedback.
   - **Required audit:** Record existing DB model/migration, service, REST/GraphQL endpoint, UI route, RBAC, tests and live-screen evidence; classify existing/partial/missing before edits.
   - **Implementation:** Extend native CRM, create minimal migrations and API/UI changes only for verified gaps; preserve existing sales/customer records, scope rules, auditability and integration contracts.
   - **Acceptance:** Test publication permissions, search, revision history and private article leakage. Include backend/DB/API tests, frontend checks, browser screenshot evidence, independent review and exact commit SHA. Any live-provider validation remains [!] until real access is available.
+  Done (2026-11-12, batch 5) [v] implemented, independently reviewed, findings fixed; milestone acceptance pending: existing KB (articles, categories, revisions, search, scopes) extended — editorial gate: publishing, making an article public, editing a published article or changing any visibility field of a published/public article needs `knowledge_base.publish` (editors submit for review: new `IN_REVIEW` status); drafts/reviews/archives readable only by their author, editors and publishers; detail route now enforces article scope; feedback (`kb_article_feedback`, migration `20261112_0040`) one vote per staff user on published articles; public no-login help centre `/kb`, `/kb/<slug>` (routes `/public/kb/*`, allow-listed) shows only published, non-internal, unscoped articles, plain-text rendering, wildcard-escaped search, keyed-hash per-IP feedback limit. Also fixed: internal article page rendered article markdown as raw HTML (stored XSS) — now escaped; detail route committed before reading (500 risk). Test `backend/tests/test_m36_s04_t005_kb_db.py` through the real app; screens `coordination/milestones/M36/screenshots/B5/`.
 
 ## M36.S05 — Advanced marketing and intelligence
 - [ ] M36.S05.T001 — Customer journey attribution (P2)

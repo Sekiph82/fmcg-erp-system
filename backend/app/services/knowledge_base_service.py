@@ -9,9 +9,9 @@ from app.core.access_control import can_modify_record, can_view_record, forbidde
 
 
 KB_ACTION_STATUSES: dict[str, set[str]] = {
-    "edit": {"DRAFT", "PUBLISHED"},
-    "publish": {"DRAFT"},
-    "archive": {"DRAFT", "PUBLISHED"},
+    "edit": {"DRAFT", "IN_REVIEW", "PUBLISHED"},
+    "publish": {"DRAFT", "IN_REVIEW"},
+    "archive": {"DRAFT", "IN_REVIEW", "PUBLISHED"},
     "delete": {"DRAFT"},
 }
 

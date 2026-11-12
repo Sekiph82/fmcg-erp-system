@@ -9,6 +9,7 @@ from app.db.base import Base, TimestampMixin
 
 class KBArticleStatus(str, enum.Enum):
     DRAFT = "DRAFT"
+    IN_REVIEW = "IN_REVIEW"
     PUBLISHED = "PUBLISHED"
     ARCHIVED = "ARCHIVED"
 
@@ -84,3 +85,18 @@ class KBArticleRevision(Base, TimestampMixin):
 
     article = relationship("KBArticle", back_populates="revisions")
     changed_by = relationship("User", foreign_keys=[changed_by_id])
+
+
+
+class KBArticleFeedback(Base):
+    """"Was this helpful?" votes from staff (INTERNAL) and the public help centre (PUBLIC)."""
+    __tablename__ = "kb_article_feedback"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    article_id = Column(UUID(as_uuid=True), ForeignKey("kb_articles.id", ondelete="CASCADE"), nullable=False, index=True)
+    helpful = Column(Boolean, nullable=False)
+    comment = Column(Text, nullable=True)
+    source = Column(String(10), nullable=False)             # INTERNAL | PUBLIC
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    ip_hash = Column(String(64), nullable=True, index=True)  # keyed hash for public rate limiting
+    created_at = Column(DateTime(timezone=True), nullable=False, index=True)

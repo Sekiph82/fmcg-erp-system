@@ -50,7 +50,7 @@ function refreshSession(): Promise<void> {
 
 function redirectToLogin(): void {
   // public pages (website lead forms) have no session to expire
-  if (typeof window !== "undefined" && window.location.pathname.startsWith("/forms/")) return;
+  if (typeof window !== "undefined" && /^\/(forms|kb)(\/|$)/.test(window.location.pathname)) return;
   if (_router) {
     _router.push("/login");
   } else if (typeof window !== "undefined") {

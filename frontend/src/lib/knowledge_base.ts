@@ -21,7 +21,7 @@ export interface KBArticle {
   category_id?: string;
   category_name?: string;
   tags: string[];
-  status: "DRAFT" | "PUBLISHED" | "ARCHIVED";
+  status: "DRAFT" | "IN_REVIEW" | "PUBLISHED" | "ARCHIVED";
   version: number;
   author_name?: string;
   view_count: number;
@@ -40,8 +40,12 @@ export interface KBArticle {
   access_scope_id?: string;
 }
 
+export interface KBArticleFeedbackSummary { helpful: number; not_helpful: number }
+
 export interface KBArticleDetail extends KBArticle {
   content_md: string;
+  feedback?: KBArticleFeedbackSummary;
+  is_internal_only?: boolean;
 }
 
 export interface KBRevision {
@@ -88,4 +92,6 @@ export const kbApi = {
     apiClient.get<KBArticle[]>(`${BASE}/search`, { params: { q, limit } }).then(r => r.data),
   getStats: () =>
     apiClient.get<KBStats>(`${BASE}/stats`).then(r => r.data),
+  sendFeedback: (articleId: string, helpful: boolean, comment?: string) =>
+    apiClient.post<{ helpful: number; not_helpful: number }>(`${BASE}/articles/${articleId}/feedback`, { helpful, comment }).then(r => r.data),
 };

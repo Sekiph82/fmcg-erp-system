@@ -4,8 +4,9 @@ import { useParams } from "next/navigation";
 import { kbApi, KBArticleDetail, KBRevision } from "@/lib/knowledge_base";
 
 function renderMarkdown(md: string): string {
-  // Basic markdown rendering without external lib
+  // Basic markdown rendering without external lib; escape first so article text can never inject HTML
   return md
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;")
     .replace(/^### (.+)$/gm, '<h3 class="text-base font-semibold text-gray-800 mt-4 mb-2">$1</h3>')
     .replace(/^## (.+)$/gm, '<h2 class="text-lg font-semibold text-gray-900 mt-6 mb-2 border-b pb-1">$2</h2>'.replace('$2', '$1'))
     .replace(/^# (.+)$/gm, '<h1 class="text-xl font-bold text-gray-900 mt-6 mb-3">$1</h1>')
@@ -42,6 +43,7 @@ export default function ArticleViewPage() {
 
   return (
     <div className="p-6 max-w-4xl">
+      <EditorialBar article={article} onChanged={() => kbApi.getArticle(id).then(setArticle)} />
       <div className="mb-6">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="flex-1 min-w-0">
@@ -126,6 +128,47 @@ export default function ArticleViewPage() {
         <span className="text-gray-300">|</span>
         <a href="/dashboard/knowledge-base/articles" className="text-blue-600 hover:underline">All Articles</a>
       </div>
+    </div>
+  );
+}
+
+
+function apiError(e: unknown) {
+  const detail = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
+  if (typeof detail === "string") return detail;
+  if (detail && typeof detail === "object" && "detail" in detail) return String((detail as { detail: unknown }).detail);
+  return "Request failed.";
+}
+
+/** M36.S04.T005: review → publish workflow, public visibility and feedback. Publishing and making an
+ * article public need the Publish Knowledge Base permission (the server enforces it). */
+function EditorialBar({ article, onChanged }: { article: KBArticleDetail; onChanged: () => void }) {
+  const [error, setError] = useState<string | null>(null);
+  const [voted, setVoted] = useState(false);
+  async function act(data: object) {
+    setError(null);
+    try { await kbApi.updateArticle(article.id, data); onChanged(); } catch (e) { setError(apiError(e)); }
+  }
+  const btn = "px-2.5 py-1 text-xs border rounded-lg";
+  return (
+    <div className="mb-4 rounded-lg border p-3 text-sm space-y-2" aria-label="Editorial workflow">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs text-gray-500">Status: <b>{article.status}</b> · {article.is_internal_only === false ? "Public help centre" : "Internal only"}</span>
+        {article.status === "DRAFT" && <button className={btn} onClick={() => act({ status: "IN_REVIEW" })}>Submit for review</button>}
+        {(article.status === "DRAFT" || article.status === "IN_REVIEW") && <button className={btn} onClick={() => act({ status: "PUBLISHED" })}>Publish</button>}
+        {article.status === "IN_REVIEW" && <button className={btn} onClick={() => act({ status: "DRAFT" })}>Send back to draft</button>}
+        {article.is_internal_only !== false
+          ? <button className={btn} onClick={() => act({ is_internal_only: false })}>Show in public help centre</button>
+          : <button className={btn} onClick={() => act({ is_internal_only: true })}>Make internal only</button>}
+        {article.feedback && <span className="text-xs text-gray-500">👍 {article.feedback.helpful} · 👎 {article.feedback.not_helpful}</span>}
+      </div>
+      {article.status === "PUBLISHED" && !voted && (
+        <div className="flex items-center gap-2 text-xs">Was this helpful?
+          <button className={btn} onClick={async () => { await kbApi.sendFeedback(article.id, true).catch(() => null); setVoted(true); onChanged(); }}>Yes</button>
+          <button className={btn} onClick={async () => { await kbApi.sendFeedback(article.id, false).catch(() => null); setVoted(true); onChanged(); }}>No</button>
+        </div>
+      )}
+      {error && <p role="alert" className="text-xs text-red-600">{error}</p>}
     </div>
   );
 }

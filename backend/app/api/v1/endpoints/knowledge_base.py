@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select, or_, func
@@ -10,10 +10,43 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.deps import get_current_user, get_db, require_permission
-from app.models.knowledge_base import KBCategory, KBArticle, KBArticleRevision
+from app.core.access_control import has_permission
+from app.models.knowledge_base import KBCategory, KBArticle, KBArticleFeedback, KBArticleRevision
 from app.services.knowledge_base_service import ensure_article_action_allowed
 
 router = APIRouter()
+
+
+STATUSES = {"DRAFT", "IN_REVIEW", "PUBLISHED", "ARCHIVED"}
+
+
+def _require_publish(user, why: str) -> None:
+    """Editorial gate: publishing, making an article public or changing published content needs
+    knowledge_base.publish (editors submit for review instead)."""
+    if not has_permission(user, "knowledge_base.publish"):
+        raise HTTPException(403, f"{why} needs the Publish Knowledge Base permission; submit for review instead.")
+
+
+# fields that decide who may read an article; changing them on a public/published article is publishing
+VISIBILITY_FIELDS = ("is_internal_only", "company_id", "access_level", "access_scope_type", "access_scope_id",
+                     "department_id", "factory_id", "module_key")
+
+
+def _can_see_unpublished(user, article) -> bool:
+    """Drafts, reviews and archives: their author, editors and publishers only (not every reader)."""
+    return (has_permission(user, "knowledge_base.edit") or has_permission(user, "knowledge_base.publish")
+            or str(getattr(article, "author_id", "")) == str(getattr(user, "id", "")))
+
+
+def _like(term: str) -> str:
+    return "%" + term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
+
+
+async def _feedback_summary(db: AsyncSession, article_id) -> dict:
+    rows = (await db.execute(select(KBArticleFeedback.helpful, func.count()).where(
+        KBArticleFeedback.article_id == article_id).group_by(KBArticleFeedback.helpful))).all()
+    counts = {bool(h): n for h, n in rows}
+    return {"helpful": counts.get(True, 0), "not_helpful": counts.get(False, 0)}
 
 
 def _date_or_none(value):
@@ -106,7 +139,7 @@ async def list_articles(
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    current_user=Depends(get_current_user),
 ):
     q = select(KBArticle).options(
         selectinload(KBArticle.category),
@@ -116,11 +149,15 @@ async def list_articles(
         q = q.where(KBArticle.category_id == category_id)
     if status:
         q = q.where(KBArticle.status == status)
+        if status != "PUBLISHED" and not (has_permission(current_user, "knowledge_base.edit")
+                                          or has_permission(current_user, "knowledge_base.publish")):
+            q = q.where(KBArticle.author_id == current_user.id)
     else:
         q = q.where(KBArticle.status == "PUBLISHED")
     if search:
-        like = f"%{search}%"
-        q = q.where(or_(KBArticle.title.ilike(like), KBArticle.summary.ilike(like), KBArticle.content_md.ilike(like)))
+        like = _like(search)
+        q = q.where(or_(KBArticle.title.ilike(like, escape="\\"), KBArticle.summary.ilike(like, escape="\\"),
+                        KBArticle.content_md.ilike(like, escape="\\")))
     q = q.order_by(KBArticle.is_featured.desc(), KBArticle.updated_at.desc()).limit(limit).offset(offset)
     r = await db.execute(q)
     articles = list(r.scalars())
@@ -150,7 +187,7 @@ async def list_articles(
 async def get_article(
     article_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    current_user=Depends(get_current_user),
 ):
     r = await db.execute(
         select(KBArticle).options(
@@ -161,9 +198,14 @@ async def get_article(
     a = r.scalar_one_or_none()
     if not a:
         raise HTTPException(404, "Article not found")
+    ensure_article_action_allowed(current_user, a, "view")
+    if a.status != "PUBLISHED" and not _can_see_unpublished(current_user, a):
+        raise HTTPException(404, "Article not found")
+    feedback = await _feedback_summary(db, a.id)
     a.view_count = (a.view_count or 0) + 1
-    await db.commit()
-    return {
+    out = {
+        "feedback": feedback,
+        "is_internal_only": a.is_internal_only,
         "id": str(a.id),
         "slug": a.slug,
         "title": a.title,
@@ -181,6 +223,8 @@ async def get_article(
         "published_at": a.published_at.isoformat() if a.published_at else None,
         "updated_at": a.updated_at.isoformat() if a.updated_at else None,
     }
+    await db.commit()  # after reading: the commit refreshes updated_at server-side
+    return out
 
 
 @router.post("/articles", status_code=201,
@@ -190,6 +234,14 @@ async def create_article(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
+    if body.get("status", "DRAFT") not in STATUSES:
+        raise HTTPException(422, f"status must be one of {sorted(STATUSES)}")
+    if body.get("status") == "PUBLISHED":
+        _require_publish(current_user, "Publishing")
+    if "is_internal_only" in body and not isinstance(body["is_internal_only"], bool):
+        raise HTTPException(422, "is_internal_only must be true or false")
+    if body.get("is_internal_only") is False:
+        _require_publish(current_user, "Making an article public")
     article = KBArticle(
         slug=body["slug"],
         title=body["title"],
@@ -243,6 +295,20 @@ async def update_article(
     if not a:
         raise HTTPException(404, "Article not found")
     ensure_article_action_allowed(current_user, a, "edit")
+    if "status" in body and body["status"] not in STATUSES:
+        raise HTTPException(422, f"status must be one of {sorted(STATUSES)}")
+    if body.get("status") == "PUBLISHED" and a.status != "PUBLISHED":
+        _require_publish(current_user, "Publishing")
+    if "is_internal_only" in body and not isinstance(body["is_internal_only"], bool):
+        raise HTTPException(422, "is_internal_only must be true or false")
+    if body.get("is_internal_only") is False and a.is_internal_only:
+        _require_publish(current_user, "Making an article public")
+    if (a.status == "PUBLISHED" or not a.is_internal_only) and any(
+            k in body and str(body[k] if body[k] is not None else "") != str(getattr(a, k) if getattr(a, k) is not None else "")
+            for k in VISIBILITY_FIELDS):
+        _require_publish(current_user, "Changing who can read a published or public article")
+    if a.status == "PUBLISHED" and any(k in body and body[k] != getattr(a, k) for k in ("title", "summary", "content_md")):
+        _require_publish(current_user, "Changing a published article")
     content_changed = False
     if "content_md" in body and body["content_md"] != a.content_md:
         content_changed = True
@@ -383,3 +449,26 @@ async def kb_stats(db: AsyncSession = Depends(get_db), _=Depends(get_current_use
         "categories": cats_r.scalar_one(),
         "top_articles": [{"id": str(a.id), "title": a.title, "view_count": a.view_count} for a in top],
     }
+
+
+
+@router.post("/articles/{article_id}/feedback", status_code=201,
+             dependencies=[Depends(require_permission("knowledge_base", "view"))])
+async def add_feedback(article_id: uuid.UUID, body: dict, db: AsyncSession = Depends(get_db),
+                       current_user=Depends(get_current_user)):
+    a = await db.get(KBArticle, article_id)
+    if not a:
+        raise HTTPException(404, "Article not found")
+    ensure_article_action_allowed(current_user, a, "view")
+    if a.status != "PUBLISHED":
+        raise HTTPException(409, "Feedback is collected on published articles only.")
+    if not isinstance(body.get("helpful"), bool):
+        raise HTTPException(422, "helpful must be true or false")
+    from sqlalchemy import delete as _delete
+
+    await db.execute(_delete(KBArticleFeedback).where(  # one vote per user: the latest replaces earlier ones
+        KBArticleFeedback.article_id == a.id, KBArticleFeedback.user_id == current_user.id))
+    db.add(KBArticleFeedback(article_id=a.id, helpful=body["helpful"], comment=(str(body.get("comment") or "")[:1000] or None),
+                             source="INTERNAL", user_id=current_user.id, created_at=datetime.now(timezone.utc)))
+    await db.commit()
+    return await _feedback_summary(db, a.id)
