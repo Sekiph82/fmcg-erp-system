@@ -8,12 +8,12 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 ## Project Status
 
-- Current Milestone: M17 — Integrations (software completion of remaining provider tasks)
-- Current Sprint: M17.S02 — Provider Completion
-- Current Task: M17.S02.T005 — IoT/CRM/e-commerce/GraphQL stub families
-- Current Task Status: DONE (2026-11-12) — GraphQL, Shopify store connector (buyers linked to native customers) and broker-agnostic MQTT bridge delivered; CRM stays native by owner decision and the optional external CRM/WooCommerce/native OPC-UA connectors are deferred as M17.S02.T006 [D]; live Shopify store and plant MQTT broker acceptance are external gates. M35 DONE; security default-auth fix shipped
-- Next Task/Action: None executable without external inputs: live KRA/eTIMS, M-Pesa, bank and AI-provider credentials, production deployment secrets, physical printers/devices (see Persistent External / Runtime Gates)
-- Required Actor: CODEX
+- Current Milestone: M36 — Native CRM HubSpot Capability Gap Audit & Delivery (new owner-approved scope; M17 existing software history preserved)
+- Current Sprint: M36.S00 — Code/DB/API/real-UI evidence audit
+- Current Task: M36.S00.T001 — Audit native CRM implementation against 25 candidate gaps
+- Current Task Status: PLANNED (2026-11-12) — M36 is new scope, not a claim that 25 features are absent. Prior M17.S02.T005 DONE evidence remains historical; verify actual implementation before coding.
+- Next Task/Action: Claude to audit current code, ORM/migrations, API, frontend routes and real running CRM screens; classify all 25 gaps, then autonomously implement dependency-ready verified gaps. External credentials/hardware gate only their live acceptance.
+- Required Actor: CLAUDE (sole active task runner and tracker writer; per coordination/CLAUDE_AUTONOMOUS_EXECUTION_POLICY.md)
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
 - M00 Gate: COMPLETE
@@ -46,9 +46,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 6. Cross-module changes must preserve RBAC, auditability, migrations, API contracts, frontend/backend consistency and tenant/company boundaries.
 7. M20–M35 are enterprise upgrades layered on M01–M19 foundations.
 8. Graphify is reference tooling only. Do not run refreshes without an explicit project need; no hooks, watchers or competing tracker state.
-9. The owner authorizes the active Codex task runner as the tracker writer for this project. Update `TASKS.md` only for explicit current-task claims, accepted transitions, and matching owner answers; the dashboard and independent reviewer are read-only. Keep `TASKS_HISTORY.md` immutable.
+9. The owner authorizes Claude as the sole active autonomous task runner, task selector, implementer, reviewer coordinator and tracker writer. Update `TASKS.md` only for evidence-backed current-task claims, accepted transitions and owner answers; dashboard and independent reviewers are read-only. Keep `TASKS_HISTORY.md` immutable. Historical Codex names, logs and prior owner answers are evidence, not active authority.
 10. Builder logs are evidence claims, not acceptance by themselves.
-11. `main` is the only authorized branch. Builders must not create, restore, push, or work on legacy `hiveai*` branches unless ChatGPT explicitly authorizes a temporary branch.
+11. `main` is the only authorized branch. Claude must not create, restore, push or work on legacy `hiveai*` branches without explicit owner authorization; ChatGPT is not a required execution gate.
 
 ---
 
@@ -1433,6 +1433,172 @@ Shared evidence (2026-11-10): `app/services/qa_enterprise_service.py`, router `a
 `M01/M02/M03/M04 → M05/M06/M07/M08/M09/M10/M11/M12/M13/M14/M15/M16/M17/M18/M19 → M20 → M21 → M22 → M23 → M24 → M25/M26/M27 → M28/M29 → M30/M31 → M32 → M33/M34 → M35`
 
 Parallel work is allowed where dependencies are satisfied, but dependency integrity takes precedence over milestone number.
+
+
+
+---
+
+# M36 — Native CRM HubSpot Capability Gap Audit & Delivery (Owner-approved 2026-11-12)
+
+**Status: PLANNED — 25 candidate gaps; none is presumed absent or DONE without current-source and runtime evidence.**
+**Active actor: Claude only.** Follow `coordination/CLAUDE_AUTONOMOUS_EXECUTION_POLICY.md`. Keep native CRM the source of truth; HubSpot/Salesforce/Zoho remain optional connectors, never dependencies. Preserve all M01–M35 acceptance and historical evidence.
+
+## M36.S00 — Mandatory source-to-screen audit (execute before implementing feature tasks)
+- [ ] M36.S00.T001 — Inventory actual backend CRM/sales/customer/marketing/support modules, services, background jobs, frontend routes/components, SQLAlchemy models, Alembic migrations, API contracts, RBAC and audit hooks at exact main SHA. Record source paths, functions and missing surfaces; inspect existing native leads/opportunities/territories/visits/segments/NPS/helpdesk/AI to avoid duplicate implementations.
+- [ ] M36.S00.T002 — Start existing application in supported local/staging configuration with synthetic data, exercise real CRM pages in browser (list/detail/create/edit/pipeline/timeline), capture screenshots and browser console/network evidence. Document inaccessible screens and runtime blockers without claiming visual PASS. Do not use screenshots as substitutes for API/DB tests.
+- [ ] M36.S00.T003 — For each of the 25 M36 tasks, produce evidence-backed matrix: EXISTS_COMPLETE / PARTIAL / MISSING / BLOCKED / NOT_APPLICABLE; link code, ORM, API, UI, tests, screenshot and evidence SHA. Mark already-complete features [x] only after independent review; keep partial tasks open with bounded subtasks. Compare HubSpot capabilities as reference, not as a requirement to buy a subscription.
+- [ ] M36.S00.T004 — Audit architecture and risk: company/tenant boundaries, role permissions, consent, personal-data retention, event dispatcher ownership, queues, idempotency, outbound mail limits, integration secrets, migration safety, data provenance and live-provider gates. Propose dependency graph and ordered implementation batches.
+- [ ] M36.S00.T005 — Independent reviewer gate for audit and plan. Record reviewer identity, exact SHA, findings, screenshot references, scope and verdict. Fix audit defects before implementation. Update M36 rows and top Project Status to actual evidence, not speculative percentages.
+
+## M36 execution and acceptance contract
+1. For each task below, inspect existing implementation first; reuse native CRM and shared workflow, custom fields, documents, auth, event, reporting and sales foundations. Never replace working modules or invent parallel customer records.
+2. Each task deliverable must cover **database schema/migrations where needed, backend service/API, frontend UX, RBAC/company isolation, audit/events, error/empty/loading states, tests and actual running-screen screenshot evidence**. If a layer is not needed, record why.
+3. Provide synthetic-data end-to-end acceptance from lead through quote/order when relevant; verify no cross-tenant leaks, no duplicate outbound sends, stable retries and accurate sales/finance links. Run backend, frontend type/lint/build, migration and integration tests applicable to changed code.
+4. Respect customer consent, unsubscribe/suppression, retention, local law and provider terms. Never send real bulk emails, record calls, or contact real customers without explicit authorization. Never store OAuth/API secrets in Git. Use mocks only for software tests, not live-provider acceptance.
+5. For every batch: update task-specific evidence in `coordination/sessions/M36...`, perform separate independent review at milestone gate, commit/push to main, verify remote SHA, update this canonical ledger. Use [v] for implemented but not independently accepted; [!] only for genuine external blockers; [x] only after verified acceptance.
+6. Claude should continue automatically through all dependency-ready tasks; external credentials for Gmail/Outlook/telephony/signing providers block only live integration tests, not safe provider-agnostic implementation. Ask owner only for unavoidable provider, legal or commercial decisions.
+
+
+## M36.S01 — Critical CRM communications and automation
+- [ ] M36.S01.T001 — Two-way email integration (P0)
+  - **Scope:** Gmail/Microsoft 365 OAuth connection, per-user mailbox permissions, inbound/outbound sync, thread deduplication, attachment metadata, unsubscribe and disconnect handling.
+  - **Required audit:** Record existing DB model/migration, service, REST/GraphQL endpoint, UI route, RBAC, tests and live-screen evidence; classify existing/partial/missing before edits.
+  - **Implementation:** Extend native CRM, create minimal migrations and API/UI changes only for verified gaps; preserve existing sales/customer records, scope rules, auditability and integration contracts.
+  - **Acceptance:** Verify OAuth refresh/revocation, idempotent replay, company isolation, mailbox disconnect and UI thread history. Include backend/DB/API tests, frontend checks, browser screenshot evidence, independent review and exact commit SHA. Any live-provider validation remains [!] until real access is available.
+- [ ] M36.S01.T002 — Automated sales sequences (P0)
+  - **Scope:** Scheduled multi-step personalized outreach, reply/opt-out stop conditions, owner assignment and safe rate limits.
+  - **Required audit:** Record existing DB model/migration, service, REST/GraphQL endpoint, UI route, RBAC, tests and live-screen evidence; classify existing/partial/missing before edits.
+  - **Implementation:** Extend native CRM, create minimal migrations and API/UI changes only for verified gaps; preserve existing sales/customer records, scope rules, auditability and integration contracts.
+  - **Acceptance:** Test delays, reply-stop, unsubscribe, retries, no duplicate sends and consent. Include backend/DB/API tests, frontend checks, browser screenshot evidence, independent review and exact commit SHA. Any live-provider validation remains [!] until real access is available.
+- [ ] M36.S01.T003 — Unified conversations inbox (P0)
+  - **Scope:** Permission-scoped inbox for email, website chat and support threads, assignment, SLA and links to native CRM contacts.
+  - **Required audit:** Record existing DB model/migration, service, REST/GraphQL endpoint, UI route, RBAC, tests and live-screen evidence; classify existing/partial/missing before edits.
+  - **Implementation:** Extend native CRM, create minimal migrations and API/UI changes only for verified gaps; preserve existing sales/customer records, scope rules, auditability and integration contracts.
+  - **Acceptance:** Test channel ingestion, ownership changes, unread state, duplicate events and tenant separation. Include backend/DB/API tests, frontend checks, browser screenshot evidence, independent review and exact commit SHA. Any live-provider validation remains [!] until real access is available.
+- [ ] M36.S01.T004 — CRM workflow automation engine (P0)
+  - **Scope:** Event-triggered lead routing, stage transitions, reminders and task creation with rules, retries and durable execution.
+  - **Required audit:** Record existing DB model/migration, service, REST/GraphQL endpoint, UI route, RBAC, tests and live-screen evidence; classify existing/partial/missing before edits.
+  - **Implementation:** Extend native CRM, create minimal migrations and API/UI changes only for verified gaps; preserve existing sales/customer records, scope rules, auditability and integration contracts.
+  - **Acceptance:** Prove background worker ownership, idempotency, audit trails, recursion limits and failure recovery. Include backend/DB/API tests, frontend checks, browser screenshot evidence, independent review and exact commit SHA. Any live-provider validation remains [!] until real access is available.
+- [ ] M36.S01.T005 — Calendar and meeting scheduling (P0)
+  - **Scope:** Google/Microsoft calendar connections, availability, meeting links, time-zone-safe booking, CRM meeting history.
+  - **Required audit:** Record existing DB model/migration, service, REST/GraphQL endpoint, UI route, RBAC, tests and live-screen evidence; classify existing/partial/missing before edits.
+  - **Implementation:** Extend native CRM, create minimal migrations and API/UI changes only for verified gaps; preserve existing sales/customer records, scope rules, auditability and integration contracts.
+  - **Acceptance:** Test double-booking protection, DST/time zones, cancellations, sync conflicts and OAuth revocation. Include backend/DB/API tests, frontend checks, browser screenshot evidence, independent review and exact commit SHA. Any live-provider validation remains [!] until real access is available.
+
+## M36.S02 — Sales intelligence and marketing foundations
+- [ ] M36.S02.T001 — Website lead capture forms (P1)
+  - **Scope:** Embeddable validated forms, spam protection, consent, source/UTM capture and lead deduplication.
+  - **Required audit:** Record existing DB model/migration, service, REST/GraphQL endpoint, UI route, RBAC, tests and live-screen evidence; classify existing/partial/missing before edits.
+  - **Implementation:** Extend native CRM, create minimal migrations and API/UI changes only for verified gaps; preserve existing sales/customer records, scope rules, auditability and integration contracts.
+  - **Acceptance:** Test anonymous rate limiting, field mapping, injection prevention and source attribution. Include backend/DB/API tests, frontend checks, browser screenshot evidence, independent review and exact commit SHA. Any live-provider validation remains [!] until real access is available.
+- [ ] M36.S02.T002 — Lead scoring (P1)
+  - **Scope:** Configurable fit/engagement score rules, score history and explainable prioritized lead queue.
+  - **Required audit:** Record existing DB model/migration, service, REST/GraphQL endpoint, UI route, RBAC, tests and live-screen evidence; classify existing/partial/missing before edits.
+  - **Implementation:** Extend native CRM, create minimal migrations and API/UI changes only for verified gaps; preserve existing sales/customer records, scope rules, auditability and integration contracts.
+  - **Acceptance:** Test deterministic scores, recalculation, missing data and RBAC. Include backend/DB/API tests, frontend checks, browser screenshot evidence, independent review and exact commit SHA. Any live-provider validation remains [!] until real access is available.
+- [ ] M36.S02.T003 — Weighted sales forecasting (P1)
+  - **Scope:** Probability-weighted opportunities, stage forecasts, quota/owner/territory filters and forecast snapshots.
+  - **Required audit:** Record existing DB model/migration, service, REST/GraphQL endpoint, UI route, RBAC, tests and live-screen evidence; classify existing/partial/missing before edits.
+  - **Implementation:** Extend native CRM, create minimal migrations and API/UI changes only for verified gaps; preserve existing sales/customer records, scope rules, auditability and integration contracts.
+  - **Acceptance:** Reconcile forecast to native opportunity/order records and test currency/time filters. Include backend/DB/API tests, frontend checks, browser screenshot evidence, independent review and exact commit SHA. Any live-provider validation remains [!] until real access is available.
+- [ ] M36.S02.T004 — Sales funnel analytics (P1)
+  - **Scope:** Stage conversion, aging, win/loss reasons, cohort and representative performance drill-down.
+  - **Required audit:** Record existing DB model/migration, service, REST/GraphQL endpoint, UI route, RBAC, tests and live-screen evidence; classify existing/partial/missing before edits.
+  - **Implementation:** Extend native CRM, create minimal migrations and API/UI changes only for verified gaps; preserve existing sales/customer records, scope rules, auditability and integration contracts.
+  - **Acceptance:** Reconcile aggregates to source opportunities; test deleted/merged leads and date boundaries. Include backend/DB/API tests, frontend checks, browser screenshot evidence, independent review and exact commit SHA. Any live-provider validation remains [!] until real access is available.
+- [ ] M36.S02.T005 — Marketing campaign management (P1)
+  - **Scope:** Consent-aware segmented email campaigns, templates, send scheduling, deliverability and conversion metrics.
+  - **Required audit:** Record existing DB model/migration, service, REST/GraphQL endpoint, UI route, RBAC, tests and live-screen evidence; classify existing/partial/missing before edits.
+  - **Implementation:** Extend native CRM, create minimal migrations and API/UI changes only for verified gaps; preserve existing sales/customer records, scope rules, auditability and integration contracts.
+  - **Acceptance:** Test opt-out, suppression, bounce handling, attribution and no cross-tenant sends. Include backend/DB/API tests, frontend checks, browser screenshot evidence, independent review and exact commit SHA. Any live-provider validation remains [!] until real access is available.
+
+## M36.S03 — CRM engagement and workflow UX
+- [ ] M36.S03.T001 — Sales document engagement tracking (P1)
+  - **Scope:** Permissioned proposal/document links, opens and views with privacy-aware tracking and expiry.
+  - **Required audit:** Record existing DB model/migration, service, REST/GraphQL endpoint, UI route, RBAC, tests and live-screen evidence; classify existing/partial/missing before edits.
+  - **Implementation:** Extend native CRM, create minimal migrations and API/UI changes only for verified gaps; preserve existing sales/customer records, scope rules, auditability and integration contracts.
+  - **Acceptance:** Test signed link expiry, access revocation, event deduplication and no sensitive data leakage. Include backend/DB/API tests, frontend checks, browser screenshot evidence, independent review and exact commit SHA. Any live-provider validation remains [!] until real access is available.
+- [ ] M36.S03.T002 — Unified customer activity timeline (P1)
+  - **Scope:** One ordered customer view for emails, calls, visits, meetings, tasks, quotes, orders and support.
+  - **Required audit:** Record existing DB model/migration, service, REST/GraphQL endpoint, UI route, RBAC, tests and live-screen evidence; classify existing/partial/missing before edits.
+  - **Implementation:** Extend native CRM, create minimal migrations and API/UI changes only for verified gaps; preserve existing sales/customer records, scope rules, auditability and integration contracts.
+  - **Acceptance:** Verify event references, chronology, pagination, merges and role-scoped visibility. Include backend/DB/API tests, frontend checks, browser screenshot evidence, independent review and exact commit SHA. Any live-provider validation remains [!] until real access is available.
+- [ ] M36.S03.T003 — Mobile CRM experience (P1)
+  - **Scope:** Responsive/PWA mobile customer cards, quick notes, visit capture, alerts and safe offline behavior if supported.
+  - **Required audit:** Record existing DB model/migration, service, REST/GraphQL endpoint, UI route, RBAC, tests and live-screen evidence; classify existing/partial/missing before edits.
+  - **Implementation:** Extend native CRM, create minimal migrations and API/UI changes only for verified gaps; preserve existing sales/customer records, scope rules, auditability and integration contracts.
+  - **Acceptance:** Run actual mobile viewport/device checks; verify auth, touch usability and offline conflict policy. Include backend/DB/API tests, frontend checks, browser screenshot evidence, independent review and exact commit SHA. Any live-provider validation remains [!] until real access is available.
+- [ ] M36.S03.T004 — Visual workflow designer (P1)
+  - **Scope:** Rule builder for triggers, conditional branches, delays, approvals and versioned published workflows.
+  - **Required audit:** Record existing DB model/migration, service, REST/GraphQL endpoint, UI route, RBAC, tests and live-screen evidence; classify existing/partial/missing before edits.
+  - **Implementation:** Extend native CRM, create minimal migrations and API/UI changes only for verified gaps; preserve existing sales/customer records, scope rules, auditability and integration contracts.
+  - **Acceptance:** Test graph validation, cycles, rollback, simulation and privilege enforcement. Include backend/DB/API tests, frontend checks, browser screenshot evidence, independent review and exact commit SHA. Any live-provider validation remains [!] until real access is available.
+- [ ] M36.S03.T005 — Live chat and chatbot (P2)
+  - **Scope:** Embeddable website chat, human handoff, CRM lead creation and transcript retention.
+  - **Required audit:** Record existing DB model/migration, service, REST/GraphQL endpoint, UI route, RBAC, tests and live-screen evidence; classify existing/partial/missing before edits.
+  - **Implementation:** Extend native CRM, create minimal migrations and API/UI changes only for verified gaps; preserve existing sales/customer records, scope rules, auditability and integration contracts.
+  - **Acceptance:** Test spam/rate controls, handoff, privacy, tenant isolation and transcript linking. Include backend/DB/API tests, frontend checks, browser screenshot evidence, independent review and exact commit SHA. Any live-provider validation remains [!] until real access is available.
+
+## M36.S04 — Customer service and journey tooling
+- [ ] M36.S04.T001 — AI sales copilot (P2)
+  - **Scope:** Permission-scoped interaction summaries, suggested follow-ups, draft messages and evidence-linked recommendations.
+  - **Required audit:** Record existing DB model/migration, service, REST/GraphQL endpoint, UI route, RBAC, tests and live-screen evidence; classify existing/partial/missing before edits.
+  - **Implementation:** Extend native CRM, create minimal migrations and API/UI changes only for verified gaps; preserve existing sales/customer records, scope rules, auditability and integration contracts.
+  - **Acceptance:** Test hallucination safeguards, human approval before sends, provider-off fallback and PII controls. Include backend/DB/API tests, frontend checks, browser screenshot evidence, independent review and exact commit SHA. Any live-provider validation remains [!] until real access is available.
+- [ ] M36.S04.T002 — Telephony and VoIP integration (P2)
+  - **Scope:** Provider-optional click-to-call, call metadata, recording consent and transcription if legally enabled.
+  - **Required audit:** Record existing DB model/migration, service, REST/GraphQL endpoint, UI route, RBAC, tests and live-screen evidence; classify existing/partial/missing before edits.
+  - **Implementation:** Extend native CRM, create minimal migrations and API/UI changes only for verified gaps; preserve existing sales/customer records, scope rules, auditability and integration contracts.
+  - **Acceptance:** Test consent, recording retention, permissions, failed calls and provider-off behavior. Include backend/DB/API tests, frontend checks, browser screenshot evidence, independent review and exact commit SHA. Any live-provider validation remains [!] until real access is available.
+- [ ] M36.S04.T003 — Quote approval and e-signature (P2)
+  - **Scope:** Existing ERP quotation integration with approval, secure external review, e-sign and audit proof via chosen provider.
+  - **Required audit:** Record existing DB model/migration, service, REST/GraphQL endpoint, UI route, RBAC, tests and live-screen evidence; classify existing/partial/missing before edits.
+  - **Implementation:** Extend native CRM, create minimal migrations and API/UI changes only for verified gaps; preserve existing sales/customer records, scope rules, auditability and integration contracts.
+  - **Acceptance:** Test signer identity, tamper evidence, expiry and order conversion without bypassing pricing/credit controls. Include backend/DB/API tests, frontend checks, browser screenshot evidence, independent review and exact commit SHA. Any live-provider validation remains [!] until real access is available.
+- [ ] M36.S04.T004 — Customer self-service portal (P2)
+  - **Scope:** Customer-authenticated ticket history, status, replies and approved attachments.
+  - **Required audit:** Record existing DB model/migration, service, REST/GraphQL endpoint, UI route, RBAC, tests and live-screen evidence; classify existing/partial/missing before edits.
+  - **Implementation:** Extend native CRM, create minimal migrations and API/UI changes only for verified gaps; preserve existing sales/customer records, scope rules, auditability and integration contracts.
+  - **Acceptance:** Test customer/company isolation, attachment security and status synchronization. Include backend/DB/API tests, frontend checks, browser screenshot evidence, independent review and exact commit SHA. Any live-provider validation remains [!] until real access is available.
+- [ ] M36.S04.T005 — Customer knowledge base (P2)
+  - **Scope:** Searchable versioned public/private support articles, editorial approvals and feedback.
+  - **Required audit:** Record existing DB model/migration, service, REST/GraphQL endpoint, UI route, RBAC, tests and live-screen evidence; classify existing/partial/missing before edits.
+  - **Implementation:** Extend native CRM, create minimal migrations and API/UI changes only for verified gaps; preserve existing sales/customer records, scope rules, auditability and integration contracts.
+  - **Acceptance:** Test publication permissions, search, revision history and private article leakage. Include backend/DB/API tests, frontend checks, browser screenshot evidence, independent review and exact commit SHA. Any live-provider validation remains [!] until real access is available.
+
+## M36.S05 — Advanced marketing and intelligence
+- [ ] M36.S05.T001 — Customer journey attribution (P2)
+  - **Scope:** Source-to-lead-to-opportunity-to-order-to-repeat-purchase attribution with consent-aware identity joins.
+  - **Required audit:** Record existing DB model/migration, service, REST/GraphQL endpoint, UI route, RBAC, tests and live-screen evidence; classify existing/partial/missing before edits.
+  - **Implementation:** Extend native CRM, create minimal migrations and API/UI changes only for verified gaps; preserve existing sales/customer records, scope rules, auditability and integration contracts.
+  - **Acceptance:** Test source precedence, multi-touch attribution assumptions, merges and reporting reconciliation. Include backend/DB/API tests, frontend checks, browser screenshot evidence, independent review and exact commit SHA. Any live-provider validation remains [!] until real access is available.
+- [ ] M36.S05.T002 — Landing pages and A/B testing (P2)
+  - **Scope:** Campaign landing-page templates, variants, conversion goals and safe experiment assignment.
+  - **Required audit:** Record existing DB model/migration, service, REST/GraphQL endpoint, UI route, RBAC, tests and live-screen evidence; classify existing/partial/missing before edits.
+  - **Implementation:** Extend native CRM, create minimal migrations and API/UI changes only for verified gaps; preserve existing sales/customer records, scope rules, auditability and integration contracts.
+  - **Acceptance:** Test consistent assignment, statistical guardrails, consent and form integration. Include backend/DB/API tests, frontend checks, browser screenshot evidence, independent review and exact commit SHA. Any live-provider validation remains [!] until real access is available.
+- [ ] M36.S05.T003 — Integration catalog and sync console (P2)
+  - **Scope:** Inventory of optional provider connectors, mapping health, retries, errors, credential status and scoped sync controls.
+  - **Required audit:** Record existing DB model/migration, service, REST/GraphQL endpoint, UI route, RBAC, tests and live-screen evidence; classify existing/partial/missing before edits.
+  - **Implementation:** Extend native CRM, create minimal migrations and API/UI changes only for verified gaps; preserve existing sales/customer records, scope rules, auditability and integration contracts.
+  - **Acceptance:** Test no fake SYNCED status, backoff, secrets handling and provider-unavailable behavior. Include backend/DB/API tests, frontend checks, browser screenshot evidence, independent review and exact commit SHA. Any live-provider validation remains [!] until real access is available.
+- [ ] M36.S05.T004 — Conversation intelligence (P3)
+  - **Scope:** Opt-in transcript analytics, objection/theme extraction, coaching insights and review workflow.
+  - **Required audit:** Record existing DB model/migration, service, REST/GraphQL endpoint, UI route, RBAC, tests and live-screen evidence; classify existing/partial/missing before edits.
+  - **Implementation:** Extend native CRM, create minimal migrations and API/UI changes only for verified gaps; preserve existing sales/customer records, scope rules, auditability and integration contracts.
+  - **Acceptance:** Test transcript consent, access controls, source-linked outputs and no fabricated scores. Include backend/DB/API tests, frontend checks, browser screenshot evidence, independent review and exact commit SHA. Any live-provider validation remains [!] until real access is available.
+- [ ] M36.S05.T005 — Account-based marketing (P3)
+  - **Scope:** Target-account groups, buying committees, cross-contact engagement and coordinated account campaigns.
+  - **Required audit:** Record existing DB model/migration, service, REST/GraphQL endpoint, UI route, RBAC, tests and live-screen evidence; classify existing/partial/missing before edits.
+  - **Implementation:** Extend native CRM, create minimal migrations and API/UI changes only for verified gaps; preserve existing sales/customer records, scope rules, auditability and integration contracts.
+  - **Acceptance:** Test account/contact joins, hierarchy, permissions and attribution. Include backend/DB/API tests, frontend checks, browser screenshot evidence, independent review and exact commit SHA. Any live-provider validation remains [!] until real access is available.
+
+## M36.S06 — Consolidated acceptance and handoff
+- [ ] M36.S06.T001 — Run full CRM regression across lead → opportunity → quote → sales order → invoice, field sales, Shopify buyer mappings, customer support and permissions using synthetic PostgreSQL data; record exact SHA and failures.
+- [ ] M36.S06.T002 — Perform browser visual regression and screenshot walkthrough of all implemented CRM pages (desktop and mobile), with accessible navigation, loading/error/empty states and no console failures.
+- [ ] M36.S06.T003 — Independent code/security/privacy/migration audit with separate reviewer; remediate findings and retest. No self-review presented as independent.
+- [ ] M36.S06.T004 — Update CRM user/admin docs, provider setup instructions, consent policy, feature matrix, deferred live gates, release notes and TASKS.md; commit/push and verify main synchronization.
 
 # Persistent External / Runtime Gates
 
