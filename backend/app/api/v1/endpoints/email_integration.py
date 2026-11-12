@@ -25,6 +25,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.config import settings
 from app.core.deps import get_current_user, get_db
 from app.models.email_integration import (
     EmailAccount, EmailThread, EmailMessage, EmailTemplate, EmailProvider,
@@ -40,16 +41,40 @@ from app.schemas.email_integration import (
 router = APIRouter()
 
 
+# Mailboxes are personal: a user reaches only the accounts they connected (superusers: all).
+def _owns(account: EmailAccount, user: User) -> bool:
+    return bool(getattr(user, "is_superuser", False)) or account.created_by_id == user.id
+
+
+async def _account_for(db: AsyncSession, account_id: uuid.UUID, user: User) -> EmailAccount:
+    account = await db.get(EmailAccount, account_id)
+    if not account or not _owns(account, user):
+        raise HTTPException(404, "Account not found")
+    return account
+
+
+async def _thread_for(db: AsyncSession, thread_id: uuid.UUID, user: User, with_messages: bool = False) -> EmailThread:
+    q = select(EmailThread).where(EmailThread.id == thread_id)
+    if with_messages:
+        q = q.options(selectinload(EmailThread.messages))
+    thread = (await db.execute(q)).scalar_one_or_none()
+    account = await db.get(EmailAccount, thread.account_id) if thread else None
+    if not thread or account is None or not _owns(account, user):
+        raise HTTPException(404, "Thread not found")
+    return thread
+
+
 # ── Accounts ──────────────────────────────────────────────────────────────────
 
 @router.get("/accounts", response_model=List[EmailAccountRead])
 async def list_accounts(
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
-    result = await db.execute(
-        select(EmailAccount).where(EmailAccount.is_active.is_(True)).order_by(EmailAccount.created_at)
-    )
+    q = select(EmailAccount).where(EmailAccount.is_active.is_(True)).order_by(EmailAccount.created_at)
+    if not current_user.is_superuser:
+        q = q.where(EmailAccount.created_by_id == current_user.id)
+    result = await db.execute(q)
     return [EmailAccountRead.model_validate(a) for a in result.scalars().all()]
 
 
@@ -67,10 +92,9 @@ async def add_account(
 
 
 @router.delete("/accounts/{account_id}", status_code=204)
-async def remove_account(account_id: uuid.UUID, db: AsyncSession = Depends(get_db), _: User = Depends(get_current_user)):
-    account = await db.get(EmailAccount, account_id)
-    if not account:
-        raise HTTPException(404, "Account not found")
+async def remove_account(account_id: uuid.UUID, db: AsyncSession = Depends(get_db),
+                         current_user: User = Depends(get_current_user)):
+    account = await _account_for(db, account_id, current_user)
     account.is_active = False
     await db.commit()
 
@@ -86,9 +110,12 @@ async def list_threads(
     skip: int = 0,
     limit: int = Query(50, le=200),
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     q = select(EmailThread).order_by(EmailThread.last_message_at.desc()).offset(skip).limit(limit)
+    if not current_user.is_superuser:
+        q = q.where(EmailThread.account_id.in_(
+            select(EmailAccount.id).where(EmailAccount.created_by_id == current_user.id)))
     if linked_object_id:
         q = q.where(EmailThread.linked_object_id == linked_object_id)
     if linked_module:
@@ -111,16 +138,9 @@ async def list_threads(
 async def get_thread(
     thread_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
-    result = await db.execute(
-        select(EmailThread)
-        .options(selectinload(EmailThread.messages))
-        .where(EmailThread.id == thread_id)
-    )
-    thread = result.scalar_one_or_none()
-    if not thread:
-        raise HTTPException(404, "Thread not found")
+    thread = await _thread_for(db, thread_id, current_user, with_messages=True)
 
     # Mark as read
     thread.is_read = True
@@ -140,12 +160,10 @@ async def link_thread(
     linked_object_id: uuid.UUID,
     linked_object_ref: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     """Link an email thread to an ERP record."""
-    thread = await db.get(EmailThread, thread_id)
-    if not thread:
-        raise HTTPException(404, "Thread not found")
+    thread = await _thread_for(db, thread_id, current_user)
     thread.linked_module = linked_module
     thread.linked_object_id = linked_object_id
     thread.linked_object_ref = linked_object_ref
@@ -163,18 +181,19 @@ async def send_email(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Compose and log an outgoing email. Creates or appends to a thread."""
-    account = await db.get(EmailAccount, body.account_id)
-    if not account or not account.is_active:
+    """Record an outgoing email in the thread (outbox log). No mail provider is connected yet, so
+    nothing is delivered; M36.S01.T001 adds provider delivery."""
+    account = await _account_for(db, body.account_id, current_user)
+    if not account.is_active:
         raise HTTPException(404, "Email account not found or inactive")
 
     now = datetime.now(tz=timezone.utc)
 
     # Get or create thread
     if body.thread_id:
-        thread = await db.get(EmailThread, body.thread_id)
-        if not thread:
-            raise HTTPException(404, "Thread not found")
+        thread = await _thread_for(db, body.thread_id, current_user)
+        if thread.account_id != account.id:
+            raise HTTPException(422, "Thread belongs to another mailbox")
     else:
         thread = EmailThread(
             account_id=account.id,
@@ -225,15 +244,15 @@ async def send_email(
 async def simulate_sync(
     account_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     """
-    Simulate inbox sync — creates realistic demo email threads for demo/testing.
-    In production this would call Gmail/Outlook API.
+    Demo inbox fill for local development only: inserts sample threads. No mailbox provider is
+    connected, so outside development this refuses instead of fabricating mail.
     """
-    account = await db.get(EmailAccount, account_id)
-    if not account:
-        raise HTTPException(404, "Account not found")
+    if settings.ENVIRONMENT != "development":
+        raise HTTPException(501, "No mailbox provider is connected; inbox sync is not available.")
+    account = await _account_for(db, account_id, current_user)
 
     now = datetime.now(tz=timezone.utc)
 

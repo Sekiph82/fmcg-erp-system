@@ -1,0 +1,42 @@
+[
+  {
+    "route": "/dashboard/sales/quotes",
+    "status": "OK",
+    "heading": "Quotations",
+    "screenshot": "coordination/milestones/M36/screenshots/B1/dashboard_sales_quotes.png",
+    "console_errors": [],
+    "failed_api": []
+  },
+  {
+    "route": "/dashboard/helpdesk",
+    "status": "OK",
+    "heading": null,
+    "screenshot": "coordination/milestones/M36/screenshots/B1/dashboard_helpdesk.png",
+    "console_errors": [],
+    "failed_api": []
+  },
+  {
+    "route": "/dashboard/crm",
+    "status": "OK",
+    "heading": "CRM",
+    "screenshot": "coordination/milestones/M36/screenshots/B1/dashboard_crm.png",
+    "console_errors": [],
+    "failed_api": []
+  },
+  {
+    "route": "/dashboard/crm/forecast",
+    "status": "OK",
+    "heading": "Revenue Forecast",
+    "screenshot": "coordination/milestones/M36/screenshots/B1/dashboard_crm_forecast.png",
+    "console_errors": [],
+    "failed_api": []
+  },
+  {
+    "route": "/dashboard/communication",
+    "status": "OK",
+    "heading": "Communication",
+    "screenshot": "coordination/milestones/M36/screenshots/B1/dashboard_communication.png",
+    "console_errors": [],
+    "failed_api": []
+  }
+]

@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 import type { CommercialAccessHint, CommercialScopeFields } from "@/lib/sales";
 
 const BASE = "/api/v1/quotes";
@@ -87,7 +88,7 @@ export interface QuoteCreate extends CommercialScopeFields {
 }
 
 async function req<T>(url: string, opts?: RequestInit): Promise<T> {
-  const r = await fetch(url, { credentials: "include", ...opts });
+  const r = await apiFetch(url, opts);  // API origin + session refresh
   if (!r.ok) {
     const err = await r.json().catch(() => ({ detail: r.statusText }));
     throw new Error(err.detail ?? r.statusText);

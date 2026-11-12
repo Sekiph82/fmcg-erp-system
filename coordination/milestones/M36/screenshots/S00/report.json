@@ -1,0 +1,169 @@
+[
+  {
+    "route": "/dashboard/crm",
+    "status": "OK",
+    "heading": "CRM",
+    "screenshot": "coordination/milestones/M36/screenshots/S00/dashboard_crm.png",
+    "console_errors": [],
+    "failed_api": []
+  },
+  {
+    "route": "/dashboard/crm/leads",
+    "status": "OK",
+    "heading": "Leads",
+    "screenshot": "coordination/milestones/M36/screenshots/S00/dashboard_crm_leads.png",
+    "console_errors": [],
+    "failed_api": []
+  },
+  {
+    "route": "/dashboard/crm/opportunities",
+    "status": "OK",
+    "heading": "Opportunities",
+    "screenshot": "coordination/milestones/M36/screenshots/S00/dashboard_crm_opportunities.png",
+    "console_errors": [],
+    "failed_api": []
+  },
+  {
+    "route": "/dashboard/crm/pipeline",
+    "status": "OK",
+    "heading": "Pipeline Board",
+    "screenshot": "coordination/milestones/M36/screenshots/S00/dashboard_crm_pipeline.png",
+    "console_errors": [],
+    "failed_api": []
+  },
+  {
+    "route": "/dashboard/crm/forecast",
+    "status": "OK",
+    "heading": "Revenue Forecast",
+    "screenshot": "coordination/milestones/M36/screenshots/S00/dashboard_crm_forecast.png",
+    "console_errors": [],
+    "failed_api": []
+  },
+  {
+    "route": "/dashboard/crm/win-loss",
+    "status": "OK",
+    "heading": "Win / Loss Analysis",
+    "screenshot": "coordination/milestones/M36/screenshots/S00/dashboard_crm_win-loss.png",
+    "console_errors": [],
+    "failed_api": []
+  },
+  {
+    "route": "/dashboard/crm/activities",
+    "status": "OK",
+    "heading": "Activity Timeline",
+    "screenshot": "coordination/milestones/M36/screenshots/S00/dashboard_crm_activities.png",
+    "console_errors": [],
+    "failed_api": []
+  },
+  {
+    "route": "/dashboard/crm/ai",
+    "status": "OK",
+    "heading": "CRM",
+    "screenshot": "coordination/milestones/M36/screenshots/S00/dashboard_crm_ai.png",
+    "console_errors": [],
+    "failed_api": []
+  },
+  {
+    "route": "/dashboard/crm/territory",
+    "status": "OK",
+    "heading": "Territory Management",
+    "screenshot": "coordination/milestones/M36/screenshots/S00/dashboard_crm_territory.png",
+    "console_errors": [],
+    "failed_api": []
+  },
+  {
+    "route": "/dashboard/marketing/crm",
+    "status": "OK",
+    "heading": "CRM",
+    "screenshot": "coordination/milestones/M36/screenshots/S00/dashboard_marketing_crm.png",
+    "console_errors": [],
+    "failed_api": []
+  },
+  {
+    "route": "/dashboard/marketing/campaigns",
+    "status": "OK",
+    "heading": null,
+    "screenshot": "coordination/milestones/M36/screenshots/S00/dashboard_marketing_campaigns.png",
+    "console_errors": [
+      "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+      "Failed to load resource: the server responded with a status of 403 (Forbidden)",
+      "[QueryCache] AxiosError: Request failed with status code 403\n    at settle (http://localhost:3000/_next/static/chunks/node_modules_0vr4_cu0ebcd-._.js:4728:16)\n    at XMLHttpRequest.onloadend (http://l"
+    ],
+    "failed_api": [
+      "403 /api/v1/marketing/campaigns?limit=100"
+    ]
+  },
+  {
+    "route": "/dashboard/sales/customers",
+    "status": "OK",
+    "heading": "Customers",
+    "screenshot": "coordination/milestones/M36/screenshots/S00/dashboard_sales_customers.png",
+    "console_errors": [],
+    "failed_api": []
+  },
+  {
+    "route": "/dashboard/sales/quotes",
+    "status": "OK",
+    "heading": "Quotations",
+    "screenshot": "coordination/milestones/M36/screenshots/S00/dashboard_sales_quotes.png",
+    "console_errors": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "[QueryCache] Error: Not Found\n    at req (http://localhost:3000/_next/static/chunks/src_1ps72a2-cn-ko._.js:1625:15)"
+    ],
+    "failed_api": [
+      "404 /api/v1/quotes/dashboard",
+      "404 /api/v1/quotes"
+    ]
+  },
+  {
+    "route": "/dashboard/helpdesk",
+    "status": "OK",
+    "heading": null,
+    "screenshot": "coordination/milestones/M36/screenshots/S00/dashboard_helpdesk.png",
+    "console_errors": [],
+    "failed_api": []
+  },
+  {
+    "route": "/dashboard/knowledge-base",
+    "status": "OK",
+    "heading": "Knowledge Base",
+    "screenshot": "coordination/milestones/M36/screenshots/S00/dashboard_knowledge-base.png",
+    "console_errors": [],
+    "failed_api": []
+  },
+  {
+    "route": "/dashboard/calendar",
+    "status": "OK",
+    "heading": "Communication",
+    "screenshot": "coordination/milestones/M36/screenshots/S00/dashboard_calendar.png",
+    "console_errors": [],
+    "failed_api": []
+  },
+  {
+    "route": "/dashboard/chatter",
+    "status": "OK",
+    "heading": "Communication",
+    "screenshot": "coordination/milestones/M36/screenshots/S00/dashboard_chatter.png",
+    "console_errors": [],
+    "failed_api": []
+  },
+  {
+    "route": "/dashboard/communication",
+    "status": "OK",
+    "heading": "Communication",
+    "screenshot": "coordination/milestones/M36/screenshots/S00/dashboard_communication.png",
+    "console_errors": [],
+    "failed_api": []
+  },
+  {
+    "route": "/dashboard/integrations/sync",
+    "status": "OK",
+    "heading": "🔄 Sync Status",
+    "screenshot": "coordination/milestones/M36/screenshots/S00/dashboard_integrations_sync.png",
+    "console_errors": [],
+    "failed_api": []
+  }
+]

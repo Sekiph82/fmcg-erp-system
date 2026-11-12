@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 const BASE = "/api/v1/projects";
 
 export type ProjectStatus    = "PLANNING" | "ACTIVE" | "ON_HOLD" | "COMPLETED" | "CANCELLED";
@@ -100,7 +101,7 @@ export interface ProjectDashboard {
 }
 
 async function req<T>(url: string, opts?: RequestInit): Promise<T> {
-  const r = await fetch(url, { credentials: "include", ...opts });
+  const r = await apiFetch(url, opts);  // API origin + session refresh
   if (!r.ok) {
     const err = await r.json().catch(() => ({ detail: r.statusText }));
     throw new Error(err.detail ?? r.statusText);

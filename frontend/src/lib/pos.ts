@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/api";
 const BASE = "/api/v1/pos";
 
 export type POSSessionStatus = "OPEN" | "CLOSED";
@@ -72,7 +73,7 @@ export interface POSDashboard {
 }
 
 async function req<T>(url: string, opts?: RequestInit): Promise<T> {
-  const r = await fetch(url, { credentials: "include", ...opts });
+  const r = await apiFetch(url, opts);  // API origin + session refresh
   if (!r.ok) {
     const err = await r.json().catch(() => ({ detail: r.statusText }));
     throw new Error(err.detail ?? r.statusText);
