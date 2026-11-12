@@ -10,7 +10,7 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M36 — Native CRM HubSpot Capability Gap Audit & Delivery (new owner-approved scope; M17 existing software history preserved)
 - Current Sprint: M36.S02 — Sales intelligence (after M36.S00 audit accepted)
-- Current Task: M36.S02.T002–T004 — lead scoring rules/history, forecast filters/snapshots, funnel analytics (batch 2)
+- Current Task: M36.S03.T002 unified customer timeline + M36.S02.T001 web lead capture (batch 3)
 - Current Task Status: IN_PROGRESS (2026-11-12) — M36.S00 audit accepted with corrections by an independent reviewer (25 tasks: 17 PARTIAL, 8 MISSING, none complete); batch 1 security/defect fixes landed. Evidence: coordination/milestones/M36/M36_S00_AUDIT.md
 - Next Task/Action: Batch 2 — M36.S02.T002 lead scoring (configurable rules, history, explanation; fix enum bug), M36.S02.T003 forecast filters + snapshots, M36.S02.T004 funnel analytics; then batch 3 (S03.T002 customer timeline, S02.T001 web lead capture). Provider-bound live tests stay [!].
 - Required Actor: CLAUDE (sole active task runner and tracker writer; per coordination/CLAUDE_AUTONOMOUS_EXECUTION_POLICY.md)
@@ -1495,21 +1495,24 @@ Parallel work is allowed where dependencies are satisfied, but dependency integr
   - **Required audit:** Record existing DB model/migration, service, REST/GraphQL endpoint, UI route, RBAC, tests and live-screen evidence; classify existing/partial/missing before edits.
   - **Implementation:** Extend native CRM, create minimal migrations and API/UI changes only for verified gaps; preserve existing sales/customer records, scope rules, auditability and integration contracts.
   - **Acceptance:** Test anonymous rate limiting, field mapping, injection prevention and source attribution. Include backend/DB/API tests, frontend checks, browser screenshot evidence, independent review and exact commit SHA. Any live-provider validation remains [!] until real access is available.
-- [ ] M36.S02.T002 — Lead scoring (P1)
+- [v] M36.S02.T002 — Lead scoring (P1)
   - **Scope:** Configurable fit/engagement score rules, score history and explainable prioritized lead queue.
   - **Required audit:** Record existing DB model/migration, service, REST/GraphQL endpoint, UI route, RBAC, tests and live-screen evidence; classify existing/partial/missing before edits.
   - **Implementation:** Extend native CRM, create minimal migrations and API/UI changes only for verified gaps; preserve existing sales/customer records, scope rules, auditability and integration contracts.
   - **Acceptance:** Test deterministic scores, recalculation, missing data and RBAC. Include backend/DB/API tests, frontend checks, browser screenshot evidence, independent review and exact commit SHA. Any live-provider validation remains [!] until real access is available.
-- [ ] M36.S02.T003 — Weighted sales forecasting (P1)
+  Done (2026-11-12, batch 2) [v] implemented, independently reviewed, review findings fixed; milestone acceptance pending: native CRM sales intelligence — `backend/app/services/crm_intelligence_service.py`, tables `crm_score_rules`, `crm_score_history`, `crm_stage_history` (stage/status transitions captured on flush for every write path), `crm_forecast_snapshots` (migration `20261112_0036`), routes in `crm_pipeline.py`, pages `crm/scoring`, `crm/forecast` (rewritten), `crm/funnel`. Tests: `backend/tests/test_m36_s02_sales_intelligence_db.py` (disposable PostgreSQL), full backend suite 1732 passed. Screens: `coordination/milestones/M36/screenshots/B2/` (synthetic SYNTH data created through the API). Review (separate read-only sub-agent): funnel counted on-hold/nurturing stages, NaN rule values, cross-currency rep revenue, short score queue for scoped users, N+1 history lookup, new-record status — all fixed and covered.
+- [v] M36.S02.T003 — Weighted sales forecasting (P1)
   - **Scope:** Probability-weighted opportunities, stage forecasts, quota/owner/territory filters and forecast snapshots.
   - **Required audit:** Record existing DB model/migration, service, REST/GraphQL endpoint, UI route, RBAC, tests and live-screen evidence; classify existing/partial/missing before edits.
   - **Implementation:** Extend native CRM, create minimal migrations and API/UI changes only for verified gaps; preserve existing sales/customer records, scope rules, auditability and integration contracts.
   - **Acceptance:** Reconcile forecast to native opportunity/order records and test currency/time filters. Include backend/DB/API tests, frontend checks, browser screenshot evidence, independent review and exact commit SHA. Any live-provider validation remains [!] until real access is available.
-- [ ] M36.S02.T004 — Sales funnel analytics (P1)
+  Done (2026-11-12) [v]: `/crm/forecast/detail` (month × currency, never summed across currencies; owner/territory/stage filters; overdue open bucket), snapshots save/list/view; see M36.S02.T002 evidence. Quotas: no quota model exists — not added (no owner requirement).
+- [v] M36.S02.T004 — Sales funnel analytics (P1)
   - **Scope:** Stage conversion, aging, win/loss reasons, cohort and representative performance drill-down.
   - **Required audit:** Record existing DB model/migration, service, REST/GraphQL endpoint, UI route, RBAC, tests and live-screen evidence; classify existing/partial/missing before edits.
   - **Implementation:** Extend native CRM, create minimal migrations and API/UI changes only for verified gaps; preserve existing sales/customer records, scope rules, auditability and integration contracts.
   - **Acceptance:** Reconcile aggregates to source opportunities; test deleted/merged leads and date boundaries. Include backend/DB/API tests, frontend checks, browser screenshot evidence, independent review and exact commit SHA. Any live-provider validation remains [!] until real access is available.
+  Done (2026-11-12) [v]: `/crm/reports/funnel` — stage conversion from stage history + current stage, open-record aging per stage, representative performance (win rate, won revenue per currency, cycle days), loss reasons, date-range boundaries; reconciled to source records in the PostgreSQL test. See M36.S02.T002 evidence.
 - [ ] M36.S02.T005 — Marketing campaign management (P1)
   - **Scope:** Consent-aware segmented email campaigns, templates, send scheduling, deliverability and conversion metrics.
   - **Required audit:** Record existing DB model/migration, service, REST/GraphQL endpoint, UI route, RBAC, tests and live-screen evidence; classify existing/partial/missing before edits.

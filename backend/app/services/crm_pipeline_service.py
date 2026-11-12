@@ -382,39 +382,6 @@ async def check_duplicates(db: AsyncSession, company_name: str, email: Optional[
 
 # ── Lead Scoring ──────────────────────────────────────────────────────────────
 
-async def update_lead_score(db: AsyncSession, record_id: str) -> Optional[CRMRecord]:
-    record = await _load_record(db, record_id)
-    if not record:
-        return None
-    score = 0
-    if str(record.source_type) in {"REFERRAL", "INBOUND", "FIELD_SALES"}:
-        score += 20
-    completed = [a for a in (record.activities or []) if a.result_status == CRMActivityResult.COMPLETED]
-    score += min(30, len(completed) * 5)
-    if record.qualified_flag:
-        score += 20
-    rev = record.expected_revenue or Decimal("0")
-    if rev > 500000:
-        score += 15
-    elif rev > 100000:
-        score += 10
-    if record.next_action_date:
-        score += 5
-    score += min(10, len(record.interest_lines or []) * 3)
-    record.lead_score = min(100, score)
-    if score >= 70:
-        record.temperature = CRMTemperature.HOT
-    elif score >= 40:
-        record.temperature = CRMTemperature.WARM
-    else:
-        record.temperature = CRMTemperature.COLD
-    await db.commit()
-    await db.refresh(record)
-    return record
-
-
-# ── Dashboard ─────────────────────────────────────────────────────────────────
-
 async def get_dashboard(db: AsyncSession) -> dict:
     today = date.today()
     month_start = today.replace(day=1)

@@ -404,4 +404,54 @@ export const crmApi = {
 
   // 360 View
   get360: (id: string) => r(ax.get<CRM360View>(`/crm/records/${id}/360`)),
+
+  // M36.S02 scoring, forecast detail/snapshots, funnel
+  getScoreRules: () => r(ax.get<ScoreRulesResponse>(`/crm/score-rules`)),
+  createScoreRule: (data: ScoreRuleInput) => r(ax.post<ScoreRule>(`/crm/score-rules`, data)),
+  updateScoreRule: (id: string, data: Partial<ScoreRuleInput>) => r(ax.patch<ScoreRule>(`/crm/score-rules/${id}`, data)),
+  seedScoreRules: () => r(ax.post<{ created: number }>(`/crm/score-rules/seed-defaults`)),
+  recalculateScores: () => r(ax.post<{ scored: number; changed: number; rules: number }>(`/crm/scores/recalculate`)),
+  getScoreQueue: (limit = 50) => r(ax.get<ScoreQueueItem[]>(`/crm/scores/queue`, { params: { limit } })),
+  getScoreHistory: (id: string) => r(ax.get<ScoreHistoryItem[]>(`/crm/records/${id}/score-history`)),
+  getForecastDetail: (params: ForecastFilters) => r(ax.get<ForecastDetail>(`/crm/forecast/detail`, { params })),
+  createForecastSnapshot: (data: ForecastFilters & { label?: string }) => r(ax.post<ForecastSnapshot>(`/crm/forecast/snapshots`, data)),
+  listForecastSnapshots: () => r(ax.get<ForecastSnapshot[]>(`/crm/forecast/snapshots`)),
+  getForecastSnapshot: (id: string) => r(ax.get<ForecastSnapshot>(`/crm/forecast/snapshots/${id}`)),
+  getFunnel: (params: FunnelFilters) => r(ax.get<FunnelReport>(`/crm/reports/funnel`, { params })),
 };
+
+export interface ScoreBreakdownItem { rule: string; category: string; points: number; reason: string }
+export interface ScoreRuleInput {
+  name: string; category: "FIT" | "ENGAGEMENT"; field: string; operator: string; value?: string | null;
+  points: number; max_points?: number | null; active_flag?: boolean; sequence_no?: number;
+}
+export interface ScoreRule extends ScoreRuleInput { id: string; active_flag: boolean; sequence_no: number }
+export interface ScoreRulesResponse {
+  rules: ScoreRule[]; using_defaults: boolean; defaults: ScoreRuleInput[]; fields: Record<string, string>;
+}
+export interface ScoreQueueItem {
+  id: string; lead_code: string | null; company_name: string; lead_score: number; temperature: string;
+  assigned_rep_id: string | null; breakdown: ScoreBreakdownItem[] | null;
+}
+export interface ScoreHistoryItem {
+  score: number; previous_score: number | null; temperature: string; breakdown: ScoreBreakdownItem[];
+  computed_at: string; computed_by: string | null;
+}
+export interface ForecastFilters { months_ahead?: number; assigned_rep_id?: string; territory_id?: string; stage_id?: string }
+export interface ForecastCell { expected_revenue: number; weighted_revenue: number; deal_count: number }
+export interface ForecastDetail {
+  filters: ForecastFilters & { start: string }; currencies: string[];
+  rows: (ForecastCell & { month: string; currency: string })[];
+  by_stage: (ForecastCell & { stage: string; currency: string })[];
+  overdue_open: (ForecastCell & { currency: string })[];
+}
+export interface ForecastSnapshot extends Partial<ForecastDetail> { id: string; label: string | null; taken_at: string }
+export interface FunnelFilters { date_from?: string; date_to?: string; assigned_rep_id?: string; territory_id?: string }
+export interface FunnelReport {
+  records: number;
+  funnel: { stage_id: string; stage: string; sequence: number; reached: number; conversion_from_previous_pct: number | null }[];
+  aging: { stage: string; open: number; avg_days: number; max_days: number; over_30_days: number }[];
+  reps: { assigned_rep_id: string; total: number; open: number; won: number; lost: number; win_rate_pct: number | null;
+          won_revenue_by_currency: Record<string, number>; avg_cycle_days: number | null }[];
+  loss_reasons: { reason: string; count: number }[];
+}

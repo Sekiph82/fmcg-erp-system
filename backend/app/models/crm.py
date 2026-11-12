@@ -313,3 +313,96 @@ class CRMAIRecommendation(Base, TimestampMixin):
     status         = Column(Enum(CRMAIRecStatus), default=CRMAIRecStatus.PENDING)
     acknowledged_by = Column(String(50))
     notes          = Column(Text)
+
+
+# ── M36.S02 sales intelligence ────────────────────────────────────────────────
+
+class CRMScoreRule(Base, TimestampMixin):
+    """Configurable lead-score rule: when `field <operator> value` holds, add `points` (fit or engagement)."""
+    __tablename__ = "crm_score_rules"
+
+    id         = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name       = Column(String(150), nullable=False)
+    category   = Column(String(20), nullable=False, default="FIT")      # FIT | ENGAGEMENT
+    field      = Column(String(50), nullable=False)                     # see crm_intelligence_service.SCORE_FIELDS
+    operator   = Column(String(10), nullable=False)                     # eq | in | gte | lte | true
+    value      = Column(String(500), nullable=True)
+    points     = Column(Integer, nullable=False)
+    max_points = Column(Integer, nullable=True)                         # cap for count fields (points per item)
+    active_flag = Column(Boolean, default=True, nullable=False)
+    sequence_no = Column(Integer, default=0, nullable=False)
+
+
+class CRMScoreHistory(Base):
+    """One row per score change, with the per-rule breakdown that explains it."""
+    __tablename__ = "crm_score_history"
+
+    id             = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    crm_record_id  = Column(UUID(as_uuid=True), ForeignKey("crm_records.id", ondelete="CASCADE"), nullable=False, index=True)
+    previous_score = Column(Integer, nullable=True)
+    score          = Column(Integer, nullable=False)
+    temperature    = Column(String(10), nullable=False)
+    breakdown      = Column(Text, nullable=False)                       # JSON list of {rule, points, reason}
+    computed_at    = Column(DateTime(timezone=True), nullable=False)
+    computed_by    = Column(String(50), nullable=True)
+
+
+class CRMStageHistory(Base):
+    """Stage/status transitions of a CRM record (captured on flush for every write path)."""
+    __tablename__ = "crm_stage_history"
+
+    id            = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    crm_record_id = Column(UUID(as_uuid=True), ForeignKey("crm_records.id", ondelete="CASCADE"), nullable=False, index=True)
+    from_stage_id = Column(UUID(as_uuid=True), nullable=True)
+    to_stage_id   = Column(UUID(as_uuid=True), nullable=True)
+    from_status   = Column(String(20), nullable=True)
+    to_status     = Column(String(20), nullable=True)
+    changed_at    = Column(DateTime(timezone=True), nullable=False, index=True)
+
+
+class CRMForecastSnapshot(Base):
+    """Frozen copy of a forecast (filters + rows) for later comparison."""
+    __tablename__ = "crm_forecast_snapshots"
+
+    id          = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    label       = Column(String(150), nullable=True)
+    filters     = Column(Text, nullable=False)                          # JSON
+    rows        = Column(Text, nullable=False)                          # JSON
+    taken_at    = Column(DateTime(timezone=True), nullable=False, index=True)
+    taken_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
+
+def _capture_stage_changes(session, _flush_context, _instances):
+    from datetime import datetime, timezone
+
+    from sqlalchemy import inspect
+
+    now = datetime.now(timezone.utc)
+    for obj in list(session.new) + list(session.dirty):
+        if not isinstance(obj, CRMRecord):
+            continue
+        state = inspect(obj)
+        stage, status = state.attrs.stage_id.history, state.attrs.status.history
+        if obj in session.new:
+            if obj.stage_id is None and obj.status in (None, CRMStatus.OPEN):
+                continue
+            from_stage, from_status = None, None
+            if obj.status is None:
+                obj.status = CRMStatus.OPEN  # column default, applied now so the history row is complete
+        elif stage.has_changes() or status.has_changes():
+            from_stage = (stage.deleted or [obj.stage_id])[0]
+            from_status = (status.deleted or [obj.status])[0]
+        else:
+            continue
+        if obj.id is None:
+            obj.id = uuid.uuid4()
+        session.add(CRMStageHistory(
+            crm_record_id=obj.id, from_stage_id=from_stage, to_stage_id=obj.stage_id,
+            from_status=getattr(from_status, "value", from_status), to_status=getattr(obj.status, "value", obj.status),
+            changed_at=now))
+
+
+from sqlalchemy import event as _event  # noqa: E402
+from sqlalchemy.orm import Session as _Session  # noqa: E402
+
+_event.listen(_Session, "before_flush", _capture_stage_changes)

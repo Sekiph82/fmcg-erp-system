@@ -1,130 +1,167 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import { crmApi, fmtCurrency } from "@/lib/crm_pipeline";
+import {
+  crmApi, fmtCurrency, type CRMStage, type CRMTerritory, type ForecastDetail, type ForecastFilters, type ForecastSnapshot,
+} from "@/lib/crm_pipeline";
 
-interface ForecastRow {
-  month: string;
-  expected_revenue: number;
-  weighted_revenue: number;
-  deal_count: number;
+function errorText(e: unknown) {
+  const detail = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
+  if (typeof detail === "string") return detail;
+  if (detail && typeof detail === "object" && "detail" in detail) return String((detail as { detail: unknown }).detail);
+  return "Could not load the forecast.";
 }
 
 export default function ForecastPage() {
-  const [forecast, setForecast] = useState<ForecastRow[]>([]);
-  const [pipeline, setPipeline] = useState<Record<string, unknown>[]>([]);
+  const [filters, setFilters] = useState<ForecastFilters>({ months_ahead: 6 });
+  const [detail, setDetail] = useState<ForecastDetail | null>(null);
+  const [stages, setStages] = useState<CRMStage[]>([]);
+  const [territories, setTerritories] = useState<CRMTerritory[]>([]);
+  const [snapshots, setSnapshots] = useState<ForecastSnapshot[]>([]);
+  const [viewing, setViewing] = useState<ForecastSnapshot | null>(null);
+  const [label, setLabel] = useState("");
   const [loading, setLoading] = useState(true);
-  const [months, setMonths] = useState(6);
+  const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
-      const [fc, pp] = await Promise.all([
-        crmApi.getForecast(months),
-        crmApi.getPipelineReport(),
-      ]);
-      setForecast(fc as unknown as ForecastRow[]);
-      setPipeline(pp);
-    } catch (e) { console.error(e); }
+      const clean = Object.fromEntries(Object.entries(filters).filter(([, v]) => v !== "" && v != null));
+      const [d, snaps] = await Promise.all([crmApi.getForecastDetail(clean), crmApi.listForecastSnapshots()]);
+      setDetail(d);
+      setSnapshots(snaps);
+    } catch (e) {
+      setError(errorText(e));
+    }
     setLoading(false);
-  }, [months]);
+  }, [filters]);
 
   useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    crmApi.getStages(true).then(setStages).catch(() => setStages([]));
+    crmApi.getTerritories(true).then(setTerritories).catch(() => setTerritories([]));
+  }, []);
 
-  const totalExpected = forecast.reduce((s, r) => s + r.expected_revenue, 0);
-  const totalWeighted = forecast.reduce((s, r) => s + r.weighted_revenue, 0);
-  const totalDeals = forecast.reduce((s, r) => s + r.deal_count, 0);
-  const maxWeighted = Math.max(...forecast.map(r => r.weighted_revenue), 1);
+  async function saveSnapshot() {
+    try {
+      const clean = Object.fromEntries(Object.entries(filters).filter(([, v]) => v !== "" && v != null));
+      await crmApi.createForecastSnapshot({ ...clean, label: label || undefined });
+      setLabel("");
+      setSnapshots(await crmApi.listForecastSnapshots());
+    } catch (e) {
+      setError(errorText(e));
+    }
+  }
+
+  const shown = viewing ?? detail;
+  const currencies = shown?.currencies ?? [];
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-gray-900">Revenue Forecast</h1>
-        <div className="flex items-center gap-2">
-          <label className="text-sm text-gray-600">Horizon:</label>
-          <select value={months} onChange={e => setMonths(+e.target.value)}
-            className="text-sm border rounded-lg px-2 py-1.5">
-            <option value={3}>3 Months</option>
-            <option value={6}>6 Months</option>
-            <option value={12}>12 Months</option>
-          </select>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900">Revenue Forecast</h1>
+          <p className="text-sm text-gray-500">Open opportunities by expected close month, weighted by probability. Currencies are never added together.</p>
         </div>
+        <form aria-label="Forecast filters" className="flex flex-wrap items-end gap-2" onSubmit={(e) => e.preventDefault()}>
+          <label className="text-xs text-gray-500">Horizon
+            <select aria-label="Horizon" value={filters.months_ahead} onChange={(e) => setFilters({ ...filters, months_ahead: +e.target.value })}
+              className="block text-sm border rounded-lg px-2 py-1.5">
+              {[3, 6, 12].map((m) => <option key={m} value={m}>{m} months</option>)}
+            </select>
+          </label>
+          <label className="text-xs text-gray-500">Stage
+            <select aria-label="Stage" value={filters.stage_id ?? ""} onChange={(e) => setFilters({ ...filters, stage_id: e.target.value || undefined })}
+              className="block text-sm border rounded-lg px-2 py-1.5">
+              <option value="">All stages</option>
+              {stages.map((s) => <option key={s.id} value={s.id}>{s.stage_name}</option>)}
+            </select>
+          </label>
+          <label className="text-xs text-gray-500">Territory
+            <select aria-label="Territory" value={filters.territory_id ?? ""} onChange={(e) => setFilters({ ...filters, territory_id: e.target.value || undefined })}
+              className="block text-sm border rounded-lg px-2 py-1.5">
+              <option value="">All territories</option>
+              {territories.map((t) => <option key={t.id} value={t.id}>{t.territory_name}</option>)}
+            </select>
+          </label>
+          <label className="text-xs text-gray-500">Owner (rep id)
+            <input aria-label="Owner" value={filters.assigned_rep_id ?? ""} onChange={(e) => setFilters({ ...filters, assigned_rep_id: e.target.value || undefined })}
+              className="block text-sm border rounded-lg px-2 py-1.5 w-32" />
+          </label>
+        </form>
       </div>
 
-      {/* Summary */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="bg-white rounded-xl border shadow-sm p-4">
-          <div className="text-xs text-gray-500">Total Expected Revenue</div>
-          <div className="text-xl font-bold text-gray-800 mt-1">{fmtCurrency(totalExpected)}</div>
-        </div>
-        <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4">
-          <div className="text-xs text-gray-500">Weighted Pipeline</div>
-          <div className="text-xl font-bold text-indigo-700 mt-1">{fmtCurrency(totalWeighted)}</div>
-        </div>
-        <div className="bg-white rounded-xl border shadow-sm p-4">
-          <div className="text-xs text-gray-500">Deals in Forecast</div>
-          <div className="text-xl font-bold text-gray-800 mt-1">{totalDeals}</div>
-        </div>
-      </div>
+      {error && <p role="alert" className="rounded-lg p-3 text-sm bg-red-50 border border-red-200 text-red-700">{error}</p>}
+      {viewing && (
+        <p className="rounded-lg p-3 text-sm bg-amber-50 border border-amber-200 text-amber-800">
+          Viewing snapshot {viewing.label ?? ""} taken {new Date(viewing.taken_at).toLocaleString()}.{" "}
+          <button className="underline" onClick={() => setViewing(null)}>Back to live forecast</button>
+        </p>
+      )}
 
-      {/* Bar Chart */}
-      <div className="bg-white rounded-xl border shadow-sm p-4">
-        <h2 className="font-semibold text-gray-800 mb-4">Monthly Forecast</h2>
-        {loading ? (
+      <div className="bg-white rounded-xl border shadow-sm p-4 overflow-x-auto">
+        <h2 className="font-semibold text-gray-800 mb-3">Monthly forecast</h2>
+        {loading && !viewing ? (
           <div className="text-gray-400 py-4 text-center">Loading…</div>
+        ) : !shown || currencies.length === 0 ? (
+          <div className="text-gray-400 py-4 text-center">No open opportunities with an expected close date in this range.</div>
         ) : (
-          <div className="space-y-3">
-            {forecast.map(row => (
-              <div key={row.month} className="flex items-center gap-3">
-                <div className="w-16 text-xs text-gray-600 font-medium">{row.month}</div>
-                <div className="flex-1 space-y-1">
-                  <div className="flex items-center gap-2">
-                    <div className="h-4 bg-blue-100 rounded relative overflow-hidden"
-                      style={{ width: `${(row.expected_revenue / Math.max(totalExpected / months, 1)) * 60}%`, minWidth: 4 }}>
-                      <div className="h-full bg-blue-400 rounded" />
-                    </div>
-                    <span className="text-xs text-gray-500">{fmtCurrency(row.expected_revenue)}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="h-4 rounded overflow-hidden"
-                      style={{ width: `${(row.weighted_revenue / Math.max(totalWeighted / months, 1)) * 60}%`, minWidth: 4, background: "#E0E7FF" }}>
-                      <div className="h-full rounded" style={{ background: "#6366F1" }} />
-                    </div>
-                    <span className="text-xs text-indigo-600">{fmtCurrency(row.weighted_revenue)} weighted</span>
-                  </div>
-                </div>
-                <div className="text-xs text-gray-400 w-14 text-right">{row.deal_count} deals</div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Pipeline by Stage */}
-      <div className="bg-white rounded-xl border shadow-sm p-4">
-        <h2 className="font-semibold text-gray-800 mb-3">Pipeline by Stage</h2>
-        <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b text-xs text-gray-600 bg-gray-50">
-                <th className="px-3 py-2 text-left">Stage</th>
-                <th className="px-3 py-2 text-right">Deals</th>
-                <th className="px-3 py-2 text-right">Total Value</th>
-                <th className="px-3 py-2 text-right">Weighted</th>
-                <th className="px-3 py-2 text-right">Avg Prob</th>
-              </tr>
-            </thead>
+            <thead><tr className="text-left text-xs text-gray-500">
+              <th className="py-1">Month</th><th>Currency</th><th className="text-right">Expected</th><th className="text-right">Weighted</th><th className="text-right">Deals</th>
+            </tr></thead>
             <tbody>
-              {pipeline.map((row: Record<string, unknown>, i) => (
-                <tr key={i} className="border-b hover:bg-gray-50">
-                  <td className="px-3 py-2 font-medium text-gray-800">{row.stage_name as string}</td>
-                  <td className="px-3 py-2 text-right text-gray-600">{row.record_count as number}</td>
-                  <td className="px-3 py-2 text-right text-gray-800">{fmtCurrency(row.total_value as number)}</td>
-                  <td className="px-3 py-2 text-right text-indigo-700">{fmtCurrency(row.weighted_value as number)}</td>
-                  <td className="px-3 py-2 text-right text-gray-500">{Math.round(row.avg_probability as number)}%</td>
+              {shown.rows?.filter((r) => r.deal_count > 0).map((r) => (
+                <tr key={`${r.month}-${r.currency}`} className="border-t">
+                  <td className="py-1.5">{r.month}</td><td>{r.currency}</td>
+                  <td className="text-right">{fmtCurrency(r.expected_revenue, r.currency)}</td>
+                  <td className="text-right font-medium">{fmtCurrency(r.weighted_revenue, r.currency)}</td>
+                  <td className="text-right">{r.deal_count}</td>
                 </tr>
               ))}
             </tbody>
           </table>
+        )}
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-4">
+        <div className="bg-white rounded-xl border shadow-sm p-4">
+          <h2 className="font-semibold text-gray-800 mb-3">By stage</h2>
+          {(shown?.by_stage ?? []).length === 0 ? <p className="text-sm text-gray-400">No data.</p> : (
+            <ul className="space-y-1 text-sm">
+              {shown!.by_stage!.map((s) => (
+                <li key={`${s.stage}-${s.currency}`} className="flex justify-between gap-2">
+                  <span>{s.stage} · {s.deal_count} deals</span>
+                  <span className="font-medium">{fmtCurrency(s.weighted_revenue, s.currency)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          {(shown?.overdue_open ?? []).map((o) => (
+            <p key={o.currency} className="mt-3 text-xs text-amber-700">
+              {o.deal_count} open deal(s) are past their close date ({fmtCurrency(o.expected_revenue, o.currency)}) and are not in the monthly rows.
+            </p>
+          ))}
+        </div>
+        <div className="bg-white rounded-xl border shadow-sm p-4">
+          <h2 className="font-semibold text-gray-800 mb-3">Snapshots</h2>
+          <div className="flex gap-2 mb-3">
+            <input aria-label="Snapshot label" placeholder="Label (e.g. Q4 commit)" value={label} onChange={(e) => setLabel(e.target.value)}
+              className="flex-1 text-sm border rounded-lg px-2 py-1.5" />
+            <button onClick={saveSnapshot} disabled={!detail} className="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-lg disabled:opacity-50">
+              Save snapshot
+            </button>
+          </div>
+          {snapshots.length === 0 ? <p className="text-sm text-gray-400">No snapshots yet.</p> : (
+            <ul className="space-y-1 text-sm">
+              {snapshots.map((s) => (
+                <li key={s.id} className="flex justify-between gap-2">
+                  <span>{s.label ?? "Untitled"} · {new Date(s.taken_at).toLocaleString()}</span>
+                  <button className="text-indigo-600 underline" onClick={async () => setViewing(await crmApi.getForecastSnapshot(s.id))}>View</button>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
     </div>

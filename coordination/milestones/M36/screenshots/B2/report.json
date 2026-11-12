@@ -1,0 +1,34 @@
+[
+  {
+    "route": "/dashboard/crm/scoring",
+    "status": "OK",
+    "heading": "Lead Scoring",
+    "screenshot": "coordination/milestones/M36/screenshots/B2/dashboard_crm_scoring.png",
+    "console_errors": [],
+    "failed_api": []
+  },
+  {
+    "route": "/dashboard/crm/forecast",
+    "status": "OK",
+    "heading": "Revenue Forecast",
+    "screenshot": "coordination/milestones/M36/screenshots/B2/dashboard_crm_forecast.png",
+    "console_errors": [],
+    "failed_api": []
+  },
+  {
+    "route": "/dashboard/crm/funnel",
+    "status": "OK",
+    "heading": "Sales Funnel",
+    "screenshot": "coordination/milestones/M36/screenshots/B2/dashboard_crm_funnel.png",
+    "console_errors": [],
+    "failed_api": []
+  },
+  {
+    "route": "/dashboard/crm",
+    "status": "OK",
+    "heading": "CRM",
+    "screenshot": "coordination/milestones/M36/screenshots/B2/dashboard_crm.png",
+    "console_errors": [],
+    "failed_api": []
+  }
+]

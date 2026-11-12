@@ -1,12 +1,17 @@
 from __future__ import annotations
-from typing import List, Optional
+from datetime import date
+from typing import List, Literal, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel, Field
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.access_control import can_view_record, has_any_permission, require_any_permission
 from app.core.deps import get_current_user
 from app.db.session import get_db
-from app.models.crm import CRMActivity, CRMInterestLine, CRMRecord, CRMRecordType, CRMTerritory
+from app.models.crm import (
+    CRMActivity, CRMForecastSnapshot, CRMInterestLine, CRMRecord, CRMRecordType, CRMScoreRule, CRMTerritory,
+)
 from app.schemas.crm import (
     CRMStageCreate, CRMStageRead, CRMStageUpdate,
     CRMRecordCreate, CRMRecordRead, CRMRecordUpdate,
@@ -21,6 +26,7 @@ from app.schemas.crm import (
 )
 from app.services.commercial_access_service import build_commercial_access_hint, ensure_commercial_action_allowed
 import app.services.crm_pipeline_service as svc
+import app.services.crm_intelligence_service as intel
 
 
 def _uuid(value: str):
@@ -277,10 +283,18 @@ async def reopen_record(record_id: str, db: AsyncSession = Depends(get_db), curr
 async def update_lead_score(record_id: str, db: AsyncSession = Depends(get_db),
                             current_user=Depends(require_any_permission(CRM_EDIT_PERMISSIONS))):
     await _scoped_record(db, record_id, current_user, "edit")
-    rec = await svc.update_lead_score(db, record_id)
+    rec = await intel.rescore_record(db, record_id, current_user.username)
     if not rec:
         raise HTTPException(404, "Record not found")
-    return rec
+    return _record_read(await svc.get_record(db, record_id), current_user)
+
+
+@router.get("/records/{record_id}/score-history")
+async def get_score_history(record_id: str, db: AsyncSession = Depends(get_db),
+                            current_user=Depends(get_current_user)):
+    """Every score change with the rule-by-rule breakdown that explains it."""
+    await _scoped_record(db, record_id, current_user, "view")
+    return await intel.score_history(db, record_id)
 
 
 # ── Interest Lines ────────────────────────────────────────────────────────────
@@ -477,3 +491,161 @@ async def get_record_360(record_id: str, db: AsyncSession = Depends(get_db),
     if not view:
         raise HTTPException(404, "Record not found")
     return view
+
+
+# ── M36.S02 lead scoring rules, prioritised queue ─────────────────────────────
+
+class ScoreRuleIn(BaseModel):
+    name: str = Field(min_length=1, max_length=150)
+    category: Literal["FIT", "ENGAGEMENT"] = "FIT"
+    field: str
+    operator: str
+    value: Optional[str] = Field(None, max_length=500)
+    points: int = Field(ge=-100, le=100)
+    max_points: Optional[int] = Field(None, ge=0, le=100)
+    active_flag: bool = True
+    sequence_no: int = 0
+
+
+class ScoreRulePatch(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=150)
+    value: Optional[str] = Field(None, max_length=500)
+    points: Optional[int] = Field(None, ge=-100, le=100)
+    max_points: Optional[int] = Field(None, ge=0, le=100)
+    active_flag: Optional[bool] = None
+    sequence_no: Optional[int] = None
+
+
+def _rule_out(r: CRMScoreRule) -> dict:
+    return {"id": str(r.id), "name": r.name, "category": r.category, "field": r.field, "operator": r.operator,
+            "value": r.value, "points": r.points, "max_points": r.max_points, "active_flag": r.active_flag,
+            "sequence_no": r.sequence_no}
+
+
+@router.get("/score-rules", dependencies=[Depends(require_any_permission(CRM_BROAD_VIEW))])
+async def list_score_rules(db: AsyncSession = Depends(get_db)):
+    rows = (await db.execute(select(CRMScoreRule).order_by(CRMScoreRule.sequence_no, CRMScoreRule.name))).scalars().all()
+    defaults = [vars(r) for r in intel.DEFAULT_RULES] if not any(r.active_flag for r in rows) else []
+    return {"rules": [_rule_out(r) for r in rows], "using_defaults": bool(defaults), "defaults": defaults,
+            "fields": {k: v[1] for k, v in intel.SCORE_FIELDS.items()}}
+
+
+@router.post("/score-rules", status_code=201, dependencies=[Depends(require_any_permission(CRM_CONFIG))])
+async def create_score_rule(body: ScoreRuleIn, db: AsyncSession = Depends(get_db)):
+    try:
+        intel.validate_rule(body.field, body.operator, body.value)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc))
+    rule = CRMScoreRule(**body.model_dump())
+    db.add(rule)
+    await db.commit()
+    return _rule_out(rule)
+
+
+@router.patch("/score-rules/{rule_id}", dependencies=[Depends(require_any_permission(CRM_CONFIG))])
+async def update_score_rule(rule_id: str, body: ScoreRulePatch, db: AsyncSession = Depends(get_db)):
+    rule = await db.get(CRMScoreRule, _uuid(rule_id))
+    if rule is None:
+        raise HTTPException(404, "Rule not found")
+    changes = body.model_dump(exclude_unset=True)
+    try:
+        intel.validate_rule(rule.field, rule.operator, changes.get("value", rule.value))
+    except ValueError as exc:
+        raise HTTPException(422, str(exc))
+    for k, v in changes.items():
+        setattr(rule, k, v)
+    await db.commit()
+    return _rule_out(rule)
+
+
+@router.post("/score-rules/seed-defaults", dependencies=[Depends(require_any_permission(CRM_CONFIG))])
+async def seed_score_rules(db: AsyncSession = Depends(get_db)):
+    """Copy the built-in rules into editable rows (only when no rules exist yet)."""
+    if (await db.execute(select(CRMScoreRule.id).limit(1))).first():
+        raise HTTPException(409, "Score rules already exist.")
+    for n, r in enumerate(intel.DEFAULT_RULES):
+        db.add(CRMScoreRule(name=r.name, category=r.category, field=r.field, operator=r.operator, value=r.value,
+                            points=r.points, max_points=r.max_points, sequence_no=n))
+    await db.commit()
+    return {"created": len(intel.DEFAULT_RULES)}
+
+
+@router.post("/scores/recalculate", dependencies=[Depends(require_any_permission(CRM_CONFIG))])
+async def recalculate_scores(db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    return await intel.rescore_all(db, current_user.username)
+
+
+@router.get("/scores/queue")
+async def lead_score_queue(limit: int = Query(50, ge=1, le=200), db: AsyncSession = Depends(get_db),
+                           current_user=Depends(get_current_user)):
+    """Open leads the caller may see, best score first, each with why it scored that way."""
+    out, offset, batch = [], 0, max(limit, 100)
+    while len(out) < limit:  # scoped users: keep paging until enough visible leads or none left
+        rows = await intel.score_queue_candidates(db, batch, offset)
+        offset += batch
+        for record, breakdown in rows:
+            if not can_view_record(current_user, "crm", record):
+                continue
+            out.append({"id": str(record.id), "lead_code": record.lead_code, "company_name": record.company_name,
+                        "lead_score": record.lead_score or 0, "temperature": getattr(record.temperature, "value", record.temperature),
+                        "assigned_rep_id": record.assigned_rep_id, "breakdown": breakdown})
+        if len(rows) < batch:
+            break
+    return out[:limit]
+
+
+# ── M36.S02 forecast detail and snapshots, funnel analytics ────────────────────
+
+@router.get("/forecast/detail", dependencies=[Depends(require_any_permission(CRM_BROAD_VIEW))])
+async def forecast_detail(months_ahead: int = Query(6, ge=1, le=24), assigned_rep_id: Optional[str] = None,
+                          territory_id: Optional[str] = None, stage_id: Optional[str] = None,
+                          db: AsyncSession = Depends(get_db)):
+    try:
+        return await intel.forecast_detail(db, months_ahead, assigned_rep_id, territory_id, stage_id)
+    except ValueError:
+        raise HTTPException(422, "territory_id and stage_id must be UUIDs")
+
+
+class SnapshotIn(BaseModel):
+    label: Optional[str] = Field(None, max_length=150)
+    months_ahead: int = Field(6, ge=1, le=24)
+    assigned_rep_id: Optional[str] = None
+    territory_id: Optional[str] = None
+    stage_id: Optional[str] = None
+
+
+@router.post("/forecast/snapshots", status_code=201, dependencies=[Depends(require_any_permission(CRM_BROAD_VIEW))])
+async def create_forecast_snapshot(body: SnapshotIn, db: AsyncSession = Depends(get_db),
+                                   current_user=Depends(get_current_user)):
+    try:
+        detail = await intel.forecast_detail(db, body.months_ahead, body.assigned_rep_id, body.territory_id, body.stage_id)
+    except ValueError:
+        raise HTTPException(422, "territory_id and stage_id must be UUIDs")
+    return intel.snapshot_out(await intel.save_snapshot(db, detail, body.label, current_user.id), with_rows=True)
+
+
+@router.get("/forecast/snapshots", dependencies=[Depends(require_any_permission(CRM_BROAD_VIEW))])
+async def list_forecast_snapshots(limit: int = Query(20, ge=1, le=100), db: AsyncSession = Depends(get_db)):
+    rows = (await db.execute(select(CRMForecastSnapshot).order_by(CRMForecastSnapshot.taken_at.desc()).limit(limit))).scalars()
+    return [intel.snapshot_out(s) for s in rows]
+
+
+@router.get("/forecast/snapshots/{snapshot_id}", dependencies=[Depends(require_any_permission(CRM_BROAD_VIEW))])
+async def get_forecast_snapshot(snapshot_id: str, db: AsyncSession = Depends(get_db)):
+    snap = await db.get(CRMForecastSnapshot, _uuid(snapshot_id))
+    if snap is None:
+        raise HTTPException(404, "Snapshot not found")
+    return intel.snapshot_out(snap, with_rows=True)
+
+
+@router.get("/reports/funnel", dependencies=[Depends(require_any_permission(CRM_BROAD_VIEW))])
+async def funnel_report(date_from: Optional[date] = None, date_to: Optional[date] = None,
+                        assigned_rep_id: Optional[str] = None, territory_id: Optional[str] = None,
+                        db: AsyncSession = Depends(get_db)):
+    """Stage conversion, aging of open records, rep performance and loss reasons for records created in range."""
+    if date_from and date_to and date_from > date_to:
+        raise HTTPException(422, "date_from must not be after date_to")
+    try:
+        return await intel.funnel(db, date_from, date_to, assigned_rep_id, territory_id)
+    except ValueError:
+        raise HTTPException(422, "territory_id must be a UUID")
