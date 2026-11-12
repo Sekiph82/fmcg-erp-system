@@ -780,3 +780,134 @@ async def list_lead_submissions(form_id: str, limit: int = Query(100, ge=1, le=5
              "crm_record_id": str(r.crm_record_id) if r.crm_record_id else None, "contact_email": r.contact_email,
              "consent_given": r.consent_given, "utm_source": r.utm_source, "utm_medium": r.utm_medium,
              "utm_campaign": r.utm_campaign, "referrer": r.referrer, "landing_page": r.landing_page} for r in rows]
+
+
+# ── M36.S01.T004 CRM workflow automation ───────────────────────────────────────
+
+class AutomationRuleIn(BaseModel):
+    rule_name: str = Field(min_length=1, max_length=200)
+    trigger_event: str
+    condition_field: Optional[str] = None
+    condition_operator: Optional[str] = None
+    condition_value: Optional[str] = Field(None, max_length=500)
+    action_type: str
+    action_payload: dict = Field(default_factory=dict)
+    active_flag: bool = True
+    notes: Optional[str] = Field(None, max_length=2000)
+
+
+class AutomationRulePatch(BaseModel):
+    rule_name: Optional[str] = Field(None, min_length=1, max_length=200)
+    active_flag: Optional[bool] = None
+    action_payload: Optional[dict] = None
+    condition_value: Optional[str] = Field(None, max_length=500)
+
+
+def _auto_rule_out(r) -> dict:
+    return {"rule_id": r.rule_id, "rule_name": r.rule_name, "trigger_event": r.trigger_event,
+            "condition_field": r.condition_field, "condition_operator": r.condition_operator,
+            "condition_value": r.condition_value, "action_type": r.action_type, "action_payload": r.action_payload or {},
+            "active_flag": r.active_flag, "created_at": r.created_at.isoformat() if r.created_at else None}
+
+
+@router.get("/automation/rules", dependencies=[Depends(require_any_permission(CRM_BROAD_VIEW))])
+async def list_automation_rules(db: AsyncSession = Depends(get_db)):
+    from app.models.custom_fields import EntityType, WorkflowTriggerRule
+    from app.services import crm_automation_service as auto
+
+    rows = (await db.execute(select(WorkflowTriggerRule).where(WorkflowTriggerRule.entity_type == EntityType.CRM_RECORD)
+                             .order_by(WorkflowTriggerRule.created_at))).scalars()
+    return {"rules": [_auto_rule_out(r) for r in rows], "triggers": list(auto.TRIGGERS), "actions": list(auto.ACTIONS),
+            "condition_fields": list(auto.CONDITION_FIELDS), "settable_fields": auto.SETTABLE}
+
+
+@router.post("/automation/rules", status_code=201, dependencies=[Depends(require_any_permission(CRM_CONFIG))])
+async def create_automation_rule(body: AutomationRuleIn, db: AsyncSession = Depends(get_db),
+                                 current_user=Depends(get_current_user)):
+    from app.models.custom_fields import EntityType, WorkflowTriggerRule
+    from app.services import crm_automation_service as auto
+
+    from datetime import datetime as _dt, timezone as _tz
+
+    try:
+        auto.validate(body.trigger_event, body.condition_field, body.condition_operator, body.action_type, body.action_payload)
+        if body.action_type == "notify":
+            await auto.check_recipients(db, body.action_payload)
+    except (ValueError, TypeError) as exc:
+        raise HTTPException(422, str(exc))
+    now = _dt.now(_tz.utc)
+    rule = WorkflowTriggerRule(entity_type=EntityType.CRM_RECORD, created_by=current_user.username,
+                               activated_at=now, enqueued_until=now, **body.model_dump())
+    db.add(rule)
+    await db.commit()
+    return _auto_rule_out(rule)
+
+
+@router.patch("/automation/rules/{rule_id}", dependencies=[Depends(require_any_permission(CRM_CONFIG))])
+async def update_automation_rule(rule_id: str, body: AutomationRulePatch, db: AsyncSession = Depends(get_db)):
+    from app.models.custom_fields import EntityType, WorkflowTriggerRule
+    from app.services import crm_automation_service as auto
+
+    rule = (await db.execute(select(WorkflowTriggerRule).where(
+        WorkflowTriggerRule.rule_id == rule_id, WorkflowTriggerRule.entity_type == EntityType.CRM_RECORD))).scalar_one_or_none()
+    if rule is None:
+        raise HTTPException(404, "Rule not found")
+    changes = body.model_dump(exclude_unset=True)
+    if changes.get("rule_name", "x") is None or changes.get("active_flag", True) is None:
+        raise HTTPException(422, "rule_name and active_flag cannot be empty")
+    payload = changes["action_payload"] if "action_payload" in changes else (rule.action_payload or {})
+    try:
+        auto.validate(rule.trigger_event, rule.condition_field, rule.condition_operator, rule.action_type, payload)
+        if rule.action_type == "notify" and "action_payload" in changes:
+            await auto.check_recipients(db, payload)
+    except (ValueError, TypeError) as exc:
+        raise HTTPException(422, str(exc))
+    reactivated = changes.get("active_flag") is True and not rule.active_flag
+    for k, v in changes.items():
+        setattr(rule, k, v)
+    if reactivated or "condition_value" in changes:  # no replay of events from the paused/old-condition period
+        from datetime import datetime as _dt, timezone as _tz
+
+        rule.activated_at = rule.enqueued_until = _dt.now(_tz.utc)
+    await db.commit()
+    return _auto_rule_out(rule)
+
+
+@router.get("/automation/runs", dependencies=[Depends(require_any_permission(CRM_BROAD_VIEW))])
+async def list_automation_runs(status: Optional[str] = None, limit: int = Query(100, ge=1, le=500),
+                               db: AsyncSession = Depends(get_db)):
+    from app.models.crm import CRMAutomationRun
+
+    q = select(CRMAutomationRun, CRMRecord.company_name).join(CRMRecord, CRMRecord.id == CRMAutomationRun.crm_record_id)
+    if status:
+        q = q.where(CRMAutomationRun.status == status.upper())
+    rows = (await db.execute(q.order_by(CRMAutomationRun.created_at.desc()).limit(limit))).all()
+    return [{"id": str(r.id), "rule_id": r.rule_id, "rule_name": r.rule_name, "event_type": r.event_type,
+             "crm_record_id": str(r.crm_record_id), "company_name": name, "status": r.status, "attempts": r.attempts,
+             "result": r.result, "error": r.error, "created_at": r.created_at.isoformat(),
+             "finished_at": r.finished_at.isoformat() if r.finished_at else None} for r, name in rows]
+
+
+@router.post("/automation/runs/{run_id}/retry", dependencies=[Depends(require_any_permission(CRM_CONFIG))])
+async def retry_automation_run(run_id: str, db: AsyncSession = Depends(get_db)):
+    from datetime import datetime as _dt, timezone as _tz
+
+    from app.models.crm import CRMAutomationRun
+
+    run = await db.get(CRMAutomationRun, _uuid(run_id))
+    if run is None:
+        raise HTTPException(404, "Run not found")
+    if run.status != "FAILED":
+        raise HTTPException(409, "Only failed runs can be retried.")
+    run.status, run.attempts, run.next_attempt_at, run.finished_at = "PENDING", 0, _dt.now(_tz.utc), None
+    await db.commit()
+    return {"status": "PENDING"}
+
+
+@router.post("/automation/process", dependencies=[Depends(require_any_permission(CRM_CONFIG))])
+async def process_automation_now(db: AsyncSession = Depends(get_db)):
+    """Run one automation tick now (the background task does this every 15 seconds)."""
+    from app.services import crm_automation_service as auto
+
+    queued = await auto.enqueue(db)
+    return {"queued": queued, **await auto.process(db)}

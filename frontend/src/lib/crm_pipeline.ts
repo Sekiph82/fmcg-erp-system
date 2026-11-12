@@ -424,7 +424,28 @@ export const crmApi = {
   createLeadForm: (data: Partial<LeadForm>) => r(ax.post<LeadForm>(`/crm/lead-forms`, data)),
   updateLeadForm: (id: string, data: Partial<LeadForm>) => r(ax.patch<LeadForm>(`/crm/lead-forms/${id}`, data)),
   listLeadSubmissions: (id: string) => r(ax.get<LeadSubmissionRow[]>(`/crm/lead-forms/${id}/submissions`)),
+  getAutomationRules: () => r(ax.get<AutomationMeta>(`/crm/automation/rules`)),
+  createAutomationRule: (data: Partial<AutomationRule>) => r(ax.post<AutomationRule>(`/crm/automation/rules`, data)),
+  updateAutomationRule: (id: string, data: Partial<AutomationRule>) => r(ax.patch<AutomationRule>(`/crm/automation/rules/${id}`, data)),
+  getAutomationRuns: (status?: string) => r(ax.get<AutomationRun[]>(`/crm/automation/runs`, { params: { status } })),
+  retryAutomationRun: (id: string) => r(ax.post<{ status: string }>(`/crm/automation/runs/${id}/retry`)),
+  processAutomation: () => r(ax.post<Record<string, number>>(`/crm/automation/process`)),
 };
+
+export interface AutomationRule {
+  rule_id: string; rule_name: string; trigger_event: string; condition_field: string | null;
+  condition_operator: string | null; condition_value: string | null; action_type: string;
+  action_payload: Record<string, unknown>; active_flag: boolean; created_at: string | null;
+}
+export interface AutomationMeta {
+  rules: AutomationRule[]; triggers: string[]; actions: string[]; condition_fields: string[];
+  settable_fields: Record<string, string[] | null>;
+}
+export interface AutomationRun {
+  id: string; rule_id: string; rule_name: string | null; event_type: string; crm_record_id: string;
+  company_name: string; status: string; attempts: number; result: string | null; error: string | null;
+  created_at: string; finished_at: string | null;
+}
 
 export interface LeadForm {
   id: string; slug: string; name: string; title: string; intro: string | null; consent_text: string | null;

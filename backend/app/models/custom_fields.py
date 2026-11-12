@@ -218,3 +218,7 @@ class WorkflowTriggerRule(Base):
     notes = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    # CRM automation (M36.S01.T004): events before activated_at never fire (no replay after pause/edit);
+    # enqueued_until is the watermark so each tick only reads new history
+    activated_at = Column(DateTime(timezone=True), nullable=True)
+    enqueued_until = Column(DateTime(timezone=True), nullable=True)

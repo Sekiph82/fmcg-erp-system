@@ -1,0 +1,10 @@
+[
+  {
+    "route": "/dashboard/crm/automation",
+    "status": "OK",
+    "heading": "CRM Automation",
+    "screenshot": "coordination/milestones/M36/screenshots/B4/dashboard_crm_automation.png",
+    "console_errors": [],
+    "failed_api": []
+  }
+]

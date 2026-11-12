@@ -383,15 +383,14 @@ def _capture_stage_changes(session, _flush_context, _instances):
             continue
         state = inspect(obj)
         stage, status = state.attrs.stage_id.history, state.attrs.status.history
-        if obj in session.new:
-            if obj.stage_id is None and obj.status in (None, CRMStatus.OPEN):
-                continue
+        if obj in session.new:  # creation is an event too (automation "created" trigger)
             from_stage, from_status = None, None
             if obj.status is None:
                 obj.status = CRMStatus.OPEN  # column default, applied now so the history row is complete
         elif stage.has_changes() or status.has_changes():
-            from_stage = (stage.deleted or [obj.stage_id])[0]
-            from_status = (status.deleted or [obj.status])[0]
+            # a changed attribute with nothing in `deleted` had no previous value (e.g. first stage)
+            from_stage = (stage.deleted or [None])[0] if stage.has_changes() else obj.stage_id
+            from_status = (status.deleted or [None])[0] if status.has_changes() else obj.status
         else:
             continue
         if obj.id is None:
@@ -451,3 +450,27 @@ class CRMLeadSubmission(Base):
     utm_content    = Column(String(100), nullable=True)
     referrer       = Column(String(500), nullable=True)
     landing_page   = Column(String(500), nullable=True)
+
+
+
+# ── M36.S01.T004 CRM automation ───────────────────────────────────────────────
+
+class CRMAutomationRun(Base):
+    """One execution of a CRM automation rule for one CRM event; unique per (rule, event) so replays,
+    restarts and several API workers never run an action twice. Doubles as the audit trail."""
+    __tablename__ = "crm_automation_runs"
+    __table_args__ = (UniqueConstraint("rule_id", "event_key", name="uq_crm_automation_rule_event"),)
+
+    id              = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    rule_id         = Column(String(36), nullable=False, index=True)
+    rule_name       = Column(String(200), nullable=True)
+    event_key       = Column(String(80), nullable=False)               # "<event>:<stage_history_id>"
+    event_type      = Column(String(20), nullable=False)
+    crm_record_id   = Column(UUID(as_uuid=True), ForeignKey("crm_records.id", ondelete="CASCADE"), nullable=False, index=True)
+    status          = Column(String(10), nullable=False, default="PENDING", index=True)  # PENDING|DONE|FAILED|SKIPPED
+    attempts        = Column(Integer, nullable=False, default=0)
+    next_attempt_at = Column(DateTime(timezone=True), nullable=False)
+    result          = Column(Text, nullable=True)
+    error           = Column(Text, nullable=True)
+    created_at      = Column(DateTime(timezone=True), nullable=False)
+    finished_at     = Column(DateTime(timezone=True), nullable=True)

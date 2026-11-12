@@ -37,6 +37,7 @@ function CRMDashboardTab() {
     { href: "/dashboard/crm/funnel", label: "Funnel Analytics" },
     { href: "/dashboard/crm/scoring", label: "Lead Scoring" },
     { href: "/dashboard/crm/lead-forms", label: "Website Lead Forms" },
+    { href: "/dashboard/crm/automation", label: "Automation" },
     { href: "/dashboard/crm/win-loss", label: "Win/Loss Analysis" },
     { href: "/dashboard/crm?tab=pipeline", label: "Overdue Queue" },
     { href: "/dashboard/crm?tab=overview", label: "AI Agents" },
@@ -153,6 +154,7 @@ const CRMWinLossPage     = dynamic(() => import("@/app/dashboard/crm/win-loss/pa
 const CRMFunnelPage      = dynamic(() => import("@/app/dashboard/crm/funnel/page"),      { ssr: false });
 const CRMScoringPage     = dynamic(() => import("@/app/dashboard/crm/scoring/page"),     { ssr: false });
 const CRMLeadFormsPage   = dynamic(() => import("@/app/dashboard/crm/lead-forms/page"),  { ssr: false });
+const CRMAutomationPage  = dynamic(() => import("@/app/dashboard/crm/automation/page"),  { ssr: false });
 const LoyaltyPage        = dynamic(() => import("@/app/dashboard/loyalty/page"),         { ssr: false });
 const NPSPage            = dynamic(() => import("@/app/dashboard/nps/page"),             { ssr: false });
 const SurveysPage        = dynamic(() => import("@/app/dashboard/surveys/page"),         { ssr: false });
@@ -171,6 +173,7 @@ export default function CRMPage() {
     { key: "funnel",      label: "Funnel",      permission: "crm.view", content: <CRMFunnelPage /> },
     { key: "scoring",     label: "Lead Scoring", permission: "crm.view", content: <CRMScoringPage /> },
     { key: "lead-forms",  label: "Lead Forms",  permission: "crm.view", content: <CRMLeadFormsPage /> },
+    { key: "automation",  label: "Automation",  permission: "crm.view", content: <CRMAutomationPage /> },
     { key: "loyalty",     label: "Loyalty",     permission: "crm.view", content: <LoyaltyPage /> },
     { key: "nps",         label: "NPS",         permission: "crm.view", content: <NPSPage /> },
     { key: "surveys",     label: "Surveys",     permission: "crm.view", content: <SurveysPage /> },
