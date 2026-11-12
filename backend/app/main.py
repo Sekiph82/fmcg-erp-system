@@ -29,6 +29,7 @@ from app.core.security_headers import SecurityHeadersMiddleware
 from app.db.seed import seed_admin, seed_management_users
 from app.db.session import AsyncSessionLocal
 from app.services.webhook_dispatcher import run_webhook_dispatcher
+from app.services.mqtt_bridge import run_mqtt_bridge
 import app.models  # noqa: F401 - ensure all models are registered
 
 configure_logging(settings.ENVIRONMENT)
@@ -63,12 +64,14 @@ async def lifespan(app: FastAPI):
     dispatcher_task = asyncio.create_task(
         run_webhook_dispatcher(), name="webhook-dispatcher"
     )
+    mqtt_task = asyncio.create_task(run_mqtt_bridge(), name="mqtt-bridge")
     try:
         yield
     finally:
-        dispatcher_task.cancel()
-        with suppress(asyncio.CancelledError):
-            await dispatcher_task
+        for task in (dispatcher_task, mqtt_task):
+            task.cancel()
+            with suppress(asyncio.CancelledError):
+                await task
         logger.info("Shutting down %s", settings.PROJECT_NAME)
 
 

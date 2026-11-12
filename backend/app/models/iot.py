@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 from enum import Enum as PyEnum
-from sqlalchemy import Column, String, Text, Numeric, Boolean, DateTime, Integer, Enum, ForeignKey
+from sqlalchemy import Column, String, Text, Numeric, Boolean, DateTime, Integer, Enum, ForeignKey, Index, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
 from app.db.base import Base
@@ -140,6 +140,11 @@ class IoTChannel(Base):
 class IoTIngestMessage(Base):
     """Idempotency and audit record for a device/gateway ingest message."""
     __tablename__ = "iot_ingest_messages"
+    __table_args__ = (
+        # a device message is stored once, even when two API workers receive a redelivery at the same time
+        Index("uq_iot_ingest_messages_accepted", "source", "message_id", unique=True,
+              postgresql_where=text("status = 'ACCEPTED' AND message_id IS NOT NULL")),
+    )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     device_id = Column(UUID(as_uuid=True), ForeignKey("iot_devices.id", ondelete="SET NULL"), nullable=True, index=True)

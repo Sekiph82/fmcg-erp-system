@@ -15,9 +15,10 @@ from sqlalchemy import func, select
 
 from app.core.config import settings
 from app.db.session import AsyncSessionLocal, engine
-from app.models.integrations import EcommerceOrderMapping, EcommerceProductMapping, SyncStatus
+from app.models.integrations import CrmCustomerMapping, EcommerceOrderMapping, EcommerceProductMapping, SyncStatus
 from app.models.inventory import Lot, Stock, StockType
 from app.models.master import Product, ProductCategory, UnitOfMeasure, Warehouse, WarehouseType
+from app.models.marketing import AcquisitionSource, CRMProfile
 from app.models.sales import Customer, CustomerChannel, OrderSource, PaymentMethod, SalesOrder, SOLine, SOStatus
 from app.models.user import User
 from app.services import shopify_service
@@ -76,11 +77,13 @@ async def test_orders_import_once_as_draft_sales_orders_and_stock_is_pushed(monk
     monkeypatch.setattr(settings, "SHOPIFY_WAREHOUSE_ID", str(ids[2]))
     monkeypatch.setattr(settings, "SHOPIFY_LOCATION_ID", "777")
     base = int(s[:6], 16) % 100000
-    good = make_order(base, line_items=[
+    buyer = {"id": int(f"7{base}"), "first_name": "Synthetic", "last_name": "Buyer", "email": f"buyer-{s}@example.invalid",
+             "default_address": {"address1": "1 Test Road", "city": "Nairobi", "country": "Kenya", "phone": "+254700000000"}}
+    good = make_order(base, customer=buyer, line_items=[
         {"id": 1, "sku": sku, "quantity": 3, "price": "150.00", "total_discount": "10.00", "tax_lines": [{"rate": 0.16}]},
         {"id": 9, "sku": "REFUNDED-NOT-IN-ERP", "quantity": 1, "current_quantity": 0, "price": "5"},
     ])
-    inclusive = make_order(base + 1, taxes_included=True, financial_status="pending",
+    inclusive = make_order(base + 1, taxes_included=True, financial_status="pending", customer={"id": buyer["id"]},
                            line_items=[{"id": 3, "sku": sku, "quantity": 1, "price": "116.00", "tax_lines": [{"rate": 0.16}]}])
     unknown = make_order(base + 2, line_items=[{"id": 2, "sku": late_sku, "quantity": 1, "price": "9"}])
     cancelled = make_order(base + 3, cancelled_at="2026-11-10T09:00:00Z")
@@ -127,13 +130,23 @@ async def test_orders_import_once_as_draft_sales_orders_and_stock_is_pushed(monk
         assert any(late_sku in e for e in result.errors) and any("Could not import" in e for e in result.errors)
 
         so = await so_for(good)
-        assert so.status == SOStatus.DRAFT and so.customer_id == ids[1] and so.warehouse_id == ids[2]
+        assert so.status == SOStatus.DRAFT and so.warehouse_id == ids[2]
+        # the Shopify buyer became one native ONLINE customer, linked by Shopify id, with a CRM profile
+        link = (await db.execute(select(CrmCustomerMapping).where(
+            CrmCustomerMapping.crm_provider == "SHOPIFY", CrmCustomerMapping.external_crm_id == str(buyer["id"])))).scalar_one()
+        web_buyer = await db.get(Customer, link.customer_id)
+        assert so.customer_id == web_buyer.id != ids[1]
+        assert (web_buyer.channel, web_buyer.name, web_buyer.email, web_buyer.city, web_buyer.is_prepaid) == (
+            CustomerChannel.ONLINE, "Synthetic Buyer", buyer["email"], "Nairobi", True)
+        profile = (await db.execute(select(CRMProfile).where(CRMProfile.customer_id == web_buyer.id))).scalar_one()
+        assert (profile.acquisition_source, profile.acquisition_channel) == (AcquisitionSource.DIRECT, "SHOPIFY")
         assert so.source == OrderSource.ECOMMERCE and so.payment_method == PaymentMethod.BANK_TRANSFER
         line = (await db.execute(select(SOLine).where(SOLine.so_id == so.id))).scalar_one()  # refunded line dropped
         assert (line.ordered_quantity, line.unit_price, line.tax_rate) == (Decimal("3"), Decimal("146.6667"), Decimal("16.00"))
         so2 = await so_for(inclusive)
         line2 = (await db.execute(select(SOLine).where(SOLine.so_id == so2.id))).scalar_one()
         assert line2.unit_price == Decimal("100.0000") and so2.payment_method == PaymentMethod.CREDIT  # net of 16% VAT
+        assert so2.customer_id == web_buyer.id  # repeat buyer reuses the same ERP customer
         assert (await mapping_for(good)).so_id == so.id
         failed = await mapping_for(unknown)
         assert failed.sync_status == SyncStatus.FAILED and failed.so_id is None
@@ -151,6 +164,7 @@ async def test_orders_import_once_as_draft_sales_orders_and_stock_is_pushed(monk
         await db.refresh(retried)
         assert retried.sync_status == SyncStatus.SYNCED and retried.error_message is None
         assert retried.so_id == (await so_for(unknown)).id
+        assert (await so_for(unknown)).customer_id == ids[1]  # guest checkout stays on the web-store account
 
         inventory = await run(shopify_service.sync_inventory)
         assert (inventory.synced, inventory.unmatched, inventory.failed) == (1, 1, 0)

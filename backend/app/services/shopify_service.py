@@ -1,8 +1,9 @@
 """Shopify connector: import web orders as draft sales orders and push stock levels.
 
 Uses the Shopify Admin REST API with a custom-app access token (settings, never stored in the
-database). Orders become DRAFT sales orders for the configured web-store customer and
-warehouse once every line's SKU matches an ERP product; otherwise the order is recorded as
+database). Shopify buyers become native ERP customers (channel ONLINE, with a CRM profile) linked
+by Shopify customer id; guest checkouts go to the configured web-store customer. Orders become
+DRAFT sales orders in the configured warehouse once every line's SKU matches an ERP product; otherwise the order is recorded as
 FAILED with the reason and no sales order is created. Each Shopify order is imported once
 (unique per platform + external id). Inventory sync sets the Shopify location's available
 quantity to the ERP warehouse's unblocked available stock for every SKU-matched variant.
@@ -25,10 +26,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.crud import sales as sales_crud
-from app.models.integrations import EcommerceOrderMapping, EcommerceProductMapping, SyncStatus
+from app.models.integrations import CrmCustomerMapping, EcommerceOrderMapping, EcommerceProductMapping, SyncStatus
 from app.models.inventory import Lot, Stock, StockType
 from app.models.master import Product
-from app.models.sales import Customer, OrderSource, PaymentMethod
+from app.models.marketing import AcquisitionSource, CRMProfile
+from app.models.sales import Customer, CustomerChannel, OrderSource, PaymentMethod
 
 PLATFORM = "SHOPIFY"
 _SHOP_DOMAIN = re.compile(r"^[a-z0-9][a-z0-9-]{0,62}\.myshopify\.com$")
@@ -160,6 +162,64 @@ def _order_lines(order: dict, products: dict, skus: list[str], lines: list[dict]
     return so_lines
 
 
+def _text(value: Any, size: int) -> Optional[str]:
+    value = str(value or "").strip()
+    return value[:size] or None
+
+
+async def _resolve_customer(db: AsyncSession, order: dict, fallback: Customer, order_date: date) -> Customer:
+    """The ERP customer for a Shopify buyer: linked by Shopify customer id, created on first order.
+
+    Guest checkouts (no Shopify customer) stay on the configured web-store customer. Buyers are never
+    matched by e-mail: Shopify checkout e-mails are unverified, so matching could attach a stranger's
+    order to an existing trade account. To use an existing ERP account, point its SHOPIFY mapping at it.
+    """
+    buyer = order.get("customer") or {}
+    buyer_id = _text(buyer.get("id"), 200)
+    if buyer_id is None:
+        return fallback
+    mapping = (await db.execute(select(CrmCustomerMapping).where(
+        CrmCustomerMapping.crm_provider == PLATFORM,
+        CrmCustomerMapping.external_crm_id == buyer_id))).scalar_one_or_none()
+    if mapping is not None:
+        customer = await db.get(Customer, mapping.customer_id)
+        if customer is None or not customer.is_active:
+            raise ShopifyError(f"ERP customer linked to Shopify customer {buyer_id} is inactive.")
+        mapping.last_sync_at = datetime.now(timezone.utc)
+        profile = (await db.execute(select(CRMProfile).where(CRMProfile.customer_id == customer.id))).scalar_one_or_none()
+        if profile is not None:
+            profile.last_touch_source = "shopify"
+            profile.last_contact_date = max(profile.last_contact_date or order_date, order_date)
+        return customer
+    address = buyer.get("default_address") or order.get("billing_address") or {}
+    name = " ".join(filter(None, [_text(buyer.get("first_name"), 100), _text(buyer.get("last_name"), 100)]))
+    name = name or _text(buyer.get("email"), 255) or f"Shopify customer {buyer_id}"
+    customer = Customer(
+        code=f"SHOP-C-{buyer_id}"[:50], name=name[:255], contact_person=name[:255],
+        email=_text(buyer.get("email"), 255), phone=_text(buyer.get("phone") or address.get("phone"), 50),
+        address=_text(", ".join(filter(None, [address.get("address1"), address.get("address2")])), 2000),
+        city=_text(address.get("city"), 100), country=_text(address.get("country"), 100),
+        channel=CustomerChannel.ONLINE, currency=(order.get("currency") or fallback.currency or "KES")[:10],
+        payment_terms_days=0, is_prepaid=True,  # consumer web buyers pay up front, no credit line
+        # same commercial scope as the web-store account, so scoped access rules apply unchanged
+        company_id=fallback.company_id, branch_id=fallback.branch_id, sales_region_id=fallback.sales_region_id,
+        sales_team_id=fallback.sales_team_id, customer_group_id=fallback.customer_group_id,
+        notes=f"Created from Shopify customer {buyer_id}",
+    )
+    db.add(customer)
+    await db.flush()
+    db.add_all([
+        CrmCustomerMapping(customer_id=customer.id, crm_provider=PLATFORM, external_crm_id=buyer_id,
+                           sync_status=SyncStatus.SYNCED, sync_direction="PULL",
+                           last_sync_at=datetime.now(timezone.utc)),
+        CRMProfile(customer_id=customer.id, acquisition_source=AcquisitionSource.DIRECT,
+                   acquisition_channel="SHOPIFY", first_touch_source="shopify", last_touch_source="shopify",
+                   last_contact_date=order_date, preferred_contact_method="email" if customer.email else None),
+    ])
+    await db.flush()
+    return customer
+
+
 async def _import_one(db: AsyncSession, order: dict, mapping: EcommerceOrderMapping, name: str, customer: Customer,
                       warehouse_id: str, actor_id: uuid.UUID) -> Optional[str]:
     """Create the draft sales order and fill the mapping; return an error message when the order can't map."""
@@ -181,6 +241,7 @@ async def _import_one(db: AsyncSession, order: dict, mapping: EcommerceOrderMapp
         await db.flush()
         return error
     created = datetime.fromisoformat(str(order["created_at"]).replace("Z", "+00:00")).date()
+    customer = await _resolve_customer(db, order, customer, created)
     paid = (order.get("financial_status") or "").lower() in _PAID
     so = await sales_crud.create_so(db, {
         "order_no": f"SHOP-{name.lstrip('#')}"[:50], "customer_id": customer.id, "order_date": created,

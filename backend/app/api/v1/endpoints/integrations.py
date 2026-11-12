@@ -547,6 +547,15 @@ async def import_ecommerce_orders(
             since = since.replace(tzinfo=_tz.utc)
     client = await _shopify_client()
     try:
+        from app.models.sales import Customer
+        from app.services.commercial_access_service import ensure_commercial_action_allowed
+
+        try:
+            web_customer = await db.get(Customer, uuid.UUID(settings.SHOPIFY_CUSTOMER_ID))
+        except ValueError:
+            web_customer = None  # import_orders reports the misconfiguration
+        if web_customer is not None:  # orders and new buyers are created in this account's commercial scope
+            ensure_commercial_action_allowed(current_user, web_customer, "create", "sales")
         result = await shopify.import_orders(db, client, since, current_user.id, limit=body.limit)
     except shopify.ShopifyError as exc:
         await db.rollback()

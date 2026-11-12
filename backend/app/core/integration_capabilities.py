@@ -127,20 +127,24 @@ CAPABILITIES: tuple[IntegrationCapability, ...] = (
     ),
     IntegrationCapability(
         provider="IOT",
-        label="IoT / Machine Streaming",
-        status=IntegrationCapabilityStatus.STUB_ONLY,
-        simulation_supported=True,
+        label="IoT / Machine Streaming (MQTT)",
+        status=IntegrationCapabilityStatus.SANDBOX_READY,
+        live_env_vars=("MQTT_BROKER_URL", "MQTT_USERNAME", "MQTT_PASSWORD", "MQTT_TOPICS"),
+        production_execution_allowed=True,
         requires_signature_validation=True,
         frontend_route="/dashboard/iot",
-        notes="Current service is a placeholder for a future MQTT/streaming bridge.",
+        notes="Broker-agnostic MQTT bridge into native IoT ingest (readings, batches, machine states, "
+              "threshold alerts, audited/idempotent ingest messages); verified against a local Mosquitto "
+              "broker. TLS (mqtts) required in production. OPC-UA needs an edge gateway publishing to MQTT.",
     ),
     IntegrationCapability(
         provider="CRM_SYNC",
-        label="CRM Sync",
+        label="External CRM Sync (optional)",
         status=IntegrationCapabilityStatus.STUB_ONLY,
         simulation_supported=True,
         frontend_route="/dashboard/crm",
-        notes="CRM integration service is explicitly a scalable placeholder.",
+        notes="CRM is native to the ERP (customers, pipeline, CRM profiles, interactions). External CRMs "
+              "(HubSpot/Salesforce/Zoho) are optional future connectors by owner decision; sync answers 501.",
     ),
     IntegrationCapability(
         provider="ECOMMERCE_SYNC",

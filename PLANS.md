@@ -33,6 +33,29 @@ Development must follow:
 
 ---
 
+## Owner Architecture Decision — Native CRM (2026-11-11)
+
+The ERP is the system of record for customers and CRM. An external CRM (HubSpot, Salesforce, Zoho or
+similar) is never a required dependency; such connectors are optional future integrations that sync
+to and from the native records.
+
+- Native CRM capability lives in the ERP modules and is extended there, not duplicated:
+  customer master and commercial scope (`sales.Customer`), leads/opportunities pipeline with stages,
+  territories, activities, competitors, win/loss and AI recommendations (`crm.*`, `/dashboard/crm`),
+  CRM profiles, interactions, visits and segments (`marketing.CRMProfile` and related,
+  `/dashboard/marketing/crm`), loyalty, field-sales visits/routes, distributors and secondary sales,
+  helpdesk, NPS and consumer complaints.
+- Channel integrations feed the native records. Shopify buyers become native customers (channel ONLINE,
+  scoped like the web-store account, with a CRM profile) linked through `crm_customer_mappings`
+  (provider `SHOPIFY`, one ERP customer per external id); guest checkouts use the configured web-store
+  customer; imported orders are native DRAFT sales orders (source ECOMMERCE). Buyers are not matched by
+  e-mail because checkout e-mails are unverified.
+- Any future external CRM connector must use the same mapping table and must not become the source of
+  truth for customer, pricing, credit or order data. Until one is built, the CRM sync endpoint answers
+  501 instead of reporting fabricated success.
+
+---
+
 ## Phase Structure (High-Level)
 
 ### Phase Group 1 — Core Foundations

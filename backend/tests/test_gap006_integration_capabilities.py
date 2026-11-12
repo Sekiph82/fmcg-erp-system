@@ -16,7 +16,8 @@ def test_capability_registry_classifies_real_and_stub_providers():
 
     assert providers["MPESA_DARAJA"].status == IntegrationCapabilityStatus.SANDBOX_READY
     assert providers["MPESA_DARAJA"].production_execution_allowed is True
-    assert providers["IOT"].status == IntegrationCapabilityStatus.STUB_ONLY
+    assert providers["IOT"].status == IntegrationCapabilityStatus.SANDBOX_READY  # MQTT bridge
+    assert providers["CRM_SYNC"].status == IntegrationCapabilityStatus.STUB_ONLY  # external CRM is optional
     assert providers["EMAIL_SYNC"].status == IntegrationCapabilityStatus.SIMULATED_ONLY
     assert providers["GRAPHQL_API"].status == IntegrationCapabilityStatus.LIVE_READY
 
@@ -67,13 +68,13 @@ def test_live_ready_capability_requires_production_execution_flag_in_production(
 def test_blocked_production_capability_report_includes_known_stub_providers():
     blocked = {capability.provider for capability in iter_blocked_production_capabilities()}
 
-    assert "IOT" in blocked
+    assert "IOT" not in blocked  # MQTT bridge is implemented
     assert "CRM_SYNC" in blocked
     assert "GRAPHQL_API" not in blocked  # read-only GraphQL is implemented
 
 
 def test_production_block_reason_explains_stub_and_allowed_providers():
-    stub = get_integration_capability("IOT")
+    stub = get_integration_capability("CRM_SYNC")
     mpesa = get_integration_capability("MPESA_DARAJA")
 
     assert stub is not None

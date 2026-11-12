@@ -132,6 +132,15 @@ class Settings(BaseSettings):
     SHOPIFY_LOCATION_ID: str = ""          # Shopify location whose stock the ERP sets
     SHOPIFY_CUSTOMER_ID: str = ""          # ERP customer that web orders are booked against
     SHOPIFY_WAREHOUSE_ID: str = ""         # ERP warehouse for web orders and stock
+
+    # MQTT -> IoT ingest bridge (broker-agnostic). Empty broker URL disables it.
+    MQTT_BROKER_URL: str = ""              # mqtt://host:1883 or mqtts://host:8883 (TLS required in production)
+    MQTT_USERNAME: str = ""
+    MQTT_PASSWORD: str = ""
+    MQTT_CA_FILE: str = ""                 # private CA bundle for mqtts; system CAs when empty
+    MQTT_TOPICS: str = "fmcg/iot/#"        # comma-separated topic filters, QoS 1
+    MQTT_CLIENT_ID: str = ""               # keep empty with several workers: one fixed id makes the broker kick them in turn
+    MQTT_SHARED_GROUP: str = "fmcg-erp"    # $share group so API workers split messages; empty disables
     MPESA_ENV: str = "sandbox"           # "sandbox" | "production"
     MPESA_TRANSACTION_TYPE: str = "CustomerPayBillOnline"  # or CustomerBuyGoodsOnline
 

@@ -20,37 +20,14 @@ from app.models.iot import (
     MachineState, AlertSeverity, AlertStatus,
 )
 
+from app.services.iot_ingest import (
+    SensorBatchIn, SensorIn, StateIn, ingest_reading, record_machine_state,
+)
+
 router = APIRouter()
 
 
 # ── Request Schemas ───────────────────────────────────────────────────────────
-
-class SensorIn(BaseModel):
-    machine_id: str
-    machine_name: Optional[str] = None
-    sensor_id: Optional[str] = None
-    metric_name: str
-    value: float
-    unit: Optional[str] = None
-    quality_flag: bool = True
-    source: str = "HTTP"
-    production_order_id: Optional[str] = None
-    recorded_at: Optional[str] = None
-
-
-class SensorBatchIn(BaseModel):
-    readings: List[SensorIn]
-
-
-class StateIn(BaseModel):
-    machine_id: str
-    machine_name: Optional[str] = None
-    state: MachineState
-    trigger_value: Optional[float] = None
-    trigger_metric: Optional[str] = None
-    trigger_source: str = "manual"
-    notes: Optional[str] = None
-
 
 class ThresholdIn(BaseModel):
     machine_id: str
@@ -70,49 +47,7 @@ async def ingest_sensor(
     _=Depends(require_permission("iot", "ingest")),
 ):
     """Ingest single sensor reading. Requires iot.ingest permission."""
-    recorded = datetime.fromisoformat(payload.recorded_at) if payload.recorded_at else datetime.utcnow()
-    dp = SensorDataPoint(
-        machine_id=payload.machine_id,
-        machine_name=payload.machine_name,
-        sensor_id=payload.sensor_id,
-        metric_name=payload.metric_name,
-        value=payload.value,
-        unit=payload.unit,
-        quality_flag=payload.quality_flag,
-        source=payload.source,
-        production_order_id=payload.production_order_id,
-        recorded_at=recorded,
-    )
-    db.add(dp)
-
-    # Check thresholds → create alert if breached
-    thresh_r = await db.execute(
-        select(IoTAlertThreshold).where(
-            IoTAlertThreshold.machine_id == payload.machine_id,
-            IoTAlertThreshold.metric_name == payload.metric_name,
-            IoTAlertThreshold.is_active == True,
-        )
-    )
-    for threshold in thresh_r.scalars().all():
-        breached = False
-        if threshold.min_threshold is not None and payload.value < float(threshold.min_threshold):
-            breached = True
-        if threshold.max_threshold is not None and payload.value > float(threshold.max_threshold):
-            breached = True
-        if breached:
-            alert = IoTAlert(
-                threshold_id=threshold.id,
-                machine_id=payload.machine_id,
-                machine_name=payload.machine_name,
-                metric_name=payload.metric_name,
-                triggered_value=payload.value,
-                threshold_min=threshold.min_threshold,
-                threshold_max=threshold.max_threshold,
-                severity=threshold.severity,
-                triggered_at=recorded,
-            )
-            db.add(alert)
-
+    recorded = await ingest_reading(db, payload)
     await db.commit()
     return {"machine_id": payload.machine_id, "metric": payload.metric_name, "value": payload.value, "recorded_at": recorded.isoformat()}
 
@@ -126,18 +61,18 @@ async def ingest_batch(
     """Batch ingest up to 1000 sensor readings. Requires iot.ingest permission."""
     if len(payload.readings) > 1000:
         raise HTTPException(400, "Max 1000 readings per batch")
-    ingested = 0
-    for r in payload.readings:
-        recorded = datetime.fromisoformat(r.recorded_at) if r.recorded_at else datetime.utcnow()
-        db.add(SensorDataPoint(
-            machine_id=r.machine_id, machine_name=r.machine_name,
-            sensor_id=r.sensor_id, metric_name=r.metric_name,
-            value=r.value, unit=r.unit, quality_flag=r.quality_flag,
-            source=r.source, recorded_at=recorded,
-        ))
-        ingested += 1
+    for r in payload.readings:  # same path as single readings, so thresholds raise alerts here too
+        await ingest_reading(db, r)
     await db.commit()
-    return {"ingested": ingested}
+    return {"ingested": len(payload.readings)}
+
+
+@router.get("/bridge/status")
+async def mqtt_bridge_status(_=Depends(require_permission("iot", "view"))):
+    """MQTT bridge state for this API worker (no credentials)."""
+    from app.services.mqtt_bridge import STATUS
+
+    return dict(STATUS)
 
 
 @router.get("/sensors/latest")
@@ -206,31 +141,9 @@ async def record_state(
     _=Depends(require_permission("iot", "ingest")),
 ):
     """Record machine state change. Requires iot.ingest permission."""
-    prev_r = await db.execute(
-        select(MachineStateEvent)
-        .where(MachineStateEvent.machine_id == payload.machine_id)
-        .order_by(desc(MachineStateEvent.changed_at))
-        .limit(1)
-    )
-    prev = prev_r.scalar_one_or_none()
-    prev_state = prev.state if prev else None
-    duration = int((datetime.utcnow() - prev.changed_at).total_seconds()) if prev else None
-
-    evt = MachineStateEvent(
-        machine_id=payload.machine_id,
-        machine_name=payload.machine_name,
-        state=payload.state,
-        previous_state=prev_state,
-        trigger_value=payload.trigger_value,
-        trigger_metric=payload.trigger_metric,
-        trigger_source=payload.trigger_source,
-        duration_seconds=duration,
-        notes=payload.notes,
-    )
-    db.add(evt)
+    result = await record_machine_state(db, payload)
     await db.commit()
-    return {"machine_id": payload.machine_id, "state": payload.state,
-            "previous_state": prev_state, "duration_seconds": duration}
+    return result
 
 
 @router.get("/machines/current-states")

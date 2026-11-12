@@ -153,7 +153,11 @@ class IntegrationMpesaTransaction(Base, TimestampMixin):
 class CrmCustomerMapping(Base, TimestampMixin):
     """Maps internal Customer to external CRM contact/lead records."""
     __tablename__ = "crm_customer_mappings"
-    __table_args__ = (UniqueConstraint("customer_id", "crm_provider", name="uq_crm_customer_provider"),)
+    __table_args__ = (
+        UniqueConstraint("customer_id", "crm_provider", name="uq_crm_customer_provider"),
+        # one ERP customer per external customer (Shopify buyer ids are linked on first order)
+        UniqueConstraint("crm_provider", "external_crm_id", name="uq_crm_customer_mappings_provider_external"),
+    )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     customer_id = Column(UUID(as_uuid=True), ForeignKey("customers.id", ondelete="CASCADE"), nullable=False, index=True)
