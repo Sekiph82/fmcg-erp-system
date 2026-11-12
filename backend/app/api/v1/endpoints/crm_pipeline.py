@@ -649,3 +649,134 @@ async def funnel_report(date_from: Optional[date] = None, date_to: Optional[date
         return await intel.funnel(db, date_from, date_to, assigned_rep_id, territory_id)
     except ValueError:
         raise HTTPException(422, "territory_id must be a UUID")
+
+
+# ── M36.S03.T002 unified customer timeline ─────────────────────────────────────
+
+@router.get("/customers/{customer_id}/timeline")
+async def customer_timeline(customer_id: str, limit: int = Query(50, ge=1, le=200), before: Optional[str] = None,
+                            types: Optional[str] = Query(None, description="comma-separated event types"),
+                            db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    """Newest-first events touching the customer. Each source is shown only with its own view permission;
+    `hidden_sources` lists what the caller may not see. Page with `before` = previous `next`."""
+    from app.models.sales import Customer
+    from app.services import customer_timeline_service as timeline_svc
+
+    customer = await db.get(Customer, _uuid(customer_id))
+    if customer is None:
+        raise HTTPException(404, "Customer not found")
+    if not (can_view_record(current_user, "crm", customer) or can_view_record(current_user, "sales", customer)):
+        raise HTTPException(403, "Customer is outside your commercial scope.")
+    try:
+        result = await timeline_svc.timeline(db, customer.id, current_user, limit, before,
+                                             {t.strip() for t in types.split(",") if t.strip()} if types else None)
+    except ValueError:
+        raise HTTPException(422, "before must be a cursor returned as `next`.")
+    return {"customer": {"id": str(customer.id), "code": customer.code, "name": customer.name}, **result}
+
+
+# ── M36.S02.T001 website lead forms (admin) ────────────────────────────────────
+
+class LeadFormIn(BaseModel):
+    slug: str = Field(min_length=3, max_length=80, pattern=r"^[a-z0-9][a-z0-9-]*$")
+    name: str = Field(min_length=1, max_length=150)
+    title: str = Field(min_length=1, max_length=200)
+    intro: Optional[str] = Field(None, max_length=2000)
+    consent_text: Optional[str] = Field(None, max_length=2000)
+    require_consent: bool = True
+    success_message: Optional[str] = Field(None, max_length=300)
+    active_flag: bool = True
+    assigned_rep_id: Optional[str] = Field(None, max_length=50)
+    territory_id: Optional[str] = None
+    company_id: Optional[str] = None
+    branch_id: Optional[str] = None
+    sales_region_id: Optional[str] = Field(None, max_length=100)
+    sales_team_id: Optional[str] = Field(None, max_length=100)
+
+
+class LeadFormPatch(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=150)
+    title: Optional[str] = Field(None, min_length=1, max_length=200)
+    intro: Optional[str] = Field(None, max_length=2000)
+    consent_text: Optional[str] = Field(None, max_length=2000)
+    require_consent: Optional[bool] = None
+    success_message: Optional[str] = Field(None, max_length=300)
+    active_flag: Optional[bool] = None
+    assigned_rep_id: Optional[str] = Field(None, max_length=50)
+    sales_region_id: Optional[str] = Field(None, max_length=100)
+    sales_team_id: Optional[str] = Field(None, max_length=100)
+
+
+async def _check_form_refs(db: AsyncSession, data: dict) -> None:
+    """Lead forms stamp their scope on every lead: referenced territory/company/branch must exist."""
+    from app.models.company import Branch, Company
+
+    for key, model in (("territory_id", CRMTerritory), ("company_id", Company), ("branch_id", Branch)):
+        if data.get(key):
+            data[key] = _uuid(data[key])
+            if await db.get(model, data[key]) is None:
+                raise HTTPException(422, f"{key} does not exist.")
+        else:
+            data[key] = None
+
+
+def _form_out(f) -> dict:
+    return {"id": str(f.id), "slug": f.slug, "name": f.name, "title": f.title, "intro": f.intro,
+            "consent_text": f.consent_text, "require_consent": f.require_consent, "success_message": f.success_message,
+            "active_flag": f.active_flag, "assigned_rep_id": f.assigned_rep_id,
+            "territory_id": str(f.territory_id) if f.territory_id else None,
+            "company_id": str(f.company_id) if f.company_id else None,
+            "branch_id": str(f.branch_id) if f.branch_id else None,
+            "sales_region_id": f.sales_region_id, "sales_team_id": f.sales_team_id}
+
+
+@router.get("/lead-forms", dependencies=[Depends(require_any_permission(CRM_BROAD_VIEW))])
+async def list_lead_forms(db: AsyncSession = Depends(get_db)):
+    from app.models.crm import CRMLeadForm
+
+    return [_form_out(f) for f in (await db.execute(select(CRMLeadForm).order_by(CRMLeadForm.name))).scalars()]
+
+
+@router.post("/lead-forms", status_code=201, dependencies=[Depends(require_any_permission(CRM_CONFIG))])
+async def create_lead_form(body: LeadFormIn, db: AsyncSession = Depends(get_db)):
+    from app.models.crm import CRMLeadForm
+
+    if body.require_consent and not (body.consent_text or "").strip():
+        raise HTTPException(422, "consent_text is required when consent is required.")
+    if (await db.execute(select(CRMLeadForm.id).where(CRMLeadForm.slug == body.slug))).first():
+        raise HTTPException(409, "A form with this slug already exists.")
+    data = body.model_dump()
+    await _check_form_refs(db, data)
+    form = CRMLeadForm(**data)
+    db.add(form)
+    await db.commit()
+    return _form_out(form)
+
+
+@router.patch("/lead-forms/{form_id}", dependencies=[Depends(require_any_permission(CRM_CONFIG))])
+async def update_lead_form(form_id: str, body: LeadFormPatch, db: AsyncSession = Depends(get_db)):
+    from app.models.crm import CRMLeadForm
+
+    form = await db.get(CRMLeadForm, _uuid(form_id))
+    if form is None:
+        raise HTTPException(404, "Form not found")
+    for k, v in body.model_dump(exclude_unset=True).items():
+        if v is None and k in ("name", "title", "require_consent", "active_flag"):
+            raise HTTPException(422, f"{k} cannot be empty.")
+        setattr(form, k, v)
+    if form.require_consent and not (form.consent_text or "").strip():
+        raise HTTPException(422, "consent_text is required when consent is required.")
+    await db.commit()
+    return _form_out(form)
+
+
+@router.get("/lead-forms/{form_id}/submissions", dependencies=[Depends(require_any_permission(CRM_BROAD_VIEW))])
+async def list_lead_submissions(form_id: str, limit: int = Query(100, ge=1, le=500), db: AsyncSession = Depends(get_db)):
+    from app.models.crm import CRMLeadSubmission
+
+    rows = (await db.execute(select(CRMLeadSubmission).where(CRMLeadSubmission.form_id == _uuid(form_id))
+                             .order_by(CRMLeadSubmission.received_at.desc()).limit(limit))).scalars()
+    return [{"id": str(r.id), "received_at": r.received_at.isoformat(), "status": r.status,
+             "crm_record_id": str(r.crm_record_id) if r.crm_record_id else None, "contact_email": r.contact_email,
+             "consent_given": r.consent_given, "utm_source": r.utm_source, "utm_medium": r.utm_medium,
+             "utm_campaign": r.utm_campaign, "referrer": r.referrer, "landing_page": r.landing_page} for r in rows]

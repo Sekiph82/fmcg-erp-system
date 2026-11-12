@@ -406,3 +406,48 @@ from sqlalchemy import event as _event  # noqa: E402
 from sqlalchemy.orm import Session as _Session  # noqa: E402
 
 _event.listen(_Session, "before_flush", _capture_stage_changes)
+
+
+# ── M36.S02.T001 website lead capture ─────────────────────────────────────────
+
+class CRMLeadForm(Base, TimestampMixin):
+    """Public lead form (hosted at /forms/<slug>, embeddable by iframe). Scope fields are copied to leads."""
+    __tablename__ = "crm_lead_forms"
+
+    id               = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    slug             = Column(String(80), nullable=False, unique=True, index=True)
+    name             = Column(String(150), nullable=False)
+    title            = Column(String(200), nullable=False)
+    intro            = Column(Text, nullable=True)
+    consent_text     = Column(Text, nullable=True)
+    require_consent  = Column(Boolean, nullable=False, default=True)
+    success_message  = Column(String(300), nullable=True)
+    active_flag      = Column(Boolean, nullable=False, default=True)
+    assigned_rep_id  = Column(String(50), nullable=True)
+    territory_id     = Column(UUID(as_uuid=True), ForeignKey("crm_territories.id"), nullable=True)
+    company_id       = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="SET NULL"), nullable=True)
+    branch_id        = Column(UUID(as_uuid=True), ForeignKey("branches.id", ondelete="SET NULL"), nullable=True)
+    sales_region_id  = Column(String(100), nullable=True)
+    sales_team_id    = Column(String(100), nullable=True)
+
+
+class CRMLeadSubmission(Base):
+    """Every submission, kept for audit and attribution (ACCEPTED / DUPLICATE / SPAM)."""
+    __tablename__ = "crm_lead_submissions"
+
+    id             = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    form_id        = Column(UUID(as_uuid=True), ForeignKey("crm_lead_forms.id", ondelete="CASCADE"), nullable=False, index=True)
+    received_at    = Column(DateTime(timezone=True), nullable=False, index=True)
+    ip_hash        = Column(String(64), nullable=True, index=True)   # keyed hash; raw IPs are not stored
+    status         = Column(String(12), nullable=False)
+    crm_record_id  = Column(UUID(as_uuid=True), ForeignKey("crm_records.id", ondelete="SET NULL"), nullable=True)
+    contact_email  = Column(String(200), nullable=True)
+    consent_given  = Column(Boolean, nullable=False, default=False)
+    consent_text   = Column(Text, nullable=True)                     # text the visitor agreed to
+    utm_source     = Column(String(100), nullable=True)
+    utm_medium     = Column(String(100), nullable=True)
+    utm_campaign   = Column(String(100), nullable=True)
+    utm_term       = Column(String(100), nullable=True)
+    utm_content    = Column(String(100), nullable=True)
+    referrer       = Column(String(500), nullable=True)
+    landing_page   = Column(String(500), nullable=True)

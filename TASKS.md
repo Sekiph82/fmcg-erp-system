@@ -10,9 +10,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M36 — Native CRM HubSpot Capability Gap Audit & Delivery (new owner-approved scope; M17 existing software history preserved)
 - Current Sprint: M36.S02 — Sales intelligence (after M36.S00 audit accepted)
-- Current Task: M36.S03.T002 unified customer timeline + M36.S02.T001 web lead capture (batch 3)
+- Current Task: M36 batch 4 — S01.T004 CRM workflow automation executor (then S01.T002 sequences, S02.T005 consent/suppression)
 - Current Task Status: IN_PROGRESS (2026-11-12) — M36.S00 audit accepted with corrections by an independent reviewer (25 tasks: 17 PARTIAL, 8 MISSING, none complete); batch 1 security/defect fixes landed. Evidence: coordination/milestones/M36/M36_S00_AUDIT.md
-- Next Task/Action: Batch 2 — M36.S02.T002 lead scoring (configurable rules, history, explanation; fix enum bug), M36.S02.T003 forecast filters + snapshots, M36.S02.T004 funnel analytics; then batch 3 (S03.T002 customer timeline, S02.T001 web lead capture). Provider-bound live tests stay [!].
+- Next Task/Action: Batch 4 — S01.T004 automation executor on CRM events (idempotent, worker-safe, recursion limit, audit), then consent/suppression store and provider-agnostic outbox for S01.T002/S02.T005; S04.T005 KB visibility/feedback; S04.T003 quote approval↔e-sign link. Live provider gates stay [!].
 - Required Actor: CLAUDE (sole active task runner and tracker writer; per coordination/CLAUDE_AUTONOMOUS_EXECUTION_POLICY.md)
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -1490,11 +1490,12 @@ Parallel work is allowed where dependencies are satisfied, but dependency integr
   - **Acceptance:** Test double-booking protection, DST/time zones, cancellations, sync conflicts and OAuth revocation. Include backend/DB/API tests, frontend checks, browser screenshot evidence, independent review and exact commit SHA. Any live-provider validation remains [!] until real access is available.
 
 ## M36.S02 — Sales intelligence and marketing foundations
-- [ ] M36.S02.T001 — Website lead capture forms (P1)
+- [v] M36.S02.T001 — Website lead capture forms (P1)
   - **Scope:** Embeddable validated forms, spam protection, consent, source/UTM capture and lead deduplication.
   - **Required audit:** Record existing DB model/migration, service, REST/GraphQL endpoint, UI route, RBAC, tests and live-screen evidence; classify existing/partial/missing before edits.
   - **Implementation:** Extend native CRM, create minimal migrations and API/UI changes only for verified gaps; preserve existing sales/customer records, scope rules, auditability and integration contracts.
   - **Acceptance:** Test anonymous rate limiting, field mapping, injection prevention and source attribution. Include backend/DB/API tests, frontend checks, browser screenshot evidence, independent review and exact commit SHA. Any live-provider validation remains [!] until real access is available.
+  Done (2026-11-12, batch 3) [v] implemented, independently reviewed, findings fixed; milestone acceptance pending: forms `crm_lead_forms` / submissions `crm_lead_submissions` (migration `20261112_0037`), public no-login routes `/public/lead-forms/{slug}` + `/submit` (allow-listed), hosted embeddable page `/forms/<slug>` (iframe snippet on the admin page), admin `crm/lead-forms`. Honeypot (SPAM, nothing created), consent required and recorded with the agreed text (refusals stored and rate-limited), per-IP (5/10 min, keyed-hash, raw IP never stored) and per-form (30/min) database rate limits, UTM/referrer/landing attribution on the submission and lead, e-mail dedupe inside the form's company only (repeat adds a note, same 202 answer), leads scored by the active rules. Also fixed lead/opportunity code generation (codes reused after lead conversion; string order at 100000). Test `backend/tests/test_m36_s02_t001_lead_capture_db.py` through the real app without login; browser walk-through `coordination/milestones/M36/screenshots/B3/forms_synth-contact_*.png` + admin view. Deployment note: behind a reverse proxy set `FORWARDED_ALLOW_IPS` to the proxy so the per-IP limit sees the visitor address.
 - [v] M36.S02.T002 — Lead scoring (P1)
   - **Scope:** Configurable fit/engagement score rules, score history and explainable prioritized lead queue.
   - **Required audit:** Record existing DB model/migration, service, REST/GraphQL endpoint, UI route, RBAC, tests and live-screen evidence; classify existing/partial/missing before edits.
@@ -1525,11 +1526,12 @@ Parallel work is allowed where dependencies are satisfied, but dependency integr
   - **Required audit:** Record existing DB model/migration, service, REST/GraphQL endpoint, UI route, RBAC, tests and live-screen evidence; classify existing/partial/missing before edits.
   - **Implementation:** Extend native CRM, create minimal migrations and API/UI changes only for verified gaps; preserve existing sales/customer records, scope rules, auditability and integration contracts.
   - **Acceptance:** Test signed link expiry, access revocation, event deduplication and no sensitive data leakage. Include backend/DB/API tests, frontend checks, browser screenshot evidence, independent review and exact commit SHA. Any live-provider validation remains [!] until real access is available.
-- [ ] M36.S03.T002 — Unified customer activity timeline (P1)
+- [v] M36.S03.T002 — Unified customer activity timeline (P1)
   - **Scope:** One ordered customer view for emails, calls, visits, meetings, tasks, quotes, orders and support.
   - **Required audit:** Record existing DB model/migration, service, REST/GraphQL endpoint, UI route, RBAC, tests and live-screen evidence; classify existing/partial/missing before edits.
   - **Implementation:** Extend native CRM, create minimal migrations and API/UI changes only for verified gaps; preserve existing sales/customer records, scope rules, auditability and integration contracts.
   - **Acceptance:** Verify event references, chronology, pagination, merges and role-scoped visibility. Include backend/DB/API tests, frontend checks, browser screenshot evidence, independent review and exact commit SHA. Any live-provider validation remains [!] until real access is available.
+  Done (2026-11-12, batch 3) [v] implemented, independently reviewed, findings fixed; milestone acceptance pending: `GET /crm/customers/{id}/timeline` (`backend/app/services/customer_timeline_service.py`) — newest-first events from CRM records/activities, interactions, visits, calls, meetings, quotes, orders, invoices, payments, field visits, helpdesk tickets and the caller's own linked e-mail threads; each source needs its module view right and record scope (hidden sources are reported); cursor paging in SQL on the same column as the event time. Page `frontend/src/app/dashboard/crm/customers/[id]` (linked from the customer list). Test `backend/tests/test_m36_s03_customer_timeline_db.py` (chronology, gap-free paging, permission hiding, personal mailboxes). Screens `coordination/milestones/M36/screenshots/B3/`. No merge model exists for customers, so merge handling is not applicable.
 - [ ] M36.S03.T003 — Mobile CRM experience (P1)
   - **Scope:** Responsive/PWA mobile customer cards, quick notes, visit capture, alerts and safe offline behavior if supported.
   - **Required audit:** Record existing DB model/migration, service, REST/GraphQL endpoint, UI route, RBAC, tests and live-screen evidence; classify existing/partial/missing before edits.

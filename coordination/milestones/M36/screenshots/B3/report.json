@@ -1,0 +1,18 @@
+[
+  {
+    "route": "/dashboard/crm/customers/a4793ccc-9b71-458c-b8ff-f07d652ef81b",
+    "status": "OK",
+    "heading": "SYNTH Nairobi Supermart Ltd · SYNTH-NSM",
+    "screenshot": "coordination/milestones/M36/screenshots/B3/dashboard_crm_customers_a4793ccc-9b71-458c-b8ff-f07d652ef81b.png",
+    "console_errors": [],
+    "failed_api": []
+  },
+  {
+    "route": "/dashboard/crm/lead-forms",
+    "status": "OK",
+    "heading": "Website Lead Forms",
+    "screenshot": "coordination/milestones/M36/screenshots/B3/dashboard_crm_lead-forms.png",
+    "console_errors": [],
+    "failed_api": []
+  }
+]

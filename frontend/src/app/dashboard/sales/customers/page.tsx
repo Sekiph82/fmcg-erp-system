@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { salesApi, CustomerChannel } from "@/lib/sales";
 import { extractApiError } from "@/lib/inventory";
@@ -147,7 +148,9 @@ export default function CustomersPage() {
 
   const columns = [
     { header: "Code", accessor: (r: typeof customers[0]) => r.code },
-    { header: "Name", accessor: (r: typeof customers[0]) => <span className="font-medium">{r.name}</span> },
+    { header: "Name", accessor: (r: typeof customers[0]) => (
+      <Link href={`/dashboard/crm/customers/${r.id}`} className="font-medium text-indigo-600 hover:underline" title="Customer timeline">{r.name}</Link>
+    ) },
     { header: "Channel", accessor: (r: typeof customers[0]) => (
       <Badge label={r.channel} variant={channelVariant(r.channel)} />
     )},

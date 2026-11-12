@@ -418,7 +418,33 @@ export const crmApi = {
   listForecastSnapshots: () => r(ax.get<ForecastSnapshot[]>(`/crm/forecast/snapshots`)),
   getForecastSnapshot: (id: string) => r(ax.get<ForecastSnapshot>(`/crm/forecast/snapshots/${id}`)),
   getFunnel: (params: FunnelFilters) => r(ax.get<FunnelReport>(`/crm/reports/funnel`, { params })),
+  getCustomerTimeline: (customerId: string, params: { limit?: number; before?: string; types?: string }) =>
+    r(ax.get<CustomerTimeline>(`/crm/customers/${customerId}/timeline`, { params })),
+  listLeadForms: () => r(ax.get<LeadForm[]>(`/crm/lead-forms`)),
+  createLeadForm: (data: Partial<LeadForm>) => r(ax.post<LeadForm>(`/crm/lead-forms`, data)),
+  updateLeadForm: (id: string, data: Partial<LeadForm>) => r(ax.patch<LeadForm>(`/crm/lead-forms/${id}`, data)),
+  listLeadSubmissions: (id: string) => r(ax.get<LeadSubmissionRow[]>(`/crm/lead-forms/${id}/submissions`)),
 };
+
+export interface LeadForm {
+  id: string; slug: string; name: string; title: string; intro: string | null; consent_text: string | null;
+  require_consent: boolean; success_message: string | null; active_flag: boolean; assigned_rep_id: string | null;
+  territory_id: string | null; sales_region_id: string | null; sales_team_id: string | null;
+}
+export interface LeadSubmissionRow {
+  id: string; received_at: string; status: string; crm_record_id: string | null; contact_email: string | null;
+  consent_given: boolean; utm_source: string | null; utm_medium: string | null; utm_campaign: string | null;
+  referrer: string | null; landing_page: string | null;
+}
+
+export interface TimelineEvent {
+  key: string; type: string; at: string; title: string; status: string | null; ref: string | null;
+  link: string | null; detail: string | null;
+}
+export interface CustomerTimeline {
+  customer: { id: string; code: string; name: string };
+  events: TimelineEvent[]; next: string | null; hidden_sources: string[];
+}
 
 export interface ScoreBreakdownItem { rule: string; category: string; points: number; reason: string }
 export interface ScoreRuleInput {

@@ -86,21 +86,26 @@ async def seed_default_stages(db: AsyncSession):
 
 # ── Auto-code generation ──────────────────────────────────────────────────────
 
+async def _next_code(db: AsyncSession, column, prefix: str) -> str:
+    # highest existing number, not a row count: converted leads keep their LD- code, so counting
+    # LEAD rows would hand out a code that is already taken
+    # numeric order: longer code first, so LD-100000 ranks above LD-99999
+    last = (await db.execute(select(column).where(column.like(f"{prefix}-%"))
+                             .order_by(func.length(column).desc(), column.desc()).limit(1))).scalar()
+    try:
+        n = int(last.rsplit("-", 1)[1]) if last else 0
+    except ValueError:
+        n = (await db.execute(select(func.count()).where(column.like(f"{prefix}-%")))).scalar() or 0
+    return f"{prefix}-{n + 1:05d}"
+
+
 async def _next_lead_code(db: AsyncSession) -> str:
-    n = (await db.execute(
-        select(func.count(CRMRecord.id)).where(CRMRecord.record_type == CRMRecordType.LEAD)
-    )).scalar() or 0
-    return f"LD-{n + 1:05d}"
+    return await _next_code(db, CRMRecord.lead_code, "LD")
 
 
 async def _next_opp_code(db: AsyncSession) -> str:
-    n = (await db.execute(
-        select(func.count(CRMRecord.id)).where(CRMRecord.record_type == CRMRecordType.OPPORTUNITY)
-    )).scalar() or 0
-    return f"OPP-{n + 1:05d}"
+    return await _next_code(db, CRMRecord.opportunity_code, "OPP")
 
-
-# ── Records ───────────────────────────────────────────────────────────────────
 
 async def _load_record(db: AsyncSession, record_id: str) -> Optional[CRMRecord]:
     result = await db.execute(
