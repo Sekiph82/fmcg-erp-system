@@ -316,3 +316,85 @@ async def submit_claim(body: PortalClaimCreate, user: PortalUser = Depends(ext.g
             raise HTTPException(422, "The order is not one of your orders.")
     c = await svc.create_claim(db, str(user.portal_account_id), str(user.id), body)
     return {"id": str(c.id), "claim_no": c.claim_no, "status": c.status.value}
+
+
+# ── support tickets (helpdesk) ────────────────────────────────────────────────
+
+class TicketIn(BaseModel):
+    category: str = Field(pattern=r"^(QUALITY|DELIVERY|BILLING|PRODUCT|OTHER)$")
+    subject: str = Field(min_length=3, max_length=200)
+    description: str = Field(min_length=3, max_length=4000)
+
+
+class ReplyIn(BaseModel):
+    body: str = Field(min_length=1, max_length=4000)
+
+
+async def _my_ticket(db: AsyncSession, user: PortalUser, ticket_id: uuid.UUID):
+    from sqlalchemy.orm import selectinload
+
+    from app.models.helpdesk import HelpdeskTicket
+
+    customer = await _customer(db, user)
+    t = (await db.execute(select(HelpdeskTicket).options(selectinload(HelpdeskTicket.comments))
+                          .where(HelpdeskTicket.id == ticket_id, HelpdeskTicket.customer_id == customer.id))).scalar_one_or_none()
+    if t is None:
+        raise HTTPException(404, "Ticket not found")
+    return t
+
+
+def _ticket_out(t, with_thread: bool = False) -> dict:
+    out = {"id": str(t.id), "ticket_no": t.ticket_no, "category": t.category.value, "status": t.status.value,
+           "subject": t.subject, "created_at": t.created_at.isoformat() if t.created_at else None,
+           "resolution_notes": t.resolution_notes}
+    if with_thread:  # internal staff notes are never shown to the customer
+        out["description"] = t.description
+        out["thread"] = [{"body": c.body, "from_us": c.created_by_id is not None,
+                          "at": c.created_at.isoformat() if c.created_at else None} for c in t.comments if not c.is_internal]
+    return out
+
+
+@router.get("/tickets")
+async def tickets(user: PortalUser = Depends(ext.get_portal_user), db: AsyncSession = Depends(get_db)):
+    from app.models.helpdesk import HelpdeskTicket
+
+    customer = await _customer(db, user)
+    rows = (await db.execute(select(HelpdeskTicket).where(HelpdeskTicket.customer_id == customer.id)
+                             .order_by(HelpdeskTicket.created_at.desc()).limit(100))).scalars().all()
+    return [_ticket_out(t) for t in rows]
+
+
+@router.get("/tickets/{ticket_id}")
+async def ticket(ticket_id: uuid.UUID, user: PortalUser = Depends(ext.get_portal_user), db: AsyncSession = Depends(get_db)):
+    return _ticket_out(await _my_ticket(db, user, ticket_id), with_thread=True)
+
+
+@router.post("/tickets", status_code=201)
+async def open_ticket(body: TicketIn, user: PortalUser = Depends(ext.get_portal_user), db: AsyncSession = Depends(get_db)):
+    from app.models.helpdesk import SLA_DEFAULTS, HelpdeskTicket, TicketCategory, TicketPriority, TicketSource, TicketStatus
+
+    customer = await _customer(db, user)
+    t = HelpdeskTicket(ticket_no=f"TKT-{date.today():%Y%m%d}-P{secrets.token_hex(3).upper()}", customer_id=customer.id,
+                       category=TicketCategory(body.category), priority=TicketPriority.MEDIUM, status=TicketStatus.OPEN,
+                       source=TicketSource.PORTAL, subject=body.subject,
+                       description=f"{body.description}\n\n— {user.full_name} ({user.email}) via partner portal",
+                       sla_hours=SLA_DEFAULTS[TicketPriority.MEDIUM])
+    db.add(t)
+    await db.commit()
+    return {"id": str(t.id), "ticket_no": t.ticket_no, "status": t.status.value}
+
+
+@router.post("/tickets/{ticket_id}/reply", status_code=201)
+async def reply(ticket_id: uuid.UUID, body: ReplyIn, user: PortalUser = Depends(ext.get_portal_user),
+                db: AsyncSession = Depends(get_db)):
+    from app.models.helpdesk import TicketComment, TicketStatus
+
+    t = await _my_ticket(db, user, ticket_id)
+    if t.status == TicketStatus.CLOSED:
+        raise HTTPException(409, "This ticket is closed; open a new one.")
+    # created_by_id stays empty: a customer message (staff replies carry the staff user)
+    db.add(TicketComment(ticket_id=t.id, body=f"{body.body}\n\n— {user.full_name}", is_internal=False))
+    if t.status == TicketStatus.RESOLVED:
+        t.status = TicketStatus.IN_PROGRESS  # the customer says it is not solved yet
+    await db.commit()
+    return {"status": t.status.value}

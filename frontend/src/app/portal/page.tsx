@@ -7,7 +7,7 @@ import {
   type PortalMe, type CatalogItem, type PortalOrder, type PortalOrderDetail, type PortalStatement, type PortalClaim,
 } from "@/lib/portalSelf";
 
-type Tab = "order" | "orders" | "statement" | "claims";
+type Tab = "order" | "orders" | "statement" | "claims" | "support";
 type Cart = Record<string, { item: CatalogItem; qty: number }>;
 const CLAIM_TYPES = ["SHORTAGE_CLAIM", "DAMAGE_CLAIM", "RETURN_REQUEST", "DELIVERY_DISCREPANCY", "PRICING_DISPUTE", "PRODUCT_COMPLAINT"];
 const newRef = () => (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
@@ -43,7 +43,7 @@ export default function PartnerPortal() {
         <button onClick={signOut} className="text-sm underline shrink-0">Sign out</button>
       </header>
       <nav aria-label="Portal sections" className="flex overflow-x-auto bg-white border-b text-sm">
-        {([["order", "New order"], ["orders", "My orders"], ["statement", "Invoices & statement"], ["claims", "Claims"]] as [Tab, string][]).map(([k, label]) => (
+        {([["order", "New order"], ["orders", "My orders"], ["statement", "Invoices & statement"], ["claims", "Claims"], ["support", "Support"]] as [Tab, string][]).map(([k, label]) => (
           <button key={k} onClick={() => { setTab(k); setError(null); setInfo(null); }} aria-current={tab === k ? "page" : undefined}
             className={`px-4 py-3 whitespace-nowrap ${tab === k ? "border-b-2 border-indigo-600 font-semibold text-indigo-700" : "text-gray-600"}`}>{label}</button>
         ))}
@@ -56,6 +56,7 @@ export default function PartnerPortal() {
           {tab === "orders" && <OrdersTab me={me} fail={fail} />}
           {tab === "statement" && <StatementTab me={me} fail={fail} />}
           {tab === "claims" && <ClaimsTab me={me} fail={fail} onDone={(no) => setInfo(`Claim ${no} submitted.`)} />}
+          {tab === "support" && <SupportTab fail={fail} onDone={(t) => setInfo(t)} />}
         </>)}
       </div>
     </main>
@@ -225,6 +226,52 @@ function ClaimsTab({ me, fail, onDone }: { me: PortalMe; fail: (e: unknown) => v
           <p className="flex justify-between"><span className="font-medium">{c.claim_no}</span><span>{c.status.replace(/_/g, " ").toLowerCase()}</span></p>
           <p className="text-gray-600">{c.reason}</p>
           {c.resolution_notes && <p className="text-xs text-emerald-700">Resolution: {c.resolution_notes}</p>}
+        </div>))}
+    </div>
+  );
+}
+
+interface Ticket { id: string; ticket_no: string; category: string; status: string; subject: string; created_at: string | null; resolution_notes: string | null;
+  description?: string; thread?: { body: string; from_us: boolean; at: string | null }[] }
+
+function SupportTab({ fail, onDone }: { fail: (e: unknown) => void; onDone: (t: string) => void }) {
+  const [rows, setRows] = useState<Ticket[]>([]);
+  const [open, setOpen] = useState<Ticket | null>(null);
+  const [form, setForm] = useState({ category: "DELIVERY", subject: "", description: "" });
+  const [reply, setReply] = useState("");
+  const load = useCallback(() => { ps<Ticket[]>("/tickets").then(setRows).catch(fail); }, [fail]);
+  useEffect(load, [load]);
+  const show = (id: string) => ps<Ticket>(`/tickets/${id}`).then(setOpen).catch(fail);
+
+  return (
+    <div className="space-y-3">
+      <form aria-label="New support ticket" className="bg-white rounded-xl border p-3 grid gap-2 sm:grid-cols-2" onSubmit={async (e) => {
+        e.preventDefault();
+        try { const r = await post<{ ticket_no: string }>("/tickets", form); setForm({ ...form, subject: "", description: "" }); onDone(`Ticket ${r.ticket_no} opened. We will reply here.`); load(); }
+        catch (err) { fail(err); }
+      }}>
+        <select aria-label="Topic" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="border rounded-lg px-2 py-1.5 text-sm">
+          {["DELIVERY", "BILLING", "QUALITY", "PRODUCT", "OTHER"].map((c) => <option key={c} value={c}>{c.toLowerCase()}</option>)}
+        </select>
+        <input aria-label="Subject" required minLength={3} maxLength={200} placeholder="Subject" value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} className="border rounded-lg px-2 py-1.5 text-sm" />
+        <textarea aria-label="Describe the problem" required minLength={3} maxLength={4000} rows={3} placeholder="Describe the problem" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="sm:col-span-2 border rounded-lg px-2 py-1.5 text-sm" />
+        <button className="sm:col-start-2 py-2 rounded-lg bg-indigo-600 text-white text-sm">Open ticket</button>
+      </form>
+      {rows.length === 0 ? <p className="text-sm text-gray-500">No tickets yet.</p> : rows.map((t) => (
+        <div key={t.id} className="bg-white rounded-xl border p-3 text-sm">
+          <button className="w-full text-left flex justify-between gap-2" aria-expanded={open?.id === t.id} onClick={() => open?.id === t.id ? setOpen(null) : show(t.id)}>
+            <span><span className="font-medium">{t.subject}</span><span className="block text-xs text-gray-500">{t.ticket_no} · {t.category.toLowerCase()}</span></span>
+            <span className="text-xs">{t.status.replace(/_/g, " ").toLowerCase()}</span>
+          </button>
+          {open?.id === t.id && (
+            <div className="mt-2 border-t pt-2 space-y-2">
+              <p className="text-gray-700 whitespace-pre-line">{open.description}</p>
+              {(open.thread ?? []).map((m, i) => <p key={i} className={`rounded-lg p-2 whitespace-pre-line ${m.from_us ? "bg-indigo-50" : "bg-gray-50"}`}><span className="block text-xs text-gray-500">{m.from_us ? "Our team" : "You"}{m.at ? ` · ${new Date(m.at).toLocaleString()}` : ""}</span>{m.body}</p>)}
+              {open.resolution_notes && <p className="text-xs text-emerald-700">Resolution: {open.resolution_notes}</p>}
+              {open.status !== "CLOSED" && (
+                <div className="flex gap-2"><input aria-label="Reply" placeholder="Write a reply" value={reply} onChange={(e) => setReply(e.target.value)} className="flex-1 border rounded-lg px-2 py-1.5" />
+                  <button disabled={!reply.trim()} onClick={async () => { try { await post(`/tickets/${open.id}/reply`, { body: reply }); setReply(""); show(open.id); load(); } catch (e) { fail(e); } }} className="px-3 rounded-lg bg-indigo-600 text-white disabled:opacity-50">Send</button></div>)}
+            </div>)}
         </div>))}
     </div>
   );

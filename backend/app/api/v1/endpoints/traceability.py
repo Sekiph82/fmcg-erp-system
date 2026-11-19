@@ -448,7 +448,9 @@ async def anchor_to_blockchain(
         # Simulate tx hash as sha256 of payload_hash + timestamp
         tx_hash = hashlib.sha256((payload_hash + ts).encode()).hexdigest()
         block_number = 0  # stub
-        anchor_url = f"/api/v1/traceability/blockchain/public/{qr_token}"
+        from app.core.config import settings
+
+        anchor_url = f"{settings.PUBLIC_APP_URL.rstrip('/')}/verify/{qr_token}"  # what the pack QR code opens
 
     anchor = BlockchainAnchor(
         lot_id=uuid.UUID(payload.lot_id) if payload.lot_id else None,
@@ -515,14 +517,26 @@ async def public_trace_view(qr_token: str, db: AsyncSession = Depends(get_db)):
     if not anchor:
         raise HTTPException(404, "Invalid or expired QR code")
 
+    # Only claim a public-ledger anchor when there really is one: STUB (demo) anchors are records in our own system.
+    from app.models.inventory import Lot
+    from app.models.master import Product
+
+    on_chain = anchor.network != BlockchainNetwork.STUB and bool(anchor.tx_hash) and anchor.status == BlockchainAnchorStatus.ANCHORED
+    lot = await db.get(Lot, anchor.lot_id) if anchor.lot_id else None
+    product = await db.get(Product, lot.product_id) if lot is not None and lot.product_id else None
     return {
         "verified": True,
         "lot_number": anchor.lot_number,
         "record_type": anchor.record_type,
+        "product_name": product.name if product else None,
+        "manufacture_date": str(lot.manufacture_date) if lot is not None and lot.manufacture_date else None,
+        "expiry_date": str(lot.expiry_date) if lot is not None and lot.expiry_date else None,
         "anchored_at": anchor.anchored_at.isoformat() if anchor.anchored_at else None,
-        "blockchain_network": anchor.network,
+        "blockchain_anchored": on_chain,
+        "blockchain_network": anchor.network if on_chain else None,
         "payload_hash": anchor.payload_hash,
-        "tx_hash": anchor.tx_hash,
-        "integrity_note": "Payload hash can be independently verified against the blockchain transaction.",
+        "tx_hash": anchor.tx_hash if on_chain else None,
+        "integrity_note": ("The record's fingerprint can be checked against the public blockchain transaction."
+                           if on_chain else "This code matches a production record in the manufacturer's traceability system."),
         "manufacturer": "POVU ERP — Verified Trace Record",
     }

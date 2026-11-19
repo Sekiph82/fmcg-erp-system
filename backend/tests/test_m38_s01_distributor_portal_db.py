@@ -22,6 +22,7 @@ from app.db.session import AsyncSessionLocal, engine
 from app.models.master import Product, ProductCategory
 from app.models.portal import PortalAccount, PortalAccountStatus, PortalAccountType, PortalUser, PortalUserRole
 from app.models.sales import Customer, CustomerChannel, OrderSource, SalesOrder, SOLine, SOStatus
+from app.models.user import User
 
 TASK_DB_ENV = "M38_S01_DISPOSABLE_TEST_DATABASE"
 TASK_DB_NAME_ENV = "M38_S01_DISPOSABLE_TEST_DATABASE_NAME"
@@ -245,3 +246,51 @@ async def test_review_fixes_statement_dashboard_and_deactivation():
         for t in (token, token2):
             assert (await c.post(f"{API}/auth/activate", json={"token": t, "new_password": PW + "x"})).status_code == 400
         assert (await c.post(f"{API}/auth/login", json={"email": f"fin-{s}@example.com", "password": PW})).status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_portal_support_tickets_are_the_customers_own():
+    from app.main import app
+    from app.models.helpdesk import HelpdeskTicket, TicketComment
+
+    s = uuid.uuid4().hex[:8]
+    async with AsyncSessionLocal() as db:
+        assert (await db.execute(select(func.current_database()))).scalar_one() == os.environ[TASK_DB_NAME_ENV]
+        emails = {}
+        for k in ("x", "y"):
+            cust = Customer(code=f"T{k}-{s}", name=f"Ticket {k} {s}", channel=CustomerChannel.DISTRIBUTOR, currency="KES")
+            db.add(cust)
+            await db.flush()
+            acc = PortalAccount(account_code=f"PA-T{k}-{s}", account_type=PortalAccountType.DISTRIBUTOR,
+                                linked_customer_id=str(cust.id), portal_status=PortalAccountStatus.ACTIVE)
+            db.add(acc)
+            await db.flush()
+            emails[k] = f"t{k}-{s}@example.com"
+            db.add(PortalUser(portal_account_id=acc.id, full_name=f"T{k}", email=emails[k], password_hash=hash_password(PW),
+                              role_type=PortalUserRole.VIEWER, is_active=True))
+        await db.commit()
+
+    async with _client(app) as x, _client(app) as y:
+        for c, k in ((x, "x"), (y, "y")):
+            assert (await c.post(f"{API}/auth/login", json={"email": emails[k], "password": PW})).status_code == 200
+        t = await x.post(f"{API}/tickets", json={"category": "DELIVERY", "subject": "Late truck", "description": "2 days late"})
+        assert t.status_code == 201
+        tid = t.json()["id"]
+        assert [r["id"] for r in (await x.get(f"{API}/tickets")).json()] == [tid]
+        assert (await y.get(f"{API}/tickets")).json() == []
+        assert (await y.get(f"{API}/tickets/{tid}")).status_code == 404
+        assert (await y.post(f"{API}/tickets/{tid}/reply", json={"body": "hi"})).status_code == 404
+        async with AsyncSessionLocal() as db:  # staff add an internal note and a public reply
+            staff = (await db.execute(select(User).limit(1))).scalar_one_or_none()
+            db.add(TicketComment(ticket_id=uuid.UUID(tid), body="internal: check driver", is_internal=True))
+            db.add(TicketComment(ticket_id=uuid.UUID(tid), body="Sorry, arriving today", is_internal=False,
+                                 created_by_id=staff.id if staff else None))
+            await db.commit()
+        assert (await x.post(f"{API}/tickets/{tid}/reply", json={"body": "Thanks"})).status_code == 201
+        thread = (await x.get(f"{API}/tickets/{tid}")).json()["thread"]
+        assert [m["body"].split("\n")[0] for m in thread] == ["Sorry, arriving today", "Thanks"] or \
+               sorted(m["body"].split("\n")[0] for m in thread) == ["Sorry, arriving today", "Thanks"]
+        assert all("internal" not in m["body"] for m in thread)
+    async with AsyncSessionLocal() as db:
+        row = await db.get(HelpdeskTicket, uuid.UUID(tid))
+        assert row.source.value == "PORTAL" and row.customer_id is not None
