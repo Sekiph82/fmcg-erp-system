@@ -148,6 +148,8 @@ class SPUser(Base, TimestampMixin):
     last_login_at      = Column(DateTime(timezone=True), nullable=True)
     invited_by         = Column(String(200), nullable=True)
     notes              = Column(Text, nullable=True)
+    invitation_token   = Column(String(64), nullable=True, index=True)   # SHA-256 of the one-time set-password token
+    token_expires_at   = Column(DateTime(timezone=True), nullable=True)
 
     account            = relationship("SPAccount", back_populates="users")
     activity_logs      = relationship("SPActivityLog", back_populates="user")

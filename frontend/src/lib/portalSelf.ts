@@ -5,10 +5,11 @@ export class PortalError extends Error {
   constructor(public status: number, message: string) { super(message); }
 }
 
-export async function ps<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const res = await fetch(`${API_ORIGIN}/api/v1/portal-self${path}`, {
+export async function partnerFetch<T>(base: "portal-self" | "supplier-self", path: string, init: RequestInit = {}): Promise<T> {
+  const res = await fetch(`${API_ORIGIN}/api/v1/${base}${path}`, {
     ...init, credentials: "include",
-    headers: { "Content-Type": "application/json", ...(init.headers ?? {}) },
+    // FormData (file uploads) sets its own multipart boundary header
+    headers: init.body instanceof FormData ? init.headers : { "Content-Type": "application/json", ...(init.headers ?? {}) },
   });
   const body = await res.json().catch(() => ({}));
   if (!res.ok) {
@@ -19,6 +20,7 @@ export async function ps<T>(path: string, init: RequestInit = {}): Promise<T> {
   return body as T;
 }
 
+export const ps = <T,>(path: string, init: RequestInit = {}) => partnerFetch<T>("portal-self", path, init);
 export const post = <T,>(path: string, data?: unknown) => ps<T>(path, { method: "POST", body: JSON.stringify(data ?? {}) });
 
 export interface PortalMe {

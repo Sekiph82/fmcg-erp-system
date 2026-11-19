@@ -15,7 +15,7 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from pydantic import BaseModel, Field
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -113,10 +113,11 @@ async def login(body: LoginIn, response: Response, db: AsyncSession = Depends(ge
 
     key = await ext.login_guard("portal", body.email)
     user = (await db.execute(select(PortalUser).options(selectinload(PortalUser.account))
-                             .where(PortalUser.email == body.email.strip()))).scalar_one_or_none()
+                             .where(func.lower(PortalUser.email) == body.email.strip().lower()))).scalar_one_or_none()
     usable = user is not None and user.is_active and user.account.portal_status == PortalAccountStatus.ACTIVE
     if not usable or not await ext.password_login(db, response, "portal", user, body.password, key):
         if not usable:
+            ext.dummy_password_check(body.password)
             await ext.record_login_failure(key)
         raise HTTPException(401, "E-mail or password is incorrect, or the account is not active.")
     user.last_login_at = datetime.utcnow()
@@ -222,7 +223,7 @@ async def place_order(body: OrderIn, user: PortalUser = Depends(ext.get_portal_u
         if price is None:
             raise HTTPException(422, f"{product.name} has no price for your account.")
         priced.append((product, line.quantity, price))
-    so = SalesOrder(order_no=f"WEB-{date.today():%y%m%d}-{secrets.token_hex(3).upper()}", customer_id=customer.id,
+    so = SalesOrder(order_no=f"WEB-{date.today():%y%m%d}-{secrets.token_hex(5).upper()}", customer_id=customer.id,
                     order_date=date.today(), requested_delivery_date=body.requested_delivery_date,
                     status=SOStatus.DRAFT, currency=customer.currency, payment_method=PaymentMethod.CREDIT,
                     source=OrderSource.DISTRIBUTOR, distributor_id=dist, offline_id=offline_id,
@@ -234,7 +235,9 @@ async def place_order(body: OrderIn, user: PortalUser = Depends(ext.get_portal_u
         await db.flush()
     except IntegrityError:  # a concurrent identical submission won
         await db.rollback()
-        existing = (await db.execute(select(SalesOrder).where(SalesOrder.offline_id == offline_id))).scalar_one()
+        existing = (await db.execute(select(SalesOrder).where(SalesOrder.offline_id == offline_id))).scalar_one_or_none()
+        if existing is None:
+            raise HTTPException(409, "The order could not be saved; please submit it again.")
         return {"id": str(existing.id), "order_no": existing.order_no, "status": existing.status.value, "duplicate": True}
     for n, (product, qty, price) in enumerate(priced, start=1):
         db.add(SOLine(so_id=so.id, line_no=n, product_id=product.id, ordered_quantity=qty, unit=product.uom.value,
@@ -275,6 +278,8 @@ async def order_detail(order_id: uuid.UUID, user: PortalUser = Depends(ext.get_p
             l["unit_price"] = None
     if not user.account.can_view_prices:
         order["total"] = None
+        for i in order["invoices"]:
+            i["total_amount"] = None
     return order
 
 

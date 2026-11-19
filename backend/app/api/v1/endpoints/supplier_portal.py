@@ -3,7 +3,12 @@ import uuid
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.access_control import has_permission
+from app.core.config import settings
+from app.core.deps import get_current_user
 
 from app.db.session import get_db
 from app.schemas.supplier_portal import (
@@ -20,28 +25,50 @@ from app.schemas.supplier_portal import (
 )
 import app.services.supplier_portal_service as svc
 
-router = APIRouter()
+async def _staff_access(request: Request, current_user=Depends(get_current_user)):
+    """Staff administration of the supplier portal: reading needs procurement.view, changes procurement.edit.
+    (Suppliers themselves use /supplier-self with their own sign-in.)"""
+    needed = "procurement.view" if request.method == "GET" else "procurement.edit"
+    if not has_permission(current_user, needed):
+        raise HTTPException(403, f"Missing permission {needed}")
+    return current_user
 
 
-# ── Auth ───────────────────────────────────────────────────────────────────────
-
-@router.post("/auth/login")
-async def login(payload: SPLoginRequest, request: Request, db: AsyncSession = Depends(get_db)):
-    ip = request.client.host if request.client else None
-    result = await svc.login(db, payload, ip=ip)
-    if not result:
-        raise HTTPException(status_code=401, detail="Invalid credentials or inactive account")
-    await db.commit()
-    return result
+router = APIRouter(dependencies=[Depends(_staff_access)])
 
 
-@router.post("/auth/reset-password")
-async def reset_password(payload: SPPasswordReset, db: AsyncSession = Depends(get_db)):
-    ok = await svc.reset_password(db, payload.email, payload.new_password)
-    if not ok:
+def _with_link(user, token: str) -> dict:
+    out = SPUserOut.model_validate(user).model_dump(mode="json")
+    out["activation_link"] = f"{settings.PUBLIC_APP_URL.rstrip('/')}/supplier/activate?token={token}"
+    return out
+
+
+@router.post("/users/{user_id}/password-link")
+async def password_link(user_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    """New one-time set-password link for a supplier user (invitation resend / forgotten password)."""
+    from app.models.supplier_portal import SPUser
+
+    user = await db.get(SPUser, user_id)
+    if user is None:
         raise HTTPException(status_code=404, detail="User not found")
+    token = svc.new_invitation(user)
     await db.commit()
-    return {"detail": "Password updated"}
+    await db.refresh(user)
+    return _with_link(user, token)
+
+
+@router.get("/documents/{doc_id}/file")
+async def download_document(doc_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    from app.models.supplier_portal import SPDocument
+    from app.services.document_storage_service import get_document_storage
+
+    doc = await db.get(SPDocument, doc_id)
+    if doc is None or not doc.file_path or "/" in doc.file_path:
+        raise HTTPException(status_code=404, detail="Document file not found")
+    path = get_document_storage().path_for(doc.file_path)
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="Document file not found")
+    return FileResponse(path, filename=doc.file_name)
 
 
 # ── Account CRUD ───────────────────────────────────────────────────────────────
@@ -87,17 +114,20 @@ async def list_users(account_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     return await svc.list_users(db, account_id)
 
 
-@router.post("/accounts/{account_id}/users/invite", response_model=SPUserOut)
+@router.post("/accounts/{account_id}/users/invite")
 async def invite_user(
     account_id: uuid.UUID,
     payload: SPUserInvite,
     invited_by: str = Query("internal"),
     db: AsyncSession = Depends(get_db),
 ):
+    if await svc.get_account(db, account_id) is None:
+        raise HTTPException(status_code=404, detail="Account not found")
     user = await svc.invite_user(db, account_id, payload, invited_by)
+    token = user.raw_invitation_token
     await db.commit()
     await db.refresh(user)
-    return user
+    return _with_link(user, token)
 
 
 @router.post("/users/{user_id}/deactivate", response_model=SPUserOut)

@@ -1,0 +1,21 @@
+[
+  {
+    "viewport": "mobile",
+    "responded": "Your response was sent to the buyer.",
+    "uploaded": "synth_invoice.pdf uploaded for review.",
+    "horizontal_overflow_px": 0,
+    "supplier_cookie_on_staff_api": 401,
+    "page_errors": []
+  },
+  {
+    "viewport": "desktop",
+    "responded": "Your response was sent to the buyer.",
+    "uploaded": "synth_invoice.pdf uploaded for review.",
+    "horizontal_overflow_px": 0,
+    "supplier_cookie_on_staff_api": 401,
+    "page_errors": []
+  },
+  {
+    "distributor_login_title": "Partner portal"
+  }
+]

@@ -32,11 +32,44 @@ from app.schemas.supplier_portal import (
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _hash_pw(pw: str) -> str:
-    return hashlib.sha256(pw.encode()).hexdigest()
+    from app.core.security import hash_password
+
+    return hash_password(pw)
 
 
 def _verify_pw(pw: str, hashed: str) -> bool:
-    return hashlib.sha256(pw.encode()).hexdigest() == hashed
+    from app.core.external_auth import check_password
+
+    return check_password(pw, hashed)[0]
+
+
+RELEASED_PO_STATUSES = ("APPROVED", "ORDERED", "PARTIALLY_RECEIVED", "RECEIVED")
+
+
+def token_digest(token: str) -> str:
+    return hashlib.sha256(token.encode()).hexdigest()
+
+
+def new_invitation(user: SPUser) -> str:
+    """Fresh 7-day one-time set-password token; only its digest is stored."""
+    token = secrets.token_urlsafe(32)
+    user.invitation_token = token_digest(token)
+    user.token_expires_at = _now() + timedelta(days=7)
+    return token
+
+
+async def activate_with_token(db: AsyncSession, token: str, new_password: str) -> Optional[SPUser]:
+    user = (await db.execute(select(SPUser).where(SPUser.invitation_token == token_digest(token))
+                             .with_for_update())).scalar_one_or_none()
+    if user is None or user.token_expires_at is None or user.token_expires_at < _now():
+        return None
+    if not user.is_active and user.last_login_at is not None:
+        return None  # deactivated by staff: a link never reactivates
+    user.password_hash = _hash_pw(new_password)
+    user.invitation_token = user.token_expires_at = None
+    user.is_active = True
+    await db.flush()
+    return user
 
 
 def _now() -> datetime:
@@ -106,18 +139,18 @@ async def update_account(db: AsyncSession, account_id: uuid.UUID, payload: SPAcc
 # ── User Management ───────────────────────────────────────────────────────────
 
 async def invite_user(db: AsyncSession, account_id: uuid.UUID, payload: SPUserInvite, invited_by: str) -> SPUser:
-    temp_pw = secrets.token_urlsafe(12)
     user = SPUser(
         account_id=account_id,
         full_name=payload.full_name,
-        email=payload.email,
+        email=payload.email.strip().lower(),
         phone=payload.phone,
         role_type=payload.role_type,
-        password_hash=_hash_pw(temp_pw),
-        login_identifier=payload.email,
+        password_hash=None,               # set by the supplier through the one-time link
+        login_identifier=payload.email.strip().lower(),
         invited_by=invited_by,
         notes=payload.notes,
     )
+    user.raw_invitation_token = new_invitation(user)
     db.add(user)
     await db.flush()
     await _log(db, account_id, SPActivityType.INVITE_USER, notes=f"Invited {payload.email}")
@@ -130,6 +163,7 @@ async def deactivate_user(db: AsyncSession, user_id: uuid.UUID) -> Optional[SPUs
     if not user:
         return None
     user.is_active = False
+    user.invitation_token = user.token_expires_at = None  # an outstanding link must not switch it back on
     await db.flush()
     await _log(db, user.account_id, SPActivityType.DEACTIVATE_USER, notes=f"Deactivated {user.email}")
     return user
@@ -140,35 +174,7 @@ async def list_users(db: AsyncSession, account_id: uuid.UUID) -> List[SPUser]:
     return list(rows.scalars())
 
 
-async def reset_password(db: AsyncSession, email: str, new_pw: str) -> bool:
-    user = (await db.execute(select(SPUser).where(SPUser.email == email, SPUser.is_active == True))).scalar_one_or_none()
-    if not user:
-        return False
-    user.password_hash = _hash_pw(new_pw)
-    await db.flush()
-    return True
-
-
 # ── Authentication ────────────────────────────────────────────────────────────
-
-async def login(db: AsyncSession, payload: SPLoginRequest, ip: Optional[str] = None) -> Optional[dict]:
-    user = (await db.execute(
-        select(SPUser).where(SPUser.email == payload.email, SPUser.is_active == True)
-    )).scalar_one_or_none()
-    if not user or not _verify_pw(payload.password, user.password_hash or ""):
-        return None
-    user.last_login_at = _now()
-    await db.flush()
-    await _log(db, user.account_id, SPActivityType.LOGIN, user_id=user.id, ip=ip)
-    token = secrets.token_urlsafe(32)
-    return {
-        "token": token,
-        "user_id": str(user.id),
-        "account_id": str(user.account_id),
-        "full_name": user.full_name,
-        "role_type": user.role_type,
-    }
-
 
 # ── Purchase Orders (scoped to supplier) ──────────────────────────────────────
 
@@ -178,9 +184,12 @@ async def list_supplier_pos(
     status: Optional[str] = None,
     limit: int = 50,
 ) -> List[dict]:
+    from sqlalchemy.orm import selectinload
+
     q = (
-        select(PurchaseOrder)
-        .where(PurchaseOrder.supplier_id == account.supplier_id)
+        select(PurchaseOrder).options(selectinload(PurchaseOrder.lines))
+        .where(PurchaseOrder.supplier_id == account.supplier_id,
+               PurchaseOrder.status.in_(RELEASED_PO_STATUSES))  # drafts/cancelled are internal
         .order_by(PurchaseOrder.created_at.desc())
         .limit(limit)
     )
@@ -197,15 +206,19 @@ async def list_supplier_pos(
         )).scalar_one_or_none()
         result.append({
             "po_id": str(po.id),
-            "po_number": getattr(po, "po_number", str(po.id)[:8]),
-            "po_date": str(po.created_at.date()) if po.created_at else None,
-            "status": po.status,
-            "total_amount": float(po.total_amount) if po.total_amount else None,
-            "currency": getattr(po, "currency", "KES"),
-            "required_date": str(po.required_date) if getattr(po, "required_date", None) else None,
+            "po_number": po.po_no,
+            "po_date": str(po.order_date),
+            "status": po.status.value,
+            "total_amount": float(po_total(po)) if account.can_view_prices else None,
+            "currency": po.currency,
+            "required_date": str(po.expected_delivery_date),
             "acknowledgment_status": resp.response_status if resp else "PENDING_RESPONSE",
         })
     return result
+
+
+def po_total(po) -> Decimal:
+    return sum((l.ordered_quantity * l.unit_price * (1 + (l.tax_rate or 0)) for l in (po.lines or [])), Decimal("0"))
 
 
 async def get_po_detail(
@@ -217,6 +230,7 @@ async def get_po_detail(
         select(PurchaseOrder).where(
             PurchaseOrder.id == po_id,
             PurchaseOrder.supplier_id == account.supplier_id,
+            PurchaseOrder.status.in_(RELEASED_PO_STATUSES),
         )
     )).scalar_one_or_none()
     if not po:
@@ -260,6 +274,7 @@ async def acknowledge_po(
         select(PurchaseOrder).where(
             PurchaseOrder.id == po_id,
             PurchaseOrder.supplier_id == account.supplier_id,
+            PurchaseOrder.status.in_(RELEASED_PO_STATUSES),
         )
     )).scalar_one_or_none()
     if not po:
@@ -452,11 +467,12 @@ async def get_payment_status(db: AsyncSession, account: SPAccount) -> List[dict]
     for inv in invoices:
         result.append({
             "invoice_id": str(inv.id),
-            "invoice_number": getattr(inv, "invoice_number", str(inv.id)[:8]),
+            "invoice_number": inv.invoice_no,
+            "paid_amount": float(inv.paid_amount or 0),
             "invoice_date": str(inv.invoice_date) if getattr(inv, "invoice_date", None) else None,
             "total_amount": float(inv.total_amount) if getattr(inv, "total_amount", None) else None,
             "currency": getattr(inv, "currency", "KES"),
-            "status": inv.status if inv.status else "SUBMITTED",
+            "status": inv.status.value if inv.status else "SUBMITTED",
             "due_date": str(inv.due_date) if getattr(inv, "due_date", None) else None,
         })
     return result

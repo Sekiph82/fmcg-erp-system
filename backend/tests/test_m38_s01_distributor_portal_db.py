@@ -182,3 +182,66 @@ async def test_distributor_portal_end_to_end():
         assert upgraded.password_hash.startswith("$2")                            # legacy hash replaced by bcrypt
         stored = (await db.execute(select(PortalUser.invitation_token).where(PortalUser.email == f"new-{s}@example.com"))).scalar_one()
         assert stored is None
+
+
+@pytest.mark.asyncio
+async def test_review_fixes_statement_dashboard_and_deactivation():
+    """Independent-review regressions: draft/cancelled invoices hidden, dashboard totals over every open invoice,
+    statement totals in SQL, deactivated users cannot be switched back on by an old link, e-mail case-insensitive."""
+    from app.main import app
+    from app.models.sales import Invoice, InvoiceStatus
+    from app.services import portal_service as svc
+
+    s = uuid.uuid4().hex[:8]
+    async with AsyncSessionLocal() as db:
+        assert (await db.execute(select(func.current_database()))).scalar_one() == os.environ[TASK_DB_NAME_ENV]
+        cust = Customer(code=f"S-{s}", name=f"Stmt {s}", channel=CustomerChannel.DISTRIBUTOR, currency="KES")
+        db.add(cust)
+        await db.flush()
+        so = SalesOrder(order_no=f"SO-S-{s}", customer_id=cust.id, order_date=date.today(),
+                        requested_delivery_date=date.today(), currency="KES")
+        db.add(so)
+        await db.flush()
+        for n in range(8):  # 8 open invoices of 100 each, one 40 overdue days
+            db.add(Invoice(invoice_no=f"INV-{s}-{n}", so_id=so.id, customer_id=cust.id, currency="KES",
+                           invoice_date=date.today() - timedelta(days=n), status=InvoiceStatus.ISSUED,
+                           due_date=date.today() - timedelta(days=40) if n == 7 else date.today() + timedelta(days=30),
+                           total_amount=Decimal("100"), subtotal=Decimal("100")))
+        db.add(Invoice(invoice_no=f"INV-{s}-draft", so_id=so.id, customer_id=cust.id, currency="KES", invoice_date=date.today(),
+                       due_date=date.today(), status=InvoiceStatus.DRAFT, total_amount=Decimal("999")))
+        db.add(Invoice(invoice_no=f"INV-{s}-void", so_id=so.id, customer_id=cust.id, currency="KES", invoice_date=date.today(),
+                       due_date=date.today(), status=InvoiceStatus.CANCELLED, total_amount=Decimal("777")))
+        acc = PortalAccount(account_code=f"PA-S-{s}", account_type=PortalAccountType.DISTRIBUTOR,
+                            linked_customer_id=str(cust.id), portal_status=PortalAccountStatus.ACTIVE)
+        db.add(acc)
+        await db.flush()
+        u = PortalUser(portal_account_id=acc.id, full_name="Fin", email=f"fin-{s}@example.com",
+                       password_hash=hash_password(PW), role_type=PortalUserRole.FINANCE, is_active=True)
+        db.add(u)
+        await db.commit()
+        acc_id, uid = acc.id, u.id
+
+    async with _client(app) as c:
+        assert (await c.post(f"{API}/auth/login", json={"email": f"FIN-{s}@Example.com", "password": PW})).status_code == 200
+        dash = (await c.get(f"{API}/dashboard")).json()
+        assert dash["outstanding_balance"] == 800.0 and len(dash["recent_invoices"]) == 5
+        st = (await c.get(f"{API}/statement")).json()
+        assert st["total_invoiced"] == 800.0 and st["outstanding_balance"] == 800.0
+        assert {i["invoice_no"] for i in (await c.get(f"{API}/invoices")).json()} == {f"INV-{s}-{n}" for n in range(8)}
+        assert (await c.get(f"{API}/orders", params={"status": "nonsense"})).json() == []
+        assert (await c.post(f"{API}/orders", json={"client_ref": f"fin-{s}", "requested_delivery_date": date.today().isoformat(),
+                                                    "lines": [{"product_id": str(uuid.uuid4()), "quantity": "1"}]})).status_code == 403
+
+    async with AsyncSessionLocal() as db:  # staff deactivates; an old link must not switch the user back on
+        user = await db.get(PortalUser, uid)
+        token = svc.new_invitation(user)
+        await db.commit()
+        await svc.deactivate_user(db, str(uid))
+        user = await db.get(PortalUser, uid)
+        assert user.invitation_token is None
+        token2 = svc.new_invitation(user)  # even a fresh link for a once-active, deactivated user
+        await db.commit()
+    async with _client(app) as c:
+        for t in (token, token2):
+            assert (await c.post(f"{API}/auth/activate", json={"token": t, "new_password": PW + "x"})).status_code == 400
+        assert (await c.post(f"{API}/auth/login", json={"email": f"fin-{s}@example.com", "password": PW})).status_code == 401

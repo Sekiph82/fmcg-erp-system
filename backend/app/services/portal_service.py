@@ -28,6 +28,14 @@ from app.schemas.portal import (
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
+def _visible_invoice_statuses():
+    from app.models.sales import InvoiceStatus
+
+    return (InvoiceStatus.ISSUED, InvoiceStatus.PARTIALLY_PAID, InvoiceStatus.PAID, InvoiceStatus.OVERDUE)
+
+
+CUSTOMER_VISIBLE_INVOICES = _visible_invoice_statuses()  # never DRAFT (not yet issued) or CANCELLED
+
 def _hash_password(password: str) -> str:
     from app.core.security import hash_password
 
@@ -158,9 +166,9 @@ async def invite_user(db: AsyncSession, account_id: str, data: PortalUserInvite)
     user = PortalUser(
         portal_account_id=uuid.UUID(account_id),
         full_name=data.full_name,
-        email=data.email,
+        email=data.email.strip().lower(),
         phone=data.phone,
-        login_identifier=data.email,
+        login_identifier=data.email.strip().lower(),
         role_type=data.role_type,
         invited_by=data.invited_by,
         is_active=False,
@@ -180,8 +188,10 @@ async def activate_user_with_password(db: AsyncSession, token: str, new_password
     user = result.scalar_one_or_none()
     if not user:
         return None
-    if user.token_expires_at and user.token_expires_at < datetime.utcnow():
+    if user.token_expires_at is None or user.token_expires_at < datetime.utcnow():
         return None
+    if user.is_active is False and user.last_login_at is not None:
+        return None  # deactivated by staff: a link must never switch the account back on
     user.password_hash = _hash_password(new_password)
     user.is_active = True
     user.invitation_token = None
@@ -196,6 +206,8 @@ async def deactivate_user(db: AsyncSession, user_id: str) -> Optional[PortalUser
     if not user:
         return None
     user.is_active = False
+    user.invitation_token = None
+    user.token_expires_at = None
     await db.commit()
     await db.refresh(user)
     return user
@@ -251,7 +263,7 @@ async def get_portal_dashboard(db: AsyncSession, account: PortalAccount) -> dict
     if customer_id_str:
         inv_q = inv_q.where(Invoice.customer_id == uuid.UUID(customer_id_str))
 
-    invoices = (await db.execute(inv_q.limit(200))).scalars().all()
+    invoices = (await db.execute(inv_q.order_by(Invoice.invoice_date.desc()))).scalars().all()
 
     today = date.today()
     outstanding = Decimal("0")
@@ -263,7 +275,7 @@ async def get_portal_dashboard(db: AsyncSession, account: PortalAccount) -> dict
     aging_90_plus = Decimal("0")
 
     recent_invoices = []
-    for inv in sorted(invoices, key=lambda x: x.invoice_date, reverse=True)[:5]:
+    for n, inv in enumerate(invoices):
         remaining = (inv.total_amount or Decimal("0")) - (inv.paid_amount or Decimal("0"))
         outstanding += remaining
         if inv.due_date and inv.due_date < today:
@@ -279,6 +291,8 @@ async def get_portal_dashboard(db: AsyncSession, account: PortalAccount) -> dict
                 aging_90_plus += remaining
         else:
             current_due += remaining
+        if n >= 5:
+            continue
         recent_invoices.append({
             "id": str(inv.id),
             "invoice_no": inv.invoice_no,
@@ -380,7 +394,11 @@ async def get_portal_orders(db: AsyncSession, account: PortalAccount, status: Op
     else:
         return []
     if status:
-        q = q.where(SalesOrder.status == status)
+        from app.models.sales import SOStatus
+
+        if status not in SOStatus.__members__:
+            return []
+        q = q.where(SalesOrder.status == SOStatus[status])
     q = q.order_by(SalesOrder.order_date.desc()).offset(skip).limit(limit)
     rows = (await db.execute(q)).scalars().all()
     return [_serialize_order(o) for o in rows]
@@ -490,7 +508,7 @@ async def get_portal_shipments(db: AsyncSession, account: PortalAccount, skip: i
 async def get_portal_invoices(db: AsyncSession, account: PortalAccount, status: Optional[str] = None, skip: int = 0, limit: int = 50):
     from app.models.sales import Invoice
 
-    q = select(Invoice)
+    q = select(Invoice).where(Invoice.status.in_(CUSTOMER_VISIBLE_INVOICES))
     if account.linked_customer_id:
         try:
             q = q.where(Invoice.customer_id == uuid.UUID(account.linked_customer_id))
@@ -499,6 +517,8 @@ async def get_portal_invoices(db: AsyncSession, account: PortalAccount, status: 
     else:
         return []
     if status:
+        if status not in {s.value for s in CUSTOMER_VISIBLE_INVOICES}:
+            return []
         q = q.where(Invoice.status == status)
     q = q.order_by(Invoice.invoice_date.desc()).offset(skip).limit(limit)
     rows = (await db.execute(q)).scalars().all()
@@ -526,6 +546,7 @@ async def get_portal_payments(db: AsyncSession, account: PortalAccount, skip: in
     q = (
         select(Payment)
         .join(Invoice, Invoice.id == Payment.invoice_id)
+        .where(Invoice.status.in_(CUSTOMER_VISIBLE_INVOICES))
     )
     if account.linked_customer_id:
         try:
@@ -550,6 +571,20 @@ async def get_portal_payments(db: AsyncSession, account: PortalAccount, skip: in
 
 
 async def get_portal_statement(db: AsyncSession, account: PortalAccount, from_date: Optional[date] = None, to_date: Optional[date] = None):
+    """Totals over every issued invoice in the range (SQL); the listed rows are the 200 most recent."""
+    from app.models.sales import Invoice
+
+    if not account.linked_customer_id:
+        return {"account_code": account.account_code, "from_date": None, "to_date": None, "total_invoiced": 0.0,
+                "total_paid": 0.0, "outstanding_balance": 0.0, "invoices": [], "payments": []}
+    cond = [Invoice.customer_id == uuid.UUID(account.linked_customer_id), Invoice.status.in_(CUSTOMER_VISIBLE_INVOICES)]
+    if from_date:
+        cond.append(Invoice.invoice_date >= from_date)
+    if to_date:
+        cond.append(Invoice.invoice_date <= to_date)
+    invoiced, paid = (await db.execute(select(func.coalesce(func.sum(Invoice.total_amount), 0),
+                                              func.coalesce(func.sum(Invoice.paid_amount), 0)).where(*cond))).one()
+    total_invoiced, total_paid = float(invoiced), float(paid)
     invoices = await get_portal_invoices(db, account, limit=200)
     payments = await get_portal_payments(db, account, limit=200)
     if from_date:
@@ -558,8 +593,6 @@ async def get_portal_statement(db: AsyncSession, account: PortalAccount, from_da
     if to_date:
         invoices = [i for i in invoices if i["invoice_date"] <= str(to_date)]
         payments = [p for p in payments if p["payment_date"] <= str(to_date)]
-    total_invoiced = sum(i["total_amount"] for i in invoices)
-    total_paid = sum(p["amount"] for p in payments)
     return {
         "account_code": account.account_code,
         "from_date": str(from_date) if from_date else None,

@@ -42,6 +42,14 @@ def check_password(plain: str, stored: str | None) -> tuple[bool, bool]:
         return False, False
 
 
+_DUMMY_HASH = hash_password("timing-equaliser-not-a-real-password")
+
+
+def dummy_password_check(plain: str) -> None:
+    """Spend the same bcrypt time when the account doesn't exist, so timing doesn't reveal valid e-mails."""
+    verify_password(plain, _DUMMY_HASH)
+
+
 def _fingerprint(password_hash: str | None) -> str:
     return hashlib.sha256((password_hash or "").encode()).hexdigest()[:16]
 
