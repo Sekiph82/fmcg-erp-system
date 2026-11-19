@@ -26,6 +26,7 @@ from app.models.field_ops import CashCollection
 router = APIRouter()
 VIEW = ("sales.view", "finance.view")
 FINANCE = ("finance.edit", "finance.approve")
+APPROVE = ("finance.approve",)  # confirming money posts it to the ledger
 METHOD_TO_PAYMENT = {"CASH": "cash", "MPESA": "mpesa", "BANK_TRANSFER": "bank", "CHEQUE": "bank"}
 
 
@@ -33,12 +34,12 @@ class CollectionCreate(BaseModel):
     collection_no: Optional[str] = Field(default=None, max_length=40)
     customer_id: uuid.UUID
     sales_order_id: Optional[uuid.UUID] = None
-    invoice_id: Optional[uuid.UUID] = None
+    invoice_id: uuid.UUID          # v1: every collection settles an invoice
     rep_id: Optional[uuid.UUID] = None
     collection_date: date
     method: str = Field(pattern=r"^(CASH|MPESA|BANK_TRANSFER|CHEQUE)$")
-    amount: Decimal = Field(gt=0, le=Decimal("100000000"))
-    currency: str = Field(min_length=3, max_length=10)
+    amount: Decimal = Field(gt=0, le=Decimal("100000000"), decimal_places=2)
+    currency: Optional[str] = Field(default=None, min_length=3, max_length=10)
     reference: Optional[str] = Field(default=None, max_length=100)
     mpesa_code: Optional[str] = Field(default=None, pattern=r"^[A-Z0-9]{8,12}$")
     mpesa_phone: Optional[str] = Field(default=None, pattern=r"^\+?[0-9]{9,15}$")
@@ -111,18 +112,20 @@ async def create_collection(body: CollectionCreate, db: AsyncSession = Depends(g
         raise HTTPException(422, "Customer not found")
     if body.method == "MPESA" and not body.mpesa_code:
         raise HTTPException(422, "An M-Pesa collection needs the M-Pesa confirmation code.")
-    so_id = body.sales_order_id
-    if body.invoice_id:
-        inv = await db.get(Invoice, body.invoice_id)
-        if inv is None or inv.customer_id != customer.id:
-            raise HTTPException(422, "The invoice does not belong to this customer.")
-        if body.amount > inv.total_amount - inv.paid_amount:
-            raise HTTPException(422, "The amount is more than the invoice's open balance.")
-        so_id = so_id or inv.so_id
+    from app.api.v1.endpoints.field_app import open_to_collect
+
+    inv = (await db.execute(select(Invoice).where(Invoice.id == body.invoice_id).with_for_update())).scalar_one_or_none()
+    if inv is None or inv.customer_id != customer.id:
+        raise HTTPException(422, "The invoice does not belong to this customer.")
+    if body.currency and body.currency != inv.currency:
+        raise HTTPException(422, f"The invoice is in {inv.currency}; record the collection in that currency.")
+    if body.amount > await open_to_collect(db, inv):
+        raise HTTPException(422, "The amount is more than the invoice's open balance (including collections awaiting confirmation).")
+    so_id = body.sales_order_id or inv.so_id
     c = CashCollection(collection_no=body.collection_no or f"COL-{date.today():%y%m%d}-{secrets.token_hex(4).upper()}",
                        customer_id=customer.id, invoice_id=body.invoice_id, sales_order_id=so_id, rep_id=body.rep_id,
                        collected_by_id=user.id, collection_date=body.collection_date, method=body.method, amount=body.amount,
-                       currency=body.currency, reference=body.reference, mpesa_code=body.mpesa_code,
+                       currency=inv.currency, reference=body.reference, mpesa_code=body.mpesa_code,
                        mpesa_phone=body.mpesa_phone, status="PENDING", notes=body.notes)
     db.add(c)
     try:
@@ -133,17 +136,24 @@ async def create_collection(body: CollectionCreate, db: AsyncSession = Depends(g
     return (await _out(db, [c]))[0]
 
 
-@router.post("/{collection_id}/confirm", dependencies=[Depends(require_any_permission(FINANCE))])
+@router.post("/{collection_id}/confirm", dependencies=[Depends(require_any_permission(APPROVE))])
 async def confirm(collection_id: uuid.UUID, db: AsyncSession = Depends(get_db), user=Depends(get_current_user)):
-    """Finance confirms the money arrived; an invoice-linked collection becomes a payment on that invoice."""
+    """Finance confirms the money arrived (a cheque: after it cleared) and it becomes a payment on the invoice.
+    The person who recorded the collection cannot confirm it."""
     from app.models.sales import Invoice
     from app.services import sales_service
 
     c = await _locked(db, collection_id)
     if c.status != "PENDING":
         raise HTTPException(409, f"Collection is {c.status}.")
+    if c.collected_by_id == user.id:
+        raise HTTPException(403, "You recorded this collection; another finance user must confirm it.")
+    if c.invoice_id is None:
+        raise HTTPException(409, "This collection is not linked to an invoice; link it or cancel it.")
     if c.invoice_id:
         inv = await db.get(Invoice, c.invoice_id)
+        if inv.currency != c.currency:
+            raise HTTPException(409, f"Currency mismatch: collection {c.currency}, invoice {inv.currency}.")
         payment = await sales_service.record_payment(
             db, inv, amount=Decimal(c.amount), payment_date=c.collection_date,
             reference=c.mpesa_code or c.reference or c.collection_no, notes=f"Collection {c.collection_no}",

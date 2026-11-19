@@ -18,7 +18,8 @@ from app.services import moto_sales_service as svc
 router = APIRouter()
 # Moto supervision needs sales permissions; the M-Pesa callback stays public (verified by verify_mpesa_callback).
 _VIEW = Depends(require_any_permission(("sales.view", "field.supervise")))
-_EDIT = Depends(require_any_permission(("sales.edit", "field.supervise")))
+_EDIT = Depends(require_any_permission(("sales.edit",)))
+_REVIEW = Depends(require_any_permission(("sales.edit", "field.supervise")))  # fraud scan / alert review only
 
 
 def _404(label: str = "Record"):
@@ -84,7 +85,7 @@ async def list_mpesa(
 
 # ── Fraud ─────────────────────────────────────────────────────────────────────
 
-@router.post("/fraud/scan", status_code=201, dependencies=[_EDIT])
+@router.post("/fraud/scan", status_code=201, dependencies=[_REVIEW])
 async def run_fraud_scan(days: int = 7, db: AsyncSession = Depends(get_db)):
     return await svc.run_fraud_scan(db, cutoff_days=days)
 
@@ -103,7 +104,7 @@ async def list_fraud_alerts(
     )
 
 
-@router.patch("/fraud/alerts/{alert_id}", dependencies=[_EDIT])
+@router.patch("/fraud/alerts/{alert_id}", dependencies=[_REVIEW])
 async def review_alert(
     alert_id: UUID,
     payload: FraudReviewRequest,

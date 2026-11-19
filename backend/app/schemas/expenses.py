@@ -98,7 +98,7 @@ class ExpenseClaimLineApprove(BaseModel):
 # ── Claim Header ─────────────────────────────────────────────────────────────
 
 class ExpenseClaimCreate(BaseModel):
-    employee_id: UUID
+    employee_id: Optional[UUID] = None   # defaults to the signed-in employee
     department_id: Optional[UUID] = None
     claim_date: date
     period_start: Optional[date] = None

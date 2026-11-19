@@ -1,8 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
-import { essApi, ESSRequest, ESSRequestType, REQUEST_STATUS_COLOR } from "@/lib/ess";
+import { essSelf, ESSRequest, ESSRequestType, REQUEST_STATUS_COLOR } from "@/lib/ess";
 
-const DEMO_EMPLOYEE = "00000000-0000-0000-0000-000000000001";
 const REQ_TYPES: ESSRequestType[] = ["leave", "expense", "profile_update", "document", "certificate", "payslip", "other"];
 const inputCls = "w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500";
 const selectCls = "w-full bg-[#0d1829] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none";
@@ -14,12 +13,11 @@ export default function RequestTrackerPage() {
   const [form, setForm] = useState({ request_type: "other" as ESSRequestType, subject: "", description: "", attachment_ref: "" });
   const [msg, setMsg] = useState("");
 
-  const load = () => essApi.listRequests({ employee_id: DEMO_EMPLOYEE }).then(setRequests).catch(console.error);
+  const load = () => essSelf.requests().then(setRequests).catch(console.error);
   useEffect(() => { load(); }, []);
 
   const handleCreate = async () => {
-    const req = await essApi.createRequest({ ...form, employee_id: DEMO_EMPLOYEE });
-    await essApi.submitRequest(req.request_id);
+    await essSelf.createRequest(form);
     await load(); setShowForm(false); setMsg("Request submitted"); setTimeout(() => setMsg(""), 2500);
   };
 

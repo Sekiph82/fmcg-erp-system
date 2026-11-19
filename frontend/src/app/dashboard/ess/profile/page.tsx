@@ -1,8 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
-import { essApi, ESSProfile } from "@/lib/ess";
+import { essSelf, ESSProfile } from "@/lib/ess";
 
-const DEMO_EMPLOYEE = "00000000-0000-0000-0000-000000000001";
 const inputCls = "w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500";
 const labelCls = "block text-[10px] text-slate-400 mb-1";
 
@@ -12,7 +11,7 @@ export default function ESSProfilePage() {
   const [form, setForm] = useState({ personal_email: "", phone: "", address: "", emergency_contact_name: "", emergency_contact_phone: "" });
   const [msg, setMsg] = useState("");
 
-  const load = () => essApi.getProfile(DEMO_EMPLOYEE).then(setProfile).catch(console.error);
+  const load = () => essSelf.me().then((m) => { if (!m.profile) throw new Error("No profile yet"); return m.profile; }).then(setProfile).catch(console.error);
   useEffect(() => { load(); }, []);
 
   const startEdit = () => {
@@ -20,7 +19,7 @@ export default function ESSProfilePage() {
     setForm({ personal_email: profile.personal_email || "", phone: profile.phone || "", address: profile.address || "", emergency_contact_name: profile.emergency_contact_name || "", emergency_contact_phone: profile.emergency_contact_phone || "" });
     setEditing(true);
   };
-  const handleSave = async () => { await essApi.updateProfile(DEMO_EMPLOYEE, form); await load(); setEditing(false); setMsg("Profile updated"); setTimeout(() => setMsg(""), 2000); };
+  const handleSave = async () => { await essSelf.updateProfile(form); await load(); setEditing(false); setMsg("Profile updated"); setTimeout(() => setMsg(""), 2000); };
 
   const Field = ({ label, value }: { label: string; value?: string }) => (
     <div><p className="text-[10px] text-slate-500 uppercase tracking-widest mb-0.5">{label}</p><p className="text-sm text-slate-300">{value || "—"}</p></div>

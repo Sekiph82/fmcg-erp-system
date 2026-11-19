@@ -229,6 +229,16 @@ export const NAV_CONFIG: NavEntry[] = [
       { label: "Dynamic Pricing",     tab: "dynamic-pricing" },
     ]}),
 
+  // Employee self-service (M38): every employee's own leave, attendance, requests, payslips
+  ws("my-hr",       "My HR",           "/dashboard/ess",
+    md("M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"),
+    { searchHints: [
+      { label: "My Leave",            href: "/dashboard/ess/leave" },
+      { label: "My Attendance",       href: "/dashboard/ess/attendance" },
+      { label: "My Payslips",         href: "/dashboard/ess/payslips" },
+      { label: "My Requests",         href: "/dashboard/ess/requests" },
+    ]}),
+
   // Field app (M38): reps, moto riders, drivers and field controllers see only their own work; no module permission needed
   ws("field",       "Field App",       "/dashboard/field",
     md("M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0zM15 11a3 3 0 11-6 0 3 3 0 016 0z"),

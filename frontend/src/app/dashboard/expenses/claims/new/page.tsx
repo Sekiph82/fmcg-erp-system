@@ -23,8 +23,7 @@ export default function NewClaimPage() {
   const [categories, setCategories] = useState<ExpenseCategory[]>([]);
   const [form, setForm] = useState({
     claim_date: new Date().toISOString().slice(0, 10), period_start: "", period_end: "",
-    currency: "KES", reimbursement_method: "bank", notes: "",
-    employee_id: "00000000-0000-0000-0000-000000000001",
+    currency: "KES", reimbursement_method: "bank", notes: "",  // the claim is filed for the signed-in employee
   });
   const [lines, setLines] = useState<LineForm[]>([emptyLine()]);
   const [saving, setSaving] = useState(false);

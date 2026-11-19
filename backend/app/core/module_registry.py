@@ -439,6 +439,7 @@ ENDPOINT_ROUTE_DEFINITIONS: tuple[EndpointRouteDefinition, ...] = (
     EndpointRouteDefinition(key="distributors", route_prefix="/distributors", import_path="app.api.v1.endpoints.distributors", tags=('distributors',)),
     EndpointRouteDefinition(key="field_sales", route_prefix="/field-sales", import_path="app.api.v1.endpoints.field_sales", tags=('field-sales',)),
     EndpointRouteDefinition(key="delivery", route_prefix="/delivery", import_path="app.api.v1.endpoints.delivery", tags=('delivery',)),
+    EndpointRouteDefinition(key="ess_self", route_prefix="/ess-self", import_path="app.api.v1.endpoints.ess_self", tags=('ess-self',)),
     EndpointRouteDefinition(key="field_app", route_prefix="/field", import_path="app.api.v1.endpoints.field_app", tags=('field-app',)),
     EndpointRouteDefinition(key="collections", route_prefix="/collections", import_path="app.api.v1.endpoints.collections", tags=('collections',)),
     EndpointRouteDefinition(key="returns_mgmt", route_prefix="/returns", import_path="app.api.v1.endpoints.returns_mgmt", tags=('returns',)),
@@ -614,7 +615,6 @@ PUBLIC_ROUTES: frozenset[tuple[str, str]] = frozenset({
     ("/auth/2fa/login-verify", "POST"),
     ("/auth/2fa/use-recovery-code", "POST"),
     ("/auth/2fa/resend-otp", "POST"),
-    ("/ess/login", "POST"),
     ("/supplier-self/auth/login", "POST"),             # supplier sign-in (rate-limited, realm cookie)
     ("/supplier-self/auth/activate", "POST"),          # one-time set-password token (stored as a digest)
     ("/supplier-self/auth/logout", "POST"),

@@ -310,3 +310,34 @@ export const essApi = {
   ackRec: (id: string, d: { status: ESSAIRecStatus; notes?: string }) =>
     api<ESSAIRecommendation>(`/ai/recommendations/${id}`, { method: "PATCH", body: JSON.stringify(d) }),
 };
+
+
+// ── The signed-in employee's own data (M38.S04.T001) ─────────────────────────
+// Resolved on the server from the staff login; no employee id is ever sent.
+async function self<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const res = await apiFetch(`/api/v1/ess-self${path}`, { ...init, headers: { "Content-Type": "application/json", ...(init.headers ?? {}) } });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) { const d = (body as { detail?: unknown }).detail; throw new Error(typeof d === "string" ? d : "Request failed"); }
+  return body as T;
+}
+export interface ESSMe {
+  employee: { code: string; name: string; department: string; role: string; hire_date: string; email: string | null; phone: string | null } | null;
+  profile: ESSProfile | null; dashboard: ESSDashboard;
+}
+export interface Payslip { id: string; period: string; issue_date: string; gross: number; net: number; paye: number; nhif: number; nssf: number; housing_levy: number; components: Record<string, unknown> | null }
+export const essSelf = {
+  me: () => self<ESSMe>("/me"),
+  updateProfile: (d: object) => self<ESSProfile>("/profile", { method: "PATCH", body: JSON.stringify(d) }),
+  leave: (year?: number) => self<{ types: ESSLeaveType[]; balances: ESSLeaveBalance[]; requests: ESSLeaveRequest[] }>(`/leave${year ? `?year=${year}` : ""}`),
+  requestLeave: (d: object) => self<ESSLeaveRequest>("/leave", { method: "POST", body: JSON.stringify(d) }),
+  cancelLeave: (id: string) => self<ESSLeaveRequest>(`/leave/${id}/cancel`, { method: "POST" }),
+  attendance: (month: number, year: number) => self<{ records: ESSAttendanceRecord[]; summary: Record<string, unknown> }>(`/attendance?month=${month}&year=${year}`),
+  clock: (action: "in" | "out") => self<ESSAttendanceRecord>("/attendance/clock", { method: "POST", body: JSON.stringify({ action }) }),
+  requests: () => self<ESSRequest[]>("/requests"),
+  createRequest: (d: object) => self<ESSRequest>("/requests", { method: "POST", body: JSON.stringify(d) }),
+  documents: () => self<ESSDocument[]>("/documents"),
+  notifications: () => self<ESSNotification[]>("/notifications"),
+  markRead: (id: string) => self<{ ok: boolean }>(`/notifications/${id}/read`, { method: "POST" }),
+  markAllRead: () => self<{ marked_read: number }>("/notifications/read-all", { method: "POST" }),
+  payslips: () => self<Payslip[]>("/payslips"),
+};

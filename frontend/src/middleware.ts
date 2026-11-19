@@ -242,6 +242,8 @@ const BYPASS_PREFIX_REDIRECT = new Set([
   "/dashboard/recruitment/interviews",
   "/dashboard/recruitment/offers",
   "/dashboard/recruitment/stages",
+  "/dashboard/ess",              // employee self-service home: every employee, not only HR (M38.S04.T001)
+  "/dashboard/ess/payslips",
   "/dashboard/ess/profile",
   "/dashboard/ess/leave",
   "/dashboard/ess/attendance",

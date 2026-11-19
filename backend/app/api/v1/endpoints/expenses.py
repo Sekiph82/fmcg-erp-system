@@ -3,6 +3,7 @@ from typing import List, Optional
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.core.deps import get_current_user
 from app.db.session import get_db
 from app.models.expenses import ExpenseStatus, AdvanceSettlementStatus, ExpAIRecStatus
 from app.schemas.expenses import (
@@ -91,8 +92,23 @@ async def list_claims(
 
 
 @router.post("/claims", response_model=ExpenseClaimRead)
-async def create_claim(data: ExpenseClaimCreate, db: AsyncSession = Depends(get_db)):
-    return await svc.create_claim(db, data)
+async def create_claim(data: ExpenseClaimCreate, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    """A claim is the signed-in employee's own; only HR (hr.edit) may file one for someone else."""
+    from sqlalchemy import select
+
+    from app.core.access_control import has_permission
+    from app.models.hr import Employee
+
+    me = (await db.execute(select(Employee.id).where(Employee.user_id == current_user.id).limit(1))).scalar_one_or_none()
+    if data.employee_id is None or data.employee_id != me:
+        if data.employee_id is not None and has_permission(current_user, "hr.edit"):
+            pass
+        elif me is None:
+            raise HTTPException(403, "Your login is not linked to an employee record; ask HR.")
+        else:
+            data.employee_id = me
+    claim = await svc.create_claim(db, data)
+    return await svc.get_claim(db, claim.expense_claim_id)  # reload with lines (the bare instance cannot lazy-load them)
 
 
 @router.get("/claims/{claim_id}", response_model=ExpenseClaimRead)

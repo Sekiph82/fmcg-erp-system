@@ -1,25 +1,29 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { essApi, ESSDashboard } from "@/lib/ess";
+import { useAuth } from "@/context/AuthContext";
+import { essApi, essSelf, ESSDashboard } from "@/lib/ess";
 
-const DEMO_EMPLOYEE = "00000000-0000-0000-0000-000000000001";
 
 export default function ESSDashboardPage() {
   const [data, setData] = useState<ESSDashboard | null>(null);
   const [error, setError] = useState("");
+  const { hasPermission } = useAuth();
 
-  useEffect(() => { essApi.getDashboard(DEMO_EMPLOYEE).then(setData).catch((e) => setError(e.message)); }, []);
+  useEffect(() => { essSelf.me().then((m) => setData(m.dashboard)).catch((e) => setError(e.message)); }, []);
 
   const links = [
     { href: "/dashboard/ess/profile",       label: "My Profile",    icon: "👤" },
     { href: "/dashboard/ess/leave",         label: "Leave",         icon: "🏖️" },
     { href: "/dashboard/ess/attendance",    label: "Attendance",    icon: "📅" },
     { href: "/dashboard/ess/documents",     label: "Documents",     icon: "📄" },
+    { href: "/dashboard/ess/payslips",      label: "My Payslips",   icon: "💵" },
     { href: "/dashboard/ess/requests",      label: "My Requests",   icon: "📋" },
     { href: "/dashboard/ess/notifications", label: "Notifications", icon: "🔔" },
-    { href: "/dashboard/ess/ai",            label: "AI Insights",   icon: "🤖" },
-    { href: "/dashboard/ess/admin",         label: "HR Admin",      icon: "⚙️" },
+    ...(hasPermission("hr.view") ? [  // HR-only pages
+      { href: "/dashboard/ess/ai",            label: "AI Insights",   icon: "🤖" },
+      { href: "/dashboard/ess/admin",         label: "HR Admin",      icon: "⚙️" },
+    ] : []),
   ];
 
   return (
@@ -32,7 +36,7 @@ export default function ESSDashboardPage() {
         {data && <p className="text-xs text-slate-600">{data.days_since_joining} days with the company</p>}
       </div>
 
-      {error && <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-3 text-sm text-amber-300">{error} — set up your ESS account first via HR Admin.</div>}
+      {error && <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-3 text-sm text-amber-300">{error}</div>}
 
       {data && (
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">

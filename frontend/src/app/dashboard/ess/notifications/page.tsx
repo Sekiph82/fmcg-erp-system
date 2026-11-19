@@ -1,18 +1,17 @@
 "use client";
 import { useEffect, useState } from "react";
-import { essApi, ESSNotification, NOTIF_TYPE_ICON } from "@/lib/ess";
+import { essSelf, ESSNotification, NOTIF_TYPE_ICON } from "@/lib/ess";
 
-const DEMO_EMPLOYEE = "00000000-0000-0000-0000-000000000001";
 
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<ESSNotification[]>([]);
   const [unreadOnly, setUnreadOnly] = useState(false);
 
-  const load = () => essApi.listNotifications(DEMO_EMPLOYEE, unreadOnly).then(setNotifications).catch(console.error);
+  const load = () => essSelf.notifications().then((n) => n.filter((x) => !unreadOnly || !x.read_flag)).then(setNotifications).catch(console.error);
   useEffect(() => { load(); }, [unreadOnly]);
 
-  const handleMarkRead = async (id: string) => { await essApi.markRead(id, DEMO_EMPLOYEE); load(); };
-  const handleMarkAll = async () => { await essApi.markAllRead(DEMO_EMPLOYEE); load(); };
+  const handleMarkRead = async (id: string) => { await essSelf.markRead(id); load(); };
+  const handleMarkAll = async () => { await essSelf.markAllRead(); load(); };
   const unreadCount = notifications.filter((n) => !n.read_flag).length;
 
   return (

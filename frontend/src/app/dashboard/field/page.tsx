@@ -205,7 +205,7 @@ function CollectForm({ stop, say, fail, reload }: Say & { stop: Stop; reload: ()
   return (
     <div className="space-y-2">
       <select aria-label="Invoice" value={form.invoice_id} onChange={(e) => { const i = invoices.find((x) => x.id === e.target.value); setForm({ ...form, invoice_id: e.target.value, amount: i ? String(i.outstanding) : form.amount }); }} className={input}>
-        <option value="">On account (no specific invoice)</option>
+        <option value="">Choose the invoice being paid…</option>
         {invoices.map((i) => <option key={i.id} value={i.id}>{i.invoice_no} · due {i.due_date} · {kes(i.outstanding, i.currency)}{i.overdue ? " · OVERDUE" : ""}</option>)}
       </select>
       <div className="grid grid-cols-2 gap-2">
@@ -217,7 +217,8 @@ function CollectForm({ stop, say, fail, reload }: Say & { stop: Stop; reload: ()
         <input aria-label="Customer phone" inputMode="tel" placeholder="Phone 07…" value={form.mpesa_phone} onChange={(e) => setForm({ ...form, mpesa_phone: e.target.value })} className={input} />
       </div>)}
       {form.method === "CHEQUE" && <input aria-label="Cheque number" placeholder="Cheque number / bank" value={form.reference} onChange={(e) => setForm({ ...form, reference: e.target.value })} className={input} />}
-      <button onClick={save} disabled={busy || !form.amount} className={`${btn} w-full bg-emerald-600 text-white`}>Record collection</button>
+      {invoices.length === 0 && <p className="text-xs text-gray-500">No open invoices for this customer.</p>}
+      <button onClick={save} disabled={busy || !form.amount || !form.invoice_id} className={`${btn} w-full bg-emerald-600 text-white`}>Record collection</button>
       {form.method === "MPESA" && form.invoice_id && <button onClick={stk} disabled={busy || !form.amount || !form.mpesa_phone} className={`${btn} w-full border`}>Send M-Pesa request to phone</button>}
     </div>
   );
@@ -281,8 +282,8 @@ function DeliveryPanel({ stop, tripActive, say, fail, reload }: Say & { stop: Tr
       if (gps) { fd.append("lat", String(gps.lat)); fd.append("lng", String(gps.lng)); }
       fd.append("signature", sig!, "signature.png");
       if (photo) fd.append("photo", photo);
-      await fpost(`/field/trip-orders/${stop.id}/deliver`, fd);
-      say(true, `Delivered to ${stop.customer}.`); reload();
+      const r = await fpost<{ id: string | null; duplicate: boolean }>(`/field/trip-orders/${stop.id}/deliver`, fd);
+      say(true, r.duplicate ? `Delivery to ${stop.customer} was already recorded.` : `Delivered to ${stop.customer}.`); reload();
     } catch (e) { fail(e); } finally { setBusy(false); }
   }
   async function failed() {
@@ -291,7 +292,8 @@ function DeliveryPanel({ stop, tripActive, say, fail, reload }: Say & { stop: Tr
   return (
     <div className="mt-2 space-y-2">
       <div className="flex gap-3 text-xs">{stop.phone && <a href={`tel:${stop.phone}`} className="underline text-indigo-700">Call</a>}{maps && <a href={maps} target="_blank" rel="noreferrer" className="underline text-indigo-700">Directions</a>}</div>
-      {stop.status !== "PENDING" ? <p className="text-xs text-gray-600">{stop.status === "FAILED" ? `Not delivered: ${stop.failure_reason}` : "Delivered."}</p> : !tripActive ? <p className="text-xs text-amber-700">Start the trip first.</p> : (<>
+      {stop.status === "FAILED" && <p className="text-xs text-red-700">Not delivered earlier: {stop.failure_reason}. You can deliver it now if the customer is back.</p>}
+      {stop.status !== "PENDING" && stop.status !== "FAILED" ? <p className="text-xs text-gray-600">Delivered.</p> : !tripActive ? <p className="text-xs text-amber-700">Start the trip first.</p> : (<>
         <input aria-label="Received by" placeholder="Name of person receiving" value={receivedBy} onChange={(e) => setReceivedBy(e.target.value)} className={input} />
         <SignaturePad onChange={setSig} />
         <PhotoInput label="Photo of delivered goods (optional)" onFile={setPhoto} />

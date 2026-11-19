@@ -1,8 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
-import { essApi, ESSLeaveRequest, ESSLeaveBalance, ESSLeaveType, LEAVE_STATUS_COLOR } from "@/lib/ess";
+import { essSelf, ESSLeaveRequest, ESSLeaveBalance, ESSLeaveType, LEAVE_STATUS_COLOR } from "@/lib/ess";
 
-const DEMO_EMPLOYEE = "00000000-0000-0000-0000-000000000001";
 const inputCls = "w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500";
 const selectCls = "w-full bg-[#0d1829] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none";
 const labelCls = "block text-[10px] text-slate-400 mb-1";
@@ -16,17 +15,16 @@ export default function LeaveManagementPage() {
   const [msg, setMsg] = useState("");
 
   const load = async () => {
-    const [reqs, bals, lts] = await Promise.all([essApi.listLeaveRequests({ employee_id: DEMO_EMPLOYEE }), essApi.getLeaveBalances(DEMO_EMPLOYEE), essApi.listLeaveTypes()]);
+    const [reqs, bals, lts] = await Promise.all([essSelf.leave().then((l) => l.requests), essSelf.leave().then((l) => l.balances), essSelf.leave().then((l) => l.types)]);
     setRequests(reqs); setBalances(bals); setTypes(lts);
   };
   useEffect(() => { load(); }, []);
 
   const handleCreate = async () => {
-    const req = await essApi.createLeaveRequest({ ...form, employee_id: DEMO_EMPLOYEE });
-    await essApi.submitLeaveRequest(req.leave_request_id);
+    await essSelf.requestLeave(form);
     await load(); setShowForm(false); setMsg("Leave request submitted"); setTimeout(() => setMsg(""), 2500);
   };
-  const handleCancel = async (id: string) => { await essApi.cancelLeave(id, DEMO_EMPLOYEE); await load(); };
+  const handleCancel = async (id: string) => { await essSelf.cancelLeave(id); await load(); };
   const typeName = (id: string) => types.find((t) => t.leave_type_id === id)?.type_name ?? id;
 
   return (

@@ -118,7 +118,7 @@ async def test_field_app_end_to_end(tmp_path, monkeypatch):
         U = {k: _as(u) for k, u in users.items()}
         U["ctl"] = _as(users["ctl"], "field.audit")
         U["sup"] = _as(users["sup"], "field.supervise")
-        U["fin"] = _as(users["fin"], "finance.edit", "sales.view")
+        U["fin"] = _as(users["fin"], "finance.approve", "sales.view", "sales.create")
 
     def who(u):
         app.dependency_overrides[get_current_user] = lambda: u
@@ -160,7 +160,10 @@ async def test_field_app_end_to_end(tmp_path, monkeypatch):
             assert (await c.post(f"{F}/collections", json=col)).json()["duplicate"] is True
             assert (await c.post(f"{F}/collections", json={**col, "client_ref": f"c2-{s}"})).status_code == 409  # same code
             assert (await c.post(f"{F}/collections", json={**col, "client_ref": f"c4-{s}", "mpesa_code": None, "method": "CASH",
-                                                           "amount": "5000"})).status_code == 422     # above open balance
+                                                           "amount": "700"})).status_code == 422      # 1000 - 400 pending < 700
+            assert (await c.post(f"{F}/collections", json={**col, "client_ref": f"c5-{s}", "mpesa_code": None, "method": "CASH",
+                                                           "amount": "1.005"})).status_code == 422    # sub-cent amount
+            assert (await c.post(f"{F}/invoices/{ids.inv}/stk", json={"phone": "0799999999", "amount": "100"})).status_code == 422
             assert len((await c.get(f"{F}/collections")).json()) == 1
 
             who(U["bea"])
@@ -171,8 +174,15 @@ async def test_field_app_end_to_end(tmp_path, monkeypatch):
             who(U["ali"])
             assert (await c.post(f"/api/v1/collections/{c1.json()['id']}/confirm")).status_code == 403
             who(U["fin"])
+            own = await c.post("/api/v1/collections/", json={"customer_id": str(ids.c1), "invoice_id": str(ids.inv),
+                                                              "collection_date": date.today().isoformat(), "method": "CASH", "amount": "50"})
+            assert own.status_code == 201, own.text
+            assert (await c.post(f"/api/v1/collections/{own.json()['id']}/confirm")).status_code == 403   # own entry
+            assert (await c.post("/api/v1/collections/", json={"customer_id": str(ids.c1), "invoice_id": str(ids.inv), "currency": "USD",
+                                                               "collection_date": date.today().isoformat(), "method": "CASH", "amount": "5"})).status_code == 422
             listed = (await c.get("/api/v1/collections/", params={"customer_id": str(ids.c1)})).json()
-            assert listed[0]["invoice_no"] == f"INV-{s}" and listed[0]["rep_name"] == "Ali Rep"
+            listed = [x for x in listed if x["rep_name"] == "Ali Rep"]
+            assert listed[0]["invoice_no"] == f"INV-{s}"
             conf = await c.post(f"/api/v1/collections/{c1.json()['id']}/confirm")
             assert conf.status_code == 200 and conf.json()["status"] == "CONFIRMED", conf.text
             assert (await c.post(f"/api/v1/collections/{c1.json()['id']}/cancel")).status_code == 409

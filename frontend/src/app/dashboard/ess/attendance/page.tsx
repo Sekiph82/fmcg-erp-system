@@ -1,11 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
-import { essApi, ESSAttendanceRecord, AttendanceStatus, ATTENDANCE_STATUS_COLOR } from "@/lib/ess";
+import { essSelf, ESSAttendanceRecord, ATTENDANCE_STATUS_COLOR } from "@/lib/ess";
 
-const DEMO_EMPLOYEE = "00000000-0000-0000-0000-000000000001";
-const inputCls = "w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500";
-const selectCls = "w-full bg-[#0d1829] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none";
-const labelCls = "block text-[10px] text-slate-400 mb-1";
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 export default function AttendancePage() {
@@ -13,19 +9,19 @@ export default function AttendancePage() {
   const [month, setMonth] = useState(today.getMonth() + 1);
   const [year, setYear] = useState(today.getFullYear());
   const [records, setRecords] = useState<ESSAttendanceRecord[]>([]);
-  const [summary, setSummary] = useState<any>(null);
-  const [showEntry, setShowEntry] = useState(false);
-  const [entry, setEntry] = useState({ attendance_date: today.toISOString().slice(0, 10), check_in: "", check_out: "", status: "present" as AttendanceStatus, notes: "" });
+  const [summary, setSummary] = useState<Record<string, number | string> | null>(null);
+  const [msg, setMsg] = useState("");
 
   const load = async () => {
-    const [recs, sum] = await Promise.all([essApi.listAttendance(DEMO_EMPLOYEE, month, year), essApi.attendanceSummary(DEMO_EMPLOYEE, month, year)]);
-    setRecords(recs); setSummary(sum);
+    const r = await essSelf.attendance(month, year);
+    setRecords(r.records); setSummary(r.summary as Record<string, number | string>);
   };
-  useEffect(() => { load(); }, [month, year]);
+  useEffect(() => { load().catch((e) => setMsg(e.message)); }, [month, year]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleEntry = async () => {
-    await essApi.upsertAttendance({ employee_id: DEMO_EMPLOYEE, attendance_date: entry.attendance_date, check_in: entry.check_in ? new Date(entry.attendance_date + "T" + entry.check_in).toISOString() : undefined, check_out: entry.check_out ? new Date(entry.attendance_date + "T" + entry.check_out).toISOString() : undefined, status: entry.status, notes: entry.notes || undefined });
-    await load(); setShowEntry(false);
+  // check in / out at the server's time — employees do not type their own hours
+  const clock = async (action: "in" | "out") => {
+    try { await essSelf.clock(action); setMsg(action === "in" ? "Checked in." : "Checked out."); await load(); }
+    catch (e) { setMsg((e as Error).message); }
   };
 
   return (
@@ -40,9 +36,8 @@ export default function AttendancePage() {
             {MONTHS.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
           </select>
           <input type="number" value={year} onChange={(e) => setYear(Number(e.target.value))} className="bg-[#0d1829] border border-white/[0.08] rounded-lg px-2 py-1.5 text-sm text-white focus:outline-none w-20" />
-          <button onClick={() => setShowEntry(!showEntry)} className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm">
-            {showEntry ? "Cancel" : "+ Log Entry"}
-          </button>
+          <button onClick={() => clock("in")} className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm">Check in now</button>
+          <button onClick={() => clock("out")} className="px-3 py-1.5 rounded-lg bg-slate-600 hover:bg-slate-500 text-white text-sm">Check out now</button>
         </div>
       </div>
 
@@ -63,22 +58,7 @@ export default function AttendancePage() {
         </div>
       )}
 
-      {showEntry && (
-        <div className="glow-card p-5 space-y-3">
-          <h2 className="text-sm font-semibold text-white">Log Attendance</h2>
-          <div className="grid grid-cols-3 gap-3">
-            <div><label className={labelCls}>Date</label><input type="date" value={entry.attendance_date} onChange={(e) => setEntry({ ...entry, attendance_date: e.target.value })} className={inputCls} /></div>
-            <div><label className={labelCls}>Check In (HH:MM)</label><input type="time" value={entry.check_in} onChange={(e) => setEntry({ ...entry, check_in: e.target.value })} className={inputCls} /></div>
-            <div><label className={labelCls}>Check Out (HH:MM)</label><input type="time" value={entry.check_out} onChange={(e) => setEntry({ ...entry, check_out: e.target.value })} className={inputCls} /></div>
-            <div><label className={labelCls}>Status</label>
-              <select value={entry.status} onChange={(e) => setEntry({ ...entry, status: e.target.value as AttendanceStatus })} className={selectCls}>
-                {["present", "absent", "late", "half_day", "on_leave", "holiday", "work_from_home"].map((s) => <option key={s} value={s}>{s.replace("_", " ")}</option>)}
-              </select>
-            </div>
-          </div>
-          <button onClick={handleEntry} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm">Save Entry</button>
-        </div>
-      )}
+      {msg && <p role="status" className="text-sm text-amber-300">{msg}</p>}
 
       <div className="glass-table">
         <table className="w-full text-sm">

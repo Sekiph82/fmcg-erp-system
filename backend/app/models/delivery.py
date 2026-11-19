@@ -2,7 +2,7 @@ import uuid
 import enum
 from sqlalchemy import (
     Column, String, Text, Numeric, Integer, Boolean,
-    ForeignKey, Enum, Date, DateTime,
+    ForeignKey, Enum, Date, DateTime, Index, text,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
@@ -77,6 +77,9 @@ class ProofOfDelivery(Base, TimestampMixin):
     """Delivery confirmation captured at point of delivery."""
 
     __tablename__ = "proof_of_deliveries"
+    __table_args__ = (  # one proof of delivery per trip stop, even under double taps / retries
+        Index("uq_pod_trip_order", "trip_order_id", unique=True, postgresql_where=text("trip_order_id IS NOT NULL")),
+    )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     shipment_id = Column(UUID(as_uuid=True), ForeignKey("shipments.id", ondelete="RESTRICT"), nullable=False)

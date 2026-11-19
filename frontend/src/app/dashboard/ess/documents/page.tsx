@@ -1,8 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
-import { essApi, ESSDocument, ESSDocumentType } from "@/lib/ess";
+import { essSelf, ESSDocument, ESSDocumentType } from "@/lib/ess";
 
-const DEMO_EMPLOYEE = "00000000-0000-0000-0000-000000000001";
 const DOC_ICONS: Record<ESSDocumentType, string> = { payslip: "💰", contract: "📝", offer_letter: "📨", experience_cert: "🏆", salary_cert: "💼", hr_letter: "📮", appraisal: "⭐", other: "📄" };
 const DOC_TYPES: ESSDocumentType[] = ["payslip", "contract", "offer_letter", "experience_cert", "salary_cert", "hr_letter", "appraisal", "other"];
 
@@ -10,7 +9,7 @@ export default function DocumentsPage() {
   const [docs, setDocs] = useState<ESSDocument[]>([]);
   const [filter, setFilter] = useState<string>("");
 
-  useEffect(() => { essApi.listDocuments(DEMO_EMPLOYEE, filter || undefined).then(setDocs).catch(console.error); }, [filter]);
+  useEffect(() => { essSelf.documents().then((d) => d.filter((x) => !filter || x.document_type === filter)).then(setDocs).catch(console.error); }, [filter]);
 
   const grouped = DOC_TYPES.reduce((acc, t) => {
     const items = docs.filter((d) => d.document_type === t);

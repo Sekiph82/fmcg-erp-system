@@ -74,9 +74,9 @@ class OrderIn(BaseModel):
 class CollectionIn(GPS):
     client_ref: str = Field(min_length=8, max_length=64, pattern=r"^[A-Za-z0-9-]+$")
     customer_id: uuid.UUID
-    invoice_id: Optional[uuid.UUID] = None
+    invoice_id: uuid.UUID          # v1: every collection settles an invoice (on-account credit is not booked yet)
     method: str = Field(pattern=r"^(CASH|MPESA|CHEQUE|BANK_TRANSFER)$")
-    amount: Decimal = Field(gt=0, le=Decimal("100000000"))
+    amount: Decimal = Field(gt=0, le=Decimal("100000000"), decimal_places=2)
     mpesa_code: Optional[str] = Field(default=None, pattern=r"^[A-Z0-9]{8,12}$")
     mpesa_phone: Optional[str] = Field(default=None, pattern=r"^\+?[0-9]{9,15}$")
     reference: Optional[str] = Field(default=None, max_length=100)
@@ -85,7 +85,7 @@ class CollectionIn(GPS):
 
 class StkIn(BaseModel):
     phone: str = Field(pattern=r"^(\+?254|0)[17][0-9]{8}$")
-    amount: Decimal = Field(gt=0, le=Decimal("250000"))
+    amount: Decimal = Field(gt=0, le=Decimal("250000"), decimal_places=2)
 
 
 class FailIn(BaseModel):
@@ -146,6 +146,15 @@ def _gps(body):
     return getattr(body, "lat", None), getattr(body, "lng", None)
 
 
+async def open_to_collect(db: AsyncSession, inv) -> Decimal:
+    """Invoice balance minus collections already recorded and awaiting finance confirmation."""
+    from app.models.field_ops import CashCollection
+
+    pending = (await db.execute(select(func.coalesce(func.sum(CashCollection.amount), 0)).where(
+        CashCollection.invoice_id == inv.id, CashCollection.status == "PENDING"))).scalar_one()
+    return Decimal(inv.total_amount) - Decimal(inv.paid_amount) - Decimal(pending)
+
+
 def _no(prefix: str) -> str:
     return f"{prefix}-{date.today():%y%m%d}-{secrets.token_hex(4).upper()}"
 
@@ -158,9 +167,12 @@ async def _store(file: UploadFile) -> str:
         raise HTTPException(415, "Photos and signatures must be JPG or PNG images.")
     storage = get_document_storage()
     stored = await storage.store_upload(file, max_bytes=8 * 1024 * 1024)
-    if (await scan_document(storage.path_for(stored.storage_key))).status == "INFECTED":
+    from app.core.config import settings
+
+    scan = (await scan_document(storage.path_for(stored.storage_key))).status
+    if scan == "INFECTED" or (scan == "SCAN_ERROR" and settings.DOCUMENT_CLAMAV_HOST.strip()):
         storage.delete(stored.storage_key)
-        raise HTTPException(422, "The file was rejected by the malware scanner.")
+        raise HTTPException(422, "The file was rejected by the malware scanner (or the scanner is unavailable); try again.")
     return stored.storage_key
 
 
@@ -171,6 +183,14 @@ def _perm(user, code: str):
 
 async def _existing(db: AsyncSession, model, client_ref: str):
     return (await db.execute(select(model).where(model.client_ref == client_ref))).scalar_one_or_none()
+
+
+async def _replay(db: AsyncSession, model, client_ref: str, owner_attr: str, owner_id):
+    """After an IntegrityError: the earlier record for this client_ref if it is the caller's own, else 409."""
+    existing = await _existing(db, model, client_ref)
+    if existing is None or getattr(existing, owner_attr) != owner_id:
+        raise HTTPException(409, "This was already recorded, or conflicts with an existing record.")
+    return existing
 
 
 # ── who am I ──────────────────────────────────────────────────────────────────
@@ -200,7 +220,7 @@ async def me(db: AsyncSession = Depends(get_db), user=Depends(get_current_user))
 @router.get("/today")
 async def today(db: AsyncSession = Depends(get_db), user=Depends(get_current_user)):
     from app.models.field_sales import DailyTarget, VisitLog
-    from app.models.sales import Customer, Invoice, InvoiceStatus, OrderSource, SalesOrder, SOLine
+    from app.models.sales import Customer, Invoice, InvoiceStatus, OrderSource, SalesOrder, SOLine, SOStatus
 
     rep = await _rep_or_403(db, user)
     stops = await _route_stops(db, rep)
@@ -213,7 +233,8 @@ async def today(db: AsyncSession = Depends(get_db), user=Depends(get_current_use
         .group_by(Invoice.customer_id))).all()) if ids else {}
     sold = (await db.execute(select(func.coalesce(func.sum(SOLine.ordered_quantity * SOLine.unit_price), 0)).join(
         SalesOrder, SalesOrder.id == SOLine.so_id).where(SalesOrder.sales_rep_id == rep.id, SalesOrder.order_date == date.today(),
-                                                         SalesOrder.source == OrderSource.FIELD_SALES))).scalar_one()
+                                                         SalesOrder.source == OrderSource.FIELD_SALES,
+                                                         SalesOrder.status != SOStatus.CANCELLED))).scalar_one()
     target = (await db.execute(select(DailyTarget).where(DailyTarget.rep_id == rep.id, DailyTarget.target_date == date.today())
                                .limit(1))).scalar_one_or_none()
     out = []
@@ -252,7 +273,7 @@ async def log_visit(body: VisitIn, db: AsyncSession = Depends(get_db), user=Depe
         await db.commit()
     except IntegrityError:
         await db.rollback()
-        return {"id": str((await _existing(db, VisitLog, body.client_ref)).id), "duplicate": True}
+        return {"id": str((await _replay(db, VisitLog, body.client_ref, "rep_id", rep.id)).id), "duplicate": True}
     return {"id": str(v.id), "duplicate": False}
 
 
@@ -330,7 +351,7 @@ async def place_order(body: OrderIn, db: AsyncSession = Depends(get_db), user=De
     except IntegrityError:
         await db.rollback()
         existing = (await db.execute(select(SalesOrder).where(SalesOrder.offline_id == offline_id))).scalar_one_or_none()
-        if existing is None:
+        if existing is None or existing.sales_rep_id != rep.id:
             raise HTTPException(409, "The order could not be saved; please send it again.")
         return {"id": str(existing.id), "order_no": existing.order_no, "duplicate": True}
     for n, (product, qty, price) in enumerate(priced, start=1):
@@ -372,18 +393,16 @@ async def record_collection(body: CollectionIn, db: AsyncSession = Depends(get_d
     customer, _ = await _my_customer(db, rep, body.customer_id)
     if body.method == "MPESA" and not body.mpesa_code:
         raise HTTPException(422, "Enter the M-Pesa confirmation code from the customer's message.")
-    so_id = None
-    if body.invoice_id:
-        inv = await db.get(Invoice, body.invoice_id)
-        if inv is None or inv.customer_id != customer.id or inv.status.value not in OPEN_INVOICE:
-            raise HTTPException(422, "The invoice is not an open invoice of this customer.")
-        if body.amount > inv.total_amount - inv.paid_amount:
-            raise HTTPException(422, "The amount is more than the invoice's open balance.")
-        so_id = inv.so_id
+    inv = (await db.execute(select(Invoice).where(Invoice.id == body.invoice_id).with_for_update())).scalar_one_or_none()
+    if inv is None or inv.customer_id != customer.id or inv.status.value not in OPEN_INVOICE:
+        raise HTTPException(422, "The invoice is not an open invoice of this customer.")
+    if body.amount > await open_to_collect(db, inv):
+        raise HTTPException(422, "The amount is more than the invoice's open balance (including collections awaiting confirmation).")
+    so_id = inv.so_id
     lat, lng = _gps(body)
     c = CashCollection(collection_no=_no("COL"), customer_id=customer.id, invoice_id=body.invoice_id, sales_order_id=so_id,
                        rep_id=rep.id, collected_by_id=user.id, collection_date=date.today(), method=body.method,
-                       amount=body.amount, currency=customer.currency, reference=body.reference, mpesa_code=body.mpesa_code,
+                       amount=body.amount, currency=inv.currency, reference=body.reference, mpesa_code=body.mpesa_code,
                        mpesa_phone=body.mpesa_phone, gps_lat=lat, gps_lng=lng, status="PENDING", client_ref=body.client_ref,
                        notes=body.notes)
     db.add(c)
@@ -391,7 +410,8 @@ async def record_collection(body: CollectionIn, db: AsyncSession = Depends(get_d
         await db.commit()
     except IntegrityError:
         await db.rollback()
-        if (existing := await _existing(db, CashCollection, body.client_ref)) is not None:
+        existing = await _existing(db, CashCollection, body.client_ref)
+        if existing is not None and existing.collected_by_id == user.id:
             return {"id": str(existing.id), "collection_no": existing.collection_no, "duplicate": True}
         raise HTTPException(409, "This M-Pesa code was already recorded.")
     return {"id": str(c.id), "collection_no": c.collection_no, "status": c.status, "duplicate": False}
@@ -421,10 +441,17 @@ async def stk_push(invoice_id: uuid.UUID, body: StkIn, db: AsyncSession = Depend
     inv = await db.get(Invoice, invoice_id)
     if inv is None:
         raise HTTPException(404, "Invoice not found")
-    await _my_customer(db, rep, inv.customer_id)
-    if inv.status.value not in OPEN_INVOICE or body.amount > inv.total_amount - inv.paid_amount:
+    customer, _ = await _my_customer(db, rep, inv.customer_id)
+    if inv.status.value not in OPEN_INVOICE:
+        raise HTTPException(422, "This invoice is not open.")
+    if body.amount > inv.total_amount - inv.paid_amount:
         raise HTTPException(422, "The amount is more than the invoice's open balance.")
-    so = await db.get(SalesOrder, inv.so_id)
+    digits = lambda x: (x or "")[-9:]  # compare the national number (07.. / 2547..)
+    if not customer.phone or digits(customer.phone) != digits(body.phone):
+        raise HTTPException(422, "M-Pesa requests go only to the customer's registered phone number.")
+    so = (await db.execute(select(SalesOrder).where(SalesOrder.id == inv.so_id).with_for_update())).scalar_one()
+    if so.payment_method.value != "mpesa":
+        raise HTTPException(422, "This order is not set up for M-Pesa payment; record the M-Pesa code instead.")
     tx = await mpesa_service.initiate_payment(db, so, body.phone, body.amount, user.id)
     await db.commit()
     return {"id": str(tx.id), "status": getattr(tx.status, "value", tx.status), "checkout_request_id": tx.mpesa_request_id}
@@ -444,7 +471,7 @@ async def _my_trip(db: AsyncSession, user, trip_id: uuid.UUID):
 async def _my_stop(db: AsyncSession, user, trip_order_id: uuid.UUID):
     from app.models.delivery import TripOrder
 
-    to = await db.get(TripOrder, trip_order_id)
+    to = (await db.execute(select(TripOrder).where(TripOrder.id == trip_order_id).with_for_update())).scalar_one_or_none()
     if to is None:
         raise HTTPException(404, "Stop not found")
     trip = await _my_trip(db, user, to.trip_id)
@@ -516,8 +543,10 @@ async def deliver(trip_order_id: uuid.UUID, received_by: str = Form(..., min_len
     if trip.status != TripStatus.IN_TRANSIT:
         raise HTTPException(409, "Start the trip first.")
     existing = (await db.execute(select(ProofOfDelivery).where(ProofOfDelivery.trip_order_id == to.id))).scalar_one_or_none()
-    if existing is not None or to.status != TripOrderStatus.PENDING:  # a resend after a lost response
-        return {"id": str(existing.id) if existing else None, "status": to.status.value, "duplicate": True}
+    if existing is not None:  # a resend after a lost response
+        return {"id": str(existing.id), "status": to.status.value, "duplicate": True}
+    if to.status not in (TripOrderStatus.PENDING, TripOrderStatus.FAILED):  # FAILED: re-attempt later the same trip
+        raise HTTPException(409, f"This stop is {to.status.value.lower()}.")
     sig_key = await _store(signature)
     photo_key = await _store(photo) if photo is not None and photo.filename else None
     pod = ProofOfDelivery(shipment_id=to.shipment_id, trip_order_id=to.id, received_by=received_by.strip(),
@@ -528,7 +557,12 @@ async def deliver(trip_order_id: uuid.UUID, received_by: str = Form(..., min_len
     shipment = await db.get(Shipment, to.shipment_id)
     if shipment is not None and shipment.status == ShipmentStatus.DISPATCHED:
         shipment.status = ShipmentStatus.DELIVERED
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError:  # a parallel identical request won
+        await db.rollback()
+        existing = (await db.execute(select(ProofOfDelivery).where(ProofOfDelivery.trip_order_id == trip_order_id))).scalar_one()
+        return {"id": str(existing.id), "status": "DELIVERED", "duplicate": True}
     return {"id": str(pod.id), "status": to.status.value, "duplicate": False}
 
 
@@ -584,13 +618,13 @@ async def create_audit(body: AuditIn, db: AsyncSession = Depends(get_db), user=D
         return {"id": str(existing.id), "audit_no": existing.audit_no, "score": float(existing.score), "duplicate": True}
     keys = [k for k, _ in CHECKLIST]
     answers = {a.key: a for a in body.answers}
-    if sorted(answers) != sorted(keys):
+    if len(body.answers) != len(keys) or sorted(answers) != sorted(keys):
         raise HTTPException(422, "Answer every checklist item exactly once.")
     customer = await db.get(Customer, body.customer_id)
-    if customer is None:
+    if customer is None or not customer.is_active:
         raise HTTPException(404, "Outlet not found")
     route = (await db.execute(select(SalesRoute).join(RouteStop, RouteStop.route_id == SalesRoute.id).where(
-        RouteStop.customer_id == customer.id, SalesRoute.is_active.is_(True)).limit(1))).scalar_one_or_none()
+        RouteStop.customer_id == customer.id, SalesRoute.is_active.is_(True)).order_by(SalesRoute.code).limit(1))).scalar_one_or_none()
     score = Decimal(sum(1 for a in answers.values() if a.ok) * 100) / Decimal(len(keys))
     lat, lng = _gps(body)
     audit = FieldAudit(audit_no=_no("AUD"), auditor_id=user.id, rep_id=route.assigned_rep_id if route else None,
@@ -603,7 +637,7 @@ async def create_audit(body: AuditIn, db: AsyncSession = Depends(get_db), user=D
         await db.commit()
     except IntegrityError:
         await db.rollback()
-        existing = await _existing(db, FieldAudit, body.client_ref)
+        existing = await _replay(db, FieldAudit, body.client_ref, "auditor_id", user.id)
         return {"id": str(existing.id), "audit_no": existing.audit_no, "score": float(existing.score), "duplicate": True}
     return {"id": str(audit.id), "audit_no": audit.audit_no, "score": float(audit.score), "duplicate": False}
 
@@ -652,7 +686,7 @@ async def compliance(days: int = Query(7, ge=1, le=92), db: AsyncSession = Depen
     """Per active rep over the last N days: route coverage, orders, collections, audit scores."""
     from app.models.field_ops import CashCollection, FieldAudit
     from app.models.field_sales import RouteStop, SalesRep, SalesRoute, VisitLog
-    from app.models.sales import OrderSource, SalesOrder, SOLine
+    from app.models.sales import OrderSource, SalesOrder, SOLine, SOStatus
 
     _perm(user, "field.supervise")
     since = date.today() - timedelta(days=days - 1)
@@ -661,7 +695,7 @@ async def compliance(days: int = Query(7, ge=1, le=92), db: AsyncSession = Depen
     def per_rep(rows):
         return {r[0]: r[1:] for r in rows}
 
-    stops = per_rep((await db.execute(select(SalesRoute.assigned_rep_id, func.count(RouteStop.id)).join(
+    stops = per_rep((await db.execute(select(SalesRoute.assigned_rep_id, func.count(func.distinct(RouteStop.customer_id))).join(
         RouteStop, RouteStop.route_id == SalesRoute.id).where(SalesRoute.is_active.is_(True))
         .group_by(SalesRoute.assigned_rep_id))).all())
     visits = per_rep((await db.execute(select(VisitLog.rep_id, func.count(VisitLog.id), func.count(func.distinct(VisitLog.customer_id)),
@@ -670,10 +704,12 @@ async def compliance(days: int = Query(7, ge=1, le=92), db: AsyncSession = Depen
     orders = per_rep((await db.execute(select(SalesOrder.sales_rep_id, func.count(func.distinct(SalesOrder.id)),
                                               func.coalesce(func.sum(SOLine.ordered_quantity * SOLine.unit_price), 0))
                                        .join(SOLine, SOLine.so_id == SalesOrder.id)
-                                       .where(SalesOrder.source == OrderSource.FIELD_SALES, SalesOrder.order_date >= since)
+                                       .where(SalesOrder.source == OrderSource.FIELD_SALES, SalesOrder.order_date >= since,
+                                              SalesOrder.status != SOStatus.CANCELLED)
                                        .group_by(SalesOrder.sales_rep_id))).all())
     cols = per_rep((await db.execute(select(CashCollection.rep_id, func.count(CashCollection.id), func.sum(CashCollection.amount))
-                                     .where(CashCollection.collection_date >= since, CashCollection.status != "CANCELLED")
+                                     .where(CashCollection.collection_date >= since,
+                                            CashCollection.status.in_(("PENDING", "CONFIRMED", "RECONCILED")))
                                      .group_by(CashCollection.rep_id))).all())
     audits = per_rep((await db.execute(select(FieldAudit.rep_id, func.count(FieldAudit.id), func.avg(FieldAudit.score))
                                        .where(FieldAudit.audit_date >= since).group_by(FieldAudit.rep_id))).all())
@@ -686,7 +722,7 @@ async def compliance(days: int = Query(7, ge=1, le=92), db: AsyncSession = Depen
         a = audits.get(r.id) or (0, None)
         out.append({"rep_id": str(r.id), "rep": r.name, "code": r.code, "vehicle": r.vehicle_type.value,
                     "route_stops": n_stops, "visits": v[0], "outlets_visited": v[1],
-                    "coverage_pct": round(100 * v[1] / n_stops, 1) if n_stops else None,
+                    "coverage_pct": min(100.0, round(100 * v[1] / n_stops, 1)) if n_stops else None,
                     "visits_with_gps_pct": round(100 * v[2] / v[0], 1) if v[0] else None,
                     "last_visit_at": v[3].isoformat() if v[3] else None,
                     "orders": o[0], "order_value": float(o[1] or 0), "collections": c[0], "collected": float(c[1] or 0),

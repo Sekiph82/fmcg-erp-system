@@ -30,12 +30,8 @@ router = APIRouter()
 
 # ── Auth ──────────────────────────────────────────────────────────────────────
 
-@router.post("/login", response_model=ESSLoginResponse)
-async def login(data: ESSLoginRequest, db: AsyncSession = Depends(get_db)):
-    result = await svc.login(db, data.email, data.password)
-    if not result:
-        raise HTTPException(401, "Invalid credentials or account suspended")
-    return result
+# Employees use their normal staff login; their own data is served by /ess-self (ess_self.py). The old
+# public ESS login returned an unvalidated placeholder token and was removed (M38.S04.T001).
 
 
 @router.post("/accounts", response_model=ESSAccountRead,
