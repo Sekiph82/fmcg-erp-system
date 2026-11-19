@@ -1613,6 +1613,11 @@ Parallel work is allowed where dependencies are satisfied, but dependency integr
 - [ ] M36.S06.T003 — Independent code/security/privacy/migration audit with separate reviewer; remediate findings and retest. No self-review presented as independent.
 - [ ] M36.S06.T004 — Update CRM user/admin docs, provider setup instructions, consent policy, feature matrix, deferred live gates, release notes and TASKS.md; commit/push and verify main synchronization.
 
+# ESIGN-USR — Employee registered e-signatures (owner request 2026-11-19)
+
+- [v] ESIGN-USR.T001 — IT registers each employee's signature at hiring; it is applied automatically when they sign; each person sees only their own signature.
+  Done (2026-11-19) [v] implemented, independently reviewed, findings fixed: `esign_user_signatures` (migration `20261119_0044`; one active signature per user, replaced/revoked ones kept as history), routes `GET /esign/my-signature` (own only), `GET /esign/signatures` (IT, `esign.admin`: who has a signature on file — metadata and hash, never the image), `PUT/DELETE /esign/signatures/{user_id}` (IT register/replace/revoke, PNG/JPEG ≤300 KB validated, audit-logged). Signing applies the registered signature automatically; a revoked signature blocks signing; a drawn signature is accepted only for people never registered and is validated the same way. Signature images in signing requests are returned only to their owner (requesters, viewers and IT admins see none — review found this leak and it is fixed). Pages: "My signature" card + sign modal on `/dashboard/esign`, IT page `/dashboard/esign/signatures` (upload or draw). Tests `backend/tests/test_esign_user_signatures_db.py` (PostgreSQL, real app); dev browser check with a synthetic IT user and synthetic employee — `coordination/milestones/ESIGN/`.
+
 # Persistent External / Runtime Gates
 
 These are not reasons to fabricate completion and do not erase source implementation:

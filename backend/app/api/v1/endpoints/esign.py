@@ -19,6 +19,7 @@ from datetime import datetime, timezone
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Query
+from pydantic import BaseModel, Field
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -46,7 +47,8 @@ def _request_no(seq: int) -> str:
     return f"ESIGN-{today}-{str(seq + 1).zfill(4)}"
 
 
-def _enrich_request(req: SignatureRequest) -> dict:
+def _enrich_request(req: SignatureRequest, viewer_id=None) -> dict:
+    # a signature image is returned only to the person it belongs to — never to requesters, viewers or admins
     data = {
         "id": req.id,
         "request_no": req.request_no,
@@ -90,7 +92,7 @@ def _enrich_request(req: SignatureRequest) -> dict:
                 "declined_at": r.declined_at,
                 "ip_address": r.ip_address,
                 "user_agent": r.user_agent,
-                "signature_data": r.signature_data,
+                "signature_data": r.signature_data if viewer_id is not None and r.signer_id == viewer_id else None,
                 "signed_payload_hash_sha256": r.signed_payload_hash_sha256,
                 "decline_reason": r.decline_reason,
                 "evidence_hash_sha256": r.evidence_hash_sha256,
@@ -162,7 +164,7 @@ async def create_request(
         .where(SignatureRequest.id == req.id)
     )
     req = result.scalar_one()
-    return _enrich_request(req)
+    return _enrich_request(req, current_user.id)
 
 
 @router.get("/requests/pending-for-me", response_model=List[SignatureRequestRead],
@@ -186,7 +188,7 @@ async def pending_for_me(
         .order_by(SignatureRequest.created_at.desc())
     )
     requests = result.scalars().all()
-    return [_enrich_request(r) for r in requests]
+    return [_enrich_request(r, current_user.id) for r in requests]
 
 
 @router.get("/dashboard", response_model=ESignDashboard,
@@ -252,7 +254,7 @@ async def list_requests(
             pass
     result = await db.execute(q)
     requests = result.scalars().all()
-    return [_enrich_request(r) for r in requests]
+    return [_enrich_request(r, current_user.id) for r in requests]
 
 
 @router.get("/requests/{request_id}", response_model=SignatureRequestDetail,
@@ -274,7 +276,7 @@ async def get_request(
     if not req:
         raise HTTPException(status_code=404, detail="Signature request not found")
     ensure_signature_action_allowed(current_user, req, "view")
-    return _enrich_request(req)
+    return _enrich_request(req, current_user.id)
 
 
 @router.post("/requests/{request_id}/sign", response_model=SignatureRequestRead,
@@ -308,11 +310,24 @@ async def sign_request(
     if record.status != SignatureRecordStatus.PENDING:
         raise HTTPException(status_code=400, detail=f"You have already {record.status.value.lower()} this request")
 
+    from app.models.esign import UserSignatureProfile
+
+    profile = await _active_signature(db, current_user.id)
+    if profile is None:
+        had_one = (await db.execute(select(UserSignatureProfile.id).where(
+            UserSignatureProfile.user_id == current_user.id).limit(1))).first()
+        if had_one:  # IT revoked it (e.g. the person left): no signing with a drawn substitute
+            raise HTTPException(status_code=403, detail="Your registered signature was revoked; contact IT.")
+        if not body.signature_data:
+            raise HTTPException(status_code=422, detail="No signature registered for you; ask IT to register it, or draw one.")
+        _validated_image(body.signature_data)
     record.status = SignatureRecordStatus.SIGNED
     record.signed_at = datetime.now(timezone.utc)
-    record.signature_data = body.signature_data
+    # the signer's IT-registered signature is applied automatically; a drawn one is used only when none is on file
+    record.signature_data = profile.signature_image if profile else body.signature_data
     record.signed_payload_hash_sha256 = body.signed_payload_hash_sha256
-    record.auth_method = body.auth_method
+    record.auth_method = (f"registered-signature:{profile.image_sha256[:16]}" if profile
+                          else (body.auth_method or "drawn-signature"))
     record.ip_address = http_request.client.host if http_request.client else None
     record.user_agent = http_request.headers.get("user-agent", "")[:500]
 
@@ -333,7 +348,7 @@ async def sign_request(
         .where(SignatureRequest.id == req.id)
     )
     req = result2.scalar_one()
-    return _enrich_request(req)
+    return _enrich_request(req, current_user.id)
 
 
 @router.post("/requests/{request_id}/decline", response_model=SignatureRequestRead,
@@ -385,4 +400,119 @@ async def decline_request(
         .where(SignatureRequest.id == req.id)
     )
     req = result2.scalar_one()
-    return _enrich_request(req)
+    return _enrich_request(req, current_user.id)
+
+
+
+# ── Registered employee signatures (recorded by IT at hiring) ──────────────────
+
+MAX_SIGNATURE_BYTES = 300 * 1024
+_SIGNATURE_FORMATS = {"data:image/png;base64,": b"\x89PNG\r\n\x1a\n", "data:image/jpeg;base64,": b"\xff\xd8\xff"}
+
+
+class SignatureRegistration(BaseModel):
+    signature_image: str = Field(min_length=30, max_length=MAX_SIGNATURE_BYTES * 2)
+
+
+async def _active_signature(db: AsyncSession, user_id):
+    from app.models.esign import UserSignatureProfile
+
+    return (await db.execute(select(UserSignatureProfile).where(
+        UserSignatureProfile.user_id == user_id, UserSignatureProfile.is_active.is_(True)))).scalar_one_or_none()
+
+
+def _validated_image(data_url: str) -> str:
+    """PNG or JPEG data URL, decodable, real image header, at most 300 KB. Returns its SHA-256."""
+    import base64
+    import binascii
+    import hashlib
+
+    prefix = next((p for p in _SIGNATURE_FORMATS if data_url.startswith(p)), None)
+    if prefix is None:
+        raise HTTPException(422, "Signature must be a PNG or JPEG image.")
+    try:
+        raw = base64.b64decode(data_url[len(prefix):], validate=True)
+    except (binascii.Error, ValueError):
+        raise HTTPException(422, "Signature image is not valid base64.")
+    if len(raw) > MAX_SIGNATURE_BYTES or not raw.startswith(_SIGNATURE_FORMATS[prefix]):
+        raise HTTPException(422, "Signature image is too large or not a real PNG/JPEG.")
+    return hashlib.sha256(raw).hexdigest()
+
+
+@router.get("/my-signature", dependencies=[Depends(require_permission("esign", "view"))])
+async def my_signature(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """The caller's own registered signature. Nobody can read another person's signature image."""
+    p = await _active_signature(db, current_user.id)
+    if p is None:
+        return {"has_signature": False}
+    return {"has_signature": True, "signature_image": p.signature_image, "image_sha256": p.image_sha256,
+            "registered_at": p.registered_at.isoformat()}
+
+
+@router.get("/signatures", dependencies=[Depends(require_permission("esign", "admin"))])
+async def list_registered_signatures(search: Optional[str] = Query(None, max_length=100),
+                                     db: AsyncSession = Depends(get_db)):
+    """For IT: who has a signature on file (metadata only — never the image)."""
+    from app.models.esign import UserSignatureProfile
+
+    q = select(User, UserSignatureProfile).outerjoin(UserSignatureProfile, (UserSignatureProfile.user_id == User.id)
+                                                     & UserSignatureProfile.is_active.is_(True)).where(User.is_active.is_(True))
+    if search and search.strip():
+        like = "%" + search.strip().replace("%", "\\%").replace("_", "\\_") + "%"
+        q = q.where((User.full_name.ilike(like, escape="\\")) | (User.username.ilike(like, escape="\\")))
+    rows = (await db.execute(q.order_by(User.full_name).limit(500))).all()
+    return [{"user_id": str(u.id), "username": u.username, "full_name": u.full_name,
+             "has_signature": p is not None, "registered_at": p.registered_at.isoformat() if p else None,
+             "image_sha256": p.image_sha256 if p else None} for u, p in rows]
+
+
+@router.put("/signatures/{user_id}", dependencies=[Depends(require_permission("esign", "admin"))])
+async def register_signature(user_id: uuid.UUID, body: SignatureRegistration, http_request: Request,
+                             db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """IT records (or replaces) an employee's signature; the previous one is kept as revoked history."""
+    from app.crud import audit as audit_crud
+    from app.models.esign import UserSignatureProfile
+
+    employee = await db.get(User, user_id)
+    if employee is None or not employee.is_active:
+        raise HTTPException(404, "Active user not found")
+    digest = _validated_image(body.signature_image)
+    now = datetime.now(timezone.utc)
+    old = await _active_signature(db, user_id)
+    if old is not None:
+        old.is_active, old.revoked_at, old.revoked_by_id, old.revoke_reason = False, now, current_user.id, "replaced"
+        await db.flush()
+    from sqlalchemy.exc import IntegrityError
+
+    db.add(UserSignatureProfile(user_id=user_id, signature_image=body.signature_image, image_sha256=digest,
+                                is_active=True, registered_by_id=current_user.id, registered_at=now))
+    try:
+        await db.flush()
+    except IntegrityError:  # another IT user registered at the same moment
+        await db.rollback()
+        raise HTTPException(409, "The signature was changed at the same time; reload and try again.")
+    await audit_crud.log_event(db, event_type="ESIGN_SIGNATURE_REGISTERED", actor_id=current_user.id,
+                               actor_email=current_user.email, module="esign", target_type="user",
+                               target_id=str(user_id), target_name=employee.username,
+                               details={"image_sha256": digest, "replaced": old is not None},
+                               ip_address=http_request.client.host if http_request.client else None)
+    await db.commit()
+    return {"user_id": str(user_id), "has_signature": True, "image_sha256": digest, "registered_at": now.isoformat()}
+
+
+@router.delete("/signatures/{user_id}", dependencies=[Depends(require_permission("esign", "admin"))])
+async def revoke_signature(user_id: uuid.UUID, http_request: Request, reason: str = Query("revoked by IT", max_length=300),
+                           db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """E.g. when someone leaves: the signature can no longer be applied (history and past signings stay)."""
+    from app.crud import audit as audit_crud
+
+    p = await _active_signature(db, user_id)
+    if p is None:
+        raise HTTPException(404, "No active signature for this user")
+    p.is_active, p.revoked_at, p.revoked_by_id, p.revoke_reason = False, datetime.now(timezone.utc), current_user.id, reason
+    await audit_crud.log_event(db, event_type="ESIGN_SIGNATURE_REVOKED", actor_id=current_user.id,
+                               actor_email=current_user.email, module="esign", target_type="user",
+                               target_id=str(user_id), details={"reason": reason, "image_sha256": p.image_sha256},
+                               ip_address=http_request.client.host if http_request.client else None)
+    await db.commit()
+    return {"user_id": str(user_id), "has_signature": False}

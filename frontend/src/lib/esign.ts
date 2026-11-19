@@ -111,7 +111,24 @@ export const esignApi = {
 
   decline: (id: string, reason?: string) =>
     apiClient.post<SignatureRequest>(`${BASE}/requests/${id}/decline`, { reason }).then(res => res.data),
+
+  /** The caller's own IT-registered signature (nobody can read anyone else's). */
+  mySignature: () =>
+    apiClient.get<MySignature>(`${BASE}/my-signature`).then(res => res.data),
+  /** IT only: who has a signature on file (metadata, never images). */
+  listRegistered: (search?: string) =>
+    apiClient.get<RegisteredSignature[]>(`${BASE}/signatures`, { params: { search } }).then(res => res.data),
+  register: (userId: string, signatureImage: string) =>
+    apiClient.put(`${BASE}/signatures/${userId}`, { signature_image: signatureImage }).then(res => res.data),
+  revoke: (userId: string, reason: string) =>
+    apiClient.delete(`${BASE}/signatures/${userId}`, { params: { reason } }).then(res => res.data),
 };
+
+export interface MySignature { has_signature: boolean; signature_image?: string; image_sha256?: string; registered_at?: string }
+export interface RegisteredSignature {
+  user_id: string; username: string; full_name: string | null; has_signature: boolean;
+  registered_at: string | null; image_sha256: string | null;
+}
 
 export function statusColor(s: SignatureRequestStatus | SignatureRecordStatus): string {
   switch (s) {

@@ -5,7 +5,7 @@ import uuid
 import enum
 
 from sqlalchemy import (
-    Column, String, Text, Integer, DateTime, ForeignKey, Enum as SAEnum, JSON,
+    Boolean, Column, String, Text, Integer, DateTime, ForeignKey, Enum as SAEnum, JSON, Index, text,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
@@ -134,3 +134,24 @@ class SignatureRecord(Base, TimestampMixin):
     request = relationship("SignatureRequest", back_populates="signature_records")
     signer = relationship("User", foreign_keys=[signer_id])
     signed_document = relationship("Document", foreign_keys=[signed_document_id])
+
+
+class UserSignatureProfile(Base):
+    """An employee's registered signature, recorded by IT at hiring. Exactly one active profile per user
+    (partial unique index); replaced profiles stay as history. Only the owner sees the image; IT sees that a
+    signature is on file (who registered it, when, its hash), never the image of somebody else."""
+    __tablename__ = "esign_user_signatures"
+    __table_args__ = (
+        Index("uq_esign_user_signature_active", "user_id", unique=True, postgresql_where=text("is_active")),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    signature_image = Column(Text, nullable=False)            # data:image/png;base64,... (max 300 KB)
+    image_sha256 = Column(String(64), nullable=False)
+    is_active = Column(Boolean, nullable=False, default=True)
+    registered_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    registered_at = Column(DateTime(timezone=True), nullable=False)
+    revoked_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    revoked_at = Column(DateTime(timezone=True), nullable=True)
+    revoke_reason = Column(String(300), nullable=True)

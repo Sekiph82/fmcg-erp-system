@@ -97,7 +97,7 @@ class SignatureRequestDetail(SignatureRequestRead):
 
 
 class SignAction(BaseModel):
-    signature_data: str
+    signature_data: Optional[str] = None  # ignored when the signer has a registered signature
     signed_payload_hash_sha256: Optional[str] = None
     auth_method: Optional[str] = None
 

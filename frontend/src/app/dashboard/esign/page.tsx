@@ -12,7 +12,7 @@ import {
 import { apiClient } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/Button";
-import { RequirePermission } from "@/components/PermissionGuard";
+import { PermissionGuard, RequirePermission } from "@/components/PermissionGuard";
 import { PageHelpTooltip } from "@/components/help/PageHelpTooltip";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -330,6 +330,7 @@ function SignModal({
   onClose: () => void;
 }) {
   const qc = useQueryClient();
+  const { data: mine } = useQuery({ queryKey: ["esign-my-signature"], queryFn: esignApi.mySignature });
   const mut = useMutation({
     mutationFn: (data: string) => esignApi.sign(req.id, data),
     onSuccess: () => {
@@ -351,7 +352,19 @@ function SignModal({
         {mut.isError && (
           <p className="text-sm text-red-600">{String((mut.error as Error).message)}</p>
         )}
-        <SignaturePad onSave={(data) => mut.mutate(data)} onCancel={onClose} />
+        {mine?.has_signature ? (
+          <div className="flex flex-col gap-3">
+            <p className="text-sm text-gray-600">Your signature registered by IT will be applied:</p>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={mine.signature_image} alt="Your registered signature" className="max-h-32 border rounded-lg bg-white p-2 self-start" />
+            <div className="flex gap-2 justify-end">
+              <Button variant="secondary" onClick={onClose}>Cancel</Button>
+              <Button onClick={() => mut.mutate("")} disabled={mut.isPending}>Sign with my signature</Button>
+            </div>
+          </div>
+        ) : (
+          <SignaturePad onSave={(data) => mut.mutate(data)} onCancel={onClose} />
+        )}
       </div>
     </div>
   );
@@ -523,9 +536,14 @@ function ESignPageInner() {
         </div>
         <div className="flex items-center gap-2">
           <PageHelpTooltip topic="esign" />
+          <PermissionGuard permission="esign.admin">
+            <a href="/dashboard/esign/signatures" className="text-sm underline text-indigo-700">Employee signatures (IT)</a>
+          </PermissionGuard>
           <Button onClick={() => setShowCreate(true)}>+ New Request</Button>
         </div>
       </div>
+
+      <MySignatureCard />
 
       {/* KPI Cards */}
       {stats && (
@@ -640,5 +658,25 @@ export default function ESignPage() {
     <RequirePermission permission="esign.view">
       <ESignPageInner />
     </RequirePermission>
+  );
+}
+
+
+function MySignatureCard() {
+  const { data } = useQuery({ queryKey: ["esign-my-signature"], queryFn: esignApi.mySignature });
+  if (!data) return null;
+  return (
+    <div className="bg-white rounded-xl border p-4 flex items-center gap-4" aria-label="My signature">
+      <div className="text-sm">
+        <div className="font-semibold text-gray-900">My signature</div>
+        <div className="text-xs text-gray-500">{data.has_signature
+          ? `Registered by IT on ${new Date(data.registered_at!).toLocaleDateString()} — applied automatically when you sign.`
+          : "No signature on file yet. IT registers it for you; until then you can draw one when signing."}</div>
+      </div>
+      {data.has_signature && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={data.signature_image} alt="My registered signature" className="max-h-16 border rounded bg-white p-1" />
+      )}
+    </div>
   );
 }
