@@ -45,3 +45,29 @@ def _send_smtp(to_email: str, otp: str) -> None:
         if settings.SMTP_USERNAME:
             server.login(settings.SMTP_USERNAME, settings.SMTP_PASSWORD)
         server.send_message(msg)
+
+
+
+def send_email(to_email: str, subject: str, body: str, headers: dict | None = None) -> str:
+    """Send one plain-text e-mail over the configured SMTP server (blocking; call in a thread).
+    Returns the Message-ID. Raises on any SMTP failure, so callers never mark unsent mail as sent."""
+    from email.utils import make_msgid
+
+    if any(c in (subject or "") + (to_email or "") for c in "\r\n"):
+        raise ValueError("line breaks are not allowed in subject or recipient")
+    msg = MIMEText(body, "plain", "utf-8")
+    msg["Subject"] = subject
+    msg["From"] = settings.SMTP_FROM_EMAIL
+    msg["To"] = to_email
+    msg["Message-ID"] = make_msgid(domain=settings.SMTP_FROM_EMAIL.split("@")[-1] or "erp.local")
+    for key, value in (headers or {}).items():
+        msg[key] = value
+    with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=30) as server:
+        server.ehlo()
+        if settings.SMTP_USE_TLS:
+            server.starttls()
+            server.ehlo()
+        if settings.SMTP_USERNAME:
+            server.login(settings.SMTP_USERNAME, settings.SMTP_PASSWORD)
+        server.send_message(msg)
+    return msg["Message-ID"]

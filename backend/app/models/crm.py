@@ -474,3 +474,41 @@ class CRMAutomationRun(Base):
     error           = Column(Text, nullable=True)
     created_at      = Column(DateTime(timezone=True), nullable=False)
     finished_at     = Column(DateTime(timezone=True), nullable=True)
+
+
+
+# ── M36 consent register and outbound e-mail outbox ───────────────────────────
+
+class CRMContactConsent(Base):
+    """Marketing permission per e-mail address. UNSUBSCRIBED / BOUNCED / COMPLAINED suppress all
+    sequence and campaign mail; the latest event wins."""
+    __tablename__ = "crm_contact_consents"
+
+    id             = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    email          = Column(String(254), nullable=False, unique=True, index=True)   # stored lower-case
+    status         = Column(String(15), nullable=False)    # SUBSCRIBED | UNSUBSCRIBED | BOUNCED | COMPLAINED
+    source         = Column(String(100), nullable=True)    # form:<slug> | unsubscribe-link | manual:<user> ...
+    consent_text   = Column(Text, nullable=True)
+    updated_at     = Column(DateTime(timezone=True), nullable=False)
+
+
+class CRMOutboundMessage(Base):
+    """Outbox: every CRM e-mail is queued here first. Never marked SENT unless the SMTP server accepted it."""
+    __tablename__ = "crm_outbound_messages"
+
+    id                  = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    dedupe_key          = Column(String(200), nullable=False, unique=True)   # same key = same message, sent once
+    purpose             = Column(String(12), nullable=False)                 # MANUAL | SEQUENCE | CAMPAIGN
+    to_email            = Column(String(254), nullable=False, index=True)
+    subject             = Column(String(300), nullable=False)
+    body_text           = Column(Text, nullable=False)
+    crm_record_id       = Column(UUID(as_uuid=True), ForeignKey("crm_records.id", ondelete="SET NULL"), nullable=True, index=True)
+    customer_id         = Column(UUID(as_uuid=True), ForeignKey("customers.id", ondelete="SET NULL"), nullable=True, index=True)
+    status              = Column(String(12), nullable=False, index=True)     # QUEUED | SENT | SUPPRESSED | FAILED | CANCELLED
+    status_reason       = Column(String(300), nullable=True)
+    attempts            = Column(Integer, nullable=False, default=0)
+    next_attempt_at     = Column(DateTime(timezone=True), nullable=False)
+    provider_message_id = Column(String(300), nullable=True)
+    created_by          = Column(String(100), nullable=True)
+    created_at          = Column(DateTime(timezone=True), nullable=False)
+    sent_at             = Column(DateTime(timezone=True), nullable=True)

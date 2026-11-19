@@ -430,7 +430,18 @@ export const crmApi = {
   getAutomationRuns: (status?: string) => r(ax.get<AutomationRun[]>(`/crm/automation/runs`, { params: { status } })),
   retryAutomationRun: (id: string) => r(ax.post<{ status: string }>(`/crm/automation/runs/${id}/retry`)),
   processAutomation: () => r(ax.post<Record<string, number>>(`/crm/automation/process`)),
+  getOutbox: (status?: string) => r(ax.get<{ delivery_enabled: boolean; messages: OutboxMessage[] }>(`/crm/outbox`, { params: { status } })),
+  queueEmail: (data: { to_email: string; subject: string; body: string; crm_record_id?: string }) => r(ax.post<OutboxMessage>(`/crm/outbox`, data)),
+  cancelEmail: (id: string) => r(ax.post<OutboxMessage>(`/crm/outbox/${id}/cancel`)),
+  getConsents: (params?: { status?: string; email?: string }) => r(ax.get<ConsentRow[]>(`/crm/consents`, { params })),
+  setConsent: (data: { email: string; status: string; consent_text?: string }) => r(ax.post<ConsentRow>(`/crm/consents`, data)),
 };
+
+export interface OutboxMessage {
+  id: string; purpose: string; to_email: string; subject: string; status: string; status_reason: string | null;
+  attempts: number; crm_record_id: string | null; created_by: string | null; created_at: string; sent_at: string | null;
+}
+export interface ConsentRow { email: string; status: string; source: string | null; updated_at?: string }
 
 export interface AutomationRule {
   rule_id: string; rule_name: string; trigger_event: string; condition_field: string | null;

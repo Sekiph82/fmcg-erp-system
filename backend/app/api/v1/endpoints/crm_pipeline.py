@@ -3,7 +3,7 @@ from datetime import date
 from typing import List, Literal, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.access_control import can_view_record, has_any_permission, require_any_permission
@@ -911,3 +911,140 @@ async def process_automation_now(db: AsyncSession = Depends(get_db)):
 
     queued = await auto.enqueue(db)
     return {"queued": queued, **await auto.process(db)}
+
+
+# ── M36 consent register and outbox ───────────────────────────────────────────
+
+class OutboxIn(BaseModel):
+    to_email: str = Field(min_length=3, max_length=254, pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+    subject: str = Field(min_length=1, max_length=300, pattern=r"^[^\r\n]+$")
+    body: str = Field(min_length=1, max_length=20000)
+    crm_record_id: Optional[str] = None
+
+
+MANUAL_DAILY_CAP = 100
+
+
+class ConsentIn(BaseModel):
+    email: str = Field(min_length=3, max_length=254, pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+    status: Literal["SUBSCRIBED", "UNSUBSCRIBED", "BOUNCED", "COMPLAINED"]
+    consent_text: Optional[str] = Field(None, max_length=2000)
+
+
+def _msg_out(m) -> dict:
+    return {"id": str(m.id), "purpose": m.purpose, "to_email": m.to_email, "subject": m.subject, "status": m.status,
+            "status_reason": m.status_reason, "attempts": m.attempts,
+            "crm_record_id": str(m.crm_record_id) if m.crm_record_id else None,
+            "created_by": m.created_by, "created_at": m.created_at.isoformat(),
+            "sent_at": m.sent_at.isoformat() if m.sent_at else None}
+
+
+@router.get("/outbox", dependencies=[Depends(require_any_permission(CRM_BROAD_VIEW))])
+async def list_outbox(status: Optional[str] = None, limit: int = Query(100, ge=1, le=500), db: AsyncSession = Depends(get_db)):
+    from app.core.config import settings
+    from app.models.crm import CRMOutboundMessage
+
+    q = select(CRMOutboundMessage)
+    if status:
+        q = q.where(CRMOutboundMessage.status == status.upper())
+    rows = (await db.execute(q.order_by(CRMOutboundMessage.created_at.desc()).limit(limit))).scalars()
+    return {"delivery_enabled": bool(settings.CRM_OUTBOUND_EMAIL_ENABLED and settings.SMTP_HOST),
+            "messages": [_msg_out(m) for m in rows]}
+
+
+@router.post("/outbox", status_code=201)
+async def queue_email(body: OutboxIn, db: AsyncSession = Depends(get_db),
+                      current_user=Depends(require_any_permission(CRM_EDIT_PERMISSIONS))):
+    """One-to-one e-mail to the contact of a CRM record the caller may edit (MANUAL). Free addresses need
+    company-wide CRM edit. Suppressed addresses are never mailed; each user may queue 100 a day."""
+    import uuid as _u
+    from datetime import datetime as _dt, timedelta as _td, timezone as _tz
+
+    from app.models.crm import CRMOutboundMessage
+    from app.models.sales import Customer
+    from app.services import crm_outbound_service as outbound
+
+    record_id = None
+    to = outbound.norm(body.to_email)
+    if body.crm_record_id:
+        rec = await _scoped_record(db, body.crm_record_id, current_user, "edit")
+        known = {outbound.norm(rec.contact_email or "")}
+        if rec.assigned_customer_id:
+            cust = await db.get(Customer, rec.assigned_customer_id)
+            known.add(outbound.norm(cust.email or "") if cust else "")
+        if to not in known:
+            raise HTTPException(422, "The address must be the record's contact e-mail.")
+        record_id = rec.id
+    elif not has_any_permission(current_user, CRM_CONFIG):
+        raise HTTPException(403, "E-mail must be sent from a CRM record (or by a company-wide CRM editor).")
+    sent_today = (await db.execute(select(func.count()).where(
+        CRMOutboundMessage.created_by == current_user.username, CRMOutboundMessage.purpose == "MANUAL",
+        CRMOutboundMessage.created_at >= _dt.now(_tz.utc) - _td(days=1)))).scalar()
+    if sent_today >= MANUAL_DAILY_CAP:
+        raise HTTPException(429, "Daily e-mail limit reached.")
+    msg = await outbound.queue(db, to_email=body.to_email, subject=body.subject, body=body.body, purpose="MANUAL",
+                               dedupe_key=f"manual:{_u.uuid4()}", crm_record_id=record_id, created_by=current_user.username)
+    await db.commit()
+    return _msg_out(msg)
+
+
+@router.post("/outbox/{message_id}/cancel", dependencies=[Depends(require_any_permission(CRM_CONFIG))])
+async def cancel_email(message_id: str, db: AsyncSession = Depends(get_db)):
+    from app.models.crm import CRMOutboundMessage
+
+    from sqlalchemy import update as _update
+
+    done = (await db.execute(_update(CRMOutboundMessage).where(  # atomic: never cancels a message being sent
+        CRMOutboundMessage.id == _uuid(message_id), CRMOutboundMessage.status == "QUEUED")
+        .values(status="CANCELLED", status_reason="cancelled by user"))).rowcount
+    await db.commit()
+    msg = await db.get(CRMOutboundMessage, _uuid(message_id))
+    if msg is None:
+        raise HTTPException(404, "Message not found")
+    if not done:
+        raise HTTPException(409, "Only queued messages can be cancelled.")
+    await db.refresh(msg)
+    return _msg_out(msg)
+
+
+@router.post("/outbox/{message_id}/retry", dependencies=[Depends(require_any_permission(CRM_CONFIG))])
+async def retry_email(message_id: str, db: AsyncSession = Depends(get_db)):
+    """Re-queue a FAILED message after a person checked it was not delivered."""
+    from datetime import datetime as _dt, timezone as _tz
+
+    from sqlalchemy import update as _update
+
+    from app.models.crm import CRMOutboundMessage
+
+    done = (await db.execute(_update(CRMOutboundMessage).where(
+        CRMOutboundMessage.id == _uuid(message_id), CRMOutboundMessage.status == "FAILED")
+        .values(status="QUEUED", attempts=0, status_reason="re-queued by user", next_attempt_at=_dt.now(_tz.utc)))).rowcount
+    await db.commit()
+    if not done:
+        raise HTTPException(409, "Only failed messages can be retried.")
+    return {"status": "QUEUED"}
+
+
+@router.get("/consents", dependencies=[Depends(require_any_permission(CRM_CONFIG))])
+async def list_consents(status: Optional[str] = None, email: Optional[str] = None,
+                        limit: int = Query(200, ge=1, le=1000), db: AsyncSession = Depends(get_db)):
+    from app.models.crm import CRMContactConsent
+
+    q = select(CRMContactConsent)
+    if status:
+        q = q.where(CRMContactConsent.status == status.upper())
+    if email:
+        q = q.where(CRMContactConsent.email == email.strip().lower())
+    rows = (await db.execute(q.order_by(CRMContactConsent.updated_at.desc()).limit(limit))).scalars()
+    return [{"email": r.email, "status": r.status, "source": r.source, "updated_at": r.updated_at.isoformat()} for r in rows]
+
+
+@router.post("/consents", dependencies=[Depends(require_any_permission(CRM_CONFIG))])
+async def set_consent(body: ConsentIn, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    """Record a consent event by hand (e.g. a signed paper form, a bounce report, a phone opt-out)."""
+    from app.services import crm_outbound_service as outbound
+
+    row = await outbound.record_consent(db, body.email, body.status, f"manual:{current_user.username}", body.consent_text,
+                                        may_lift_unsubscribe=True)  # an authorised person recording proof
+    await db.commit()
+    return {"email": row.email, "status": row.status, "source": row.source}

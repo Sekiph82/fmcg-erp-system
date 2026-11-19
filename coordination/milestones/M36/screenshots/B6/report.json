@@ -1,0 +1,10 @@
+[
+  {
+    "route": "/dashboard/crm/outbox",
+    "status": "OK",
+    "heading": "E-mail Outbox & Consent",
+    "screenshot": "coordination/milestones/M36/screenshots/B6/dashboard_crm_outbox.png",
+    "console_errors": [],
+    "failed_api": []
+  }
+]

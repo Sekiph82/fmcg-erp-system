@@ -97,6 +97,10 @@ async def submit(db: AsyncSession, form: CRMLeadForm, body: LeadSubmission, ip: 
         await db.commit()
         raise ConsentRequired()
     phone = _clean(body.contact_phone)
+    if email and body.consent and form.consent_text:
+        from app.services.crm_outbound_service import record_consent
+
+        await record_consent(db, email, "SUBSCRIBED", f"form:{form.slug}", form.consent_text)  # never lifts an unsubscribe
     existing = None
     if email:  # dedupe on e-mail only, and only within the form's own company: a visitor typing someone
         # else's address must not reach leads of another company

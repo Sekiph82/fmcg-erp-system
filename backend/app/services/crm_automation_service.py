@@ -253,6 +253,15 @@ async def run_crm_automation(interval: float = 15.0) -> None:
             raise
         except Exception:
             logger.exception("CRM automation tick failed")
+        try:  # mail delivery runs even when automation failed this tick
+            async with AsyncSessionLocal() as db:
+                from app.services.crm_outbound_service import deliver_due
+
+                await deliver_due(db)
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            logger.exception("CRM e-mail delivery tick failed")
         await asyncio.sleep(interval)
 
 

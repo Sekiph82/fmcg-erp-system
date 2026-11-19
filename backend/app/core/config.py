@@ -108,6 +108,11 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: str = ""
     SMTP_FROM_EMAIL: str = "noreply@erp.local"
     SMTP_USE_TLS: bool = True
+    # CRM outbound e-mail (M36): outbox delivery is off until explicitly enabled; queued mail then waits
+    CRM_OUTBOUND_EMAIL_ENABLED: bool = False
+    CRM_OUTBOUND_MAX_PER_TICK: int = 30            # delivery rate limit per 15 s worker tick
+    PUBLIC_APP_URL: str = "http://localhost:3000"  # used in unsubscribe links
+    PUBLIC_API_URL: str = "http://localhost:8000"  # used for one-click List-Unsubscribe-Post
 
     # ── SMS OTP delivery (Twilio or compatible) ────────────────────────────────
     SMS_PROVIDER: str = ""          # "twilio" or ""

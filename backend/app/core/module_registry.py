@@ -510,6 +510,7 @@ ENDPOINT_ROUTE_DEFINITIONS: tuple[EndpointRouteDefinition, ...] = (
     # company promoted to ModuleDefinition (GAP-025G)
     EndpointRouteDefinition(key="whatsapp", route_prefix="/whatsapp", import_path="app.api.v1.endpoints.whatsapp", tags=('whatsapp',)),
     EndpointRouteDefinition(key="quotation", route_prefix="/quotes", import_path="app.api.v1.endpoints.quotation", tags=('quotes',)),
+    EndpointRouteDefinition(key="crm_unsubscribe_public", route_prefix="/public/unsubscribe", import_path="app.api.v1.endpoints.crm_unsubscribe_public", tags=('crm',)),
     EndpointRouteDefinition(key="kb_public", route_prefix="/public/kb", import_path="app.api.v1.endpoints.kb_public", tags=('knowledge-base',)),
     EndpointRouteDefinition(key="crm_lead_forms_public", route_prefix="/public/lead-forms", import_path="app.api.v1.endpoints.crm_lead_forms_public", tags=('crm',)),
     EndpointRouteDefinition(key="helpdesk", route_prefix="/helpdesk", import_path="app.api.v1.endpoints.helpdesk", tags=('helpdesk',)),
@@ -624,6 +625,8 @@ PUBLIC_ROUTES: frozenset[tuple[str, str]] = frozenset({
     ("/public/kb/search", "GET"),                        # published public help articles only (M36.S04.T005)
     ("/public/kb/articles/{slug}", "GET"),
     ("/public/kb/articles/{slug}/feedback", "POST"),     # rate-limited per keyed IP hash
+    ("/public/unsubscribe", "GET"),                      # HMAC-signed token from CRM e-mails
+    ("/public/unsubscribe", "POST"),
 })
 
 
