@@ -239,6 +239,14 @@ export const NAV_CONFIG: NavEntry[] = [
       { label: "My Requests",         href: "/dashboard/ess/requests" },
     ]}),
 
+  // Warehouse floor (M38): scan-driven picking and putaway for warehouse operators
+  ws("warehouse-floor", "Warehouse Floor", "/dashboard/warehouse-floor",
+    md("M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"),
+    { permission: "inventory.view", searchHints: [
+      { label: "Pick tasks",          href: "/dashboard/warehouse-floor" },
+      { label: "Putaway tasks",       href: "/dashboard/warehouse-floor" },
+    ]}),
+
   // Field app (M38): reps, moto riders, drivers and field controllers see only their own work; no module permission needed
   ws("field",       "Field App",       "/dashboard/field",
     md("M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0zM15 11a3 3 0 11-6 0 3 3 0 016 0z"),

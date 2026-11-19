@@ -22,6 +22,7 @@ export default function manifest(): MetadataRoute.Manifest {
       { name: "Shop Floor Terminal", url: "/dashboard/shop-floor/terminal" },
       { name: "Approvals", url: "/dashboard/mobile/approvals" },
       { name: "Field app", url: "/dashboard/field" },
+      { name: "Warehouse floor", url: "/dashboard/warehouse-floor" },
     ],
   };
 }

@@ -1191,3 +1191,110 @@ async def update_replenishment_task(
     r.product_name = task.product.name if task.product else None
     _with_access(r, current_user, task.warehouse_id)
     return r
+
+
+from decimal import Decimal  # noqa: E402
+from pydantic import BaseModel, Field  # noqa: E402
+
+
+# ── Scan-driven floor execution (M38.S06): the picker / putaway operator scans location and item ────────────
+
+class ScanPickIn(BaseModel):
+    location_code: str = Field(min_length=1, max_length=100)
+    item_code: str = Field(min_length=1, max_length=100)
+    picked_qty: Decimal = Field(ge=0, le=Decimal("1000000"))
+    short_reason: Optional[str] = Field(default=None, max_length=500)
+
+
+class ScanPutawayIn(BaseModel):
+    location_code: str = Field(min_length=1, max_length=100)
+    item_code: str = Field(min_length=1, max_length=100)
+    override_reason: Optional[str] = Field(default=None, max_length=500)
+
+
+async def _scan_location(db: AsyncSession, warehouse_id, code: str):
+    from sqlalchemy import func, or_, select
+
+    from app.models.wms import StorageLocation, WarehouseZone
+
+    c = code.strip()
+    rows = (await db.execute(select(StorageLocation).join(WarehouseZone, WarehouseZone.id == StorageLocation.zone_id).where(
+        WarehouseZone.warehouse_id == warehouse_id, StorageLocation.is_active.is_(True),
+        or_(StorageLocation.barcode == c, func.upper(StorageLocation.code) == c.upper())))).scalars().all()
+    if len(rows) != 1:
+        raise HTTPException(422, "Scanned location is not a location of this warehouse." if not rows else
+                            "Location code is ambiguous; scan the location barcode.")
+    return rows[0]
+
+
+def _item_matches(code: str, *candidates) -> bool:
+    c = code.strip().upper()
+    return any(x and str(x).strip().upper() == c for x in candidates)
+
+
+@router.post("/picking/tasks/{task_id}/scan-confirm", response_model=PickingTaskRead)
+async def scan_confirm_pick(task_id: uuid.UUID, body: ScanPickIn, db: AsyncSession = Depends(get_db),
+                            current_user=Depends(get_current_user)):
+    """Picker confirms a pick by scanning the pick location and the item; a short pick needs a reason."""
+    from sqlalchemy import select
+    from sqlalchemy.orm import selectinload
+
+    task = (await db.execute(select(PickingTask).options(selectinload(PickingTask.product), selectinload(PickingTask.lot),
+                                                         selectinload(PickingTask.from_location), selectinload(PickingTask.warehouse),
+                                                         selectinload(PickingTask.wave))
+                             .where(PickingTask.id == task_id).with_for_update(of=PickingTask))).scalar_one_or_none()
+    if task is None:
+        raise HTTPException(404, "Picking task not found")
+    svc.ensure_wms_action_allowed(current_user, task.warehouse_id, "pick")
+    if task.status not in (PickingTaskStatus.PENDING, PickingTaskStatus.IN_PROGRESS):
+        raise HTTPException(409, f"Task is {task.status.value.lower()}.")
+    if task.assigned_to_id and task.assigned_to_id != current_user.id:
+        raise HTTPException(403, "This task is assigned to someone else.")
+    loc = await _scan_location(db, task.warehouse_id, body.location_code)
+    if task.from_location_id and loc.id != task.from_location_id:
+        raise HTTPException(422, f"Wrong location: pick from {task.from_location.code}.")
+    p = task.product
+    if not _item_matches(body.item_code, p.barcode if p else None, p.sku if p else None, task.lot.lot_number if task.lot else None):
+        raise HTTPException(422, "Scanned item is not the product of this task.")
+    if body.picked_qty > task.requested_qty:
+        raise HTTPException(422, "Picked quantity is more than requested.")
+    if body.picked_qty < task.requested_qty and not (body.short_reason or "").strip():
+        raise HTTPException(422, "Short pick: give the reason (e.g. not enough stock in the location).")
+    now = datetime.now(_tz.utc)
+    task.picked_qty, task.status = body.picked_qty, PickingTaskStatus.PICKED
+    task.started_at, task.completed_at = task.started_at or now, now
+    task.assigned_to_id = task.assigned_to_id or current_user.id
+    if body.short_reason:
+        task.notes = ((task.notes + "\n") if task.notes else "") + f"Short pick {body.picked_qty}/{task.requested_qty}: {body.short_reason}"
+    await db.commit()
+    r = PickingTaskRead.model_validate(task)
+    r.product_name, r.warehouse_name = (p.name if p else None), (task.warehouse.name if task.warehouse else None)
+    r.from_location_code = task.from_location.code if task.from_location else None
+    _with_access(r, current_user, task.warehouse_id)
+    return r
+
+
+@router.post("/putaway/tasks/{task_id}/scan-execute", response_model=PutawayExecutionRead)
+async def scan_execute_putaway(task_id: uuid.UUID, body: ScanPutawayIn, db: AsyncSession = Depends(get_db),
+                               current_user=Depends(get_current_user)):
+    """Operator puts stock away by scanning the item and the target location (must be in the task's warehouse)."""
+    from app.schemas.wms import PutawayExecuteRequest
+
+    task = await crud.get_putaway_task(db, task_id)
+    if not task:
+        raise HTTPException(404, "Task not found")
+    svc.ensure_wms_action_allowed(current_user, task.warehouse_id, "putaway")
+    if task.assigned_to and task.assigned_to != current_user.id:
+        raise HTTPException(403, "This task is assigned to someone else.")
+    item = task.product or task.material
+    if not _item_matches(body.item_code, getattr(item, "barcode", None), getattr(item, "sku", None),
+                         getattr(item, "code", None), task.lot_number):
+        raise HTTPException(422, "Scanned item is not the item of this task.")
+    loc = await _scan_location(db, task.warehouse_id, body.location_code)
+    execution = await svc.execute_putaway_task(db, task, PutawayExecuteRequest(
+        actual_location_id=loc.id, override_reason=body.override_reason, notes="scan-confirmed"), current_user.id)
+    await db.commit()
+    await db.refresh(execution)
+    r = PutawayExecutionRead.model_validate(execution)
+    r.actual_location_code = loc.code
+    return r
