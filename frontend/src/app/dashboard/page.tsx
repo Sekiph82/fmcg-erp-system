@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
 import { dashboardApi } from "@/lib/dashboard";
@@ -20,7 +22,8 @@ function fmtKES(n: number) {
 }
 
 export default function DashboardPage() {
-  const { user } = useAuth();
+  const { user, getFirstAllowedRoute } = useAuth();
+  const router = useRouter();
 
   const { data, isLoading, dataUpdatedAt, refetch } = useQuery({
     queryKey: ["dashboard-summary"],
@@ -37,6 +40,16 @@ export default function DashboardPage() {
   const alerts = data?.alerts ?? [];
 
   const criticalAlerts = alerts.filter((a) => a.severity === "critical").length;
+
+  // Sections the caller lacks permission for come back null from the API (role-gated summary).
+  const show = (section: unknown) => isLoading || !!section;
+  const noCompanyView = !!data && !p && !inv && !s && !m && !log;
+  useEffect(() => {
+    if (!noCompanyView || !user) return;
+    const shopFloor = user.permission_codes.some((code) => code.startsWith("shop_floor."));
+    const target = shopFloor ? "/dashboard/shop-floor/terminal" : getFirstAllowedRoute();
+    if (target !== "/dashboard") router.replace(target);
+  }, [noCompanyView, user, router, getFirstAllowedRoute]);
 
   const lastRefresh = dataUpdatedAt
     ? new Date(dataUpdatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
@@ -81,6 +94,7 @@ export default function DashboardPage() {
         <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Today&apos;s KPIs</h2>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
 
+          {show(p) && (
           <KPICard
             label="Active Production"
             value={isLoading ? "—" : fmt(p?.active_orders ?? 0)}
@@ -96,7 +110,9 @@ export default function DashboardPage() {
             href="/dashboard/production/orders"
             loading={isLoading}
           />
+          )}
 
+          {show(p) && (
           <KPICard
             label="Machines Down"
             value={isLoading ? "—" : fmt(p?.machines_down ?? 0)}
@@ -110,7 +126,9 @@ export default function DashboardPage() {
             href="/dashboard/maintenance/breakdowns"
             loading={isLoading}
           />
+          )}
 
+          {show(inv) && (
           <KPICard
             label="Stock Value"
             value={isLoading ? "—" : fmtKES(inv?.total_stock_value ?? 0)}
@@ -119,7 +137,9 @@ export default function DashboardPage() {
             href="/dashboard/inventory"
             loading={isLoading}
           />
+          )}
 
+          {show(inv) && (
           <KPICard
             label="Low Stock"
             value={isLoading ? "—" : fmt(inv?.critical_low_stock_count ?? 0)}
@@ -133,7 +153,9 @@ export default function DashboardPage() {
             href="/dashboard/inventory"
             loading={isLoading}
           />
+          )}
 
+          {show(s) && (
           <KPICard
             label="Today's Sales"
             value={isLoading ? "—" : fmtKES(s?.today_invoices_amount ?? 0)}
@@ -144,7 +166,9 @@ export default function DashboardPage() {
             href="/dashboard/sales/invoices"
             loading={isLoading}
           />
+          )}
 
+          {show(s) && (
           <KPICard
             label="Pending Payments"
             value={isLoading ? "—" : fmtKES(s?.pending_payments_amount ?? 0)}
@@ -158,7 +182,9 @@ export default function DashboardPage() {
             href="/dashboard/sales/invoices"
             loading={isLoading}
           />
+          )}
 
+          {show(m) && (
           <KPICard
             label="M-Pesa Today"
             value={isLoading ? "—" : fmtKES(m?.today_collected ?? 0)}
@@ -172,7 +198,9 @@ export default function DashboardPage() {
             href="/dashboard/finance/mpesa"
             loading={isLoading}
           />
+          )}
 
+          {show(log) && (
           <KPICard
             label="Shipments"
             value={isLoading ? "—" : fmt((log?.in_transit ?? 0) + (log?.arrived_port ?? 0))}
@@ -194,6 +222,7 @@ export default function DashboardPage() {
             href="/dashboard/logistics/shipments"
             loading={isLoading}
           />
+          )}
         </div>
       </div>
 
@@ -213,6 +242,7 @@ export default function DashboardPage() {
       </SectionCard>
 
       {/* ── Production Section ── */}
+      {show(p) && (
       <SectionCard title="Production" icon="⚙️">
         {p ? (
           <div className="space-y-3">
@@ -243,8 +273,10 @@ export default function DashboardPage() {
           <div className="h-16 bg-gray-50 rounded-lg animate-pulse" />
         )}
       </SectionCard>
+      )}
 
       {/* ── Inventory Section ── */}
+      {show(inv) && (
       <SectionCard title="Inventory" icon="📦">
         {inv ? (
           <div className="space-y-3">
@@ -286,8 +318,10 @@ export default function DashboardPage() {
           <div className="h-16 bg-gray-50 rounded-lg animate-pulse" />
         )}
       </SectionCard>
+      )}
 
       {/* ── Sales Section ── */}
+      {show(s) && (
       <SectionCard title="Sales" icon="📊">
         {s ? (
           <div className="space-y-3">
@@ -318,8 +352,10 @@ export default function DashboardPage() {
           <div className="h-16 bg-gray-50 rounded-lg animate-pulse" />
         )}
       </SectionCard>
+      )}
 
       {/* ── Finance / M-Pesa Section ── */}
+      {show(m) && (
       <SectionCard title="M-Pesa Collections" icon="💚">
         {m ? (
           <MpesaSection data={m} />
@@ -327,8 +363,10 @@ export default function DashboardPage() {
           <div className="h-24 bg-gray-50 rounded-lg animate-pulse" />
         )}
       </SectionCard>
+      )}
 
       {/* ── Logistics Section ── */}
+      {show(log) && (
       <SectionCard title="Logistics (TR → KE)" icon="🚢">
         {log ? (
           <div className="space-y-3">
@@ -367,6 +405,7 @@ export default function DashboardPage() {
           <div className="h-16 bg-gray-50 rounded-lg animate-pulse" />
         )}
       </SectionCard>
+      )}
 
       {/* ── Footer ── */}
       <p className="text-center text-[11px] text-gray-300 pb-2">

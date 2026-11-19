@@ -254,6 +254,36 @@ export const IMPACT_COLOR: Record<SFImpactLevel, string> = {
   CRITICAL: "bg-red-100 text-red-700",
 };
 
+// ── M37.S04 barcode flow types ──────────────────────────────────────────────────
+
+export interface BarcodeResolution {
+  code: string;
+  type: string; // PREPARED_LOT | LOT | GS1 | MATERIAL | PRODUCT | LOCATION
+  data: {
+    material_id?: string; material_code?: string; material_name?: string; uom?: string;
+    lot_number?: string; expiry_date?: string | null; is_quarantine?: boolean; is_expired?: boolean;
+    prepared_lot_no?: string; quantity?: string | null; consumed?: boolean; quality_status?: string;
+    [key: string]: unknown;
+  };
+}
+
+export interface PreparedLotLabel {
+  prepared_lot_no: string;
+  code128_svg_b64: string | null;
+  qr_png_b64: string | null;
+  material_name?: string; material_code?: string; lot_number?: string; expiry_date?: string | null;
+  quantity: string; uom: string; weighed_at: string | null;
+}
+
+export interface DispensingOrder {
+  id: string; order_no: string; product_name: string | null; status: string; planned_qty: string;
+  materials: {
+    id: string; work_order_id: string; operation: string; item_id: string | null; item_code: string | null;
+    item_name: string | null; uom: string; required_qty: string; issued_qty: string; consumed_qty: string;
+    prepared_lots: { prepared_lot_no: string; lot_no: string; qty: string; dispensed_at: string | null; consumed: boolean }[];
+  }[];
+}
+
 // ── API client ─────────────────────────────────────────────────────────────────
 
 const inMemoryIdempotencyKeys = new Map<string, string>();
@@ -262,6 +292,7 @@ export class ShopFloorRequestError extends Error {
   constructor(
     public readonly status: number | null,
     public readonly hasIdempotencyKey = false,
+    public readonly detail: string | null = null,
   ) {
     super(status === null ? "The Shop Floor server could not be reached." : `Shop Floor request failed (${status}).`);
     this.name = "ShopFloorRequestError";
@@ -270,6 +301,8 @@ export class ShopFloorRequestError extends Error {
 
 export function describeShopFloorError(error: unknown): { message: string; requiresRefresh: boolean } {
   const status = error instanceof ShopFloorRequestError ? error.status : null;
+  // Business-rule rejections (400) carry an operator-readable reason, e.g. a refused barcode scan.
+  if (status === 400 && error instanceof ShopFloorRequestError && error.detail) return { message: error.detail, requiresRefresh: false };
   if (status === 401) return { message: "Your sign-in has expired. Sign in again before continuing.", requiresRefresh: false };
   if (status === 403) return { message: "You do not have permission for this action. Contact a supervisor if you need access.", requiresRefresh: false };
   if (status === 409) return { message: "The server reports a conflict. Refresh the latest Shop Floor state and resolve it before retrying.", requiresRefresh: true };
@@ -335,7 +368,12 @@ async function req<T>(path: string, opts?: RequestInit): Promise<T> {
   } catch {
     throw new ShopFloorRequestError(null, idempotency !== null);
   }
-  if (!res.ok) throw new ShopFloorRequestError(res.status, idempotency !== null);
+  if (!res.ok) {
+    const detail = res.status === 400 || res.status === 404
+      ? await res.json().then((b: { detail?: unknown }) => (typeof b.detail === "string" ? b.detail : null)).catch(() => null)
+      : null;
+    throw new ShopFloorRequestError(res.status, idempotency !== null, detail);
+  }
   const result = await res.json();
   if (idempotency) clearPendingExecutionIdempotencyKey(idempotency.storageKey);
   return result;
@@ -394,6 +432,16 @@ export const sfApi = {
     `/work-orders/${woId}/materials/${materialId}/consume`,
     { method: "POST", body: JSON.stringify(body) },
   ),
+  // M37.S04 barcode-driven material flow
+  resolveBarcode: (code: string) =>
+    req<BarcodeResolution>(`/barcodes/resolve?code=${encodeURIComponent(code)}`),
+  scanConsume: (woId: string, body: { session_id: string; code: string; qty?: number; client_scanned_at: string }) =>
+    req<SFOperationMaterial>(`/work-orders/${woId}/scan-consume`, { method: "POST", body: JSON.stringify(body) }),
+  dispensingOrders: () => req<DispensingOrder[]>("/dispensing/orders"),
+  dispense: (body: { exec_material_id: string; source_lot_code: string; actual_quantity: number; target_quantity?: number; tolerance_pct?: number }) =>
+    req<PreparedLotLabel>("/dispensing/prepared-lots", { method: "POST", body: JSON.stringify(body) }),
+  preparedLotLabel: (preparedLotNo: string) =>
+    req<PreparedLotLabel>(`/dispensing/prepared-lots/${encodeURIComponent(preparedLotNo)}/label`),
   getWorkOrderQCCheckpoints: (woId: string, sessionId: string) =>
     req<WOActivityLog[]>(`/work-orders/${woId}/qc-checkpoints?session_id=${encodeURIComponent(sessionId)}`),
   recordWorkOrderQCCheckpoint: (

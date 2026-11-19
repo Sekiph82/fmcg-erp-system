@@ -1,0 +1,38 @@
+{
+  "generated_at": "2026-11-19T11:52:35.420Z",
+  "app": "http://localhost:3200",
+  "steps": [
+    {
+      "name": "dispenser landing",
+      "path": "/dashboard"
+    },
+    {
+      "name": "wrong lot refused",
+      "message": "Scanned Salt (synthetic) — this line needs Sugar (synthetic)."
+    },
+    {
+      "name": "prepared lot issued + label",
+      "preparedLotNo": "PL-261119-3A543D"
+    },
+    {
+      "name": "operator landing",
+      "path": "/dashboard"
+    },
+    {
+      "name": "scan preview",
+      "text": "PREPARED LOT · PL-261119-3A543DSugar (synthetic) RM-SUGARLot SUG-2611-A · expires 2027-03-19 · label 12.400 KGConfirm consumptionCancel"
+    },
+    {
+      "name": "consumption",
+      "message": "Sugar (synthetic): 12.400 KG recorded."
+    },
+    {
+      "name": "rescan refused",
+      "message": "Prepared lot PL-261119-3A543D was already consumed"
+    },
+    {
+      "name": "phone overflow px",
+      "overflow": 0
+    }
+  ]
+}

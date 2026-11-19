@@ -161,6 +161,7 @@ function ShopFloorDashboardTab() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
           { href: "/dashboard/shop-floor/terminal", label: "Operator Terminal", desc: "Start, pause, finish WOs", color: "bg-green-50 border-green-200 text-green-700" },
+          { href: "/dashboard/shop-floor/dispensing", label: "Material Dispensing", desc: "Weigh, issue & label raw material", color: "bg-indigo-50 border-indigo-200 text-indigo-700" },
           { href: "/dashboard/shop-floor/queue",    label: "Work Center Queue", desc: "Live WO board by line",   color: "bg-blue-50 border-blue-200 text-blue-700" },
           { href: "/dashboard/shop-floor/downtime", label: "Downtime Board",    desc: "Track interruptions",    color: "bg-red-50 border-red-200 text-red-700" },
           { href: "/dashboard/shop-floor/handover", label: "Shift Handover",    desc: "Document shift transfers", color: "bg-indigo-50 border-indigo-200 text-indigo-700" },

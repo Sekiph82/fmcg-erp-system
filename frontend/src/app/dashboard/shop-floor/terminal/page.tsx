@@ -7,7 +7,7 @@ import { ShopFloorConnectionNotice, useShopFloorConnectionState } from "@/compon
 import { advProductionApi, Shift, WorkCenter } from "@/lib/productionAdvanced";
 import { Machine, moApi, OperatorProfile } from "@/lib/machineOperator";
 import { useAuth } from "@/context/AuthContext";
-import { BarcodeScanButton } from "@/components/BarcodeScanButton";
+import { MaterialScanPanel } from "@/components/shop-floor/MaterialScanPanel";
 
 const DOWNTIME_CATS = [
   "MACHINE_BREAKDOWN", "MATERIAL_SHORTAGE", "PACKAGING_SHORTAGE", "QC_WAITING",
@@ -701,7 +701,14 @@ export default function OperatorTerminal() {
                       Could not load operation materials. <button type="button" className="underline" onClick={() => void materialsQuery.refetch()}>Try again</button>
                     </div>
                   ) : materialsQuery.data?.length ? (
-                    materialsQuery.data.map((material) => {
+                    <>
+                    <MaterialScanPanel
+                      woId={selectedWO.work_order_id}
+                      sessionId={activeSession.id}
+                      materials={materialsQuery.data}
+                      disabled={!hasActiveSession || !canExecuteOnSelectedLine || isAnyPending || queueUnavailable}
+                    />
+                    {materialsQuery.data.map((material) => {
                       const issued = Number(material.issued_qty || 0);
                       const consumed = Number(material.consumed_qty || 0);
                       const returned = Number(material.returned_qty || 0);
@@ -745,18 +752,6 @@ export default function OperatorTerminal() {
                                   <option value="">Select recorded lot</option>
                                   {lots.map((lot) => <option key={lot} value={lot}>{lot}</option>)}
                                 </select>
-                                <div className="mt-1">
-                                  <BarcodeScanButton
-                                    label="Scan lot label"
-                                    onScan={(code) => {
-                                      if (lots.includes(code)) {
-                                        setMaterialLotById((values) => ({ ...values, [material.id]: code }));
-                                      } else {
-                                        setFeedback({ type: "error", message: `Scanned lot ${code} was not issued to this operation.` });
-                                      }
-                                    }}
-                                  />
-                                </div>
                               </div>
                             )}
                           </div>
@@ -781,7 +776,8 @@ export default function OperatorTerminal() {
                           </button>
                         </article>
                       );
-                    })
+                    })}
+                    </>
                   ) : (
                     <p className="rounded-lg bg-gray-50 p-3 text-sm text-gray-700" role="status">
                       No materials are assigned to this operation. Order-level materials are not shown here.

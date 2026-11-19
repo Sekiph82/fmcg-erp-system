@@ -109,6 +109,8 @@ _AI_LENGTHS: Dict[str, int] = {
     "10": -1, "11": 6, "13": 6, "15": 6, "17": 6,
     "20": 2, "21": -1, "22": -1,
     "30": -1, "310": 6, "311": 6,
+    # net weight kg with decimal indicator n (AI 310n), matched before the 3-digit form
+    **{f"310{n}": 6 for n in range(6)},
     "37": -1,
 }
 

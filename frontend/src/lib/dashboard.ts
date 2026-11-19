@@ -77,11 +77,11 @@ export interface AlertItem {
 
 export interface DashboardSummary {
   generated_at: string;
-  production: ProductionSummary;
-  inventory: InventorySummary;
-  sales: SalesSummary;
-  mpesa: MpesaSummary;
-  logistics: LogisticsSummary;
+  production: ProductionSummary | null;
+  inventory: InventorySummary | null;
+  sales: SalesSummary | null;
+  mpesa: MpesaSummary | null;
+  logistics: LogisticsSummary | null;
   alerts: AlertItem[];
 }
 

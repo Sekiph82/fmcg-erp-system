@@ -917,3 +917,164 @@ async def action_ai_rec(
     await db.commit()
     await db.refresh(rec)
     return rec
+
+
+# ── M37.S04 Barcode-driven raw-material flow ──────────────────────────────────
+from datetime import datetime as _dt  # noqa: E402
+from decimal import Decimal as _Dec  # noqa: E402
+
+from pydantic import BaseModel as _BaseModel, Field as _Field  # noqa: E402
+
+from app.models.material_flow import PreparedLot as _PreparedLot  # noqa: E402
+from app.models.production_execution import ExecOrderMaterial as _ExecOrderMaterial  # noqa: E402
+from app.models.shop_floor import WOActivityLog as _WOActivityLog  # noqa: E402
+from app.services import material_barcode_flow_service as barcode_flow  # noqa: E402
+
+_BARCODE_VIEW_PERMISSIONS = (
+    "shop_floor.view", "shop_floor.view_own_scope", "production.view", "production.view_own_scope",
+    "inventory.view", "materials.view", "wms.view",
+)
+_DISPENSE_PERMISSIONS = ("wms.edit", "inventory.edit", "production.edit")
+
+
+class BarcodeResolveOut(_BaseModel):
+    code: str
+    type: str
+    data: dict
+
+
+class DispenseRequest(_BaseModel):
+    exec_material_id: UUID
+    source_lot_code: str = _Field(min_length=1, max_length=200)
+    actual_quantity: _Dec = _Field(gt=0)
+    target_quantity: Optional[_Dec] = _Field(default=None, gt=0)
+    tolerance_pct: Optional[_Dec] = _Field(default=None, ge=0, le=100)
+
+
+class ScanConsumeRequest(_BaseModel):
+    session_id: UUID
+    code: str = _Field(min_length=1, max_length=200)
+    qty: Optional[_Dec] = _Field(default=None, gt=0)
+    client_scanned_at: Optional[_dt] = None
+
+
+@router.get("/barcodes/resolve", response_model=BarcodeResolveOut, summary="Resolve any material/lot/prepared-lot/GS1 barcode")
+async def resolve_barcode(
+    code: str = Query(..., min_length=1, max_length=200),
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    if not has_any_permission(current_user, _BARCODE_VIEW_PERMISSIONS):
+        raise _forbidden("Material, inventory or shop-floor view permission is required to resolve barcodes.")
+    result = await barcode_flow.resolve_code(db, code)
+    if result is None:
+        raise HTTPException(status_code=404, detail="Unknown barcode")
+    return BarcodeResolveOut(code=result["code"], type=result["type"], data=result)
+
+
+@router.get("/dispensing/orders", summary="Released/in-progress orders with raw-material lines to dispense")
+async def dispensing_orders(db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    if not has_any_permission(current_user, _DISPENSE_PERMISSIONS):
+        raise _forbidden("Warehouse or production edit permission is required for dispensing.")
+    orders = (await db.execute(
+        select(ProdExecOrder).where(ProdExecOrder.status.in_(("RELEASED", "IN_PROGRESS"))).order_by(ProdExecOrder.order_no)
+    )).scalars().all()
+    if not orders:
+        return []
+    order_ids = [o.id for o in orders]
+    lines = (await db.execute(
+        select(_ExecOrderMaterial, ExecWorkOrder.step_name)
+        .join(ExecWorkOrder, ExecWorkOrder.id == _ExecOrderMaterial.work_order_id)
+        .where(_ExecOrderMaterial.production_order_id.in_(order_ids), _ExecOrderMaterial.item_type == "MATERIAL")
+        .order_by(_ExecOrderMaterial.created_at)
+    )).all()
+    dispensed = (await db.execute(
+        select(_WOActivityLog.extra_data, _WOActivityLog.timestamp_start)
+        .where(_WOActivityLog.production_order_id.in_(order_ids), _WOActivityLog.event_type == "MATERIAL_DISPENSED")
+        .order_by(_WOActivityLog.timestamp_start)
+    )).all()
+    prepared_ids = [UUID(e["prepared_lot_id"]) for e, _ in dispensed if e and e.get("prepared_lot_id")]
+    consumed_ids = {str(pid) for pid in (await db.execute(
+        select(_PreparedLot.id).where(_PreparedLot.id.in_(prepared_ids), _PreparedLot.consumed.is_(True))
+    )).scalars().all()} if prepared_ids else set()
+    by_line: dict = {}
+    for extra, ts in dispensed:
+        extra = extra or {}
+        by_line.setdefault(extra.get("material_line_id"), []).append({
+            **extra, "dispensed_at": ts.isoformat() if ts else None,
+            "consumed": extra.get("prepared_lot_id") in consumed_ids,
+        })
+    out = []
+    for order in orders:
+        mats = [{
+            "id": str(m.id), "work_order_id": str(m.work_order_id), "operation": step,
+            "item_id": str(m.item_id) if m.item_id else None, "item_code": m.item_code, "item_name": m.item_name,
+            "uom": m.uom, "required_qty": str(m.required_qty), "issued_qty": str(m.issued_qty or 0),
+            "consumed_qty": str(m.consumed_qty or 0), "prepared_lots": by_line.get(str(m.id), []),
+        } for m, step in lines if m.production_order_id == order.id]
+        if mats:
+            out.append({"id": str(order.id), "order_no": order.order_no, "product_name": order.product_name,
+                        "status": order.status, "planned_qty": str(order.planned_qty), "materials": mats})
+    return out
+
+
+@router.post("/dispensing/prepared-lots", status_code=201, summary="Weigh + issue a prepared lot and return its label")
+async def dispense_prepared_lot(
+    body: DispenseRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    if not has_any_permission(current_user, _DISPENSE_PERMISSIONS):
+        raise _forbidden("Warehouse or production edit permission is required for dispensing.")
+    try:
+        prepared = await barcode_flow.dispense_prepared_lot(
+            db, exec_material_id=body.exec_material_id, source_lot_code=body.source_lot_code,
+            actual_quantity=body.actual_quantity, tolerance_pct=body.tolerance_pct, actor_user_id=current_user.id,
+            target_quantity=body.target_quantity,
+        )
+    except ValueError as e:
+        await db.rollback()
+        raise HTTPException(status_code=400, detail=str(e))
+    info = await barcode_flow.resolve_code(db, prepared.prepared_lot_no) or {}
+    return barcode_flow.prepared_lot_label(prepared, info)
+
+
+@router.get("/dispensing/prepared-lots/{prepared_lot_no}/label", summary="Reprint a prepared-lot label")
+async def prepared_lot_label(
+    prepared_lot_no: str,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    if not has_any_permission(current_user, _DISPENSE_PERMISSIONS):
+        raise _forbidden("Warehouse or production edit permission is required for dispensing.")
+    prepared = (await db.execute(select(_PreparedLot).where(_PreparedLot.prepared_lot_no == prepared_lot_no))).scalar_one_or_none()
+    if prepared is None:
+        raise HTTPException(status_code=404, detail="Prepared lot not found")
+    info = await barcode_flow.resolve_code(db, prepared_lot_no) or {}
+    return barcode_flow.prepared_lot_label(prepared, info)
+
+
+@router.post("/work-orders/{wo_id}/scan-consume", response_model=SFOperationMaterialOut,
+             summary="Consume a material by scanning its prepared-lot, lot, GS1 or material barcode")
+async def scan_consume_material(
+    wo_id: UUID,
+    body: ScanConsumeRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+    idempotency_key: str = Header(..., alias="Idempotency-Key"),
+):
+    session = await _require_execution_session(db, current_user, body.session_id, work_order_id=wo_id)
+    if session.current_work_order_id != wo_id:
+        raise _forbidden("Start this work order in the active operator session before scanning materials.")
+    key, fingerprint = _execution_idempotency_context(
+        idempotency_key, action="materials/scan-consume", resource_id=f"work-order:{wo_id}", user=current_user, body=body,
+    )
+    try:
+        material, _ = await barcode_flow.scan_consume(
+            db, wo_id, session_id=body.session_id, code=body.code, qty=body.qty,
+            client_scanned_at=body.client_scanned_at, actor_user_id=current_user.id,
+            idempotency_key=key, request_fingerprint=fingerprint,
+        )
+    except ValueError as e:
+        raise _execution_action_error(e)
+    return material

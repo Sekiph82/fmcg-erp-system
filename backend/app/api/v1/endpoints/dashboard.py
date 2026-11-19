@@ -14,6 +14,7 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_, or_, case, cast, Date as SADate, text
 
+from app.core.access_control import has_any_permission
 from app.core.deps import get_current_user, get_db
 
 router = APIRouter()
@@ -96,13 +97,26 @@ class AlertItem(BaseModel):
     action_url: str
 
 
+# Section/alert module -> any of these permission codes grants it (company-wide view only;
+# *_own_scope codes do not unlock company totals).
+SECTION_PERMISSIONS: dict[str, tuple[str, ...]] = {
+    "production": ("production.view",),
+    "maintenance": ("maintenance.view", "production.view"),
+    "inventory": ("inventory.view",),
+    "sales": ("sales.view",),
+    "finance": ("finance.view", "mpesa.view_transactions"),
+    "logistics": ("logistics.view",),
+    "quality": ("quality.view",),
+}
+
+
 class DashboardSummary(BaseModel):
     generated_at: str
-    production: ProductionSummary
-    inventory: InventorySummary
-    sales: SalesSummary
-    mpesa: MpesaSummary
-    logistics: LogisticsSummary
+    production: Optional[ProductionSummary] = None  # null when the caller lacks the section's permission
+    inventory: Optional[InventorySummary] = None  # null when the caller lacks the section's permission
+    sales: Optional[SalesSummary] = None  # null when the caller lacks the section's permission
+    mpesa: Optional[MpesaSummary] = None  # null when the caller lacks the section's permission
+    logistics: Optional[LogisticsSummary] = None  # null when the caller lacks the section's permission
     alerts: List[AlertItem]
 
 
@@ -630,12 +644,15 @@ async def get_dashboard_summary(
     severity_order = {"critical": 0, "medium": 1, "low": 2}
     alerts.sort(key=lambda a: severity_order.get(a.severity, 3))
 
+    # Role gate: each section/alert is returned only to holders of its module permission.
+    # ponytail: sections are computed then dropped; skip the queries if this endpoint gets slow.
+    allowed = {module: has_any_permission(current_user, codes) for module, codes in SECTION_PERMISSIONS.items()}
     return DashboardSummary(
         generated_at=datetime.now(timezone.utc).isoformat(),
-        production=production,
-        inventory=inventory,
-        sales=sales,
-        mpesa=mpesa,
-        logistics=logistics,
-        alerts=alerts,
+        production=production if allowed["production"] else None,
+        inventory=inventory if allowed["inventory"] else None,
+        sales=sales if allowed["sales"] else None,
+        mpesa=mpesa if allowed["finance"] else None,
+        logistics=logistics if allowed["logistics"] else None,
+        alerts=[a for a in alerts if allowed.get(a.module, False)],
     )
