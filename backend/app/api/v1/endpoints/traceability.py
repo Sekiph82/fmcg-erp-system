@@ -524,8 +524,11 @@ async def public_trace_view(qr_token: str, db: AsyncSession = Depends(get_db)):
     on_chain = anchor.network != BlockchainNetwork.STUB and bool(anchor.tx_hash) and anchor.status == BlockchainAnchorStatus.ANCHORED
     lot = await db.get(Lot, anchor.lot_id) if anchor.lot_id else None
     product = await db.get(Product, lot.product_id) if lot is not None and lot.product_id else None
+    held = bool(lot is not None and getattr(lot, "is_quarantine", False))
+    valid = anchor.status == BlockchainAnchorStatus.ANCHORED and lot is not None
     return {
-        "verified": True,
+        "verified": valid and not held,
+        "on_hold": held,  # quarantined / recalled batch: do not consume
         "lot_number": anchor.lot_number,
         "record_type": anchor.record_type,
         "product_name": product.name if product else None,

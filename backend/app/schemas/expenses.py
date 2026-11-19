@@ -145,7 +145,7 @@ class ExpenseClaimRead(BaseModel):
 
 
 class ExpenseClaimApproveReject(BaseModel):
-    approver_id: UUID
+    approver_id: Optional[UUID] = None   # set by the server from the signed-in user
     notes: Optional[str] = None
     line_approvals: Optional[List[ExpenseClaimLineApprove]] = None
 

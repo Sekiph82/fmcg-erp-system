@@ -17,6 +17,7 @@ from sqlalchemy import func, select
 from app.core.deps import get_current_user
 from app.db.session import AsyncSessionLocal, engine
 from app.models.master import Product, ProductCategory, Warehouse, WarehouseType
+from app.models.inventory import Stock, StockType
 from app.models.user import User
 from app.models.wms import (PickingTask, PickingTaskStatus, PutawayTask, PutawayTaskStatus, StorageLocation, WarehouseZone,
                             ZoneType)
@@ -73,8 +74,14 @@ async def test_scan_pick_and_putaway():
         put = PutawayTask(task_no=f"PA-{s}", warehouse_id=whs[0].id, product_id=prod.id, quantity=Decimal("10"),
                           suggested_location_id=locs[(0, "A-02")].id)
         db.add_all([pick, mine, put])
+        await db.flush()
+        prod2 = Product(sku=f"SKU2-{s}", name="Water", category=ProductCategory.BEVERAGE)
+        db.add(prod2)
+        await db.flush()
+        nostock = PutawayTask(task_no=f"PA0-{s}", warehouse_id=whs[0].id, product_id=prod2.id, quantity=Decimal("1"))
+        db.add_all([nostock, Stock(stock_type=StockType.PRODUCT, warehouse_id=whs[0].id, product_id=prod.id, quantity_on_hand=Decimal("10"))])
         await db.commit()
-        ids = SimpleNamespace(pick=pick.id, other_pick=mine.id, put=put.id, loc_w2=locs[(1, "A-01")].barcode,
+        ids = SimpleNamespace(nostock=nostock.id, pick=pick.id, other_pick=mine.id, put=put.id, loc_w2=locs[(1, "A-01")].barcode,
                               l01=locs[(0, "A-01")].barcode, l02=locs[(0, "A-02")].barcode)
         P = _as(pk, "inventory.dispatch_all", "inventory.receive_all", "inventory.view")
 
@@ -97,6 +104,9 @@ async def test_scan_pick_and_putaway():
             purl = f"{W}/putaway/tasks/{ids.put}/scan-execute"
             assert (await c.post(purl, json={"location_code": ids.loc_w2, "item_code": f"SKU-{s}"})).status_code == 422
             assert (await c.post(purl, json={"location_code": ids.l01, "item_code": f"SKU-{s}"})).status_code == 422  # off-suggestion, no reason
+            assert (await c.post(f"{W}/putaway/tasks/{ids.nostock}/scan-execute",
+                                 json={"location_code": "a-01", "item_code": f"SKU2-{s}"})).status_code == 409  # nothing to move
+            assert (await c.post(url.replace(str(ids.pick), str(ids.other_pick)), json={**ok, "item_code": "LOT-ONLY"})).status_code in (403, 422)
             done = await c.post(purl, json={"location_code": "a-02", "item_code": f"SKU-{s}"})                       # by code, case-insensitive
             assert done.status_code == 200 and done.json()["actual_location_code"] == "A-02", done.text
         app.dependency_overrides[get_current_user] = lambda: _as(other, "inventory.view")
@@ -110,3 +120,5 @@ async def test_scan_pick_and_putaway():
         t = await db.get(PickingTask, ids.pick)
         assert (t.status, t.picked_qty) == (PickingTaskStatus.PICKED, Decimal("8.000")) and "only 8 in bin" in t.notes
         assert (await db.get(PutawayTask, ids.put)).status == PutawayTaskStatus.COMPLETED
+        moved = (await db.execute(select(Stock).where(Stock.product_id == t.product_id))).scalars().all()
+        assert [m.location_id is not None for m in moved] == [True]

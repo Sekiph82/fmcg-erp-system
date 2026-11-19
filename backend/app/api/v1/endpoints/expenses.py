@@ -59,6 +59,24 @@ async def _scope(db: AsyncSession, user):
     return me or UUID(int=0)
 
 
+async def _approver(db: AsyncSession, claim_id: UUID, req, current_user, stage: str):
+    """The signed-in user approves; never their own claim, and finance approval by someone other than the manager."""
+    from sqlalchemy import select
+
+    from app.models.hr import Employee
+
+    claim = await svc.get_claim(db, claim_id)
+    if claim is None:
+        raise HTTPException(404, "Claim not found")
+    owner_user = (await db.execute(select(Employee.user_id).where(Employee.id == claim.employee_id))).scalar_one_or_none()
+    if owner_user is not None and owner_user == current_user.id:
+        raise HTTPException(403, "You cannot approve or reject your own claim.")
+    if stage == "finance" and claim.approved_by_manager == current_user.id:
+        raise HTTPException(403, "Finance approval must be done by someone other than the approving manager.")
+    req.approver_id = current_user.id
+    return claim
+
+
 def _own_or_404(obj, scope):
     if obj is None or (scope is not None and obj.employee_id != scope):
         raise HTTPException(404, "Not found")
@@ -157,6 +175,10 @@ async def create_claim(data: ExpenseClaimCreate, db: AsyncSession = Depends(get_
             raise HTTPException(403, "Your login is not linked to an employee record; ask HR.")
         else:
             data.employee_id = me
+    if data.advance_id is not None:  # only the claimant's own advance can be deducted
+        adv = await svc.get_advance(db, data.advance_id)
+        if adv is None or adv.employee_id != data.employee_id:
+            raise HTTPException(422, "The advance does not belong to this employee.")
     claim = await svc.create_claim(db, data)
     return await svc.get_claim(db, claim.expense_claim_id)  # reload with lines (the bare instance cannot lazy-load them)
 
@@ -186,7 +208,9 @@ async def submit_claim(claim_id: UUID, db: AsyncSession = Depends(get_db), curre
 
 
 @router.post("/claims/{claim_id}/manager-approve", response_model=ExpenseClaimRead)
-async def manager_approve(claim_id: UUID, req: ExpenseClaimApproveReject, db: AsyncSession = Depends(get_db)):
+async def manager_approve(claim_id: UUID, req: ExpenseClaimApproveReject, db: AsyncSession = Depends(get_db),
+                          current_user=Depends(get_current_user)):
+    await _approver(db, claim_id, req, current_user, "manager")
     claim = await svc.manager_approve_claim(db, claim_id, req)
     if not claim:
         raise HTTPException(400, "Cannot approve — wrong status or not found")
@@ -194,7 +218,9 @@ async def manager_approve(claim_id: UUID, req: ExpenseClaimApproveReject, db: As
 
 
 @router.post("/claims/{claim_id}/finance-approve", response_model=ExpenseClaimRead)
-async def finance_approve(claim_id: UUID, req: ExpenseClaimApproveReject, db: AsyncSession = Depends(get_db)):
+async def finance_approve(claim_id: UUID, req: ExpenseClaimApproveReject, db: AsyncSession = Depends(get_db),
+                          current_user=Depends(get_current_user)):
+    await _approver(db, claim_id, req, current_user, "finance")
     claim = await svc.finance_approve_claim(db, claim_id, req)
     if not claim:
         raise HTTPException(400, "Cannot approve — wrong status or not found")
@@ -202,7 +228,9 @@ async def finance_approve(claim_id: UUID, req: ExpenseClaimApproveReject, db: As
 
 
 @router.post("/claims/{claim_id}/reject", response_model=ExpenseClaimRead)
-async def reject_claim(claim_id: UUID, req: ExpenseClaimApproveReject, db: AsyncSession = Depends(get_db)):
+async def reject_claim(claim_id: UUID, req: ExpenseClaimApproveReject, db: AsyncSession = Depends(get_db),
+                       current_user=Depends(get_current_user)):
+    await _approver(db, claim_id, req, current_user, "reject")
     claim = await svc.reject_claim(db, claim_id, req)
     if not claim:
         raise HTTPException(400, "Cannot reject — wrong status or not found")
@@ -218,7 +246,9 @@ async def return_for_correction(claim_id: UUID, notes: str = Query(...), db: Asy
 
 
 @router.post("/claims/{claim_id}/pay", response_model=ExpenseClaimRead)
-async def pay_claim(claim_id: UUID, req: ExpenseClaimPayRequest, db: AsyncSession = Depends(get_db)):
+async def pay_claim(claim_id: UUID, req: ExpenseClaimPayRequest, db: AsyncSession = Depends(get_db),
+                    current_user=Depends(get_current_user)):
+    await _approver(db, claim_id, ExpenseClaimApproveReject(), current_user, "pay")  # nobody pays their own claim
     claim = await svc.pay_claim(db, claim_id, req)
     if not claim:
         raise HTTPException(400, "Cannot pay — claim not finance-approved or not found")

@@ -348,7 +348,7 @@ def _ticket_out(t, with_thread: bool = False) -> dict:
            "subject": t.subject, "created_at": t.created_at.isoformat() if t.created_at else None,
            "resolution_notes": t.resolution_notes}
     if with_thread:  # internal staff notes are never shown to the customer
-        out["description"] = t.description
+        out["description"] = t.description if t.source.value == "PORTAL" else None  # staff-entered text stays internal
         out["thread"] = [{"body": c.body, "from_us": c.created_by_id is not None,
                           "at": c.created_at.isoformat() if c.created_at else None} for c in t.comments if not c.is_internal]
     return out
@@ -371,9 +371,18 @@ async def ticket(ticket_id: uuid.UUID, user: PortalUser = Depends(ext.get_portal
 
 @router.post("/tickets", status_code=201)
 async def open_ticket(body: TicketIn, user: PortalUser = Depends(ext.get_portal_user), db: AsyncSession = Depends(get_db)):
+    from datetime import timedelta
+
+    from sqlalchemy import func
+
     from app.models.helpdesk import SLA_DEFAULTS, HelpdeskTicket, TicketCategory, TicketPriority, TicketSource, TicketStatus
 
     customer = await _customer(db, user)
+    recent = (await db.execute(select(func.count()).select_from(HelpdeskTicket).where(
+        HelpdeskTicket.customer_id == customer.id, HelpdeskTicket.source == TicketSource.PORTAL,
+        HelpdeskTicket.created_at >= datetime.now(timezone.utc) - timedelta(days=1)))).scalar_one()
+    if recent >= 20:
+        raise HTTPException(429, "Too many tickets today; please add to an existing ticket.")
     t = HelpdeskTicket(ticket_no=f"TKT-{date.today():%Y%m%d}-P{secrets.token_hex(3).upper()}", customer_id=customer.id,
                        category=TicketCategory(body.category), priority=TicketPriority.MEDIUM, status=TicketStatus.OPEN,
                        source=TicketSource.PORTAL, subject=body.subject,

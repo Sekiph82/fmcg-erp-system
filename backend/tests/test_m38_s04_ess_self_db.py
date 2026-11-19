@@ -116,6 +116,12 @@ async def test_ess_is_the_signed_in_employees_own():
             claim_id = claim.json()["expense_claim_id"]
             assert (await c.post(f"/api/v1/expenses/claims/{claim_id}/finance-approve")).status_code == 403  # no finance right
             assert (await c.get("/api/v1/expenses/dashboard")).status_code == 403
+            assert (await c.post("/api/v1/expenses/claims", json={"claim_date": date.today().isoformat(),
+                                                                  "advance_id": str(uuid.uuid4())})).status_code == 422  # not her advance
+            who(_as(users["amina"], "hr.approve", "finance.approve"))
+            assert (await c.post(f"/api/v1/expenses/claims/{claim_id}/manager-approve", json={"approver_id": str(uuid.uuid4())})).status_code == 403
+            assert (await c.post(f"/api/v1/expenses/claims/{claim_id}/pay", json={})).status_code == 403   # own claim
+            who(U["amina"])
             who(U["brian"])
             assert (await c.get(f"/api/v1/expenses/claims/{claim_id}")).status_code == 404          # Amina's claim
             assert (await c.get("/api/v1/expenses/claims")).json() == []

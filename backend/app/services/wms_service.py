@@ -995,6 +995,7 @@ async def execute_putaway_task(
     task: PutawayTask,
     req: PutawayExecuteRequest,
     user_id: uuid.UUID,
+    require_stock: bool = False,
 ) -> PutawayExecution:
     if task.status == PutawayTaskStatus.COMPLETED:
         raise HTTPException(422, "Task already completed")
@@ -1044,13 +1045,19 @@ async def execute_putaway_task(
         stock_filters += [Stock.material_id == task.material_id, Stock.stock_type == StockType.MATERIAL]
 
     if task.lot_number:
-        lot_r = await db.execute(select(Lot).where(Lot.lot_number == task.lot_number))
-        lot = lot_r.scalar_one_or_none()
+        lot_q = select(Lot).where(Lot.lot_number == task.lot_number)
+        if task.product_id:
+            lot_q = lot_q.where(Lot.product_id == task.product_id)
+        elif task.material_id:
+            lot_q = lot_q.where(Lot.material_id == task.material_id)
+        lot = (await db.execute(lot_q.limit(1))).scalar_one_or_none()
         if lot:
             stock_filters.append(Stock.lot_id == lot.id)
 
-    stock_r = await db.execute(select(Stock).where(and_(*stock_filters)).with_for_update())
+    stock_r = await db.execute(select(Stock).where(and_(*stock_filters)).with_for_update().limit(1))
     stock = stock_r.scalar_one_or_none()
+    if stock is None and require_stock:  # the floor screen must not report a move that did not happen
+        raise HTTPException(409, "No received, not-yet-located stock found for this task; check the goods receipt.")
     if stock:
         stock.location_id = req.actual_location_id
 

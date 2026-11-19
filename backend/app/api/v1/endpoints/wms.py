@@ -1254,8 +1254,8 @@ async def scan_confirm_pick(task_id: uuid.UUID, body: ScanPickIn, db: AsyncSessi
     if task.from_location_id and loc.id != task.from_location_id:
         raise HTTPException(422, f"Wrong location: pick from {task.from_location.code}.")
     p = task.product
-    if not _item_matches(body.item_code, p.barcode if p else None, p.sku if p else None, task.lot.lot_number if task.lot else None):
-        raise HTTPException(422, "Scanned item is not the product of this task.")
+    if not _item_matches(body.item_code, p.barcode if p else None, p.sku if p else None):
+        raise HTTPException(422, "Scanned item is not the product of this task (scan the product barcode).")
     if body.picked_qty > task.requested_qty:
         raise HTTPException(422, "Picked quantity is more than requested.")
     if body.picked_qty < task.requested_qty and not (body.short_reason or "").strip():
@@ -1280,19 +1280,26 @@ async def scan_execute_putaway(task_id: uuid.UUID, body: ScanPutawayIn, db: Asyn
     """Operator puts stock away by scanning the item and the target location (must be in the task's warehouse)."""
     from app.schemas.wms import PutawayExecuteRequest
 
-    task = await crud.get_putaway_task(db, task_id)
+    from sqlalchemy import select
+
+    from app.models.wms import PutawayTask
+
+    locked = (await db.execute(select(PutawayTask.id).where(PutawayTask.id == task_id).with_for_update())).scalar_one_or_none()
+    task = await crud.get_putaway_task(db, task_id) if locked else None  # row lock: a double scan cannot execute twice
     if not task:
         raise HTTPException(404, "Task not found")
+    if task.status.value in ("COMPLETED", "CANCELLED"):
+        raise HTTPException(409, f"Task is {task.status.value.lower()}.")
     svc.ensure_wms_action_allowed(current_user, task.warehouse_id, "putaway")
     if task.assigned_to and task.assigned_to != current_user.id:
         raise HTTPException(403, "This task is assigned to someone else.")
     item = task.product or task.material
-    if not _item_matches(body.item_code, getattr(item, "barcode", None), getattr(item, "sku", None),
-                         getattr(item, "code", None), task.lot_number):
+    if not _item_matches(body.item_code, getattr(item, "barcode", None), getattr(item, "sku", None), getattr(item, "code", None)):
         raise HTTPException(422, "Scanned item is not the item of this task.")
     loc = await _scan_location(db, task.warehouse_id, body.location_code)
     execution = await svc.execute_putaway_task(db, task, PutawayExecuteRequest(
-        actual_location_id=loc.id, override_reason=body.override_reason, notes="scan-confirmed"), current_user.id)
+        actual_location_id=loc.id, override_reason=body.override_reason, notes="scan-confirmed"), current_user.id,
+        require_stock=True)
     await db.commit()
     await db.refresh(execution)
     r = PutawayExecutionRead.model_validate(execution)
