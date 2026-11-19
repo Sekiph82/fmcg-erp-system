@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { crmApi, type EmailCampaign } from "@/lib/crm_pipeline";
+import { companyApi, getActiveCompanyId, type Company } from "@/lib/company";
 
 function errorText(e: unknown) {
   const detail = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
@@ -10,12 +11,13 @@ function errorText(e: unknown) {
   return "Request failed.";
 }
 
-const EMPTY = { name: "", subject: "", body: "", segment_id: "" };
+const EMPTY = { name: "", subject: "", body: "", segment_id: "", company_id: "" };
 
 export default function CRMEmailCampaignsPage() {
   const [items, setItems] = useState<EmailCampaign[]>([]);
   const [segments, setSegments] = useState<{ id: string; name: string; members: number }[]>([]);
-  const [draft, setDraft] = useState(EMPTY);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [draft, setDraft] = useState({ ...EMPTY, company_id: getActiveCompanyId() ?? "" });
   const [preview, setPreview] = useState<Record<string, { customers: number; addresses: number; with_consent: number }>>({});
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
@@ -27,7 +29,7 @@ export default function CRMEmailCampaignsPage() {
       setSegments(s);
     } catch (e) { setError(errorText(e)); }
   }, []);
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load(); companyApi.list().then(setCompanies).catch(() => setCompanies([])); }, [load]);
 
   async function act(fn: () => Promise<unknown>, msg: string) {
     setError(null);
@@ -46,12 +48,16 @@ export default function CRMEmailCampaignsPage() {
       {info && !error && <p role="status" className="rounded-lg p-3 text-sm bg-emerald-50 border border-emerald-200 text-emerald-800">{info}</p>}
 
       <form aria-label="New campaign" className="bg-white rounded-xl border shadow-sm p-4 grid md:grid-cols-2 gap-2"
-        onSubmit={(e) => { e.preventDefault(); act(() => crmApi.createEmailCampaign(draft), "Draft campaign created."); setDraft(EMPTY); }}>
+        onSubmit={(e) => { e.preventDefault(); act(() => crmApi.createEmailCampaign(draft), "Draft campaign created."); setDraft({ ...EMPTY, company_id: draft.company_id }); }}>
         <h2 className="font-semibold text-gray-800 md:col-span-2">New campaign</h2>
         <input aria-label="Campaign name" required placeholder="Name" value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} className={input} />
         <select aria-label="Segment" required value={draft.segment_id} onChange={(e) => setDraft({ ...draft, segment_id: e.target.value })} className={input}>
           <option value="">Choose a segment…</option>
           {segments.map((s) => <option key={s.id} value={s.id}>{s.name} ({s.members})</option>)}
+        </select>
+        <select aria-label="Company" required value={draft.company_id} onChange={(e) => setDraft({ ...draft, company_id: e.target.value })} className={input}>
+          <option value="">Choose the sending company…</option>
+          {companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
         <input aria-label="Campaign subject" required placeholder="Subject — {company_name} allowed" value={draft.subject} onChange={(e) => setDraft({ ...draft, subject: e.target.value })} className={`${input} md:col-span-2`} />
         <textarea aria-label="Campaign body" required rows={4} placeholder="Message — {contact_name} {company_name}" value={draft.body} onChange={(e) => setDraft({ ...draft, body: e.target.value })} className={`${input} md:col-span-2`} />
@@ -76,7 +82,7 @@ export default function CRMEmailCampaignsPage() {
                   <td className="text-xs">{Object.keys(st).length ? Object.entries(st).map(([k, v]) => `${k} ${v}`).join(" · ") : "—"}
                     {c.queued_at && <div>Converted: {c.stats.converted_customers}</div>}</td>
                   <td className="text-right space-x-2 whitespace-nowrap">
-                    {c.status === "DRAFT" && <button className="text-xs underline" onClick={() => act(() => crmApi.scheduleEmailCampaign(c.id), "Campaign scheduled; the worker queues it within a minute.")}>Send now</button>}
+                    {(c.status === "DRAFT" || c.status === "FAILED") && <button className="text-xs underline" onClick={() => act(() => crmApi.scheduleEmailCampaign(c.id), "Campaign scheduled; the worker queues it within a minute.")}>Send now</button>}
                     {c.status !== "CANCELLED" && <button className="text-xs underline" onClick={() => act(() => crmApi.cancelEmailCampaign(c.id), "Campaign cancelled.")}>Cancel</button>}
                   </td>
                 </tr>

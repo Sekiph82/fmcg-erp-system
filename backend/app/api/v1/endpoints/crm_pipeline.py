@@ -1184,7 +1184,7 @@ class EmailCampaignIn(BaseModel):
     subject: str = Field(min_length=1, max_length=300, pattern=r"^[^\r\n]+$")
     body: str = Field(min_length=1, max_length=50000)
     segment_id: str
-    company_id: Optional[str] = None
+    company_id: str                       # required: a campaign only ever reaches one company's customers
     marketing_campaign_id: Optional[str] = None
 
 
@@ -1209,13 +1209,22 @@ async def list_email_campaigns(db: AsyncSession = Depends(get_db)):
 @router.post("/email-campaigns", status_code=201, dependencies=[Depends(require_any_permission(CRM_CONFIG))])
 async def create_email_campaign(body: EmailCampaignIn, db: AsyncSession = Depends(get_db),
                                 current_user=Depends(get_current_user)):
+    from app.models.company import Company
     from app.models.crm import CRMEmailCampaign
     from app.models.marketing import CustomerSegment
+    from app.services import crm_campaign_service as campaigns
 
-    if await db.get(CustomerSegment, _uuid(body.segment_id)) is None:
-        raise HTTPException(422, "segment_id does not exist")
+    seg = await db.get(CustomerSegment, _uuid(body.segment_id))
+    if seg is None or not seg.is_active:
+        raise HTTPException(422, "segment_id is not an active segment")
+    if await db.get(Company, _uuid(body.company_id)) is None:
+        raise HTTPException(422, "company_id does not exist")
+    unknown = campaigns.unknown_placeholders(body.subject + body.body)
+    if unknown:
+        raise HTTPException(422, "Unknown placeholder(s): " + ", ".join("{%s}" % u for u in sorted(unknown))
+                            + "; use {contact_name} or {company_name}")
     c = CRMEmailCampaign(name=body.name, subject=body.subject, body=body.body, segment_id=_uuid(body.segment_id),
-                         company_id=_uuid(body.company_id) if body.company_id else None,
+                         company_id=_uuid(body.company_id),
                          marketing_campaign_id=_uuid(body.marketing_campaign_id) if body.marketing_campaign_id else None,
                          status="DRAFT", created_by=current_user.username)
     db.add(c)
@@ -1251,17 +1260,23 @@ async def schedule_email_campaign(campaign_id: str, at: Optional[str] = None, db
     from datetime import datetime as _dt, timezone as _tz
 
     from app.models.crm import CRMEmailCampaign
+    from app.services import crm_campaign_service as campaigns
 
-    c = await db.get(CRMEmailCampaign, _uuid(campaign_id))
-    if c is None:
-        raise HTTPException(404, "Campaign not found")
-    if c.status != "DRAFT":
-        raise HTTPException(409, "Only draft campaigns can be scheduled.")
     try:
         when = _dt.fromisoformat(at.replace("Z", "+00:00")) if at else _dt.now(_tz.utc)
     except ValueError:
         raise HTTPException(422, "at must be an ISO date-time")
-    c.status, c.scheduled_at = "SCHEDULED", when if when.tzinfo else when.replace(tzinfo=_tz.utc)
+    if when.tzinfo is None:
+        raise HTTPException(422, "at must include a time-zone offset (e.g. +03:00 or Z)")
+    c = (await db.execute(select(CRMEmailCampaign).where(CRMEmailCampaign.id == _uuid(campaign_id))
+                          .with_for_update())).scalar_one_or_none()  # serialises against a concurrent cancel
+    if c is None:
+        raise HTTPException(404, "Campaign not found")
+    if c.status not in ("DRAFT", "FAILED"):
+        raise HTTPException(409, "Only draft or failed campaigns can be scheduled.")
+    if (await campaigns.audience_preview(db, c))["addresses"] == 0:
+        raise HTTPException(422, "The segment has no customers with an e-mail address for this company.")
+    c.status, c.scheduled_at = "SCHEDULED", when
     await db.commit()
     return await _campaign_out(db, c)
 

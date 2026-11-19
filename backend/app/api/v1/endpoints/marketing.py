@@ -258,8 +258,14 @@ async def delete_segment(sid: str, db: AsyncSession = Depends(get_db)):
     obj = r.scalar_one_or_none()
     if not obj:
         raise HTTPException(404, "Segment not found")
+    from sqlalchemy.exc import IntegrityError
+
     await db.delete(obj)
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError:  # e.g. an e-mail campaign still targets it
+        await db.rollback()
+        raise HTTPException(409, "Segment is in use (e.g. by an e-mail campaign); deactivate it instead.")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
