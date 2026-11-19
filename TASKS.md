@@ -1648,3 +1648,31 @@ A milestone is DONE only when its planned scope is implemented or explicitly sup
 - Q-M01-S03-T004-OPS-ACCEPTANCE | TASK: M01.S03.T004 | ANSWER: Şekip Docker Desktop'ı açtı; bu, yerel sentetik ve tek kullanımlık PostgreSQL provası seçeneğinin kabulü olarak uygulandı.
 - Q-M03-S02-T004-STEWARD-MODE | TASK: M03.S02.T004 | ANSWER: Uygun yetkiye sahip kullanıcı ana veri değişikliklerini doğrudan yapabilir; değişiklikler denetim kaydına alınmalıdır. Ayrı onay zorunlu değildir.
 - Q-M03-S02-T002-MERGE-RULES | TASK: M03.S02.T002 | ANSWER: Evet. Önerilen güvenli birleştirme ve pasifleştirme kuralını kabul ediyorum.
+
+# M37 — Employee Mobile App (iOS/Android) — Owner-requested 2026-11-19
+
+**Status: S01 DELIVERED [v] (installable PWA, local verification); S02/S03 device- and account-gated.**
+Decision: no public App Store / Google Play listing. Phase 1 = installable PWA of the existing Next.js ERP; Phase 2 (Capacitor shell) only on documented triggers, distributed privately (Android: managed Google Play private app; iOS: Apple Business Manager Custom App). Rationale, cost and account comparison: `coordination/milestones/M37/M37_MOBILE_APP_DISTRIBUTION_DECISION.md`. Coordinated with concurrent M36 session: no CRM files touched.
+
+## M37.S00 — Audit and decision
+- [x] M37.S00.T001 — Inventory existing mobile surfaces: cookie session + refresh + 2FA, no self-signup, default-auth API, `mobile_push_tokens`/`mobile_app_sessions` + `/api/v1/mobile/*` (push send is a stub), shop-floor terminal touch-ready and deliberately not offline-writing, no PWA assets. Evidence: decision doc §1–2.
+- [x] M37.S00.T002 — Distribution decision with cost, D-U-N-S / Apple Developer Program / ABM / Play Console / Android Enterprise requirements, security and update path. Evidence: decision doc §3–5.
+
+## M37.S01 — Installable PWA (Phase 1)
+- [v] M37.S01.T001 — Web app manifest (`frontend/src/app/manifest.ts`), icons (`frontend/public/icons/`), viewport/theme/apple-web-app metadata (`frontend/src/app/layout.tsx`).
+- [v] M37.S01.T002 — Service worker `frontend/public/sw.js`: caches only hashed `/_next/static` + icons; navigations network-only with static `offline.html`; never intercepts API, cross-origin or non-GET (no ERP data left on shared devices, no offline write queue). Registered in production only (`frontend/src/components/PwaRegister.tsx`). Test: `npm run test:pwa` (4 pass).
+- [v] M37.S01.T003 — Device registration: the installed app (display-mode standalone) registers a persistent device id + detected platform through existing `POST /api/v1/mobile/devices` once per session → visible/deactivatable in Admin → Mobile Apps → Device Manager. Push token empty until S03.
+- [v] M37.S01.T004 — Camera barcode/QR scan via native `BarcodeDetector` (`frontend/src/components/BarcodeScanButton.tsx`), wired to shop-floor material lot selection (scanned lot must be one issued to the operation). Hidden where unsupported (iOS Safari); keyboard-wedge hardware scanners work everywhere.
+- [v] M37.S01.T005 — Verification 2026-11-19: `tsc --noEmit` 0 errors; `eslint .` 0 errors (pre-existing warnings only, none in changed files); production `next build` OK; Chrome `Page.getInstallabilityErrors` = [] on prod build; SW active, cache holds only static assets; offline navigation shows fallback; backend auth/security tests 18 passed / 1 skipped (no backend changes). Phone-width (Pixel 7) screens dashboard, shop-floor terminal, mobile approvals, devices: 0 px horizontal overflow — **layout-only with mocked API** (synthetic shop_floor_operator permission codes); creating a live synthetic tester in the dev DB was not permitted in this session. Evidence: `coordination/milestones/M37/screenshots/` + `report.json`, script `frontend/scripts/capture-m37-pwa-evidence.mjs`.
+- [!] M37.S01.T006 — Live-session acceptance on phone width with a real non-admin employee account (needs a provisioned test user; rerun script with `E2E_USERNAME`/`E2E_PASSWORD`).
+- [!] M37.S01.T007 — Real-device acceptance: install on a physical Android (Chrome) and iPhone (Safari "Add to Home Screen") over production HTTPS; camera scan on Android; device appears in Device Manager. Requires HTTPS deployment and devices.
+
+## M37.S02 — Managed distribution (company accounts required)
+- [!] M37.S02.T001 — Android Enterprise + EMM: push PWA as managed Google Play web app to factory devices. Needs company EMM and Google account (D-U-N-S for org Play account).
+- [!] M37.S02.T002 — iOS MDM Web Clip for managed iPhones/iPads. Needs MDM.
+- [ ] M37.S02.T003 — (Phase 2 trigger only) Capacitor shell; Android private app via managed Google Play, iOS Custom App via Apple Business Manager. Needs D-U-N-S, Apple Developer Program (org), ABM, Play Console (org).
+
+## M37.S03 — Push notifications and device policy
+- [ ] M37.S03.T001 — Replace `/api/v1/mobile/push/send` stub with Web Push (VAPID) for installed PWA (Android, iOS 16.4+); restrict send to authorised roles; store subscription in existing token table.
+- [ ] M37.S03.T002 — Lock down `/mobile/devices/stats`, `/mobile/kpis`, `/mobile/push/send` (currently any authenticated user) to admin/mobile-management permission.
+- [ ] M37.S03.T003 — iOS camera barcode fallback (JS decoder) if iOS scanning becomes a requirement.

@@ -1,0 +1,38 @@
+{
+  "generated_at": "2026-11-19T10:58:05.986Z",
+  "prod": {
+    "installability_errors": [],
+    "cached_paths": [
+      "/offline.html"
+    ],
+    "offline_heading": "No connection"
+  },
+  "screens": [
+    {
+      "name": "03-dashboard-phone",
+      "path": "/dashboard",
+      "final_path": "/dashboard",
+      "horizontal_overflow_px": 0
+    },
+    {
+      "name": "04-shop-floor-terminal-phone",
+      "path": "/dashboard/shop-floor/terminal",
+      "final_path": "/dashboard/shop-floor/terminal",
+      "horizontal_overflow_px": 0
+    },
+    {
+      "name": "05-mobile-approvals-phone",
+      "path": "/dashboard/mobile/approvals",
+      "final_path": "/dashboard/mobile/approvals",
+      "horizontal_overflow_px": 0
+    },
+    {
+      "name": "06-mobile-devices-phone",
+      "path": "/dashboard/mobile/devices",
+      "final_path": "/dashboard/mobile/devices",
+      "horizontal_overflow_px": 0
+    }
+  ],
+  "screens_mode": "mocked-api-layout-only",
+  "login_landing": "/dashboard"
+}

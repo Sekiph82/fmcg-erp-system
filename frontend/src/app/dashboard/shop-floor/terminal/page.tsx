@@ -7,6 +7,7 @@ import { ShopFloorConnectionNotice, useShopFloorConnectionState } from "@/compon
 import { advProductionApi, Shift, WorkCenter } from "@/lib/productionAdvanced";
 import { Machine, moApi, OperatorProfile } from "@/lib/machineOperator";
 import { useAuth } from "@/context/AuthContext";
+import { BarcodeScanButton } from "@/components/BarcodeScanButton";
 
 const DOWNTIME_CATS = [
   "MACHINE_BREAKDOWN", "MATERIAL_SHORTAGE", "PACKAGING_SHORTAGE", "QC_WAITING",
@@ -744,6 +745,18 @@ export default function OperatorTerminal() {
                                   <option value="">Select recorded lot</option>
                                   {lots.map((lot) => <option key={lot} value={lot}>{lot}</option>)}
                                 </select>
+                                <div className="mt-1">
+                                  <BarcodeScanButton
+                                    label="Scan lot label"
+                                    onScan={(code) => {
+                                      if (lots.includes(code)) {
+                                        setMaterialLotById((values) => ({ ...values, [material.id]: code }));
+                                      } else {
+                                        setFeedback({ type: "error", message: `Scanned lot ${code} was not issued to this operation.` });
+                                      }
+                                    }}
+                                  />
+                                </div>
                               </div>
                             )}
                           </div>
