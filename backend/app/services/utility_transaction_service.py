@@ -267,7 +267,6 @@ async def build_summary(
     utility_type: Optional[UtilityType] = None,
 ) -> UtilityTransactionSummary:
     """Aggregate transactions into summary rows grouped by utility type and department."""
-    from app.models.utility_management import UTILITY_TYPE_LABELS_PYTHON  # soft import
 
     raw = await crud.summarize_transactions(
         db,

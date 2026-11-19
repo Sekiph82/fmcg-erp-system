@@ -95,6 +95,7 @@ async def list_pos(
         selectinload(PurchaseOrder.supplier),
         selectinload(PurchaseOrder.pr),
         selectinload(PurchaseOrder.lines),
+        selectinload(PurchaseOrder.supplier_payments),  # the list shows the paid amount
     )
     if status:
         q = q.where(PurchaseOrder.status == status)

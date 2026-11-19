@@ -595,9 +595,7 @@ async def barcode_usage(
             ProductGS1Config.gtin,
             ProductGS1Config.barcode_type,
             func.count(LotBarcodeRecord.id).label("total_generated"),
-            func.sum(
-                (LotBarcodeRecord.is_printed == True).cast(type_=None)
-            ).label("total_printed"),
+            func.count(LotBarcodeRecord.id).filter(LotBarcodeRecord.is_printed.is_(True)).label("total_printed"),
         )
         .join(ProductGS1Config, LotBarcodeRecord.product_config_id == ProductGS1Config.id)
         .join(Product, ProductGS1Config.product_id == Product.id)

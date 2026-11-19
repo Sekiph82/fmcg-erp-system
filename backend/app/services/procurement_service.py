@@ -1198,6 +1198,7 @@ async def get_inbound_schedule(
         .options(
             selectinload(PurchaseOrder.supplier),
             selectinload(PurchaseOrder.import_shipment),
+            selectinload(PurchaseOrder.lines),
         )
         .where(
             PurchaseOrder.status.in_([
@@ -1241,6 +1242,7 @@ async def get_delivery_alerts(db: AsyncSession) -> list:
         .options(
             selectinload(PurchaseOrder.supplier),
             selectinload(PurchaseOrder.import_shipment),
+            selectinload(PurchaseOrder.lines),
         )
         .where(
             PurchaseOrder.status.in_([

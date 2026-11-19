@@ -10,7 +10,7 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
-from sqlalchemy import select, func, desc
+from sqlalchemy import select, func, desc, Integer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import get_current_user, get_db
@@ -157,8 +157,8 @@ async def shelf_share_summary(
             MarketObservation.category,
             func.avg(MarketObservation.our_shelf_share_pct).label("avg_shelf_share"),
             func.count().label("observations"),
-            func.sum(MarketObservation.our_oos_flag.cast(int)).label("oos_count"),
-            func.sum(MarketObservation.competitor_promo_active.cast(int)).label("comp_promo_count"),
+            func.sum(MarketObservation.our_oos_flag.cast(Integer)).label("oos_count"),
+            func.sum(MarketObservation.competitor_promo_active.cast(Integer)).label("comp_promo_count"),
         )
         .where(
             MarketObservation.observation_date >= cutoff,

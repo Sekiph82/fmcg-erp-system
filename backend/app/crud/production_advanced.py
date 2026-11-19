@@ -103,6 +103,7 @@ async def delete_work_center(db: AsyncSession, obj: WorkCenter) -> None:
 
 async def list_routings(db: AsyncSession, skip=0, limit=100, product_id: Optional[UUID] = None):
     q = select(Routing).options(
+        selectinload(Routing.product),
         selectinload(Routing.steps).selectinload(RoutingStep.work_center)
     )
     if product_id:
@@ -1308,7 +1309,7 @@ async def list_qc_inspections(
     status: Optional[str] = None,
     inspection_type: Optional[str] = None,
 ):
-    q = select(AdvQCInspection).options(selectinload(AdvQCInspection.results))
+    q = select(AdvQCInspection).options(selectinload(AdvQCInspection.results), selectinload(AdvQCInspection.production_order))
     if production_order_id:
         q = q.where(AdvQCInspection.production_order_id == production_order_id)
     if status:
@@ -1358,7 +1359,7 @@ async def list_waste_records(
     production_order_id: Optional[UUID] = None,
     is_anomaly: Optional[bool] = None,
 ):
-    q = select(WasteRecord)
+    q = select(WasteRecord).options(selectinload(WasteRecord.production_order))
     if production_order_id:
         q = q.where(WasteRecord.production_order_id == production_order_id)
     if is_anomaly is not None:
@@ -1439,7 +1440,7 @@ async def list_batch_lots(
     production_order_id: Optional[UUID] = None,
     status: Optional[str] = None,
 ):
-    q = select(BatchLot)
+    q = select(BatchLot).options(selectinload(BatchLot.production_order), selectinload(BatchLot.product))
     if production_order_id:
         q = q.where(BatchLot.production_order_id == production_order_id)
     if status:

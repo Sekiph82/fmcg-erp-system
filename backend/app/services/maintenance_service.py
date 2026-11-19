@@ -159,12 +159,7 @@ async def compute_downtime_by_machine(db: AsyncSession) -> List[DowntimeByMachin
             BreakdownRecord.asset_id,
             func.count(BreakdownRecord.id).label("cnt"),
             func.coalesce(func.sum(BreakdownRecord.downtime_minutes), 0).label("total_dt"),
-            func.sum(
-                func.cast(
-                    BreakdownRecord.status.in_([BreakdownStatus.OPEN, BreakdownStatus.IN_REPAIR]),
-                    type_=None,
-                )
-            ).label("open_cnt"),
+            func.count(BreakdownRecord.id).filter(BreakdownRecord.status.in_([BreakdownStatus.OPEN, BreakdownStatus.IN_REPAIR])).label("open_cnt"),
         )
         .group_by(BreakdownRecord.asset_id)
     )

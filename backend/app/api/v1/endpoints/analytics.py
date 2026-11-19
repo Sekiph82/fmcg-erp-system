@@ -12,10 +12,26 @@ from collections import defaultdict
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, and_, text, cast, Date as SADate
+from sqlalchemy import select, func, and_, text, cast, case, Date as SADate, Integer
 
 from app.core.deps import get_current_user, require_permission
 from app.db.session import get_db
+
+
+def _so_value():
+    """An order's value from its lines (sales orders keep no stored total) — same formula as the order screens."""
+    from app.models.sales import SalesOrder, SOLine
+    return (select(func.coalesce(func.sum(SOLine.ordered_quantity * SOLine.unit_price * (1 - SOLine.discount_pct)
+                                          * (1 + SOLine.tax_rate)), 0))
+            .where(SOLine.so_id == SalesOrder.id).correlate(SalesOrder).scalar_subquery())
+
+
+def _po_value():
+    """A purchase order's value from its lines (incl. tax)."""
+    from app.models.procurement import POLine, PurchaseOrder
+    return (select(func.coalesce(func.sum(POLine.ordered_quantity * POLine.unit_price * (1 + POLine.tax_rate)), 0))
+            .where(POLine.po_id == PurchaseOrder.id).correlate(PurchaseOrder).scalar_subquery())
+
 
 router = APIRouter()
 
@@ -104,7 +120,7 @@ async def inventory_analytics(
             Product.standard_cost,
             Product.uom,
             func.sum(Stock.quantity_on_hand).label("qty"),
-            func.sum(Stock.is_blocked.cast(int)).label("blocked_count"),
+            func.sum(Stock.is_blocked.cast(Integer)).label("blocked_count"),
         )
         .join(Product, Stock.product_id == Product.id)
         .where(Stock.product_id.isnot(None))
@@ -171,12 +187,12 @@ async def inventory_analytics(
     # ── Movement trends ──
     move_result = await db.execute(
         select(
-            cast(StockMovement.moved_at, SADate).label("day"),
+            StockMovement.movement_date.label("day"),
             StockMovement.movement_type,
             func.count(StockMovement.id).label("cnt"),
             func.coalesce(func.sum(StockMovement.quantity), 0).label("qty"),
         )
-        .where(cast(StockMovement.moved_at, SADate) >= start)
+        .where(StockMovement.movement_date >= start)
         .group_by(text("day"), StockMovement.movement_type)
         .order_by(text("day"))
     )
@@ -287,7 +303,7 @@ async def production_analytics(
     rate_result = await db.execute(
         select(
             func.avg(
-                func.case(
+                case(
                     (effective_planned_quantity > 0,
                      ProductionOrder.actual_quantity / effective_planned_quantity * 100),
                     else_=0
@@ -341,10 +357,10 @@ async def production_analytics(
     # ── Downtime trend ──
     downtime_result = await db.execute(
         select(
-            cast(DowntimeLog.started_at, SADate).label("day"),
+            cast(DowntimeLog.start_time, SADate).label("day"),
             func.coalesce(func.sum(DowntimeLog.duration_minutes), 0).label("mins"),
         )
-        .where(cast(DowntimeLog.started_at, SADate).between(start, today))
+        .where(cast(DowntimeLog.start_time, SADate).between(start, today))
         .group_by(text("day"))
     )
     downtime_map: dict[str, float] = {}
@@ -449,7 +465,7 @@ async def procurement_analytics(
         select(
             PurchaseOrder.status,
             func.count(PurchaseOrder.id),
-            func.coalesce(func.sum(PurchaseOrder.total_amount), 0),
+            func.coalesce(func.sum(_po_value()), 0),
         ).group_by(PurchaseOrder.status)
     )
     open_po_count = 0
@@ -510,7 +526,7 @@ async def procurement_analytics(
     po_trend_result = await db.execute(
         select(
             cast(PurchaseOrder.order_date, SADate).label("day"),
-            func.coalesce(func.sum(PurchaseOrder.total_amount), 0).label("val"),
+            func.coalesce(func.sum(_po_value()), 0).label("val"),
         )
         .where(cast(PurchaseOrder.order_date, SADate).between(start, today))
         .group_by(text("day"))
@@ -522,11 +538,11 @@ async def procurement_analytics(
         select(
             Supplier.name,
             func.count(PurchaseOrder.id).label("cnt"),
-            func.coalesce(func.sum(PurchaseOrder.total_amount), 0).label("val"),
+            func.coalesce(func.sum(_po_value()), 0).label("val"),
         )
         .join(Supplier, PurchaseOrder.supplier_id == Supplier.id)
         .group_by(Supplier.name)
-        .order_by(func.sum(PurchaseOrder.total_amount).desc())
+        .order_by(func.sum(_po_value()).desc())
         .limit(8)
     )
     top_suppliers = [
@@ -604,7 +620,7 @@ async def sales_analytics(
 
     # Today orders
     today_so = await db.execute(
-        select(func.count(SalesOrder.id), func.coalesce(func.sum(SalesOrder.total_amount), 0))
+        select(func.count(SalesOrder.id), func.coalesce(func.sum(_so_value()), 0))
         .where(and_(SalesOrder.order_date == today,
                     SalesOrder.status.notin_([SOStatus.CANCELLED, SOStatus.DRAFT])))
     )
@@ -657,7 +673,7 @@ async def sales_analytics(
 
     # Avg order value (last 30d)
     avg_ov = await db.execute(
-        select(func.avg(SalesOrder.total_amount))
+        select(func.avg(_so_value()))
         .where(and_(SalesOrder.order_date >= start,
                     SalesOrder.status.notin_([SOStatus.CANCELLED, SOStatus.DRAFT])))
     )
@@ -683,12 +699,12 @@ async def sales_analytics(
     channel_result = await db.execute(
         select(Customer.channel,
                func.count(SalesOrder.id).label("cnt"),
-               func.coalesce(func.sum(SalesOrder.total_amount), 0).label("val"))
+               func.coalesce(func.sum(_so_value()), 0).label("val"))
         .join(Customer, SalesOrder.customer_id == Customer.id)
         .where(and_(SalesOrder.order_date >= start,
                     SalesOrder.status.notin_([SOStatus.CANCELLED, SOStatus.DRAFT])))
         .group_by(Customer.channel)
-        .order_by(func.sum(SalesOrder.total_amount).desc())
+        .order_by(func.sum(_so_value()).desc())
     )
     by_channel = [
         DistributionSlice(
@@ -791,7 +807,7 @@ async def finance_analytics(
     # Cash balances
     cash_result = await db.execute(
         select(CashAccount.account_type,
-               func.coalesce(func.sum(CashAccount.balance), 0).label("bal"))
+               func.coalesce(func.sum(CashAccount.current_balance), 0).label("bal"))
         .group_by(CashAccount.account_type)
     )
     cash_on_hand = 0.0
@@ -818,7 +834,7 @@ async def finance_analytics(
 
     # Open payables
     payables_result = await db.execute(
-        select(func.coalesce(func.sum(PurchaseOrder.total_amount), 0))
+        select(func.coalesce(func.sum(_po_value()), 0))
         .where(and_(
             PurchaseOrder.payment_status.in_([POPaymentStatus.PENDING, POPaymentStatus.PARTIALLY_PAID]),
             PurchaseOrder.status != POStatus.CANCELLED,

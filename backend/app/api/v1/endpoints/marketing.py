@@ -1967,7 +1967,7 @@ async def marketing_analytics_summary(
 
     # E-commerce revenue
     ecomm_q = await db.execute(
-        select(func.sum(StorePerformance.gmv)).where(StorePerformance.perf_date >= start)
+        select(func.sum(StorePerformance.total_revenue)).where(StorePerformance.perf_date >= start)
     )
     ecommerce_revenue = _f(ecomm_q.scalar_one())
 
@@ -1977,7 +1977,7 @@ async def marketing_analytics_summary(
 
     # Surveys
     surv_q = await db.execute(
-        select(func.count(Survey.id), func.sum(Survey.respondent_count))
+        select(func.count(Survey.id), func.sum(Survey.response_count))
         .where(Survey.survey_date >= start)
     )
     surv = surv_q.one()

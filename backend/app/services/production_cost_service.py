@@ -171,12 +171,13 @@ async def compute_order_cost(
     # 4. Energy cost (best-effort from utility_transactions)
     # ─────────────────────────────────────────────────────────────────────────
     total_energy_cost = Decimal("0")
+    from sqlalchemy import or_
+    energy_match = UtilityTransaction.production_order_id == order.id
     if order.batch_no:
-        energy_q = await db.execute(
-            select(func.coalesce(func.sum(UtilityTransaction.total_cost), 0))
-            .where(UtilityTransaction.batch_id == order.batch_no)
-        )
-        total_energy_cost = _dec(energy_q.scalar())
+        energy_match = or_(energy_match, UtilityTransaction.batch_no == order.batch_no)
+    # utility rows linked to the order or carrying its batch number
+    energy_q = await db.execute(select(func.coalesce(func.sum(UtilityTransaction.total_cost), 0)).where(energy_match))
+    total_energy_cost = _dec(energy_q.scalar())
 
     # Informational yield-loss exposure is separate from booked production cost.
     yield_loss_q = await db.execute(

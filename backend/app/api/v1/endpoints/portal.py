@@ -443,6 +443,7 @@ async def portal_sales_orders(
     """Return confirmed ERP sales orders linked to the portal account's customer."""
     from sqlalchemy import select
     from app.models.portal import PortalAccount
+    from sqlalchemy import String
     from app.models.sales import SalesOrder, SOStatus
 
     acc = await svc.get_account(db, account_id)
@@ -455,7 +456,7 @@ async def portal_sales_orders(
     result = await db.execute(
         select(SalesOrder)
         .where(
-            SalesOrder.customer_id.cast(str) == str(acc.linked_customer_id)
+            SalesOrder.customer_id.cast(String) == str(acc.linked_customer_id)
         )
         .order_by(SalesOrder.created_at.desc())
         .limit(limit)

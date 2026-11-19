@@ -254,7 +254,7 @@ export const UTILITY_CHART_LABELS: Record<string, string> = {
 export const kpiApi = {
   // Main dashboard
   async mainDashboard(params?: { report_date?: string; production_tons?: number }): Promise<MainDashboardKPIs> {
-    const r = await apiClient.get<MainDashboardKPIs>("/api/v1/kpi/dashboard", { params });
+    const r = await apiClient.get<MainDashboardKPIs>("/api/v1/utility-kpi/dashboard", { params });
     return r.data;
   },
 
@@ -263,55 +263,55 @@ export const kpiApi = {
     dimension?: string; utility_type?: string;
     date_from?: string; date_to?: string; top_n?: number;
   }): Promise<TopConsumers> {
-    const r = await apiClient.get<TopConsumers>("/api/v1/kpi/top-consumers", { params });
+    const r = await apiClient.get<TopConsumers>("/api/v1/utility-kpi/top-consumers", { params });
     return r.data;
   },
 
   // Daily trend
   async dailyTrend(params?: { date_from?: string; date_to?: string }): Promise<DailyTrendPoint[]> {
-    const r = await apiClient.get<DailyTrendPoint[]>("/api/v1/kpi/trend", { params });
+    const r = await apiClient.get<DailyTrendPoint[]>("/api/v1/utility-kpi/trend", { params });
     return r.data;
   },
 
   // Sub-dashboards
   async electricity(params?: { date_from?: string; date_to?: string }): Promise<ElectricityDashboardKPIs> {
-    const r = await apiClient.get<ElectricityDashboardKPIs>("/api/v1/kpi/electricity", { params });
+    const r = await apiClient.get<ElectricityDashboardKPIs>("/api/v1/utility-kpi/electricity", { params });
     return r.data;
   },
   async water(params?: { date_from?: string; date_to?: string }): Promise<WaterDashboardKPIs> {
-    const r = await apiClient.get<WaterDashboardKPIs>("/api/v1/kpi/water", { params });
+    const r = await apiClient.get<WaterDashboardKPIs>("/api/v1/utility-kpi/water", { params });
     return r.data;
   },
   async boiler(params?: { date_from?: string; date_to?: string }): Promise<BoilerDashboardKPIs> {
-    const r = await apiClient.get<BoilerDashboardKPIs>("/api/v1/kpi/boiler", { params });
+    const r = await apiClient.get<BoilerDashboardKPIs>("/api/v1/utility-kpi/boiler", { params });
     return r.data;
   },
   async compressor(params?: { date_from?: string; date_to?: string }): Promise<CompressorDashboardKPIs> {
-    const r = await apiClient.get<CompressorDashboardKPIs>("/api/v1/kpi/compressor", { params });
+    const r = await apiClient.get<CompressorDashboardKPIs>("/api/v1/utility-kpi/compressor", { params });
     return r.data;
   },
   async softWater(params?: { date_from?: string; date_to?: string }): Promise<SoftWaterDashboardKPIs> {
-    const r = await apiClient.get<SoftWaterDashboardKPIs>("/api/v1/kpi/soft-water", { params });
+    const r = await apiClient.get<SoftWaterDashboardKPIs>("/api/v1/utility-kpi/soft-water", { params });
     return r.data;
   },
   async solar(params?: { date_from?: string; date_to?: string }): Promise<SolarDashboardKPIs> {
-    const r = await apiClient.get<SolarDashboardKPIs>("/api/v1/kpi/solar", { params });
+    const r = await apiClient.get<SolarDashboardKPIs>("/api/v1/utility-kpi/solar", { params });
     return r.data;
   },
   async chemicals(params?: { date_from?: string; date_to?: string }): Promise<ChemicalDashboardKPIs> {
-    const r = await apiClient.get<ChemicalDashboardKPIs>("/api/v1/kpi/chemicals", { params });
+    const r = await apiClient.get<ChemicalDashboardKPIs>("/api/v1/utility-kpi/chemicals", { params });
     return r.data;
   },
   async wastewater(params?: { date_from?: string; date_to?: string }): Promise<WastewaterDashboardKPIs> {
-    const r = await apiClient.get<WastewaterDashboardKPIs>("/api/v1/kpi/wastewater", { params });
+    const r = await apiClient.get<WastewaterDashboardKPIs>("/api/v1/utility-kpi/wastewater", { params });
     return r.data;
   },
   async machineUtility(params?: { date_from?: string; date_to?: string }): Promise<MachineDashboardKPIs> {
-    const r = await apiClient.get<MachineDashboardKPIs>("/api/v1/kpi/machine-utility", { params });
+    const r = await apiClient.get<MachineDashboardKPIs>("/api/v1/utility-kpi/machine-utility", { params });
     return r.data;
   },
   async utilityCost(params?: { date_from?: string; date_to?: string }): Promise<UtilityCostDashboardKPIs> {
-    const r = await apiClient.get<UtilityCostDashboardKPIs>("/api/v1/kpi/utility-cost", { params });
+    const r = await apiClient.get<UtilityCostDashboardKPIs>("/api/v1/utility-kpi/utility-cost", { params });
     return r.data;
   },
 };

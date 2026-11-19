@@ -134,7 +134,7 @@ export default function HRPage() {
     { key: "payroll",      label: "Payroll",      permission: "payroll.view", content: <HRPayrollPage /> },
     { key: "shifts",       label: "Shifts",       permission: "hr.view", content: <HRShiftsPage /> },
     { key: "recruitment",  label: "Recruitment",  permission: "hr.view", content: <RecruitmentPage /> },
-    { key: "ess",          label: "ESS",          permission: "hr.view", content: <ESSPage /> },
+    { key: "ess",          label: "ESS",          permission: "self.my_hr", content: <ESSPage /> },
     { key: "appraisals",   label: "Appraisals",   permission: "hr.view", content: <AppraisalsPage /> },
     { key: "training",     label: "Training",     permission: "hr.view", content: <TrainingPage /> },
     { key: "timesheets",   label: "Timesheets",   permission: "hr.view", content: <TimesheetsPage /> },

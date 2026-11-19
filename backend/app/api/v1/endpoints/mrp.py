@@ -407,6 +407,7 @@ async def list_mrp_runs(
         MRPRunOut(
             id=r.id, run_no=r.run_no, run_date=r.run_date,
             planning_horizon_days=r.planning_horizon_days,
+            frozen_horizon_days=r.frozen_horizon_days,
             status=str(r.status), trigger=str(r.trigger),
             include_forecast=r.include_forecast,
             include_safety_stock=r.include_safety_stock,
@@ -436,6 +437,7 @@ async def get_mrp_run(
     return MRPRunOut(
         id=run.id, run_no=run.run_no, run_date=run.run_date,
         planning_horizon_days=run.planning_horizon_days,
+        frozen_horizon_days=run.frozen_horizon_days,
         status=str(run.status), trigger=str(run.trigger),
         include_forecast=run.include_forecast,
         include_safety_stock=run.include_safety_stock,
@@ -666,6 +668,7 @@ async def mrp_dashboard(
         return MRPRunOut(
             id=r.id, run_no=r.run_no, run_date=r.run_date,
             planning_horizon_days=r.planning_horizon_days,
+            frozen_horizon_days=r.frozen_horizon_days,
             status=str(r.status), trigger=str(r.trigger),
             include_forecast=r.include_forecast,
             include_safety_stock=r.include_safety_stock,

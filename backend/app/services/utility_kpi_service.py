@@ -312,10 +312,6 @@ async def get_main_dashboard_kpis(
             UtilityAlarmEvent.severity.label("sev"),
             func.count().label("cnt"),
         )
-        .join(
-            UtilityAlarmEvent.__table__.c,
-            isouter=False,
-        )
         .where(UtilityAlarmEvent.status == AlarmStatus.ACTIVE)
         .group_by(UtilityAlarmEvent.severity)
     )).all())

@@ -731,9 +731,7 @@ async def ai_variance_analyzer(db: AsyncSession) -> Dict[str, Any]:
             CountEntry.product_id,
             CountEntry.material_id,
             func.count().label("total_counts"),
-            func.sum(
-                func.cast(CountEntry.within_tolerance == False, type_=None)  # noqa: E712
-            ).label("variance_count"),
+            func.count().filter(CountEntry.within_tolerance.is_(False)).label("variance_count"),
             func.avg(func.abs(CountEntry.variance_pct)).label("avg_variance_pct"),
         )
         .where(CountEntry.counted_at >= since)
