@@ -62,6 +62,9 @@ DEMO_USERS = [
 PERMISSIONS = [
     # External partner portals (M38): issuing sign-in links / deactivating partner users is a separate right,
     # because a set-password link lets its holder sign in as that distributor or supplier.
+    # Field app (M38): outlet audits by field controllers; supervision of field teams
+    ("field", "audit", "Field Audits", "Run outlet/route audits as a field controller", True),
+    ("field", "supervise", "Supervise Field Teams", "Field compliance, audits, moto fraud alerts and leaderboards", True),
     ("partner_portal", "manage_access", "Manage Partner Portal Access",
      "Invite distributor/supplier portal users, issue set-password links, deactivate them", False),
     # Analytics / BI (cross-module hub)

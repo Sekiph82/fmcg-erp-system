@@ -11,10 +11,14 @@ from app.core.callback_security import verify_mpesa_callback
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.access_control import require_any_permission
 from app.db.session import get_db
 from app.services import moto_sales_service as svc
 
 router = APIRouter()
+# Moto supervision needs sales permissions; the M-Pesa callback stays public (verified by verify_mpesa_callback).
+_VIEW = Depends(require_any_permission(("sales.view", "field.supervise")))
+_EDIT = Depends(require_any_permission(("sales.edit", "field.supervise")))
 
 
 def _404(label: str = "Record"):
@@ -49,7 +53,7 @@ class PerformanceComputeRequest(BaseModel):
 
 # ── M-Pesa ────────────────────────────────────────────────────────────────────
 
-@router.post("/mpesa/stk-push", status_code=201)
+@router.post("/mpesa/stk-push", status_code=201, dependencies=[_EDIT])
 async def stk_push(payload: StkPushRequest, db: AsyncSession = Depends(get_db)):
     return await svc.initiate_stk_push(db, payload.txn_id, payload.phone_number, payload.amount)
 
@@ -69,7 +73,7 @@ async def stk_callback(payload: StkCallbackRequest, db: AsyncSession = Depends(g
     return result
 
 
-@router.get("/mpesa/payments")
+@router.get("/mpesa/payments", dependencies=[_VIEW])
 async def list_mpesa(
     txn_id: Optional[UUID] = None,
     status: Optional[str] = None,
@@ -80,12 +84,12 @@ async def list_mpesa(
 
 # ── Fraud ─────────────────────────────────────────────────────────────────────
 
-@router.post("/fraud/scan", status_code=201)
+@router.post("/fraud/scan", status_code=201, dependencies=[_EDIT])
 async def run_fraud_scan(days: int = 7, db: AsyncSession = Depends(get_db)):
     return await svc.run_fraud_scan(db, cutoff_days=days)
 
 
-@router.get("/fraud/alerts")
+@router.get("/fraud/alerts", dependencies=[_VIEW])
 async def list_fraud_alerts(
     van_id: Optional[UUID] = None,
     driver_id: Optional[UUID] = None,
@@ -99,7 +103,7 @@ async def list_fraud_alerts(
     )
 
 
-@router.patch("/fraud/alerts/{alert_id}")
+@router.patch("/fraud/alerts/{alert_id}", dependencies=[_EDIT])
 async def review_alert(
     alert_id: UUID,
     payload: FraudReviewRequest,
@@ -113,12 +117,12 @@ async def review_alert(
 
 # ── Rider Performance ─────────────────────────────────────────────────────────
 
-@router.post("/performance/compute", status_code=201)
+@router.post("/performance/compute", status_code=201, dependencies=[_EDIT])
 async def compute_performance(payload: PerformanceComputeRequest, db: AsyncSession = Depends(get_db)):
     return await svc.compute_rider_performance(db, payload.driver_id, payload.perf_date)
 
 
-@router.get("/performance")
+@router.get("/performance", dependencies=[_VIEW])
 async def list_performance(
     driver_id: Optional[UUID] = None,
     from_date: Optional[date] = None,
@@ -129,7 +133,7 @@ async def list_performance(
     return await svc.list_rider_performance(db, driver_id=driver_id, from_date=from_date, to_date=to_date, skip=skip, limit=limit)
 
 
-@router.get("/performance/leaderboard")
+@router.get("/performance/leaderboard", dependencies=[_VIEW])
 async def get_leaderboard(
     from_date: Optional[date] = None,
     to_date: Optional[date] = None,

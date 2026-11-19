@@ -439,6 +439,8 @@ ENDPOINT_ROUTE_DEFINITIONS: tuple[EndpointRouteDefinition, ...] = (
     EndpointRouteDefinition(key="distributors", route_prefix="/distributors", import_path="app.api.v1.endpoints.distributors", tags=('distributors',)),
     EndpointRouteDefinition(key="field_sales", route_prefix="/field-sales", import_path="app.api.v1.endpoints.field_sales", tags=('field-sales',)),
     EndpointRouteDefinition(key="delivery", route_prefix="/delivery", import_path="app.api.v1.endpoints.delivery", tags=('delivery',)),
+    EndpointRouteDefinition(key="field_app", route_prefix="/field", import_path="app.api.v1.endpoints.field_app", tags=('field-app',)),
+    EndpointRouteDefinition(key="collections", route_prefix="/collections", import_path="app.api.v1.endpoints.collections", tags=('collections',)),
     EndpointRouteDefinition(key="returns_mgmt", route_prefix="/returns", import_path="app.api.v1.endpoints.returns_mgmt", tags=('returns',)),
     EndpointRouteDefinition(key="pricing", route_prefix="/pricing", import_path="app.api.v1.endpoints.pricing", tags=('pricing',)),
     EndpointRouteDefinition(key="analytics", route_prefix="/analytics", import_path="app.api.v1.endpoints.analytics", tags=('analytics',)),

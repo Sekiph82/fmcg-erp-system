@@ -32,6 +32,7 @@ class DeliveryTripCreate(BaseModel):
     vehicle_type: Optional[str] = None
     driver_name: Optional[str] = None
     driver_phone: Optional[str] = None
+    driver_user_id: Optional[uuid.UUID] = None   # the driver's login (field app 'my trips')
     warehouse_id: Optional[uuid.UUID] = None
     rep_id: Optional[uuid.UUID] = None
     capacity_kg: Optional[float] = None
@@ -43,6 +44,7 @@ class DeliveryTripUpdate(BaseModel):
     vehicle_plate: Optional[str] = None
     driver_name: Optional[str] = None
     driver_phone: Optional[str] = None
+    driver_user_id: Optional[uuid.UUID] = None   # the driver's login (field app 'my trips')
     status: Optional[TripStatus] = None
     route_notes: Optional[str] = None
     departed_at: Optional[datetime] = None
@@ -58,6 +60,7 @@ class DeliveryTripRead(BaseModel):
     vehicle_type: Optional[str]
     driver_name: Optional[str]
     driver_phone: Optional[str]
+    driver_user_id: Optional[uuid.UUID] = None
     warehouse_id: Optional[uuid.UUID]
     rep_id: Optional[uuid.UUID]
     rep_name: Optional[str] = None

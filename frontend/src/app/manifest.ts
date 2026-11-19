@@ -21,6 +21,7 @@ export default function manifest(): MetadataRoute.Manifest {
     shortcuts: [
       { name: "Shop Floor Terminal", url: "/dashboard/shop-floor/terminal" },
       { name: "Approvals", url: "/dashboard/mobile/approvals" },
+      { name: "Field app", url: "/dashboard/field" },
     ],
   };
 }
