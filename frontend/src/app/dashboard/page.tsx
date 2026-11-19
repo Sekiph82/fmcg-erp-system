@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
@@ -32,6 +33,10 @@ export default function DashboardPage() {
     staleTime: 30_000,
   });
 
+  const { data: work, isFetched: workFetched } = useQuery({
+    queryKey: ["my-work"], queryFn: dashboardApi.myWork, refetchInterval: 60_000, staleTime: 30_000,
+  });
+
   const p = data?.production;
   const inv = data?.inventory;
   const s = data?.sales;
@@ -45,11 +50,12 @@ export default function DashboardPage() {
   const show = (section: unknown) => isLoading || !!section;
   const noCompanyView = !!data && !p && !inv && !s && !m && !log;
   useEffect(() => {
-    if (!noCompanyView || !user) return;
+    // no company figures and nothing waiting here: open the user's own first screen instead
+    if (!noCompanyView || !user || !workFetched || (work?.length ?? 0) > 0) return;
     const shopFloor = user.permission_codes.some((code) => code.startsWith("shop_floor."));
     const target = shopFloor ? "/dashboard/shop-floor/terminal" : getFirstAllowedRoute();
     if (target !== "/dashboard") router.replace(target);
-  }, [noCompanyView, user, router, getFirstAllowedRoute]);
+  }, [noCompanyView, user, router, getFirstAllowedRoute, workFetched, work]);
 
   const lastRefresh = dataUpdatedAt
     ? new Date(dataUpdatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
@@ -76,6 +82,21 @@ export default function DashboardPage() {
           </svg>
         </button>
       </div>
+
+      {/* ── My work today: only the queues this user can act on ── */}
+      {!!work?.length && (
+        <section aria-label="My work today" data-testid="my-work" className="rounded-xl border border-indigo-200 bg-indigo-50/60 p-4">
+          <h2 className="text-sm font-semibold text-indigo-900 mb-2">My work today</h2>
+          <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+            {work.map((w) => (
+              <li key={w.key}>
+                <Link href={w.href} className="flex items-center justify-between gap-3 rounded-lg bg-white border px-3 py-2 hover:border-indigo-400">
+                  <span className="text-sm text-gray-800">{w.label}</span>
+                  <span className="min-w-8 text-center rounded-full bg-indigo-600 px-2 py-0.5 text-sm font-semibold text-white">{w.count}</span>
+                </Link>
+              </li>))}
+          </ul>
+        </section>)}
 
       {/* ── Alerts banner ── */}
       {criticalAlerts > 0 && (

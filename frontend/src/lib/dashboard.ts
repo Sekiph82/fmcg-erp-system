@@ -85,7 +85,11 @@ export interface DashboardSummary {
   alerts: AlertItem[];
 }
 
+/** One queue waiting for the signed-in user's action (M39 "My work today"). */
+export interface WorkItem { key: string; label: string; count: number; href: string }
+
 export const dashboardApi = {
+  myWork: async (): Promise<WorkItem[]> => (await apiClient.get<WorkItem[]>("/api/v1/dashboard/my-work")).data,
   getSummary: async (): Promise<DashboardSummary> => {
     const res = await apiClient.get<DashboardSummary>("/api/v1/dashboard/summary");
     return res.data;

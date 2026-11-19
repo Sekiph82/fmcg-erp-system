@@ -59,3 +59,38 @@ async def test_screen_endpoints_do_not_fail():
             assert not bad, bad
     finally:
         app.dependency_overrides.pop(get_current_user, None)
+
+
+@pytest.mark.asyncio
+async def test_my_work_lists_only_the_users_queues():
+    """M39.S03.T002: 'My work today' shows only queues the user can act on, with counts and the screen to open."""
+    import uuid
+    from datetime import date
+
+    from app.main import app
+    from app.models.sales import Customer, CustomerChannel, SalesOrder, SOStatus
+
+    s = uuid.uuid4().hex[:8]
+    async with AsyncSessionLocal() as db:
+        assert (await db.execute(select(func.current_database()))).scalar_one() == os.environ[TASK_DB_NAME_ENV]
+        c = Customer(code=f"MW-{s}", name="Shop", channel=CustomerChannel.RETAIL, currency="KES")
+        db.add(c)
+        await db.flush()
+        db.add(SalesOrder(order_no=f"MW-{s}", customer_id=c.id, order_date=date.today(), requested_delivery_date=date.today(),
+                          currency="KES", status=SOStatus.DRAFT))
+        await db.commit()
+
+    def as_user(*codes):
+        perms = [SimpleNamespace(code=x, module=x.split(".")[0], action=x.split(".")[1], is_active=True) for x in codes]
+        return SimpleNamespace(id=uuid.uuid4(), username="u", email="u@example.com", full_name="U", is_superuser=False, is_active=True,
+                               access_scopes=[], roles=[SimpleNamespace(name="r", is_active=True, permissions=perms, access_scopes=[])])
+    try:
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://t") as c:
+            app.dependency_overrides[get_current_user] = lambda: as_user("sales.view", "sales.edit")
+            desk = {w["key"]: w for w in (await c.get("/api/v1/dashboard/my-work")).json()}
+            assert desk["orders"]["count"] >= 1 and desk["orders"]["href"] == "/dashboard/sales?tab=orders"
+            assert not {"payroll", "expenses", "picking"} & set(desk)            # nothing outside the desk's job
+            app.dependency_overrides[get_current_user] = lambda: as_user("inventory.dispatch_all")
+            assert "orders" not in {w["key"] for w in (await c.get("/api/v1/dashboard/my-work")).json()}
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)

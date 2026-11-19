@@ -1133,6 +1133,26 @@ ROLE_DEFINITIONS = {
         "description": "Warehouse floor: scan picking and putaway only",
         "permissions": ["inventory.dispatch_all", "inventory.receive_all"],
     },
+    # User groups without a role until M39 (persona audit): clerks prepare, managers approve (segregation of duties)
+    "accountant": {
+        "description": "Accountant: journals, posting, receivables/payables follow-up, M-Pesa reconciliation (no approvals or setup)",
+        "permissions": ["finance.view", "finance.create", "finance.edit", "finance.post_all", "finance.export",
+                        "mpesa.view_transactions", "mpesa.reconcile_payment", "sales.view", "procurement.view"],
+    },
+    "payroll_officer": {
+        "description": "Payroll officer: prepares and calculates payroll runs; finance approves them",
+        "permissions": ["payroll_ke.view", "payroll_ke.create", "payroll_ke.export", "hr.view"],
+    },
+    "planner": {
+        "description": "Demand and supply planner: forecasts, MPS, MRP runs and suggestions (release/approval by managers)",
+        "permissions": ["planning.view_all", "planning.create_all", "planning.edit_all", "planning.calculate_all",
+                        "mps.view", "mps.create", "mps.edit", "mps.calculate", "mps.simulate", "mrp.view_all", "mrp.run_own_scope",
+                        "production.view", "inventory.view", "sales.view", "procurement.view"],
+    },
+    "sales_order_desk": {
+        "description": "Order desk: confirms incoming shop/distributor/field orders and follows them to delivery",
+        "permissions": ["sales.view", "sales.create", "sales.edit", "crm.view", "inventory.view"],
+    },
 
     # ── Marketing roles ───────────────────────────────────────────────────────
     "marketing_manager": {

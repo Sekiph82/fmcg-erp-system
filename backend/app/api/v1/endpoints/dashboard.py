@@ -656,3 +656,74 @@ async def get_dashboard_summary(
         logistics=logistics if allowed["logistics"] else None,
         alerts=[a for a in alerts if allowed.get(a.module, False)],
     )
+
+
+# ── My work today (M39.S03.T002): each user's own queues, by the permissions they hold ───────────────────────────
+
+class WorkItem(BaseModel):
+    key: str
+    label: str
+    count: int
+    href: str
+
+
+@router.get("/my-work", response_model=List[WorkItem])
+async def my_work(db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    """What waits for this user's action: only queues their permissions let them act on, only non-empty ones."""
+    from app.core.access_control import has_permission
+    from app.models.expenses import ExpenseClaim, ExpenseStatus
+    from app.models.field_ops import CashCollection
+    from app.models.hr import ApprovalStatus, LeaveRequest
+    from app.models.mrp import MRPSuggestion, SuggestionStatus
+    from app.models.payroll_ke import PayrollRun, PayrollRunStatus
+    from app.models.portal import PortalAccount, PortalAccountStatus
+    from app.models.procurement import POStatus, PurchaseOrder
+    from app.models.quality import QCInspection, QCStatus
+    from app.models.sales import SalesOrder, SOStatus
+    from app.models.wms import PickingTask, PickingTaskStatus, PutawayTask, PutawayTaskStatus
+
+    from app.core.access_control import get_effective_permission_codes
+    held = set(get_effective_permission_codes(current_user))
+
+    def can(*codes: str) -> bool:  # the code itself or a scoped variant of it (…_all, …_own_scope, …)
+        return any(has_permission(current_user, c) or any(h.startswith(c + "_") for h in held) for c in codes)
+
+    async def count(q) -> int:
+        return int((await db.execute(q)).scalar() or 0)
+
+    queues = [  # (key, label, permission(s), count query, screen)
+        ("orders", "Orders waiting for confirmation", ("sales.edit",),
+         select(func.count()).select_from(SalesOrder).where(SalesOrder.status == SOStatus.DRAFT), "/dashboard/sales?tab=orders"),
+        ("signups", "Shop sign-up requests", ("partner_portal.manage_access",),
+         select(func.count()).select_from(PortalAccount).where(PortalAccount.portal_status == PortalAccountStatus.PENDING,
+                                                               PortalAccount.notes.startswith("SIGNUP:")), "/dashboard/sales?tab=portal"),
+        ("collections", "Collections to confirm", ("finance.approve",),
+         select(func.count()).select_from(CashCollection).where(CashCollection.status.in_(("PENDING", "DEPOSITED"))),
+         "/dashboard/sales?tab=collections"),
+        ("expenses", "Expense claims for finance approval", ("finance.approve",),
+         select(func.count()).select_from(ExpenseClaim).where(ExpenseClaim.status == ExpenseStatus.MANAGER_APPROVED), "/dashboard/expenses"),
+        ("payroll", "Payroll runs to approve", ("payroll_ke.approve",),
+         select(func.count()).select_from(PayrollRun).where(PayrollRun.status == PayrollRunStatus.CALCULATED), "/dashboard/payroll"),
+        ("purchase_orders", "Purchase orders to approve", ("procurement.approve",),
+         select(func.count()).select_from(PurchaseOrder).where(PurchaseOrder.status == POStatus.DRAFT), "/dashboard/procurement?tab=orders"),
+        ("picking", "Picking tasks on the floor", ("inventory.dispatch",),
+         select(func.count()).select_from(PickingTask).where(PickingTask.status.in_((PickingTaskStatus.PENDING, PickingTaskStatus.IN_PROGRESS)),
+                                                             or_(PickingTask.assigned_to_id.is_(None), PickingTask.assigned_to_id == current_user.id)),
+         "/dashboard/warehouse-floor"),
+        ("putaway", "Put-away tasks", ("inventory.receive",),
+         select(func.count()).select_from(PutawayTask).where(PutawayTask.status == PutawayTaskStatus.PENDING), "/dashboard/warehouse-floor"),
+        ("qc", "Quality inspections open", ("quality.create", "quality.approve"),
+         select(func.count()).select_from(QCInspection).where(QCInspection.status.in_((QCStatus.PENDING, QCStatus.IN_PROGRESS))),
+         "/dashboard/quality?tab=inspections"),
+        ("mrp", "MRP suggestions to review", ("planning.edit", "mps.edit"),
+         select(func.count()).select_from(MRPSuggestion).where(MRPSuggestion.status == SuggestionStatus.DRAFT), "/dashboard/planning?tab=mrp"),
+        ("leave", "Leave requests to approve", ("hr.approve",),
+         select(func.count()).select_from(LeaveRequest).where(LeaveRequest.approval_status == ApprovalStatus.PENDING), "/dashboard/hr?tab=leave"),
+    ]
+    out = []
+    for key, label, perms, q, href in queues:
+        if can(*perms):
+            n = await count(q)
+            if n:
+                out.append(WorkItem(key=key, label=label, count=n, href=href))
+    return out
