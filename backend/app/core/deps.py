@@ -30,7 +30,7 @@ async def get_current_user(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token has been revoked. Please log in again.")
 
     payload = decode_access_token(token)
-    user_id = payload.get("sub") if payload else None
+    user_id = payload.get("sub") if payload and not payload.get("realm") else None  # portal/supplier tokens never
     if not user_id:
         logger.warning("Auth failed: invalid or expired token")
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")

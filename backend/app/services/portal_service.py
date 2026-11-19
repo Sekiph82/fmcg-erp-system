@@ -29,11 +29,15 @@ from app.schemas.portal import (
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _hash_password(password: str) -> str:
-    return hashlib.sha256(password.encode()).hexdigest()
+    from app.core.security import hash_password
+
+    return hash_password(password)
 
 
 def _verify_password(password: str, hashed: str) -> bool:
-    return hashlib.sha256(password.encode()).hexdigest() == hashed
+    from app.core.external_auth import check_password
+
+    return check_password(password, hashed)[0]
 
 
 async def _next_account_code(db: AsyncSession) -> str:
@@ -138,8 +142,19 @@ async def get_users(db: AsyncSession, account_id: str):
     return result.scalars().all()
 
 
-async def invite_user(db: AsyncSession, account_id: str, data: PortalUserInvite) -> PortalUser:
+def token_digest(token: str) -> str:
+    return hashlib.sha256(token.encode()).hexdigest()
+
+
+def new_invitation(user: PortalUser) -> str:
+    """Give the user a fresh 7-day set-password token; returns the raw token (stored only as a digest)."""
     token = secrets.token_urlsafe(32)
+    user.invitation_token = token_digest(token)
+    user.token_expires_at = datetime.utcnow() + timedelta(days=7)
+    return token
+
+
+async def invite_user(db: AsyncSession, account_id: str, data: PortalUserInvite) -> PortalUser:
     user = PortalUser(
         portal_account_id=uuid.UUID(account_id),
         full_name=data.full_name,
@@ -148,11 +163,10 @@ async def invite_user(db: AsyncSession, account_id: str, data: PortalUserInvite)
         login_identifier=data.email,
         role_type=data.role_type,
         invited_by=data.invited_by,
-        invitation_token=token,
-        token_expires_at=datetime.utcnow() + timedelta(days=7),
         is_active=False,
         password_hash=_hash_password(secrets.token_urlsafe(16)),
     )
+    user.raw_invitation_token = new_invitation(user)
     db.add(user)
     await db.commit()
     await db.refresh(user)
@@ -161,7 +175,7 @@ async def invite_user(db: AsyncSession, account_id: str, data: PortalUserInvite)
 
 async def activate_user_with_password(db: AsyncSession, token: str, new_password: str) -> Optional[PortalUser]:
     result = await db.execute(
-        select(PortalUser).where(PortalUser.invitation_token == token)
+        select(PortalUser).where(PortalUser.invitation_token == token_digest(token))
     )
     user = result.scalar_one_or_none()
     if not user:
@@ -227,16 +241,15 @@ async def get_portal_dashboard(db: AsyncSession, account: PortalAccount) -> dict
     # Pull linked IDs
     customer_id_str = account.linked_customer_id
     dist_id_str = account.linked_distributor_id
+    if not customer_id_str:
+        raise ValueError("Portal account is not linked to a customer")
 
     # Outstanding balance from invoices
     inv_q = select(Invoice).where(
         Invoice.status.in_([InvoiceStatus.ISSUED, InvoiceStatus.PARTIALLY_PAID, InvoiceStatus.OVERDUE])
     )
     if customer_id_str:
-        try:
-            inv_q = inv_q.where(Invoice.customer_id == uuid.UUID(customer_id_str))
-        except Exception:
-            pass
+        inv_q = inv_q.where(Invoice.customer_id == uuid.UUID(customer_id_str))
 
     invoices = (await db.execute(inv_q.limit(200))).scalars().all()
 
@@ -309,7 +322,9 @@ async def get_portal_dashboard(db: AsyncSession, account: PortalAccount) -> dict
     ]
 
     # Recent payments
-    pay_q = select(Payment).order_by(Payment.payment_date.desc()).limit(5)
+    pay_q = (select(Payment).join(Invoice, Invoice.id == Payment.invoice_id)  # this customer's payments only
+             .where(Invoice.customer_id == uuid.UUID(customer_id_str))
+             .order_by(Payment.payment_date.desc()).limit(5))
     recent_payments_rows = (await db.execute(pay_q)).scalars().all()
     recent_payments = [
         {"id": str(p.id), "payment_date": str(p.payment_date), "amount": float(p.amount or 0), "method": p.method}
@@ -382,6 +397,8 @@ def _serialize_order(o):
         "payment_method": str(o.payment_method),
         "payment_status": str(o.payment_status),
         "line_count": len(o.lines or []),
+        "total": float(sum((l.ordered_quantity * l.unit_price * (1 - (l.discount_pct or 0)) * (1 + (l.tax_rate or 0))
+                            for l in (o.lines or [])), Decimal("0"))),
     }
 
 
@@ -451,6 +468,8 @@ async def get_portal_shipments(db: AsyncSession, account: PortalAccount, skip: i
             q = q.where(SalesOrder.distributor_id == uuid.UUID(account.linked_distributor_id))
         except Exception:
             return []
+    else:
+        return []
     rows = (await db.execute(q)).scalars().all()
     return [
         {

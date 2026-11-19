@@ -87,6 +87,9 @@ class EndpointRouteDefinition:
     tags: tuple[str, ...]
     enabled: bool = True
     critical: bool = True
+    # External sign-in realm (portal/supplier): the module exposes ``public`` (sign-in) and ``router`` (every route
+    # guarded by its own realm dependency); no staff session is attached.
+    external_realm: bool = False
 
 
 MODULE_DEFINITIONS: tuple[ModuleDefinition, ...] = (
@@ -481,6 +484,7 @@ ENDPOINT_ROUTE_DEFINITIONS: tuple[EndpointRouteDefinition, ...] = (
     EndpointRouteDefinition(key="promotions", route_prefix="/promotions", import_path="app.api.v1.endpoints.promotions", tags=('promotions',)),
     EndpointRouteDefinition(key="tpm", route_prefix="/tpm", import_path="app.api.v1.endpoints.tpm", tags=('tpm',)),
     EndpointRouteDefinition(key="portal", route_prefix="/portal", import_path="app.api.v1.endpoints.portal", tags=('portal',)),
+    EndpointRouteDefinition(key="portal_self", route_prefix="/portal-self", import_path="app.api.v1.endpoints.portal_self", tags=('portal-self',), external_realm=True),
     EndpointRouteDefinition(key="supplier_portal", route_prefix="/supplier-portal", import_path="app.api.v1.endpoints.supplier_portal", tags=('supplier-portal',)),
     EndpointRouteDefinition(key="dunning", route_prefix="/dunning", import_path="app.api.v1.endpoints.dunning", tags=('dunning',)),
     EndpointRouteDefinition(key="price_list", route_prefix="/price-lists", import_path="app.api.v1.endpoints.price_list", tags=('price-lists',)),
@@ -608,9 +612,10 @@ PUBLIC_ROUTES: frozenset[tuple[str, str]] = frozenset({
     ("/auth/2fa/use-recovery-code", "POST"),
     ("/auth/2fa/resend-otp", "POST"),
     ("/ess/login", "POST"),
-    ("/portal/auth/login", "POST"),
-    ("/portal/auth/activate", "POST"),               # invitation token in body
     ("/supplier-portal/auth/login", "POST"),
+    ("/portal-self/auth/login", "POST"),               # distributor sign-in (rate-limited, realm cookie)
+    ("/portal-self/auth/activate", "POST"),            # one-time set-password token (stored as a digest)
+    ("/portal-self/auth/logout", "POST"),
     ("/integrations/mpesa/callback", "POST"),        # Safaricom Daraja callbacks (shared-secret token)
     ("/sales/mpesa/callback", "POST"),
     ("/moto-sales/mpesa/callback", "POST"),
@@ -662,6 +667,11 @@ def _register_routes(
             endpoint_module = import_module(definition.import_path)
             router = getattr(endpoint_module, "router")
             tags = getattr(definition, "tags", (definition.key,))
+            if getattr(definition, "external_realm", False):
+                api_router.include_router(endpoint_module.public, prefix=definition.route_prefix, tags=list(tags))
+                api_router.include_router(router, prefix=definition.route_prefix, tags=list(tags))
+                diagnostics.append({"module": definition.key, "status": "registered"})
+                continue
             from app.core.deps import get_current_user  # local import: deps imports settings only at call time
 
             public, protected = _split_public_routes(router, definition.route_prefix)

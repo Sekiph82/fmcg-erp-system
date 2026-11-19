@@ -1,8 +1,12 @@
 from __future__ import annotations
 from typing import List, Optional
 from datetime import date
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.access_control import has_permission
+from app.core.config import settings
+from app.core.deps import get_current_user
 
 from app.db.session import get_db
 from app.schemas.portal import (
@@ -17,25 +21,23 @@ from app.schemas.portal import (
 )
 import app.services.portal_service as svc
 
-router = APIRouter()
+async def _staff_access(request: Request, current_user=Depends(get_current_user)):
+    """Staff administration of customer/distributor portals: reading needs sales.view, changes need sales.edit.
+    (Distributors themselves use /portal-self with their own sign-in.)"""
+    needed = "sales.view" if request.method == "GET" else "sales.edit"
+    if not has_permission(current_user, needed):
+        raise HTTPException(403, f"Missing permission {needed}")
+    return current_user
 
 
-# ── Auth ──────────────────────────────────────────────────────────────────────
-
-@router.post("/auth/login", response_model=PortalLoginResponse)
-async def portal_login(data: PortalLoginRequest, db: AsyncSession = Depends(get_db)):
-    result = await svc.login(db, data.email, data.password)
-    if not result:
-        raise HTTPException(401, "Invalid credentials or account inactive")
-    return result
+router = APIRouter(dependencies=[Depends(_staff_access)])
 
 
-@router.post("/auth/activate")
-async def activate_portal_user(data: PortalPasswordSetRequest, db: AsyncSession = Depends(get_db)):
-    user = await svc.activate_user_with_password(db, data.token, data.new_password)
-    if not user:
-        raise HTTPException(400, "Invalid or expired invitation token")
-    return {"message": "Account activated successfully", "email": user.email}
+def _with_link(user, token: str) -> dict:
+    """Invitation/set-password link, returned once to the staff member who sends it to the customer."""
+    out = PortalUserRead.model_validate(user).model_dump(mode="json")
+    out["activation_link"] = f"{settings.PUBLIC_APP_URL.rstrip('/')}/portal/activate?token={token}"
+    return out
 
 
 # ── Portal Accounts (internal admin) ─────────────────────────────────────────
@@ -94,9 +96,28 @@ async def list_users(account_id: str, db: AsyncSession = Depends(get_db)):
     return await svc.get_users(db, account_id)
 
 
-@router.post("/accounts/{account_id}/users/invite", response_model=PortalUserRead, status_code=201)
+@router.post("/accounts/{account_id}/users/invite", status_code=201)
 async def invite_user(account_id: str, data: PortalUserInvite, db: AsyncSession = Depends(get_db)):
-    return await svc.invite_user(db, account_id, data)
+    if await svc.get_account(db, account_id) is None:
+        raise HTTPException(404, "Portal account not found")
+    user = await svc.invite_user(db, account_id, data)
+    return _with_link(user, user.raw_invitation_token)
+
+
+@router.post("/users/{user_id}/password-link")
+async def password_link(user_id: str, db: AsyncSession = Depends(get_db)):
+    """New set-password link for a user who forgot their password (the old password keeps working until used)."""
+    import uuid as _uuid
+
+    from app.models.portal import PortalUser
+
+    user = await db.get(PortalUser, _uuid.UUID(user_id))
+    if user is None:
+        raise HTTPException(404, "Portal user not found")
+    token = svc.new_invitation(user)
+    await db.commit()
+    await db.refresh(user)
+    return _with_link(user, token)
 
 
 @router.post("/users/{user_id}/deactivate", response_model=PortalUserRead)
@@ -114,7 +135,10 @@ async def portal_dashboard(account_id: str, db: AsyncSession = Depends(get_db)):
     acc = await svc.get_account(db, account_id)
     if not acc:
         raise HTTPException(404, "Portal account not found")
-    return await svc.get_portal_dashboard(db, acc)
+    try:
+        return await svc.get_portal_dashboard(db, acc)
+    except ValueError as exc:
+        raise HTTPException(409, str(exc))
 
 
 @router.get("/accounts/{account_id}/orders")

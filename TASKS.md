@@ -1697,10 +1697,11 @@ Decision: no public App Store / Google Play listing. Phase 1 = installable PWA o
 - [v] M37.S04.T009 — Next.js 16.4.2 → 16.4.6 (+ eslint-config-next) fixes GHSA-mfr8-8qww-v76h and GHSA-vc7v-qv4w-wrv8 (moderate, 'use cache' cross-root-param leaks). `npm audit --omit=dev` 0 vulnerabilities; `next build` exit 0 (713 pages), `tsc` 0, `eslint` 0 errors, `test:pwa` 4 + `test:auth-refresh` 2 pass; prod smoke: login page, SW active, manifest, offline page, unauthenticated dashboard redirect. The docker dev frontend keeps 16.4.2 in its node_modules volume until rebuilt (`docker compose build frontend && docker compose up -d frontend`).
 
 ## M38 — Screens for every team and channel (owner request 2026-11-19)
+**GOAL (owner, 2026-11-19): complete every row below — each team/channel gets its own working screen; run without stopping until all are [v]/[x].**
 Audit: `coordination/milestones/M38/M38_S00_PERSONA_SCREEN_AUDIT.md` (distributor, supplier, ESS logins non-functional; moto, driver POD, field controller have no screens; ESS demo-wired).
 - [v] M38.S00.T001 — Persona/channel screen audit (helper sweep + hand re-check of key claims). Independent review pending.
-- [ ] M38.S01.T001 — External-realm auth: signed per-realm JWT (portal/supplier) in HttpOnly cookie, salted hashes with upgrade-on-login, login rate limit, account-scoped dependency; supplier password reset requires a reset token.
-- [ ] M38.S01.T002 — Distributor ordering portal: login page, catalog with server-side prices, order → priced DRAFT sales order (source DISTRIBUTOR, idempotent), order/shipment/invoice status, statement, reorder.
+- [~] M38.S01.T001 — External-realm auth: signed per-realm JWT (portal/supplier) in HttpOnly cookie, salted hashes with upgrade-on-login, login rate limit, account-scoped dependency; supplier password reset requires a reset token.
+- [~] M38.S01.T002 — Distributor ordering portal: login page, catalog with server-side prices, order → priced DRAFT sales order (source DISTRIBUTOR, idempotent), order/shipment/invoice status, statement, reorder.
 - [ ] M38.S02.T001 — Field rep / pre-seller "my day" PWA screen: route outlets, check-in with GPS, visit log + photo, order capture.
 - [ ] M38.S02.T002 — Moto rider screen: sell, M-Pesa STK push, day summary; supervisor fraud alerts + leaderboard UI.
 - [ ] M38.S02.T003 — Delivery driver "my trip": stops, POD with signature/photo/GPS, failed-delivery reasons.
@@ -1709,3 +1710,4 @@ Audit: `coordination/milestones/M38/M38_S00_PERSONA_SCREEN_AUDIT.md` (distributo
 - [ ] M38.S04.T001 — ESS bound to the logged-in user (`Employee.user_id`), remove DEMO_EMPLOYEE, my payslips.
 - [ ] M38.S05.T001 — Supplier portal UI (POs, acknowledge, ETA, documents) on S01.T001 auth.
 - [ ] M38.S06.T001 — Customer ticket/NPS portal; warehouse pick/putaway execution; consumer QR verify page; replace redirect stubs.
+  Progress M38.S01 (2026-11-19, not yet DB-tested or reviewed): `backend/app/core/external_auth.py` (per-realm signed JWT in HttpOnly cookie, realm claim rejected by staff auth, password-fingerprint revocation, bcrypt with SHA-256 upgrade-on-login, login rate limit); distributor API `/portal-self` (`portal_self.py`: login/activate/logout, me, password, dashboard, catalog with server-side prices, idempotent order → DRAFT sales order source DISTRIBUTOR, orders, invoices, statement, shipments, claims); staff `/portal` now needs sales.view/sales.edit, invite returns a one-time set-password link (token stored as digest), unlinked accounts no longer see other customers' invoices/payments/shipments. Remaining: supplier realm + reset-password fix, DB tests, frontend `/portal` pages, review.

@@ -3,6 +3,7 @@ from fastapi import APIRouter
 from fastapi.routing import APIRoute
 
 from app.core.deps import get_current_user
+from app.core.external_auth import get_portal_user, get_supplier_user
 from app.core.module_registry import PUBLIC_ROUTES, register_endpoint_routes, register_module_routes
 
 
@@ -35,7 +36,8 @@ def test_only_allowlisted_routes_are_reachable_without_a_session():
     routes = _routes()
     assert len(routes) > 2000
     for path, route, inherited in routes:
-        if get_current_user in inherited or get_current_user in _calls(route.dependant, []):
+        calls = _calls(route.dependant, [])
+        if get_current_user in inherited or any(g in calls for g in (get_current_user, get_portal_user, get_supplier_user)):
             continue
         for method in set(route.methods) - {"HEAD", "OPTIONS"}:
             open_routes.add((path, method))
