@@ -178,7 +178,7 @@ export default function MaintenancePage() {
     { key: "plans",       label: "Plans",       permission: "maintenance.view", content: <MaintenancePlansPage /> },
     { key: "predictive",  label: "Predictive",  permission: "maintenance.view", content: <MaintenancePredictivePage /> },
     { key: "spares",      label: "Spares",      permission: "maintenance.view", content: <MaintenanceSparesPage /> },
-    { key: "reports",     label: "Reports",     permission: "maintenance.view", content: <MaintenanceReportsPage /> },
+    { key: "reports",     label: "Reports",     permission: "maintenance.export", content: <MaintenanceReportsPage /> },
   ];
   return (
     <ModuleWorkspace

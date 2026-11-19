@@ -251,7 +251,7 @@ export default function PlanningPage() {
     { key: "bottlenecks",  label: "Bottlenecks",  permission: "planning.view", content: <PlanningBottlenecksPage /> },
     { key: "changeover",   label: "Changeover",   permission: "planning.view", content: <PlanningChangeoverPage /> },
     { key: "mrp",          label: "MRP",          permission: "planning.view", content: <MRPPage /> },
-    { key: "mps",          label: "MPS",          permission: "planning.view", content: <MPSPage /> },
+    { key: "mps",          label: "MPS",          permission: "mps.view", content: <MPSPage /> },
     { key: "kanban",       label: "Kanban",       permission: "planning.view", content: <KanbanPage /> },
   ];
   return (

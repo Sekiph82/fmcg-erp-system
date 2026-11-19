@@ -283,8 +283,8 @@ async def finance_approve_claim(db: AsyncSession, claim_id: UUID, req: ExpenseCl
 
 async def reject_claim(db: AsyncSession, claim_id: UUID, req: ExpenseClaimApproveReject) -> Optional[ExpenseClaim]:
     claim = await get_claim(db, claim_id)
-    if not claim or claim.status in (ExpenseStatus.PAID, ExpenseStatus.CANCELLED):
-        return None
+    if not claim or claim.status in (ExpenseStatus.PAID, ExpenseStatus.CANCELLED, ExpenseStatus.FINANCE_APPROVED):
+        return None  # finance-approved claims are in the ledger: reverse there, not by rejecting
     claim.status = ExpenseStatus.REJECTED
     claim.rejected_by = req.approver_id
     claim.rejected_at = datetime.utcnow()
@@ -398,7 +398,12 @@ async def _post_claim_to_gl(db: AsyncSession, claim: ExpenseClaim):
     total = Decimal(claim.total_approved_amount or 0)
     if total <= 0:
         return None
-    tax = Decimal(sum((ln.tax_amount or 0) for ln in claim.lines if ln.line_status != "rejected")) if rule.tax_account_id else Decimal("0")
+    def _line_tax(ln):  # claimed tax scaled to what was approved on the line
+        claimed = Decimal(ln.claimed_amount or 0)
+        approved = Decimal(ln.approved_amount if ln.approved_amount is not None else claimed)
+        return Decimal(ln.tax_amount or 0) * (approved / claimed) if claimed > 0 else Decimal("0")
+    tax = (sum((_line_tax(ln) for ln in claim.lines if ln.line_status != "rejected"), Decimal("0")).quantize(Decimal("0.01"))
+           if rule.tax_account_id else Decimal("0"))
     tax = min(max(tax, Decimal("0")), total)
     if not rule.debit_account_id or not rule.credit_account_id:
         raise HTTPException(422, "The expense posting rule needs the expense and employee payable accounts.")

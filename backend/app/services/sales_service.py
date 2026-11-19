@@ -120,7 +120,22 @@ async def _post_sales_journal(
     source_module: str = "sales",
     entry_prefix: str = "AUTO-SLS",
 ) -> JournalEntry:
-    """Post one configured, balanced journal in the source transaction (sales by default; payroll reuses it)."""
+    """Post one configured, balanced journal in the source transaction (sales by default; payroll, expenses, POS,
+    stock counts and supplier payments reuse it). Ledger refusals (closed period, inactive/control account) -> 422."""
+    try:
+        return await _post_journal_unchecked(
+            db, source_event=source_event, source_id=source_id, source_ref=source_ref, entry_date=entry_date,
+            description=description, amount=amount, currency=currency, debit_lines=debit_lines,
+            credit_lines=credit_lines, user_id=user_id, source_module=source_module, entry_prefix=entry_prefix)
+    except ValueError as exc:
+        raise HTTPException(422, f"Cannot post to the ledger: {exc}") from exc
+
+
+async def _post_journal_unchecked(
+    db: AsyncSession, *, source_event: str, source_id: uuid.UUID, source_ref: str, entry_date: date, description: str,
+    amount: Decimal, currency: str, debit_lines: list[tuple[uuid.UUID, Decimal, str]],
+    credit_lines: list[tuple[uuid.UUID, Decimal, str]], user_id: uuid.UUID, source_module: str, entry_prefix: str,
+) -> JournalEntry:
     from app.services.finance_service import (
         assert_journal_lines_postable,
         assert_posting_period_open,
@@ -447,6 +462,9 @@ async def _release_so_allocation(db: AsyncSession, so: SalesOrder) -> None:
 # ── Shipment Lifecycle ────────────────────────────────────────────────────────
 
 async def start_picking(db: AsyncSession, shipment: Shipment) -> Shipment:
+    locked = (await db.execute(select(Shipment.status).where(Shipment.id == shipment.id).with_for_update())).scalar_one()
+    if locked != ShipmentStatus.PENDING:   # a second click / another user got here first
+        raise HTTPException(409, "Picking has already started for this shipment.")
     _assert_ship(shipment, ShipmentStatus.PENDING)
     shipment.status = ShipmentStatus.PICKING
     await create_floor_pick_tasks(db, shipment)
@@ -463,10 +481,9 @@ async def create_floor_pick_tasks(db: AsyncSession, shipment: Shipment) -> int:
     from app.models.wms import PickingTask, PickingTaskStatus
 
     made = 0
-    for n, line in enumerate(shipment.lines or [], start=1):
-        exists = (await db.execute(select(func.count()).select_from(PickingTask).where(
-            PickingTask.shipment_id == shipment.id, PickingTask.product_id == line.product_id,
-            PickingTask.status != PickingTaskStatus.CANCELLED))).scalar()
+    for n, line in enumerate(sorted(shipment.lines or [], key=lambda l: str(l.id)), start=1):
+        task_no = f"PK-{shipment.shipment_no}-{n}"[:50]   # one task per shipment line
+        exists = (await db.execute(select(func.count()).select_from(PickingTask).where(PickingTask.task_no == task_no))).scalar()
         if exists or line.is_picked:
             continue
         q = select(Stock.location_id).where(Stock.warehouse_id == shipment.warehouse_id, Stock.product_id == line.product_id,
@@ -475,7 +492,7 @@ async def create_floor_pick_tasks(db: AsyncSession, shipment: Shipment) -> int:
         if line.lot_id:
             q = q.where(Stock.lot_id == line.lot_id)
         bin_id = (await db.execute(q.order_by(Stock.quantity_available.desc()).limit(1))).scalar()
-        db.add(PickingTask(task_no=f"PK-{shipment.shipment_no}-{n}"[:50], warehouse_id=shipment.warehouse_id,
+        db.add(PickingTask(task_no=task_no, warehouse_id=shipment.warehouse_id,
                            shipment_id=shipment.id, product_id=line.product_id, lot_id=line.lot_id,
                            from_location_id=bin_id, requested_qty=line.quantity, unit=line.unit or "PCS",
                            status=PickingTaskStatus.PENDING, fefo_enforced=False))

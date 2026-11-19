@@ -579,13 +579,12 @@ async def notify_permission_holders(db: AsyncSession, permission: str, title: st
     from app.models.role import Permission, Role, role_permission
     from app.models.user import User, user_role
 
-    module_key, action = permission.split(".", 1)
     rows = (await db.execute(
         select(User.id, User.full_name).distinct()
         .join(user_role, user_role.c.user_id == User.id).join(Role, Role.id == user_role.c.role_id)
         .join(role_permission, role_permission.c.role_id == Role.id).join(Permission, Permission.id == role_permission.c.permission_id)
         .where(User.is_active.is_(True), Role.is_active.is_(True), Permission.is_active.is_(True),
-               or_(Permission.code == permission, Permission.code.like(f"{module_key}.{action}" + r"\_%", escape="\\"))))).all()
+               Permission.code.in_((permission, f"{permission}_all"))))).all()
     now = datetime.utcnow()
     for uid, name in rows:
         db.add(Notification(user_id=str(uid), user_name=name, title=title[:255], message=message,

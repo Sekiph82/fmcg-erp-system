@@ -53,7 +53,7 @@ export default function UtilityManagementPage() {
     <ModuleWorkspace
       title="Utility Management"
       description="Electricity, water, solar, steam, IoT sensors, ESG, alarms, KPIs"
-      permission="utilities.view"
+      permission="utility_management.view"
       tabs={tabs}
       defaultTab="assets"
     />

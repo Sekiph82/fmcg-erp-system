@@ -1135,8 +1135,8 @@ ROLE_DEFINITIONS = {
     },
     # User groups without a role until M39 (persona audit): clerks prepare, managers approve (segregation of duties)
     "accountant": {
-        "description": "Accountant: journals, posting, receivables/payables follow-up, M-Pesa reconciliation (no approvals or setup)",
-        "permissions": ["finance.view", "finance.create", "finance.edit", "finance.post_all", "finance.export",
+        "description": "Accountant: prepares journals, follows receivables/payables, reconciles M-Pesa; the finance manager posts and approves",
+        "permissions": ["finance.view", "finance.create", "finance.export",
                         "mpesa.view_transactions", "mpesa.reconcile_payment", "sales.view", "procurement.view"],
     },
     "payroll_officer": {

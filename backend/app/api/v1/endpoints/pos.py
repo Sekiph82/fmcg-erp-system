@@ -249,6 +249,27 @@ async def _post_pos_sale_to_gl(db: AsyncSession, sale: POSSale, user_id):
         user_id=user_id, source_module="pos", entry_prefix="AUTO-POS")
 
 
+async def _reverse_pos_sale_in_gl(db: AsyncSession, sale: POSSale, user_id):
+    """A voided sale takes its ledger entry back: a posted reversal of the AUTO-POS journal, in the same transaction."""
+    from sqlalchemy.orm import selectinload
+
+    from app.models.finance import JournalEntry
+    from app.services.finance_service import create_reversal_journal, mark_journal_posted
+
+    entry = (await db.execute(select(JournalEntry).options(selectinload(JournalEntry.lines)).where(
+        JournalEntry.source_module == "pos", JournalEntry.source_event == "POS_SALE", JournalEntry.source_id == sale.id,
+        JournalEntry.is_posted.is_(True)))).scalar_one_or_none()
+    if entry is None or entry.reversed_by_entry_id:
+        return None
+    try:
+        rev = await create_reversal_journal(db, entry, reversal_entry_no=f"REV-{entry.entry_no}"[:50], reversal_date=date.today(),
+                                            user_id=user_id, description=f"Void of POS sale {sale.sale_no}")
+        await mark_journal_posted(db, rev, user_id)
+    except ValueError as exc:
+        raise HTTPException(422, f"Cannot reverse the sale in the ledger: {exc}") from exc
+    return rev
+
+
 @router.post("/sales", response_model=POSSaleRead, status_code=201)
 async def create_sale(
     body: POSSaleCreate,
@@ -345,11 +366,12 @@ async def get_sale(sale_id: uuid.UUID, db: AsyncSession = Depends(get_db), _: Us
 
 
 @router.post("/sales/{sale_id}/void", response_model=POSSaleRead)
-async def void_sale(sale_id: uuid.UUID, db: AsyncSession = Depends(get_db), _: User = Depends(get_current_user)):
+async def void_sale(sale_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     s = await _get_sale_or_404(db, sale_id)
     if s.status == POSSaleStatus.VOIDED:
         raise HTTPException(422, "Sale already voided")
     s.status = POSSaleStatus.VOIDED
+    await _reverse_pos_sale_in_gl(db, s, current_user.id)
 
     # Reverse session totals
     sess = await _get_session_or_404(db, s.session_id)

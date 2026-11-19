@@ -685,8 +685,8 @@ async def my_work(db: AsyncSession = Depends(get_db), current_user=Depends(get_c
     from app.core.access_control import get_effective_permission_codes
     held = set(get_effective_permission_codes(current_user))
 
-    def can(*codes: str) -> bool:  # the code itself or a scoped variant of it (…_all, …_own_scope, …)
-        return any(has_permission(current_user, c) or any(h.startswith(c + "_") for h in held) for c in codes)
+    def can(*codes: str) -> bool:  # company-wide queues: the code or its _all variant (own-scope users work in their screens)
+        return any(has_permission(current_user, c) or (c + "_all") in held for c in codes)
 
     async def count(q) -> int:
         return int((await db.execute(q)).scalar() or 0)

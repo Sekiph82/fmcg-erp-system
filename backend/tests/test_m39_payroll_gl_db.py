@@ -194,3 +194,9 @@ async def test_pos_sale_is_booked_with_output_tax():
         await db.commit()
         lines = {(l.account_id, l.debit, l.credit) for l in (await db.execute(select(JournalLine).where(JournalLine.entry_id == je.id))).scalars()}
         assert lines == {(till.id, Decimal("1160"), Decimal("0")), (rev.id, Decimal("0"), Decimal("1000")), (vat.id, Decimal("0"), Decimal("160"))}
+        from app.api.v1.endpoints.pos import _reverse_pos_sale_in_gl     # voiding the sale takes the entry back
+        back = await _reverse_pos_sale_in_gl(db, sale, cashier.id)
+        await db.commit()
+        rlines = {(l.account_id, l.debit, l.credit) for l in (await db.execute(select(JournalLine).where(JournalLine.entry_id == back.id))).scalars()}
+        assert back.is_posted and rlines == {(a, cr, dr) for a, dr, cr in lines}
+        assert await _reverse_pos_sale_in_gl(db, sale, cashier.id) is None   # only once

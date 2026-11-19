@@ -339,6 +339,9 @@ async def post_supplier_payment_to_gl(db: AsyncSession, payment: SupplierPayment
     amount = Decimal(payment.amount or 0)
     if amount <= 0:
         raise HTTPException(422, "A supplier payment must be positive.")
+    if (po.currency or "KES") != "KES":  # ponytail: no FX conversion here; finance books foreign payments
+        logging.getLogger(__name__).warning("supplier payment on %s in %s not auto-posted (no FX conversion)", po.po_no, po.currency)
+        return None
     if not rule.debit_account_id or not rule.credit_account_id:
         raise HTTPException(422, "The supplier payment rule needs the payables and the paying bank/cash accounts.")
     await _require_sales_account_types(db, [(rule.debit_account_id, AccountType.LIABILITY, "accounts payable"),

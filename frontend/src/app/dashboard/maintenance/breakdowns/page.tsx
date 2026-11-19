@@ -6,6 +6,7 @@ import { maintenanceApi, BreakdownRecord, BreakdownStatus, BreakdownSeverity, Do
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { RequirePermission } from "@/components/PermissionGuard";
+import { useAuth } from "@/context/AuthContext";
 
 const severityBadge = (s: BreakdownSeverity) =>
   s === "CRITICAL" ? "red" : s === "HIGH" ? "red" : s === "MEDIUM" ? "yellow" : "gray";
@@ -15,6 +16,7 @@ const statusBadge = (s: BreakdownStatus) =>
 
 export default function BreakdownsPage() {
   const qc = useQueryClient();
+  const { hasPermission } = useAuth();
   const [showNew, setShowNew] = useState(false);
   const [resolving, setResolving] = useState<BreakdownRecord | null>(null);
   const [filterStatus, setFilterStatus] = useState<BreakdownStatus | "ALL">("ALL");
@@ -37,6 +39,7 @@ export default function BreakdownsPage() {
   const { data: capacityImpact, isLoading: capacityImpactLoading, isError: capacityImpactError } = useQuery({
     queryKey: ["maint-downtime-capacity-impact"],
     queryFn: () => maintenanceApi.getDowntimeCapacityImpact(),
+    enabled: hasPermission("maintenance.export"),  // the report API needs maintenance.export
   });
 
   const { data: priorityEscalation, isLoading: priorityLoading, isError: priorityError } = useQuery({

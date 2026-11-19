@@ -160,6 +160,7 @@ async def test_shipment_picking_reaches_the_warehouse_floor():
         db.add(sh)
         await db.flush()
         db.add(ShipmentLine(shipment_id=sh.id, product_id=prod.id, quantity=Decimal("12"), unit="PCS"))
+        db.add(ShipmentLine(shipment_id=sh.id, product_id=prod.id, quantity=Decimal("5"), unit="PCS"))  # same product again
         await db.commit()
         ids = SimpleNamespace(sh=sh.id, loc=loc.id)
         P = _as(pk, "inventory.dispatch_all", "inventory.receive_all", "sales.view", "sales.edit")
@@ -169,15 +170,22 @@ async def test_shipment_picking_reaches_the_warehouse_floor():
         async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://t") as c:
             r = await c.post(f"/api/v1/sales/shipments/{ids.sh}/start-picking")
             assert r.status_code == 200, r.text
-            tasks = [t for t in (await c.get(f"{W}/picking/tasks?status=PENDING")).json() if t["task_no"] == f"PK-SH-{s}-1"]
-            assert len(tasks) == 1 and tasks[0]["from_location_code"] == "B-07" and float(tasks[0]["requested_qty"]) == 12
-            done = await c.post(f"{W}/picking/tasks/{tasks[0]['id']}/scan-confirm",
+            assert (await c.post(f"/api/v1/sales/shipments/{ids.sh}/start-picking")).status_code == 409   # double click
+            tasks = {float(t["requested_qty"]): t for t in (await c.get(f"{W}/picking/tasks?status=PENDING")).json()
+                     if t["task_no"].startswith(f"PK-SH-{s}-")}
+            assert set(tasks) == {12.0, 5.0} and tasks[12.0]["from_location_code"] == "B-07"   # one task per line
+            short = await c.post(f"{W}/picking/tasks/{tasks[5.0]['id']}/scan-confirm",
+                                 json={"location_code": f"LB07-{s}", "item_code": f"BC{s}", "picked_qty": "3", "short_reason": "only 3"})
+            assert short.status_code == 200, short.text
+            async with AsyncSessionLocal() as db2:                                # a short pick leaves its line open
+                assert (await db2.get(Shipment, ids.sh)).status == ShipmentStatus.PICKING
+            done = await c.post(f"{W}/picking/tasks/{tasks[12.0]['id']}/scan-confirm",
                                 json={"location_code": f"LB07-{s}", "item_code": f"BC{s}", "picked_qty": "12"})
             assert done.status_code == 200, done.text
     finally:
         app.dependency_overrides.pop(get_current_user, None)
     async with AsyncSessionLocal() as db:
         sh = await db.get(Shipment, ids.sh)
-        assert sh.status == ShipmentStatus.PACKED
-        line = (await db.execute(select(ShipmentLine).where(ShipmentLine.shipment_id == ids.sh))).scalar_one()
-        assert line.is_picked
+        assert sh.status == ShipmentStatus.PICKING                 # the short line still waits for the office
+        picked = {float(l.quantity): l.is_picked for l in (await db.execute(select(ShipmentLine).where(ShipmentLine.shipment_id == ids.sh))).scalars()}
+        assert picked == {12.0: True, 5.0: False}
