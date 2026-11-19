@@ -1,0 +1,14 @@
+# Phone / tablet testing on the local network (development only).
+#   PowerShell:  $env:LAN_IP = "192.168.1.189"; docker compose -f docker-compose.yml -f docker-compose.lan.yml up -d backend frontend
+# The phone opens http://<LAN_IP>:3000. Location, camera and barcode scanning need a "secure" page: on Android Chrome add
+# http://<LAN_IP>:3000 to chrome://flags/#unsafely-treat-insecure-origin-as-secure (see docs/PHONE_ACCEPTANCE_TEST.md).
+# Back to laptop-only:  docker compose up -d backend frontend
+services:
+  backend:
+    environment:
+      BACKEND_CORS_ORIGINS: '["http://localhost:3000","http://${LAN_IP:?set LAN_IP}:3000"]'
+      PUBLIC_APP_URL: http://${LAN_IP}:3000
+  frontend:
+    environment:
+      NEXT_PUBLIC_API_URL: http://${LAN_IP}:8000
+      LAN_IP: ${LAN_IP}
