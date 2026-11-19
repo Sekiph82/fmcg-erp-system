@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { portalApi, PortalAccount, ACCOUNT_TYPE_LABELS, ACCOUNT_STATUS_COLORS } from "@/lib/portal";
+import { SignupRequestsPanel } from "@/components/SignupRequestsPanel";
 
 export default function PortalAdminPage() {
   const [accounts, setAccounts] = useState<PortalAccount[]>([]);
@@ -87,6 +88,8 @@ export default function PortalAdminPage() {
           + New Portal Account
         </button>
       </div>
+
+      <SignupRequestsPanel />
 
       {/* Adoption KPIs */}
       {report && (

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ps, post, money, statusText, PortalError,
-  type PortalMe, type CatalogItem, type PortalOrder, type PortalOrderDetail, type PortalStatement, type PortalClaim,
+  type PortalMe, type CatalogItem, type PortalOrder, type PortalOrderDetail, type PortalStatement, type PortalClaim, type OrderTracking, type PaymentOptions,
 } from "@/lib/portalSelf";
 
 type Tab = "order" | "orders" | "statement" | "claims" | "support";
@@ -73,6 +73,9 @@ function OrderTab({ me, fail, onPlaced }: { me: PortalMe; fail: (e: unknown) => 
   const [notes, setNotes] = useState("");
   const [ref, setRef] = useState(newRef);
   const [busy, setBusy] = useState(false);
+  const [payOpts, setPayOpts] = useState<PaymentOptions | null>(null);
+  const [pay, setPay] = useState("");
+  useEffect(() => { ps<PaymentOptions>("/payment-options").then((o) => { setPayOpts(o); setPay(o.default); }).catch(fail); }, [fail]);
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -94,7 +97,7 @@ function OrderTab({ me, fail, onPlaced }: { me: PortalMe; fail: (e: unknown) => 
     setBusy(true);
     try {
       const r = await post<{ order_no: string }>("/orders", {
-        client_ref: ref, requested_delivery_date: delivery, notes: notes || null,
+        client_ref: ref, requested_delivery_date: delivery, notes: notes || null, payment_method: pay || null,
         lines: lines.map((l) => ({ product_id: l.item.product_id, quantity: String(l.qty) })),
       });
       setCart({}); setNotes(""); setRef(newRef());
@@ -127,6 +130,12 @@ function OrderTab({ me, fail, onPlaced }: { me: PortalMe; fail: (e: unknown) => 
         <label className="block text-xs text-gray-600">Delivery date
           <input type="date" min={new Date().toISOString().slice(0, 10)} value={delivery} onChange={(e) => setDelivery(e.target.value)} className="mt-1 w-full border rounded-lg px-2 py-1.5 text-sm" />
         </label>
+        {payOpts && (
+          <label className="block text-xs text-gray-600">Payment
+            <select value={pay} onChange={(e) => setPay(e.target.value)} className="mt-1 w-full border rounded-lg px-2 py-1.5 text-sm">
+              {payOpts.allowed.map((m) => <option key={m} value={m}>{PAY_TEXT[m]?.(payOpts) ?? m}</option>)}
+            </select>
+          </label>)}
         <textarea aria-label="Order notes" placeholder="Notes (delivery gate, contact…)" maxLength={1000} rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} className="w-full border rounded-lg px-2 py-1.5 text-sm" />
         <button onClick={place} disabled={busy || !me.can_order || lines.length === 0}
           className="w-full py-2.5 rounded-lg bg-indigo-600 text-white font-medium disabled:opacity-50">{busy ? "Sending…" : "Place order"}</button>
@@ -136,9 +145,23 @@ function OrderTab({ me, fail, onPlaced }: { me: PortalMe; fail: (e: unknown) => 
   );
 }
 
+const PAY_TEXT: Record<string, (o: PaymentOptions) => string> = {
+  cash: () => "Cash on delivery",
+  mpesa: (o) => (o.prepaid ? "M-Pesa (pay before delivery)" : "M-Pesa"),
+  credit: (o) => `On account (${o.terms_days} days)`,
+};
+
 function OrdersTab({ me, fail }: { me: PortalMe; fail: (e: unknown) => void }) {
   const [rows, setRows] = useState<PortalOrder[] | null>(null);
   const [open, setOpen] = useState<PortalOrderDetail | null>(null);
+  const [payMsg, setPayMsg] = useState<string | null>(null);
+  async function payMpesa(id: string) {
+    setPayMsg(null);
+    try {
+      const r = await post<{ amount: number; phone_hint: string }>(`/orders/${id}/pay-mpesa`, {});
+      setPayMsg(`Payment request for ${money(r.amount, me.currency)} sent to your phone (${r.phone_hint}). Enter your M-Pesa PIN there.`);
+    } catch (e) { fail(e); }
+  }
   useEffect(() => { ps<PortalOrder[]>("/orders").then(setRows).catch(fail); }, [fail]);
 
   function reorder(d: PortalOrderDetail) {
@@ -161,12 +184,42 @@ function OrdersTab({ me, fail }: { me: PortalMe; fail: (e: unknown) => void }) {
           </button>
           {open?.id === o.id && (
             <div className="mt-2 border-t pt-2 text-sm space-y-1">
+              {open.tracking && <Tracking t={open.tracking} />}
               {open.lines.map((l) => <p key={l.product_id} className="flex justify-between"><span>{l.ordered_quantity} × {l.product_name}</span><span className="text-gray-500">shipped {l.shipped_quantity}</span></p>)}
               {open.shipments.map((s) => <p key={s.id} className="text-xs text-gray-600">Shipment {s.shipment_no}: {s.status.replace(/^.*\./, "")} ({s.scheduled_date})</p>)}
               {open.invoices.map((i) => <p key={i.id} className="text-xs text-gray-600">Invoice {i.invoice_no}: {money(i.total_amount, o.currency)}</p>)}
+              {me.can_order && open.status !== "CANCELLED" && open.payment_status !== "paid" && (open.tracking?.stage ?? "") !== "delivered" && open.payment_method === "mpesa" && (
+                <button onClick={() => payMpesa(open.id)} className="block w-full py-2 rounded-lg bg-emerald-600 text-white text-sm font-medium">Pay with M-Pesa</button>)}
+              {payMsg && <p role="status" className="text-xs text-emerald-700">{payMsg}</p>}
               {me.can_order && <button onClick={() => reorder(open)} className="text-xs underline text-indigo-700">Order again</button>}
             </div>)}
         </div>))}
+    </div>
+  );
+}
+
+const STAGE_TEXT: Record<string, string> = {
+  received: "Received", confirmed: "Confirmed", preparing: "Being prepared", on_the_way: "On the way", delivered: "Delivered",
+};
+const hhmm = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+function Tracking({ t }: { t: OrderTracking }) {
+  if (t.stage === "cancelled") return <p className="text-sm font-medium text-red-700">This order was cancelled.</p>;
+  const at = t.stages.indexOf(t.stage);
+  return (
+    <div className="pb-2" data-testid="order-tracking">
+      <ol className="flex items-start gap-1" aria-label="Order progress">
+        {t.stages.map((s, i) => (
+          <li key={s} className="flex-1 text-center" aria-current={i === at ? "step" : undefined}>
+            <span className={`block h-1.5 rounded-full ${i <= at ? "bg-emerald-500" : "bg-gray-200"}`} />
+            <span className={`block mt-1 text-[11px] leading-tight ${i === at ? "font-semibold text-gray-900" : "text-gray-500"}`}>{STAGE_TEXT[s] ?? s}</span>
+          </li>))}
+      </ol>
+      <p className="mt-2 text-sm text-gray-800" role="status">
+        {t.stage === "delivered" ? (t.delivered_at ? `Delivered at ${hhmm(t.delivered_at)}.` : "Delivered.")
+          : t.eta ? `Driver expected around ${hhmm(t.eta)}${t.stops_before ? ` (${t.stops_before} stop${t.stops_before > 1 ? "s" : ""} before you)` : ""}.`
+          : t.eta_date ? `Planned delivery: ${t.eta_date}.` : null}
+      </p>
     </div>
   );
 }

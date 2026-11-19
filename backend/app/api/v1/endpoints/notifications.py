@@ -47,6 +47,32 @@ async def create_notification(data: NotificationCreate, db: AsyncSession = Depen
     return await svc.create_notification(db, data)
 
 
+# ── The signed-in user's own notifications (header bell) — every login, no module permission ─────────────────────
+
+@router.get("/me", response_model=List[NotificationOut])
+async def my_notifications(read_flag: Optional[bool] = None, limit: int = Query(default=20, le=100),
+                           db: AsyncSession = Depends(get_db), user=Depends(get_current_user)):
+    return await svc.list_notifications(db, str(user.id), None, None, read_flag, None, limit, 0)
+
+
+@router.get("/me/unread-count")
+async def my_unread_count(db: AsyncSession = Depends(get_db), user=Depends(get_current_user)):
+    return {"unread_count": await svc.get_unread_count(db, str(user.id))}
+
+
+@router.post("/me/{notification_id}/read", response_model=NotificationOut)
+async def my_mark_read(notification_id: UUID, db: AsyncSession = Depends(get_db), user=Depends(get_current_user)):
+    obj = await svc.get_notification(db, notification_id)
+    if not obj or obj.user_id != str(user.id):
+        raise HTTPException(404, "Notification not found")
+    return await svc.mark_read(db, notification_id)
+
+
+@router.post("/me/read-all")
+async def my_mark_all_read(db: AsyncSession = Depends(get_db), user=Depends(get_current_user)):
+    return {"marked_read": await svc.mark_all_read(db, str(user.id))}
+
+
 @router.get("/unread-count",
             dependencies=[Depends(require_permission("notifications", "view"))])
 async def unread_count(user_id: str, db: AsyncSession = Depends(get_db)):

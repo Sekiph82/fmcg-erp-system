@@ -53,9 +53,7 @@ export function NotificationBell({ compact = false }: Props) {
   const fetchCount = useCallback(async () => {
     if (!userId) return;
     try {
-      const { data } = await apiClient.get<{ unread_count?: number }>("/api/v1/notifications/unread-count", {
-        params: { user_id: userId },
-      });
+      const { data } = await apiClient.get<{ unread_count?: number }>("/api/v1/notifications/me/unread-count");
       setCount(data.unread_count ?? 0);
     } catch {}
   }, [userId]);
@@ -64,9 +62,7 @@ export function NotificationBell({ compact = false }: Props) {
     if (!userId) return;
     setLoading(true);
     try {
-      const { data } = await apiClient.get<NCNotif[]>("/api/v1/notifications/", {
-        params: { user_id: userId, read_flag: false, limit: 8 },
-      });
+      const { data } = await apiClient.get<NCNotif[]>("/api/v1/notifications/me", { params: { read_flag: false, limit: 8 } });
       setNotifs(data);
     } catch {}
     setLoading(false);
@@ -96,7 +92,7 @@ export function NotificationBell({ compact = false }: Props) {
   };
 
   const markOne = async (id: string) => {
-    await apiClient.patch(`/api/v1/notifications/${id}/read`);
+    await apiClient.post(`/api/v1/notifications/me/${id}/read`);
     setNotifs((prev) => prev.filter((n) => n.notification_id !== id));
     setCount((c) => Math.max(0, c - 1));
   };
@@ -105,7 +101,7 @@ export function NotificationBell({ compact = false }: Props) {
     if (!userId) return;
     setMarking(true);
     try {
-      await apiClient.post("/api/v1/notifications/mark-all-read", null, { params: { user_id: userId } });
+      await apiClient.post("/api/v1/notifications/me/read-all");
       setNotifs([]);
       setCount(0);
     } finally {

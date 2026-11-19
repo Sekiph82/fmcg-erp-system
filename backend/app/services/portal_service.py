@@ -412,8 +412,8 @@ def _serialize_order(o):
         "requested_delivery_date": str(o.requested_delivery_date),
         "status": str(o.status),
         "currency": o.currency,
-        "payment_method": str(o.payment_method),
-        "payment_status": str(o.payment_status),
+        "payment_method": o.payment_method.value,
+        "payment_status": o.payment_status.value,
         "line_count": len(o.lines or []),
         "total": float(sum((l.ordered_quantity * l.unit_price * (1 - (l.discount_pct or 0)) * (1 + (l.tax_rate or 0))
                             for l in (o.lines or [])), Decimal("0"))),

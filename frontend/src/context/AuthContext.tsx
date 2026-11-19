@@ -93,6 +93,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const hasPermission = (code: string): boolean => {
     if (!user) return false;
+    // "self.<flag>": screens that follow who the user is (linked rep/driver, employee record), not a module permission
+    if (code.startsWith("self.")) return !!user.feature_flags?.[code.slice(5)];
     if (user.is_superuser) return true;
     if (permissionSet.has(code)) return true;
 

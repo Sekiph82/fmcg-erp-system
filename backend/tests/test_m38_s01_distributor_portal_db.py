@@ -324,3 +324,128 @@ async def test_failed_logins_lock_only_the_guessing_address():
         r = await owner.post(f"{API}/auth/login", json={**creds, "password": PW})
         assert r.status_code == 200                                                 # the real user is not
         assert (await owner.post(f"{API}/password", json={"current_password": PW, "new_password": PW})).status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_shop_pays_by_its_method_and_tracks_the_driver():
+    """M39.S02: a cash-on-delivery shop may pick only cash/M-Pesa, pays by M-Pesa from the portal (sandbox STK), and
+    follows the order from 'received' to 'on the way' with an arrival estimate from the driver's trip."""
+    from datetime import datetime, timezone
+
+    from app.main import app
+    from app.models.delivery import DeliveryTrip, ProofOfDelivery, TripOrder, TripOrderStatus, TripStatus
+    from app.models.master import Warehouse, WarehouseType
+    from app.models.sales import MpesaTransaction, Shipment, ShipmentStatus
+
+    s = uuid.uuid4().hex[:8]
+    async with AsyncSessionLocal() as db:
+        assert (await db.execute(select(func.current_database()))).scalar_one() == os.environ[TASK_DB_NAME_ENV]
+        shop = Customer(code=f"SH-{s}", name=f"Duka {s}", channel=CustomerChannel.RETAIL, currency="KES", phone="0712345678",
+                        payment_terms_days=0, gps_lat=Decimal("-1.2800"), gps_lng=Decimal("36.8950"))
+        other = Customer(code=f"OT-{s}", name=f"Other {s}", channel=CustomerChannel.RETAIL, currency="KES",
+                         gps_lat=Decimal("-1.2833"), gps_lng=Decimal("36.8833"))
+        prod = Product(sku=f"P-{s}", name="Detergent", category=ProductCategory.HOUSEHOLD, selling_price=Decimal("100"))
+        wh = Warehouse(code=f"W-{s}", name="WH", warehouse_type=WarehouseType.FINISHED_GOODS)
+        db.add_all([shop, other, prod, wh])
+        await db.flush()
+        acc = PortalAccount(account_code=f"PA-SH-{s}", account_type=PortalAccountType.RETAILER,
+                            linked_customer_id=str(shop.id), portal_status=PortalAccountStatus.ACTIVE)
+        db.add(acc)
+        await db.flush()
+        db.add(PortalUser(portal_account_id=acc.id, full_name="Mama", email=f"duka-{s}@example.com", password_hash=hash_password(PW),
+                          role_type=PortalUserRole.OWNER, is_active=True))
+        other_so = SalesOrder(order_no=f"OT-{s}", customer_id=other.id, order_date=date.today(), requested_delivery_date=date.today(),
+                              currency="KES", status=SOStatus.CONFIRMED)
+        db.add(other_so)
+        await db.commit()
+        ids = SimpleNamespace(prod=prod.id, wh=wh.id, other_so=other_so.id)
+
+    async with _client(app) as c:
+        assert (await c.post(f"{API}/auth/login", json={"email": f"duka-{s}@example.com", "password": PW})).status_code == 200
+        opts = (await c.get(f"{API}/payment-options")).json()
+        assert opts["allowed"] == ["cash", "mpesa"] and opts["default"] == "cash"
+        order = {"client_ref": f"ref-{s}", "requested_delivery_date": (date.today() + timedelta(days=1)).isoformat(),
+                 "lines": [{"product_id": str(ids.prod), "quantity": "3"}]}
+        assert (await c.post(f"{API}/orders", json={**order, "payment_method": "credit"})).status_code == 422   # not on credit
+        made = await c.post(f"{API}/orders", json={**order, "payment_method": "mpesa"})
+        assert made.status_code == 201, made.text
+        oid = made.json()["id"]
+        d = (await c.get(f"{API}/orders/{oid}")).json()
+        assert d["payment_method"] == "mpesa" and d["tracking"]["stage"] == "received"
+        paid = await c.post(f"{API}/orders/{oid}/pay-mpesa", json={})
+        assert paid.status_code == 201 and paid.json()["amount"] == 300.0 and paid.json()["phone_hint"] == "…678", paid.text
+        assert (await c.post(f"{API}/orders/{ids.other_so}/pay-mpesa", json={})).status_code == 404     # not my order
+        assert (await c.post(f"{API}/orders/{oid}/pay-mpesa", json={})).status_code == 409               # one request at a time
+
+        async with AsyncSessionLocal() as db:   # staff: confirm, ship, dispatch on a trip after another drop
+            so = await db.get(SalesOrder, uuid.UUID(oid))
+            so.status = SOStatus.CONFIRMED
+            assert (await db.execute(select(func.count()).select_from(MpesaTransaction).where(MpesaTransaction.so_id == so.id))).scalar() == 1
+            sh_mine = Shipment(shipment_no=f"SM-{s}", so_id=so.id, warehouse_id=ids.wh, status=ShipmentStatus.DISPATCHED, scheduled_date=date.today())
+            sh_other = Shipment(shipment_no=f"SO-{s}", so_id=ids.other_so, warehouse_id=ids.wh, status=ShipmentStatus.DELIVERED, scheduled_date=date.today())
+            db.add_all([sh_mine, sh_other])
+            await db.flush()
+            dep = datetime.now(timezone.utc)
+            trip = DeliveryTrip(trip_no=f"T-{s}", trip_date=date.today(), vehicle_type="MOTORBIKE", status=TripStatus.PLANNED)
+            db.add(trip)
+            await db.flush()
+            first = TripOrder(trip_id=trip.id, shipment_id=sh_other.id, delivery_sequence=1, status=TripOrderStatus.DELIVERED)
+            mine = TripOrder(trip_id=trip.id, shipment_id=sh_mine.id, delivery_sequence=2)
+            db.add_all([first, mine])
+            await db.commit()
+            trip_id, first_id, other_ship = trip.id, first.id, sh_other.id
+
+        d = (await c.get(f"{API}/orders/{oid}")).json()["tracking"]
+        assert d["stage"] == "preparing" and d["eta"] is None and d["eta_date"] == date.today().isoformat()  # not left yet
+
+        async with AsyncSessionLocal() as db:
+            trip = await db.get(DeliveryTrip, trip_id)
+            trip.status, trip.departed_at = TripStatus.IN_TRANSIT, dep
+            db.add(ProofOfDelivery(shipment_id=other_ship, trip_order_id=first_id, delivered_at=dep, received_by="x"))
+            await db.commit()
+        d = (await c.get(f"{API}/orders/{oid}")).json()["tracking"]
+        assert d["stage"] == "on_the_way" and d["stops_before"] == 0, d
+        eta = datetime.fromisoformat(d["eta"])
+        assert 0 <= (eta - dep).total_seconds() / 60 <= 15, d     # ~1.35 km straight line on a motorbike
+
+
+@pytest.mark.asyncio
+async def test_shop_signs_up_from_the_app_and_staff_approve():
+    """M39.S02.T003: public sign-up request (no account enumeration, one request per e-mail), staff list + approve →
+    retail customer on cash on delivery + active account + owner invite link; the shop sets a password and orders."""
+    from app.main import app
+
+    s = uuid.uuid4().hex[:8]
+    req = {"shop_name": f"Mama Duka {s}", "contact_name": "Mama", "phone": "0711 222 333", "email": f"Shop-{s}@Example.com",
+           "address": "Umoja, Nairobi", "lat": "-1.2800", "lng": "36.8950"}
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app, client=(f"203.0.113.{int(s[:2], 16) % 250}", 5000)),
+                                 base_url="http://t") as pub:
+        a = await pub.post(f"{API}/auth/signup-request", json=req)
+        b = await pub.post(f"{API}/auth/signup-request", json={**req, "email": f"shop-{s}@example.com"})  # same e-mail again
+        assert a.status_code == b.status_code == 202 and a.json() == b.json()
+        assert (await pub.post(f"{API}/auth/signup-request", json={**req, "email": "not-an-email"})).status_code == 422
+    staff = SimpleNamespace(id=uuid.uuid4(), username="sales", email="s@example.com", full_name="S", is_superuser=False,
+                            is_active=True, access_scopes=[], roles=[SimpleNamespace(name="r", is_active=True, access_scopes=[],
+                            permissions=[SimpleNamespace(code=c, module=c.split(".")[0], action=c.split(".")[1], is_active=True)
+                                         for c in ("sales.view", "sales.edit", "partner_portal.manage_access")])])
+    try:
+        app.dependency_overrides[get_current_user] = lambda: staff
+        async with _client(app) as st:
+            mine = [r for r in (await st.get("/api/v1/portal/signup-requests")).json() if r["shop_name"] == req["shop_name"]]
+            assert len(mine) == 1 and mine[0]["email"] == f"shop-{s}@example.com" and mine[0]["lat"] == "-1.2800"
+            ok = await st.post(f"/api/v1/portal/signup-requests/{mine[0]['id']}/approve")
+            assert ok.status_code == 201, ok.text
+            assert (await st.post(f"/api/v1/portal/signup-requests/{mine[0]['id']}/approve")).status_code == 404  # once only
+            assert all(r["shop_name"] != req["shop_name"] for r in (await st.get("/api/v1/portal/signup-requests")).json())
+            token = ok.json()["activation_link"].split("token=")[1]
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+    async with AsyncSessionLocal() as db:
+        cust = (await db.execute(select(Customer).where(Customer.name == req["shop_name"]))).scalar_one()
+        assert (cust.channel, cust.payment_terms_days, cust.phone, str(cust.gps_lat)) == (CustomerChannel.RETAIL, 0, "0711 222 333", "-1.2800000")
+    async with _client(app) as shop:
+        assert (await shop.post(f"{API}/auth/activate", json={"token": token, "new_password": "Duka-Pass-2026!"})).status_code == 200
+        assert (await shop.post(f"{API}/auth/login", json={"email": f"shop-{s}@example.com", "password": "Duka-Pass-2026!"})).status_code == 200
+        me = (await shop.get(f"{API}/me")).json()
+        assert me["role"] == "OWNER" and me["can_order"] is True, me
+        assert (await shop.get(f"{API}/payment-options")).json()["allowed"] == ["cash", "mpesa"]

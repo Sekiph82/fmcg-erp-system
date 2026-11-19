@@ -197,6 +197,10 @@ export const portalApi = {
   getAccount: (id: string) => r(ax.get<PortalAccount>(`/portal/accounts/${id}`)),
   updateAccount: (id: string, data: Partial<PortalAccount>) => r(ax.patch<PortalAccount>(`/portal/accounts/${id}`, data)),
   activateAccount: (id: string) => r(ax.post<PortalAccount>(`/portal/accounts/${id}/activate`)),
+  signupRequests: () => r(ax.get<SignupRequest[]>("/portal/signup-requests")),
+  approveSignup: (id: string, customerId?: string) =>
+    r(ax.post<{ customer_code: string; activation_link: string; email: string }>(`/portal/signup-requests/${id}/approve`, null,
+      { params: customerId ? { customer_id: customerId } : {} })),
   suspendAccount: (id: string) => r(ax.post<PortalAccount>(`/portal/accounts/${id}/suspend`)),
 
   // Users
@@ -244,3 +248,9 @@ export const portalApi = {
   getAIRecs: (params?: Record<string, unknown>) => r(ax.get<PortalAIRec[]>(`/portal/ai/recommendations`, { params })),
   ackAIRec: (id: string, data: Record<string, unknown>) => r(ax.patch<PortalAIRec>(`/portal/ai/recommendations/${id}`, data)),
 };
+
+/** A shop's account request from the app (M39.S02.T003). */
+export interface SignupRequest {
+  id: string; account_code: string; shop_name: string; contact_name: string; email: string; phone: string;
+  address: string; lat: string | null; lng: string | null; created_at: string | null;
+}

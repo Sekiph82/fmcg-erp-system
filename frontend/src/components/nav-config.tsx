@@ -232,7 +232,7 @@ export const NAV_CONFIG: NavEntry[] = [
   // Employee self-service (M38): every employee's own leave, attendance, requests, payslips
   ws("my-hr",       "My HR",           "/dashboard/ess",
     md("M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"),
-    { searchHints: [
+    { permission: "self.my_hr", searchHints: [
       { label: "My Leave",            href: "/dashboard/ess/leave" },
       { label: "My Attendance",       href: "/dashboard/ess/attendance" },
       { label: "My Payslips",         href: "/dashboard/ess/payslips" },
@@ -250,7 +250,7 @@ export const NAV_CONFIG: NavEntry[] = [
   // Field app (M38): reps, moto riders, drivers and field controllers see only their own work; no module permission needed
   ws("field",       "Field App",       "/dashboard/field",
     md("M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0zM15 11a3 3 0 11-6 0 3 3 0 016 0z"),
-    { searchHints: [
+    { permission: "self.field_app", searchHints: [
       { label: "My Route",            href: "/dashboard/field" },
       { label: "My Deliveries",       href: "/dashboard/field" },
       { label: "Outlet Audits",       href: "/dashboard/field" },
@@ -259,7 +259,7 @@ export const NAV_CONFIG: NavEntry[] = [
 
   ws("crm",         "CRM",             "/dashboard/crm",
     md("M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"),
-    { permission: "sales.view", searchHints: [
+    { permission: "crm.view", searchHints: [
       { label: "Pipeline Board",      tab: "pipeline" },
       { label: "Loyalty Program",     tab: "loyalty" },
       { label: "NPS Tracking",        tab: "nps" },

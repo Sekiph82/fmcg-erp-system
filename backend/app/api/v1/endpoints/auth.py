@@ -328,9 +328,25 @@ async def refresh_session(
 
 
 @router.get("/me", response_model=UserRead, summary="Current user profile", description="Returns the authenticated user's profile, roles, permission codes, effective modules, and access scopes. Use this to bootstrap frontend auth context.")
-async def get_me(current_user=Depends(get_current_user)):
+async def get_me(current_user=Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     payload = UserRead.model_validate(current_user).model_dump()
     payload["modules"] = get_effective_modules(current_user)
     payload["scopes"] = get_effective_scopes(current_user)
-    payload["feature_flags"] = {}
+    payload["feature_flags"] = await _work_links(db, current_user)
     return payload
+
+
+async def _work_links(db: AsyncSession, user) -> dict[str, bool]:
+    """Screens that follow who the user IS rather than a module permission: the Field App (a linked sales rep or
+    moto rider, a trip driver, a field controller/supervisor) and My HR (a linked employee record)."""
+    from sqlalchemy import exists, select
+    from app.core.access_control import has_permission
+    from app.models.delivery import DeliveryTrip
+    from app.models.field_sales import SalesRep
+    from app.models.hr import Employee
+
+    field = has_permission(user, "field.audit") or has_permission(user, "field.supervise") or bool((await db.execute(select(
+        exists().where(SalesRep.user_id == user.id, SalesRep.is_active.is_(True))
+        | exists().where(DeliveryTrip.driver_user_id == user.id)))).scalar())
+    employee = bool((await db.execute(select(exists().where(Employee.user_id == user.id)))).scalar())
+    return {"field_app": field, "my_hr": employee}

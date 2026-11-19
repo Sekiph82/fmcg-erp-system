@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { partnerFetch } from "@/lib/portalSelf";
 
-export interface PartnerAuthProps { base: "portal-self" | "supplier-self"; home: string; title: string; subtitle: string; helper: string }
+export interface PartnerAuthProps { base: "portal-self" | "supplier-self"; home: string; title: string; subtitle: string; helper: string; signupHref?: string }
 
-export function PartnerLogin({ base, home, title, subtitle, helper }: PartnerAuthProps) {
+export function PartnerLogin({ base, home, title, subtitle, helper, signupHref }: PartnerAuthProps) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -47,6 +47,7 @@ export function PartnerLogin({ base, home, title, subtitle, helper }: PartnerAut
           {busy ? "Signing in…" : "Sign in"}
         </button>
         <p className="text-xs text-gray-500">{helper}</p>
+        {signupHref && <p className="text-sm"><Link href={signupHref} className="font-medium text-indigo-700 underline">New shop? Request an account</Link></p>}
         <p className="text-xs text-gray-400"><Link href="/login" className="underline">Staff sign-in</Link></p>
       </form>
     </main>

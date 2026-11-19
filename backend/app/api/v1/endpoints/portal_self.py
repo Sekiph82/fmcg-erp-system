@@ -57,6 +57,22 @@ class OrderIn(BaseModel):
     requested_delivery_date: date
     notes: Optional[str] = Field(default=None, max_length=1000)
     lines: List[OrderLineIn] = Field(min_length=1, max_length=200)
+    payment_method: Optional[str] = Field(default=None, pattern=r"^(cash|mpesa|credit)$")  # must be one the account allows
+
+
+def payment_options(customer) -> dict:
+    """How this customer may pay, from its commercial terms (no separate setting): prepaid accounts pay by M-Pesa
+    before delivery; accounts without credit days pay on delivery (cash or M-Pesa); credit accounts may also buy on
+    their terms. The first option is the default."""
+    if customer.is_prepaid:
+        allowed = ["mpesa"]
+    elif not customer.payment_terms_days or (customer.credit_limit is not None and customer.credit_limit <= 0):
+        allowed = ["cash", "mpesa"]
+    else:
+        allowed = ["credit", "mpesa", "cash"]
+    return {"allowed": allowed, "default": allowed[0], "prepaid": bool(customer.is_prepaid),
+            "terms_days": customer.payment_terms_days if "credit" in allowed else 0,
+            "credit_limit": float(customer.credit_limit) if "credit" in allowed and customer.credit_limit is not None else None}
 
 
 async def _customer(db: AsyncSession, user: PortalUser):
@@ -122,6 +138,47 @@ async def activate(body: ActivateIn, db: AsyncSession = Depends(get_db)):
     if not user:
         raise HTTPException(400, "This link is invalid or has expired. Ask your sales representative for a new one.")
     return {"detail": "Password set. You can sign in now.", "email": user.email}
+
+
+class SignupIn(BaseModel):
+    shop_name: str = Field(min_length=2, max_length=150)
+    contact_name: str = Field(min_length=2, max_length=150)
+    phone: str = Field(min_length=9, max_length=20, pattern=r"^\+?[0-9 ]+$")
+    email: str = Field(min_length=5, max_length=200, pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+    address: str = Field(min_length=3, max_length=300)
+    lat: Optional[Decimal] = Field(default=None, ge=-90, le=90)
+    lng: Optional[Decimal] = Field(default=None, ge=-180, le=180)
+
+
+SIGNUP_PREFIX = "SIGNUP:"  # ponytail: the request rides in PortalAccount.notes as JSON; a column when requests need search
+
+
+@public.post("/auth/signup-request", status_code=202)
+async def signup_request(body: SignupIn, request: Request, db: AsyncSession = Depends(get_db)):
+    """A shop asks for an ordering account from the app. Sales staff review it (Customer Portal → requests), create or
+    link the customer and send the set-password link. Same answer whether or not the e-mail is known."""
+    import json
+
+    from app.core.login_limiter import check_login_allowed, record_login_failure
+    from app.models.portal import PortalAccount, PortalAccountStatus, PortalAccountType
+
+    key = f"portal-signup:{request.client.host if request.client else '-'}"
+    await check_login_allowed(key)
+    await record_login_failure(key)  # every request counts: at most a few per address per window
+    email = body.email.strip().lower()
+    known = (await db.execute(select(PortalUser.id).where(func.lower(PortalUser.email) == email))).first() or (
+        await db.execute(select(PortalAccount.id).where(func.lower(PortalAccount.primary_contact_email) == email,
+                                                        PortalAccount.portal_status == PortalAccountStatus.PENDING))).first()
+    if not known:
+        db.add(PortalAccount(
+            account_code=f"REQ-{secrets.token_hex(4).upper()}", account_type=PortalAccountType.RETAILER,
+            portal_status=PortalAccountStatus.PENDING, primary_contact_name=body.contact_name.strip(),
+            primary_contact_email=email, primary_contact_phone=body.phone.strip(), can_view_prices=True,
+            notes=SIGNUP_PREFIX + json.dumps({"shop_name": body.shop_name.strip(), "address": body.address.strip(),
+                                              "lat": str(body.lat) if body.lat is not None else None,
+                                              "lng": str(body.lng) if body.lng is not None else None})))
+        await db.commit()
+    return {"detail": "Thank you. Our sales team will check your request and send you a link to set your password."}
 
 
 @public.post("/auth/logout")
@@ -218,9 +275,13 @@ async def place_order(body: OrderIn, user: PortalUser = Depends(ext.get_portal_u
         if price is None:
             raise HTTPException(422, f"{product.name} has no price for your account.")
         priced.append((product, line.quantity, price))
+    opts = payment_options(customer)
+    method = body.payment_method or opts["default"]
+    if method not in opts["allowed"]:
+        raise HTTPException(422, "This payment method is not available for your account.")
     so = SalesOrder(order_no=f"WEB-{date.today():%y%m%d}-{secrets.token_hex(5).upper()}", customer_id=customer.id,
                     order_date=date.today(), requested_delivery_date=body.requested_delivery_date,
-                    status=SOStatus.DRAFT, currency=customer.currency, payment_method=PaymentMethod.CREDIT,
+                    status=SOStatus.DRAFT, currency=customer.currency, payment_method=PaymentMethod(method),
                     source=OrderSource.DISTRIBUTOR, distributor_id=dist, offline_id=offline_id,
                     offline_synced_at=datetime.now(timezone.utc),
                     notes=f"Portal order by {user.full_name} ({user.email})" + (f": {body.notes}" if body.notes else ""))
@@ -245,6 +306,67 @@ async def place_order(body: OrderIn, user: PortalUser = Depends(ext.get_portal_u
             "total": float(total) if user.account.can_view_prices else None, "duplicate": False}
 
 
+@router.get("/payment-options")
+async def get_payment_options(user: PortalUser = Depends(ext.get_portal_user), db: AsyncSession = Depends(get_db)):
+    return payment_options(await _customer(db, user))
+
+
+@router.post("/orders/{order_id}/pay-mpesa", status_code=201)
+async def pay_mpesa(order_id: uuid.UUID, user: PortalUser = Depends(ext.get_portal_user), db: AsyncSession = Depends(get_db)):
+    """Send an M-Pesa payment request (STK push) for the order's open amount to the account's registered phone."""
+    from app.models.sales import Invoice, InvoiceStatus, PaymentMethod, SalesOrder, SOLine
+    from app.services import mpesa_service
+
+    if user.role_type not in ORDERING_ROLES | {PortalUserRole.FINANCE}:
+        raise HTTPException(403, "Your portal role cannot make payments.")
+    customer = await _customer(db, user)
+    so = (await db.execute(select(SalesOrder).where(SalesOrder.id == order_id, SalesOrder.customer_id == customer.id)
+                           .with_for_update())).scalar_one_or_none()
+    if so is None:
+        raise HTTPException(404, "Order not found")
+    if so.status.value == "CANCELLED":
+        raise HTTPException(422, "This order was cancelled.")
+    if not customer.phone:
+        raise HTTPException(422, "No phone number is registered for your account; please contact your sales representative.")
+    from datetime import timedelta
+
+    from app.core.login_limiter import check_login_allowed, record_login_failure
+    from app.models.sales import MpesaTransaction, MpesaTxStatus
+
+    await check_login_allowed(f"portal-pay:{user.id}")   # a few payment requests per user per window
+    await record_login_failure(f"portal-pay:{user.id}")
+    recent = (await db.execute(select(MpesaTransaction.id).where(
+        MpesaTransaction.so_id == so.id, MpesaTransaction.status == MpesaTxStatus.PENDING,
+        MpesaTransaction.created_at > datetime.now(timezone.utc) - timedelta(minutes=2)))).first()
+    if recent:
+        raise HTTPException(409, "A payment request was just sent to your phone; check it or try again in two minutes.")
+    inv = (await db.execute(select(func.count(Invoice.id), func.coalesce(func.sum(Invoice.total_amount - Invoice.paid_amount), 0))
+                            .where(Invoice.so_id == so.id,
+                                   Invoice.status.notin_((InvoiceStatus.CANCELLED, InvoiceStatus.DRAFT))))).one()
+    if inv[0]:   # invoiced: what is still open on the invoices (0 when they are paid)
+        due = Decimal(inv[1])
+    else:        # not invoiced yet (pay before delivery): the order value less M-Pesa already received
+        value = Decimal((await db.execute(select(func.coalesce(func.sum(
+            SOLine.ordered_quantity * SOLine.unit_price * (1 - SOLine.discount_pct) * (1 + SOLine.tax_rate)), 0))
+            .where(SOLine.so_id == so.id))).scalar())
+        received = Decimal((await db.execute(select(func.coalesce(func.sum(MpesaTransaction.amount), 0)).where(
+            MpesaTransaction.so_id == so.id, MpesaTransaction.status == MpesaTxStatus.COMPLETED))).scalar())
+        due = value - received
+    due = due.quantize(Decimal("1"))
+    if due <= 0:
+        raise HTTPException(422, "Nothing is due on this order.")
+    if so.payment_method.value != "mpesa":
+        if "mpesa" not in payment_options(customer)["allowed"]:
+            raise HTTPException(422, "M-Pesa is not available for your account.")
+        so.payment_method = PaymentMethod.MPESA  # the shop chose to pay this order by M-Pesa
+    tx = await mpesa_service.initiate_payment(db, so, customer.phone, due, None)
+    await svc._log_activity(db, str(user.id), str(user.portal_account_id), PortalActivityType.SUBMIT_ORDER,
+                            "mpesa_payment", str(tx.id))
+    await db.commit()
+    return {"status": getattr(tx.status, "value", tx.status), "amount": float(due),
+            "phone_hint": "…" + customer.phone[-3:]}
+
+
 @router.get("/orders")
 async def orders(status: Optional[str] = Query(None, max_length=20), page: int = Query(1, ge=1, le=500),
                  user: PortalUser = Depends(ext.get_portal_user), db: AsyncSession = Depends(get_db)):
@@ -265,6 +387,9 @@ async def order_detail(order_id: uuid.UUID, user: PortalUser = Depends(ext.get_p
     order = await svc.get_portal_order_detail(db, user.account, str(order_id))
     if not order:
         raise HTTPException(404, "Order not found")
+    from app.models.sales import SalesOrder
+    from app.services.delivery_eta import order_tracking
+    order["tracking"] = await order_tracking(db, await db.get(SalesOrder, order_id))  # scoped above: the caller's own order
     ids = [uuid.UUID(l["product_id"]) for l in order["lines"]]
     names = {str(p.id): (p.name, p.sku) for p in (await db.execute(select(Product).where(Product.id.in_(ids)))).scalars()} if ids else {}
     for l in order["lines"]:

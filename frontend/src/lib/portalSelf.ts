@@ -30,12 +30,20 @@ export interface PortalMe {
 export interface CatalogItem { product_id: string; sku: string; name: string; uom: string; units_per_carton: number; unit_price: number | null }
 export interface PortalOrder {
   id: string; order_no: string; order_date: string; requested_delivery_date: string; status: string; currency: string;
-  payment_status: string; line_count: number; total: number | null;
+  payment_method: string; payment_status: string; line_count: number; total: number | null;
 }
 export interface PortalOrderDetail extends PortalOrder {
   lines: { product_id: string; product_name: string; sku: string; ordered_quantity: number; shipped_quantity: number; unit: string; unit_price: number | null }[];
   shipments: { id: string; shipment_no: string; status: string; scheduled_date: string }[];
   invoices: { id: string; invoice_no: string; status: string; total_amount: number }[];
+  tracking?: OrderTracking;
+}
+export interface PaymentOptions { allowed: string[]; default: string; prepaid: boolean; terms_days: number; credit_limit: number | null }
+/** Where the order is and when the driver should arrive (estimate from the driver's trip). */
+export interface OrderTracking {
+  stage: "received" | "confirmed" | "preparing" | "on_the_way" | "delivered" | "cancelled";
+  stages: string[]; eta: string | null; eta_date: string | null; delivered_at: string | null;
+  stops_before: number | null; vehicle: string | null;
 }
 export interface PortalInvoice {
   id: string; invoice_no: string; invoice_date: string; due_date: string; status: string; currency: string;

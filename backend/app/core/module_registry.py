@@ -620,6 +620,7 @@ PUBLIC_ROUTES: frozenset[tuple[str, str]] = frozenset({
     ("/supplier-self/auth/logout", "POST"),
     ("/portal-self/auth/login", "POST"),               # distributor sign-in (rate-limited, realm cookie)
     ("/portal-self/auth/activate", "POST"),            # one-time set-password token (stored as a digest)
+    ("/portal-self/auth/signup-request", "POST"),      # shop asks for an account (rate-limited per address; staff approve)
     ("/portal-self/auth/logout", "POST"),
     ("/integrations/mpesa/callback", "POST"),        # Safaricom Daraja callbacks (shared-secret token)
     ("/sales/mpesa/callback", "POST"),

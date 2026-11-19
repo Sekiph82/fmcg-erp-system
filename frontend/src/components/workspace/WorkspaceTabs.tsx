@@ -83,6 +83,7 @@ export function WorkspaceTabs({ tabs, defaultTab, wrapOnMobile = false }: Worksp
             return (
               <button
                 key={tab.key}
+                data-tab-key={tab.key}
                 onClick={() => navigate(tab.key)}
                 className={
                   active

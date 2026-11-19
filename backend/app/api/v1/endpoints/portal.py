@@ -118,6 +118,76 @@ async def invite_user(account_id: str, data: PortalUserInvite, db: AsyncSession 
     return _with_link(user, user.raw_invitation_token)
 
 
+# ── Shop sign-up requests from the app (M39.S02.T003) ─────────────────────────
+
+@router.get("/signup-requests")
+async def signup_requests(db: AsyncSession = Depends(get_db)):
+    """Pending self sign-up requests, newest first."""
+    import json
+
+    from sqlalchemy import select
+
+    from app.api.v1.endpoints.portal_self import SIGNUP_PREFIX
+    from app.models.portal import PortalAccount, PortalAccountStatus
+
+    rows = (await db.execute(select(PortalAccount).where(PortalAccount.portal_status == PortalAccountStatus.PENDING,
+                                                         PortalAccount.notes.startswith(SIGNUP_PREFIX))
+                             .order_by(PortalAccount.created_at.desc()).limit(200))).scalars().all()
+    return [{"id": str(a.id), "account_code": a.account_code, "contact_name": a.primary_contact_name,
+             "email": a.primary_contact_email, "phone": a.primary_contact_phone,
+             "created_at": a.created_at.isoformat() if a.created_at else None,
+             **json.loads(a.notes[len(SIGNUP_PREFIX):])} for a in rows]
+
+
+@router.post("/signup-requests/{account_id}/approve", status_code=201)
+async def approve_signup(account_id: str, customer_id: Optional[str] = None, db: AsyncSession = Depends(get_db),
+                         staff=Depends(_manage_access)):
+    """Approve a shop: link an existing customer (customer_id) or create one (retail, cash on delivery until finance
+    sets credit terms), activate the account and invite the contact as its owner. Returns the set-password link."""
+    import json
+    import secrets
+    import uuid as _uuid
+    from decimal import Decimal
+
+    from sqlalchemy import func, select
+
+    from app.api.v1.endpoints.portal_self import SIGNUP_PREFIX
+    from app.models.portal import PortalAccount, PortalAccountStatus, PortalUser, PortalUserRole
+    from app.models.sales import Customer, CustomerChannel
+    from app.schemas.portal import PortalUserInvite
+
+    try:
+        acc_id, cust_id = _uuid.UUID(account_id), (_uuid.UUID(customer_id) if customer_id else None)
+    except ValueError:
+        raise HTTPException(422, "Invalid id.")
+    acc = (await db.execute(select(PortalAccount).where(PortalAccount.id == acc_id).with_for_update())).scalar_one_or_none()
+    if acc is None or acc.portal_status != PortalAccountStatus.PENDING or not (acc.notes or "").startswith(SIGNUP_PREFIX):
+        raise HTTPException(404, "Sign-up request not found")
+    req = json.loads(acc.notes[len(SIGNUP_PREFIX):])
+    if (await db.execute(select(PortalUser.id).where(func.lower(PortalUser.email) == acc.primary_contact_email))).first():
+        raise HTTPException(409, "A portal user with this e-mail already exists.")
+    if customer_id:
+        customer = await db.get(Customer, cust_id)
+        if customer is None or not customer.is_active:
+            raise HTTPException(422, "Customer not found or inactive.")
+    else:
+        customer = Customer(code=f"SHOP-{secrets.token_hex(3).upper()}", name=req["shop_name"], channel=CustomerChannel.RETAIL,
+                            currency="KES", contact_person=acc.primary_contact_name, phone=acc.primary_contact_phone,
+                            email=acc.primary_contact_email, address=req.get("address"), delivery_address=req.get("address"),
+                            payment_terms_days=0, credit_limit=Decimal("0"),
+                            gps_lat=Decimal(req["lat"]) if req.get("lat") else None,
+                            gps_lng=Decimal(req["lng"]) if req.get("lng") else None)
+        db.add(customer)
+        await db.flush()
+    acc.linked_customer_id, acc.portal_status = str(customer.id), PortalAccountStatus.ACTIVE
+    acc.notes = f"Approved by {staff.username}. " + acc.notes  # keeps the original request; no longer listed as pending
+    # one transaction: invite_user commits the customer, the account change and the owner together (or none of them)
+    user = await svc.invite_user(db, str(acc.id), PortalUserInvite(full_name=acc.primary_contact_name, email=acc.primary_contact_email,
+                                                                   phone=acc.primary_contact_phone, role_type=PortalUserRole.OWNER,
+                                                                   invited_by=staff.username))
+    return {"customer_id": str(customer.id), "customer_code": customer.code, **_with_link(user, user.raw_invitation_token)}
+
+
 @router.post("/users/{user_id}/password-link")
 async def password_link(user_id: str, db: AsyncSession = Depends(get_db), staff=Depends(_manage_access)):
     """New set-password link for a user who forgot their password (the old password keeps working until used)."""

@@ -1,0 +1,16 @@
+{
+  "id": "/portal",
+  "name": "POVU Shop",
+  "short_name": "POVU Shop",
+  "description": "Order POVU products for your shop, pay and track your delivery",
+  "start_url": "/portal?source=pwa",
+  "scope": "/portal",
+  "display": "standalone",
+  "background_color": "#f9fafb",
+  "theme_color": "#4338ca",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
