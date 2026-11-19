@@ -1266,6 +1266,14 @@ async def scan_confirm_pick(task_id: uuid.UUID, body: ScanPickIn, db: AsyncSessi
     task.assigned_to_id = task.assigned_to_id or current_user.id
     if body.short_reason:
         task.notes = ((task.notes + "\n") if task.notes else "") + f"Short pick {body.picked_qty}/{task.requested_qty}: {body.short_reason}"
+    if task.shipment_id:  # a sales shipment's task: its shipment line is picked too (shipment → PACKED when all are)
+        from app.models.sales import ShipmentLine
+        from app.services import sales_service
+        line = (await db.execute(select(ShipmentLine).where(
+            ShipmentLine.shipment_id == task.shipment_id, ShipmentLine.product_id == task.product_id,
+            ShipmentLine.is_picked.is_(False)).limit(1))).scalar_one_or_none()
+        if line is not None:
+            await sales_service.pick_line(db, line, current_user.id)
     await db.commit()
     r = PickingTaskRead.model_validate(task)
     r.product_name, r.warehouse_name = (p.name if p else None), (task.warehouse.name if task.warehouse else None)

@@ -178,6 +178,13 @@ async def signup_request(body: SignupIn, request: Request, db: AsyncSession = De
                                               "lat": str(body.lat) if body.lat is not None else None,
                                               "lng": str(body.lng) if body.lng is not None else None})))
         await db.commit()
+        from app.services.notifications_service import notify_permission_holders
+        try:
+            await notify_permission_holders(db, "partner_portal.manage_access", f"Shop sign-up: {body.shop_name.strip()}",
+                                            f"{body.contact_name.strip()} asked for an ordering account (Customer Portal → requests).",
+                                            module="sales")
+        except Exception:  # the request is saved; staff also see it in the list
+            pass
     return {"detail": "Thank you. Our sales team will check your request and send you a link to set your password."}
 
 
@@ -301,6 +308,8 @@ async def place_order(body: OrderIn, user: PortalUser = Depends(ext.get_portal_u
     await svc._log_activity(db, str(user.id), str(user.portal_account_id), PortalActivityType.SUBMIT_ORDER,
                             "sales_order", str(so.id))
     await db.commit()
+    from app.services.notifications_service import notify_new_order
+    await notify_new_order(db, so, customer.name, "portal")
     total = sum((q * p for _, q, p in priced), Decimal("0"))
     return {"id": str(so.id), "order_no": so.order_no, "status": so.status.value, "currency": so.currency,
             "total": float(total) if user.account.can_view_prices else None, "duplicate": False}

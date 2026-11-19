@@ -354,11 +354,16 @@ async def test_shop_pays_by_its_method_and_tracks_the_driver():
         await db.flush()
         db.add(PortalUser(portal_account_id=acc.id, full_name="Mama", email=f"duka-{s}@example.com", password_hash=hash_password(PW),
                           role_type=PortalUserRole.OWNER, is_active=True))
+        from app.models.role import Permission, Role
+        perm = (await db.execute(select(Permission).where(Permission.code == "sales.edit"))).scalar_one_or_none() or             Permission(code="sales.edit", name="Edit sales", module="sales", action="edit")
+        desk = User(email=f"desk-{s}@example.com", username=f"desk{s}", full_name="Sales Desk", hashed_password="x", is_active=True,
+                    roles=[Role(name=f"desk-{s}", is_active=True, permissions=[perm])])
+        db.add(desk)
         other_so = SalesOrder(order_no=f"OT-{s}", customer_id=other.id, order_date=date.today(), requested_delivery_date=date.today(),
                               currency="KES", status=SOStatus.CONFIRMED)
         db.add(other_so)
         await db.commit()
-        ids = SimpleNamespace(prod=prod.id, wh=wh.id, other_so=other_so.id)
+        ids = SimpleNamespace(prod=prod.id, wh=wh.id, other_so=other_so.id, desk=desk.id)
 
     async with _client(app) as c:
         assert (await c.post(f"{API}/auth/login", json={"email": f"duka-{s}@example.com", "password": PW})).status_code == 200
@@ -377,6 +382,10 @@ async def test_shop_pays_by_its_method_and_tracks_the_driver():
         assert (await c.post(f"{API}/orders/{ids.other_so}/pay-mpesa", json={})).status_code == 404     # not my order
         assert (await c.post(f"{API}/orders/{oid}/pay-mpesa", json={})).status_code == 409               # one request at a time
 
+        async with AsyncSessionLocal() as db:   # the sales desk was told about the new order
+            from app.models.notifications import Notification
+            note = (await db.execute(select(Notification).where(Notification.user_id == str(ids.desk)))).scalars().all()
+            assert [n.reference_id for n in note] == [oid] and "waits for confirmation" in note[0].message
         async with AsyncSessionLocal() as db:   # staff: confirm, ship, dispatch on a trip after another drop
             so = await db.get(SalesOrder, uuid.UUID(oid))
             so.status = SOStatus.CONFIRMED

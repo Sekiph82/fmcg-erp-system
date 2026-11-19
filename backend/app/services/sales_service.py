@@ -447,8 +447,38 @@ async def _release_so_allocation(db: AsyncSession, so: SalesOrder) -> None:
 async def start_picking(db: AsyncSession, shipment: Shipment) -> Shipment:
     _assert_ship(shipment, ShipmentStatus.PENDING)
     shipment.status = ShipmentStatus.PICKING
+    await create_floor_pick_tasks(db, shipment)
     await db.flush()
     return shipment
+
+
+async def create_floor_pick_tasks(db: AsyncSession, shipment: Shipment) -> int:
+    """One scan-picking task per shipment line on the Warehouse Floor screen (M39 hand-off: sales → warehouse).
+    The task points at a bin holding the line's product/lot in the shipment's warehouse (most available first); with
+    no bin known the picker may scan any bin. Completing the task by scan marks the shipment line picked."""
+    from sqlalchemy import func
+
+    from app.models.wms import PickingTask, PickingTaskStatus
+
+    made = 0
+    for n, line in enumerate(shipment.lines or [], start=1):
+        exists = (await db.execute(select(func.count()).select_from(PickingTask).where(
+            PickingTask.shipment_id == shipment.id, PickingTask.product_id == line.product_id,
+            PickingTask.status != PickingTaskStatus.CANCELLED))).scalar()
+        if exists or line.is_picked:
+            continue
+        q = select(Stock.location_id).where(Stock.warehouse_id == shipment.warehouse_id, Stock.product_id == line.product_id,
+                                            Stock.location_id.is_not(None), Stock.is_blocked.is_(False),
+                                            Stock.quantity_available > 0)
+        if line.lot_id:
+            q = q.where(Stock.lot_id == line.lot_id)
+        bin_id = (await db.execute(q.order_by(Stock.quantity_available.desc()).limit(1))).scalar()
+        db.add(PickingTask(task_no=f"PK-{shipment.shipment_no}-{n}"[:50], warehouse_id=shipment.warehouse_id,
+                           shipment_id=shipment.id, product_id=line.product_id, lot_id=line.lot_id,
+                           from_location_id=bin_id, requested_qty=line.quantity, unit=line.unit or "PCS",
+                           status=PickingTaskStatus.PENDING, fefo_enforced=False))
+        made += 1
+    return made
 
 
 async def pick_line(

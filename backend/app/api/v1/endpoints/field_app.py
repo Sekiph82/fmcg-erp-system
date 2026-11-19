@@ -362,6 +362,8 @@ async def place_order(body: OrderIn, db: AsyncSession = Depends(get_db), user=De
         if v is not None and v.rep_id == rep.id and v.customer_id == customer.id:
             v.order_id, v.outcome = so.id, VisitOutcome.ORDERED
     await db.commit()
+    from app.services.notifications_service import notify_new_order
+    await notify_new_order(db, so, customer.name, "field")
     return {"id": str(so.id), "order_no": so.order_no, "currency": so.currency,
             "total": float(sum((q * p for _, q, p in priced), Decimal("0"))), "duplicate": False}
 

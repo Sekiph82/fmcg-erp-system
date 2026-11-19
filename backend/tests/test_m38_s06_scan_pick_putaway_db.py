@@ -124,3 +124,60 @@ async def test_scan_pick_and_putaway():
         assert (await db.get(PutawayTask, ids.put)).status == PutawayTaskStatus.COMPLETED
         moved = (await db.execute(select(Stock).where(Stock.product_id == t.product_id))).scalars().all()
         assert [m.location_id is not None for m in moved] == [True]
+
+
+@pytest.mark.asyncio
+async def test_shipment_picking_reaches_the_warehouse_floor():
+    """M39 hand-off: 'start picking' on a sales shipment puts one scan task per line on the Warehouse Floor (pointing at
+    the bin holding the stock); confirming it by scan marks the shipment line picked and the shipment PACKED."""
+    from datetime import date
+
+    from app.main import app
+    from app.models.sales import Customer, CustomerChannel, SalesOrder, Shipment, ShipmentLine, ShipmentStatus, SOStatus
+
+    s = uuid.uuid4().hex[:8]
+    async with AsyncSessionLocal() as db:
+        assert (await db.execute(select(func.current_database()))).scalar_one() == os.environ[TASK_DB_NAME_ENV]
+        pk = User(email=f"pk-{s}@example.com", username=f"pk{s}", full_name="Picker", hashed_password="x")
+        wh = Warehouse(code=f"W-{s}", name="WH", warehouse_type=list(WarehouseType)[0])
+        prod = Product(sku=f"SKU-{s}", barcode=f"BC{s}", name="Detergent", category=ProductCategory.HOUSEHOLD)
+        cust = Customer(code=f"C-{s}", name="Shop", channel=CustomerChannel.RETAIL, currency="KES")
+        db.add_all([pk, wh, prod, cust])
+        await db.flush()
+        z = WarehouseZone(warehouse_id=wh.id, code=f"Z-{s}", name="Zone", zone_type=list(ZoneType)[0])
+        db.add(z)
+        await db.flush()
+        loc = StorageLocation(zone_id=z.id, code="B-07", name="B-07", barcode=f"LB07-{s}")
+        db.add(loc)
+        await db.flush()
+        db.add(Stock(stock_type=StockType.PRODUCT, warehouse_id=wh.id, product_id=prod.id, location_id=loc.id,
+                     quantity_on_hand=Decimal("40"), quantity_available=Decimal("40")))
+        so = SalesOrder(order_no=f"SO-{s}", customer_id=cust.id, order_date=date.today(), requested_delivery_date=date.today(),
+                        currency="KES", status=SOStatus.CONFIRMED)
+        db.add(so)
+        await db.flush()
+        sh = Shipment(shipment_no=f"SH-{s}", so_id=so.id, warehouse_id=wh.id, status=ShipmentStatus.PENDING, scheduled_date=date.today())
+        db.add(sh)
+        await db.flush()
+        db.add(ShipmentLine(shipment_id=sh.id, product_id=prod.id, quantity=Decimal("12"), unit="PCS"))
+        await db.commit()
+        ids = SimpleNamespace(sh=sh.id, loc=loc.id)
+        P = _as(pk, "inventory.dispatch_all", "inventory.receive_all", "sales.view", "sales.edit")
+
+    app.dependency_overrides[get_current_user] = lambda: P
+    try:
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://t") as c:
+            r = await c.post(f"/api/v1/sales/shipments/{ids.sh}/start-picking")
+            assert r.status_code == 200, r.text
+            tasks = [t for t in (await c.get(f"{W}/picking/tasks?status=PENDING")).json() if t["task_no"] == f"PK-SH-{s}-1"]
+            assert len(tasks) == 1 and tasks[0]["from_location_code"] == "B-07" and float(tasks[0]["requested_qty"]) == 12
+            done = await c.post(f"{W}/picking/tasks/{tasks[0]['id']}/scan-confirm",
+                                json={"location_code": f"LB07-{s}", "item_code": f"BC{s}", "picked_qty": "12"})
+            assert done.status_code == 200, done.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+    async with AsyncSessionLocal() as db:
+        sh = await db.get(Shipment, ids.sh)
+        assert sh.status == ShipmentStatus.PACKED
+        line = (await db.execute(select(ShipmentLine).where(ShipmentLine.shipment_id == ids.sh))).scalar_one()
+        assert line.is_picked

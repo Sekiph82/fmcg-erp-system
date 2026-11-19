@@ -568,3 +568,42 @@ async def ack_ai_rec(db: AsyncSession, rec_id: UUID, data: NCNotifAIRecAck) -> O
     await db.commit()
     await db.refresh(rec)
     return rec
+
+
+async def notify_permission_holders(db: AsyncSession, permission: str, title: str, message: str, *,
+                                    reference_type: Optional[str] = None, reference_id: Optional[str] = None,
+                                    module: Optional[str] = None,
+                                    notification_type: NotificationType = NotificationType.APPROVAL_REQUIRED) -> int:
+    """In-app notification to every active user whose roles grant `permission` (exact code or its *_all / own-scope
+    variants) — e.g. 'sales.edit' for the people who confirm incoming orders. Commits; returns how many were sent."""
+    from app.models.role import Permission, Role, role_permission
+    from app.models.user import User, user_role
+
+    module_key, action = permission.split(".", 1)
+    rows = (await db.execute(
+        select(User.id, User.full_name).distinct()
+        .join(user_role, user_role.c.user_id == User.id).join(Role, Role.id == user_role.c.role_id)
+        .join(role_permission, role_permission.c.role_id == Role.id).join(Permission, Permission.id == role_permission.c.permission_id)
+        .where(User.is_active.is_(True), Role.is_active.is_(True), Permission.is_active.is_(True),
+               or_(Permission.code == permission, Permission.code.like(f"{module_key}.{action}" + r"\_%", escape="\\"))))).all()
+    now = datetime.utcnow()
+    for uid, name in rows:
+        db.add(Notification(user_id=str(uid), user_name=name, title=title[:255], message=message,
+                            notification_type=notification_type, priority=NotificationPriority.HIGH,
+                            channel=NotificationChannel.IN_APP, reference_type=reference_type, reference_id=reference_id,
+                            module=module, status=NotificationStatus.SENT, sent_at=now))
+    await db.commit()
+    return len(rows)
+
+
+async def notify_new_order(db, so, customer_name: str, source: str) -> None:
+    """Tell the people who confirm orders (sales.edit) that a new order is waiting; never fails the order itself."""
+    import logging
+
+    from app.services.notifications_service import notify_permission_holders
+    try:
+        await notify_permission_holders(db, "sales.edit", f"New {source} order {so.order_no}",
+                                        f"{customer_name} placed order {so.order_no} — it waits for confirmation.",
+                                        reference_type="sales_order", reference_id=str(so.id), module="sales")
+    except Exception:  # the order is saved; a lost notice must not turn it into an error for the shop/rep
+        logging.getLogger(__name__).exception("new-order notification failed for %s", so.order_no)
