@@ -117,8 +117,10 @@ async def _post_sales_journal(
     debit_lines: list[tuple[uuid.UUID, Decimal, str]],
     credit_lines: list[tuple[uuid.UUID, Decimal, str]],
     user_id: uuid.UUID,
+    source_module: str = "sales",
+    entry_prefix: str = "AUTO-SLS",
 ) -> JournalEntry:
-    """Post one configured, balanced sales journal in the source transaction."""
+    """Post one configured, balanced journal in the source transaction (sales by default; payroll reuses it)."""
     from app.services.finance_service import (
         assert_journal_lines_postable,
         assert_posting_period_open,
@@ -131,7 +133,7 @@ async def _post_sales_journal(
 
     event, batch, _ = await get_or_create_operational_posting_event(
         db,
-        source_module="sales",
+        source_module=source_module,
         source_event=source_event,
         source_id=source_id,
         event_date=entry_date,
@@ -145,7 +147,7 @@ async def _post_sales_journal(
         if existing is not None:
             return existing
     if event.status != OperationalPostingStatus.PENDING:
-        raise HTTPException(409, f"Sales posting event {source_event}/{source_id} already exists but is not posted")
+        raise HTTPException(409, f"Posting event {source_module}/{source_event}/{source_id} already exists but is not posted")
 
     lines_data = [
         {"account_id": account_id, "description": line_description, "debit": debit, "credit": Decimal("0"), "currency": currency}
@@ -159,10 +161,10 @@ async def _post_sales_journal(
     await assert_posting_period_open(db, entry_date)
 
     entry = JournalEntry(
-        entry_no=f"AUTO-SLS-{source_id.hex}",
+        entry_no=f"{entry_prefix}-{source_id.hex}",
         entry_date=entry_date,
         description=description[:255],
-        source_module="sales",
+        source_module=source_module,
         source_event=source_event,
         source_id=source_id,
         source_ref=source_ref[:100],

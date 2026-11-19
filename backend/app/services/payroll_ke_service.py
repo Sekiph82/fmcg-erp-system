@@ -432,6 +432,7 @@ async def approve_payroll_run(
     run.approved_by = approver_id
     run.approved_at = _now()
     await db.flush()
+    await post_payroll_to_gl(db, run, approver_id)
 
     # Generate payslips
     lines_q = await db.execute(
@@ -639,3 +640,41 @@ async def ai_compliance_monitor(db: AsyncSession) -> PayrollInsight:
         insights.append("All employees have complete statutory data (KRA PIN, NHIF, NSSF). Compliance status: OK.")
 
     return PayrollInsight(agent="Compliance Monitor", insights=insights, details=details, generated_at=_now().isoformat())
+
+
+async def post_payroll_to_gl(db: AsyncSession, run: PayrollRun, user_id: uuid.UUID):
+    """Book an approved payroll run in the general ledger (M39 hand-off: HR → accounting), using the posting rule
+    payroll/PAYROLL_APPROVED: debit = salaries expense (gross), credit = net pay payable (net), tax account =
+    statutory deductions payable (PAYE, SHIF/NHIF, NSSF, housing levy and other deductions: gross − net).
+    ponytail: employer-side contributions are not in the run totals yet; add a line when payroll computes them.
+    Without a configured rule nothing is posted (logged) — finance turns posting on by creating the rule."""
+    import logging
+
+    from app.models.finance import AccountingPostingRule, AccountType
+    from app.services.sales_service import _post_sales_journal, _require_sales_account_types
+
+    rule = (await db.execute(select(AccountingPostingRule).where(
+        AccountingPostingRule.source_module == "payroll", AccountingPostingRule.source_event == "PAYROLL_APPROVED",
+        AccountingPostingRule.is_active.is_(True)).order_by(AccountingPostingRule.priority).limit(1))).scalar_one_or_none()
+    if rule is None:
+        logging.getLogger(__name__).warning("payroll run %s approved without GL posting: no payroll/PAYROLL_APPROVED rule", run.id)
+        return None
+    gross, net = Decimal(run.total_gross or 0), Decimal(run.total_net or 0)
+    deductions = gross - net
+    if gross <= 0 or net < 0 or deductions < 0:
+        raise HTTPException(422, "Payroll totals are not postable (gross must be positive and at least the net pay).")
+    if not rule.debit_account_id or not rule.credit_account_id or (deductions > 0 and not rule.tax_account_id):
+        raise HTTPException(422, "The payroll posting rule needs the salaries expense, net pay payable and deductions payable accounts.")
+    await _require_sales_account_types(db, [
+        (rule.debit_account_id, AccountType.EXPENSE, "salaries expense"),
+        (rule.credit_account_id, AccountType.LIABILITY, "net pay payable"),
+        (rule.tax_account_id if deductions > 0 else None, AccountType.LIABILITY, "statutory deductions payable"),
+    ])
+    ref = run.run_no
+    return await _post_sales_journal(  # booked in the payroll period (accrual), so the expense lands in its month
+        db, source_event="PAYROLL_APPROVED", source_id=run.id, source_ref=ref, entry_date=run.period_end or date.today(),
+        description=f"Payroll run {ref}", amount=gross, currency="KES",
+        debit_lines=[(rule.debit_account_id, gross, "Salaries and wages (gross)")],
+        credit_lines=[(rule.credit_account_id, net, "Net pay payable"),
+                      *([(rule.tax_account_id, deductions, "PAYE, SHIF, NSSF, housing levy and other deductions")] if deductions > 0 else [])],
+        user_id=user_id, source_module="payroll", entry_prefix="AUTO-PAY")
