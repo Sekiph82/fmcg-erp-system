@@ -69,6 +69,21 @@ docker compose exec -e PYTHONPATH=/app backend python /tmp/p.py synth-field
 
 Report any step that fails with the step number and a screenshot.
 
+### Results — iPhone (Safari, home-screen app), 2026-11-19
+
+| # | Result |
+|---|---|
+| 1 | pass |
+| 2 | pass — server stored the phone's real GPS fix and the photo |
+| 3 | pass — FS-261119-5F1E6707 |
+| 4 | form works; refused correctly because the invoice already had a pending collection |
+| 5 | not shown yet — the stop was already delivered by the emulated run; retest on `SYNTH-TRIP-CC47` |
+| 6 | pass — AUD-261119-837BC741, photo stored |
+| 7 | camera button was missing on iPhone (no native BarcodeDetector) — fixed with a WebAssembly decoder; retest on `SYNTH-PICK-CC47` (bin `SY-A-01`) |
+| 8 | pass |
+| 9 | pass — opens full screen from the POVU icon |
+| 10–12 | not run yet |
+
 ## 5. Back to laptop-only
 
 ```powershell

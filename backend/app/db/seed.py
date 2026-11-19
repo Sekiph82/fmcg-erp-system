@@ -1119,6 +1119,20 @@ ROLE_DEFINITIONS = {
             "production.view_own_scope", "planning.view_own_scope",
         ],
     },
+    # Field and floor roles (M38): they see only their own work screens. Reps, moto riders and drivers need no role:
+    # the Field App and My HR follow the linked sales-rep / trip driver / employee record.
+    "field_auditor": {
+        "description": "Field controller: outlet audits in the Field App",
+        "permissions": ["field.audit"],
+    },
+    "field_supervisor": {
+        "description": "Field supervisor: audits, team compliance, moto fraud alerts",
+        "permissions": ["field.audit", "field.supervise"],
+    },
+    "warehouse_picker": {
+        "description": "Warehouse floor: scan picking and putaway only",
+        "permissions": ["inventory.dispatch_all", "inventory.receive_all"],
+    },
 
     # ── Marketing roles ───────────────────────────────────────────────────────
     "marketing_manager": {

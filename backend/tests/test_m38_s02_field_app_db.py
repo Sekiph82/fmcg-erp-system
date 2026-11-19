@@ -237,6 +237,15 @@ async def test_field_app_end_to_end(tmp_path, monkeypatch):
             assert (ra["route_stops"], ra["visits"], ra["outlets_visited"], ra["coverage_pct"], ra["visits_with_gps_pct"]) == (2, 1, 1, 50.0, 100.0)
             assert (ra["orders"], ra["order_value"], ra["collections"], ra["audits"]) == (1, 1200.0, 1, 1)
             assert len((await c.get(f"{F}/audits")).json()) >= 1
+            who(U["fin"])                                           # dispatcher sets a trip's driver login
+            logins = {d["id"] for d in (await c.get("/api/v1/delivery/driver-logins")).json()}
+            assert str(U["ali"].id) in logins and str(U["ctl"].id) not in logins       # reps/employees only
+            trip = {"trip_no": f"TD-{s}", "trip_date": date.today().isoformat(), "driver_user_id": str(U["ctl"].id)}
+            assert (await c.post("/api/v1/delivery/trips", json=trip)).status_code == 422
+            made = await c.post("/api/v1/delivery/trips", json={**trip, "driver_user_id": str(U["ali"].id)})
+            assert made.status_code == 201 and made.json()["driver_user_id"] == str(U["ali"].id), made.text
+            who(U["ali"])
+            assert f"TD-{s}" in {t["trip_no"] for t in (await c.get(f"{F}/trips")).json()}
     finally:
         app.dependency_overrides.pop(get_current_user, None)
 

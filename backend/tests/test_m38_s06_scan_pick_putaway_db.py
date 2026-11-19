@@ -83,11 +83,13 @@ async def test_scan_pick_and_putaway():
         await db.commit()
         ids = SimpleNamespace(nostock=nostock.id, pick=pick.id, other_pick=mine.id, put=put.id, loc_w2=locs[(1, "A-01")].barcode,
                               l01=locs[(0, "A-01")].barcode, l02=locs[(0, "A-02")].barcode)
-        P = _as(pk, "inventory.dispatch_all", "inventory.receive_all", "inventory.view")
+        P = _as(pk, "inventory.dispatch_all", "inventory.receive_all")  # the seeded warehouse_picker role: no inventory.view
 
     app.dependency_overrides[get_current_user] = lambda: P
     try:
         async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://t") as c:
+            listed = await c.get(f"{W}/picking/tasks?status=PENDING")                                   # the floor list works without inventory.view
+            assert listed.status_code == 200 and {str(ids.pick), str(ids.other_pick)} <= {t["id"] for t in listed.json()}, listed.text
             url = f"{W}/picking/tasks/{ids.pick}/scan-confirm"
             ok = {"location_code": ids.l01, "item_code": f"bc{s}", "picked_qty": "10"}
             assert (await c.post(url, json={**ok, "location_code": ids.l02})).status_code == 422          # wrong bin

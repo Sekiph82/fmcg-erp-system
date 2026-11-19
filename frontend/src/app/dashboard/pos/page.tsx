@@ -255,9 +255,9 @@ function POSTerminalTab() {
   const hasSession = session && session.status === "OPEN";
 
   return (
-    <div className="flex h-screen bg-gray-100 overflow-hidden">
+    <div className="flex flex-col md:flex-row md:h-screen bg-gray-100 md:overflow-hidden">
       {/* Left: Product grid */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col md:overflow-hidden">
         {/* Top bar */}
         <div className="bg-white border-b px-4 py-3 flex items-center gap-3">
           <h1 className="text-lg font-bold text-gray-900">Point of Sale</h1>
@@ -305,7 +305,7 @@ function POSTerminalTab() {
               Open a register session to start selling.
             </div>
           )}
-          <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
             {filtered.map(p => (
               <button
                 key={p.id}
@@ -328,7 +328,7 @@ function POSTerminalTab() {
       </div>
 
       {/* Right: Cart */}
-      <div className="w-80 bg-white border-l flex flex-col shadow-lg">
+      <div className="w-full md:w-80 bg-white border-t md:border-t-0 md:border-l flex flex-col shadow-lg">
         <div className="px-4 py-3 border-b">
           <h2 className="font-bold text-gray-900">Cart ({cart.length} items)</h2>
         </div>

@@ -35,6 +35,27 @@ async def list_trips(
     return result
 
 
+async def _driver_logins(db: AsyncSession) -> list[dict]:
+    """Active logins of staff who can drive a trip: an active employee or sales rep linked to a user."""
+    from sqlalchemy import or_, select
+    from app.models.field_sales import SalesRep
+    from app.models.hr import Employee, EmployeeStatus
+    from app.models.user import User
+
+    rows = (await db.execute(
+        select(User.id, User.full_name, User.username).where(User.is_active.is_(True), or_(
+            User.id.in_(select(Employee.user_id).where(Employee.user_id.is_not(None), Employee.status == EmployeeStatus.ACTIVE)),
+            User.id.in_(select(SalesRep.user_id).where(SalesRep.user_id.is_not(None), SalesRep.is_active.is_(True)))))
+        .order_by(User.full_name))).all()
+    return [{"id": str(r.id), "name": r.full_name or r.username} for r in rows]
+
+
+@router.get("/driver-logins", dependencies=[Depends(require_permission("sales", "create"))])
+async def driver_logins(db: AsyncSession = Depends(get_db)):
+    """Who can be set as a trip's driver; that person then sees the trip in the Field App (My deliveries)."""
+    return await _driver_logins(db)
+
+
 @router.post("/trips", response_model=DeliveryTripRead, status_code=201,
              dependencies=[Depends(require_permission("sales", "create"))])
 async def create_trip(
@@ -42,9 +63,14 @@ async def create_trip(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
+    if data.driver_user_id and str(data.driver_user_id) not in {d["id"] for d in await _driver_logins(db)}:
+        raise HTTPException(422, "The driver must be an active employee or sales rep login.")
     trip = await crud.create_trip(db, data, current_user.id)
     await db.commit()
-    return trip
+    trip = await crud.get_trip(db, trip.id)  # reload with orders: the response reads them (lazy load fails after commit)
+    td = DeliveryTripRead.model_validate(trip)
+    td.order_count = len(trip.orders)
+    return td
 
 
 @router.get("/trips/{trip_id}", response_model=DeliveryTripRead,
@@ -68,6 +94,8 @@ async def update_trip(
     trip = await crud.get_trip(db, trip_id)
     if not trip:
         raise HTTPException(status_code=404, detail="Delivery trip not found")
+    if data.driver_user_id and str(data.driver_user_id) not in {d["id"] for d in await _driver_logins(db)}:
+        raise HTTPException(422, "The driver must be an active employee or sales rep login.")
     trip = await crud.update_trip(db, trip, data)
     await db.commit()
     td = DeliveryTripRead.model_validate(trip)

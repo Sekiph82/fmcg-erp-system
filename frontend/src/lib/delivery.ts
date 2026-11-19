@@ -22,6 +22,7 @@ export interface DeliveryTrip {
   vehicle_type?: string;
   driver_name?: string;
   driver_phone?: string;
+  driver_user_id?: string | null;  // the driver's login: the trip then shows in their Field App
   warehouse_id?: string;
   rep_id?: string;
   rep_name?: string;
@@ -51,6 +52,8 @@ export interface ProofOfDelivery {
 }
 
 export const deliveryApi = {
+  driverLogins: () =>
+    apiClient.get<{ id: string; name: string }[]>("/api/v1/delivery/driver-logins").then((r) => r.data),
   listTrips: (params?: { status?: TripStatus }) =>
     apiClient.get<DeliveryTrip[]>("/api/v1/delivery/trips", { params }).then((r) => r.data),
   createTrip: (data: Partial<DeliveryTrip> & { orders?: Partial<TripOrder>[] }) =>

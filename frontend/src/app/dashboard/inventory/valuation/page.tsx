@@ -4,9 +4,9 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { inventoryApi, ValuationRow, AgingRow } from "@/lib/inventory";
 
-function fmtKES(n?: number | null) {
+function fmtKES(n?: number | string | null) {
   if (n == null) return "—";
-  return `KES ${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return `KES ${Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 function fmtQty(n?: number | null) {
@@ -41,14 +41,15 @@ export default function ValuationPage() {
   const buckets = ["0-30", "31-60", "61-90", "91-180", "180+"];
   const bucketTotals = buckets.map((b) => ({
     bucket: b,
-    value: aging.filter((r) => r.aging_bucket === b).reduce((s, r) => s + r.total_value, 0),
+    value: aging.filter((r) => r.aging_bucket === b).reduce((s, r) => s + Number(r.total_value), 0),
     count: aging.filter((r) => r.aging_bucket === b).length,
   }));
 
   const rows = valuation?.rows ?? [];
-  const fifoTotal = valuation?.total_value ?? 0;
-  const stdTotal = rows.reduce((s, r) => s + (r.std_total_value ?? 0), 0);
-  const agingTotal = aging.reduce((s, r) => s + r.total_value, 0);
+  // the API sends money as decimal strings: convert before adding
+  const fifoTotal = Number(valuation?.total_value ?? 0);
+  const stdTotal = rows.reduce((s, r) => s + Number(r.std_total_value ?? 0), 0);
+  const agingTotal = aging.reduce((s, r) => s + Number(r.total_value), 0);
 
   return (
     <div className="space-y-6">
@@ -58,7 +59,7 @@ export default function ValuationPage() {
       </div>
 
       {/* KPI cards */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-white rounded-lg border p-4">
           <p className="text-xs text-gray-500 mb-1">FIFO Total Value</p>
           <p className="text-xl font-bold text-indigo-700">{fmtKES(fifoTotal)}</p>
@@ -120,7 +121,7 @@ export default function ValuationPage() {
               <tbody className="divide-y">
                 {rows.map((r, i) => {
                   const delta = (r.std_total_value != null && r.fifo_total_value != null)
-                    ? r.std_total_value - r.fifo_total_value : null;
+                    ? Number(r.std_total_value) - Number(r.fifo_total_value) : null;
                   return (
                     <tr key={i} className="hover:bg-gray-50">
                       <td className="px-4 py-2.5">
@@ -166,7 +167,7 @@ export default function ValuationPage() {
       {tab === "aging" && (
         <>
           {/* Bucket summary */}
-          <div className="grid grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
             {bucketTotals.map((b) => (
               <div key={b.bucket} className="bg-white rounded-lg border p-3 text-center">
                 <span className={`text-xs font-bold px-2 py-0.5 rounded ${BUCKET_COLOR[b.bucket]}`}>{b.bucket} days</span>

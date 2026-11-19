@@ -583,7 +583,7 @@ export default function InventoryPage() {
     { key: "movements",   label: "Movements",       permission: "inventory.view", content: <MovementsPage /> },
     { key: "cycle-count", label: "Cycle Count",     permission: "inventory.view", content: <CycleCountPage /> },
     { key: "shelf-life",  label: "Shelf Life",      permission: "inventory.view", content: <ShelfLifePage /> },
-    { key: "traceability",label: "Traceability",    permission: "inventory.view", content: <TraceabilityPage /> },
+    { key: "traceability",label: "Traceability",    permission: "traceability.view", content: <TraceabilityPage /> },
     { key: "serials",     label: "Serials",         permission: "inventory.view", content: <InventorySerialsPage /> },
     { key: "valuation",   label: "Valuation",       permission: "inventory.view", content: <InventoryValuationPage /> },
   ];

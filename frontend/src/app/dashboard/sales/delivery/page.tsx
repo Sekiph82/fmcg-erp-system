@@ -34,7 +34,7 @@ const ORDER_STATUS_COLOR: Record<string, string> = {
 
 const emptyTrip = {
   trip_no: "", trip_date: new Date().toISOString().split("T")[0],
-  vehicle_plate: "", driver_name: "", driver_phone: "", vehicle_type: "MOTORBIKE",
+  vehicle_plate: "", driver_name: "", driver_phone: "", vehicle_type: "MOTORBIKE", driver_user_id: "",
 };
 
 export default function DeliveryPage() {
@@ -44,13 +44,16 @@ export default function DeliveryPage() {
   const [selectedTrip, setSelectedTrip] = useState<DeliveryTrip | null>(null);
   const [form, setForm] = useState(emptyTrip);
 
+  const { data: driverLogins = [] } = useQuery({
+    queryKey: ["delivery-driver-logins"], queryFn: deliveryApi.driverLogins, enabled: createOpen,
+  });
   const { data: trips = [], isLoading } = useQuery({
     queryKey: ["delivery-trips", filter],
     queryFn: () => deliveryApi.listTrips(filter !== "ALL" ? { status: filter } : {}),
   });
 
   const create = useMutation({
-    mutationFn: (data: typeof form) => deliveryApi.createTrip({ ...data, orders: [] }),
+    mutationFn: (data: typeof form) => deliveryApi.createTrip({ ...data, driver_user_id: data.driver_user_id || null, orders: [] }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["delivery-trips"] }); setCreateOpen(false); setForm(emptyTrip); },
   });
 
@@ -231,6 +234,18 @@ export default function DeliveryPage() {
             <Input label="Driver Name" value={form.driver_name} onChange={(e) => setForm((f) => ({ ...f, driver_name: e.target.value }))} />
             <Input label="Driver Phone" value={form.driver_phone} onChange={(e) => setForm((f) => ({ ...f, driver_phone: e.target.value }))} />
           </div>
+          <label className="block text-sm">
+            <span className="text-gray-700">Driver&apos;s app login</span>
+            <select className="mt-1 w-full border rounded px-3 py-2 text-sm" value={form.driver_user_id}
+              onChange={(e) => {
+                const d = driverLogins.find((x) => x.id === e.target.value);
+                setForm((f) => ({ ...f, driver_user_id: e.target.value, driver_name: f.driver_name || d?.name || "" }));
+              }}>
+              <option value="">None (driver has no app)</option>
+              {driverLogins.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+            </select>
+            <span className="text-xs text-gray-500">The trip appears in this person&apos;s Field App under My deliveries.</span>
+          </label>
           {create.error && <p className="text-sm text-red-600">Failed to create trip.</p>}
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" type="button" onClick={() => setCreateOpen(false)}>Cancel</Button>

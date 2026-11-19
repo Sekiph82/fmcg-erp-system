@@ -566,3 +566,6 @@
 
 /* ── Full-filled status backgrounds ──────────────────────────────────────── */
 [data-theme="dark"] .bg-red-600 { box-shadow: 0 0 14px rgba(239,68,68,0.45) !important; }
+
+/* Phones: a card that clips its children (overflow-hidden) scrolls a wide table sideways instead of cutting it off */
+div.overflow-hidden:has(> table) { overflow-x: auto; }

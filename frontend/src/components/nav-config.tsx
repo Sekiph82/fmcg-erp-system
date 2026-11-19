@@ -242,7 +242,7 @@ export const NAV_CONFIG: NavEntry[] = [
   // Warehouse floor (M38): scan-driven picking and putaway for warehouse operators
   ws("warehouse-floor", "Warehouse Floor", "/dashboard/warehouse-floor",
     md("M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"),
-    { permission: "inventory.view", searchHints: [
+    { permission: "inventory.dispatch", searchHints: [
       { label: "Pick tasks",          href: "/dashboard/warehouse-floor" },
       { label: "Putaway tasks",       href: "/dashboard/warehouse-floor" },
     ]}),

@@ -926,8 +926,8 @@ async def list_picking_tasks(
 ):
     from sqlalchemy import select
     from sqlalchemy.orm import selectinload
-    if warehouse_id:
-        svc.ensure_wms_action_allowed(current_user, warehouse_id, "view")
+    if warehouse_id and not svc.build_wms_access_hint(current_user, warehouse_id).can_pick:
+        svc.ensure_wms_action_allowed(current_user, warehouse_id, "view")  # pickers may filter by their warehouse too
     q = select(PickingTask).options(
         selectinload(PickingTask.product),
         selectinload(PickingTask.lot),
@@ -954,7 +954,7 @@ async def list_picking_tasks(
         r.assignee_name = t.assigned_to.full_name if t.assigned_to else None
         r.wave_no = t.wave.wave_no if t.wave else None
         _with_access(r, current_user, t.warehouse_id)
-        if r.access.can_view:
+        if r.access.can_view or r.access.can_pick:  # a picker sees the work without the whole inventory module
             rows.append(r)
     return rows
 

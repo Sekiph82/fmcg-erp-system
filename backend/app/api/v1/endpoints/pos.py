@@ -294,6 +294,17 @@ async def create_sale(
     return _sale_read(await _get_sale_or_404(db, sale.id))
 
 
+@router.get("/sales", response_model=List[POSSaleRead])
+async def list_sales(skip: int = 0, limit: int = Query(100, le=500), db: AsyncSession = Depends(get_db),
+                     _: User = Depends(get_current_user)):
+    """Sales history (newest first) for the POS Sales tab."""
+    q = (select(POSSale)
+         .options(selectinload(POSSale.cashier), selectinload(POSSale.customer),
+                  selectinload(POSSale.lines).selectinload(POSSaleLine.product))
+         .order_by(POSSale.created_at.desc()).offset(skip).limit(limit))
+    return [_sale_read(s) for s in (await db.execute(q)).scalars().all()]
+
+
 @router.get("/sales/{sale_id}", response_model=POSSaleRead)
 async def get_sale(sale_id: uuid.UUID, db: AsyncSession = Depends(get_db), _: User = Depends(get_current_user)):
     return _sale_read(await _get_sale_or_404(db, sale_id))

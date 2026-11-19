@@ -30,10 +30,10 @@ function SalesDashboardTab() {
 
   const tiles = [
     { label: "Total Orders", value: summary?.total_orders ?? "—", sub: `${summary?.confirmed_orders ?? 0} active`, color: "text-gray-900", href: "/dashboard/sales/orders" },
-    { label: "Order Value", value: summary ? `$${Number(summary.total_order_value).toLocaleString(undefined, { minimumFractionDigits: 0 })}` : "—", sub: "confirmed orders", color: "text-blue-700", href: "/dashboard/sales/orders" },
-    { label: "Total Invoiced", value: summary ? `$${Number(summary.total_invoiced).toLocaleString(undefined, { minimumFractionDigits: 0 })}` : "—", sub: "all invoices", color: "text-gray-900", href: "/dashboard/sales/invoices" },
-    { label: "Collected", value: summary ? `$${Number(summary.total_collected).toLocaleString(undefined, { minimumFractionDigits: 0 })}` : "—", sub: "payments received", color: "text-green-700", href: "/dashboard/sales/invoices" },
-    { label: "Outstanding", value: summary ? `$${Number(summary.outstanding_balance).toLocaleString(undefined, { minimumFractionDigits: 0 })}` : "—", sub: "to be collected", color: "text-orange-600", href: "/dashboard/sales/invoices" },
+    { label: "Order Value", value: summary ? `KES ${Number(summary.total_order_value).toLocaleString(undefined, { minimumFractionDigits: 0 })}` : "—", sub: "confirmed orders", color: "text-blue-700", href: "/dashboard/sales/orders" },
+    { label: "Total Invoiced", value: summary ? `KES ${Number(summary.total_invoiced).toLocaleString(undefined, { minimumFractionDigits: 0 })}` : "—", sub: "all invoices", color: "text-gray-900", href: "/dashboard/sales/invoices" },
+    { label: "Collected", value: summary ? `KES ${Number(summary.total_collected).toLocaleString(undefined, { minimumFractionDigits: 0 })}` : "—", sub: "payments received", color: "text-green-700", href: "/dashboard/sales/invoices" },
+    { label: "Outstanding", value: summary ? `KES ${Number(summary.outstanding_balance).toLocaleString(undefined, { minimumFractionDigits: 0 })}` : "—", sub: "to be collected", color: "text-orange-600", href: "/dashboard/sales/invoices" },
     { label: "Overdue Invoices", value: summary?.overdue_invoices ?? "—", sub: "past due date", color: summary?.overdue_invoices ? "text-red-600" : "text-gray-900", href: "/dashboard/sales/invoices?status=OVERDUE" },
   ];
 
@@ -48,7 +48,7 @@ function SalesDashboardTab() {
       </div>
 
       {/* Summary tiles */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         {tiles.map((tile) => (
           <button
             key={tile.label}
@@ -71,11 +71,11 @@ function SalesDashboardTab() {
           </div>
           <div className="space-y-1">
             {overdueItems.slice(0, 5).map((r) => (
-              <div key={r.invoice_id} className="flex justify-between text-xs text-red-700">
+              <div key={r.invoice_id} className="flex flex-wrap justify-between gap-x-3 text-xs text-red-700">
                 <span className="font-medium">{r.invoice_no}</span>
                 <span>{r.customer_name}</span>
                 <span>{r.days_overdue}d overdue</span>
-                <span className="font-semibold">${Number(r.outstanding_balance).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                <span className="font-semibold">KES {Number(r.outstanding_balance).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
               </div>
             ))}
           </div>
@@ -83,7 +83,7 @@ function SalesDashboardTab() {
       )}
 
       {/* Quick links */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
           { label: "Manage Orders", desc: "Create, confirm, allocate", href: "/dashboard/sales/orders" },
           { label: "Customers", desc: "Customer master data", href: "/dashboard/sales/customers" },
@@ -118,9 +118,9 @@ function SalesDashboardTab() {
                 <div
                   key={so.id}
                   onClick={() => router.push(`/dashboard/sales/orders/${so.id}`)}
-                  className="px-6 py-3 flex items-center justify-between cursor-pointer hover:bg-gray-50"
+                  className="px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 cursor-pointer hover:bg-gray-50"
                 >
-                  <div>
+                  <div className="min-w-0">
                     <span className="font-medium text-sm">{so.order_no}</span>
                     <span className="text-sm text-gray-500 ml-3">{so.customer_name}</span>
                   </div>

@@ -35,8 +35,10 @@ export default function SalesReportsPage() {
   // Aggregate helpers
   type ExtendedOrder = typeof orders[0] & { total_amount?: number; sales_rep_id?: string; customer_city?: string };
   const extOrders = orders as ExtendedOrder[];
+  // the API sends money as decimal strings: convert before adding, or "+" glues the strings together
+  const orderValue = (o: ExtendedOrder) => Number(o.total_value ?? o.total_amount ?? 0);
 
-  const totalRevenue = extOrders.reduce((s, o) => s + (o.total_value ?? o.total_amount ?? 0), 0);
+  const totalRevenue = extOrders.reduce((s, o) => s + orderValue(o), 0);
   const totalOrders = orders.length;
   const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
   const confirmedOrders = orders.filter((o) => o.status !== "CANCELLED" && o.status !== "DRAFT").length;
@@ -49,7 +51,7 @@ export default function SalesReportsPage() {
       const name = rep?.name ?? o.sales_rep_id.slice(0, 8);
       if (!repMap[o.sales_rep_id]) repMap[o.sales_rep_id] = { name, orders: 0, revenue: 0 };
       repMap[o.sales_rep_id].orders++;
-      repMap[o.sales_rep_id].revenue += o.total_value ?? o.total_amount ?? 0;
+      repMap[o.sales_rep_id].revenue += orderValue(o);
     }
   });
   const byRep = Object.values(repMap).sort((a, b) => b.revenue - a.revenue);
@@ -60,7 +62,7 @@ export default function SalesReportsPage() {
     const region = o.customer_city ?? "Unknown";
     if (!regionMap[region]) regionMap[region] = { orders: 0, revenue: 0 };
     regionMap[region].orders++;
-    regionMap[region].revenue += o.total_value ?? o.total_amount ?? 0;
+    regionMap[region].revenue += orderValue(o);
   });
   const byRegion = Object.entries(regionMap)
     .map(([region, v]) => ({ region, ...v }))
@@ -71,8 +73,8 @@ export default function SalesReportsPage() {
   extOrders.forEach((o) => {
     (o.lines ?? []).forEach((l) => {
       if (!productMap[l.product_id]) productMap[l.product_id] = { name: l.product_name ?? l.product_id.slice(0, 8), qty: 0, revenue: 0 };
-      productMap[l.product_id].qty += l.shipped_quantity || l.ordered_quantity || 0;
-      productMap[l.product_id].revenue += l.line_total ?? 0;
+      productMap[l.product_id].qty += Number(l.shipped_quantity || l.ordered_quantity || 0);
+      productMap[l.product_id].revenue += Number(l.line_total ?? 0);
     });
   });
   const byProduct = Object.values(productMap).sort((a, b) => b.revenue - a.revenue).slice(0, 20);
@@ -83,7 +85,7 @@ export default function SalesReportsPage() {
     const key = o.customer_id;
     if (!custMap[key]) custMap[key] = { name: o.customer_name ?? key.slice(0, 8), orders: 0, revenue: 0 };
     custMap[key].orders++;
-    custMap[key].revenue += o.total_value ?? o.total_amount ?? 0;
+    custMap[key].revenue += orderValue(o);
   });
   const byCustomer = Object.values(custMap).sort((a, b) => b.revenue - a.revenue).slice(0, 20);
 
