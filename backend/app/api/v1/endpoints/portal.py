@@ -33,6 +33,12 @@ async def _staff_access(request: Request, current_user=Depends(get_current_user)
 router = APIRouter(dependencies=[Depends(_staff_access)])
 
 
+async def _manage_access(current_user=Depends(get_current_user)):
+    if not has_permission(current_user, "partner_portal.manage_access"):
+        raise HTTPException(403, "Missing permission partner_portal.manage_access")
+    return current_user
+
+
 def _with_link(user, token: str) -> dict:
     """Invitation/set-password link, returned once to the staff member who sends it to the customer."""
     out = PortalUserRead.model_validate(user).model_dump(mode="json")
@@ -97,15 +103,23 @@ async def list_users(account_id: str, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/accounts/{account_id}/users/invite", status_code=201)
-async def invite_user(account_id: str, data: PortalUserInvite, db: AsyncSession = Depends(get_db)):
+async def invite_user(account_id: str, data: PortalUserInvite, db: AsyncSession = Depends(get_db),
+                      staff=Depends(_manage_access)):
+    from sqlalchemy import func, select
+
+    from app.models.portal import PortalUser
+
     if await svc.get_account(db, account_id) is None:
         raise HTTPException(404, "Portal account not found")
+    if (await db.execute(select(PortalUser.id).where(func.lower(PortalUser.email) == data.email.strip().lower()))).first():
+        raise HTTPException(409, "A portal user with this e-mail already exists.")
+    data.invited_by = staff.username
     user = await svc.invite_user(db, account_id, data)
     return _with_link(user, user.raw_invitation_token)
 
 
 @router.post("/users/{user_id}/password-link")
-async def password_link(user_id: str, db: AsyncSession = Depends(get_db)):
+async def password_link(user_id: str, db: AsyncSession = Depends(get_db), staff=Depends(_manage_access)):
     """New set-password link for a user who forgot their password (the old password keeps working until used)."""
     import uuid as _uuid
 
@@ -114,13 +128,17 @@ async def password_link(user_id: str, db: AsyncSession = Depends(get_db)):
     user = await db.get(PortalUser, _uuid.UUID(user_id))
     if user is None:
         raise HTTPException(404, "Portal user not found")
+    if not user.is_active and user.invitation_token is None:  # deactivated (deactivation clears links)
+        raise HTTPException(409, "This user is deactivated; invite a new user instead.")
     token = svc.new_invitation(user)
+    await svc._log_activity(db, str(user.id), str(user.portal_account_id), svc.PortalActivityType.OTHER,
+                            notes=f"Set-password link issued by {staff.username}")
     await db.commit()
     await db.refresh(user)
     return _with_link(user, token)
 
 
-@router.post("/users/{user_id}/deactivate", response_model=PortalUserRead)
+@router.post("/users/{user_id}/deactivate", response_model=PortalUserRead, dependencies=[Depends(_manage_access)])
 async def deactivate_user(user_id: str, db: AsyncSession = Depends(get_db)):
     user = await svc.deactivate_user(db, user_id)
     if not user:

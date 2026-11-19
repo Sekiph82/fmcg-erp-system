@@ -83,12 +83,20 @@ async def test_supplier_portal_end_to_end(tmp_path, monkeypatch):
             assert (await st.post("/api/v1/supplier-portal/auth/reset-password",
                                   json={"email": "x@example.com", "new_password": "p"})).status_code in (404, 405)
             app.dependency_overrides[get_current_user] = lambda: _staff("procurement.view", "procurement.edit")
+            r = await st.post(f"/api/v1/supplier-portal/accounts/{acc_id}/users/invite",
+                              json={"full_name": "X", "email": f"x-{s}@example.com", "role_type": "OWNER"})
+            assert r.status_code == 403                                   # procurement.edit alone cannot mint logins
+            app.dependency_overrides[get_current_user] = lambda: _staff("procurement.view", "procurement.edit",
+                                                                         "partner_portal.manage_access")
             links = {}
             for role in ("SALES", "VIEWER"):
                 r = await st.post(f"/api/v1/supplier-portal/accounts/{acc_id}/users/invite",
                                   json={"full_name": role, "email": f"{role.lower()}-{s}@Example.com", "role_type": role})
                 assert r.status_code == 200, r.text
                 links[role] = r.json()["activation_link"].split("token=")[1]
+            dup = await st.post(f"/api/v1/supplier-portal/accounts/{acc_id}/users/invite",
+                                json={"full_name": "Dup", "email": f"SALES-{s}@example.com", "role_type": "SALES"})
+            assert dup.status_code == 409
     finally:
         app.dependency_overrides.pop(get_current_user, None)
 
@@ -137,3 +145,11 @@ async def test_supplier_portal_end_to_end(tmp_path, monkeypatch):
         assert resp.response_status.value == "ACCEPTED"
         doc = (await db.execute(select(SPDocument).where(SPDocument.account_id == acc_id))).scalar_one()
         assert re.fullmatch(r"[0-9a-f]{32}", doc.file_path) and (tmp_path / doc.file_path).read_bytes() == PDF
+        assert doc.scan_status == "NOT_SCANNED"                       # no scanner configured in tests
+        doc_id = doc.id
+    try:  # unscanned supplier files stay quarantined for staff
+        app.dependency_overrides[get_current_user] = lambda: _staff("procurement.view")
+        async with _client(app) as st:
+            assert (await st.get(f"/api/v1/supplier-portal/documents/{doc_id}/file")).status_code == 409
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)

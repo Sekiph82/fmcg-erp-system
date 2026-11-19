@@ -60,6 +60,10 @@ DEMO_USERS = [
 # ── Permission definitions ────────────────────────────────────────────────────
 # Format: (module, action, name, description, is_mobile_visible)
 PERMISSIONS = [
+    # External partner portals (M38): issuing sign-in links / deactivating partner users is a separate right,
+    # because a set-password link lets its holder sign in as that distributor or supplier.
+    ("partner_portal", "manage_access", "Manage Partner Portal Access",
+     "Invite distributor/supplier portal users, issue set-password links, deactivate them", False),
     # Analytics / BI (cross-module hub)
     ("analytics",   "view",   "View Analytics",       "Access Analytics & BI hub and daily KPIs", True),
     ("analytics",   "export", "Export Analytics",     "Export BI reports and data",               False),
@@ -648,6 +652,7 @@ ROLE_DEFINITIONS = {
             "documents.view", "documents.create", "documents.edit", "documents.approve", "documents.archive", "documents.export",
             "knowledge_base.view", "knowledge_base.create", "knowledge_base.edit", "knowledge_base.publish", "knowledge_base.delete", "knowledge_base.admin",
             "esign.view", "esign.request", "esign.sign", "esign.cancel", "esign.admin",
+            "partner_portal.manage_access",
             "reports.view", "reports.create", "reports.edit", "reports.run", "reports.export", "reports.admin",
             "notifications.view", "notifications.manage", "notifications.send", "notifications.configure", "notifications.report", "notifications.admin",
             "consumer_complaints.view", "consumer_complaints.create", "consumer_complaints.edit",

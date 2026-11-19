@@ -127,6 +127,8 @@ class VisitLog(Base, TimestampMixin):
     gps_lat = Column(Numeric(10, 7), nullable=True)
     gps_lng = Column(Numeric(10, 7), nullable=True)
     notes = Column(Text, nullable=True)
+    client_ref = Column(String(64), unique=True, nullable=True)   # field app idempotency key (offline retries)
+    photo_key = Column(String(64), nullable=True)                 # outlet photo in document storage
 
     rep = relationship("SalesRep", back_populates="visit_logs")
     customer = relationship("Customer")

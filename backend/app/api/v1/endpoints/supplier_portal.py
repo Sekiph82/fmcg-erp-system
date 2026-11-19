@@ -37,6 +37,12 @@ async def _staff_access(request: Request, current_user=Depends(get_current_user)
 router = APIRouter(dependencies=[Depends(_staff_access)])
 
 
+async def _manage_access(current_user=Depends(get_current_user)):
+    if not has_permission(current_user, "partner_portal.manage_access"):
+        raise HTTPException(403, "Missing permission partner_portal.manage_access")
+    return current_user
+
+
 def _with_link(user, token: str) -> dict:
     out = SPUserOut.model_validate(user).model_dump(mode="json")
     out["activation_link"] = f"{settings.PUBLIC_APP_URL.rstrip('/')}/supplier/activate?token={token}"
@@ -44,14 +50,17 @@ def _with_link(user, token: str) -> dict:
 
 
 @router.post("/users/{user_id}/password-link")
-async def password_link(user_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
-    """New one-time set-password link for a supplier user (invitation resend / forgotten password)."""
-    from app.models.supplier_portal import SPUser
+async def password_link(user_id: uuid.UUID, db: AsyncSession = Depends(get_db), staff=Depends(_manage_access)):
+    """New one-time set-password link for an active supplier user (invitation resend / forgotten password)."""
+    from app.models.supplier_portal import SPActivityType, SPUser
 
     user = await db.get(SPUser, user_id)
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
+    if not user.is_active:
+        raise HTTPException(409, "This user is deactivated; invite a new user instead.")
     token = svc.new_invitation(user)
+    await svc._log(db, user.account_id, SPActivityType.INVITE_USER, notes=f"Set-password link for {user.email} issued by {staff.username}")
     await db.commit()
     await db.refresh(user)
     return _with_link(user, token)
@@ -65,6 +74,8 @@ async def download_document(doc_id: uuid.UUID, db: AsyncSession = Depends(get_db
     doc = await db.get(SPDocument, doc_id)
     if doc is None or not doc.file_path or "/" in doc.file_path:
         raise HTTPException(status_code=404, detail="Document file not found")
+    if doc.scan_status != "CLEAN":  # unscanned/infected files stay quarantined
+        raise HTTPException(status_code=409, detail=f"File not released: malware scan status {doc.scan_status}")
     path = get_document_storage().path_for(doc.file_path)
     if not path.exists():
         raise HTTPException(status_code=404, detail="Document file not found")
@@ -118,19 +129,25 @@ async def list_users(account_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
 async def invite_user(
     account_id: uuid.UUID,
     payload: SPUserInvite,
-    invited_by: str = Query("internal"),
     db: AsyncSession = Depends(get_db),
+    staff=Depends(_manage_access),
 ):
+    from sqlalchemy import func, select
+
+    from app.models.supplier_portal import SPUser
+
     if await svc.get_account(db, account_id) is None:
         raise HTTPException(status_code=404, detail="Account not found")
-    user = await svc.invite_user(db, account_id, payload, invited_by)
+    if (await db.execute(select(SPUser.id).where(func.lower(SPUser.email) == payload.email.strip().lower()))).first():
+        raise HTTPException(409, "A supplier portal user with this e-mail already exists.")
+    user = await svc.invite_user(db, account_id, payload, staff.username)
     token = user.raw_invitation_token
     await db.commit()
     await db.refresh(user)
     return _with_link(user, token)
 
 
-@router.post("/users/{user_id}/deactivate", response_model=SPUserOut)
+@router.post("/users/{user_id}/deactivate", response_model=SPUserOut, dependencies=[Depends(_manage_access)])
 async def deactivate_user(user_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     user = await svc.deactivate_user(db, user_id)
     if not user:
@@ -185,14 +202,13 @@ async def acknowledge_po(
     account_id: uuid.UUID,
     po_id: uuid.UUID,
     payload: SPPOAcknowledge,
-    user_id: Optional[uuid.UUID] = Query(None),
     db: AsyncSession = Depends(get_db),
 ):
     acct = await svc.get_account(db, account_id)
     if not acct:
         raise HTTPException(status_code=404, detail="Account not found")
     try:
-        resp = await svc.acknowledge_po(db, acct, po_id, payload, user_id=user_id)
+        resp = await svc.acknowledge_po(db, acct, po_id, payload, user_id=None)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     await db.commit()
@@ -206,13 +222,14 @@ async def acknowledge_po(
 async def propose_eta(
     account_id: uuid.UUID,
     payload: SPETAPropose,
-    user_id: Optional[uuid.UUID] = Query(None),
     db: AsyncSession = Depends(get_db),
 ):
     acct = await svc.get_account(db, account_id)
     if not acct:
         raise HTTPException(status_code=404, detail="Account not found")
-    eta = await svc.propose_eta(db, acct, payload, user_id=user_id)
+    if not await svc.get_po_detail(db, acct, payload.po_id):
+        raise HTTPException(status_code=404, detail="Purchase order not found for this supplier")
+    eta = await svc.propose_eta(db, acct, payload, user_id=None)
     await db.commit()
     await db.refresh(eta)
     return eta
@@ -238,22 +255,6 @@ async def review_eta(eta_id: uuid.UUID, payload: SPETAReview, db: AsyncSession =
 
 
 # ── Document Upload ────────────────────────────────────────────────────────────
-
-@router.post("/accounts/{account_id}/documents", response_model=SPDocumentOut)
-async def upload_document(
-    account_id: uuid.UUID,
-    payload: SPDocumentCreate,
-    user_id: Optional[uuid.UUID] = Query(None),
-    db: AsyncSession = Depends(get_db),
-):
-    acct = await svc.get_account(db, account_id)
-    if not acct:
-        raise HTTPException(status_code=404, detail="Account not found")
-    doc = await svc.upload_document(db, acct, payload, user_id=user_id)
-    await db.commit()
-    await db.refresh(doc)
-    return doc
-
 
 @router.get("/accounts/{account_id}/documents", response_model=List[SPDocumentOut])
 async def list_documents(

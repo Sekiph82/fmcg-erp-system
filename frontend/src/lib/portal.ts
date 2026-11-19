@@ -202,7 +202,8 @@ export const portalApi = {
   // Users
   getUsers: (accountId: string) => r(ax.get<PortalUser[]>(`/portal/accounts/${accountId}/users`)),
   inviteUser: (accountId: string, data: Partial<PortalUser> & { invited_by?: string }) =>
-    r(ax.post<PortalUser>(`/portal/accounts/${accountId}/users/invite`, data)),
+    r(ax.post<PortalUser & { activation_link: string }>(`/portal/accounts/${accountId}/users/invite`, data)),
+  passwordLink: (userId: string) => r(ax.post<PortalUser & { activation_link: string }>(`/portal/users/${userId}/password-link`)),
   deactivateUser: (userId: string) => r(ax.post<PortalUser>(`/portal/users/${userId}/deactivate`)),
 
   // Self-service (per account)

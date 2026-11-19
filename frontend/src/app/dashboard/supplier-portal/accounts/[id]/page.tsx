@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { spApi, SPAccount, SPDashboard, SP_STATUS_COLORS } from "@/lib/supplier_portal";
+import { SupplierUsersPanel } from "@/components/SupplierUsersPanel";
 
 export default function SPAccountDetail() {
   const { id } = useParams<{ id: string }>();
@@ -52,6 +53,8 @@ export default function SPAccountDetail() {
           ))}
         </div>
       )}
+
+      <SupplierUsersPanel accountId={id} />
 
       {/* Account Details */}
       <div className="grid grid-cols-2 gap-6">

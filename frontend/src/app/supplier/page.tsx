@@ -152,7 +152,7 @@ function DocsTab({ me, fail, ok }: { me: Me; fail: (e: unknown) => void; ok: (m:
             {pos.map((p) => <option key={p.po_id} value={p.po_id}>{p.po_number}</option>)}
           </select>
           <label className="text-xs text-gray-600">Valid until (certificates)<input type="date" value={form.expiry_date} onChange={(e) => setForm({ ...form, expiry_date: e.target.value })} className={`${input} w-full mt-1`} /></label>
-          <label className="text-xs text-gray-600">File (PDF, image, Excel)<input type="file" required aria-label="File" accept=".pdf,.png,.jpg,.jpeg,.webp,.xlsx,.xls" onChange={(e) => setFile(e.target.files?.[0] ?? null)} className="w-full mt-1 text-sm" /></label>
+          <label className="text-xs text-gray-600">File (PDF, JPG/PNG, Excel, Word)<input type="file" required aria-label="File" accept=".pdf,.png,.jpg,.jpeg,.xlsx,.docx,.csv" onChange={(e) => setFile(e.target.files?.[0] ?? null)} className="w-full mt-1 text-sm" /></label>
           <button className="sm:col-start-2 py-2 rounded-lg bg-emerald-600 text-white text-sm">Upload</button>
         </form>)}
       {rows.length === 0 ? <p className="text-sm text-gray-500">No documents yet.</p> : (

@@ -152,7 +152,7 @@ async def test_distributor_portal_end_to_end():
     staff = SimpleNamespace(id=uuid.uuid4(), username="sales", email="s@example.com", full_name="S", is_superuser=False,
                             is_active=True, access_scopes=[], roles=[SimpleNamespace(name="r", is_active=True, access_scopes=[],
                             permissions=[SimpleNamespace(code=c, module="sales", action=c.split(".")[1], is_active=True)
-                                         for c in ("sales.view", "sales.edit")])])
+                                         for c in ("sales.view", "sales.edit", "partner_portal.manage_access")])])
     nobody = SimpleNamespace(**{**staff.__dict__, "roles": []})
     try:
         async with _client(app) as st:

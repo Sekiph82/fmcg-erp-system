@@ -83,6 +83,7 @@ from app.models.sales import (
 
 # ── Delivery & Returns ─────────────────────────────────────────────────────────
 from app.models.delivery import DeliveryTrip, TripOrder, ProofOfDelivery
+from app.models.field_ops import CashCollection, FieldAudit
 from app.models.returns_mgmt import ReturnOrder, ReturnLine
 
 # ── Pricing ───────────────────────────────────────────────────────────────────

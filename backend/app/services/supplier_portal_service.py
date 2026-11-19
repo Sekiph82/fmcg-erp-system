@@ -61,13 +61,10 @@ def new_invitation(user: SPUser) -> str:
 async def activate_with_token(db: AsyncSession, token: str, new_password: str) -> Optional[SPUser]:
     user = (await db.execute(select(SPUser).where(SPUser.invitation_token == token_digest(token))
                              .with_for_update())).scalar_one_or_none()
-    if user is None or user.token_expires_at is None or user.token_expires_at < _now():
-        return None
-    if not user.is_active and user.last_login_at is not None:
-        return None  # deactivated by staff: a link never reactivates
+    if user is None or user.token_expires_at is None or user.token_expires_at < _now() or not user.is_active:
+        return None  # a link never switches a deactivated user back on
     user.password_hash = _hash_pw(new_password)
     user.invitation_token = user.token_expires_at = None
-    user.is_active = True
     await db.flush()
     return user
 
@@ -235,7 +232,6 @@ async def get_po_detail(
     )).scalar_one_or_none()
     if not po:
         return None
-    await _log(db, account.id, SPActivityType.VIEW_PO, ref_type="PurchaseOrder", ref_id=str(po_id))
     resp = (await db.execute(
         select(SPPOResponse).where(
             SPPOResponse.account_id == account.id,
@@ -458,7 +454,8 @@ async def get_payment_status(db: AsyncSession, account: SPAccount) -> List[dict]
         return []
     rows = await db.execute(
         select(PurchaseInvoice)
-        .where(PurchaseInvoice.supplier_id == account.supplier_id)
+        .where(PurchaseInvoice.supplier_id == account.supplier_id,
+               PurchaseInvoice.status.notin_((PurchaseInvoiceStatus.DRAFT, PurchaseInvoiceStatus.CANCELLED)))
         .order_by(PurchaseInvoice.created_at.desc())
         .limit(100)
     )
@@ -470,7 +467,7 @@ async def get_payment_status(db: AsyncSession, account: SPAccount) -> List[dict]
             "invoice_number": inv.invoice_no,
             "paid_amount": float(inv.paid_amount or 0),
             "invoice_date": str(inv.invoice_date) if getattr(inv, "invoice_date", None) else None,
-            "total_amount": float(inv.total_amount) if getattr(inv, "total_amount", None) else None,
+            "total_amount": float(inv.total_amount or 0),
             "currency": getattr(inv, "currency", "KES"),
             "status": inv.status.value if inv.status else "SUBMITTED",
             "due_date": str(inv.due_date) if getattr(inv, "due_date", None) else None,

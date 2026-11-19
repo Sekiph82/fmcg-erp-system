@@ -210,6 +210,7 @@ class SPDocument(Base, TimestampMixin):
     reviewed_at         = Column(DateTime(timezone=True), nullable=True)
     expiry_date         = Column(Date, nullable=True)
     notes               = Column(Text, nullable=True)
+    scan_status         = Column(String(20), nullable=False, default="NOT_SCANNED", server_default="NOT_SCANNED")  # CLEAN releases the file
 
     account             = relationship("SPAccount", back_populates="documents")
 

@@ -6,6 +6,7 @@ import {
   portalApi, PortalAccount, PortalUser, PortalDashboard,
   fmtCurrency, ACCOUNT_TYPE_LABELS, ACCOUNT_STATUS_COLORS, USER_ROLE_LABELS, ORDER_MODE_LABELS,
 } from "@/lib/portal";
+import { AccessLinkNotice } from "@/components/AccessLinkNotice";
 
 type Tab = "overview" | "users" | "orders" | "invoices" | "claims" | "drafts";
 
@@ -21,13 +22,19 @@ export default function PortalAccountDetailPage() {
   const [showInvite, setShowInvite] = useState(false);
   const [inviteForm, setInviteForm] = useState({ full_name: "", email: "", phone: "", role_type: "VIEWER" });
   const [inviteSaving, setInviteSaving] = useState(false);
+  const [accessLink, setAccessLink] = useState<{ link: string; who: string } | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const errText = (e: unknown) => {
+    const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
+    return typeof d === "string" ? d : "Request failed.";
+  };
 
   const load = async () => {
     try {
       const [acc, usrs, dash] = await Promise.all([
         portalApi.getAccount(id),
         portalApi.getUsers(id),
-        portalApi.getDashboard(id),
+        portalApi.getDashboard(id).catch(() => null),  // 409 until the account is linked to a customer
       ]);
       setAccount(acc as PortalAccount);
       setUsers(usrs as PortalUser[]);
@@ -41,16 +48,22 @@ export default function PortalAccountDetailPage() {
   const handleInvite = async () => {
     setInviteSaving(true);
     try {
-      await portalApi.inviteUser(id, inviteForm as unknown as Parameters<typeof portalApi.inviteUser>[1]);
+      const created = await portalApi.inviteUser(id, inviteForm as unknown as Parameters<typeof portalApi.inviteUser>[1]);
+      setAccessLink({ link: created.activation_link, who: created.email });
+      setActionError(null);
       setShowInvite(false);
       setInviteForm({ full_name: "", email: "", phone: "", role_type: "VIEWER" });
       await load();
-    } catch (e) { console.error(e); }
+    } catch (e) { setActionError(errText(e)); }
     setInviteSaving(false);
   };
 
   const handleDeactivateUser = async (userId: string) => {
-    try { await portalApi.deactivateUser(userId); await load(); } catch (e) { console.error(e); }
+    try { await portalApi.deactivateUser(userId); await load(); } catch (e) { setActionError(errText(e)); }
+  };
+  const handlePasswordLink = async (userId: string) => {
+    try { const u = await portalApi.passwordLink(userId); setAccessLink({ link: u.activation_link, who: u.email }); setActionError(null); }
+    catch (e) { setActionError(errText(e)); }
   };
 
   if (loading) return <div className="p-6 text-gray-500">Loading…</div>;
@@ -187,6 +200,8 @@ export default function PortalAccountDetailPage() {
       {/* Users */}
       {tab === "users" && (
         <div className="space-y-3">
+          {actionError && <p role="alert" className="rounded-lg p-2 text-sm bg-red-50 border border-red-200 text-red-700">{actionError}</p>}
+          {accessLink && <AccessLinkNotice link={accessLink.link} who={accessLink.who} onClose={() => setAccessLink(null)} />}
           <button onClick={() => setShowInvite(true)}
             className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">
             + Invite User
@@ -219,6 +234,8 @@ export default function PortalAccountDetailPage() {
                       {user.last_login_at ? new Date(user.last_login_at).toLocaleDateString() : "Never"}
                     </td>
                     <td className="px-3 py-2">
+                      <button onClick={() => handlePasswordLink(user.id)}
+                        className="text-xs text-blue-600 hover:underline mr-3">{user.last_login_at ? "Password link" : "New invite link"}</button>
                       {user.is_active && (
                         <button onClick={() => handleDeactivateUser(user.id)}
                           className="text-xs text-red-600 hover:underline">Deactivate</button>

@@ -72,6 +72,16 @@ async def _supplier_name(db: AsyncSession, user: SPUser) -> Optional[str]:
     return s.name if s else None
 
 
+async def _open_po(db: AsyncSession, user: SPUser, po_id: uuid.UUID) -> dict:
+    """This supplier's released PO that is still open for responses (not fully received)."""
+    detail = await svc.get_po_detail(db, user.account, po_id)
+    if not detail:
+        raise HTTPException(404, "Purchase order not found")
+    if detail["po"].status.value == "RECEIVED":
+        raise HTTPException(409, "This order has been fully received.")
+    return detail
+
+
 def _require(user: SPUser, roles: set, what: str):
     if user.role_type not in roles:
         raise HTTPException(403, f"Your portal role cannot {what}.")
@@ -151,6 +161,7 @@ async def purchase_order(po_id: uuid.UUID, user: SPUser = Depends(ext.get_suppli
     detail = await svc.get_po_detail(db, user.account, po_id)
     if not detail:
         raise HTTPException(404, "Purchase order not found")
+    await svc._log(db, user.account.id, SPActivityType.VIEW_PO, user_id=user.id, ref_type="PurchaseOrder", ref_id=str(po_id))
     po = (await db.execute(select(PurchaseOrder).options(selectinload(PurchaseOrder.lines))
                            .where(PurchaseOrder.id == po_id))).scalar_one()
     names = {}
@@ -180,6 +191,9 @@ async def purchase_order(po_id: uuid.UUID, user: SPUser = Depends(ext.get_suppli
 async def acknowledge(po_id: uuid.UUID, body: AckIn, user: SPUser = Depends(ext.get_supplier_user),
                       db: AsyncSession = Depends(get_db)):
     _require(user, RESPOND_ROLES, "respond to purchase orders")
+    await _open_po(db, user, po_id)
+    if body.proposed_eta and body.proposed_eta < date.today():
+        raise HTTPException(422, "The delivery date cannot be in the past.")
     if body.response_status == "REJECTED" and not body.rejection_reason:
         raise HTTPException(422, "Please give a reason for rejecting the order.")
     if body.response_status == "ACCEPTED_REVISED_ETA" and not body.proposed_eta:
@@ -196,9 +210,7 @@ async def acknowledge(po_id: uuid.UUID, body: AckIn, user: SPUser = Depends(ext.
 async def propose_eta(po_id: uuid.UUID, body: EtaIn, user: SPUser = Depends(ext.get_supplier_user),
                       db: AsyncSession = Depends(get_db)):
     _require(user, RESPOND_ROLES, "propose delivery dates")
-    detail = await svc.get_po_detail(db, user.account, po_id)  # only this supplier's released POs
-    if not detail:
-        raise HTTPException(404, "Purchase order not found")
+    detail = await _open_po(db, user, po_id)
     if body.proposed_date < date.today():
         raise HTTPException(422, "The proposed date cannot be in the past.")
     eta = await svc.propose_eta(db, user.account, SPETAPropose(po_id=po_id, proposed_date=body.proposed_date,
@@ -228,11 +240,23 @@ async def upload(upload_type: SPDocUploadType = Form(...), linked_po_id: Optiona
     _require(user, UPLOAD_ROLES, "upload documents")
     if linked_po_id and not await svc.get_po_detail(db, user.account, linked_po_id):
         raise HTTPException(422, "The purchase order is not one of yours.")
-    stored = await get_document_storage().store_upload(file)  # opaque key, type/size/content checked
+    from app.services.document_storage_service import scan_document
+
+    storage = get_document_storage()
+    stored = await storage.store_upload(file)  # opaque key, type/size/content checked
+    scan = await scan_document(storage.path_for(stored.storage_key))
+    if scan.status == "INFECTED":
+        storage.delete(stored.storage_key)
+        raise HTTPException(422, "The file was rejected by the malware scanner.")
     doc = await svc.upload_document(db, user.account, SPDocumentCreate(
         upload_type=upload_type, linked_po_id=linked_po_id, file_name=stored.file_name, file_path=stored.storage_key,
         file_size_kb=max(1, stored.file_size_bytes // 1024), expiry_date=expiry_date, notes=notes), user_id=user.id)
-    await db.commit()
+    doc.scan_status = scan.status  # staff can download only CLEAN files
+    try:
+        await db.commit()
+    except Exception:
+        storage.delete(stored.storage_key)  # no orphan file when the record could not be saved
+        raise
     return {"id": str(doc.id), "file_name": doc.file_name, "review_status": doc.review_status.value}
 
 

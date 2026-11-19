@@ -40,6 +40,7 @@ class DeliveryTrip(Base, TimestampMixin):
     driver_phone = Column(String(50), nullable=True)
     warehouse_id = Column(UUID(as_uuid=True), ForeignKey("warehouses.id", ondelete="RESTRICT"), nullable=True)
     rep_id = Column(UUID(as_uuid=True), ForeignKey("sales_reps.id", ondelete="SET NULL"), nullable=True)
+    driver_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)  # driver's own login (field app)
     status = Column(Enum(TripStatus, name="delivery_tripstatus"), nullable=False, default=TripStatus.PLANNED)
     capacity_kg = Column(Numeric(10, 2), nullable=True)  # max load
     route_notes = Column(Text, nullable=True)
@@ -48,7 +49,7 @@ class DeliveryTrip(Base, TimestampMixin):
     created_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
     warehouse = relationship("Warehouse")
-    created_by = relationship("User")
+    created_by = relationship("User", foreign_keys=[created_by_id])
     orders = relationship("TripOrder", back_populates="trip",
                           cascade="all, delete-orphan",
                           order_by="TripOrder.delivery_sequence")
@@ -87,6 +88,7 @@ class ProofOfDelivery(Base, TimestampMixin):
     gps_lat = Column(Numeric(10, 7), nullable=True)
     gps_lng = Column(Numeric(10, 7), nullable=True)
     notes = Column(Text, nullable=True)
+    signature_key = Column(String(64), nullable=True)   # signature image in document storage
     confirmed_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
     shipment = relationship("Shipment")

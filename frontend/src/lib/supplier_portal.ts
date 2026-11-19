@@ -179,10 +179,12 @@ export const spApi = {
 
   // Users
   listUsers: (accountId: string) => apiFetch(`${BASE}/accounts/${accountId}/users`).then(r<SPUser[]>),
-  inviteUser: (accountId: string, body: Partial<SPUser>, invitedBy = "internal") =>
-    apiFetch(`${BASE}/accounts/${accountId}/users/invite?invited_by=${encodeURIComponent(invitedBy)}`, {
+  inviteUser: (accountId: string, body: Partial<SPUser>) =>
+    apiFetch(`${BASE}/accounts/${accountId}/users/invite`, {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
-    }).then(r<SPUser>),
+    }).then(r<SPUser & { activation_link: string }>),
+  passwordLink: (userId: string) =>
+    apiFetch(`${BASE}/users/${userId}/password-link`, { method: "POST" }).then(r<SPUser & { activation_link: string }>),
   deactivateUser: (userId: string) =>
     apiFetch(`${BASE}/users/${userId}/deactivate`, { method: "POST" }).then(r<SPUser>),
 
