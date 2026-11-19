@@ -49,8 +49,8 @@ function refreshSession(): Promise<void> {
 }
 
 function redirectToLogin(): void {
-  // public pages (website lead forms) have no session to expire
-  if (typeof window !== "undefined" && /^\/(forms|kb|unsubscribe)(\/|$)/.test(window.location.pathname)) return;
+  // public and external-partner pages (lead forms, help, distributor/supplier portals) have no staff session
+  if (typeof window !== "undefined" && /^\/(forms|kb|unsubscribe|portal|supplier)(\/|$)/.test(window.location.pathname)) return;
   if (_router) {
     _router.push("/login");
   } else if (typeof window !== "undefined") {

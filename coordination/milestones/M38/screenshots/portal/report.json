@@ -1,0 +1,22 @@
+[
+  {
+    "viewport": "mobile",
+    "wrong_password": "E-mail or password is incorrect, or the account is not active.",
+    "placed": "Order WEB-261119-789431 received. Our sales team will confirm it.",
+    "claim": "Claim CLM-00003 submitted.",
+    "horizontal_overflow_px": 0,
+    "portal_cookie_on_staff_api": 401,
+    "dashboard_redirects_to": "http://localhost:3000/login?next=%2Fdashboard",
+    "page_errors": []
+  },
+  {
+    "viewport": "desktop",
+    "wrong_password": "E-mail or password is incorrect, or the account is not active.",
+    "placed": "Order WEB-261119-7E31FD received. Our sales team will confirm it.",
+    "claim": "Claim CLM-00004 submitted.",
+    "horizontal_overflow_px": 0,
+    "portal_cookie_on_staff_api": 401,
+    "dashboard_redirects_to": "http://localhost:3000/login?next=%2Fdashboard",
+    "page_errors": []
+  }
+]
