@@ -1,12 +1,22 @@
 "use client";
 // One-time set-password link (invitation or forgotten password), shared by the distributor and supplier portals.
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { partnerFetch } from "@/lib/portalSelf";
 
 function Activate({ base, loginPath }: { base: "portal-self" | "supplier-self"; loginPath: string }) {
-  const token = useSearchParams().get("token") ?? "";
+  const fromUrl = useSearchParams().get("token") ?? "";
+  // keep the one-time token in memory only: drop it from the address bar/history and never send it as a referrer
+  const [token] = useState(fromUrl);
+  useEffect(() => {
+    const meta = document.createElement("meta");
+    meta.name = "referrer";
+    meta.content = "no-referrer";
+    document.head.appendChild(meta);
+    if (fromUrl) window.history.replaceState(null, "", window.location.pathname);
+    return () => { meta.remove(); };
+  }, [fromUrl]);
   const [pw, setPw] = useState("");
   const [pw2, setPw2] = useState("");
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);

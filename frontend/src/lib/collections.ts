@@ -1,7 +1,7 @@
 import { apiClient } from "./api";
 
 export type CollectionMethod = "CASH" | "MPESA" | "BANK_TRANSFER" | "CHEQUE" | "CREDIT_NOTE";
-export type CollectionStatus = "PENDING" | "CONFIRMED" | "RECONCILED" | "BOUNCED" | "CANCELLED";
+export type CollectionStatus = "PENDING" | "DEPOSITED" | "CONFIRMED" | "RECONCILED" | "BOUNCED" | "CANCELLED";
 
 export interface Collection {
   id: string;
@@ -55,6 +55,10 @@ export const collectionsApi = {
     apiClient.post(`/api/v1/collections/${id}/confirm`).then((r) => r.data),
   reconcile: (id: string) =>
     apiClient.post(`/api/v1/collections/${id}/reconcile`).then((r) => r.data),
+  // cheques: deposited at the bank, then confirmed when cleared — or bounced; never posted and reversed
+  deposit: (id: string) => apiClient.post(`/api/v1/collections/${id}/deposit`).then((r) => r.data),
+  bounce: (id: string) => apiClient.post(`/api/v1/collections/${id}/bounce`).then((r) => r.data),
+  cancel: (id: string) => apiClient.post(`/api/v1/collections/${id}/cancel`).then((r) => r.data),
 };
 
 export const METHOD_COLORS: Record<CollectionMethod, string> = {
@@ -75,6 +79,7 @@ export const METHOD_ICONS: Record<CollectionMethod, string> = {
 
 export const STATUS_COLORS: Record<CollectionStatus, string> = {
   PENDING: "bg-yellow-100 text-yellow-700",
+  DEPOSITED: "bg-indigo-100 text-indigo-700",
   CONFIRMED: "bg-blue-100 text-blue-700",
   RECONCILED: "bg-green-100 text-green-700",
   BOUNCED: "bg-red-100 text-red-700",

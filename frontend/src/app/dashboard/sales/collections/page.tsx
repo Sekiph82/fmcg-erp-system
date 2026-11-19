@@ -80,6 +80,12 @@ export default function CollectionsPage() {
     mutationFn: (id: string) => collectionsApi.reconcile(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["collections"] }),
   });
+  const act = useMutation({
+    mutationFn: ({ id, kind }: { id: string; kind: "deposit" | "bounce" | "cancel" }) => collectionsApi[kind](id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["collections"] }),
+  });
+  const actionError = [confirm.error, reconcile.error, act.error].find(Boolean) as
+    { response?: { data?: { detail?: unknown } } } | undefined;
 
   const set = (k: keyof typeof emptyForm, v: unknown) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -152,12 +158,15 @@ export default function CollectionsPage() {
         <p className="text-gray-400 text-sm py-8 text-center">No collections found.</p>
       ) : (
         <div className="space-y-2">
+          {actionError && <p role="alert" className="rounded-lg p-2 text-sm bg-red-50 border border-red-200 text-red-700">
+            {typeof actionError.response?.data?.detail === "string" ? actionError.response.data.detail : "The action failed."}</p>}
           {collections.map((c) => (
             <CollectionRow
               key={c.id}
               collection={c}
               onConfirm={() => confirm.mutate(c.id)}
               onReconcile={() => reconcile.mutate(c.id)}
+              onAction={(kind) => act.mutate({ id: c.id, kind })}
             />
           ))}
         </div>
@@ -287,10 +296,12 @@ function CollectionRow({
   collection: c,
   onConfirm,
   onReconcile,
+  onAction,
 }: {
   collection: Collection;
   onConfirm: () => void;
   onReconcile: () => void;
+  onAction: (kind: "deposit" | "bounce" | "cancel") => void;
 }) {
   return (
     <div className="rounded-xl border border-gray-100 bg-white px-4 py-3 shadow-sm">
@@ -318,9 +329,12 @@ function CollectionRow({
           <p className="text-lg font-bold text-gray-900">
             {c.currency} {c.amount.toLocaleString()}
           </p>
-          {c.status === "PENDING" && (
-            <Button variant="secondary" onClick={onConfirm}>Confirm</Button>
+          {c.method === "CHEQUE" && c.status === "PENDING" && <Button variant="secondary" onClick={() => onAction("deposit")}>Deposited</Button>}
+          {((c.method !== "CHEQUE" && c.status === "PENDING") || (c.method === "CHEQUE" && c.status === "DEPOSITED")) && (
+            <Button variant="secondary" onClick={onConfirm}>{c.method === "CHEQUE" ? "Cleared — confirm" : "Confirm"}</Button>
           )}
+          {c.method === "CHEQUE" && (c.status === "PENDING" || c.status === "DEPOSITED") && <Button variant="secondary" onClick={() => onAction("bounce")}>Bounced</Button>}
+          {(c.status === "PENDING" || c.status === "DEPOSITED") && <Button variant="secondary" onClick={() => onAction("cancel")}>Cancel</Button>}
           {c.status === "CONFIRMED" && (
             <Button variant="secondary" onClick={onReconcile}>Reconcile</Button>
           )}

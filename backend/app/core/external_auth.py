@@ -74,8 +74,11 @@ async def sign_out(request: Request, response: Response, realm: str) -> None:
                            samesite=settings.AUTH_COOKIE_SAMESITE, path="/")
 
 
-async def login_guard(realm: str, email: str):
-    key = f"{realm}:{email.strip().lower()}"
+async def login_guard(realm: str, email: str, request: Request | None = None):
+    """Lockout key per (realm, e-mail, client address): failed guesses from one address lock only that address out
+    of that account, so nobody can lock a known partner out remotely; guessing stays limited per address."""
+    ip = request.client.host if request is not None and request.client else "-"
+    key = f"{realm}:{email.strip().lower()}:{ip}"
     await check_login_allowed(key)
     return key
 

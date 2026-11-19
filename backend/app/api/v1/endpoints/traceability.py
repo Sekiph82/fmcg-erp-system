@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.access_control import has_any_permission
 from app.core.deps import get_current_user
+from app.core.actor import stamp
 from app.db.session import get_db
 from app.models.traceability import (
     TraceEventType, RecallStatus, RecallActionStatus,
@@ -57,7 +58,8 @@ _EXPORT = [Depends(_require_any("traceability.regulatory_export"))]
 # ── Traceability Events ───────────────────────────────────────────────────────
 
 @router.post("/events", response_model=TraceEventOut, status_code=201, dependencies=_RECORD)
-async def create_trace_event(data: TraceEventCreate, db: AsyncSession = Depends(get_db)):
+async def create_trace_event(data: TraceEventCreate, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    stamp(data, current_user, ("performed_by_id",), ("approved_by_id",), ("quality.approve", "traceability.approve"))
     return await trace_svc.create_trace_event(db, data)
 
 
@@ -168,7 +170,8 @@ async def recall_dashboard(db: AsyncSession = Depends(get_db)):
 # ── Recall CRUD ───────────────────────────────────────────────────────────────
 
 @router.post("/recalls", response_model=RecallHeaderOut, status_code=201, dependencies=_RECALL)
-async def initiate_recall(data: RecallCreate, db: AsyncSession = Depends(get_db)):
+async def initiate_recall(data: RecallCreate, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    stamp(data, current_user, ("initiated_by_id",))
     return await recall_svc.initiate_recall(db, data)
 
 
@@ -191,7 +194,8 @@ async def get_recall_detail(recall_id: uuid.UUID, db: AsyncSession = Depends(get
 
 @router.patch("/recalls/{recall_id}/status", response_model=RecallHeaderOut, dependencies=_RECALL)
 async def update_recall_status(recall_id: uuid.UUID, data: RecallStatusUpdate,
-                                db: AsyncSession = Depends(get_db)):
+                                db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    stamp(data, current_user, ("approved_by_id",))  # the status change is recorded as the signed-in user
     try:
         return await recall_svc.update_recall_status(db, recall_id, data)
     except ValueError as e:
@@ -423,17 +427,29 @@ def _compute_payload_hash(lot_id: Optional[str], lot_number: Optional[str],
     return hashlib.sha256(payload.encode()).hexdigest()
 
 
-@router.post("/blockchain/anchor", status_code=201)
+@router.post("/blockchain/anchor", status_code=201, dependencies=_RECORD)
 async def anchor_to_blockchain(
     payload: AnchorIn,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    current_user=Depends(get_current_user),
 ):
     """
     Anchor a lot trace record to blockchain.
     STUB mode: computes SHA-256 hash of payload, stores locally.
     Production: integrate with Ethereum/Polygon/Hyperledger SDK.
+    The record must be for an existing lot (its number is taken from the lot, not from the request): the public QR
+    page shows it to consumers as a verified batch.
     """
+    from app.models.inventory import Lot
+
+    try:
+        lot = await db.get(Lot, uuid.UUID(payload.lot_id)) if payload.lot_id else None
+    except ValueError:
+        lot = None
+    if lot is None:
+        raise HTTPException(422, "lot_id must be an existing lot.")
+    payload.lot_number = lot.lot_number
+    payload.anchored_by = current_user.username
     ts = datetime.utcnow().isoformat()
     payload_hash = _compute_payload_hash(
         payload.lot_id, payload.lot_number, payload.record_type, payload.reference_id, ts

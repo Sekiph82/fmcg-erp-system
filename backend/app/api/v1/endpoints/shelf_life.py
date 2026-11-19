@@ -11,6 +11,7 @@ from sqlalchemy import select, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import get_current_user
+from app.core.actor import stamp
 from app.db.session import get_db
 from app.models.shelf_life import (
     ShelfLifeStatus, AlertSeverity, SLAIRecStatus,
@@ -163,7 +164,8 @@ async def rank_fefo(req: FEFORankRequest, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/fefo/validate-issue", response_model=FEFOValidateIssueResponse)
-async def validate_issue(req: FEFOValidateIssueRequest, db: AsyncSession = Depends(get_db)):
+async def validate_issue(req: FEFOValidateIssueRequest, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    stamp(req, current_user, ("override_by_id",))
     return await svc.validate_issue(db, req)
 
 
@@ -175,7 +177,8 @@ async def validate_shipment(req: FEFOValidateShipmentRequest, db: AsyncSession =
 # ── FEFO Audit ────────────────────────────────────────────────────────────────
 
 @router.post("/fefo/audit-log", response_model=FEFOAuditLogOut, status_code=201)
-async def log_fefo_audit(data: FEFOAuditLogCreate, db: AsyncSession = Depends(get_db)):
+async def log_fefo_audit(data: FEFOAuditLogCreate, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    stamp(data, current_user, ("picked_by_id",), ("override_approved_by_id",), ("quality.approve", "inventory.approve"))
     return await svc.log_fefo_audit(db, data)
 
 
@@ -201,13 +204,15 @@ async def compliance_report(
 # ── Retest ────────────────────────────────────────────────────────────────────
 
 @router.post("/retest-request", response_model=RetestRequestOut, status_code=201)
-async def create_retest(data: RetestRequestCreate, db: AsyncSession = Depends(get_db)):
+async def create_retest(data: RetestRequestCreate, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    stamp(data, current_user, ("requested_by_id",))
     return await svc.create_retest_request(db, data)
 
 
 @router.post("/retest-request/{request_id}/result", response_model=RetestRequestOut)
 async def record_retest(request_id: uuid.UUID, data: RetestResultCreate,
-                         db: AsyncSession = Depends(get_db)):
+                         db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    stamp(data, current_user, ("result_by_id",))
     try:
         return await svc.record_retest_result(db, request_id, data)
     except ValueError as e:

@@ -187,6 +187,17 @@ async def test_field_app_end_to_end(tmp_path, monkeypatch):
             assert conf.status_code == 200 and conf.json()["status"] == "CONFIRMED", conf.text
             assert (await c.post(f"/api/v1/collections/{c1.json()['id']}/cancel")).status_code == 409
             assert (await c.post(f"/api/v1/collections/{c1.json()['id']}/reconcile")).json()["status"] == "RECONCILED"
+            # cheques: never posted before they clear — deposit, then confirm or bounce
+            who(U["ali"])
+            chq = await c.post(f"{F}/collections", json={"client_ref": f"chq-{s}", "customer_id": str(ids.c1), "invoice_id": str(ids.inv),
+                                                        "method": "CHEQUE", "amount": "100", "reference": "CHQ 000123"})
+            assert chq.status_code == 201, chq.text
+            who(U["fin"])
+            cid = chq.json()["id"]
+            assert (await c.post(f"/api/v1/collections/{cid}/confirm")).status_code == 409        # not deposited yet
+            assert (await c.post(f"/api/v1/collections/{cid}/deposit")).json()["status"] == "DEPOSITED"
+            assert (await c.post(f"/api/v1/collections/{cid}/bounce")).json()["status"] == "BOUNCED"
+            assert (await c.post(f"/api/v1/collections/{cid}/confirm")).status_code == 409
 
             # driver
             who(U["ali"])

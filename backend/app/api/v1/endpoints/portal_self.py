@@ -96,12 +96,12 @@ async def _price(db: AsyncSession, product, customer, distributor_id, quantity: 
 # ── sign-in ───────────────────────────────────────────────────────────────────
 
 @public.post("/auth/login")
-async def login(body: LoginIn, response: Response, db: AsyncSession = Depends(get_db)):
+async def login(body: LoginIn, request: Request, response: Response, db: AsyncSession = Depends(get_db)):
     from sqlalchemy.orm import selectinload
 
     from app.models.portal import PortalAccountStatus
 
-    key = await ext.login_guard("portal", body.email)
+    key = await ext.login_guard("portal", body.email, request)
     user = (await db.execute(select(PortalUser).options(selectinload(PortalUser.account))
                              .where(func.lower(PortalUser.email) == body.email.strip().lower()))).scalar_one_or_none()
     usable = user is not None and user.is_active and user.account.portal_status == PortalAccountStatus.ACTIVE
@@ -149,8 +149,13 @@ async def change_password(body: PasswordIn, response: Response, user: PortalUser
                           db: AsyncSession = Depends(get_db)):
     from app.core.security import hash_password
 
+    key = f"portal-pw:{user.id}"
+    await ext.check_login_allowed(key)  # current-password guesses are rate-limited like sign-in
     if not ext.check_password(body.current_password, user.password_hash)[0]:
+        await ext.record_login_failure(key)
         raise HTTPException(400, "Current password is incorrect.")
+    if ext.check_password(body.new_password, user.password_hash)[0]:
+        raise HTTPException(422, "Choose a password different from the current one.")
     user.password_hash = hash_password(body.new_password)
     await db.commit()
     ext.issue(response, "portal", user.id, user.password_hash)  # other sessions end; this one continues

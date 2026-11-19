@@ -227,6 +227,11 @@ async def propose_eta(
     acct = await svc.get_account(db, account_id)
     if not acct:
         raise HTTPException(status_code=404, detail="Account not found")
+    from sqlalchemy import select as _select
+
+    from app.models.procurement import PurchaseOrder
+
+    await db.execute(_select(PurchaseOrder.id).where(PurchaseOrder.id == payload.po_id).with_for_update())  # revision numbers
     if not await svc.get_po_detail(db, acct, payload.po_id):
         raise HTTPException(status_code=404, detail="Purchase order not found for this supplier")
     eta = await svc.propose_eta(db, acct, payload, user_id=None)

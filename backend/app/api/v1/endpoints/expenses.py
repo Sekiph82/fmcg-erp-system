@@ -21,7 +21,8 @@ from app.services import expenses_service as svc
 
 # Every employee may file and follow their own claims/advances; everything else needs a finance/HR right
 # (before M38 the whole module was open to any login — with self-service every employee is a login).
-_OWN = {("POST", "/claims"), ("POST", "/advances"), ("GET", "/claims"), ("GET", "/advances"),
+# Advances are cash handed out by finance, so finance records them (finance.edit); employees see their own.
+_OWN = {("POST", "/claims"), ("GET", "/claims"), ("GET", "/advances"),
         ("GET", "/claims/{claim_id}"), ("GET", "/advances/{advance_id}"), ("POST", "/claims/{claim_id}/lines"),
         ("POST", "/claims/{claim_id}/submit"), ("GET", "/categories"), ("GET", "/categories/{category_id}"),
         ("GET", "/policies"), ("GET", "/policies/{policy_id}")}

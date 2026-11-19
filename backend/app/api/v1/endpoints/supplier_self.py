@@ -93,7 +93,7 @@ def _require(user: SPUser, roles: set, what: str):
 async def login(body: LoginIn, request: Request, response: Response, db: AsyncSession = Depends(get_db)):
     from app.models.supplier_portal import SPAccount, SPAccountStatus
 
-    key = await ext.login_guard("supplier", body.email)
+    key = await ext.login_guard("supplier", body.email, request)
     user = (await db.execute(select(SPUser).where(func.lower(SPUser.email) == body.email.strip().lower()))).scalar_one_or_none()
     account = await db.get(SPAccount, user.account_id) if user else None
     usable = (user is not None and user.is_active and account is not None
@@ -138,8 +138,13 @@ async def change_password(body: PasswordIn, response: Response, user: SPUser = D
                           db: AsyncSession = Depends(get_db)):
     from app.core.security import hash_password
 
+    key = f"supplier-pw:{user.id}"
+    await ext.check_login_allowed(key)  # current-password guesses are rate-limited like sign-in
     if not ext.check_password(body.current_password, user.password_hash)[0]:
+        await ext.record_login_failure(key)
         raise HTTPException(400, "Current password is incorrect.")
+    if ext.check_password(body.new_password, user.password_hash)[0]:
+        raise HTTPException(422, "Choose a password different from the current one.")
     user.password_hash = hash_password(body.new_password)
     await db.commit()
     ext.issue(response, "supplier", user.id, user.password_hash)
@@ -210,6 +215,9 @@ async def acknowledge(po_id: uuid.UUID, body: AckIn, user: SPUser = Depends(ext.
 async def propose_eta(po_id: uuid.UUID, body: EtaIn, user: SPUser = Depends(ext.get_supplier_user),
                       db: AsyncSession = Depends(get_db)):
     _require(user, RESPOND_ROLES, "propose delivery dates")
+    from app.models.procurement import PurchaseOrder
+
+    await db.execute(select(PurchaseOrder.id).where(PurchaseOrder.id == po_id).with_for_update())  # serialises revision numbers
     detail = await _open_po(db, user, po_id)
     if body.proposed_date < date.today():
         raise HTTPException(422, "The proposed date cannot be in the past.")

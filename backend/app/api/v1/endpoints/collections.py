@@ -144,7 +144,10 @@ async def confirm(collection_id: uuid.UUID, db: AsyncSession = Depends(get_db), 
     from app.services import sales_service
 
     c = await _locked(db, collection_id)
-    if c.status != "PENDING":
+    # a cheque is posted only once it has cleared: PENDING → DEPOSITED → confirm (or bounce); never posted then reversed
+    if c.method == "CHEQUE" and c.status != "DEPOSITED":
+        raise HTTPException(409, "Record the cheque as deposited first; confirm it only after the bank has cleared it.")
+    if c.status not in ("PENDING", "DEPOSITED"):
         raise HTTPException(409, f"Collection is {c.status}.")
     if c.collected_by_id == user.id:
         raise HTTPException(403, "You recorded this collection; another finance user must confirm it.")
@@ -174,11 +177,22 @@ async def reconcile(collection_id: uuid.UUID, db: AsyncSession = Depends(get_db)
     return (await _out(db, [c]))[0]
 
 
+@router.post("/{collection_id}/deposit", dependencies=[Depends(require_any_permission(FINANCE))])
+async def deposit(collection_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    """A cheque handed in to the bank; it is confirmed (posted) only when the bank clears it."""
+    c = await _locked(db, collection_id)
+    if c.status != "PENDING" or c.method != "CHEQUE":
+        raise HTTPException(409, "Only pending cheques can be deposited.")
+    c.status = "DEPOSITED"
+    await db.commit()
+    return (await _out(db, [c]))[0]
+
+
 @router.post("/{collection_id}/bounce", dependencies=[Depends(require_any_permission(FINANCE))])
 async def bounce(collection_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     c = await _locked(db, collection_id)
-    if c.status != "PENDING" or c.method != "CHEQUE":
-        raise HTTPException(409, "Only pending cheques can be marked bounced.")
+    if c.status not in ("PENDING", "DEPOSITED") or c.method != "CHEQUE":
+        raise HTTPException(409, "Only cheques that are not yet confirmed can be marked bounced.")
     c.status = "BOUNCED"
     await db.commit()
     return (await _out(db, [c]))[0]
@@ -187,8 +201,8 @@ async def bounce(collection_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
 @router.post("/{collection_id}/cancel", dependencies=[Depends(require_any_permission(FINANCE))])
 async def cancel(collection_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     c = await _locked(db, collection_id)
-    if c.status != "PENDING":
-        raise HTTPException(409, "Only pending collections can be cancelled.")
+    if c.status not in ("PENDING", "DEPOSITED"):
+        raise HTTPException(409, "Only collections that are not yet confirmed can be cancelled.")
     c.status = "CANCELLED"
     await db.commit()
     return (await _out(db, [c]))[0]

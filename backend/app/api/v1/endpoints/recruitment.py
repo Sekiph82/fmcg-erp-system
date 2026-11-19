@@ -4,6 +4,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.deps import get_current_user
+from app.core.actor import stamp
 from app.db.session import get_db
 from app.models.recruitment import (
     RequisitionStatus, PipelineStatus, OfferStatus, RTAIRecStatus,
@@ -61,7 +62,8 @@ async def list_requisitions(
 
 
 @router.post("/requisitions", response_model=JobRequisitionRead)
-async def create_requisition(data: JobRequisitionCreate, db: AsyncSession = Depends(get_db)):
+async def create_requisition(data: JobRequisitionCreate, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    stamp(data, current_user, ("requested_by",))
     return await svc.create_requisition(db, data)
 
 
@@ -189,7 +191,8 @@ async def get_pipeline(pipeline_id: UUID, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/pipeline/{pipeline_id}/move", response_model=PipelineRead)
-async def move_stage(pipeline_id: UUID, data: PipelineMoveStage, db: AsyncSession = Depends(get_db)):
+async def move_stage(pipeline_id: UUID, data: PipelineMoveStage, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    stamp(data, current_user, ("moved_by",))
     p = await svc.move_pipeline_stage(db, pipeline_id, data)
     if not p:
         raise HTTPException(400, "Cannot move stage")

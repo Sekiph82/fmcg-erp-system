@@ -32,7 +32,7 @@ class CashCollection(Base, TimestampMixin):
     mpesa_phone     = Column(String(30), nullable=True)
     gps_lat         = Column(Numeric(10, 7), nullable=True)
     gps_lng         = Column(Numeric(10, 7), nullable=True)
-    status          = Column(String(20), nullable=False, default="PENDING")  # PENDING|CONFIRMED|RECONCILED|BOUNCED|CANCELLED
+    status          = Column(String(20), nullable=False, default="PENDING")  # PENDING|DEPOSITED (cheque at bank)|CONFIRMED|RECONCILED|BOUNCED|CANCELLED
     payment_id      = Column(UUID(as_uuid=True), ForeignKey("payments.id", ondelete="SET NULL"), nullable=True)
     confirmed_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     confirmed_at    = Column(DateTime(timezone=True), nullable=True)

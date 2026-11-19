@@ -151,7 +151,7 @@ async def open_to_collect(db: AsyncSession, inv) -> Decimal:
     from app.models.field_ops import CashCollection
 
     pending = (await db.execute(select(func.coalesce(func.sum(CashCollection.amount), 0)).where(
-        CashCollection.invoice_id == inv.id, CashCollection.status == "PENDING"))).scalar_one()
+        CashCollection.invoice_id == inv.id, CashCollection.status.in_(("PENDING", "DEPOSITED"))))).scalar_one()
     return Decimal(inv.total_amount) - Decimal(inv.paid_amount) - Decimal(pending)
 
 
@@ -709,7 +709,7 @@ async def compliance(days: int = Query(7, ge=1, le=92), db: AsyncSession = Depen
                                        .group_by(SalesOrder.sales_rep_id))).all())
     cols = per_rep((await db.execute(select(CashCollection.rep_id, func.count(CashCollection.id), func.sum(CashCollection.amount))
                                      .where(CashCollection.collection_date >= since,
-                                            CashCollection.status.in_(("PENDING", "CONFIRMED", "RECONCILED")))
+                                            CashCollection.status.in_(("PENDING", "DEPOSITED", "CONFIRMED", "RECONCILED")))
                                      .group_by(CashCollection.rep_id))).all())
     audits = per_rep((await db.execute(select(FieldAudit.rep_id, func.count(FieldAudit.id), func.avg(FieldAudit.score))
                                        .where(FieldAudit.audit_date >= since).group_by(FieldAudit.rep_id))).all())

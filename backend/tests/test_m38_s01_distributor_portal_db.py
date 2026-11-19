@@ -294,3 +294,33 @@ async def test_portal_support_tickets_are_the_customers_own():
     async with AsyncSessionLocal() as db:
         row = await db.get(HelpdeskTicket, uuid.UUID(tid))
         assert row.source.value == "PORTAL" and row.customer_id is not None
+
+
+@pytest.mark.asyncio
+async def test_failed_logins_lock_only_the_guessing_address():
+    from app.main import app
+
+    s = uuid.uuid4().hex[:8]
+    async with AsyncSessionLocal() as db:
+        assert (await db.execute(select(func.current_database()))).scalar_one() == os.environ[TASK_DB_NAME_ENV]
+        cust = Customer(code=f"L-{s}", name=f"Lock {s}", channel=CustomerChannel.DISTRIBUTOR, currency="KES")
+        db.add(cust)
+        await db.flush()
+        acc = PortalAccount(account_code=f"PA-L-{s}", account_type=PortalAccountType.DISTRIBUTOR,
+                            linked_customer_id=str(cust.id), portal_status=PortalAccountStatus.ACTIVE)
+        db.add(acc)
+        await db.flush()
+        db.add(PortalUser(portal_account_id=acc.id, full_name="L", email=f"l-{s}@example.com", password_hash=hash_password(PW),
+                          role_type=PortalUserRole.BUYER, is_active=True))
+        await db.commit()
+
+    def client(ip):
+        return httpx.AsyncClient(transport=httpx.ASGITransport(app=app, client=(ip, 5000)), base_url="http://t")
+
+    creds = {"email": f"l-{s}@example.com", "password": "wrong"}
+    async with client("203.0.113.9") as attacker, client("198.51.100.7") as owner:
+        codes = [(await attacker.post(f"{API}/auth/login", json=creds)).status_code for _ in range(6)]
+        assert codes[:5] == [401] * 5 and codes[5] == 429                          # the guessing address is locked out
+        r = await owner.post(f"{API}/auth/login", json={**creds, "password": PW})
+        assert r.status_code == 200                                                 # the real user is not
+        assert (await owner.post(f"{API}/password", json={"current_password": PW, "new_password": PW})).status_code == 422
