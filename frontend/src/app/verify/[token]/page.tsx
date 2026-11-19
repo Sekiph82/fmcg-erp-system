@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import { API_ORIGIN } from "@/lib/api";
 
 interface Trace {
-  verified: boolean; lot_number: string; product_name: string | null; manufacture_date: string | null; expiry_date: string | null;
+  verified: boolean; on_hold: boolean; lot_number: string; product_name: string | null; manufacture_date: string | null; expiry_date: string | null;
   blockchain_anchored: boolean; blockchain_network: string | null; tx_hash: string | null; integrity_note: string;
 }
 
@@ -37,10 +37,22 @@ export default function VerifyProduct() {
           </div>)}
         {state === "error" && <p role="alert" className="text-sm text-amber-700">The check could not be completed. Please try again later.</p>}
         {state === "ok" && data && (<>
-          <div role="status" className={`rounded-xl border p-4 text-sm ${expired ? "bg-amber-50 border-amber-200 text-amber-900" : "bg-emerald-50 border-emerald-200 text-emerald-900"}`}>
-            <p className="font-semibold text-base">{expired ? "Genuine product — past its expiry date" : "Genuine product"}</p>
-            <p>{data.integrity_note}</p>
-          </div>
+          {data.on_hold ? (
+            <div role="alert" className="rounded-xl bg-red-50 border border-red-200 p-4 text-sm text-red-800">
+              <p className="font-semibold text-base">Do not consume — this batch is on hold</p>
+              <p>Please return it to the shop or contact our customer care.</p>
+            </div>
+          ) : !data.verified ? (
+            <div role="alert" className="rounded-xl bg-amber-50 border border-amber-200 p-4 text-sm text-amber-900">
+              <p className="font-semibold">This code could not be fully confirmed yet.</p>
+              <p>Please contact our customer care if you have doubts about this product.</p>
+            </div>
+          ) : (
+            <div role="status" className={`rounded-xl border p-4 text-sm ${expired ? "bg-amber-50 border-amber-200 text-amber-900" : "bg-emerald-50 border-emerald-200 text-emerald-900"}`}>
+              <p className="font-semibold text-base">{expired ? "Genuine product — past its expiry date" : "Genuine product"}</p>
+              <p>{data.integrity_note}</p>
+            </div>
+          )}
           <dl className="text-sm grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
             {data.product_name && (<><dt className="text-gray-500">Product</dt><dd>{data.product_name}</dd></>)}
             <dt className="text-gray-500">Batch</dt><dd>{data.lot_number}</dd>
