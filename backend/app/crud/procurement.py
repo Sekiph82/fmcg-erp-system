@@ -287,6 +287,7 @@ async def create_supplier_payment(
     )
     db.add(payment)
     await db.flush()
+    await post_supplier_payment_to_gl(db, payment, po, user_id)
 
     # Recalculate payment_status based on total paid vs PO total
     paid_result = await db.execute(
@@ -314,3 +315,38 @@ async def create_supplier_payment(
     await db.flush()
     await db.refresh(payment)
     return payment
+
+
+
+async def post_supplier_payment_to_gl(db: AsyncSession, payment: SupplierPayment, po: PurchaseOrder, user_id: uuid.UUID):
+    """Book a supplier payment (M39 hand-off: procurement → accounting) through the rule
+    procurement/SUPPLIER_PAYMENT_MADE: debit accounts payable, credit the bank/cash/M-Pesa account it was paid from.
+    Without a rule nothing is posted (logged), as for payroll and expenses."""
+    import logging
+    from decimal import Decimal
+
+    from fastapi import HTTPException
+
+    from app.models.finance import AccountingPostingRule, AccountType
+    from app.services.sales_service import _post_sales_journal, _require_sales_account_types
+
+    rule = (await db.execute(select(AccountingPostingRule).where(
+        AccountingPostingRule.source_module == "procurement", AccountingPostingRule.source_event == "SUPPLIER_PAYMENT_MADE",
+        AccountingPostingRule.is_active.is_(True)).order_by(AccountingPostingRule.priority).limit(1))).scalar_one_or_none()
+    if rule is None:
+        logging.getLogger(__name__).warning("supplier payment on %s recorded without GL posting: no rule", po.po_no)
+        return None
+    amount = Decimal(payment.amount or 0)
+    if amount <= 0:
+        raise HTTPException(422, "A supplier payment must be positive.")
+    if not rule.debit_account_id or not rule.credit_account_id:
+        raise HTTPException(422, "The supplier payment rule needs the payables and the paying bank/cash accounts.")
+    await _require_sales_account_types(db, [(rule.debit_account_id, AccountType.LIABILITY, "accounts payable"),
+                                            (rule.credit_account_id, AccountType.ASSET, "bank/cash")])
+    return await _post_sales_journal(
+        db, source_event="SUPPLIER_PAYMENT_MADE", source_id=payment.id, source_ref=po.po_no,
+        entry_date=payment.payment_date,
+        description=f"Payment to supplier for {po.po_no}", amount=amount, currency=po.currency,
+        debit_lines=[(rule.debit_account_id, amount, f"Settles payable on {po.po_no}")],
+        credit_lines=[(rule.credit_account_id, amount, "Paid from bank/cash")],
+        user_id=user_id, source_module="procurement", entry_prefix="AUTO-SUPPAY")

@@ -107,3 +107,34 @@ async def test_finance_approved_expense_claim_is_booked_in_the_ledger():
         await db.commit()
         lines = {(l.account_id, l.debit, l.credit) for l in (await db.execute(select(JournalLine).where(JournalLine.entry_id == je.id))).scalars()}
         assert je.source_module == "expenses" and lines == {(exp.id, Decimal("5000"), Decimal("0")), (pay.id, Decimal("0"), Decimal("5000"))}
+
+
+@pytest.mark.asyncio
+async def test_supplier_payment_is_booked_in_the_ledger():
+    from sqlalchemy.orm import selectinload
+
+    from app.crud.procurement import create_supplier_payment
+    from app.models.master import Supplier
+    from app.models.procurement import PurchaseOrder
+
+    s = uuid.uuid4().hex[:6]
+    async with AsyncSessionLocal() as db:
+        assert (await db.execute(select(func.current_database()))).scalar_one() == os.environ[TASK_DB_NAME_ENV]
+        buyer = User(email=f"ap-{s}@example.com", username=f"ap{s}", full_name="AP", hashed_password="x")
+        sup = Supplier(code=f"SUP-{s}", name="Pack Ltd")
+        ap, bank = (ChartOfAccount(code=f"APX{s}", name="Payables", account_type=AccountType.LIABILITY, currency="KES"),
+                    ChartOfAccount(code=f"BNK{s}", name="Bank", account_type=AccountType.ASSET, currency="KES"))
+        db.add_all([buyer, sup, ap, bank])
+        await db.flush()
+        db.add(AccountingPostingRule(source_module="procurement", source_event="SUPPLIER_PAYMENT_MADE", rule_name="AP pay",
+                                     debit_account_id=ap.id, credit_account_id=bank.id, priority=1, is_active=True))
+        po = PurchaseOrder(po_no=f"PO-{s}", supplier_id=sup.id, order_date=date.today(), expected_delivery_date=date.today(),
+                           currency="KES")
+        db.add(po)
+        await db.flush()
+        po = (await db.execute(select(PurchaseOrder).options(selectinload(PurchaseOrder.lines)).where(PurchaseOrder.id == po.id))).scalar_one()
+        pay = await create_supplier_payment(db, po, {"payment_date": date.today(), "amount": Decimal("12000"), "method": "bank"}, buyer.id)
+        await db.commit()
+        je = (await db.execute(select(JournalEntry).where(JournalEntry.source_id == pay.id))).scalar_one()
+        lines = {(l.account_id, l.debit, l.credit) for l in (await db.execute(select(JournalLine).where(JournalLine.entry_id == je.id))).scalars()}
+        assert je.source_module == "procurement" and lines == {(ap.id, Decimal("12000"), Decimal("0")), (bank.id, Decimal("0"), Decimal("12000"))}
