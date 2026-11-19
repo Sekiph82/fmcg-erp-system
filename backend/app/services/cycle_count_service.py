@@ -433,7 +433,46 @@ async def _post_stock_adjustment(
     adjustment.stock_movement_ref = ref
     adjustment.status = AdjustmentStatus.POSTED
     await db.flush()
+    await _post_adjustment_to_gl(db, entry, adjustment)
 
+
+
+async def _post_adjustment_to_gl(db: AsyncSession, entry: CountEntry, adjustment: CountAdjustment):
+    """Book a posted count adjustment in the general ledger (M39 hand-off: stock control → accounting) through the rule
+    inventory/STOCK_ADJUSTMENT: debit = stock adjustment / shrinkage expense, credit = inventory. A shortage debits the
+    expense and credits inventory; a surplus does the reverse. Value: the adjustment value, else qty × unit cost.
+    Without a rule nothing is posted (logged), as for payroll and expenses."""
+    import logging
+    from decimal import Decimal
+
+    from fastapi import HTTPException
+
+    from app.models.finance import AccountingPostingRule, AccountType
+    from app.services.sales_service import _post_sales_journal, _require_sales_account_types
+
+    rule = (await db.execute(select(AccountingPostingRule).where(
+        AccountingPostingRule.source_module == "inventory", AccountingPostingRule.source_event == "STOCK_ADJUSTMENT",
+        AccountingPostingRule.is_active.is_(True)).order_by(AccountingPostingRule.priority).limit(1))).scalar_one_or_none()
+    if rule is None:
+        logging.getLogger(__name__).warning("stock adjustment %s posted without GL entry: no inventory rule", adjustment.id)
+        return None
+    qty = Decimal(adjustment.adjustment_qty or 0)
+    value = abs(Decimal(adjustment.adjustment_value)) if adjustment.adjustment_value is not None         else abs(qty) * Decimal(entry.unit_cost or 0)
+    if value == 0 or qty == 0:
+        return None
+    if not rule.debit_account_id or not rule.credit_account_id:
+        raise HTTPException(422, "The stock adjustment rule needs the adjustment expense and inventory accounts.")
+    await _require_sales_account_types(db, [(rule.debit_account_id, AccountType.EXPENSE, "stock adjustment expense"),
+                                            (rule.credit_account_id, AccountType.ASSET, "inventory")])
+    shortage = qty < 0
+    loss, stock = (rule.debit_account_id, rule.credit_account_id)
+    return await _post_sales_journal(
+        db, source_event="STOCK_ADJUSTMENT", source_id=adjustment.id, source_ref=adjustment.stock_movement_ref or "count",
+        entry_date=date.today(), description=f"Stock count {'shortage' if shortage else 'surplus'} {adjustment.stock_movement_ref}",
+        amount=value, currency="KES",
+        debit_lines=[(loss if shortage else stock, value, "Count shortage" if shortage else "Count surplus to stock")],
+        credit_lines=[(stock if shortage else loss, value, "Stock written down" if shortage else "Count surplus")],
+        user_id=adjustment.approved_by_id, source_module="inventory", entry_prefix="AUTO-ADJ")
 
 # ── Adjustment queries ────────────────────────────────────────────────────────
 

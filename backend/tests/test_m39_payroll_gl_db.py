@@ -138,3 +138,34 @@ async def test_supplier_payment_is_booked_in_the_ledger():
         je = (await db.execute(select(JournalEntry).where(JournalEntry.source_id == pay.id))).scalar_one()
         lines = {(l.account_id, l.debit, l.credit) for l in (await db.execute(select(JournalLine).where(JournalLine.entry_id == je.id))).scalars()}
         assert je.source_module == "procurement" and lines == {(ap.id, Decimal("12000"), Decimal("0")), (bank.id, Decimal("0"), Decimal("12000"))}
+
+
+@pytest.mark.asyncio
+async def test_stock_count_shortage_and_surplus_are_booked():
+    from types import SimpleNamespace
+
+    from app.services.cycle_count_service import _post_adjustment_to_gl
+
+    s = uuid.uuid4().hex[:6]
+    async with AsyncSessionLocal() as db:
+        assert (await db.execute(select(func.current_database()))).scalar_one() == os.environ[TASK_DB_NAME_ENV]
+        clerk = User(email=f"wh-{s}@example.com", username=f"wh{s}", full_name="WH", hashed_password="x")
+        shrink, inv = (ChartOfAccount(code=f"SHR{s}", name="Stock adjustments", account_type=AccountType.EXPENSE, currency="KES"),
+                       ChartOfAccount(code=f"INV{s}", name="Inventory", account_type=AccountType.ASSET, currency="KES"))
+        db.add_all([clerk, shrink, inv])
+        await db.flush()
+        db.add(AccountingPostingRule(source_module="inventory", source_event="STOCK_ADJUSTMENT", rule_name="Counts",
+                                     debit_account_id=shrink.id, credit_account_id=inv.id, priority=1, is_active=True))
+        await db.flush()
+        entry = SimpleNamespace(unit_cost=Decimal("50"))
+        short = SimpleNamespace(id=uuid.uuid4(), adjustment_qty=Decimal("-3"), adjustment_value=None, stock_movement_ref="ADJ-1",
+                                approved_by_id=clerk.id)
+        extra = SimpleNamespace(id=uuid.uuid4(), adjustment_qty=Decimal("2"), adjustment_value=Decimal("100"), stock_movement_ref="ADJ-2",
+                                approved_by_id=clerk.id)
+        j1, j2 = await _post_adjustment_to_gl(db, entry, short), await _post_adjustment_to_gl(db, entry, extra)
+        await db.commit()
+
+        async def lines(je):
+            return {(l.account_id, l.debit, l.credit) for l in (await db.execute(select(JournalLine).where(JournalLine.entry_id == je.id))).scalars()}
+        assert await lines(j1) == {(shrink.id, Decimal("150"), Decimal("0")), (inv.id, Decimal("0"), Decimal("150"))}
+        assert await lines(j2) == {(inv.id, Decimal("100"), Decimal("0")), (shrink.id, Decimal("0"), Decimal("100"))}
