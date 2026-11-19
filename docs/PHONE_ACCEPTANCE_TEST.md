@@ -4,21 +4,36 @@ What is already verified automatically: every flow below runs in an emulated pho
 against a real ClamAV scanner. What only a real phone can prove: the GPS fix, the camera, the signature on a touch
 screen, barcode reading with the camera, and installing the app. Real M-Pesa payments are out of scope (no live account).
 
-## 1. Start the dev stack for the local network (laptop)
+## 1. Start the dev stack for the phone (laptop)
+
+Find the laptop's address on the network the phone uses (`ipconfig`). With the iPhone's Personal Hotspot over the
+cable the laptop is usually `172.20.10.x`; on office Wi-Fi something like `192.168.1.x`. Then:
 
 ```powershell
-$env:LAN_IP = "192.168.1.189"   # the laptop's Wi-Fi address (ipconfig)
-docker compose -f docker-compose.yml -f docker-compose.lan.yml up -d backend frontend
+$env:LAN_IP = "172.20.10.4"
+python scripts/dev_lan_tls.py $env:LAN_IP     # test certificate for this address only (once per address)
+docker compose -f docker-compose.yml -f docker-compose.lan.yml up -d --force-recreate backend frontend lan-https
 ```
 
-The phone must be on the same Wi-Fi. If the phone cannot open `http://192.168.1.189:3000/login`, allow inbound TCP
-3000 and 8000 for Docker Desktop in Windows Defender Firewall (private network) — a change only the laptop owner makes.
+If the phone cannot open the pages, allow inbound TCP 3443, 8443 and 8088 for Docker Desktop in Windows Defender
+Firewall — a change only the laptop owner makes.
 
-## 2. Let the phone use location and camera on this test address
+## 2. iPhone (Safari) — HTTPS with the test certificate
 
-Browsers only allow GPS and camera on secure (HTTPS) pages. For a local test on **Android Chrome**:
-open `chrome://flags/#unsafely-treat-insecure-origin-as-secure`, enter `http://192.168.1.189:3000`, set *Enabled*,
-tap *Relaunch*. (iPhone Safari has no such switch; it needs an HTTPS address — ask for an HTTPS tunnel if needed.)
+Safari gives location and camera only to HTTPS pages, so the phone trusts a test certificate that is valid for this
+one laptop address only (it cannot be used for any other website):
+
+1. In Safari open `http://<LAN_IP>:8088/rootCA.crt` → *Allow* → "Profile Downloaded".
+2. Settings → *Profile Downloaded* → *Install* (passcode) → *Install*.
+3. Settings → General → About → *Certificate Trust Settings* → switch on "FMCG ERP local test CA".
+4. Open `https://<LAN_IP>:3443` — the app, with the POVU logo.
+5. To install the app: Share button → *Add to Home Screen* → *Add*. It opens full screen from the POVU icon.
+
+After testing remove it: Settings → General → VPN & Device Management → the profile → *Remove Profile*.
+
+**Android Chrome** works the same way via `https://<LAN_IP>:3443` after installing `rootCA.crt` (Settings → Security →
+Encryption & credentials → Install a certificate → CA certificate), or without a certificate by opening
+`http://<LAN_IP>:3000` and enabling `chrome://flags/#unsafely-treat-insecure-origin-as-secure` for that address.
 
 ## 3. Test accounts (synthetic, local only)
 
@@ -57,5 +72,6 @@ Report any step that fails with the step number and a screenshot.
 ## 5. Back to laptop-only
 
 ```powershell
-docker compose up -d backend frontend
+docker compose rm -sf lan-https
+docker compose up -d --force-recreate backend frontend
 ```

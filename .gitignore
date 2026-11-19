@@ -68,3 +68,6 @@ frontend/graphify-out/
 docs/graphify-out/
 scripts/graphify-out/
 .env.staging
+
+# local phone-test certificates (scripts/dev_lan_tls.py)
+.lan-tls/

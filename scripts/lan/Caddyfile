@@ -1,0 +1,31 @@
+# Phone testing over HTTPS on the Wi-Fi (development only; certificates from scripts/dev_lan_tls.py in .lan-tls/).
+{
+	auto_https off
+	admin off
+	# clients do not send SNI for an IP address: use this certificate for SNI-less handshakes
+	default_sni {$LAN_IP}
+}
+
+# the app
+https://{$LAN_IP}:3443 {
+	tls /certs/lan.crt /certs/lan.key
+	reverse_proxy frontend:3000
+}
+
+# the API
+https://{$LAN_IP}:8443 {
+	tls /certs/lan.crt /certs/lan.key
+	reverse_proxy backend:8000
+}
+
+# the test CA for the phone to install (Safari offers it as a profile)
+http://{$LAN_IP}:8088 {
+	handle /rootCA.crt {
+		root * /certs
+		header Content-Type application/x-x509-ca-cert
+		file_server
+	}
+	handle {
+		respond "Open /rootCA.crt on the phone to install the FMCG ERP test certificate." 200
+	}
+}

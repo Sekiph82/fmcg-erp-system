@@ -1,14 +1,30 @@
 # Phone / tablet testing on the local network (development only).
-#   PowerShell:  $env:LAN_IP = "192.168.1.189"; docker compose -f docker-compose.yml -f docker-compose.lan.yml up -d backend frontend
-# The phone opens http://<LAN_IP>:3000. Location, camera and barcode scanning need a "secure" page: on Android Chrome add
-# http://<LAN_IP>:3000 to chrome://flags/#unsafely-treat-insecure-origin-as-secure (see docs/PHONE_ACCEPTANCE_TEST.md).
-# Back to laptop-only:  docker compose up -d backend frontend
+#   PowerShell:  $env:LAN_IP = "192.168.1.189"; docker compose -f docker-compose.yml -f docker-compose.lan.yml up -d backend frontend lan-https
+# Android Chrome: http://<LAN_IP>:3000 with the secure-origin flag, or (any phone incl. iPhone) https://<LAN_IP>:3443 after
+# installing the test certificate from http://<LAN_IP>:8088/rootCA.crt (python scripts/dev_lan_tls.py <LAN_IP> creates it).
+# See docs/PHONE_ACCEPTANCE_TEST.md. Back to laptop-only:  docker compose up -d backend frontend; docker compose rm -sf lan-https
 services:
   backend:
     environment:
-      BACKEND_CORS_ORIGINS: '["http://localhost:3000","http://${LAN_IP:?set LAN_IP}:3000"]'
-      PUBLIC_APP_URL: http://${LAN_IP}:3000
+      BACKEND_CORS_ORIGINS: '["http://localhost:3000","http://${LAN_IP:?set LAN_IP}:3000","https://${LAN_IP}:3443"]'
+      PUBLIC_APP_URL: https://${LAN_IP}:3443
   frontend:
     environment:
-      NEXT_PUBLIC_API_URL: http://${LAN_IP}:8000
+      NEXT_PUBLIC_API_URL: https://${LAN_IP}:8443
       LAN_IP: ${LAN_IP}
+  lan-https:
+    image: caddy:2.8-alpine
+    environment:
+      LAN_IP: ${LAN_IP}
+    volumes:
+      - ./scripts/lan/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./.lan-tls/lan.crt:/certs/lan.crt:ro
+      - ./.lan-tls/lan.key:/certs/lan.key:ro
+      - ./.lan-tls/rootCA.crt:/certs/rootCA.crt:ro
+    ports:
+      - "3443:3443"
+      - "8443:8443"
+      - "8088:8088"
+    depends_on:
+      - frontend
+      - backend
