@@ -217,6 +217,38 @@ async def close_session(
 
 # ── Sales ─────────────────────────────────────────────────────────────────────
 
+async def _post_pos_sale_to_gl(db: AsyncSession, sale: POSSale, user_id):
+    """Book a counter sale in the general ledger (M39 hand-off: POS → accounting) through the rule pos/POS_SALE:
+    debit = cash / till clearing (sale total), credit = sales revenue (net of discount), tax account = output VAT.
+    Without a rule nothing is posted (logged), as for payroll and expenses."""
+    import logging
+
+    from app.models.finance import AccountingPostingRule, AccountType
+    from app.services.sales_service import _post_sales_journal, _require_sales_account_types
+
+    rule = (await db.execute(select(AccountingPostingRule).where(
+        AccountingPostingRule.source_module == "pos", AccountingPostingRule.source_event == "POS_SALE",
+        AccountingPostingRule.is_active.is_(True)).order_by(AccountingPostingRule.priority).limit(1))).scalar_one_or_none()
+    if rule is None:
+        logging.getLogger(__name__).warning("POS sale %s recorded without GL entry: no pos rule", sale.sale_no)
+        return None
+    total, tax = Decimal(sale.sale_total), Decimal(sale.tax_total or 0)
+    if total <= 0:
+        return None
+    if not rule.debit_account_id or not rule.credit_account_id or (tax > 0 and not rule.tax_account_id):
+        raise HTTPException(422, "The POS posting rule needs the till, revenue and (for taxed sales) output tax accounts.")
+    await _require_sales_account_types(db, [(rule.debit_account_id, AccountType.ASSET, "till / cash clearing"),
+                                            (rule.credit_account_id, AccountType.REVENUE, "sales revenue"),
+                                            (rule.tax_account_id if tax > 0 else None, AccountType.LIABILITY, "output tax")])
+    return await _post_sales_journal(
+        db, source_event="POS_SALE", source_id=sale.id, source_ref=sale.sale_no, entry_date=date.today(),
+        description=f"POS sale {sale.sale_no}", amount=total, currency="KES",
+        debit_lines=[(rule.debit_account_id, total, f"Till takings {sale.sale_no}")],
+        credit_lines=[(rule.credit_account_id, total - tax, "Counter sales"),
+                      *([(rule.tax_account_id, tax, "Output tax")] if tax > 0 else [])],
+        user_id=user_id, source_module="pos", entry_prefix="AUTO-POS")
+
+
 @router.post("/sales", response_model=POSSaleRead, status_code=201)
 async def create_sale(
     body: POSSaleCreate,
@@ -289,6 +321,8 @@ async def create_sale(
     # Update session totals
     session.total_sales = (session.total_sales or Decimal("0")) + sale_total
     session.total_transactions = (session.total_transactions or 0) + 1
+    await db.flush()
+    await _post_pos_sale_to_gl(db, sale, current_user.id)
 
     await db.commit()
     return _sale_read(await _get_sale_or_404(db, sale.id))

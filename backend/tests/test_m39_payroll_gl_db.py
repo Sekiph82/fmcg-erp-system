@@ -169,3 +169,28 @@ async def test_stock_count_shortage_and_surplus_are_booked():
             return {(l.account_id, l.debit, l.credit) for l in (await db.execute(select(JournalLine).where(JournalLine.entry_id == je.id))).scalars()}
         assert await lines(j1) == {(shrink.id, Decimal("150"), Decimal("0")), (inv.id, Decimal("0"), Decimal("150"))}
         assert await lines(j2) == {(inv.id, Decimal("100"), Decimal("0")), (shrink.id, Decimal("0"), Decimal("100"))}
+
+
+@pytest.mark.asyncio
+async def test_pos_sale_is_booked_with_output_tax():
+    from types import SimpleNamespace
+
+    from app.api.v1.endpoints.pos import _post_pos_sale_to_gl
+
+    s = uuid.uuid4().hex[:6]
+    async with AsyncSessionLocal() as db:
+        assert (await db.execute(select(func.current_database()))).scalar_one() == os.environ[TASK_DB_NAME_ENV]
+        cashier = User(email=f"pos-{s}@example.com", username=f"pos{s}", full_name="Till", hashed_password="x")
+        till, rev, vat = (ChartOfAccount(code=f"TIL{s}", name="Till", account_type=AccountType.ASSET, currency="KES"),
+                          ChartOfAccount(code=f"REV{s}", name="Counter sales", account_type=AccountType.REVENUE, currency="KES"),
+                          ChartOfAccount(code=f"VAT{s}", name="Output VAT", account_type=AccountType.LIABILITY, currency="KES"))
+        db.add_all([cashier, till, rev, vat])
+        await db.flush()
+        db.add(AccountingPostingRule(source_module="pos", source_event="POS_SALE", rule_name="POS", debit_account_id=till.id,
+                                     credit_account_id=rev.id, tax_account_id=vat.id, priority=1, is_active=True))
+        await db.flush()
+        sale = SimpleNamespace(id=uuid.uuid4(), sale_no=f"POS-{s}", sale_total=Decimal("1160"), tax_total=Decimal("160"))
+        je = await _post_pos_sale_to_gl(db, sale, cashier.id)
+        await db.commit()
+        lines = {(l.account_id, l.debit, l.credit) for l in (await db.execute(select(JournalLine).where(JournalLine.entry_id == je.id))).scalars()}
+        assert lines == {(till.id, Decimal("1160"), Decimal("0")), (rev.id, Decimal("0"), Decimal("1000")), (vat.id, Decimal("0"), Decimal("160"))}
