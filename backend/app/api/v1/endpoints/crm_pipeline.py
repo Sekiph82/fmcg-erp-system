@@ -1175,3 +1175,115 @@ async def stop_enrollment(enrollment_id: str, reason: str = Query("stopped by us
         .values(status="CANCELLED", status_reason="sequence stopped"))).rowcount
     await db.commit()
     return {"id": str(e.id), "status": e.status, "cancelled_messages": cancelled}
+
+
+# ── M36.S02.T005 segment e-mail campaigns ─────────────────────────────────────
+
+class EmailCampaignIn(BaseModel):
+    name: str = Field(min_length=1, max_length=150)
+    subject: str = Field(min_length=1, max_length=300, pattern=r"^[^\r\n]+$")
+    body: str = Field(min_length=1, max_length=50000)
+    segment_id: str
+    company_id: Optional[str] = None
+    marketing_campaign_id: Optional[str] = None
+
+
+async def _campaign_out(db, c) -> dict:
+    from app.services import crm_campaign_service as campaigns
+
+    return {"id": str(c.id), "name": c.name, "subject": c.subject, "body": c.body, "segment_id": str(c.segment_id),
+            "company_id": str(c.company_id) if c.company_id else None, "status": c.status,
+            "scheduled_at": c.scheduled_at.isoformat() if c.scheduled_at else None,
+            "queued_at": c.queued_at.isoformat() if c.queued_at else None, "audience_size": c.audience_size,
+            "stats": await campaigns.stats(db, c)}
+
+
+@router.get("/email-campaigns", dependencies=[Depends(require_any_permission(CRM_BROAD_VIEW))])
+async def list_email_campaigns(db: AsyncSession = Depends(get_db)):
+    from app.models.crm import CRMEmailCampaign
+
+    rows = (await db.execute(select(CRMEmailCampaign).order_by(CRMEmailCampaign.created_at.desc()))).scalars().all()
+    return [await _campaign_out(db, c) for c in rows]
+
+
+@router.post("/email-campaigns", status_code=201, dependencies=[Depends(require_any_permission(CRM_CONFIG))])
+async def create_email_campaign(body: EmailCampaignIn, db: AsyncSession = Depends(get_db),
+                                current_user=Depends(get_current_user)):
+    from app.models.crm import CRMEmailCampaign
+    from app.models.marketing import CustomerSegment
+
+    if await db.get(CustomerSegment, _uuid(body.segment_id)) is None:
+        raise HTTPException(422, "segment_id does not exist")
+    c = CRMEmailCampaign(name=body.name, subject=body.subject, body=body.body, segment_id=_uuid(body.segment_id),
+                         company_id=_uuid(body.company_id) if body.company_id else None,
+                         marketing_campaign_id=_uuid(body.marketing_campaign_id) if body.marketing_campaign_id else None,
+                         status="DRAFT", created_by=current_user.username)
+    db.add(c)
+    await db.commit()
+    return await _campaign_out(db, c)
+
+
+@router.get("/email-campaigns/segments", dependencies=[Depends(require_any_permission(CRM_BROAD_VIEW))])
+async def campaign_segments(db: AsyncSession = Depends(get_db)):
+    """Active customer segments with member counts (for choosing a campaign audience)."""
+    from app.models.marketing import CRMProfile, CustomerSegment
+
+    rows = (await db.execute(select(CustomerSegment, func.count(CRMProfile.id)).outerjoin(
+        CRMProfile, CRMProfile.segment_id == CustomerSegment.id).where(CustomerSegment.is_active.is_(True))
+        .group_by(CustomerSegment.id).order_by(CustomerSegment.segment_name))).all()
+    return [{"id": str(sg.id), "name": sg.segment_name, "members": n} for sg, n in rows]
+
+
+@router.get("/email-campaigns/{campaign_id}/preview", dependencies=[Depends(require_any_permission(CRM_BROAD_VIEW))])
+async def preview_email_campaign(campaign_id: str, db: AsyncSession = Depends(get_db)):
+    from app.models.crm import CRMEmailCampaign
+    from app.services import crm_campaign_service as campaigns
+
+    c = await db.get(CRMEmailCampaign, _uuid(campaign_id))
+    if c is None:
+        raise HTTPException(404, "Campaign not found")
+    return await campaigns.audience_preview(db, c)
+
+
+@router.post("/email-campaigns/{campaign_id}/schedule", dependencies=[Depends(require_any_permission(CRM_CONFIG))])
+async def schedule_email_campaign(campaign_id: str, at: Optional[str] = None, db: AsyncSession = Depends(get_db)):
+    """Schedule a DRAFT campaign (now when `at` is omitted). Recipients are resolved at send time."""
+    from datetime import datetime as _dt, timezone as _tz
+
+    from app.models.crm import CRMEmailCampaign
+
+    c = await db.get(CRMEmailCampaign, _uuid(campaign_id))
+    if c is None:
+        raise HTTPException(404, "Campaign not found")
+    if c.status != "DRAFT":
+        raise HTTPException(409, "Only draft campaigns can be scheduled.")
+    try:
+        when = _dt.fromisoformat(at.replace("Z", "+00:00")) if at else _dt.now(_tz.utc)
+    except ValueError:
+        raise HTTPException(422, "at must be an ISO date-time")
+    c.status, c.scheduled_at = "SCHEDULED", when if when.tzinfo else when.replace(tzinfo=_tz.utc)
+    await db.commit()
+    return await _campaign_out(db, c)
+
+
+@router.post("/email-campaigns/{campaign_id}/cancel", dependencies=[Depends(require_any_permission(CRM_CONFIG))])
+async def cancel_email_campaign(campaign_id: str, db: AsyncSession = Depends(get_db)):
+    """Cancel a draft/scheduled campaign, or withdraw the not-yet-sent mail of a queued one."""
+    from sqlalchemy import update as _update
+
+    from app.models.crm import CRMEmailCampaign, CRMOutboundMessage
+
+    c = (await db.execute(select(CRMEmailCampaign).where(CRMEmailCampaign.id == _uuid(campaign_id))
+                          .with_for_update())).scalar_one_or_none()
+    if c is None:
+        raise HTTPException(404, "Campaign not found")
+    withdrawn = 0
+    if c.status == "QUEUED":
+        withdrawn = (await db.execute(_update(CRMOutboundMessage).where(
+            CRMOutboundMessage.dedupe_key.like(f"camp:{c.id}:%"), CRMOutboundMessage.status == "QUEUED")
+            .values(status="CANCELLED", status_reason="campaign cancelled"))).rowcount
+    elif c.status == "CANCELLED":
+        raise HTTPException(409, "Campaign is already cancelled.")
+    c.status = "CANCELLED"
+    await db.commit()
+    return {**(await _campaign_out(db, c)), "withdrawn_messages": withdrawn}

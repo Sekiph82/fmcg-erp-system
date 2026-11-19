@@ -441,7 +441,19 @@ export const crmApi = {
   enrollInSequence: (id: string, recordId: string) => r(ax.post(`/crm/sequences/${id}/enroll`, null, { params: { record_id: recordId } })),
   getEnrollments: (id: string) => r(ax.get<Enrollment[]>(`/crm/sequences/${id}/enrollments`)),
   stopEnrollment: (id: string, reason: string) => r(ax.post(`/crm/sequence-enrollments/${id}/stop`, null, { params: { reason } })),
+  getEmailCampaigns: () => r(ax.get<EmailCampaign[]>(`/crm/email-campaigns`)),
+  getCampaignSegments: () => r(ax.get<{ id: string; name: string; members: number }[]>(`/crm/email-campaigns/segments`)),
+  createEmailCampaign: (data: { name: string; subject: string; body: string; segment_id: string }) => r(ax.post<EmailCampaign>(`/crm/email-campaigns`, data)),
+  previewEmailCampaign: (id: string) => r(ax.get<{ customers: number; addresses: number; with_consent: number }>(`/crm/email-campaigns/${id}/preview`)),
+  scheduleEmailCampaign: (id: string, at?: string) => r(ax.post<EmailCampaign>(`/crm/email-campaigns/${id}/schedule`, null, { params: { at } })),
+  cancelEmailCampaign: (id: string) => r(ax.post<EmailCampaign>(`/crm/email-campaigns/${id}/cancel`)),
 };
+
+export interface EmailCampaign {
+  id: string; name: string; subject: string; body: string; segment_id: string; company_id: string | null; status: string;
+  scheduled_at: string | null; queued_at: string | null; audience_size: number | null;
+  stats: { by_status: Record<string, number>; converted_customers: number; attribution: string };
+}
 
 export interface SequenceStep { step_no: number; delay_days: number; subject: string; body: string }
 export interface Sequence { id: string; name: string; active_flag: boolean; notes: string | null; steps: SequenceStep[]; enrollments: Record<string, number> }

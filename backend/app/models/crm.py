@@ -553,3 +553,23 @@ class CRMSequenceEnrollment(Base):
     enrolled_by   = Column(String(100), nullable=True)
     enrolled_at   = Column(DateTime(timezone=True), nullable=False)
     finished_at   = Column(DateTime(timezone=True), nullable=True)
+
+
+# ── M36.S02.T005 segment e-mail campaigns ─────────────────────────────────────
+
+class CRMEmailCampaign(Base, TimestampMixin):
+    """E-mail to a customer segment through the consent-aware outbox (CAMPAIGN purpose)."""
+    __tablename__ = "crm_email_campaigns"
+
+    id                    = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name                  = Column(String(150), nullable=False)
+    subject               = Column(String(300), nullable=False)
+    body                  = Column(Text, nullable=False)                 # {contact_name} {company_name}
+    segment_id            = Column(UUID(as_uuid=True), ForeignKey("mkt_customer_segments.id", ondelete="RESTRICT"), nullable=False)
+    company_id            = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="SET NULL"), nullable=True)
+    marketing_campaign_id = Column(UUID(as_uuid=True), ForeignKey("mkt_campaigns.id", ondelete="SET NULL"), nullable=True)
+    status                = Column(String(10), nullable=False, default="DRAFT")   # DRAFT|SCHEDULED|QUEUED|CANCELLED
+    scheduled_at          = Column(DateTime(timezone=True), nullable=True)
+    queued_at             = Column(DateTime(timezone=True), nullable=True)
+    audience_size         = Column(Integer, nullable=True)
+    created_by            = Column(String(100), nullable=True)

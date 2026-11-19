@@ -1,0 +1,10 @@
+[
+  {
+    "route": "/dashboard/crm/email-campaigns",
+    "status": "OK",
+    "heading": "E-mail Campaigns",
+    "screenshot": "coordination/milestones/M36/screenshots/B8/dashboard_crm_email-campaigns.png",
+    "console_errors": [],
+    "failed_api": []
+  }
+]

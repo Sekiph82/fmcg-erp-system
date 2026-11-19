@@ -275,8 +275,12 @@ async def run_crm_automation(interval: float = 15.0) -> None:
             from app.services.crm_outbound_service import deliver_due
             from app.services.crm_sequence_service import advance
 
+            from app.services.crm_campaign_service import expand_due
+
             async with AsyncSessionLocal() as db:
                 await advance(db)
+            async with AsyncSessionLocal() as db:
+                await expand_due(db)
             async with AsyncSessionLocal() as db:
                 await deliver_due(db)
         except asyncio.CancelledError:
