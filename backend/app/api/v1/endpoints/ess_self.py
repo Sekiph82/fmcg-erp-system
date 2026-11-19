@@ -44,24 +44,51 @@ class ProfileIn(BaseModel):
 
 
 async def _me(db: AsyncSession, user):
-    """(ESS account, HR employee) of the signed-in user; creates the ESS account for a linked employee on first use."""
-    from app.models.ess import ESSAccount, ESSEmployeeProfile
-    from app.models.hr import Employee
+    """(ESS account, HR employee) of the signed-in user; creates or links the ESS account on first use.
+    Fails closed when the login maps to more than one employee, or the employee / ESS account is not active."""
+    from sqlalchemy.exc import IntegrityError
 
-    hr = (await db.execute(select(Employee).where(Employee.user_id == user.id).limit(1))).scalar_one_or_none()
-    cond = [ESSAccount.user_id == user.id] + ([ESSAccount.hr_employee_id == hr.id] if hr else [])
-    acc = (await db.execute(select(ESSAccount).where(or_(*cond)).limit(1))).scalar_one_or_none()
-    if acc is None:
-        if hr is None:
-            raise HTTPException(404, "Your login is not linked to an employee record yet. Please contact HR.")
-        acc = ESSAccount(employee_id=hr.id, user_id=user.id, hr_employee_id=hr.id,
-                         email=(hr.email or user.email or f"{hr.employee_code}@employee.invalid").lower(),
-                         password_hash="!staff-login-only")  # unusable: ESS uses the staff session
-        db.add(acc)
-        db.add(ESSEmployeeProfile(employee_id=hr.id, hr_employee_id=hr.id, full_name=hr.full_name,
-                                  email=acc.email, phone=hr.phone, job_title=hr.role, department_name=hr.department,
-                                  joining_date=hr.hire_date, grade=hr.salary_grade))
+    from app.models.ess import ESSAccount, ESSAccountStatus, ESSEmployeeProfile
+    from app.models.hr import Employee, EmployeeStatus
+
+    hrs = (await db.execute(select(Employee).where(Employee.user_id == user.id).limit(2))).scalars().all()
+    if len(hrs) > 1:
+        raise HTTPException(409, "Your login is linked to more than one employee record. Please contact HR.")
+    hr = hrs[0] if hrs else None
+    if hr is not None and hr.status not in (EmployeeStatus.ACTIVE, EmployeeStatus.ON_LEAVE):
+        raise HTTPException(403, "Self-service is only available to current employees.")
+    # an existing account for this person: by login, by HR link, or created earlier by HR with the HR id
+    cond = [ESSAccount.user_id == user.id] + ([ESSAccount.hr_employee_id == hr.id, ESSAccount.employee_id == hr.id] if hr else [])
+    accs = (await db.execute(select(ESSAccount).where(or_(*cond)))).scalars().all()
+    if hr is not None:
+        accs = [a for a in accs if a.hr_employee_id in (None, hr.id)]  # never another employee's account
+    if len(accs) > 1:
+        raise HTTPException(409, "More than one self-service account matches your login. Please contact HR.")
+    acc = accs[0] if accs else None
+    if acc is None and hr is None:
+        raise HTTPException(404, "Your login is not linked to an employee record yet. Please contact HR.")
+    if acc is not None and acc.status not in (None, ESSAccountStatus.ACTIVE):
+        raise HTTPException(403, "Your self-service account is not active. Please contact HR.")
+    try:
+        if acc is None:
+            email = (hr.email or user.email or "").lower()
+            taken = email and (await db.execute(select(ESSAccount.ess_account_id).where(ESSAccount.email == email))).first()
+            acc = ESSAccount(employee_id=hr.id, user_id=user.id, hr_employee_id=hr.id,
+                             email=f"{hr.employee_code.lower()}@employee.invalid" if (taken or not email) else email,
+                             password_hash="!staff-login-only")  # unusable: ESS uses the staff session
+            db.add(acc)
+            await db.flush()
+        elif hr is not None and (acc.user_id != user.id or acc.hr_employee_id != hr.id):
+            acc.user_id, acc.hr_employee_id = user.id, hr.id  # backfill links on an account HR created earlier
+        if hr is not None and (await db.execute(select(ESSEmployeeProfile.profile_id).where(
+                ESSEmployeeProfile.employee_id == acc.employee_id))).first() is None:
+            db.add(ESSEmployeeProfile(employee_id=acc.employee_id, hr_employee_id=hr.id, full_name=hr.full_name,
+                                      email=acc.email, phone=hr.phone, job_title=hr.role, department_name=hr.department,
+                                      joining_date=hr.hire_date, grade=hr.salary_grade))
         await db.commit()
+    except IntegrityError:  # a parallel first request created it: use that one
+        await db.rollback()
+        acc = (await db.execute(select(ESSAccount).where(or_(*cond)).limit(1))).scalar_one()
     return acc, hr
 
 
@@ -103,9 +130,33 @@ async def leave(year: Optional[int] = Query(None, ge=2000, le=2100), db: AsyncSe
 async def request_leave(body: LeaveIn, db: AsyncSession = Depends(get_db), user=Depends(get_current_user)):
     from app.schemas.ess import ESSLeaveRequestCreate
 
+    from app.models.ess import ESSLeaveRequest, ESSLeaveType, LeaveStatus
+
     acc, _ = await _me(db, user)
     if body.end_date < body.start_date:
         raise HTTPException(422, "The end date is before the start date.")
+    if body.start_date < date.today():
+        raise HTTPException(422, "Leave cannot start in the past; ask HR to record past leave.")
+    if (body.end_date - body.start_date).days > 92 or body.start_date.year != body.end_date.year:
+        raise HTTPException(422, "Request at most 3 months at a time, within one calendar year.")
+    lt = await db.get(ESSLeaveType, body.leave_type_id)
+    if lt is None or getattr(lt, "is_active", True) is False:
+        raise HTTPException(422, "Unknown leave type.")
+    days = svc._working_days(body.start_date, body.end_date)
+    if days <= 0:
+        raise HTTPException(422, "The selected dates contain no working days.")
+    overlap = (await db.execute(select(ESSLeaveRequest.leave_request_id).where(
+        ESSLeaveRequest.employee_id == acc.employee_id,
+        ESSLeaveRequest.status.in_([s for s in LeaveStatus if s.value in ("draft", "submitted", "approved")]),
+        ESSLeaveRequest.start_date <= body.end_date, ESSLeaveRequest.end_date >= body.start_date).limit(1))).first()
+    if overlap:
+        raise HTTPException(409, "You already have a leave request for these dates.")
+    bal = next((b for b in await svc.get_leave_balances(db, acc.employee_id, body.start_date.year)
+                if b.leave_type_id == body.leave_type_id), None)
+    if bal is not None:
+        available = (bal.entitled_days or 0) + (bal.carried_forward or 0) + (bal.adjusted_days or 0) - (bal.taken_days or 0) - (bal.pending_days or 0)
+        if days > available:
+            raise HTTPException(422, f"Not enough leave left: {available} day(s) available, {days} requested.")
     req = await svc.create_leave_request(db, ESSLeaveRequestCreate(employee_id=acc.employee_id, **body.model_dump()))
     req = await svc.submit_leave_request(db, req.leave_request_id)  # goes straight to the approver
     return _rows([req])[0]
@@ -192,11 +243,6 @@ async def payslips(db: AsyncSession = Depends(get_db), user=Depends(get_current_
                     "paye": float(line.paye_amount or 0), "nhif": float(line.nhif_amount or 0),
                     "nssf": float(line.nssf_employee or 0), "housing_levy": float(line.housing_levy or 0),
                     "components": line.components_json})
-        if slip.viewed_at is None:
-            from datetime import datetime, timezone
-
-            slip.viewed_at = datetime.now(timezone.utc)
-    await db.commit()
     return out
 
 
@@ -223,14 +269,22 @@ async def clock(body: ClockIn, db: AsyncSession = Depends(get_db), user=Depends(
     if body.action == "in":
         if rec is not None and rec.check_in is not None:
             raise HTTPException(409, "You already checked in today.")
-        data = ESSAttendanceCreate(employee_id=acc.employee_id, attendance_date=today, check_in=now)
+        data = ESSAttendanceCreate(employee_id=acc.employee_id, attendance_date=today, check_in=now,
+                                   **({"status": rec.status, "notes": rec.notes} if rec is not None else {}))
     else:
         if rec is None or rec.check_in is None:
             raise HTTPException(409, "Check in first.")
         if rec.check_out is not None:
             raise HTTPException(409, "You already checked out today.")
-        data = ESSAttendanceCreate(employee_id=acc.employee_id, attendance_date=today, check_in=rec.check_in, check_out=now)
-    r = await svc.upsert_attendance(db, data)
+        data = ESSAttendanceCreate(employee_id=acc.employee_id, attendance_date=today, check_in=rec.check_in, check_out=now,
+                                   status=rec.status, notes=rec.notes)  # keep what HR recorded for the day
+    from sqlalchemy.exc import IntegrityError
+
+    try:
+        r = await svc.upsert_attendance(db, data)
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(409, "Already recorded; refresh.")
     return _rows([r])[0]
 
 

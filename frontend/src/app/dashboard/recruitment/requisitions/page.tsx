@@ -15,7 +15,7 @@ export default function RequisitionsPage() {
   };
   useEffect(() => { load(); }, [filter]);
 
-  const handleApprove = async (id: string) => { await recruitmentApi.approveRequisition(id, { approver_id: "00000000-0000-0000-0000-000000000001" }); load(); };
+  const handleApprove = async (id: string) => { await recruitmentApi.approveRequisition(id, {}); load(); };
   const handleOpen = async (id: string) => { await recruitmentApi.openRequisition(id); load(); };
   const handleClose = async (id: string) => { await recruitmentApi.closeRequisition(id); load(); };
 

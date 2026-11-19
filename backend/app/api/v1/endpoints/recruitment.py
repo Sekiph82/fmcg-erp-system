@@ -3,6 +3,7 @@ from typing import List, Optional
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.core.deps import get_current_user
 from app.db.session import get_db
 from app.models.recruitment import (
     RequisitionStatus, PipelineStatus, OfferStatus, RTAIRecStatus,
@@ -81,7 +82,9 @@ async def update_requisition(req_id: UUID, data: dict, db: AsyncSession = Depend
 
 
 @router.post("/requisitions/{req_id}/approve", response_model=JobRequisitionRead)
-async def approve_requisition(req_id: UUID, data: JobRequisitionApprove, db: AsyncSession = Depends(get_db)):
+async def approve_requisition(req_id: UUID, data: JobRequisitionApprove, db: AsyncSession = Depends(get_db),
+                              current_user=Depends(get_current_user)):
+    data.approver_id = current_user.id  # the approver is whoever is signed in
     r = await svc.approve_requisition(db, req_id, data)
     if not r:
         raise HTTPException(400, "Cannot approve — wrong status or not found")

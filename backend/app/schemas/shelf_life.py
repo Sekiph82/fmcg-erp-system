@@ -362,7 +362,7 @@ class ShelfLifeAlertOut(_Base):
 # ── Disposition ───────────────────────────────────────────────────────────────
 
 class DispositionApproveRequest(BaseModel):
-    approved_by_id:  UUID
+    approved_by_id:  Optional[UUID] = None  # set by the server from the signed-in user
     execution_notes: Optional[str] = None
 
 class DispositionSuggestionOut(_Base):
@@ -389,7 +389,7 @@ class DispositionSuggestionOut(_Base):
 
 class SLAIRecReviewRequest(BaseModel):
     status:      SLAIRecStatus
-    reviewed_by_id: UUID
+    reviewed_by_id: Optional[UUID] = None  # set by the server from the signed-in user
     review_note: Optional[str] = None
 
 class SLAIRecommendationOut(_Base):

@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import List, Optional
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.deps import get_current_user
 from app.db.session import get_db
@@ -19,7 +19,53 @@ from app.schemas.expenses import (
 )
 from app.services import expenses_service as svc
 
-router = APIRouter()
+# Every employee may file and follow their own claims/advances; everything else needs a finance/HR right
+# (before M38 the whole module was open to any login — with self-service every employee is a login).
+_OWN = {("POST", "/claims"), ("POST", "/advances"), ("GET", "/claims"), ("GET", "/advances"),
+        ("GET", "/claims/{claim_id}"), ("GET", "/advances/{advance_id}"), ("POST", "/claims/{claim_id}/lines"),
+        ("POST", "/claims/{claim_id}/submit"), ("GET", "/categories"), ("GET", "/categories/{category_id}"),
+        ("GET", "/policies"), ("GET", "/policies/{policy_id}")}
+_NEEDS = {"/claims/{claim_id}/manager-approve": ("hr.approve", "finance.approve"),
+          "/claims/{claim_id}/finance-approve": ("finance.approve",), "/claims/{claim_id}/pay": ("finance.approve",),
+          "/claims/{claim_id}/reject": ("hr.approve", "finance.approve"),
+          "/claims/{claim_id}/return": ("hr.approve", "finance.approve")}
+PRIVILEGED = ("finance.view", "hr.view")
+
+
+async def _gate(request: Request, current_user=Depends(get_current_user)):
+    from app.core.access_control import has_any_permission
+
+    route = request.scope.get("route")
+    path = getattr(route, "path", request.url.path)
+    path = path[path.index("/expenses") + len("/expenses"):] if "/expenses" in path else path
+    if (request.method, path) in _OWN:
+        return current_user
+    needed = _NEEDS.get(path) or (PRIVILEGED if request.method == "GET" else ("finance.edit",))
+    if not has_any_permission(current_user, needed):
+        raise HTTPException(403, "You do not have permission for this expense action.")
+    return current_user
+
+
+async def _scope(db: AsyncSession, user):
+    """None = may see everyone's claims (finance/HR); else the user's own employee id."""
+    from sqlalchemy import select
+
+    from app.core.access_control import has_any_permission
+    from app.models.hr import Employee
+
+    if has_any_permission(user, PRIVILEGED):
+        return None
+    me = (await db.execute(select(Employee.id).where(Employee.user_id == user.id).limit(1))).scalar_one_or_none()
+    return me or UUID(int=0)
+
+
+def _own_or_404(obj, scope):
+    if obj is None or (scope is not None and obj.employee_id != scope):
+        raise HTTPException(404, "Not found")
+    return obj
+
+
+router = APIRouter(dependencies=[Depends(_gate)])
 
 
 # ── Dashboard ─────────────────────────────────────────────────────────────────
@@ -87,7 +133,11 @@ async def list_claims(
     skip: int = 0,
     limit: int = 50,
     db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
 ):
+    scope = await _scope(db, current_user)
+    if scope is not None:
+        employee_id = scope  # employees see only their own claims
     return await svc.list_claims(db, employee_id=employee_id, status=status, department_id=department_id, skip=skip, limit=limit)
 
 
@@ -112,15 +162,14 @@ async def create_claim(data: ExpenseClaimCreate, db: AsyncSession = Depends(get_
 
 
 @router.get("/claims/{claim_id}", response_model=ExpenseClaimRead)
-async def get_claim(claim_id: UUID, db: AsyncSession = Depends(get_db)):
-    claim = await svc.get_claim(db, claim_id)
-    if not claim:
-        raise HTTPException(404, "Claim not found")
-    return claim
+async def get_claim(claim_id: UUID, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    return _own_or_404(await svc.get_claim(db, claim_id), await _scope(db, current_user))
 
 
 @router.post("/claims/{claim_id}/lines", response_model=ExpenseClaimRead)
-async def add_line(claim_id: UUID, data: ExpenseClaimLineCreate, db: AsyncSession = Depends(get_db)):
+async def add_line(claim_id: UUID, data: ExpenseClaimLineCreate, db: AsyncSession = Depends(get_db),
+                   current_user=Depends(get_current_user)):
+    _own_or_404(await svc.get_claim(db, claim_id), await _scope(db, current_user))
     claim = await svc.add_line(db, claim_id, data)
     if not claim:
         raise HTTPException(400, "Cannot add line — claim not in DRAFT or not found")
@@ -128,7 +177,8 @@ async def add_line(claim_id: UUID, data: ExpenseClaimLineCreate, db: AsyncSessio
 
 
 @router.post("/claims/{claim_id}/submit", response_model=ExpenseClaimRead)
-async def submit_claim(claim_id: UUID, db: AsyncSession = Depends(get_db)):
+async def submit_claim(claim_id: UUID, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    _own_or_404(await svc.get_claim(db, claim_id), await _scope(db, current_user))
     claim = await svc.submit_claim(db, claim_id)
     if not claim:
         raise HTTPException(400, "Cannot submit — claim has blocking policy violations or wrong status")
@@ -182,21 +232,31 @@ async def list_advances(
     employee_id: Optional[UUID] = None,
     status: Optional[AdvanceSettlementStatus] = None,
     db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
 ):
-    return await svc.list_advances(db, employee_id=employee_id, status=status)
+    scope = await _scope(db, current_user)
+    return await svc.list_advances(db, employee_id=scope if scope is not None else employee_id, status=status)
 
 
 @router.post("/advances", response_model=ExpenseAdvanceRead)
-async def create_advance(data: ExpenseAdvanceCreate, db: AsyncSession = Depends(get_db)):
+async def create_advance(data: ExpenseAdvanceCreate, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    """An advance is the signed-in employee's own; only HR (hr.edit) may record one for someone else."""
+    from sqlalchemy import select
+
+    from app.core.access_control import has_permission
+    from app.models.hr import Employee
+
+    me = (await db.execute(select(Employee.id).where(Employee.user_id == current_user.id).limit(1))).scalar_one_or_none()
+    if not (data.employee_id is not None and data.employee_id != me and has_permission(current_user, "hr.edit")):
+        if me is None:
+            raise HTTPException(403, "Your login is not linked to an employee record; ask HR.")
+        data.employee_id = me
     return await svc.create_advance(db, data)
 
 
 @router.get("/advances/{advance_id}", response_model=ExpenseAdvanceRead)
-async def get_advance(advance_id: UUID, db: AsyncSession = Depends(get_db)):
-    adv = await svc.get_advance(db, advance_id)
-    if not adv:
-        raise HTTPException(404, "Advance not found")
-    return adv
+async def get_advance(advance_id: UUID, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    return _own_or_404(await svc.get_advance(db, advance_id), await _scope(db, current_user))
 
 
 # ── Reports ───────────────────────────────────────────────────────────────────

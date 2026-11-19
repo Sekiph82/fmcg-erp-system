@@ -10,6 +10,7 @@ from pydantic import BaseModel as _BM
 from sqlalchemy import select, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.deps import get_current_user
 from app.db.session import get_db
 from app.models.shelf_life import (
     ShelfLifeStatus, AlertSeverity, SLAIRecStatus,
@@ -280,7 +281,8 @@ async def list_dispositions(
 
 @router.post("/disposition-suggestions/{suggestion_id}/approve", response_model=DispositionSuggestionOut)
 async def approve_disposition(suggestion_id: uuid.UUID, data: DispositionApproveRequest,
-                               db: AsyncSession = Depends(get_db)):
+                               db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    data.approved_by_id = current_user.id
     try:
         return await svc.approve_disposition(db, suggestion_id, data)
     except ValueError as e:
@@ -307,7 +309,8 @@ async def list_ai_recs(
 
 @router.post("/ai-recommendations/{rec_id}/review", response_model=SLAIRecommendationOut)
 async def review_ai_rec(rec_id: uuid.UUID, data: SLAIRecReviewRequest,
-                         db: AsyncSession = Depends(get_db)):
+                         db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    data.reviewed_by_id = current_user.id
     try:
         return await svc.review_ai_recommendation(db, rec_id, data)
     except ValueError as e:

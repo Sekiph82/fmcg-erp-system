@@ -229,7 +229,8 @@ async def create_action(recall_id: uuid.UUID, data: RecallActionCreate,
 
 @router.post("/recalls/actions/{action_id}/complete", response_model=RecallActionOut, dependencies=_RECALL)
 async def complete_action(action_id: uuid.UUID, data: RecallActionComplete,
-                           db: AsyncSession = Depends(get_db)):
+                           db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    data.completed_by_id = current_user.id
     try:
         return await recall_svc.complete_action(db, action_id, data)
     except ValueError as e:
@@ -325,7 +326,8 @@ async def list_ai_recs(recall_id: uuid.UUID, db: AsyncSession = Depends(get_db))
 
 @router.post("/recalls/ai-recommendations/{rec_id}/review", response_model=TRRecAIRecommendationOut, dependencies=_RECALL)
 async def review_ai_rec(rec_id: uuid.UUID, data: TRRecAIRecReview,
-                         db: AsyncSession = Depends(get_db)):
+                         db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    data.reviewed_by_id = current_user.id
     try:
         rec = await recall_svc.review_ai_recommendation(db, rec_id, data)
         return TRRecAIRecommendationOut.model_validate(rec)

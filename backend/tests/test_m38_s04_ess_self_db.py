@@ -90,10 +90,17 @@ async def test_ess_is_the_signed_in_employees_own():
             leave = (await c.get(f"{E}/leave")).json()
             annual = next(t for t in leave["types"] if "annual" in t["type_name"].lower())
             start = date.today() + timedelta(days=30)
+            start += timedelta(days=(7 - start.weekday()) % 7)                          # a Monday
             r = await c.post(f"{E}/leave", json={"leave_type_id": annual["leave_type_id"], "start_date": start.isoformat(),
                                                  "end_date": (start + timedelta(days=1)).isoformat(), "reason": "family"})
             assert r.status_code == 201, r.text
             leave_id = r.json()["leave_request_id"]
+            again = {"leave_type_id": annual["leave_type_id"], "start_date": start.isoformat(), "end_date": (start + timedelta(days=1)).isoformat()}
+            assert (await c.post(f"{E}/leave", json=again)).status_code == 409                       # overlapping request
+            past = {**again, "start_date": "2020-01-06", "end_date": "2020-01-07"}
+            assert (await c.post(f"{E}/leave", json=past)).status_code == 422                        # in the past
+            huge = {**again, "start_date": (start + timedelta(days=10)).isoformat(), "end_date": (start + timedelta(days=300)).isoformat()}
+            assert (await c.post(f"{E}/leave", json=huge)).status_code == 422                        # too long
             assert (await c.post(f"{E}/attendance/clock", json={"action": "out"})).status_code == 409
             assert (await c.post(f"{E}/attendance/clock", json={"action": "in"})).status_code == 200
             assert (await c.post(f"{E}/attendance/clock", json={"action": "in"})).status_code == 409
@@ -106,7 +113,12 @@ async def test_ess_is_the_signed_in_employees_own():
                                                                   "employee_id": str(emps["brian"].id)})
             assert claim.status_code == 200 and claim.json()["employee_id"] == str(emps["amina"].id)  # cannot file for Brian
 
+            claim_id = claim.json()["expense_claim_id"]
+            assert (await c.post(f"/api/v1/expenses/claims/{claim_id}/finance-approve")).status_code == 403  # no finance right
+            assert (await c.get("/api/v1/expenses/dashboard")).status_code == 403
             who(U["brian"])
+            assert (await c.get(f"/api/v1/expenses/claims/{claim_id}")).status_code == 404          # Amina's claim
+            assert (await c.get("/api/v1/expenses/claims")).json() == []
             assert (await c.get(f"{E}/leave")).json()["requests"] == []             # never Amina's
             assert (await c.post(f"{E}/leave/{leave_id}/cancel")).status_code == 404
             assert [x["net"] for x in (await c.get(f"{E}/payslips")).json()] == [99999.0]

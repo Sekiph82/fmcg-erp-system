@@ -248,7 +248,7 @@ class RecallActionCreate(BaseModel):
     notes:              Optional[str] = None
 
 class RecallActionComplete(BaseModel):
-    completed_by_id: UUID
+    completed_by_id: Optional[UUID] = None  # set by the server from the signed-in user
     evidence_note:   Optional[str] = None
 
 class RecallActionOut(_Base):
@@ -400,7 +400,7 @@ class RecallDashboard(BaseModel):
 
 class TRRecAIRecReview(BaseModel):
     status:         TRRecAIRecStatus
-    reviewed_by_id: UUID
+    reviewed_by_id: Optional[UUID] = None  # set by the server from the signed-in user
     review_note:    Optional[str] = None
 
 class TRRecAIRecommendationOut(_Base):

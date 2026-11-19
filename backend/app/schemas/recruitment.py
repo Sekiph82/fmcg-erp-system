@@ -59,7 +59,7 @@ class JobRequisitionRead(JobRequisitionCreate):
 
 
 class JobRequisitionApprove(BaseModel):
-    approver_id: UUID
+    approver_id: Optional[UUID] = None  # set by the server from the signed-in user
     notes: Optional[str] = None
 
 

@@ -8,7 +8,7 @@ const labelCls = "block text-[10px] text-slate-400 mb-1";
 export default function AdvancesPage() {
   const [advances, setAdvances] = useState<ExpenseAdvance[]>([]);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ advance_date: new Date().toISOString().slice(0, 10), advance_amount: "", currency: "KES", purpose: "", due_date: "", employee_id: "00000000-0000-0000-0000-000000000001" });
+  const [form, setForm] = useState({ advance_date: new Date().toISOString().slice(0, 10), advance_amount: "", currency: "KES", purpose: "", due_date: "" });
   const [saving, setSaving] = useState(false);
 
   const load = () => expensesApi.listAdvances().then(setAdvances);

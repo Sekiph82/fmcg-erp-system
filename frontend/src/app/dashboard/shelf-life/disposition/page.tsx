@@ -43,7 +43,6 @@ export default function DispositionPage() {
     setApproving(selectedId);
     try {
       await shelfLifeApi.approveDisposition(selectedId, {
-        approved_by_id: "00000000-0000-0000-0000-000000000001",
         execution_notes: approveNote || undefined,
       });
       setSelectedId(null);

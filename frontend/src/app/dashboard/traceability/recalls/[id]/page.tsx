@@ -202,7 +202,7 @@ export default function RecallDetailPage() {
                   <span className={`px-2 py-0.5 rounded text-xs ${ACTION_STATUS_BG[a.status]}`}>{a.status}</span>
                   {a.status === "pending" && (
                     <button onClick={async () => {
-                      await traceApi.completeAction(a.id, { completed_by_id: "00000000-0000-0000-0000-000000000001" });
+                      await traceApi.completeAction(a.id, {});
                       load();
                     }} className="px-3 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700">
                       Mark Done
@@ -356,11 +356,11 @@ export default function RecallDetailPage() {
               {r.status === "pending" && (
                 <div className="flex gap-2 mt-3">
                   <button onClick={async () => {
-                    await traceApi.reviewAIRec(r.id, { status: "accepted", reviewed_by_id: "00000000-0000-0000-0000-000000000001" });
+                    await traceApi.reviewAIRec(r.id, { status: "accepted" });
                     load();
                   }} className="px-3 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700">Accept</button>
                   <button onClick={async () => {
-                    await traceApi.reviewAIRec(r.id, { status: "rejected", reviewed_by_id: "00000000-0000-0000-0000-000000000001" });
+                    await traceApi.reviewAIRec(r.id, { status: "rejected" });
                     load();
                   }} className="px-3 py-1 text-xs border border-gray-200 rounded hover:bg-gray-50">Reject</button>
                 </div>

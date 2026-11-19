@@ -159,7 +159,7 @@ class ExpenseClaimPayRequest(BaseModel):
 # ── Advance ───────────────────────────────────────────────────────────────────
 
 class ExpenseAdvanceCreate(BaseModel):
-    employee_id: UUID
+    employee_id: Optional[UUID] = None   # defaults to the signed-in employee
     advance_date: date
     advance_amount: Decimal
     currency: str = "KES"
