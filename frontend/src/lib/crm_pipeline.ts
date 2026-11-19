@@ -435,7 +435,20 @@ export const crmApi = {
   cancelEmail: (id: string) => r(ax.post<OutboxMessage>(`/crm/outbox/${id}/cancel`)),
   getConsents: (params?: { status?: string; email?: string }) => r(ax.get<ConsentRow[]>(`/crm/consents`, { params })),
   setConsent: (data: { email: string; status: string; consent_text?: string }) => r(ax.post<ConsentRow>(`/crm/consents`, data)),
+  getSequences: () => r(ax.get<Sequence[]>(`/crm/sequences`)),
+  createSequence: (data: { name: string; notes?: string; steps: SequenceStep[] }) => r(ax.post<Sequence>(`/crm/sequences`, data)),
+  setSequenceActive: (id: string, active: boolean) => r(ax.patch(`/crm/sequences/${id}`, null, { params: { active_flag: active } })),
+  enrollInSequence: (id: string, recordId: string) => r(ax.post(`/crm/sequences/${id}/enroll`, null, { params: { record_id: recordId } })),
+  getEnrollments: (id: string) => r(ax.get<Enrollment[]>(`/crm/sequences/${id}/enrollments`)),
+  stopEnrollment: (id: string, reason: string) => r(ax.post(`/crm/sequence-enrollments/${id}/stop`, null, { params: { reason } })),
 };
+
+export interface SequenceStep { step_no: number; delay_days: number; subject: string; body: string }
+export interface Sequence { id: string; name: string; active_flag: boolean; notes: string | null; steps: SequenceStep[]; enrollments: Record<string, number> }
+export interface Enrollment {
+  id: string; crm_record_id: string; company_name: string; email: string; status: string; stop_reason: string | null;
+  next_step_no: number; next_due_at: string; enrolled_at: string;
+}
 
 export interface OutboxMessage {
   id: string; purpose: string; to_email: string; subject: string; status: string; status_reason: string | null;

@@ -26,7 +26,7 @@ from app.models.custom_fields import EntityType, WorkflowTriggerRule
 logger = logging.getLogger(__name__)
 
 TRIGGERS = ("created", "stage_changed", "won", "lost", "status_changed")
-ACTIONS = ("create_task", "assign_owner", "set_field", "notify")
+ACTIONS = ("create_task", "assign_owner", "set_field", "notify", "enroll_in_sequence")
 CONDITION_FIELDS = ("to_stage_code", "record_type", "source_type", "temperature", "assigned_rep_id",
                     "industry_segment", "expected_revenue")
 SETTABLE = {"temperature": [t.value for t in CRMTemperature], "next_action_days": None, "probability_pct": None}
@@ -65,6 +65,13 @@ def validate(trigger: str, condition_field: Optional[str], operator: Optional[st
             raise ValueError("next_action_days must be 0..365")
         if field == "probability_pct" and not (isinstance(value, (int, float)) and 0 <= value <= 100):
             raise ValueError("probability_pct must be 0..100")
+    elif action_type == "enroll_in_sequence":
+        from uuid import UUID as _UUID
+
+        try:
+            _UUID(str(payload.get("sequence_id") or ""))
+        except ValueError as exc:
+            raise ValueError("enroll_in_sequence needs a valid sequence_id") from exc
     elif action_type == "notify":
         users = payload.get("usernames")
         if not isinstance(users, list) or not users or not all(isinstance(u, str) for u in users) \
@@ -182,6 +189,17 @@ async def _act(db: AsyncSession, rule: WorkflowTriggerRule, record: CRMRecord, n
             record.probability_pct = value
             record.probability_override = True
         return f"{field} = {value}"
+    if kind == "enroll_in_sequence":
+        from uuid import UUID as _UUID
+
+        from app.models.crm import CRMSequence
+        from app.services.crm_sequence_service import enroll
+
+        sequence = await db.get(CRMSequence, _UUID(str(payload["sequence_id"])))
+        if sequence is None:
+            raise ValueError("sequence not found")
+        row = await enroll(db, sequence, record, "automation")
+        return f"enrolled in '{sequence.name}' (next step {row.next_step_no})"
     if kind == "notify":
         from app.models.notifications import Notification, NotificationType
         from app.models.user import User
@@ -253,10 +271,13 @@ async def run_crm_automation(interval: float = 15.0) -> None:
             raise
         except Exception:
             logger.exception("CRM automation tick failed")
-        try:  # mail delivery runs even when automation failed this tick
-            async with AsyncSessionLocal() as db:
-                from app.services.crm_outbound_service import deliver_due
+        try:  # sequences and mail delivery run even when automation failed this tick
+            from app.services.crm_outbound_service import deliver_due
+            from app.services.crm_sequence_service import advance
 
+            async with AsyncSessionLocal() as db:
+                await advance(db)
+            async with AsyncSessionLocal() as db:
                 await deliver_due(db)
         except asyncio.CancelledError:
             raise

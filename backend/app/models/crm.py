@@ -512,3 +512,44 @@ class CRMOutboundMessage(Base):
     created_by          = Column(String(100), nullable=True)
     created_at          = Column(DateTime(timezone=True), nullable=False)
     sent_at             = Column(DateTime(timezone=True), nullable=True)
+
+
+# ── M36.S01.T002 sales sequences ──────────────────────────────────────────────
+
+class CRMSequence(Base, TimestampMixin):
+    __tablename__ = "crm_sequences"
+
+    id          = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name        = Column(String(150), nullable=False, unique=True)
+    active_flag = Column(Boolean, nullable=False, default=True)
+    notes       = Column(Text, nullable=True)
+
+
+class CRMSequenceStep(Base):
+    __tablename__ = "crm_sequence_steps"
+    __table_args__ = (UniqueConstraint("sequence_id", "step_no", name="uq_crm_sequence_step"),)
+
+    id          = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    sequence_id = Column(UUID(as_uuid=True), ForeignKey("crm_sequences.id", ondelete="CASCADE"), nullable=False, index=True)
+    step_no     = Column(Integer, nullable=False)
+    delay_days  = Column(Integer, nullable=False, default=0)        # after enrolment (step 1) or the previous step
+    subject     = Column(String(300), nullable=False)
+    body        = Column(Text, nullable=False)                       # {contact_name} {company_name} {rep}
+
+
+class CRMSequenceEnrollment(Base):
+    """A CRM record going through a sequence; one active enrolment per (sequence, record)."""
+    __tablename__ = "crm_sequence_enrollments"
+    __table_args__ = (UniqueConstraint("sequence_id", "crm_record_id", name="uq_crm_sequence_enrollment"),)
+
+    id            = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    sequence_id   = Column(UUID(as_uuid=True), ForeignKey("crm_sequences.id", ondelete="CASCADE"), nullable=False, index=True)
+    crm_record_id = Column(UUID(as_uuid=True), ForeignKey("crm_records.id", ondelete="CASCADE"), nullable=False, index=True)
+    email         = Column(String(254), nullable=False)
+    status        = Column(String(10), nullable=False, index=True)     # ACTIVE | COMPLETED | STOPPED
+    stop_reason   = Column(String(200), nullable=True)
+    next_step_no  = Column(Integer, nullable=False, default=1)
+    next_due_at   = Column(DateTime(timezone=True), nullable=False, index=True)
+    enrolled_by   = Column(String(100), nullable=True)
+    enrolled_at   = Column(DateTime(timezone=True), nullable=False)
+    finished_at   = Column(DateTime(timezone=True), nullable=True)

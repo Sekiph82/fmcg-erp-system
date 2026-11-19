@@ -1048,3 +1048,130 @@ async def set_consent(body: ConsentIn, db: AsyncSession = Depends(get_db), curre
                                         may_lift_unsubscribe=True)  # an authorised person recording proof
     await db.commit()
     return {"email": row.email, "status": row.status, "source": row.source}
+
+
+# ── M36.S01.T002 sales sequences ──────────────────────────────────────────────
+
+class SequenceStepIn(BaseModel):
+    step_no: int = Field(ge=1, le=50)
+    delay_days: int = Field(0, ge=0, le=365)
+    subject: str = Field(min_length=1, max_length=300, pattern=r"^[^\r\n]+$")
+    body: str = Field(min_length=1, max_length=20000)
+
+
+class SequenceIn(BaseModel):
+    name: str = Field(min_length=1, max_length=150)
+    notes: Optional[str] = Field(None, max_length=2000)
+    steps: List[SequenceStepIn] = Field(min_length=1, max_length=50)
+
+
+def _seq_out(seq, steps, counts) -> dict:
+    return {"id": str(seq.id), "name": seq.name, "active_flag": seq.active_flag, "notes": seq.notes,
+            "steps": [{"step_no": s.step_no, "delay_days": s.delay_days, "subject": s.subject, "body": s.body} for s in steps],
+            "enrollments": counts}
+
+
+@router.get("/sequences", dependencies=[Depends(require_any_permission(CRM_BROAD_VIEW))])
+async def list_sequences(db: AsyncSession = Depends(get_db)):
+    from app.models.crm import CRMSequence, CRMSequenceEnrollment, CRMSequenceStep
+
+    out = []
+    for seq in (await db.execute(select(CRMSequence).order_by(CRMSequence.name))).scalars().all():
+        steps = (await db.execute(select(CRMSequenceStep).where(CRMSequenceStep.sequence_id == seq.id)
+                                  .order_by(CRMSequenceStep.step_no))).scalars().all()
+        counts = dict((await db.execute(select(CRMSequenceEnrollment.status, func.count()).where(
+            CRMSequenceEnrollment.sequence_id == seq.id).group_by(CRMSequenceEnrollment.status))).all())
+        out.append(_seq_out(seq, steps, counts))
+    return out
+
+
+@router.post("/sequences", status_code=201, dependencies=[Depends(require_any_permission(CRM_CONFIG))])
+async def create_sequence(body: SequenceIn, db: AsyncSession = Depends(get_db)):
+    from app.models.crm import CRMSequence, CRMSequenceStep
+
+    if len({s.step_no for s in body.steps}) != len(body.steps):
+        raise HTTPException(422, "step numbers must be unique")
+    if (await db.execute(select(CRMSequence.id).where(CRMSequence.name == body.name))).first():
+        raise HTTPException(409, "A sequence with this name exists.")
+    from sqlalchemy.exc import IntegrityError as _IntegrityError
+
+    seq = CRMSequence(name=body.name, notes=body.notes)
+    db.add(seq)
+    try:
+        await db.flush()
+    except _IntegrityError:
+        await db.rollback()
+        raise HTTPException(409, "A sequence with this name exists.")
+    steps = [CRMSequenceStep(sequence_id=seq.id, **s.model_dump()) for s in sorted(body.steps, key=lambda s: s.step_no)]
+    db.add_all(steps)
+    await db.commit()
+    return _seq_out(seq, steps, {})
+
+
+@router.patch("/sequences/{sequence_id}", dependencies=[Depends(require_any_permission(CRM_CONFIG))])
+async def pause_sequence(sequence_id: str, active_flag: bool, db: AsyncSession = Depends(get_db)):
+    from app.models.crm import CRMSequence
+
+    seq = await db.get(CRMSequence, _uuid(sequence_id))
+    if seq is None:
+        raise HTTPException(404, "Sequence not found")
+    seq.active_flag = active_flag
+    await db.commit()
+    return {"id": str(seq.id), "active_flag": seq.active_flag}
+
+
+@router.post("/sequences/{sequence_id}/enroll", status_code=201)
+async def enroll_record(sequence_id: str, record_id: str, db: AsyncSession = Depends(get_db),
+                        current_user=Depends(require_any_permission(CRM_EDIT_PERMISSIONS))):
+    from app.models.crm import CRMSequence
+    from app.services import crm_sequence_service as sequences
+
+    seq = await db.get(CRMSequence, _uuid(sequence_id))
+    if seq is None:
+        raise HTTPException(404, "Sequence not found")
+    record = await _scoped_record(db, record_id, current_user, "edit")
+    try:
+        row = await sequences.enroll(db, seq, record, current_user.username)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc))
+    await db.commit()
+    return {"id": str(row.id), "status": row.status, "next_step_no": row.next_step_no, "next_due_at": row.next_due_at.isoformat()}
+
+
+@router.get("/sequences/{sequence_id}/enrollments", dependencies=[Depends(require_any_permission(CRM_BROAD_VIEW))])
+async def list_enrollments(sequence_id: str, db: AsyncSession = Depends(get_db)):
+    from app.models.crm import CRMSequenceEnrollment
+
+    rows = (await db.execute(select(CRMSequenceEnrollment, CRMRecord.company_name).join(
+        CRMRecord, CRMRecord.id == CRMSequenceEnrollment.crm_record_id).where(
+        CRMSequenceEnrollment.sequence_id == _uuid(sequence_id)).order_by(CRMSequenceEnrollment.enrolled_at.desc()))).all()
+    return [{"id": str(e.id), "crm_record_id": str(e.crm_record_id), "company_name": name, "email": e.email,
+             "status": e.status, "stop_reason": e.stop_reason, "next_step_no": e.next_step_no,
+             "next_due_at": e.next_due_at.isoformat(), "enrolled_at": e.enrolled_at.isoformat()} for e, name in rows]
+
+
+@router.post("/sequence-enrollments/{enrollment_id}/stop")
+async def stop_enrollment(enrollment_id: str, reason: str = Query("stopped by user", max_length=200),
+                          db: AsyncSession = Depends(get_db),
+                          current_user=Depends(require_any_permission(CRM_EDIT_PERMISSIONS))):
+    """Stop an enrolment, e.g. when the contact replied by phone or the rep logged a reply."""
+    from datetime import datetime as _dt, timezone as _tz
+
+    from app.models.crm import CRMSequenceEnrollment
+
+    e = await db.get(CRMSequenceEnrollment, _uuid(enrollment_id))
+    if e is None:
+        raise HTTPException(404, "Enrollment not found")
+    await _scoped_record(db, e.crm_record_id, current_user, "edit")
+    if e.status != "ACTIVE":
+        raise HTTPException(409, "Enrollment is not active.")
+    from sqlalchemy import update as _update
+
+    from app.models.crm import CRMOutboundMessage
+
+    e.status, e.stop_reason, e.finished_at = "STOPPED", reason, _dt.now(_tz.utc)
+    cancelled = (await db.execute(_update(CRMOutboundMessage).where(  # already-queued step mail is withdrawn too
+        CRMOutboundMessage.dedupe_key.like(f"seq:{e.id}:%"), CRMOutboundMessage.status == "QUEUED")
+        .values(status="CANCELLED", status_reason="sequence stopped"))).rowcount
+    await db.commit()
+    return {"id": str(e.id), "status": e.status, "cancelled_messages": cancelled}

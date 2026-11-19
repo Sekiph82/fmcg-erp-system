@@ -39,6 +39,7 @@ function CRMDashboardTab() {
     { href: "/dashboard/crm/lead-forms", label: "Website Lead Forms" },
     { href: "/dashboard/crm/automation", label: "Automation" },
     { href: "/dashboard/crm/outbox", label: "E-mail Outbox & Consent" },
+    { href: "/dashboard/crm/sequences", label: "Sales Sequences" },
     { href: "/dashboard/crm/win-loss", label: "Win/Loss Analysis" },
     { href: "/dashboard/crm?tab=pipeline", label: "Overdue Queue" },
     { href: "/dashboard/crm?tab=overview", label: "AI Agents" },
@@ -157,6 +158,7 @@ const CRMScoringPage     = dynamic(() => import("@/app/dashboard/crm/scoring/pag
 const CRMLeadFormsPage   = dynamic(() => import("@/app/dashboard/crm/lead-forms/page"),  { ssr: false });
 const CRMAutomationPage  = dynamic(() => import("@/app/dashboard/crm/automation/page"),  { ssr: false });
 const CRMOutboxPage      = dynamic(() => import("@/app/dashboard/crm/outbox/page"),      { ssr: false });
+const CRMSequencesPage   = dynamic(() => import("@/app/dashboard/crm/sequences/page"),   { ssr: false });
 const LoyaltyPage        = dynamic(() => import("@/app/dashboard/loyalty/page"),         { ssr: false });
 const NPSPage            = dynamic(() => import("@/app/dashboard/nps/page"),             { ssr: false });
 const SurveysPage        = dynamic(() => import("@/app/dashboard/surveys/page"),         { ssr: false });
@@ -177,6 +179,7 @@ export default function CRMPage() {
     { key: "lead-forms",  label: "Lead Forms",  permission: "crm.view", content: <CRMLeadFormsPage /> },
     { key: "automation",  label: "Automation",  permission: "crm.view", content: <CRMAutomationPage /> },
     { key: "outbox",      label: "E-mail",      permission: "crm.view", content: <CRMOutboxPage /> },
+    { key: "sequences",   label: "Sequences",   permission: "crm.view", content: <CRMSequencesPage /> },
     { key: "loyalty",     label: "Loyalty",     permission: "crm.view", content: <LoyaltyPage /> },
     { key: "nps",         label: "NPS",         permission: "crm.view", content: <NPSPage /> },
     { key: "surveys",     label: "Surveys",     permission: "crm.view", content: <SurveysPage /> },
