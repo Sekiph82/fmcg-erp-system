@@ -200,14 +200,22 @@ async def scan_document(path: Path) -> ScanResult:
                 await asyncio.wait_for(writer.drain(), timeout=settings.DOCUMENT_CLAMAV_TIMEOUT_SECONDS)
         writer.write(struct.pack("!I", 0))
         await asyncio.wait_for(writer.drain(), timeout=settings.DOCUMENT_CLAMAV_TIMEOUT_SECONDS)
-        response = await asyncio.wait_for(reader.readline(), timeout=settings.DOCUMENT_CLAMAV_TIMEOUT_SECONDS)
-        decoded = response.decode("utf-8", errors="replace").strip()
+        # "z"-prefixed clamd commands answer with a NUL-terminated reply (newline for "n" commands); clamd then closes
+        # the connection, so read the short reply as it comes and strip either terminator. (Waiting for a newline only
+        # never matched a real clamd reply and turned every scan into SCAN_ERROR.)
+        response = b""
+        while not response.endswith((b"\0", b"\n")) and len(response) < 4096:
+            chunk = await asyncio.wait_for(reader.read(4096), timeout=settings.DOCUMENT_CLAMAV_TIMEOUT_SECONDS)
+            if not chunk:
+                break
+            response += chunk
+        decoded = response.rstrip(b"\0\n").decode("utf-8", errors="replace").strip()
         if decoded.endswith(": OK"):
             return ScanResult("CLEAN", "ClamAV scan completed successfully.")
         if decoded.endswith(" FOUND"):
             return ScanResult("INFECTED", "ClamAV detected malicious content; file remains quarantined.")
         return ScanResult("SCAN_ERROR", "ClamAV returned an invalid scan response; file remains quarantined.")
-    except (OSError, asyncio.TimeoutError, ValueError, struct.error):
+    except (OSError, asyncio.TimeoutError, asyncio.IncompleteReadError, asyncio.LimitOverrunError, ValueError, struct.error):
         return ScanResult("SCAN_ERROR", "ClamAV scan could not be completed; file remains quarantined.")
     finally:
         if writer is not None:

@@ -129,7 +129,8 @@ async def test_unconfigured_scanner_keeps_file_quarantined(tmp_path, monkeypatch
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
     ("response", "expected"),
-    [(b"stream: OK\n", "CLEAN"), (b"stream: Test-Signature FOUND\n", "INFECTED")],
+    [(b"stream: OK\n", "CLEAN"), (b"stream: Test-Signature FOUND\n", "INFECTED"),
+     (b"stream: OK\x00", "CLEAN"), (b"stream: Eicar-Test-Signature FOUND\x00", "INFECTED")],  # zINSTREAM replies end in NUL
 )
 async def test_clamav_instream_protocol_sets_only_scanner_confirmed_status(tmp_path, monkeypatch, response, expected):
     payload = b"%PDF-1.7\nsynthetic file"

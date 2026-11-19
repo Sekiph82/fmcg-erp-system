@@ -45,6 +45,18 @@ services:
         reservations:
           memory: 64M
 
+  clamav:
+    # Malware scanner for uploaded documents (supplier invoices/certificates, field photos, DMS). Files stay
+    # quarantined until it answers CLEAN. First start downloads signatures (several minutes); not exposed to the host.
+    image: clamav/clamav:stable
+    restart: unless-stopped
+    volumes:
+      - clamav_db:/var/lib/clamav
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+
   backend:
     build:
       context: ./backend
@@ -60,6 +72,8 @@ services:
       DATABASE_MAX_OVERFLOW: "20"
       DOCUMENT_STORAGE_PROVIDER: ${DOCUMENT_STORAGE_PROVIDER:-local}
       DOCUMENT_STORAGE_PATH: /var/lib/fmcg-erp/documents
+      DOCUMENT_CLAMAV_HOST: ${DOCUMENT_CLAMAV_HOST:-clamav}
+      FORWARDED_ALLOW_IPS: ${FORWARDED_ALLOW_IPS:-127.0.0.1}
     ports:
       - "8000:8000"
     volumes:
@@ -117,3 +131,4 @@ services:
 volumes:
   postgres_data:
   documents_data:
+  clamav_db:
