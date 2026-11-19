@@ -76,3 +76,34 @@ async def test_approved_payroll_is_booked_in_the_ledger():
                          (ded.id, Decimal("0"), Decimal("26410"))}, lines
         again = await post_payroll_to_gl(db, run, hr.id)       # booked once, never twice
         assert again.id == je.id
+
+
+@pytest.mark.asyncio
+async def test_finance_approved_expense_claim_is_booked_in_the_ledger():
+    from sqlalchemy.orm import selectinload
+
+    from app.models.expenses import ExpenseClaim
+    from app.services.expenses_service import _post_claim_to_gl
+
+    s = uuid.uuid4().hex[:6]
+    async with AsyncSessionLocal() as db:
+        assert (await db.execute(select(func.current_database()))).scalar_one() == os.environ[TASK_DB_NAME_ENV]
+        fin = User(email=f"fin-{s}@example.com", username=f"fin{s}", full_name="Fin", hashed_password="x")
+        exp, pay = (ChartOfAccount(code=f"EXPX{s}", name="Travel", account_type=AccountType.EXPENSE, currency="KES"),
+                    ChartOfAccount(code=f"EXPP{s}", name="Employee payable", account_type=AccountType.LIABILITY, currency="KES"))
+        db.add_all([fin, exp, pay])
+        await db.flush()
+        claim = ExpenseClaim(claim_no=f"EC-{s}", employee_id=uuid.uuid4(), claim_date=date.today(),
+                             total_approved_amount=Decimal("5000"), approved_by_finance=fin.id)
+        db.add(claim)
+        await db.flush()
+        claim = (await db.execute(select(ExpenseClaim).options(selectinload(ExpenseClaim.lines))
+                                  .where(ExpenseClaim.expense_claim_id == claim.expense_claim_id))).scalar_one()
+        assert await _post_claim_to_gl(db, claim) is None                   # no rule: sub-ledger only
+        db.add(AccountingPostingRule(source_module="expenses", source_event="EXPENSE_FINANCE_APPROVED", rule_name="Expenses",
+                                     debit_account_id=exp.id, credit_account_id=pay.id, priority=1, is_active=True))
+        await db.flush()
+        je = await _post_claim_to_gl(db, claim)
+        await db.commit()
+        lines = {(l.account_id, l.debit, l.credit) for l in (await db.execute(select(JournalLine).where(JournalLine.entry_id == je.id))).scalars()}
+        assert je.source_module == "expenses" and lines == {(exp.id, Decimal("5000"), Decimal("0")), (pay.id, Decimal("0"), Decimal("5000"))}

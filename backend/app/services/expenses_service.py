@@ -373,6 +373,47 @@ async def _post_accounting_entries(db: AsyncSession, claim: ExpenseClaim) -> Non
         description=f"Expense reimbursement {claim.claim_no}",
     )
     db.add(entry)
+    await _post_claim_to_gl(db, claim)
+
+
+async def _post_claim_to_gl(db: AsyncSession, claim: ExpenseClaim):
+    """Book a finance-approved claim in the general ledger (M39 hand-off: expenses → accounting) through the rule
+    expenses/EXPENSE_FINANCE_APPROVED: debit = expense account (amount less recoverable tax), tax account = input tax
+    (when the claim carries tax and the rule has one), credit = employee payable (the approved total). Without a rule
+    the sub-ledger entry above is kept and nothing is posted (logged), as for payroll."""
+    import logging
+
+    from fastapi import HTTPException
+    from decimal import Decimal
+
+    from app.models.finance import AccountingPostingRule, AccountType
+    from app.services.sales_service import _post_sales_journal, _require_sales_account_types
+
+    rule = (await db.execute(select(AccountingPostingRule).where(
+        AccountingPostingRule.source_module == "expenses", AccountingPostingRule.source_event == "EXPENSE_FINANCE_APPROVED",
+        AccountingPostingRule.is_active.is_(True)).order_by(AccountingPostingRule.priority).limit(1))).scalar_one_or_none()
+    if rule is None:
+        logging.getLogger(__name__).warning("expense claim %s approved without GL posting: no expenses rule", claim.claim_no)
+        return None
+    total = Decimal(claim.total_approved_amount or 0)
+    if total <= 0:
+        return None
+    tax = Decimal(sum((ln.tax_amount or 0) for ln in claim.lines if ln.line_status != "rejected")) if rule.tax_account_id else Decimal("0")
+    tax = min(max(tax, Decimal("0")), total)
+    if not rule.debit_account_id or not rule.credit_account_id:
+        raise HTTPException(422, "The expense posting rule needs the expense and employee payable accounts.")
+    await _require_sales_account_types(db, [
+        (rule.debit_account_id, AccountType.EXPENSE, "expense"),
+        (rule.credit_account_id, AccountType.LIABILITY, "employee payable"),
+        (rule.tax_account_id if tax > 0 else None, AccountType.ASSET, "input tax"),
+    ])
+    return await _post_sales_journal(
+        db, source_event="EXPENSE_FINANCE_APPROVED", source_id=claim.expense_claim_id, source_ref=claim.claim_no,
+        entry_date=date.today(), description=f"Expense claim {claim.claim_no}", amount=total, currency="KES",
+        debit_lines=[(rule.debit_account_id, total - tax, "Approved expenses"),
+                     *([(rule.tax_account_id, tax, "Recoverable input tax")] if tax > 0 else [])],
+        credit_lines=[(rule.credit_account_id, total, "Owed to the employee")],
+        user_id=claim.approved_by_finance, source_module="expenses", entry_prefix="AUTO-EXP")
 
 
 # ── Advance ───────────────────────────────────────────────────────────────────
