@@ -16,11 +16,17 @@ import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
 
-const METHODS: CollectionMethod[] = ["CASH", "MPESA", "BANK_TRANSFER", "CHEQUE", "CREDIT_NOTE"];
+const METHODS: CollectionMethod[] = ["CASH", "MPESA", "BANK_TRANSFER", "CHEQUE"];
+const COUNTED = new Set(["PENDING", "DEPOSITED", "CONFIRMED", "RECONCILED"]);  // bounced / cancelled money is not collected
+const errorText = (e: unknown, fallback: string) => {
+  const d = (e as { response?: { data?: { detail?: unknown } } } | null)?.response?.data?.detail;
+  return typeof d === "string" ? d : Array.isArray(d) ? d.map((x) => (x as { msg?: string }).msg).join("; ") : fallback;
+};
 
 const emptyForm = {
   collection_no: "",
   customer_id: "",
+  invoice_id: "",
   sales_order_id: "",
   collection_date: new Date().toISOString().split("T")[0],
   method: "MPESA" as CollectionMethod,
@@ -53,10 +59,18 @@ export default function CollectionsPage() {
     queryFn: () => salesApi.listCustomers(),
   });
 
+  const { data: openInvoices = [] } = useQuery({
+    queryKey: ["open-invoices", form.customer_id],
+    enabled: !!form.customer_id,
+    queryFn: async () => (await salesApi.listInvoices({ customer_id: form.customer_id }))
+      .filter((i) => ["ISSUED", "PARTIALLY_PAID", "OVERDUE"].includes(String(i.status))),
+  });
+
   const create = useMutation({
     mutationFn: () =>
       collectionsApi.create({
         ...form,
+        collection_no: form.collection_no || undefined,
         amount: parseFloat(form.amount as string) || 0,
         sales_order_id: form.sales_order_id || undefined,
         reference: form.reference || undefined,
@@ -84,14 +98,16 @@ export default function CollectionsPage() {
     mutationFn: ({ id, kind }: { id: string; kind: "deposit" | "bounce" | "cancel" }) => collectionsApi[kind](id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["collections"] }),
   });
-  const actionError = [confirm.error, reconcile.error, act.error].find(Boolean) as
-    { response?: { data?: { detail?: unknown } } } | undefined;
+  // the error of the most recent action only (an older failure must not stay on screen after a later success)
+  const lastAction = [confirm, reconcile, act].filter((m) => m.submittedAt).sort((a, b) => b.submittedAt - a.submittedAt)[0];
+  const actionError = lastAction?.error as { response?: { data?: { detail?: unknown } } } | null | undefined;
 
   const set = (k: keyof typeof emptyForm, v: unknown) => setForm((f) => ({ ...f, [k]: v }));
 
-  const totalAmount = collections.reduce((s, c) => s + c.amount, 0);
-  const mpesaTotal = collections.filter((c) => c.method === "MPESA").reduce((s, c) => s + c.amount, 0);
-  const cashTotal = collections.filter((c) => c.method === "CASH").reduce((s, c) => s + c.amount, 0);
+  const counted = collections.filter((c) => COUNTED.has(c.status));
+  const totalAmount = counted.reduce((s, c) => s + c.amount, 0);
+  const mpesaTotal = counted.filter((c) => c.method === "MPESA").reduce((s, c) => s + c.amount, 0);
+  const cashTotal = counted.filter((c) => c.method === "CASH").reduce((s, c) => s + c.amount, 0);
   const pending = collections.filter((c) => c.status === "PENDING").length;
 
   return (
@@ -135,7 +151,7 @@ export default function CollectionsPage() {
           ))}
         </div>
         <div className="flex gap-1 ml-auto">
-          {(["ALL", "PENDING", "CONFIRMED", "RECONCILED"] as const).map((s) => (
+          {(["ALL", "PENDING", "DEPOSITED", "CONFIRMED", "RECONCILED", "BOUNCED", "CANCELLED"] as const).map((s) => (
             <button
               key={s}
               onClick={() => setFilterStatus(s as CollectionStatus | "ALL")}
@@ -159,7 +175,7 @@ export default function CollectionsPage() {
       ) : (
         <div className="space-y-2">
           {actionError && <p role="alert" className="rounded-lg p-2 text-sm bg-red-50 border border-red-200 text-red-700">
-            {typeof actionError.response?.data?.detail === "string" ? actionError.response.data.detail : "The action failed."}</p>}
+            {errorText(actionError, "The action failed.")}</p>}
           {collections.map((c) => (
             <CollectionRow
               key={c.id}
@@ -177,11 +193,10 @@ export default function CollectionsPage() {
         <form onSubmit={(e) => { e.preventDefault(); create.mutate(); }} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <Input
-              label="Collection No *"
+              label="Collection No (optional)"
               value={form.collection_no}
               onChange={(e) => set("collection_no", e.target.value)}
-              required
-              placeholder="COL-001"
+              placeholder="generated if empty"
             />
             <Input
               label="Date *"
@@ -196,7 +211,7 @@ export default function CollectionsPage() {
             <label className="block text-sm font-medium text-gray-700 mb-1">Customer *</label>
             <select
               value={form.customer_id}
-              onChange={(e) => set("customer_id", e.target.value)}
+              onChange={(e) => { set("customer_id", e.target.value); set("invoice_id", ""); }}
               required
               className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
@@ -204,6 +219,17 @@ export default function CollectionsPage() {
               {customers.map((c) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Invoice being paid *</label>
+            <select aria-label="Invoice being paid" value={form.invoice_id} required disabled={!form.customer_id}
+              onChange={(e) => { const i = openInvoices.find((x) => x.id === e.target.value); set("invoice_id", e.target.value);
+                if (i) { set("amount", String(i.outstanding_balance ?? i.total_amount - i.paid_amount)); set("currency", i.currency); } }}
+              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <option value="">{form.customer_id ? (openInvoices.length ? "Select invoice…" : "No open invoices") : "Select a customer first"}</option>
+              {openInvoices.map((i) => <option key={i.id} value={i.id}>{i.invoice_no} · due {i.due_date} · {i.currency} {(i.outstanding_balance ?? i.total_amount - i.paid_amount).toLocaleString()}</option>)}
             </select>
           </div>
 
@@ -281,7 +307,7 @@ export default function CollectionsPage() {
             />
           </div>
 
-          {create.error && <p className="text-sm text-red-600">Failed to record collection.</p>}
+          {create.error && <p role="alert" className="text-sm text-red-600">{errorText(create.error, "Failed to record collection.")}</p>}
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" type="button" onClick={() => setOpen(false)}>Cancel</Button>
             <Button type="submit" loading={create.isPending}>Record</Button>

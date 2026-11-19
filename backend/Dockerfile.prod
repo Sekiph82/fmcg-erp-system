@@ -23,4 +23,4 @@ USER erp
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "alembic upgrade head && gunicorn app.main:app -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000 --workers ${WEB_CONCURRENCY:-2} --timeout 120"]
+CMD ["sh", "-c", "alembic upgrade head && gunicorn app.main:app -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000 --forwarded-allow-ips="${FORWARDED_ALLOW_IPS:-127.0.0.1}" --workers ${WEB_CONCURRENCY:-2} --timeout 120"]

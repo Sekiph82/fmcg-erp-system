@@ -117,6 +117,8 @@ async def create_collection(body: CollectionCreate, db: AsyncSession = Depends(g
     inv = (await db.execute(select(Invoice).where(Invoice.id == body.invoice_id).with_for_update())).scalar_one_or_none()
     if inv is None or inv.customer_id != customer.id:
         raise HTTPException(422, "The invoice does not belong to this customer.")
+    if inv.status.value not in ("ISSUED", "PARTIALLY_PAID", "OVERDUE"):
+        raise HTTPException(422, "The invoice is not open.")
     if body.currency and body.currency != inv.currency:
         raise HTTPException(422, f"The invoice is in {inv.currency}; record the collection in that currency.")
     if body.amount > await open_to_collect(db, inv):
@@ -145,10 +147,10 @@ async def confirm(collection_id: uuid.UUID, db: AsyncSession = Depends(get_db), 
 
     c = await _locked(db, collection_id)
     # a cheque is posted only once it has cleared: PENDING → DEPOSITED → confirm (or bounce); never posted then reversed
-    if c.method == "CHEQUE" and c.status != "DEPOSITED":
-        raise HTTPException(409, "Record the cheque as deposited first; confirm it only after the bank has cleared it.")
     if c.status not in ("PENDING", "DEPOSITED"):
         raise HTTPException(409, f"Collection is {c.status}.")
+    if c.method == "CHEQUE" and c.status != "DEPOSITED":
+        raise HTTPException(409, "Record the cheque as deposited first; confirm it only after the bank has cleared it.")
     if c.collected_by_id == user.id:
         raise HTTPException(403, "You recorded this collection; another finance user must confirm it.")
     if c.invoice_id is None:

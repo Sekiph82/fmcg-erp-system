@@ -59,7 +59,7 @@ _EXPORT = [Depends(_require_any("traceability.regulatory_export"))]
 
 @router.post("/events", response_model=TraceEventOut, status_code=201, dependencies=_RECORD)
 async def create_trace_event(data: TraceEventCreate, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
-    stamp(data, current_user, ("performed_by_id",), ("approved_by_id",), ("quality.approve", "traceability.approve"))
+    stamp(data, current_user, ("performed_by_id",), ("approved_by_id",), ("quality.approve", "quality.approve_all"))
     return await trace_svc.create_trace_event(db, data)
 
 
@@ -195,9 +195,15 @@ async def get_recall_detail(recall_id: uuid.UUID, db: AsyncSession = Depends(get
 @router.patch("/recalls/{recall_id}/status", response_model=RecallHeaderOut, dependencies=_RECALL)
 async def update_recall_status(recall_id: uuid.UUID, data: RecallStatusUpdate,
                                 db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
-    stamp(data, current_user, ("approved_by_id",))  # the status change is recorded as the signed-in user
+    # who changed it is always the signed-in user; they become the recall's approver only when they approve it
+    # (moving it to active) and hold an approve right — cancelling or closing never rewrites the approval
+    from app.models.traceability import RecallStatus
+
+    approving = data.status == RecallStatus.active and has_any_permission(
+        current_user, ("traceability.recall_close", "quality.approve", "quality.approve_all"))
+    data.approved_by_id = current_user.id if approving else None
     try:
-        return await recall_svc.update_recall_status(db, recall_id, data)
+        return await recall_svc.update_recall_status(db, recall_id, data, changed_by_id=current_user.id)
     except ValueError as e:
         raise HTTPException(404, str(e))
 

@@ -1,0 +1,4 @@
+{
+  "invoice_prefilled_and_refused_because_reserved": "The amount is more than the invoice's open balance (including collections awaiting confirmation).",
+  "page_errors": []
+}

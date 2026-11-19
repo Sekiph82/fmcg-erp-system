@@ -271,14 +271,15 @@ async def list_advances(
 
 @router.post("/advances", response_model=ExpenseAdvanceRead)
 async def create_advance(data: ExpenseAdvanceCreate, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
-    """An advance is the signed-in employee's own; only HR (hr.edit) may record one for someone else."""
+    """Finance records the cash it hands to an employee (finance.edit, enforced by _gate); without an employee given,
+    it is the signed-in finance user's own advance."""
     from sqlalchemy import select
 
     from app.core.access_control import has_permission
     from app.models.hr import Employee
 
     me = (await db.execute(select(Employee.id).where(Employee.user_id == current_user.id).limit(1))).scalar_one_or_none()
-    if not (data.employee_id is not None and data.employee_id != me and has_permission(current_user, "hr.edit")):
+    if data.employee_id is None:
         if me is None:
             raise HTTPException(403, "Your login is not linked to an employee record; ask HR.")
         data.employee_id = me

@@ -111,14 +111,14 @@ async def _log_status_change(
 
 
 async def update_recall_status(db: AsyncSession, recall_id: uuid.UUID,
-                                data: RecallStatusUpdate) -> RecallHeader:
+                                data: RecallStatusUpdate, changed_by_id: Optional[uuid.UUID] = None) -> RecallHeader:
     recall = await db.get(RecallHeader, recall_id)
     if not recall:
         raise ValueError("Recall not found")
 
     await _log_status_change(
         db, recall, data.status.value,
-        changed_by_id=data.approved_by_id,
+        changed_by_id=changed_by_id or data.approved_by_id,
         reason=data.notes,
         system_note=f"Status changed to {data.status.value}",
     )

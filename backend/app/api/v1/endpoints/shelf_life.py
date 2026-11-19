@@ -178,7 +178,7 @@ async def validate_shipment(req: FEFOValidateShipmentRequest, db: AsyncSession =
 
 @router.post("/fefo/audit-log", response_model=FEFOAuditLogOut, status_code=201)
 async def log_fefo_audit(data: FEFOAuditLogCreate, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
-    stamp(data, current_user, ("picked_by_id",), ("override_approved_by_id",), ("quality.approve", "inventory.approve"))
+    stamp(data, current_user, ("picked_by_id",), ("override_approved_by_id",), ("quality.approve", "quality.approve_all", "inventory.approve", "inventory.approve_all"))
     return await svc.log_fefo_audit(db, data)
 
 

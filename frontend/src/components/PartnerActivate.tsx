@@ -14,7 +14,7 @@ function Activate({ base, loginPath }: { base: "portal-self" | "supplier-self"; 
     meta.name = "referrer";
     meta.content = "no-referrer";
     document.head.appendChild(meta);
-    if (fromUrl) window.history.replaceState(null, "", window.location.pathname);
+    if (fromUrl) window.history.replaceState(window.history.state, "", window.location.pathname);
     return () => { meta.remove(); };
   }, [fromUrl]);
   const [pw, setPw] = useState("");
