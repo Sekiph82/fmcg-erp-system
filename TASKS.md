@@ -10,7 +10,7 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M36 — Native CRM HubSpot Capability Gap Audit & Delivery (new owner-approved scope; M17 existing software history preserved)
 - Current Sprint: M36.S02 — Sales intelligence (after M36.S00 audit accepted)
-- Current Task: M36 batch 8 — S02.T005 segment campaigns on the outbox, S04.T003 quote approval↔e-sign link
+- Current Task: M38 — screens for every team and channel (S01 external auth + distributor portal first); M36 remaining tasks after
 - Current Task Status: IN_PROGRESS (2026-11-12) — M36.S00 audit accepted with corrections by an independent reviewer (25 tasks: 17 PARTIAL, 8 MISSING, none complete); batch 1 security/defect fixes landed. Evidence: coordination/milestones/M36/M36_S00_AUDIT.md
 - Next Task/Action: Batch 4 — S01.T004 automation executor on CRM events (idempotent, worker-safe, recursion limit, audit), then consent/suppression store and provider-agnostic outbox for S01.T002/S02.T005; S04.T005 KB visibility/feedback; S04.T003 quote approval↔e-sign link. Live provider gates stay [!].
 - Required Actor: CLAUDE (sole active task runner and tracker writer; per coordination/CLAUDE_AUTONOMOUS_EXECUTION_POLICY.md)
@@ -1695,3 +1695,17 @@ Decision: no public App Store / Google Play listing. Phase 1 = installable PWA o
 - [!] M37.S04.T007 — Physical acceptance: print labels on the factory label printer, scan with Android camera and a hardware scanner at a real machine; check Code 128/QR read rates. Needs devices.
 - [ ] M37.S04.T008 — Extend `ScanInput` + resolver to goods receipt, putaway, transfers and cycle counts (same resolver; warehouse screens still use manual selection).
 - [v] M37.S04.T009 — Next.js 16.4.2 → 16.4.6 (+ eslint-config-next) fixes GHSA-mfr8-8qww-v76h and GHSA-vc7v-qv4w-wrv8 (moderate, 'use cache' cross-root-param leaks). `npm audit --omit=dev` 0 vulnerabilities; `next build` exit 0 (713 pages), `tsc` 0, `eslint` 0 errors, `test:pwa` 4 + `test:auth-refresh` 2 pass; prod smoke: login page, SW active, manifest, offline page, unauthenticated dashboard redirect. The docker dev frontend keeps 16.4.2 in its node_modules volume until rebuilt (`docker compose build frontend && docker compose up -d frontend`).
+
+## M38 — Screens for every team and channel (owner request 2026-11-19)
+Audit: `coordination/milestones/M38/M38_S00_PERSONA_SCREEN_AUDIT.md` (distributor, supplier, ESS logins non-functional; moto, driver POD, field controller have no screens; ESS demo-wired).
+- [v] M38.S00.T001 — Persona/channel screen audit (helper sweep + hand re-check of key claims). Independent review pending.
+- [ ] M38.S01.T001 — External-realm auth: signed per-realm JWT (portal/supplier) in HttpOnly cookie, salted hashes with upgrade-on-login, login rate limit, account-scoped dependency; supplier password reset requires a reset token.
+- [ ] M38.S01.T002 — Distributor ordering portal: login page, catalog with server-side prices, order → priced DRAFT sales order (source DISTRIBUTOR, idempotent), order/shipment/invoice status, statement, reorder.
+- [ ] M38.S02.T001 — Field rep / pre-seller "my day" PWA screen: route outlets, check-in with GPS, visit log + photo, order capture.
+- [ ] M38.S02.T002 — Moto rider screen: sell, M-Pesa STK push, day summary; supervisor fraud alerts + leaderboard UI.
+- [ ] M38.S02.T003 — Delivery driver "my trip": stops, POD with signature/photo/GPS, failed-delivery reasons.
+- [ ] M38.S02.T004 — Collector screen: route of open balances, STK push / receipt.
+- [ ] M38.S03.T001 — Field controller: outlet/route audit checklist, scoring, rep compliance view.
+- [ ] M38.S04.T001 — ESS bound to the logged-in user (`Employee.user_id`), remove DEMO_EMPLOYEE, my payslips.
+- [ ] M38.S05.T001 — Supplier portal UI (POs, acknowledge, ETA, documents) on S01.T001 auth.
+- [ ] M38.S06.T001 — Customer ticket/NPS portal; warehouse pick/putaway execution; consumer QR verify page; replace redirect stubs.
