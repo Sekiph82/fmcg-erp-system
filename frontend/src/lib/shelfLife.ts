@@ -407,7 +407,7 @@ export const shelfLifeApi = {
     if (status) p.set("status", status);
     return req<DispositionSuggestion[]>(`${BASE}/disposition-suggestions?${p}`);
   },
-  approveDisposition: (id: string, d: { approved_by_id: string; execution_notes?: string }) =>
+  approveDisposition: (id: string, d: { execution_notes?: string }) =>
     req<DispositionSuggestion>(`${BASE}/disposition-suggestions/${id}/approve`, {
       method: "POST", body: JSON.stringify(d),
     }),
@@ -420,7 +420,7 @@ export const shelfLifeApi = {
     if (agentType) p.set("agent_type", agentType);
     return req<SLAIRecommendation[]>(`${BASE}/ai-recommendations?${p}`);
   },
-  reviewAIRec: (id: string, d: { status: SLAIRecStatus; reviewed_by_id: string; review_note?: string }) =>
+  reviewAIRec: (id: string, d: { status: SLAIRecStatus; review_note?: string }) =>
     req<SLAIRecommendation>(`${BASE}/ai-recommendations/${id}/review`, {
       method: "POST", body: JSON.stringify(d),
     }),
