@@ -349,4 +349,4 @@ async def _work_links(db: AsyncSession, user) -> dict[str, bool]:
         exists().where(SalesRep.user_id == user.id, SalesRep.is_active.is_(True))
         | exists().where(DeliveryTrip.driver_user_id == user.id)))).scalar())
     employee = bool((await db.execute(select(exists().where(Employee.user_id == user.id)))).scalar())
-    return {"field_app": field, "my_hr": employee}
+    return {"field_app": field, "my_hr": employee, "superuser": bool(user.is_superuser)}

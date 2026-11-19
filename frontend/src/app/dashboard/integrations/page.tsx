@@ -262,7 +262,7 @@ export default function IntegrationsDashboardPage() {
     { key: "barcode",         label: "Barcode",         permission: "integrations.view", content: <IntegrationsBarcodePage /> },
     { key: "marketing-sync",  label: "Marketing Sync",  permission: "integrations.view", content: <IntegrationsMarketingSyncPage /> },
     { key: "logs",            label: "Logs",            permission: "integrations.view", content: <IntegrationsLogsPage /> },
-    { key: "webhooks",        label: "Webhooks",        permission: "integrations.view", content: <WebhooksPage /> },
+    { key: "webhooks",        label: "Webhooks",        permission: "self.superuser", content: <WebhooksPage /> },  // API is superuser-only
     { key: "developer",       label: "Developer",       permission: "integrations.view", content: <DeveloperPage /> },
   ];
   return (

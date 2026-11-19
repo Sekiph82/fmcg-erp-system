@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select, desc, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, timezone
 from pydantic import BaseModel as _BM
 from app.db.session import get_db
 from app.schemas.calendar import (
@@ -15,6 +15,14 @@ from app.schemas.calendar import (
 from app.services import calendar_service
 
 router = APIRouter()
+
+
+def _naive_utc(v: Optional[str]):
+    """The screen sends ISO times with "Z"; event times are stored without a zone (UTC)."""
+    if not v:
+        return None
+    dt = datetime.fromisoformat(v.replace("Z", "+00:00"))
+    return dt.astimezone(timezone.utc).replace(tzinfo=None) if dt.tzinfo else dt
 
 
 # ── Resources ─────────────────────────────────────────────────────────────────
@@ -53,8 +61,7 @@ async def list_events(
     status: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
 ):
-    start_dt = datetime.fromisoformat(start) if start else None
-    end_dt = datetime.fromisoformat(end) if end else None
+    start_dt, end_dt = _naive_utc(start), _naive_utc(end)
     return await calendar_service.list_events(db, start_dt, end_dt, event_type, status)
 
 
@@ -103,8 +110,7 @@ async def list_bookings(
     status: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
 ):
-    start_dt = datetime.fromisoformat(start) if start else None
-    end_dt = datetime.fromisoformat(end) if end else None
+    start_dt, end_dt = _naive_utc(start), _naive_utc(end)
     return await calendar_service.list_bookings(db, resource_id, start_dt, end_dt, status)
 
 

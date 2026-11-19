@@ -27,7 +27,8 @@ PATHS = [
     "/analytics/inventory", "/analytics/sales", "/analytics/production", "/analytics/procurement", "/analytics/finance",
     "/utility-kpi/dashboard", "/utility-kpi/top-consumers", "/utility-kpi/trend", "/utility-kpi/electricity",
     "/utility-kpi/water", "/utility-kpi/boiler", "/utility-kpi/compressor", "/utility-kpi/soft-water", "/utility-kpi/solar",
-    "/utility-kpi/chemicals", "/utility-kpi/wastewater", "/utility-kpi/machine-utility", "/pos/sales", "/notifications/me", "/notifications/me/unread-count",
+    "/utility-kpi/chemicals", "/utility-kpi/wastewater", "/utility-kpi/machine-utility", "/pos/sales",
+    "/calendar/events?start=2026-11-19T21:47:58.146Z&end=2026-11-26T21:47:58.146Z", "/notifications/me", "/notifications/me/unread-count",
 ]
 
 
