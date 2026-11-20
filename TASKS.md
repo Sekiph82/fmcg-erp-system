@@ -1625,7 +1625,7 @@ These are not reasons to fabricate completion and do not erase source implementa
 - [!] Live KRA/eTIMS credentials and production acceptance
 - [!] Live Safaricom Daraja/M-Pesa credentials and production acceptance
 - [!] Live bank connector credentials/provider acceptance
-- [!] Live AI-provider acceptance where a real external model is required
+- [v] Live AI-provider acceptance where a real external model is required — 2026-11-20: owner's Anthropic key, model claude-sonnet-5-5; chat, predictions (7), recommendations (7), scenario simulation and formulation all answered live (whole test: 6,547 input + 19,924 output tokens, about $0.21). Fixes found by the live run: replies read only text blocks (thinking blocks first on current models), prediction period/risk/trend capped to their 20-char columns, AI_MAX_TOKENS 4096 → 16000 (formulation came back empty at 4096), retired gemini-1.5-pro replaced by gemini-flash-latest (the Gemini key has no usable quota). Docker reads the key from .env.development. AI runs only when a user presses one of these five buttons; no scheduled AI. 110 AI unit tests pass.
 - [!] Physical printer/device acceptance where hardware is required
 - [x] Local staging/live-like DB rehearsal — executed 2026-11-10 (M01.S03.T003, M19.S02.T005 staging part); live/production rehearsal stays external
 

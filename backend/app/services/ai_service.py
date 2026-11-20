@@ -274,11 +274,11 @@ async def generate_predictions(
                 request_id=req.id,
                 prediction_type=p.get("type", "unknown"),
                 subject_name=p.get("subject"),
-                period=p.get("period"),
+                period=(str(p.get("period") or "")[:20] or None),  # column is 20 chars; full text stays in details
                 forecast_value=p.get("forecast_value"),
                 confidence_score=p.get("confidence"),
-                risk_level=p.get("risk_level"),
-                trend=p.get("trend"),
+                risk_level=(str(p.get("risk_level") or "")[:20] or None),  # column is 20 chars; full text stays in details
+                trend=(str(p.get("trend") or "")[:20] or None),  # column is 20 chars; full text stays in details
                 summary=p.get("summary"),
                 details=p,
                 created_by_id=user_id,

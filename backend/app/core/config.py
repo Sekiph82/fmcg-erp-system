@@ -173,7 +173,7 @@ class Settings(BaseSettings):
     OPENAI_MODEL: str = "gpt-4o"
     GEMINI_API_KEY: str = ""
     GEMINI_MODEL: str = "gemini-flash-latest"
-    AI_MAX_TOKENS: int = 4096
+    AI_MAX_TOKENS: int = 16000
     AI_TEMPERATURE: float = 0.3             # lower = more deterministic for structured outputs
 
     # ── AI data masking (external LLM calls only) ──────────────────────────────
