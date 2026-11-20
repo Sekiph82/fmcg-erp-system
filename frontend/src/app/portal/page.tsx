@@ -43,10 +43,10 @@ export default function PartnerPortal() {
         </div>
         <button onClick={signOut} className="text-sm underline shrink-0">Sign out</button>
       </header>
-      <nav aria-label="Portal sections" className="flex overflow-x-auto bg-white border-b text-sm">
+      <nav aria-label="Portal sections" className="grid grid-cols-3 md:flex bg-white border-b text-sm">
         {([["order", "New order"], ["promotions", "My promotions"], ["orders", "My orders"], ["statement", "Invoices & statement"], ["claims", "Claims"], ["support", "Support"]] as [Tab, string][]).map(([k, label]) => (
           <button key={k} onClick={() => { setTab(k); setError(null); setInfo(null); }} aria-current={tab === k ? "page" : undefined}
-            className={`px-4 py-3 whitespace-nowrap ${tab === k ? "border-b-2 border-indigo-600 font-semibold text-indigo-700" : "text-gray-600"}`}>{label}</button>
+            className={`px-2 md:px-4 py-3 leading-tight md:whitespace-nowrap ${tab === k ? "border-b-2 border-indigo-600 font-semibold text-indigo-700" : "text-gray-600"}`}>{label}</button>
         ))}
       </nav>
       <div className="max-w-4xl mx-auto p-4 space-y-4">
