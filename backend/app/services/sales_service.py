@@ -69,7 +69,7 @@ async def _lock_sales_order_for_update(db: AsyncSession, so: SalesOrder) -> Sale
 
 async def _active_posting_rule(
     db: AsyncSession, source_event: str
-) -> AccountingPostingRule:
+) -> Optional[AccountingPostingRule]:
     result = await db.execute(
         select(AccountingPostingRule)
         .where(
@@ -82,10 +82,10 @@ async def _active_posting_rule(
     )
     rule = result.scalar_one_or_none()
     if rule is None:
-        raise HTTPException(
-            422,
-            f"No active accounting posting rule is configured for sales/{source_event}",
-        )
+        # refused once finance approved the rule set; before that the document is issued without a ledger entry
+        from app.services.posting_rules_catalog import missing_rule
+
+        await missing_rule(db, "sales", source_event, f"sales/{source_event}")
     return rule
 
 
@@ -198,8 +198,10 @@ async def _post_journal_unchecked(
     return entry
 
 
-async def _post_invoice_to_gl(db: AsyncSession, invoice: Invoice, user_id: uuid.UUID) -> JournalEntry:
+async def _post_invoice_to_gl(db: AsyncSession, invoice: Invoice, user_id: uuid.UUID) -> Optional[JournalEntry]:
     rule = await _active_posting_rule(db, "SALES_INVOICE_ISSUED")
+    if rule is None:
+        return None
     if not rule.debit_account_id or not rule.credit_account_id:
         raise HTTPException(422, "Invoice posting rule must configure the receivables debit and revenue credit accounts")
     if invoice.subtotal < 0 or invoice.tax_amount < 0 or invoice.total_amount <= 0:
@@ -248,6 +250,8 @@ async def _post_customer_payment_to_gl(
         raise HTTPException(422, "Customer payment method must be cash, bank, or mpesa")
     source_event = f"CUSTOMER_PAYMENT_RECEIVED_{method.upper()}"
     rule = await _active_posting_rule(db, source_event)
+    if rule is None:
+        return None
     if not rule.clearing_account_id or not rule.credit_account_id:
         raise HTTPException(422, "Payment posting rule must configure a clearing debit and receivables credit account")
     invoice_event = (await db.execute(

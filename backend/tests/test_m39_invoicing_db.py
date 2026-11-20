@@ -106,10 +106,28 @@ async def test_delivery_never_fails_when_invoicing_cannot_post():
         # an earlier test's rule may exist in this database: deactivate all to simulate "no rule"
         for r in (await db.execute(select(AccountingPostingRule).where(AccountingPostingRule.source_event == "SALES_INVOICE_ISSUED"))).scalars():
             r.is_active = False
+        # before finance approves the rule set: the invoice is issued (and mailed), only the ledger entry is missing
         user, _, so, sh = await _dispatched(db, s, OrderSource.MANUAL, with_rule=False)
-        assert await invoice_on_delivery(db, sh.id, user.id) is None
+        inv = await invoice_on_delivery(db, sh.id, user.id)
+        assert inv is not None
         await db.commit()
-        assert (await db.execute(select(func.count()).select_from(Invoice).where(Invoice.so_id == so.id))).scalar() == 0
+        from app.models.finance import JournalEntry
+        assert (await db.execute(select(func.count()).select_from(JournalEntry).where(
+            JournalEntry.source_ref == inv.invoice_no))).scalar() == 0
+
+        # after approval (mandatory): no invoice without a rule, and the delivery itself still goes through
+        from app.models.utilities import ConfigCategory, SystemConfig
+        from app.services.posting_rules_catalog import MANDATORY_KEY
+        cfg = (await db.execute(select(SystemConfig).where(SystemConfig.key == MANDATORY_KEY))).scalar_one_or_none()
+        if cfg is None:
+            cfg = SystemConfig(key=MANDATORY_KEY, category=ConfigCategory.FINANCE, is_editable=False, value="true")
+            db.add(cfg)
+        cfg.value = "true"
+        await db.flush()
+        user2, _, so2, sh2 = await _dispatched(db, s + "m", OrderSource.MANUAL, with_rule=False)
+        assert await invoice_on_delivery(db, sh2.id, user2.id) is None
+        assert (await db.execute(select(func.count()).select_from(Invoice).where(Invoice.so_id == so2.id))).scalar() == 0
+        await db.rollback()
 
 
 @pytest.mark.asyncio

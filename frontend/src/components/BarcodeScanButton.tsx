@@ -77,7 +77,7 @@ export function BarcodeScanButton({ onScan, label = "Scan" }: { onScan: (code: s
       <button
         type="button"
         onClick={() => { setError(""); setOpen(true); }}
-        className="min-h-11 px-3 rounded-lg border border-indigo-300 bg-indigo-50 text-indigo-800 text-sm font-semibold"
+        className="min-h-11 px-3 rounded-lg border border-indigo-600 bg-indigo-600 text-white text-sm font-semibold"
         data-testid="barcode-scan-button"
       >
         {label}

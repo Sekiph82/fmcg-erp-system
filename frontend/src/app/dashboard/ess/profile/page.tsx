@@ -22,7 +22,7 @@ export default function ESSProfilePage() {
   const handleSave = async () => { await essSelf.updateProfile(form); await load(); setEditing(false); setMsg("Profile updated"); setTimeout(() => setMsg(""), 2000); };
 
   const Field = ({ label, value }: { label: string; value?: string }) => (
-    <div><p className="text-[10px] text-slate-500 uppercase tracking-widest mb-0.5">{label}</p><p className="text-sm text-slate-300">{value || "—"}</p></div>
+    <div className="min-w-0"><p className="text-[10px] text-slate-500 uppercase tracking-widest mb-0.5">{label}</p><p className="text-sm text-slate-300 [overflow-wrap:anywhere]">{value || "—"}</p></div>
   );
 
   if (!profile) return (

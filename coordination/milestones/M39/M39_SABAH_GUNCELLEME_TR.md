@@ -245,3 +245,12 @@ Türkiye'deki karşılığı SGK işveren payıdır.
 - Kural seti onaylanana kadar CFO veya finans müdürü her oturumunun başında doğrudan Finans → Posting Rules ekranına düşer.
 - CEO ve sahip yönlendirilmez.
 - Kenya şirketi kurulup ilk finans kullanıcısı tanımlandığında bu ekran onun ilk göreceği şey olur. Onaydan sonra yönlendirme kendiliğinden durur.
+
+### Telefon testi düzeltmeleri (ekran görüntülerinden) [v]
+- Ekranın altı Safari araç çubuğunun arkasında kalıyordu: kabuk artık görünür yüksekliği kullanıyor.
+- Bir alana yazınca sayfa yakınlaşıp yana kayıyordu: telefonda giriş alanları 16 px.
+- Tablolar kesiliyordu: kartın içinde yatay kayıyor.
+- Devam ekranında "Check out" ekran dışındaydı: başlık satırı alta kayıyor.
+- İzin formunda tarih alanları taşıyordu; profilde uzun e-posta kartı aşıyordu; Camera düğmesi okunmuyordu: düzeltildi.
+- Teslimat: "Confirm delivery" teslim alan kişinin adı ve imza olmadan açılmaz; artık eksik olanı yazıyor. Teslimat ve denetim başına en fazla 10 fotoğraf.
+- Telefon testinde bulunan hata: teslimat kaydedildi ama fatura kesilmedi, çünkü kural seti henüz onaylanmadığı için satış faturası kuralı pasifti. Artık onaya kadar fatura kesilip gönderiliyor, yalnızca deftere yazılmıyor; onaydan sonra kuralsız fatura reddediliyor.

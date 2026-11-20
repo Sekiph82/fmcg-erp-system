@@ -28,7 +28,7 @@ export default function ESSDashboardPage() {
 
   return (
     <div className="p-6 space-y-6 text-slate-200">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h1 className="text-2xl font-bold text-white">Employee Self-Service</h1>
           {data && <p className="text-slate-500 text-sm mt-0.5">{data.employee_name} · {data.job_title} · {data.department_name}</p>}

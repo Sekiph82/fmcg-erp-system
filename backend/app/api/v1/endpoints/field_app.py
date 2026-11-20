@@ -159,6 +159,20 @@ def _no(prefix: str) -> str:
     return f"{prefix}-{date.today():%y%m%d}-{secrets.token_hex(4).upper()}"
 
 
+MAX_PHOTOS = 10  # owner 2026-11-20: up to 10 photos per delivery / audit
+
+
+def _forget(keys: list[str]) -> None:
+    from app.services.document_storage_service import get_document_storage
+
+    storage = get_document_storage()
+    for k in keys:
+        try:
+            storage.delete(k)
+        except Exception:
+            pass
+
+
 async def _store(file: UploadFile) -> str:
     """Store an image through the document storage service; returns the opaque key. Infected files are refused."""
     from app.services.document_storage_service import get_document_storage, scan_document
@@ -546,7 +560,8 @@ async def finish_trip(trip_id: uuid.UUID, db: AsyncSession = Depends(get_db), us
 async def deliver(trip_order_id: uuid.UUID, received_by: str = Form(..., min_length=2, max_length=255),
                   lat: Optional[Decimal] = Form(None, ge=-90, le=90), lng: Optional[Decimal] = Form(None, ge=-180, le=180),
                   notes: Optional[str] = Form(None, max_length=1000), signature: UploadFile = File(...),
-                  photo: Optional[UploadFile] = File(None), db: AsyncSession = Depends(get_db), user=Depends(get_current_user)):
+                  photo: Optional[UploadFile] = File(None), photos: Optional[list[UploadFile]] = File(None),
+                  db: AsyncSession = Depends(get_db), user=Depends(get_current_user)):
     from app.models.delivery import ProofOfDelivery, TripOrderStatus, TripStatus
     from app.models.sales import Shipment, ShipmentStatus
 
@@ -558,8 +573,21 @@ async def deliver(trip_order_id: uuid.UUID, received_by: str = Form(..., min_len
         return {"id": str(existing.id), "status": to.status.value, "duplicate": True}
     if to.status not in (TripOrderStatus.PENDING, TripOrderStatus.FAILED):  # FAILED: re-attempt later the same trip
         raise HTTPException(409, f"This stop is {to.status.value.lower()}.")
-    sig_key = await _store(signature)
-    photo_key = await _store(photo) if photo is not None and photo.filename else None
+    files = [f for f in [photo, *(photos or [])] if f is not None and f.filename]
+    if len(files) > MAX_PHOTOS:
+        raise HTTPException(422, f"At most {MAX_PHOTOS} photos per delivery.")
+    if not all((f.filename or "").lower().endswith((".jpg", ".jpeg", ".png")) for f in [signature, *files]):
+        raise HTTPException(415, "Photos and signatures must be JPG or PNG images.")
+    stored: list[str] = []
+    try:
+        for f in [signature, *files]:
+            stored.append(await _store(f))
+    except Exception:
+        _forget(stored)  # nothing half-saved when one photo is refused
+        raise
+    sig_key = stored[0]
+    # several photos: their storage keys, comma-separated (uuid hex keys, so the comma is safe; photo_url is free text)
+    photo_key = ",".join(stored[1:]) or None
     pod = ProofOfDelivery(shipment_id=to.shipment_id, trip_order_id=to.id, received_by=received_by.strip(),
                           signature_key=sig_key, photo_url=photo_key, delivered_at=datetime.now(timezone.utc),
                           gps_lat=lat, gps_lng=lng, notes=notes, confirmed_by_id=user.id)
@@ -576,6 +604,7 @@ async def deliver(trip_order_id: uuid.UUID, received_by: str = Form(..., min_len
         await db.commit()
     except IntegrityError:  # a parallel identical request won
         await db.rollback()
+        _forget(stored)
         existing = (await db.execute(select(ProofOfDelivery).where(ProofOfDelivery.trip_order_id == trip_order_id))).scalar_one()
         return {"id": str(existing.id), "status": "DELIVERED", "duplicate": True}
     return {"id": str(pod.id), "status": to.status.value, "duplicate": False}
@@ -666,8 +695,8 @@ async def audit_photo(audit_id: uuid.UUID, file: UploadFile = File(...), db: Asy
     audit = (await db.execute(select(FieldAudit).where(FieldAudit.id == audit_id).with_for_update())).scalar_one_or_none()
     if audit is None or audit.auditor_id != user.id:
         raise HTTPException(404, "Audit not found")
-    if len(audit.photo_keys or []) >= 6:
-        raise HTTPException(422, "At most 6 photos per audit.")
+    if len(audit.photo_keys or []) >= MAX_PHOTOS:
+        raise HTTPException(422, f"At most {MAX_PHOTOS} photos per audit.")
     audit.photo_keys = [*(audit.photo_keys or []), await _store(file)]
     await db.commit()
     return {"photos": len(audit.photo_keys)}

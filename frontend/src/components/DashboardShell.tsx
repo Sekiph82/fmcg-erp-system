@@ -75,7 +75,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
   }, [isDirty, confirmLeave]);
 
   return (
-    <div className="flex h-screen bg-[#030d1a] overflow-hidden" data-testid="dashboard-shell">
+    <div className="flex h-screen h-dvh bg-[#030d1a] overflow-hidden" data-testid="dashboard-shell">
       {/* Mobile overlay backdrop */}
       {mobileOpen && (
         <div

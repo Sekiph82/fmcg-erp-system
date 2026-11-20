@@ -237,7 +237,20 @@
     0 0 22px rgba(59,130,246,0.14),
     0 12px 40px rgba(2,8,23,0.50),
     inset 0 1px 0 rgba(255,255,255,0.06);
-  overflow: hidden;
+  /* wide tables scroll inside the card on phones instead of being cut off or pushing the page sideways */
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+/* iOS Safari zooms into any field under 16px and leaves the page zoomed (it looked shifted sideways) */
+@media (max-width: 767px) {
+  input, select, textarea { font-size: 16px !important; }
+  /* iOS Safari gives date/time inputs a fixed minimum width that overflows grid cells */
+  input[type="date"], input[type="time"], input[type="datetime-local"], input[type="month"] {
+    min-width: 0;
+    max-width: 100%;
+    -webkit-appearance: none;
+    appearance: none;
+  }
 }
 .glass-table table  { color: #c8e3f7; width: 100%; }
 .glass-table thead  { background: rgba(15,23,42,0.70); border-bottom: 1px solid rgba(96,165,250,0.20); }

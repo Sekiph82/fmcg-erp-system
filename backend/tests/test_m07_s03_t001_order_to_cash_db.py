@@ -344,7 +344,10 @@ async def test_confirmed_order_dispatch_invoice_and_customer_payment_subledger()
 
         # Missing channel mappings fail closed and do not create a subledger payment.
         cash_rule.is_active = False
-        await db.commit()
+        from app.models.utilities import ConfigCategory, SystemConfig
+        from app.services.posting_rules_catalog import MANDATORY_KEY
+        db.add(SystemConfig(key=MANDATORY_KEY, category=ConfigCategory.FINANCE, is_editable=False, value="true"))
+        await db.commit()  # rules are mandatory once finance approved them (owner 2026-11-20)
         from fastapi import HTTPException
         with pytest.raises(HTTPException) as missing_rule_error:
             await sales_service.record_payment(
@@ -352,7 +355,7 @@ async def test_confirmed_order_dispatch_invoice_and_customer_payment_subledger()
                 f"M07-T001-PAY-MISSING-{suffix}", None, user_id,
             )
         assert missing_rule_error.value.status_code == 422
-        assert "No active accounting posting rule" in str(missing_rule_error.value.detail)
+        assert "No active accounting rule" in str(missing_rule_error.value.detail)
         await db.rollback()
         invoice = await db.get(Invoice, invoice_id)
         assert invoice is not None

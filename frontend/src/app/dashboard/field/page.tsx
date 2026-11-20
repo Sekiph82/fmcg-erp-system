@@ -55,6 +55,18 @@ export default function FieldApp() {
 
 type Say = { say: (ok: boolean, t: string) => void; fail: (e: unknown) => void };
 
+/** Up to `max` photos, added one or several at a time (camera or library), shown as a count with Clear. */
+function PhotosInput({ label, files, onChange, max = 10 }: { label: string; files: File[]; onChange: (f: File[]) => void; max?: number }) {
+  const [dropped, setDropped] = useState(0);
+  return <label className="block text-xs text-gray-600">{label} — {files.length}/{max}
+    <input type="file" accept="image/jpeg,image/png" multiple aria-label={label} disabled={files.length >= max}
+      onChange={(e) => { const all = [...files, ...Array.from(e.target.files ?? [])]; setDropped(Math.max(0, all.length - max)); onChange(all.slice(0, max)); e.target.value = ""; }}
+      className="mt-1 block w-full text-sm" />
+    {dropped > 0 && <span className="block text-amber-700">{dropped} photo(s) not added: at most {max}.</span>}
+    {files.length > 0 && <button type="button" onClick={() => { onChange([]); setDropped(0); }} className="mt-1 underline">Clear photos</button>}
+  </label>;
+}
+
 function PhotoInput({ label, onFile }: { label: string; onFile: (f: File | null) => void }) {
   return <label className="block text-xs text-gray-600">{label}
     <input type="file" accept="image/jpeg,image/png" capture="environment" aria-label={label} onChange={(e) => onFile(e.target.files?.[0] ?? null)} className="mt-1 block w-full text-sm" />
@@ -269,7 +281,7 @@ function SignaturePad({ onChange }: { onChange: (b: Blob | null) => void }) {
 function DeliveryPanel({ stop, tripActive, say, fail, reload }: Say & { stop: TripStop; tripActive: boolean; reload: () => void }) {
   const [receivedBy, setReceivedBy] = useState("");
   const [sig, setSig] = useState<Blob | null>(null);
-  const [photo, setPhoto] = useState<File | null>(null);
+  const [photos, setPhotos] = useState<File[]>([]);
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   const maps = mapsLink(stop.lat, stop.lng, stop.address);
@@ -281,7 +293,7 @@ function DeliveryPanel({ stop, tripActive, say, fail, reload }: Say & { stop: Tr
       fd.append("received_by", receivedBy);
       if (gps) { fd.append("lat", String(gps.lat)); fd.append("lng", String(gps.lng)); }
       fd.append("signature", sig!, "signature.png");
-      if (photo) fd.append("photo", photo);
+      for (const p of photos) fd.append("photos", p);
       const r = await fpost<{ id: string | null; duplicate: boolean }>(`/field/trip-orders/${stop.id}/deliver`, fd);
       say(true, r.duplicate ? `Delivery to ${stop.customer} was already recorded.` : `Delivered to ${stop.customer}.`); reload();
     } catch (e) { fail(e); } finally { setBusy(false); }
@@ -296,7 +308,8 @@ function DeliveryPanel({ stop, tripActive, say, fail, reload }: Say & { stop: Tr
       {stop.status !== "PENDING" && stop.status !== "FAILED" ? <p className="text-xs text-gray-600">Delivered.</p> : !tripActive ? <p className="text-xs text-amber-700">Start the trip first.</p> : (<>
         <input aria-label="Received by" placeholder="Name of person receiving" value={receivedBy} onChange={(e) => setReceivedBy(e.target.value)} className={input} />
         <SignaturePad onChange={setSig} />
-        <PhotoInput label="Photo of delivered goods (optional)" onFile={setPhoto} />
+        <PhotosInput label="Photos of delivered goods (optional)" files={photos} onChange={setPhotos} />
+        {(receivedBy.trim().length < 2 || !sig) && <p className="text-xs text-amber-700">To confirm: {[receivedBy.trim().length < 2 && "type the name of the person receiving", !sig && "get their signature"].filter(Boolean).join(" and ")}.</p>}
         <button onClick={deliver} disabled={busy || receivedBy.trim().length < 2 || !sig} className={`${btn} w-full bg-emerald-600 text-white`}>{busy ? "Saving…" : "Confirm delivery"}</button>
         <div className="flex gap-2"><input aria-label="Reason not delivered" placeholder="Reason not delivered" value={reason} onChange={(e) => setReason(e.target.value)} className={input} />
           <button onClick={failed} disabled={reason.trim().length < 3} className={`${btn} border shrink-0`}>Not delivered</button></div>
@@ -308,6 +321,7 @@ function DeliveryPanel({ stop, tripActive, say, fail, reload }: Say & { stop: Tr
 // ── field controller ──────────────────────────────────────────────────────────
 
 function AuditsTab({ say, fail }: Say) {
+  const sentPhotos = useRef(0);
   const [items, setItems] = useState<{ key: string; label: string }[]>([]);
   const [search, setSearch] = useState("");
   const [outlets, setOutlets] = useState<{ customer_id: string; name: string; route: string; rep: string | null }[]>([]);
@@ -332,7 +346,9 @@ function AuditsTab({ say, fail }: Say) {
       const gps = await currentPosition();
       const r = await fpost<{ id: string; audit_no: string; score: number }>("/field/audits", { client_ref: ref.current, customer_id: outlet.customer_id, notes: notes || null,
         lat: gps?.lat, lng: gps?.lng, answers: items.map((i) => ({ key: i.key, ok: ans[i.key].ok, note: ans[i.key].note || null })) });
-      for (const p of photos) { const fd = new FormData(); fd.append("file", p); await fpost(`/field/audits/${r.id}/photo`, fd); }
+      // a retry replays the same audit (client_ref): send only the photos not uploaded yet
+      for (const p of photos.slice(sentPhotos.current)) { const fd = new FormData(); fd.append("file", p); await fpost(`/field/audits/${r.id}/photo`, fd); sentPhotos.current += 1; }
+      sentPhotos.current = 0;
       ref.current = newRef(); setOutlet(null); setNotes(""); setPhotos([]); setAns(Object.fromEntries(items.map((i) => [i.key, { ok: true, note: "" }])));
       say(true, `Audit ${r.audit_no} saved — score ${r.score}%.`); loadRecent();
     } catch (e) { fail(e); } finally { setBusy(false); }
@@ -355,8 +371,7 @@ function AuditsTab({ say, fail }: Say) {
               {ans[i.key] && !ans[i.key].ok && <input aria-label={`Note: ${i.label}`} placeholder="What is wrong?" value={ans[i.key].note} onChange={(e) => setAns({ ...ans, [i.key]: { ...ans[i.key], note: e.target.value } })} className={input + " mt-1"} />}
             </div>))}
           <textarea aria-label="Audit notes" placeholder="Notes" rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} className={input} />
-          <PhotoInput label="Add photo (shelf, fridge…)" onFile={(f) => f && setPhotos([...photos, f].slice(0, 6))} />
-          {photos.length > 0 && <p className="text-xs text-gray-500">{photos.length} photo(s) ready</p>}
+          <PhotosInput label="Photos (shelf, fridge…)" files={photos} onChange={setPhotos} />
           <button onClick={submit} disabled={busy} className={`${btn} w-full bg-indigo-600 text-white`}>{busy ? "Saving…" : "Save audit"}</button>
         </>)}
       </div>

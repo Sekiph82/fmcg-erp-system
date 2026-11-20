@@ -26,12 +26,12 @@ export default function AttendancePage() {
 
   return (
     <div className="p-6 space-y-5 text-slate-200">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold text-white">Attendance</h1>
           <p className="text-slate-500 text-sm mt-0.5">Daily log and monthly summary</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <select value={month} onChange={(e) => setMonth(Number(e.target.value))} className="bg-[#0d1829] border border-white/[0.08] rounded-lg px-2 py-1.5 text-sm text-white focus:outline-none">
             {MONTHS.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
           </select>

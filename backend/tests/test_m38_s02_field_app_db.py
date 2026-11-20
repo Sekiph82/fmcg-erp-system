@@ -210,8 +210,15 @@ async def test_field_app_end_to_end(tmp_path, monkeypatch):
             assert (await c.post(f"{F}/trip-orders/{ids.stop}/deliver", data=form, files=sig)).status_code == 409  # not started
             assert (await c.post(f"{F}/trips/{ids.trip}/finish")).status_code == 409
             assert (await c.post(f"{F}/trips/{ids.trip}/start")).json()["status"] == "IN_TRANSIT"
-            d1 = await c.post(f"{F}/trip-orders/{ids.stop}/deliver", data=form, files=sig)
+            eleven = [("signature", ("sig.png", PNG, "image/png"))] + [("photos", (f"p{i}.png", PNG, "image/png")) for i in range(11)]
+            assert (await c.post(f"{F}/trip-orders/{ids.stop}/deliver", data=form, files=eleven)).status_code == 422  # max 10
+            three = [("signature", ("sig.png", PNG, "image/png"))] + [("photos", (f"p{i}.png", PNG, "image/png")) for i in range(3)]
+            d1 = await c.post(f"{F}/trip-orders/{ids.stop}/deliver", data=form, files=three)
             assert d1.status_code == 201 and d1.json()["status"] == "DELIVERED"
+            from app.models.delivery import ProofOfDelivery
+            async with AsyncSessionLocal() as db:
+                pod = (await db.execute(select(ProofOfDelivery).where(ProofOfDelivery.trip_order_id == ids.stop))).scalar_one()
+                assert len(pod.photo_url.split(",")) == 3  # owner 2026-11-20: several photos per delivery
             assert (await c.post(f"{F}/trip-orders/{ids.stop}/deliver", data=form, files=sig)).json()["duplicate"] is True
             assert (await c.post(f"{F}/trips/{ids.trip}/finish")).json()["status"] == "COMPLETED"
             who(U["bea"])
