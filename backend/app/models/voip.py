@@ -41,6 +41,11 @@ class CallLog(Base, TimestampMixin):
     follow_up_required = Column(Boolean, default=False, nullable=False)
     follow_up_date = Column(DateTime, nullable=True)
     tags = Column(String(300), nullable=True)
+    # M36.S04.T002 recording consent and retention
+    recording_consent = Column(Boolean, default=False, nullable=False)
+    consent_note = Column(String(300), nullable=True)            # how consent was given, e.g. "agreed at call start"
+    recording_expires_at = Column(DateTime(timezone=True), nullable=True)
+    transcript = Column(Text, nullable=True)
 
     customer = relationship("Customer", foreign_keys=[customer_id])
     agent = relationship("User", foreign_keys=[agent_id])

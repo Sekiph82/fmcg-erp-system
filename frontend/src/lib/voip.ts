@@ -15,7 +15,10 @@ export interface CallLog {
   duration_seconds?: number;
   outcome?: string;
   notes?: string;
-  recording_url?: string;
+  recording_url?: string;      // only when consent is on file and within retention
+  recording_consent?: boolean;
+  recording_expires_at?: string;
+  has_transcript?: boolean;
   follow_up_required: boolean;
   follow_up_date?: string;
   tags?: string;
@@ -45,6 +48,8 @@ export const voipApi = {
     apiClient.get<CallLog[]>(`${BASE}/logs`, { params }).then(r => r.data),
   createCall: (data: object) =>
     apiClient.post<{ id: string; call_ref: string }>(`${BASE}/logs`, data).then(r => r.data),
+  clickToCall: (data: { phone_number: string; customer_id?: string | null }) =>
+    apiClient.post<{ id: string; call_ref: string; dial: string; provider: string | null }>(`${BASE}/click-to-call`, data).then(r => r.data),
   updateCall: (id: string, data: object) =>
     apiClient.patch<{ id: string }>(`${BASE}/logs/${id}`, data).then(r => r.data),
 
@@ -58,6 +63,7 @@ export const voipApi = {
 };
 
 export const OUTCOME_COLORS: Record<string, string> = {
+  DIALED: "bg-indigo-50 text-indigo-700",
   ANSWERED: "bg-green-100 text-green-700",
   NO_ANSWER: "bg-gray-100 text-gray-600",
   BUSY: "bg-amber-100 text-amber-700",

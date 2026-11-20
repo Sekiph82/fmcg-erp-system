@@ -6,7 +6,9 @@ const BLANK_FORM = {
   phone_number: "", customer_id: "", direction: "OUTBOUND",
   outcome: "ANSWERED", duration_seconds: "", notes: "",
   follow_up_required: false, follow_up_date: "", tags: "",
+  recording_consent: false, recording_url: "", consent_note: "",
 };
+const OUTCOMES = ["ANSWERED", "NO_ANSWER", "BUSY", "VOICEMAIL", "FAILED"];
 
 export default function CallsPage() {
   const [calls, setCalls] = useState<CallLog[]>([]);
@@ -48,19 +50,36 @@ export default function CallsPage() {
         follow_up_required: form.follow_up_required,
         follow_up_date: form.follow_up_date || null,
         tags: form.tags || null,
+        recording_consent: form.recording_consent,
+        recording_url: form.recording_consent && form.recording_url ? form.recording_url : null,
+        consent_note: form.recording_consent && form.consent_note ? form.consent_note : null,
       });
       setShowLog(false);
       setForm({ ...BLANK_FORM });
       await load();
-    } catch {
-      setError("Failed to log call");
+    } catch (e: unknown) {
+      const d = (e as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail;
+      setError(typeof d === "string" ? d : "Failed to log call — check the phone number and recording link (https).");
     } finally {
       setSaving(false);
     }
   };
 
+  // Click-to-call: no telephony provider is connected, so the phone/softphone dials a tel: link and the call is logged as DIALED.
+  const dial = async (c: CallLog) => {
+    try {
+      const r = await voipApi.clickToCall({ phone_number: c.phone_number, customer_id: c.customer_id ?? null });
+      window.location.href = r.dial;
+      await load();
+    } catch { setError("Could not start the call"); }
+  };
+  const setOutcome = async (c: CallLog, outcome: string) => {
+    try { await voipApi.updateCall(c.id, { outcome }); await load(); }   // server flags failed calls for follow-up
+    catch { setError("Only the person who made this call can set its outcome."); }
+  };
+
   return (
-    <div className="p-6 space-y-5">
+    <div className="p-4 sm:p-6 space-y-5">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-xl font-bold text-gray-900">Call Center</h1>
@@ -73,7 +92,7 @@ export default function CallsPage() {
       </div>
 
       {stats && (
-        <div className="grid grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           {[
             { label: "Total Calls", value: stats.total_calls, color: "text-gray-700" },
             { label: "Answered", value: stats.answered_calls, color: "text-green-600" },
@@ -104,8 +123,9 @@ export default function CallsPage() {
         </div>
       )}
 
+      {error && !showLog && <p role="alert" className="text-xs text-red-600">{error}</p>}
       <div className="flex gap-2 flex-wrap">
-        {["", "ANSWERED", "NO_ANSWER", "BUSY", "VOICEMAIL", "FAILED"].map(o => (
+        {["", "DIALED", ...OUTCOMES].map(o => (
           <button key={o}
             onClick={() => setFilterOutcome(o)}
             className={`rounded-full px-3 py-1 text-xs font-medium border transition-colors ${
@@ -131,7 +151,7 @@ export default function CallsPage() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b">
               <tr>
-                {["Ref", "Direction", "Phone", "Customer", "Agent", "Duration", "Outcome", "Follow-up", "Notes"].map(h => (
+                {["Ref", "Direction", "Phone", "Customer", "Agent", "Duration", "Outcome", "Follow-up", "Recording", "Notes"].map(h => (
                   <th key={h} className="px-4 py-2 text-left text-xs font-semibold text-gray-600">{h}</th>
                 ))}
               </tr>
@@ -145,12 +165,20 @@ export default function CallsPage() {
                       {c.direction === "INBOUND" ? "↓ IN" : "↑ OUT"}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-xs font-mono text-gray-700">{c.phone_number}</td>
+                  <td className="px-4 py-3 text-xs font-mono text-gray-700 whitespace-nowrap">{c.phone_number}
+                    <button onClick={() => dial(c)} aria-label={`Call ${c.phone_number}`} title="Call"
+                      className="ml-2 rounded border px-1.5 py-0.5 text-[11px] text-blue-700 hover:bg-blue-50">📞 Call</button></td>
                   <td className="px-4 py-3 text-xs text-gray-700">{c.customer_name ?? "—"}</td>
                   <td className="px-4 py-3 text-xs text-gray-500">{c.agent_name ?? "—"}</td>
                   <td className="px-4 py-3 text-xs text-gray-600">{fmtDuration(c.duration_seconds)}</td>
                   <td className="px-4 py-3">
-                    {c.outcome ? (
+                    {c.outcome === "DIALED" ? (
+                      <select aria-label="Call outcome" defaultValue="" onChange={e => e.target.value && setOutcome(c, e.target.value)}
+                        className="text-xs border rounded px-1 py-0.5">
+                        <option value="">Dialed — set outcome</option>
+                        {OUTCOMES.map(o => <option key={o} value={o}>{o.replace("_", " ")}</option>)}
+                      </select>
+                    ) : c.outcome ? (
                       <span className={`text-xs rounded-full px-2 py-0.5 ${OUTCOME_COLORS[c.outcome] ?? "bg-gray-100 text-gray-600"}`}>
                         {c.outcome.replace("_", " ")}
                       </span>
@@ -160,6 +188,10 @@ export default function CallsPage() {
                     {c.follow_up_required ? (
                       <span className="text-red-600 font-medium">{c.follow_up_date ?? "Yes"}</span>
                     ) : <span className="text-gray-300">—</span>}
+                  </td>
+                  <td className="px-4 py-3 text-xs">
+                    {c.recording_url ? <a href={c.recording_url} target="_blank" rel="noopener noreferrer" className="text-blue-700 underline">Listen</a>
+                      : <span className="text-gray-300">{c.recording_consent ? "—" : "No consent"}</span>}
                   </td>
                   <td className="px-4 py-3 text-xs text-gray-500 max-w-xs truncate">{c.notes ?? "—"}</td>
                 </tr>
@@ -197,7 +229,7 @@ export default function CallsPage() {
                 ))}
                 {[
                   { label: "Direction", key: "direction", options: ["OUTBOUND", "INBOUND"] },
-                  { label: "Outcome", key: "outcome", options: ["ANSWERED", "NO_ANSWER", "BUSY", "VOICEMAIL", "FAILED"] },
+                  { label: "Outcome", key: "outcome", options: OUTCOMES },
                 ].map(f => (
                   <div key={f.key}>
                     <label className="block text-xs font-medium text-gray-600 mb-1">{f.label}</label>
@@ -224,6 +256,24 @@ export default function CallsPage() {
                 />
                 Follow-up required
               </label>
+              <label className="flex items-start gap-2 text-sm text-gray-700 cursor-pointer">
+                <input type="checkbox" checked={form.recording_consent}
+                  onChange={e => setForm(p => ({ ...p, recording_consent: e.target.checked }))}
+                  className="h-4 w-4 mt-0.5 rounded border-gray-300 text-blue-600"
+                />
+                <span>The other person agreed to this call being recorded
+                  <span className="block text-xs text-gray-500">Required before a recording can be attached. Recordings are deleted after the retention period.</span></span>
+              </label>
+              {form.recording_consent && (
+                <div className="space-y-2">
+                  <input aria-label="Recording link" placeholder="Recording link (https://…)" value={form.recording_url}
+                    onChange={e => setForm(p => ({ ...p, recording_url: e.target.value }))}
+                    className="w-full border rounded px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none" />
+                  <input aria-label="How consent was given" placeholder="How consent was given (e.g. verbal at call start)" maxLength={300}
+                    value={form.consent_note} onChange={e => setForm(p => ({ ...p, consent_note: e.target.value }))}
+                    className="w-full border rounded px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none" />
+                </div>
+              )}
             </div>
             <div className="px-6 pb-5 flex gap-3">
               <button onClick={logCall} disabled={saving}

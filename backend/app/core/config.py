@@ -104,6 +104,8 @@ class Settings(BaseSettings):
     # ── SMTP (email OTP delivery) ───────────────────────────────────────────────
     SMTP_HOST: str = ""
     MAIL_ALLOW_PRIVATE_HOSTS: bool = False  # mailbox IMAP/SMTP may point at private addresses (self-hosted mail server)
+    CALL_RECORDING_RETENTION_DAYS: int = 90   # call recordings: link removed after this many days
+    CALL_TRANSCRIPTION_ENABLED: bool = False   # only switch on where recording transcription is lawful and disclosed
     SMTP_PORT: int = 587
     SMTP_USERNAME: str = ""
     SMTP_PASSWORD: str = ""
