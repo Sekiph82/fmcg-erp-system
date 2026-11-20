@@ -940,6 +940,7 @@ ROLE_DEFINITIONS = {
         "description": "Production planning and execution",
         "permissions": [
             "production.view", "production.create", "production.edit", "production.approve",
+            "recipe.view",  # work orders are raised against an approved recipe
             "planning.view_own_scope", "planning.create_own_scope", "planning.edit_own_scope",
             "planning.calculate_own_scope",
             "mps.view", "mps.edit", "mps.calculate",

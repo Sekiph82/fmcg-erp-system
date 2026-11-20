@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useAuth } from "@/context/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { marketingApi, MktPromotion } from "@/lib/marketingApi";
@@ -18,9 +19,11 @@ export default function PromotionsPage() {
   const [statusFilter, setStatusFilter] = useState("");
   const [campaignFilter, setCampaignFilter] = useState("");
 
+  const { hasPermission } = useAuth();
   const { data: campaigns = [] } = useQuery({
     queryKey: ["campaigns-all"],
     queryFn: () => marketingApi.campaigns.list({ limit: 200 }).then((r) => r.data),
+    enabled: hasPermission("campaigns.view"),
   });
 
   const { data: promotions = [], isLoading } = useQuery({

@@ -154,7 +154,8 @@ def has_permission(user: Any, permission: str) -> bool:
     if getattr(user, "is_superuser", False):
         return True
     permissions = set(get_effective_permission_codes(user))
-    return "*" in permissions or permission in permissions
+    # "<module>.<action>_all" is the unscoped grant, so it covers the plain "<module>.<action>" check too
+    return "*" in permissions or permission in permissions or f"{permission}_all" in permissions
 
 
 def has_any_permission(user: Any, permissions: Iterable[str]) -> bool:

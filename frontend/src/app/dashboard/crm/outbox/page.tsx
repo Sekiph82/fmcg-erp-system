@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { crmApi, type ConsentRow, type OutboxMessage } from "@/lib/crm_pipeline";
+import { useAuth } from "@/context/AuthContext";
 
 function errorText(e: unknown) {
   const detail = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
@@ -24,14 +25,16 @@ export default function CRMOutboxPage() {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
 
+  const { hasPermission } = useAuth();
+  const canConfig = hasPermission("crm.edit_all");
   const load = useCallback(async () => {
     try {
       const o = await crmApi.getOutbox();
       setMessages(o.messages);
       setEnabled(o.delivery_enabled);
-      setConsents(await crmApi.getConsents().catch(() => []));  // consent register: company-wide CRM editors only
+      if (canConfig) setConsents(await crmApi.getConsents().catch(() => []));  // consent register: company-wide CRM editors only
     } catch (e) { setError(errorText(e)); }
-  }, []);
+  }, [canConfig]);
   useEffect(() => { load(); }, [load]);
 
   async function act(fn: () => Promise<unknown>, msg: string) {
@@ -81,7 +84,7 @@ export default function CRMOutboxPage() {
         )}
       </div>
 
-      <div className="bg-white rounded-xl border shadow-sm p-4 overflow-x-auto">
+      {canConfig && <div className="bg-white rounded-xl border shadow-sm p-4 overflow-x-auto">
         <h2 className="font-semibold text-gray-800 mb-2">Consent register</h2>
         <form aria-label="Record consent" className="flex flex-wrap gap-2 mb-3"
           onSubmit={(e) => { e.preventDefault(); act(() => crmApi.setConsent(block), "Consent recorded."); setBlock({ ...block, email: "" }); }}>
@@ -100,7 +103,7 @@ export default function CRMOutboxPage() {
             ))}</tbody>
           </table>
         )}
-      </div>
+      </div>}
     </div>
   );
 }

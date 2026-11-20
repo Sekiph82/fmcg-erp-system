@@ -27,7 +27,8 @@ function isCurrentAwardApprovalStep(
 }
 
 export default function RFQPage() {
-  const { user } = useAuth();
+  const { user, hasPermission } = useAuth();
+  const canSuppliers = hasPermission("suppliers.view");
   const [rfqs, setRFQs] = useState<RFQRead[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<RFQStatus | "">("");
@@ -74,10 +75,11 @@ export default function RFQPage() {
   useEffect(() => { load(); }, [load]);
 
   useEffect(() => {
+    if (!canSuppliers) return;
     suppliersApi.list(0, 200)
       .then((rows) => setSuppliers(rows.filter((supplier) => supplier.is_active)))
       .catch(() => setSuppliers([]));
-  }, []);
+  }, [canSuppliers]);
 
   const openDetail = async (id: string) => {
     setDetailLoading(true);

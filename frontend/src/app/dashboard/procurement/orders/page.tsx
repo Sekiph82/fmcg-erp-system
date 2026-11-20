@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useAuth } from "@/context/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { procurementApi, POStatus } from "@/lib/procurement";
@@ -58,7 +59,8 @@ export default function PurchaseOrdersPage() {
     }),
   });
 
-  const { data: suppliers = [] } = useQuery({ queryKey: ["suppliers"], queryFn: () => suppliersApi.list(0, 200) });
+  const { hasPermission } = useAuth();
+  const { data: suppliers = [] } = useQuery({ queryKey: ["suppliers"], queryFn: () => suppliersApi.list(0, 200), enabled: hasPermission("suppliers.view") });
   const { data: materials = [] } = useQuery({ queryKey: ["materials"], queryFn: () => materialsApi.list(0, 200), enabled: open });
 
   const suppOpts = [{ value: "", label: "All Suppliers" }, ...suppliers.map((s) => ({ value: s.id, label: s.name }))];

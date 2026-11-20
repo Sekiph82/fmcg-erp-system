@@ -46,15 +46,17 @@ function PayrollProfilesContent() {
     }
   };
 
+  const canPickEmployees = hasPermission("hr.view");  // employee picker reads the HR register; finance approvers without HR rights only view
   useEffect(() => {
     load();
+    if (!canPickEmployees) return;
     import("@/lib/api").then(({ apiClient }) => {
       apiClient.get("/api/v1/hr/employees/", { params: { limit: 500 } }).then((res) => {
         const data = res.data?.data ?? res.data;
         setEmployees((data || []).map((e: any) => ({ id: e.id, full_name: e.full_name, employee_code: e.employee_code })));
       });
     });
-  }, []);
+  }, [canPickEmployees]);
 
   const openCreate = () => {
     setEditProfile(null);

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useAuth } from "@/context/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { usersApi, UserCreate } from "@/lib/users";
@@ -36,9 +37,11 @@ export default function UsersPage() {
     staleTime: 30_000,
   });
 
+  const { hasPermission } = useAuth();
   const { data: roles = [] } = useQuery({
     queryKey: ["roles"],
     queryFn: () => rolesApi.list({ is_active: true }),
+    enabled: hasPermission("roles.view"),
   });
 
   const createMutation = useMutation({

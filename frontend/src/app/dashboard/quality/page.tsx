@@ -252,11 +252,11 @@ export default function QualityPage() {
     { key: "inspections",        label: "Inspections",         permission: "quality.view", content: <QCInspectionsTab /> },
     { key: "certificates",       label: "Certificates",        permission: "quality.view", content: <QualityCertsPage /> },
     { key: "parameters",         label: "Parameters",          permission: "quality.view", content: <QualityParamsPage /> },
-    { key: "consumer-complaints",label: "Consumer Complaints", permission: "quality.view", content: <QualityComplaintsPage /> },
+    { key: "consumer-complaints",label: "Consumer Complaints", permission: "consumer_complaints.view", content: <QualityComplaintsPage /> },
     { key: "reports",            label: "Reports",             permission: "quality.view", content: <QualityReportsPage /> },
     { key: "gates",              label: "Quality Gates",       content: <QualityGateWorkspace /> },
     { key: "qms",                label: "QMS",                 permission: "quality.view", content: <QMSPage /> },
-    { key: "qa-governance",      label: "QA Governance",       permission: "quality.view", content: <QAEnterpriseWorkspace /> },
+    { key: "qa-governance",      label: "QA Governance",       permission: "quality.view", exact: true, content: <QAEnterpriseWorkspace /> },
     { key: "allergen",           label: "Allergen",            permission: "quality.view", content: <AllergenPage /> },
     { key: "brand-assets",       label: "Brand Assets",        permission: "quality.view", content: <BrandAssetsPage /> },
   ];

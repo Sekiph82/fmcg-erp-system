@@ -245,9 +245,9 @@ export default function ProcurementPage() {
     { key: "blanket-agreements",label: "Blanket Agreements",permission: "procurement.view", content: <ProcurementBlanketPage /> },
     { key: "reorder-policies",  label: "Reorder Policies",  permission: "procurement.view", content: <ProcurementReorderPage /> },
     { key: "suggestions",       label: "Suggestions",       permission: "procurement.view", content: <SuggestionsPage /> },
-    { key: "subcontracting",    label: "Subcontracting",    permission: "procurement.view", content: <SubcontractingPage /> },
+    { key: "subcontracting",    label: "Subcontracting",    permission: "procurement.view", exact: true, content: <SubcontractingPage /> },
     { key: "landed-cost",       label: "Landed Cost",       permission: "procurement.view", content: <LandedCostPage /> },
-    { key: "supplier-portal",   label: "Supplier Portal",   permission: "procurement.view", content: <SupplierPortalPage /> },
+    { key: "supplier-portal",   label: "Supplier Portal",   permission: "procurement.view", exact: true, content: <SupplierPortalPage /> },
   ];
   return (
     <ModuleWorkspace

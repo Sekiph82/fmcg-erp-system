@@ -16,7 +16,7 @@ const statusBadge = (s: BreakdownStatus) =>
 
 export default function BreakdownsPage() {
   const qc = useQueryClient();
-  const { hasPermission } = useAuth();
+  const { hasPermission, hasExactPermission } = useAuth();
   const [showNew, setShowNew] = useState(false);
   const [resolving, setResolving] = useState<BreakdownRecord | null>(null);
   const [filterStatus, setFilterStatus] = useState<BreakdownStatus | "ALL">("ALL");
@@ -39,7 +39,7 @@ export default function BreakdownsPage() {
   const { data: capacityImpact, isLoading: capacityImpactLoading, isError: capacityImpactError } = useQuery({
     queryKey: ["maint-downtime-capacity-impact"],
     queryFn: () => maintenanceApi.getDowntimeCapacityImpact(),
-    enabled: hasPermission("maintenance.export"),  // the report API needs maintenance.export
+    enabled: hasExactPermission("maintenance.view") && hasExactPermission("production.view"),  // the report API needs maintenance.view and production.view
   });
 
   const { data: priorityEscalation, isLoading: priorityLoading, isError: priorityError } = useQuery({

@@ -8,6 +8,8 @@ export interface WorkspaceTab {
   key: string;
   label: string;
   permission?: string;
+  /** the tab's APIs only take the plain right, not an "_own_*" scoped grant */
+  exact?: boolean;
   content: React.ReactNode;
 }
 
@@ -21,12 +23,12 @@ export function WorkspaceTabs({ tabs, defaultTab, wrapOnMobile = false }: Worksp
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { hasPermission } = useAuth();
+  const { hasPermission, hasExactPermission } = useAuth();
   const [overflowOpen, setOverflowOpen] = useState(false);
   const tabBarRef = useRef<HTMLDivElement>(null);
 
   const visibleTabs = tabs.filter(
-    (t) => !t.permission || hasPermission(t.permission)
+    (t) => !t.permission || (t.exact ? hasExactPermission(t.permission) : hasPermission(t.permission))
   );
 
   const activeKey =

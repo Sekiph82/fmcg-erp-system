@@ -1243,6 +1243,15 @@ async def campaign_segments(db: AsyncSession = Depends(get_db)):
     return [{"id": str(sg.id), "name": sg.segment_name, "members": n} for sg, n in rows]
 
 
+@router.get("/email-campaigns/companies", dependencies=[Depends(require_any_permission(CRM_CONFIG))])
+async def campaign_companies(db: AsyncSession = Depends(get_db)):
+    """Active companies a campaign can be sent for: campaign authors need the names without the company-admin right."""
+    from app.models.company import Company
+
+    rows = (await db.execute(select(Company).where(Company.is_active.is_(True)).order_by(Company.name))).scalars().all()
+    return [{"id": str(c.id), "name": c.name} for c in rows]
+
+
 @router.get("/email-campaigns/{campaign_id}/preview", dependencies=[Depends(require_any_permission(CRM_BROAD_VIEW))])
 async def preview_email_campaign(campaign_id: str, db: AsyncSession = Depends(get_db)):
     from app.models.crm import CRMEmailCampaign

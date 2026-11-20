@@ -1,7 +1,8 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { crmApi, type EmailCampaign } from "@/lib/crm_pipeline";
-import { companyApi, getActiveCompanyId, type Company } from "@/lib/company";
+import { getActiveCompanyId } from "@/lib/company";
+import { useAuth } from "@/context/AuthContext";
 
 function errorText(e: unknown) {
   const detail = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
@@ -16,7 +17,9 @@ const EMPTY = { name: "", subject: "", body: "", segment_id: "", company_id: "" 
 export default function CRMEmailCampaignsPage() {
   const [items, setItems] = useState<EmailCampaign[]>([]);
   const [segments, setSegments] = useState<{ id: string; name: string; members: number }[]>([]);
-  const [companies, setCompanies] = useState<Company[]>([]);
+  const { hasPermission } = useAuth();
+  const canAuthor = hasPermission("crm.edit_all");  // creating a campaign is company-wide CRM configuration
+  const [companies, setCompanies] = useState<{ id: string; name: string }[]>([]);
   const [draft, setDraft] = useState({ ...EMPTY, company_id: getActiveCompanyId() ?? "" });
   const [preview, setPreview] = useState<Record<string, { customers: number; addresses: number; with_consent: number }>>({});
   const [error, setError] = useState<string | null>(null);
@@ -29,7 +32,10 @@ export default function CRMEmailCampaignsPage() {
       setSegments(s);
     } catch (e) { setError(errorText(e)); }
   }, []);
-  useEffect(() => { load(); companyApi.list().then(setCompanies).catch(() => setCompanies([])); }, [load]);
+  useEffect(() => {
+    load();
+    if (canAuthor) crmApi.getCampaignCompanies().then(setCompanies).catch(() => setCompanies([]));
+  }, [load, canAuthor]);
 
   async function act(fn: () => Promise<unknown>, msg: string) {
     setError(null);
@@ -47,7 +53,7 @@ export default function CRMEmailCampaignsPage() {
       {error && <p role="alert" className="rounded-lg p-3 text-sm bg-red-50 border border-red-200 text-red-700">{error}</p>}
       {info && !error && <p role="status" className="rounded-lg p-3 text-sm bg-emerald-50 border border-emerald-200 text-emerald-800">{info}</p>}
 
-      <form aria-label="New campaign" className="bg-white rounded-xl border shadow-sm p-4 grid md:grid-cols-2 gap-2"
+      {canAuthor && <form aria-label="New campaign" className="bg-white rounded-xl border shadow-sm p-4 grid md:grid-cols-2 gap-2"
         onSubmit={(e) => { e.preventDefault(); act(() => crmApi.createEmailCampaign(draft), "Draft campaign created."); setDraft({ ...EMPTY, company_id: draft.company_id }); }}>
         <h2 className="font-semibold text-gray-800 md:col-span-2">New campaign</h2>
         <input aria-label="Campaign name" required placeholder="Name" value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} className={input} />
@@ -62,7 +68,7 @@ export default function CRMEmailCampaignsPage() {
         <input aria-label="Campaign subject" required placeholder="Subject — {company_name} allowed" value={draft.subject} onChange={(e) => setDraft({ ...draft, subject: e.target.value })} className={`${input} md:col-span-2`} />
         <textarea aria-label="Campaign body" required rows={4} placeholder="Message — {contact_name} {company_name}" value={draft.body} onChange={(e) => setDraft({ ...draft, body: e.target.value })} className={`${input} md:col-span-2`} />
         <button type="submit" className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg md:col-start-2">Save draft</button>
-      </form>
+      </form>}
 
       <div className="bg-white rounded-xl border shadow-sm p-4 overflow-x-auto">
         <h2 className="font-semibold text-gray-800 mb-2">Campaigns</h2>

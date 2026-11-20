@@ -263,20 +263,20 @@ const MarketIntelPage         = dynamic(() => import("@/app/dashboard/market-int
 export default function MarketingPage() {
   const tabs = [
     { key: "overview",      label: "Overview",         permission: "marketing.view", content: <MarketingDashboardTab /> },
-    { key: "campaigns",     label: "Campaigns",        permission: "marketing.view", content: <MarketingCampaignsPage /> },
-    { key: "promotions",    label: "Promotions",       permission: "marketing.view", content: <MarketingPromotionsPage /> },
-    { key: "promotions-schemes", label: "Schemes",    permission: "marketing.view", content: <MarketingPromotionsPage /> },
+    { key: "campaigns",     label: "Campaigns",        permission: "campaigns.view", content: <MarketingCampaignsPage /> },
+    { key: "promotions",    label: "Promotions",       permission: "promotions.view", content: <MarketingPromotionsPage /> },
+    { key: "promotions-schemes", label: "Schemes",    permission: "promotions.view", content: <MarketingPromotionsPage /> },
     { key: "tpm",           label: "TPM",              permission: "marketing.view", content: <TPMPage /> },
-    { key: "trade-spend",   label: "Trade Spend",      permission: "marketing.view", content: <MarketingTradeSpendPage /> },
-    { key: "ads",           label: "Ads",              permission: "marketing.view", content: <MarketingAdsPage /> },
-    { key: "social-media",  label: "Social Media",     permission: "marketing.view", content: <MarketingSocialPage /> },
-    { key: "segments",      label: "Segments",         permission: "marketing.view", content: <MarketingSegmentsPage /> },
-    { key: "influencers",   label: "Influencers",      permission: "marketing.view", content: <MarketingInfluencersPage /> },
-    { key: "ecommerce",     label: "E-Commerce",       permission: "marketing.view", content: <MarketingEcommercePage /> },
-    { key: "brand-spend",   label: "Brand Spend",      permission: "marketing.view", content: <MarketingBrandSpendPage /> },
-    { key: "visits",        label: "Visits",           permission: "marketing.view", content: <MarketingVisitsPage /> },
+    { key: "trade-spend",   label: "Trade Spend",      permission: "trade_spend.view", content: <MarketingTradeSpendPage /> },
+    { key: "ads",           label: "Ads",              permission: "ad_performance.view", content: <MarketingAdsPage /> },
+    { key: "social-media",  label: "Social Media",     permission: "social_media.view", content: <MarketingSocialPage /> },
+    { key: "segments",      label: "Segments",         permission: "segments.view", content: <MarketingSegmentsPage /> },
+    { key: "influencers",   label: "Influencers",      permission: "influencers.view", content: <MarketingInfluencersPage /> },
+    { key: "ecommerce",     label: "E-Commerce",       permission: "ecommerce.view", content: <MarketingEcommercePage /> },
+    { key: "brand-spend",   label: "Brand Spend",      permission: "brand_spend.view", content: <MarketingBrandSpendPage /> },
+    { key: "visits",        label: "Visits",           permission: "customer_visits.view", content: <MarketingVisitsPage /> },
     { key: "market-intel",  label: "Market Intel",     permission: "marketing.view", content: <MarketIntelPage /> },
-    { key: "analytics",     label: "Analytics",        permission: "marketing.view", content: <MarketingAnalyticsPage /> },
+    { key: "analytics",     label: "Analytics",        permission: "marketing_analytics.view", content: <MarketingAnalyticsPage /> },
   ];
   return (
     <ModuleWorkspace

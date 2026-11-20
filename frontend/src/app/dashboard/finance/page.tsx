@@ -7,13 +7,17 @@ import { useRouter } from "next/navigation";
 import { financeApi } from "@/lib/finance";
 import { Badge } from "@/components/ui/Badge";
 import { RequirePermission } from "@/components/PermissionGuard";
+import { useAuth } from "@/context/AuthContext";
 
 function FinanceDashboardContent() {
   const router = useRouter();
+  const { hasPermission } = useAuth();
+  const canReports = hasPermission("finance.export");  // cash position and M-Pesa summary are export-level reports
 
   const { data: cashPosition = [] } = useQuery({
     queryKey: ["finance-cash-position"],
     queryFn: () => financeApi.cashPosition(),
+    enabled: canReports,
   });
 
   const { data: receivables = [] } = useQuery({
@@ -32,16 +36,17 @@ function FinanceDashboardContent() {
   const { data: mpesaSummary = [] } = useQuery({
     queryKey: ["finance-mpesa-summary", monthStart, today],
     queryFn: () => financeApi.mpesaSummary(monthStart, today),
+    enabled: canReports,
   });
 
-  const totalCash = cashPosition.reduce((s, r) => s + r.balance, 0);
-  const totalReceivables = receivables.reduce((s, r) => s + r.outstanding, 0);
+  const totalCash = cashPosition.reduce((s, r) => s + Number(r.balance), 0);
+  const totalReceivables = receivables.reduce((s, r) => s + Number(r.outstanding), 0);
   const overdueCount = receivables.filter((r) => r.days_overdue && r.days_overdue > 0).length;
   const exceptionCount = recons.filter((r) => r.status === "EXCEPTION").length;
   const unmatchedCount = recons.filter((r) => r.status === "UNMATCHED").length;
-  const monthMpesaTotal = mpesaSummary.reduce((s, r) => s + r.total_received, 0);
-  const monthMpesaMatched = mpesaSummary.reduce((s, r) => s + r.matched_count, 0);
-  const monthMpesaUnmatched = mpesaSummary.reduce((s, r) => s + r.unmatched_count, 0);
+  const monthMpesaTotal = mpesaSummary.reduce((s, r) => s + Number(r.total_received), 0);
+  const monthMpesaMatched = mpesaSummary.reduce((s, r) => s + Number(r.matched_count), 0);
+  const monthMpesaUnmatched = mpesaSummary.reduce((s, r) => s + Number(r.unmatched_count), 0);
 
   const tiles = [
     {
@@ -188,22 +193,22 @@ const ExpensesPage            = dynamic(() => import("@/app/dashboard/expenses/p
 
 export default function FinanceDashboardPage() {
   const tabs = [
-    { key: "overview",       label: "Overview",        permission: "finance.view", content: <FinanceDashboardContent /> },
-    { key: "accounting",     label: "Accounting",      permission: "finance.view", content: <FinanceAccountingPage /> },
-    { key: "cashbook",       label: "Cashbook",        permission: "finance.view", content: <FinanceCashbookPage /> },
-    { key: "receivables",    label: "Receivables",     permission: "finance.view", content: <FinanceReceivablesPage /> },
-    { key: "budget",         label: "Budget",          permission: "finance.view", content: <FinanceBudgetPage /> },
-    { key: "mpesa",          label: "M-Pesa",          permission: "finance.view", content: <FinanceMpesaPage /> },
-    { key: "costing",        label: "Costing",         permission: "finance.view", content: <FinanceCostingPage /> },
-    { key: "exchange-rates", label: "Exchange Rates",  permission: "finance.view", content: <FinanceExchangeRatesPage /> },
-    { key: "etims",          label: "eTIMS",           permission: "finance.view", content: <FinanceEtimsPage /> },
-    { key: "vat-returns",    label: "VAT Returns",     permission: "finance.view", content: <FinanceVATPage /> },
+    { key: "overview",       label: "Overview",        permission: "finance.view", exact: true, content: <FinanceDashboardContent /> },
+    { key: "accounting",     label: "Accounting",      permission: "finance.view", exact: true, content: <FinanceAccountingPage /> },
+    { key: "cashbook",       label: "Cashbook",        permission: "finance.view", exact: true, content: <FinanceCashbookPage /> },
+    { key: "receivables",    label: "Receivables",     permission: "finance.view", exact: true, content: <FinanceReceivablesPage /> },
+    { key: "budget",         label: "Budget",          permission: "finance.view", exact: true, content: <FinanceBudgetPage /> },
+    { key: "mpesa",          label: "M-Pesa",          permission: "finance.view", exact: true, content: <FinanceMpesaPage /> },
+    { key: "costing",        label: "Costing",         permission: "finance.view", exact: true, content: <FinanceCostingPage /> },
+    { key: "exchange-rates", label: "Exchange Rates",  permission: "finance.view", exact: true, content: <FinanceExchangeRatesPage /> },
+    { key: "etims",          label: "eTIMS",           permission: "finance.view", exact: true, content: <FinanceEtimsPage /> },
+    { key: "vat-returns",    label: "VAT Returns",     permission: "finance.view", exact: true, content: <FinanceVATPage /> },
     { key: "bank-recon",     label: "Bank Recon",      permission: "finance.view", content: <BankReconPage /> },
-    { key: "invoice-match",  label: "Invoice Match",   permission: "finance.view", content: <InvoiceMatchPage /> },
-    { key: "fixed-assets",   label: "Fixed Assets",    permission: "finance.view", content: <FixedAssetsPage /> },
-    { key: "dimensions",     label: "Dimensions",      permission: "finance.view", content: <DimensionsPage /> },
-    { key: "dunning",        label: "Dunning",         permission: "finance.view", content: <DunningPage /> },
-    { key: "tax",            label: "Tax",             permission: "finance.view", content: <TaxPage /> },
+    { key: "invoice-match",  label: "Invoice Match",   permission: "finance.view", exact: true, content: <InvoiceMatchPage /> },
+    { key: "fixed-assets",   label: "Fixed Assets",    permission: "finance.view", exact: true, content: <FixedAssetsPage /> },
+    { key: "dimensions",     label: "Dimensions",      permission: "finance.view", exact: true, content: <DimensionsPage /> },
+    { key: "dunning",        label: "Dunning",         permission: "finance.view", exact: true, content: <DunningPage /> },
+    { key: "tax",            label: "Tax",             permission: "finance.view", exact: true, content: <TaxPage /> },
     { key: "bank-api",       label: "Bank API",        permission: "finance.view", content: <BankAPIPage /> },
     { key: "expenses",       label: "Expenses",        permission: "hr.view",      content: <ExpensesPage /> },
   ];

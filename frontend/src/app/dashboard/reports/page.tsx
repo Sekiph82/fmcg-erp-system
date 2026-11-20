@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 import { analyticsApi, fmtKES, fmt } from "@/lib/analytics";
 import { RequirePermission } from "@/components/PermissionGuard";
 import { Sparkline } from "@/components/bi/Charts";
@@ -76,10 +77,11 @@ function HubContent() {
   const router = useRouter();
 
   // Pre-fetch quick summaries for the hub
-  const { data: sales } = useQuery({ queryKey: ["analytics-sales-7"], queryFn: () => analyticsApi.sales(7) });
-  const { data: inv }   = useQuery({ queryKey: ["analytics-inv-7"],   queryFn: () => analyticsApi.inventory(7) });
-  const { data: mpesa } = useQuery({ queryKey: ["analytics-mpesa-7"], queryFn: () => analyticsApi.mpesa(7) });
-  const { data: prod }  = useQuery({ queryKey: ["analytics-prod-7"],  queryFn: () => analyticsApi.production(7) });
+  const { hasExactPermission: hasPermission } = useAuth();  // each panel loads only with the plain right its API needs
+  const { data: sales } = useQuery({ queryKey: ["analytics-sales-7"], queryFn: () => analyticsApi.sales(7), enabled: hasPermission("sales.view") });
+  const { data: inv }   = useQuery({ queryKey: ["analytics-inv-7"],   queryFn: () => analyticsApi.inventory(7), enabled: hasPermission("inventory.view") });
+  const { data: mpesa } = useQuery({ queryKey: ["analytics-mpesa-7"], queryFn: () => analyticsApi.mpesa(7), enabled: hasPermission("mpesa.view_transactions") });
+  const { data: prod }  = useQuery({ queryKey: ["analytics-prod-7"],  queryFn: () => analyticsApi.production(7), enabled: hasPermission("production.view") });
 
   const quickKpis = [
     {

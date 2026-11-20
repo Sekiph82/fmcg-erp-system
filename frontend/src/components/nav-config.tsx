@@ -108,11 +108,11 @@ export const NAV_CONFIG: NavEntry[] = [
 
   ws("materials",   "Materials",       "/dashboard/materials",
     md("M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"),
-    { permission: "products.view" }),
+    { permission: "materials.view" }),
 
   ws("suppliers",   "Suppliers",       "/dashboard/suppliers",
     md("M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"),
-    { permission: "procurement.view" }),
+    { permission: "suppliers.view" }),
 
   ws("inventory",   "Inventory",       "/dashboard/inventory",
     md("M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"),
@@ -156,7 +156,7 @@ export const NAV_CONFIG: NavEntry[] = [
 
   ws("planning",    "Planning",        "/dashboard/planning",
     md("M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"),
-    { permission: "production.view", searchHints: [
+    { permission: "planning.view", searchHints: [
       { label: "MRP",                 tab: "mrp" },
       { label: "MPS",                 tab: "mps" },
       { label: "Kanban",              tab: "kanban" },

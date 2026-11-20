@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import { getMe, login as apiLogin, logout as apiLogout, User } from "@/lib/auth";
 import { setAppRouter } from "@/lib/api";
 
+// modules whose APIs take only the plain right; finance and MPS are partly scope-aware, so their tabs use `exact` instead
+const UNSCOPED_MODULES = new Set(["hr", "employees", "payroll", "payroll_ke", "maintenance", "utilities"]);
+
 interface AuthContextValue {
   user: User | null;
   loading: boolean;
@@ -12,6 +15,7 @@ interface AuthContextValue {
   logout: () => Promise<void>;
   refreshUser: () => Promise<User>;
   hasPermission: (code: string) => boolean;
+  hasExactPermission: (code: string) => boolean;
   hasAnyPermission: (codes: string[]) => boolean;
   hasModule: (moduleKey: string) => boolean;
   canPerformInScope: (scopeType: string, scopeId: string, action: string) => boolean;
@@ -100,9 +104,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const [moduleKey, action] = code.split(".", 2);
     if (!moduleKey || !action) return false;
+    if (permissionSet.has(`${code}_all`)) return true;
+    // the backends of these modules only take the plain right: an "_own_*" grant would open screens that answer 403
+    if (UNSCOPED_MODULES.has(moduleKey)) return false;
 
     const scopedAliases = [
-      `${moduleKey}.${action}_all`,
       `${moduleKey}.${action}_own_scope`,
       `${moduleKey}.${action}_own_region`,
       `${moduleKey}.${action}_own_company`,
@@ -115,6 +121,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     ];
     return scopedAliases.some((permission) => permissionSet.has(permission));
   };
+
+  // what a plain backend check (require_permission) accepts: the code itself or its "_all" grant
+  const hasExactPermission = (code: string): boolean =>
+    !!user && (user.is_superuser || permissionSet.has(code) || permissionSet.has(`${code}_all`));
 
   const hasAnyPermission = (codes: string[]): boolean => codes.some((code) => hasPermission(code));
 
@@ -226,8 +236,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       users: "/dashboard/users",
       roles: "/dashboard/roles",
     };
-    const firstModule = user.modules.find((moduleKey) => routeByModule[moduleKey]);
-    return firstModule ? routeByModule[firstModule] : "/dashboard";
+    // a module grant alone (e.g. inventory.dispatch_all) does not open the module page: it needs <module>.view
+    const firstModule = user.modules.find((moduleKey) => routeByModule[moduleKey] && hasPermission(`${moduleKey}.view`));
+    if (firstModule) return routeByModule[firstModule];
+    if (hasPermission("inventory.dispatch") || hasPermission("inventory.receive")) return "/dashboard/warehouse-floor";
+    return "/dashboard";
   };
 
   return (
@@ -239,6 +252,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         logout,
         refreshUser,
         hasPermission,
+        hasExactPermission,
         hasAnyPermission,
         hasModule,
         canPerformInScope,

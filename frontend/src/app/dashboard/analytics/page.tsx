@@ -218,14 +218,14 @@ const ReportBuilderPage       = dynamic(() => import("@/app/dashboard/report-bui
 export default function AnalyticsPage() {
   const tabs = [
     { key: "overview",     label: "Overview",     permission: "analytics.view", content: <AnalyticsHubTab /> },
-    { key: "inventory",    label: "Inventory",    permission: "inventory.view", content: <AnalyticsInventoryPage /> },
-    { key: "sales",        label: "Sales",        permission: "sales.view",     content: <AnalyticsSalesPage /> },
-    { key: "production",   label: "Production",   permission: "production.view",content: <AnalyticsProductionPage /> },
-    { key: "procurement",  label: "Procurement",  permission: "procurement.view",content: <AnalyticsProcurementPage /> },
-    { key: "finance",      label: "Finance",      permission: "finance.view",   content: <AnalyticsFinancePage /> },
-    { key: "payments",     label: "Payments",     permission: "finance.view",   content: <AnalyticsPaymentsPage /> },
+    { key: "inventory",    label: "Inventory",    permission: "inventory.view", exact: true, content: <AnalyticsInventoryPage /> },
+    { key: "sales",        label: "Sales",        permission: "sales.view", exact: true,     content: <AnalyticsSalesPage /> },
+    { key: "production",   label: "Production",   permission: "production.view", exact: true,content: <AnalyticsProductionPage /> },
+    { key: "procurement",  label: "Procurement",  permission: "procurement.view", exact: true,content: <AnalyticsProcurementPage /> },
+    { key: "finance",      label: "Finance",      permission: "finance.view", exact: true,   content: <AnalyticsFinancePage /> },
+    { key: "payments",     label: "Payments",     permission: "mpesa.view_transactions", content: <AnalyticsPaymentsPage /> },
     { key: "reports",      label: "Reports",      permission: "analytics.view", content: <ReportsPage /> },
-    { key: "report-builder",label:"Report Builder",permission:"analytics.view", content: <ReportBuilderPage /> },
+    { key: "report-builder",label:"Report Builder",permission:"reports.view", content: <ReportBuilderPage /> },
   ];
   return (
     <ModuleWorkspace

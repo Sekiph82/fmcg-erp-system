@@ -442,6 +442,7 @@ export const crmApi = {
   getEnrollments: (id: string) => r(ax.get<Enrollment[]>(`/crm/sequences/${id}/enrollments`)),
   stopEnrollment: (id: string, reason: string) => r(ax.post(`/crm/sequence-enrollments/${id}/stop`, null, { params: { reason } })),
   getEmailCampaigns: () => r(ax.get<EmailCampaign[]>(`/crm/email-campaigns`)),
+  getCampaignCompanies: () => r(ax.get<{ id: string; name: string }[]>(`/crm/email-campaigns/companies`)),
   getCampaignSegments: () => r(ax.get<{ id: string; name: string; members: number }[]>(`/crm/email-campaigns/segments`)),
   createEmailCampaign: (data: { name: string; subject: string; body: string; segment_id: string; company_id: string }) => r(ax.post<EmailCampaign>(`/crm/email-campaigns`, data)),
   previewEmailCampaign: (id: string) => r(ax.get<{ customers: number; addresses: number; with_consent: number }>(`/crm/email-campaigns/${id}/preview`)),

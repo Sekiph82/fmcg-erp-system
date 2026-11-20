@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useAuth } from "@/context/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { productionApi, OrderCreate, OrderStatus } from "@/lib/production";
@@ -57,7 +58,8 @@ export default function ProductionOrdersPage() {
   });
 
   const { data: products = [] } = useQuery({ queryKey: ["products"], queryFn: () => productsApi.list(0, 200) });
-  const { data: recipes = [] } = useQuery({ queryKey: ["recipes"], queryFn: () => recipesApi.list({ status: "APPROVED", limit: 200 }) });
+  const { hasPermission } = useAuth();
+  const { data: recipes = [] } = useQuery({ queryKey: ["recipes"], queryFn: () => recipesApi.list({ status: "APPROVED", limit: 200 }), enabled: hasPermission("recipe.view") });
   const { data: warehouses = [] } = useQuery({ queryKey: ["warehouses"], queryFn: () => warehousesApi.list(0, 100) });
 
   const filteredRecipes = recipes.filter((r) => !form.product_id || r.product_id === form.product_id);
