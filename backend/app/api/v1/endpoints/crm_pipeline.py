@@ -1422,3 +1422,65 @@ async def attribution_report(date_from: date, date_to: date, model: Literal["fir
     if (date_to - date_from).days > 731:
         raise HTTPException(422, "Choose a period of at most two years")
     return await attribution.report(db, date_from, date_to, model, str(_uuid(company_id)) if company_id else None)
+
+
+# ── M36.S03.T003 mobile quick notes ─────────────────────────────────────────────
+
+class QuickNoteIn(BaseModel):
+    channel: Literal["call", "visit", "note", "message"] = "note"
+    summary: str = Field(min_length=2, max_length=2000)
+    outcome: Optional[str] = Field(None, max_length=500)
+    follow_up_date: Optional[date] = None
+    client_ref: str = Field(min_length=16, max_length=64, pattern=r"^[A-Za-z0-9-]+$",
+                            description="random id made by the phone; resending the same note never duplicates it")
+
+
+@router.post("/customers/{customer_id}/notes", status_code=201)
+async def customer_quick_note(customer_id: str, body: QuickNoteIn, db: AsyncSession = Depends(get_db),
+                              current_user=Depends(require_any_permission(CRM_CREATE_PERMISSIONS))):
+    """Log a call, visit or note on a customer from a phone. Offline policy: the phone keeps the note and
+    resends it with the same client_ref when back online; the server stores it once (first write wins)."""
+    from sqlalchemy.dialects.postgresql import insert as pg_insert
+
+    from app.models.marketing import CRMProfile, CustomerInteraction
+    from app.models.sales import Customer
+
+    customer = await db.get(Customer, _uuid(customer_id))
+    if customer is None:
+        raise HTTPException(404, "Customer not found")
+    if not (can_view_record(current_user, "crm", customer) or can_view_record(current_user, "sales", customer)):
+        raise HTTPException(403, "Customer is outside your commercial scope.")
+    async def replay():
+        """A retry is the same user on the same customer; any other reuse of the key is refused, not leaked."""
+        row = (await db.execute(select(CustomerInteraction.id, CustomerInteraction.recorded_by_id, CRMProfile.customer_id)
+                                .join(CRMProfile, CRMProfile.id == CustomerInteraction.crm_profile_id)
+                                .where(CustomerInteraction.client_ref == body.client_ref))).first()
+        if row is None:
+            return None
+        if row[1] != current_user.id or row[2] != customer.id:
+            raise HTTPException(409, "This note id was already used; send the note again as a new note.")
+        return {"id": str(row[0]), "duplicate": True}
+
+    done = await replay()
+    if done is not None:
+        return done
+    await db.execute(pg_insert(CRMProfile).values(id=_uuid_new(), customer_id=customer.id)
+                     .on_conflict_do_nothing(index_elements=["customer_id"]))
+    profile_id = (await db.execute(select(CRMProfile.id).where(CRMProfile.customer_id == customer.id))).scalar_one()
+    from datetime import datetime as _dt
+    from zoneinfo import ZoneInfo
+    stmt = pg_insert(CustomerInteraction).values(
+        id=_uuid_new(), crm_profile_id=profile_id, interaction_date=_dt.now(ZoneInfo("Africa/Nairobi")).date(),
+        channel=body.channel, summary=body.summary.strip(), outcome=body.outcome, follow_up_date=body.follow_up_date,
+        recorded_by_id=current_user.id, client_ref=body.client_ref,
+    ).on_conflict_do_nothing(index_elements=["client_ref"]).returning(CustomerInteraction.id)
+    new_id = (await db.execute(stmt)).scalar_one_or_none()
+    await db.commit()
+    if new_id is None:  # a concurrent retry won the race
+        return await replay()
+    return {"id": str(new_id), "duplicate": False}
+
+
+def _uuid_new():
+    import uuid as _u
+    return _u.uuid4()

@@ -95,7 +95,8 @@ export default function EmailPage() {
   return (
     <div className="h-[calc(100vh-120px)] flex rounded-xl border bg-white overflow-hidden">
       {/* Left: Accounts + Thread list */}
-      <div className="w-80 border-r flex flex-col shrink-0">
+      {/* phones: one pane at a time (list, or the open thread / compose) */}
+      <div className={`w-full md:w-80 border-r flex-col shrink-0 ${activeThread || composeMode ? "hidden md:flex" : "flex"}`}>
         {/* Accounts bar */}
         <div className="px-4 py-3 border-b">
           <div className="flex items-center justify-between mb-2">
@@ -213,7 +214,10 @@ export default function EmailPage() {
       </div>
 
       {/* Right: Thread detail or compose */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className={`flex-1 flex-col min-w-0 ${activeThread || composeMode ? "flex" : "hidden md:flex"}`}>
+        <button className="md:hidden text-left text-sm text-indigo-600 px-4 py-2 border-b" onClick={() => { setActiveThread(null); setComposeMode(false); setReplyTo(null); }}>
+          ← Back to list
+        </button>
         {composeMode ? (
           <div className="flex-1 p-6 space-y-4">
             <div className="flex items-center justify-between">

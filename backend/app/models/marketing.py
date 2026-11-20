@@ -339,6 +339,7 @@ class CustomerInteraction(Base, TimestampMixin):
     outcome         = Column(Text, nullable=True)
     follow_up_date  = Column(Date, nullable=True)
     recorded_by_id  = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    client_ref      = Column(String(64), nullable=True, unique=True)  # M36.S03.T003 phone retry key (idempotent create)
 
     crm_profile = relationship("CRMProfile", back_populates="interactions")
 

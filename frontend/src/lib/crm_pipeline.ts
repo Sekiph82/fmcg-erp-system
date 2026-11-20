@@ -419,6 +419,8 @@ export const crmApi = {
   getForecastSnapshot: (id: string) => r(ax.get<ForecastSnapshot>(`/crm/forecast/snapshots/${id}`)),
   getFunnel: (params: FunnelFilters) => r(ax.get<FunnelReport>(`/crm/reports/funnel`, { params })),
   getAttribution: (params: { date_from: string; date_to: string; model: string }) => r(ax.get<AttributionReport>(`/crm/reports/attribution`, { params })),
+  addQuickNote: (customerId: string, body: { channel: string; summary: string; follow_up_date?: string; client_ref: string }) =>
+    r(ax.post<{ id: string; duplicate: boolean }>(`/crm/customers/${customerId}/notes`, body)),
   customerCopilot: (customerId: string, note?: string) => r(ax.post<CopilotBrief>(`/crm/customers/${customerId}/copilot`, { note })),
   getCustomerTimeline: (customerId: string, params: { limit?: number; before?: string; types?: string }) =>
     r(ax.get<CustomerTimeline>(`/crm/customers/${customerId}/timeline`, { params })),
