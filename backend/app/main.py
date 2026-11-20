@@ -85,10 +85,12 @@ async def lifespan(app: FastAPI):
     mqtt_task = asyncio.create_task(run_mqtt_bridge(), name="mqtt-bridge")
     automation_task = asyncio.create_task(run_crm_automation(), name="crm-automation")
     credentials_task = asyncio.create_task(run_provider_credentials_refresh(), name="provider-credentials")
+    from app.services.cbk_rates import run_cbk_rates
+    cbk_task = asyncio.create_task(run_cbk_rates(), name="cbk-rates")
     try:
         yield
     finally:
-        for task in (dispatcher_task, mqtt_task, automation_task, credentials_task):
+        for task in (dispatcher_task, mqtt_task, automation_task, credentials_task, cbk_task):
             task.cancel()
             with suppress(asyncio.CancelledError):
                 await task

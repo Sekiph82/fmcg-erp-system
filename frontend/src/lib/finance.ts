@@ -989,6 +989,11 @@ export const financeApi = {
     return res.data;
   },
 
+  async fetchCbkRates(): Promise<{ rate_date: string; rates: Record<string, number>; written: number }> {
+    const res = await apiClient.post("/api/v1/finance/exchange-rates/fetch-cbk");
+    return res.data;
+  },
+
   async convertCurrency(amount: number, currency: string, asOfDate?: string): Promise<FXConvertResult> {
     const res = await apiClient.get<FXConvertResult>("/api/v1/finance/exchange-rates/convert", {
       params: { amount, currency, as_of_date: asOfDate },

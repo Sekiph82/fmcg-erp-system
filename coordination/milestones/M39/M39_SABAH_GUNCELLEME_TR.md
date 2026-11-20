@@ -230,3 +230,18 @@ Türkiye'deki karşılığı SGK işveren payıdır.
 - Etkilenen akışlar ayrı test veritabanlarında 26 dosyada ayrıca test edildi; hepsi geçti.
 - Bağımsız inceleme ciddi bir hata bulmadı. Önerdiği iki iyileştirme uygulandı: onaydan önce eksik hesap kontrolü ve pasif kuralın doğru gösterilmesi.
 - Yazdığım testler bir hatayı yakaladı: iki bordro yevmiyesi aynı numarayı alıyordu. Düzeltildi.
+
+## Ek 2 — Otomatik kur, finansa kural seti, telefon
+
+### Kur artık otomatik [v]
+- Sistem Kenya Merkez Bankası ana sayfasındaki günlük kur kutusunu her 6 saatte bir kendisi okuyor: USD, GBP ve EUR.
+- Okunan kur `exchange_rates` tablosuna CBK kaynağıyla yazılıyor.
+- Finans aynı gün için elle kur girdiyse o kur korunur, üzerine yazılmaz.
+- CBK'ya ulaşılamazsa son kayıtlı kur kullanılmaya devam eder.
+- Finans → Exchange Rates ekranında "Fetch CBK rates now" düğmesi var.
+- İlk otomatik çekim (20.11.2026): USD 130,00 · GBP 170,35 · EUR 142,71.
+
+### Kural seti finansın karşısına çıkıyor [v]
+- Kural seti onaylanana kadar CFO veya finans müdürü her oturumunun başında doğrudan Finans → Posting Rules ekranına düşer.
+- CEO ve sahip yönlendirilmez.
+- Kenya şirketi kurulup ilk finans kullanıcısı tanımlandığında bu ekran onun ilk göreceği şey olur. Onaydan sonra yönlendirme kendiliğinden durur.

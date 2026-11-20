@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { financeApi, ExchangeRate, RateSource } from "@/lib/finance";
+import { useAuth } from "@/context/AuthContext";
 
 const COMMON_CURRENCIES = ["USD", "EUR", "GBP", "CNY", "INR", "AED", "ZAR", "TZS", "UGX", "ETB"];
 
@@ -15,6 +16,7 @@ const SOURCE_LABELS: Record<RateSource, string> = {
 
 export default function ExchangeRatesPage() {
   const qc = useQueryClient();
+  const { hasExactPermission } = useAuth();
   const today = new Date().toISOString().slice(0, 10);
 
   const [form, setForm] = useState({
@@ -51,6 +53,15 @@ export default function ExchangeRatesPage() {
     },
   });
 
+  const canFetch = hasExactPermission("finance.create");
+  const cbkMut = useMutation({
+    mutationFn: financeApi.fetchCbkRates,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["fx-rates-latest"] });
+      qc.invalidateQueries({ queryKey: ["fx-rates-history"] });
+    },
+  });
+
   const { data: convertResult, refetch: runConvert } = useQuery({
     queryKey: ["fx-convert", convertForm],
     queryFn: () => financeApi.convertCurrency(
@@ -65,8 +76,14 @@ export default function ExchangeRatesPage() {
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Exchange Rates</h1>
         <p className="text-sm text-gray-400 mt-0.5">
-          Manage daily foreign exchange rates vs KES base currency
+          The system fetches the Central Bank of Kenya rates (USD, GBP, EUR) by itself every 6 hours. A rate entered here by hand for the same day is kept.
         </p>
+        {canFetch && <button type="button" onClick={() => cbkMut.mutate()} disabled={cbkMut.isPending}
+          className="mt-2 px-3 py-1.5 text-sm border rounded-lg hover:bg-gray-50 disabled:opacity-50">
+          {cbkMut.isPending ? "Fetching…" : "Fetch CBK rates now"}
+        </button>}
+        {cbkMut.data && <span className="ml-2 text-sm text-green-700">CBK {cbkMut.data.rate_date}: USD {cbkMut.data.rates.USD}</span>}
+        {cbkMut.isError && <span className="ml-2 text-sm text-red-600">CBK could not be reached; the last rate stays in use.</span>}
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">

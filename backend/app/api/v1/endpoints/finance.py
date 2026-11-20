@@ -1262,6 +1262,24 @@ async def create_exchange_rate(
     return ExchangeRateRead.model_validate(rate)
 
 
+@router.post("/exchange-rates/fetch-cbk", dependencies=[Depends(require_permission("finance", "create"))])
+async def fetch_cbk_rates(db: AsyncSession = Depends(get_db)):
+    """Fetch today's Central Bank of Kenya rates now (the system also does this by itself every 6 hours)."""
+    import logging
+
+    import httpx
+
+    from app.services.cbk_rates import fetch_and_store
+
+    try:
+        result = await fetch_and_store(db)
+    except (httpx.HTTPError, ValueError) as exc:
+        logging.getLogger(__name__).warning("CBK fetch failed: %s", exc)
+        raise HTTPException(502, "Could not read the CBK rates; the last stored rate stays in use")
+    await db.commit()
+    return result
+
+
 @router.get("/exchange-rates/convert", response_model=FXConvertResult,
             dependencies=[Depends(require_permission("finance", "view"))])
 async def convert_currency(

@@ -12,6 +12,7 @@ import { HelpDrawer } from "./help/HelpDrawer";
 import { getHelpForRoute } from "@/lib/help/get-help-for-route";
 import { useCommandPalette } from "@/hooks/useCommandPalette";
 import { useUnsavedChangesContext } from "@/context/UnsavedChangesContext";
+import { PostingRulesFirstLogin } from "./PostingRulesFirstLogin";
 
 interface DashboardShellProps {
   children: React.ReactNode;
@@ -83,6 +84,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
         />
       )}
 
+      <PostingRulesFirstLogin />
       <Sidebar mobileOpen={mobileOpen} onMobileClose={closeMobile} onOpenSearch={openPalette} />
 
       {/* Right column: mobile top bar + main content */}
