@@ -430,6 +430,10 @@ export const crmApi = {
   getAutomationRuns: (status?: string) => r(ax.get<AutomationRun[]>(`/crm/automation/runs`, { params: { status } })),
   retryAutomationRun: (id: string) => r(ax.post<{ status: string }>(`/crm/automation/runs/${id}/retry`)),
   processAutomation: () => r(ax.post<Record<string, number>>(`/crm/automation/process`)),
+  getInbox: (params: { view?: string; channel?: string; status?: string }) => r(ax.get<{ items: InboxItem[]; open: number; unread: number }>(`/crm/inbox`, { params })),
+  markInboxRead: (id: string) => r(ax.post(`/crm/inbox/${id}/read`)),
+  updateInbox: (id: string, data: { assignee_id?: string; status?: string }) => r(ax.patch(`/crm/inbox/${id}`, data)),
+  getInboxAssignees: () => r(ax.get<{ id: string; name: string }[]>(`/crm/inbox-assignees`)),
   getOutbox: (status?: string) => r(ax.get<{ delivery_enabled: boolean; messages: OutboxMessage[] }>(`/crm/outbox`, { params: { status } })),
   queueEmail: (data: { to_email: string; subject: string; body: string; crm_record_id?: string }) => r(ax.post<OutboxMessage>(`/crm/outbox`, data)),
   cancelEmail: (id: string) => r(ax.post<OutboxMessage>(`/crm/outbox/${id}/cancel`)),
@@ -538,4 +542,10 @@ export interface FunnelReport {
   reps: { assigned_rep_id: string; total: number; open: number; won: number; lost: number; win_rate_pct: number | null;
           won_revenue_by_currency: Record<string, number>; avg_cycle_days: number | null }[];
   loss_reasons: { reason: string; count: number }[];
+}
+
+export interface InboxItem {
+  id: string; channel: "EMAIL" | "WHATSAPP" | "TICKET"; subject: string; contact: string | null;
+  customer_id: string | null; assignee_id: string | null; status: "OPEN" | "PENDING" | "CLOSED";
+  last_message_at: string | null; sla_due_at: string | null; sla_overdue: boolean; unread: boolean; link: string;
 }

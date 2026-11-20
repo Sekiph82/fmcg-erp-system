@@ -573,3 +573,39 @@ class CRMEmailCampaign(Base, TimestampMixin):
     queued_at             = Column(DateTime(timezone=True), nullable=True)
     audience_size         = Column(Integer, nullable=True)
     created_by            = Column(String(100), nullable=True)
+
+
+# ── M36.S01.T003 unified conversations inbox ───────────────────────────────────
+
+class CRMConversation(Base, TimestampMixin):
+    """One row per customer conversation, whatever the channel (e-mail thread, WhatsApp number, support ticket).
+    Messages stay in their source tables; this index carries the inbox state (assignee, status, SLA, activity)."""
+    __tablename__ = "crm_conversations"
+    __table_args__ = (UniqueConstraint("channel", "source_ref", name="uq_crm_conversation_source"),)
+
+    id               = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    channel          = Column(String(10), nullable=False, index=True)        # EMAIL | WHATSAPP | TICKET
+    source_ref       = Column(String(120), nullable=False)                   # thread id / "<config>:<phone>" / ticket id
+    subject          = Column(String(500), nullable=True)
+    contact          = Column(String(255), nullable=True)                    # e-mail address / phone / customer name
+    customer_id      = Column(UUID(as_uuid=True), ForeignKey("customers.id", ondelete="SET NULL"), nullable=True, index=True)
+    company_id       = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="SET NULL"), nullable=True, index=True)
+    mailbox_owner_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    assignee_id      = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    status           = Column(String(10), nullable=False, default="OPEN", index=True)  # OPEN | PENDING | CLOSED
+    last_inbound_at  = Column(DateTime(timezone=True), nullable=True)
+    last_outbound_at = Column(DateTime(timezone=True), nullable=True)
+    last_message_at  = Column(DateTime(timezone=True), nullable=True, index=True)
+    sla_due_at       = Column(DateTime(timezone=True), nullable=True)        # reply due for an unanswered customer message
+    closed_at        = Column(DateTime(timezone=True), nullable=True)
+
+
+class CRMConversationRead(Base):
+    """Per user: when they last opened the conversation (unread = a customer message after that)."""
+    __tablename__ = "crm_conversation_reads"
+    __table_args__ = (UniqueConstraint("conversation_id", "user_id", name="uq_crm_conversation_read"),)
+
+    id              = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    conversation_id = Column(UUID(as_uuid=True), ForeignKey("crm_conversations.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id         = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    last_read_at    = Column(DateTime(timezone=True), nullable=False)

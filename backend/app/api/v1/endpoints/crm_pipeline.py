@@ -1311,3 +1311,70 @@ async def cancel_email_campaign(campaign_id: str, db: AsyncSession = Depends(get
     c.status = "CANCELLED"
     await db.commit()
     return {**(await _campaign_out(db, c)), "withdrawn_messages": withdrawn}
+
+
+# ── M36.S01.T003 unified conversations inbox ───────────────────────────────────
+
+class InboxPatch(BaseModel):
+    assignee_id: Optional[str] = Field(None, description="user id; empty string unassigns")
+    status: Optional[Literal["OPEN", "PENDING", "CLOSED"]] = None
+
+
+@router.get("/inbox")
+async def inbox(view: Literal["all", "mine", "unassigned", "unread"] = "all",
+                channel: Optional[Literal["EMAIL", "WHATSAPP", "TICKET"]] = None,
+                status: Optional[Literal["OPEN", "PENDING", "CLOSED"]] = None,
+                limit: int = Query(100, ge=1, le=300),
+                db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    """E-mail threads, WhatsApp numbers and helpdesk tickets as one list, newest first. Each channel is
+    shown only to who may see it (personal mailboxes to their owner); closed ones only with status=CLOSED."""
+    from app.services import crm_inbox_service as inbox_svc
+    return await inbox_svc.list_conversations(db, current_user, view=view, channel=channel, status=status, limit=limit)
+
+
+@router.post("/inbox/{conversation_id}/read")
+async def inbox_mark_read(conversation_id: str, db: AsyncSession = Depends(get_db),
+                          current_user=Depends(get_current_user)):
+    from app.services import crm_inbox_service as inbox_svc
+    conv = await inbox_svc.get_visible(db, current_user, _uuid(conversation_id))
+    if conv is None:
+        raise HTTPException(404, "Conversation not found")
+    await inbox_svc.mark_read(db, current_user, conv)
+    await db.commit()
+    return {"id": str(conv.id), "unread": False}
+
+
+@router.patch("/inbox/{conversation_id}")
+async def inbox_update(conversation_id: str, data: InboxPatch, db: AsyncSession = Depends(get_db),
+                       current_user=Depends(require_any_permission(CRM_EDIT_PERMISSIONS))):
+    """Assign (or unassign with an empty string) and set OPEN / PENDING / CLOSED. Ticket status stays in the helpdesk."""
+    from app.models.user import User
+    from app.services import crm_inbox_service as inbox_svc
+    conv = await inbox_svc.get_visible(db, current_user, _uuid(conversation_id))
+    if conv is None:
+        raise HTTPException(404, "Conversation not found")
+    if data.assignee_id is not None:
+        if conv.channel == "TICKET" and not has_any_permission(current_user, ("quality.edit", "quality.edit_all")):
+            raise HTTPException(403, "Reassigning a support ticket needs quality edit rights.")
+        assignee = None
+        if data.assignee_id:
+            assignee = await db.get(User, _uuid(data.assignee_id))
+            if assignee is None or not assignee.is_active:
+                raise HTTPException(422, "Assignee must be an active user")
+        await inbox_svc.assign(db, conv, assignee.id if assignee else None)
+    if data.status is not None:
+        try:
+            inbox_svc.set_status(conv, data.status)
+        except ValueError as e:
+            raise HTTPException(409, str(e))
+    await db.commit()
+    return {"id": str(conv.id), "assignee_id": str(conv.assignee_id) if conv.assignee_id else None, "status": conv.status}
+
+
+@router.get("/inbox-assignees")
+async def inbox_assignees(db: AsyncSession = Depends(get_db), _=Depends(require_any_permission(CRM_EDIT_PERMISSIONS))):
+    """Active users (id + name only) for the inbox assignee picker."""
+    from app.models.user import User
+    rows = (await db.execute(select(User.id, User.full_name, User.username).where(User.is_active.is_(True))
+                             .order_by(User.full_name).limit(500))).all()
+    return [{"id": str(i), "name": n or u} for i, n, u in rows]

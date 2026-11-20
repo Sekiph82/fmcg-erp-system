@@ -38,6 +38,7 @@ function CRMDashboardTab() {
     { href: "/dashboard/crm/scoring", label: "Lead Scoring" },
     { href: "/dashboard/crm/lead-forms", label: "Website Lead Forms" },
     { href: "/dashboard/crm/automation", label: "Automation" },
+    { href: "/dashboard/crm/inbox", label: "Conversations Inbox" },
     { href: "/dashboard/crm/outbox", label: "E-mail Outbox & Consent" },
     { href: "/dashboard/crm/sequences", label: "Sales Sequences" },
     { href: "/dashboard/crm/email-campaigns", label: "E-mail Campaigns" },
@@ -159,6 +160,7 @@ const CRMScoringPage     = dynamic(() => import("@/app/dashboard/crm/scoring/pag
 const CRMLeadFormsPage   = dynamic(() => import("@/app/dashboard/crm/lead-forms/page"),  { ssr: false });
 const CRMAutomationPage  = dynamic(() => import("@/app/dashboard/crm/automation/page"),  { ssr: false });
 const CRMOutboxPage      = dynamic(() => import("@/app/dashboard/crm/outbox/page"),      { ssr: false });
+const CRMInboxPage       = dynamic(() => import("@/app/dashboard/crm/inbox/page"),       { ssr: false });
 const CRMSequencesPage   = dynamic(() => import("@/app/dashboard/crm/sequences/page"),   { ssr: false });
 const CRMCampaignsPage   = dynamic(() => import("@/app/dashboard/crm/email-campaigns/page"), { ssr: false });
 const LoyaltyPage        = dynamic(() => import("@/app/dashboard/loyalty/page"),         { ssr: false });
@@ -180,6 +182,7 @@ export default function CRMPage() {
     { key: "scoring",     label: "Lead Scoring", permission: "crm.view", content: <CRMScoringPage /> },
     { key: "lead-forms",  label: "Lead Forms",  permission: "crm.view", content: <CRMLeadFormsPage /> },
     { key: "automation",  label: "Automation",  permission: "crm.view", content: <CRMAutomationPage /> },
+    { key: "inbox",       label: "Inbox",       permission: "crm.view", content: <CRMInboxPage /> },
     { key: "outbox",      label: "E-mail",      permission: "crm.view", content: <CRMOutboxPage /> },
     { key: "sequences",   label: "Sequences",   permission: "crm.view", content: <CRMSequencesPage /> },
     { key: "email-campaigns", label: "Campaigns", permission: "crm.view", content: <CRMCampaignsPage /> },
