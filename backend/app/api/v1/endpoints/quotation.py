@@ -456,3 +456,67 @@ async def convert_to_so(
     await db.commit()
 
     return {"so_id": str(so.id), "so_no": so_no, "quote_no": q.quote_no, "version": q.version}
+
+
+# ── M36.S03.T001 share links and view tracking ────────────────────────────────
+
+from pydantic import BaseModel as _BaseModel, Field as _Field  # noqa: E402
+
+
+def _may_share(user, q) -> None:
+    """Sharing a sent or accepted quote is not an edit of the quote, so the quote's own status lock does not
+    apply; the user still needs sales edit rights over this record's scope."""
+    from app.core.access_control import can_modify_record, can_view_record
+    if not (can_view_record(user, "sales", q) and can_modify_record(user, "sales", "edit", q)):
+        raise HTTPException(403, "You cannot share this quotation.")
+
+
+class ShareLinkIn(_BaseModel):
+    expires_in_days: int = _Field(14, ge=1, le=90)
+    label: Optional[str] = _Field(None, max_length=150, pattern=r"^[^\r\n]*$")
+
+
+@router.post("/{quote_id}/share-links", status_code=201)
+async def create_share_link(quote_id: uuid.UUID, body: ShareLinkIn, db: AsyncSession = Depends(get_db),
+                            current_user: User = Depends(get_current_user)):
+    """A private link the customer can open without signing in. The URL is returned once."""
+    from app.core.config import settings
+    from app.services import crm_document_service as docs
+
+    q = await _get_or_404(db, quote_id)
+    if getattr(q.status, "value", q.status) not in docs.SHAREABLE:
+        raise HTTPException(422, "Only draft, sent or accepted quotations can be shared")
+    _may_share(current_user, q)
+    link, token = await docs.create_link(db, q, current_user.id, body.expires_in_days, body.label)
+    await db.commit()
+    return {**docs.link_out(link), "url": f"{settings.PUBLIC_APP_URL.rstrip('/')}/d/{token}"}
+
+
+@router.get("/{quote_id}/share-links")
+async def list_share_links(quote_id: uuid.UUID, db: AsyncSession = Depends(get_db),
+                           current_user: User = Depends(get_current_user)):
+    from app.models.crm import CRMDocumentLink
+    from app.services import crm_document_service as docs
+
+    q = await _get_or_404(db, quote_id)
+    ensure_commercial_action_allowed(current_user, q, "view", "sales")
+    rows = (await db.execute(select(CRMDocumentLink).where(CRMDocumentLink.quotation_id == q.id)
+                             .order_by(CRMDocumentLink.created_at.desc()))).scalars().all()
+    return [docs.link_out(r) for r in rows]
+
+
+@router.post("/share-links/{link_id}/revoke")
+async def revoke_share_link(link_id: uuid.UUID, db: AsyncSession = Depends(get_db),
+                            current_user: User = Depends(get_current_user)):
+    """The link stops working at once (the customer sees the same 'not available' page as for any bad link)."""
+    from app.models.crm import CRMDocumentLink
+    from app.services import crm_document_service as docs
+
+    link = await db.get(CRMDocumentLink, link_id)
+    if link is None:
+        raise HTTPException(404, "Link not found")
+    q = await _get_or_404(db, link.quotation_id)
+    _may_share(current_user, q)
+    link.revoked_at = link.revoked_at or datetime.now(timezone.utc)
+    await db.commit()
+    return docs.link_out(link)

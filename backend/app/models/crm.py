@@ -609,3 +609,33 @@ class CRMConversationRead(Base):
     conversation_id = Column(UUID(as_uuid=True), ForeignKey("crm_conversations.id", ondelete="CASCADE"), nullable=False, index=True)
     user_id         = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     last_read_at    = Column(DateTime(timezone=True), nullable=False)
+
+
+# ── M36.S03.T001 sales document engagement ─────────────────────────────────────
+
+class CRMDocumentLink(Base):
+    """A share link for one quotation: random token (stored as SHA-256), expiry, revocation, view counters."""
+    __tablename__ = "crm_document_links"
+
+    id              = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    quotation_id    = Column(UUID(as_uuid=True), ForeignKey("quotations.id", ondelete="CASCADE"), nullable=False, index=True)
+    token_hash      = Column(String(64), nullable=False, unique=True)
+    label           = Column(String(150), nullable=True)                   # e.g. who it was sent to
+    created_by_id   = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at      = Column(DateTime(timezone=True), nullable=False)
+    expires_at      = Column(DateTime(timezone=True), nullable=False)
+    revoked_at      = Column(DateTime(timezone=True), nullable=True)
+    view_count      = Column(Integer, nullable=False, default=0)           # distinct visits (30-minute dedupe)
+    first_viewed_at = Column(DateTime(timezone=True), nullable=True)
+    last_viewed_at  = Column(DateTime(timezone=True), nullable=True)
+
+
+class CRMDocumentView(Base):
+    """One visit. No IP or user agent is stored: only a keyed hash used to merge repeat views."""
+    __tablename__ = "crm_document_views"
+
+    id          = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    link_id     = Column(UUID(as_uuid=True), ForeignKey("crm_document_links.id", ondelete="CASCADE"), nullable=False, index=True)
+    viewer_hash = Column(String(64), nullable=False)
+    viewed_at   = Column(DateTime(timezone=True), nullable=False)
+    last_seen_at = Column(DateTime(timezone=True), nullable=False)

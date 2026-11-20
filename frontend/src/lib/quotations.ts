@@ -114,7 +114,16 @@ export const quoteApi = {
   expire: (id: string) => req<Quotation>(`${BASE}/${id}/expire`, { method: "POST" }),
   revise: (id: string) => req<Quotation>(`${BASE}/${id}/revise`, { method: "POST" }),
   convert: (id: string) => req<{ so_id: string; so_no: string; quote_no: string; version: number }>(`${BASE}/${id}/convert`, { method: "POST" }),
+  shareLinks: (id: string) => req<ShareLink[]>(`${BASE}/${id}/share-links`),
+  createShareLink: (id: string, body: { expires_in_days: number; label?: string }) =>
+    req<ShareLink & { url: string }>(`${BASE}/${id}/share-links`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }),
+  revokeShareLink: (linkId: string) => req<ShareLink>(`${BASE}/share-links/${linkId}/revoke`, { method: "POST" }),
 };
+
+export interface ShareLink {
+  id: string; label: string | null; state: "ACTIVE" | "EXPIRED" | "REVOKED"; created_at: string; expires_at: string;
+  revoked_at: string | null; views: number; first_viewed_at: string | null; last_viewed_at: string | null;
+}
 
 export const STATUS_COLORS: Record<QuoteStatus, string> = {
   DRAFT:     "bg-gray-100 text-gray-700",

@@ -259,6 +259,63 @@ function RejectModal({ quote, onClose }: { quote: Quotation; onClose: () => void
 
 // ── Row actions ───────────────────────────────────────────────────────────────
 
+function SharePanel({ quote, onClose }: { quote: Quotation; onClose: () => void }) {
+  const qc = useQueryClient();
+  const [days, setDays] = useState(14);
+  const [label, setLabel] = useState("");
+  const [newUrl, setNewUrl] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const links = useQuery({ queryKey: ["share-links", quote.id], queryFn: () => quoteApi.shareLinks(quote.id) });
+  const refresh = () => qc.invalidateQueries({ queryKey: ["share-links", quote.id] });
+  const create = useMutation({
+    mutationFn: () => quoteApi.createShareLink(quote.id, { expires_in_days: days, label: label || undefined }),
+    onSuccess: (r) => { setNewUrl(r.url); setErr(null); refresh(); },
+    onError: (e: Error) => setErr(e.message),
+  });
+  const revoke = useMutation({ mutationFn: (id: string) => quoteApi.revokeShareLink(id), onSuccess: refresh, onError: (e: Error) => setErr(e.message) });
+  const when = (v: string | null) => (v ? new Date(v).toLocaleString() : "—");
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-lg p-5 space-y-3 max-h-full overflow-y-auto">
+        <div className="flex justify-between items-center">
+          <h2 className="font-semibold">Share {quote.quote_no}</h2>
+          <button onClick={onClose} className="text-gray-400 text-xl" aria-label="Close">×</button>
+        </div>
+        <p className="text-xs text-gray-500">The customer opens the quotation without signing in and sees prices, lines and customer notes only (never internal notes). You see when it was opened; no IP address is stored.</p>
+        <div className="flex flex-wrap gap-2 items-center">
+          <input aria-label="Who is it for" placeholder="Who is it for (optional)" value={label} onChange={(e) => setLabel(e.target.value)} className="border rounded px-2 py-1.5 text-sm flex-1 min-w-[10rem]" />
+          <select aria-label="Valid for" value={days} onChange={(e) => setDays(Number(e.target.value))} className="border rounded px-2 py-1.5 text-sm">
+            {[3, 7, 14, 30, 60, 90].map((d) => <option key={d} value={d}>{d} days</option>)}
+          </select>
+          <button disabled={create.isPending} onClick={() => create.mutate()} className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded">Create link</button>
+        </div>
+        {newUrl && (
+          <div className="space-y-1">
+            <p className="text-xs text-emerald-700">Copy it now; it is shown only once.</p>
+            <input readOnly value={newUrl} onFocus={(e) => e.currentTarget.select()} aria-label="Share link" className="w-full border rounded px-2 py-1 text-xs font-mono" />
+          </div>
+        )}
+        {err && <p role="alert" className="text-sm text-red-700">{err}</p>}
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead><tr className="text-left text-gray-500"><th className="py-1">For</th><th>State</th><th>Views</th><th>Last opened</th><th>Expires</th><th /></tr></thead>
+            <tbody>
+              {(links.data ?? []).map((l) => (
+                <tr key={l.id} className="border-t">
+                  <td className="py-1.5">{l.label ?? "—"}</td><td>{l.state}</td><td>{l.views}</td><td>{when(l.last_viewed_at)}</td>
+                  <td>{new Date(l.expires_at).toLocaleDateString()}</td>
+                  <td>{l.state === "ACTIVE" && <button onClick={() => revoke.mutate(l.id)} className="text-red-600 underline">Turn off</button>}</td>
+                </tr>
+              ))}
+              {links.data && links.data.length === 0 && <tr><td colSpan={6} className="py-2 text-gray-400">No links yet.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function QuoteActions({ quote, onReject }: { quote: Quotation; onReject: () => void }) {
   const qc = useQueryClient();
   const useQuoteMutation = (fn: () => Promise<unknown>) =>
@@ -272,6 +329,7 @@ function QuoteActions({ quote, onReject }: { quote: Quotation; onReject: () => v
 
   const busy = sendM.isPending || acceptM.isPending || expireM.isPending || reviseM.isPending || convertM.isPending;
   const access = quote.access;
+  const [sharing, setSharing] = useState(false);
 
   if (access?.view_only) {
     return <ViewOnlyBadge reason={access.reason} />;
@@ -309,6 +367,11 @@ function QuoteActions({ quote, onReject }: { quote: Quotation; onReject: () => v
       {(convertM.isSuccess) && (
         <span className="text-xs text-purple-700">SO created</span>
       )}
+      {["DRAFT", "SENT", "ACCEPTED"].includes(quote.status) && (
+        <button onClick={() => setSharing(true)}
+          className="text-xs px-2 py-1 rounded bg-indigo-50 text-indigo-700 hover:bg-indigo-100">Share</button>
+      )}
+      {sharing && <SharePanel quote={quote} onClose={() => setSharing(false)} />}
     </div>
   );
 }
