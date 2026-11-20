@@ -22,7 +22,7 @@ import uuid
 from datetime import datetime, timezone, timedelta
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Body, Depends, File, Form, HTTPException, Query, UploadFile
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -372,3 +372,75 @@ async def add_comment(
     db.add(comment)
     await db.commit()
     return await _build_read(await _get_or_404(db, ticket_id))
+
+
+
+# ── M36.S04.T004 attachments (staff side) ──────────────────────────────────────
+
+_FILES_READ = ("quality.view", "quality.view_all")
+_FILES_WRITE = ("quality.edit", "quality.edit_all")
+
+
+def _require(user, codes):
+    from app.core.access_control import has_any_permission
+    if not has_any_permission(user, codes):
+        raise HTTPException(403, "You do not have access to ticket files.")
+
+
+@router.get("/tickets/{ticket_id}/attachments")
+async def list_ticket_files(ticket_id: uuid.UUID, db: AsyncSession = Depends(get_db),
+                            current_user: User = Depends(get_current_user)):
+    from app.models.helpdesk import TicketAttachment
+    from app.services import ticket_attachment_service as files
+
+    _require(current_user, _FILES_READ)
+    if await db.get(HelpdeskTicket, ticket_id) is None:
+        raise HTTPException(404, "Ticket not found")
+    rows = (await db.execute(select(TicketAttachment).where(TicketAttachment.ticket_id == ticket_id)
+                             .order_by(TicketAttachment.created_at))).scalars().all()
+    return [files.out(a) for a in rows]
+
+
+@router.post("/tickets/{ticket_id}/attachments", status_code=201)
+async def add_ticket_file(ticket_id: uuid.UUID, file: UploadFile = File(...), share_with_customer: bool = Form(False),
+                          db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    from app.services import ticket_attachment_service as files
+
+    _require(current_user, _FILES_WRITE)
+    if await db.get(HelpdeskTicket, ticket_id) is None:
+        raise HTTPException(404, "Ticket not found")
+    att = await files.add(db, ticket_id, file, from_customer=False, uploaded_by_id=current_user.id,
+                          customer_visible=share_with_customer)
+    await db.commit()
+    return files.out(att)
+
+
+@router.post("/attachments/{attachment_id}/share")
+async def share_ticket_file(attachment_id: uuid.UUID, share_with_customer: bool = Body(..., embed=True),
+                            db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Approve (or withdraw) a staff file for the customer. Customer uploads always stay visible to them."""
+    from app.models.helpdesk import TicketAttachment
+    from app.services import ticket_attachment_service as files
+
+    _require(current_user, _FILES_WRITE)
+    a = await db.get(TicketAttachment, attachment_id)
+    if a is None:
+        raise HTTPException(404, "File not found")
+    if a.from_customer:
+        raise HTTPException(409, "The customer's own files are always visible to them.")
+    a.customer_visible = share_with_customer
+    await db.commit()
+    return files.out(a)
+
+
+@router.get("/attachments/{attachment_id}/download")
+async def download_ticket_file(attachment_id: uuid.UUID, db: AsyncSession = Depends(get_db),
+                               current_user: User = Depends(get_current_user)):
+    from app.models.helpdesk import TicketAttachment
+    from app.services import ticket_attachment_service as files
+
+    _require(current_user, _FILES_READ)
+    a = await db.get(TicketAttachment, attachment_id)
+    if a is None:
+        raise HTTPException(404, "File not found")
+    return files.download(a)

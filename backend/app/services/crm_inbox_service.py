@@ -110,16 +110,23 @@ async def sync(db: AsyncSession) -> int:
 
     # Helpdesk tickets: status and assignee follow the ticket.
     # Last customer-visible reply per ticket (internal notes and edits such as assignment are not messages).
-    replies = dict((await db.execute(select(TicketComment.ticket_id, func.max(TicketComment.created_at))
-                                     .where(TicketComment.is_internal.is_(False)).group_by(TicketComment.ticket_id))).all())
+    # Customer replies (portal: no staff author) are inbound; staff replies are outbound (M36.S04.T004).
+    customer_said = TicketComment.created_by_id.is_(None)
+    replies = {tid: (cin, cout) for tid, cin, cout in (await db.execute(
+        select(TicketComment.ticket_id,
+               func.max(case((customer_said, TicketComment.created_at))),
+               func.max(case((~customer_said, TicketComment.created_at))))
+        .where(TicketComment.is_internal.is_(False)).group_by(TicketComment.ticket_id))).all()}
     for t in (await db.execute(select(HelpdeskTicket))).scalars():
         closed = t.status in _CLOSED_TICKET
-        lo = t.first_response_at
+        cin, cout = replies.get(t.id, (None, None))
+        li = max(x for x in (t.created_at, cin) if x)
+        lo = max((x for x in (t.first_response_at, cout) if x), default=None)
         rows.append(dict(channel="TICKET", source_ref=str(t.id), subject=f"{t.ticket_no}: {t.subject}"[:500],
                          contact=None, customer_id=t.customer_id, mailbox_owner_id=None,
-                         last_inbound_at=t.created_at, last_outbound_at=lo,
-                         last_message_at=max(x for x in (t.created_at, lo, replies.get(t.id)) if x),
-                         sla_due_at=None if closed else _sla(t.created_at, lo, t.sla_hours or DEFAULT_REPLY_HOURS),
+                         last_inbound_at=li, last_outbound_at=lo,
+                         last_message_at=max(x for x in (li, lo) if x),
+                         sla_due_at=None if closed else _sla(li, lo, t.sla_hours or DEFAULT_REPLY_HOURS),
                          status="CLOSED" if closed else "OPEN", assignee_id=t.assigned_to_id,
                          closed_at=(t.closed_at or t.resolved_at) if closed else None))
 
@@ -194,7 +201,8 @@ async def list_conversations(db: AsyncSession, user: Any, *, view: str = "all", 
                              status: Optional[str] = None, limit: int = 100) -> dict:
     await sync(db)
     unread = _unread_expr(user.id).label("unread")
-    q = select(CRMConversation, unread).where(visible_clause(user))
+    # populate_existing: the upsert above is plain SQL, so rows already in this session must be refreshed
+    q = select(CRMConversation, unread).where(visible_clause(user)).execution_options(populate_existing=True)
     if view == "mine":
         q = q.where(CRMConversation.assignee_id == user.id)
     elif view == "unassigned":

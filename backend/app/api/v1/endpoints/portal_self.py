@@ -13,7 +13,7 @@ from datetime import date, datetime, timezone
 from decimal import Decimal
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, Response, UploadFile
 from pydantic import BaseModel, Field
 from sqlalchemy import func, or_, select
 from sqlalchemy.exc import IntegrityError
@@ -520,7 +520,46 @@ async def tickets(user: PortalUser = Depends(ext.get_portal_user), db: AsyncSess
 
 @router.get("/tickets/{ticket_id}")
 async def ticket(ticket_id: uuid.UUID, user: PortalUser = Depends(ext.get_portal_user), db: AsyncSession = Depends(get_db)):
-    return _ticket_out(await _my_ticket(db, user, ticket_id), with_thread=True)
+    from app.models.helpdesk import TicketAttachment
+    from app.services import ticket_attachment_service as files
+
+    t = await _my_ticket(db, user, ticket_id)
+    out = _ticket_out(t, with_thread=True)
+    rows = (await db.execute(select(TicketAttachment).where(
+        TicketAttachment.ticket_id == t.id, TicketAttachment.customer_visible.is_(True))
+        .order_by(TicketAttachment.created_at))).scalars().all()
+    out["attachments"] = [{k: v for k, v in files.out(a).items() if k != "customer_visible"} for a in rows]
+    return out
+
+
+@router.post("/tickets/{ticket_id}/attachments", status_code=201)
+async def add_ticket_file(ticket_id: uuid.UUID, file: UploadFile = File(...),
+                          user: PortalUser = Depends(ext.get_portal_user), db: AsyncSession = Depends(get_db)):
+    """Attach a photo or document (PDF, PNG, JPG, TXT, CSV, DOCX, XLSX; max 10 MB, 10 per ticket); scanned for malware."""
+    from app.models.helpdesk import TicketStatus
+    from app.services import ticket_attachment_service as files
+
+    t = await _my_ticket(db, user, ticket_id)
+    if t.status == TicketStatus.CLOSED:
+        raise HTTPException(409, "This ticket is closed; open a new one.")
+    att = await files.add(db, t.id, file, from_customer=True, portal_user_id=user.id)
+    await db.commit()
+    return files.out(att)
+
+
+@router.get("/tickets/{ticket_id}/attachments/{attachment_id}")
+async def get_ticket_file(ticket_id: uuid.UUID, attachment_id: uuid.UUID,
+                          user: PortalUser = Depends(ext.get_portal_user), db: AsyncSession = Depends(get_db)):
+    from app.models.helpdesk import TicketAttachment
+    from app.services import ticket_attachment_service as files
+
+    t = await _my_ticket(db, user, ticket_id)  # the customer's own ticket only
+    a = (await db.execute(select(TicketAttachment).where(
+        TicketAttachment.id == attachment_id, TicketAttachment.ticket_id == t.id,
+        TicketAttachment.customer_visible.is_(True)))).scalar_one_or_none()
+    if a is None:
+        raise HTTPException(404, "File not found")
+    return files.download(a)
 
 
 @router.post("/tickets", status_code=201)

@@ -10,6 +10,56 @@ import {
 } from "@/lib/helpdesk";
 import { salesApi } from "@/lib/sales";
 import { Button } from "@/components/ui/Button";
+import { apiClient, API_ORIGIN } from "@/lib/api";
+
+interface TicketFile { id: string; file_name: string; size: number; from_customer: boolean; customer_visible: boolean; downloadable: boolean; scan_status: string }
+
+/** M36.S04.T004 files on a ticket: customer uploads from the portal, and staff files shared on approval. */
+function TicketFiles({ ticketId }: { ticketId: string }) {
+  const qc = useQueryClient();
+  const key = ["ticket-files", ticketId];
+  const files = useQuery({ queryKey: key, queryFn: () => apiClient.get<TicketFile[]>(`/api/v1/helpdesk/tickets/${ticketId}/attachments`).then((r) => r.data), retry: false });
+  const [shareNew, setShareNew] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const refresh = () => qc.invalidateQueries({ queryKey: key });
+  const msg = (e: unknown) => ((e as { response?: { data?: { detail?: string } } }).response?.data?.detail ?? "Request failed.");
+  if (files.isError) return null;  // no quality access: the section is hidden
+  return (
+    <div className="border-t pt-3 space-y-2">
+      <p className="text-xs font-semibold text-gray-500">FILES ({files.data?.length ?? 0})</p>
+      {(files.data ?? []).map((f) => (
+        <div key={f.id} className="flex flex-wrap items-center gap-2 text-xs">
+          {f.downloadable
+            ? <a className="text-indigo-600 underline break-all" href={`${API_ORIGIN}/api/v1/helpdesk/attachments/${f.id}/download`}>{f.file_name}</a>
+            : <span className="break-all" title={`Malware scan: ${f.scan_status}`}>{f.file_name} (quarantined: {f.scan_status.toLowerCase().replace("_", " ")})</span>}
+          <span className="text-gray-400">{f.from_customer ? "from customer" : "ours"} · {Math.max(1, Math.round(f.size / 1024))} KB</span>
+          {!f.from_customer && (
+            <label className="flex items-center gap-1">
+              <input type="checkbox" checked={f.customer_visible} onChange={async (e) => {
+                try { await apiClient.post(`/api/v1/helpdesk/attachments/${f.id}/share`, { share_with_customer: e.target.checked }); refresh(); }
+                catch (x) { setErr(msg(x)); }
+              }} />
+              shared with customer
+            </label>
+          )}
+        </div>
+      ))}
+      <div className="flex flex-wrap items-center gap-3 text-xs">
+        <label className="text-indigo-600 cursor-pointer">
+          <input type="file" className="sr-only" accept=".pdf,.png,.jpg,.jpeg,.txt,.csv,.docx,.xlsx" onChange={async (e) => {
+            const f = e.target.files?.[0]; e.target.value = ""; if (!f) return;
+            const fd = new FormData(); fd.append("file", f); fd.append("share_with_customer", String(shareNew));
+            try { await apiClient.post(`/api/v1/helpdesk/tickets/${ticketId}/attachments`, fd); setErr(null); refresh(); }
+            catch (x) { setErr(msg(x)); }
+          }} />
+          + Attach file
+        </label>
+        <label className="flex items-center gap-1"><input type="checkbox" checked={shareNew} onChange={(e) => setShareNew(e.target.checked)} /> share with customer</label>
+      </div>
+      {err && <p role="alert" className="text-xs text-red-600">{err}</p>}
+    </div>
+  );
+}
 
 // ── KPI card ─────────────────────────────────────────────────────────────────
 
@@ -226,6 +276,8 @@ function TicketDetail({ ticket, onClose }: { ticket: Ticket; onClose: () => void
             Reopen
           </button>
         )}
+
+        <TicketFiles ticketId={ticket.id} />
 
         {/* Comments */}
         <div className="border-t pt-3 space-y-2">

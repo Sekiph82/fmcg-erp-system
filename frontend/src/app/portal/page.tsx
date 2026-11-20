@@ -2,6 +2,7 @@
 // Distributor / customer portal: catalog + cart (server prices), my orders, invoices & statement, claims. Mobile-first.
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { API_ORIGIN } from "@/lib/api";
 import {
   ps, post, money, statusText, PortalError,
   type PortalMe, type CatalogItem, type PortalOrder, type PortalOrderDetail, type PortalStatement, type PortalClaim, type OrderTracking, type PaymentOptions,
@@ -312,13 +313,15 @@ function ClaimsTab({ me, fail, onDone }: { me: PortalMe; fail: (e: unknown) => v
 }
 
 interface Ticket { id: string; ticket_no: string; category: string; status: string; subject: string; created_at: string | null; resolution_notes: string | null;
-  description?: string; thread?: { body: string; from_us: boolean; at: string | null }[] }
+  description?: string; thread?: { body: string; from_us: boolean; at: string | null }[];
+  attachments?: { id: string; file_name: string; size: number; from_customer: boolean; downloadable: boolean; scan_status: string }[] }
 
 function SupportTab({ fail, onDone }: { fail: (e: unknown) => void; onDone: (t: string) => void }) {
   const [rows, setRows] = useState<Ticket[]>([]);
   const [open, setOpen] = useState<Ticket | null>(null);
   const [form, setForm] = useState({ category: "DELIVERY", subject: "", description: "" });
   const [reply, setReply] = useState("");
+  const [uploading, setUploading] = useState(false);
   const load = useCallback(() => { ps<Ticket[]>("/tickets").then(setRows).catch(fail); }, [fail]);
   useEffect(load, [load]);
   const show = (id: string) => ps<Ticket>(`/tickets/${id}`).then(setOpen).catch(fail);
@@ -347,7 +350,33 @@ function SupportTab({ fail, onDone }: { fail: (e: unknown) => void; onDone: (t: 
             <div className="mt-2 border-t pt-2 space-y-2">
               <p className="text-gray-700 whitespace-pre-line">{open.description}</p>
               {(open.thread ?? []).map((m, i) => <p key={i} className={`rounded-lg p-2 whitespace-pre-line ${m.from_us ? "bg-indigo-50" : "bg-gray-50"}`}><span className="block text-xs text-gray-500">{m.from_us ? "Our team" : "You"}{m.at ? ` · ${new Date(m.at).toLocaleString()}` : ""}</span>{m.body}</p>)}
+              {(open.attachments ?? []).length > 0 && (
+                <ul aria-label="Files" className="text-xs space-y-1">
+                  {(open.attachments ?? []).map((a) => (
+                    <li key={a.id} className="flex flex-wrap gap-2 items-center">
+                      <span>📎</span>
+                      {a.downloadable
+                        ? <a className="text-indigo-700 underline break-all" href={`${API_ORIGIN}/api/v1/portal-self/tickets/${open.id}/attachments/${a.id}`}>{a.file_name}</a>
+                        : <span className="break-all">{a.file_name}</span>}
+                      <span className="text-gray-500">{a.from_customer ? "you" : "our team"} · {Math.max(1, Math.round(a.size / 1024))} KB{a.downloadable ? "" : " · being checked"}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
               {open.resolution_notes && <p className="text-xs text-emerald-700">Resolution: {open.resolution_notes}</p>}
+              {open.status !== "CLOSED" && (
+                <label className="text-xs text-indigo-700 inline-flex items-center gap-1 cursor-pointer">
+                  <input type="file" className="sr-only" accept=".pdf,.png,.jpg,.jpeg,.txt,.csv,.docx,.xlsx" disabled={uploading}
+                    onChange={async (e) => {
+                      const f = e.target.files?.[0];
+                      e.target.value = "";
+                      if (!f) return;
+                      setUploading(true);
+                      try { const fd = new FormData(); fd.append("file", f); await ps(`/tickets/${open.id}/attachments`, { method: "POST", body: fd }); show(open.id); }
+                      catch (err) { fail(err); } finally { setUploading(false); }
+                    }} />
+                  {uploading ? "Uploading…" : "📎 Add a photo or file (max 10 MB)"}
+                </label>)}
               {open.status !== "CLOSED" && (
                 <div className="flex gap-2"><input aria-label="Reply" placeholder="Write a reply" value={reply} onChange={(e) => setReply(e.target.value)} className="flex-1 border rounded-lg px-2 py-1.5" />
                   <button disabled={!reply.trim()} onClick={async () => { try { await post(`/tickets/${open.id}/reply`, { body: reply }); setReply(""); show(open.id); load(); } catch (e) { fail(e); } }} className="px-3 rounded-lg bg-indigo-600 text-white disabled:opacity-50">Send</button></div>)}

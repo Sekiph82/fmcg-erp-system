@@ -102,3 +102,23 @@ class TicketComment(Base, TimestampMixin):
 
     ticket     = relationship("HelpdeskTicket", back_populates="comments")
     created_by = relationship("User", foreign_keys=[created_by_id])
+
+
+class TicketAttachment(Base):
+    """M36.S04.T004 a file on a ticket. Customer uploads (portal) are visible to staff once the malware scan
+    is CLEAN; staff files reach the customer only after a person ticks 'share with customer'."""
+    __tablename__ = "ticket_attachments"
+
+    id                = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    ticket_id         = Column(UUID(as_uuid=True), ForeignKey("helpdesk_tickets.id", ondelete="CASCADE"), nullable=False, index=True)
+    storage_key       = Column(String(32), nullable=False, unique=True)
+    file_name         = Column(String(255), nullable=False)
+    file_size_bytes   = Column(Integer, nullable=False)
+    mime_type         = Column(String(100), nullable=False)
+    sha256            = Column(String(64), nullable=False)
+    scan_status       = Column(String(20), nullable=False)      # CLEAN | NOT_SCANNED | ERROR (INFECTED is never stored)
+    from_customer     = Column(Boolean, nullable=False, default=False)
+    portal_user_id    = Column(UUID(as_uuid=True), ForeignKey("portal_users.id", ondelete="SET NULL"), nullable=True)
+    uploaded_by_id    = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    customer_visible  = Column(Boolean, nullable=False, default=False)
+    created_at        = Column(DateTime(timezone=True), nullable=False)
