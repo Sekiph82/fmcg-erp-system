@@ -4,16 +4,34 @@ from datetime import datetime
 from typing import Optional, List
 import uuid
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 from app.models.email_integration import EmailProvider
 
 
-class EmailAccountCreate(BaseModel):
+def _one_line(v: Optional[str]) -> Optional[str]:
+    if v is not None and any(ord(c) < 32 for c in v):
+        raise ValueError("must be a single line without control characters")
+    return v
+
+
+class MailboxSettings(BaseModel):
+    """IMAP/SMTP login. Hosts/ports default by provider (Gmail, Microsoft 365); the password is write-only."""
+    imap_host:     Optional[str] = Field(None, max_length=255)
+    imap_port:     Optional[int] = Field(None, ge=1, le=65535)
+    smtp_host:     Optional[str] = Field(None, max_length=255)
+    smtp_port:     Optional[int] = Field(None, ge=1, le=65535)
+    username:      Optional[str] = Field(None, max_length=255)
+    password:      Optional[str] = Field(None, min_length=1, max_length=500)
+
+
+class EmailAccountCreate(MailboxSettings):
     provider:      EmailProvider
-    email_address: str
-    display_name:  Optional[str] = None
+    email_address: EmailStr
+    display_name:  Optional[str] = Field(None, max_length=255)
     sync_enabled:  bool = True
+
+    _name_one_line = field_validator("display_name")(classmethod(lambda cls, v: _one_line(v)))
 
 
 class EmailAccountRead(BaseModel):
@@ -27,6 +45,12 @@ class EmailAccountRead(BaseModel):
     last_sync_at:  Optional[datetime]
     sync_error:    Optional[str]
     created_at:    datetime
+    imap_host:     Optional[str] = None
+    imap_port:     Optional[int] = None
+    smtp_host:     Optional[str] = None
+    smtp_port:     Optional[int] = None
+    username:      Optional[str] = None
+    connected:     bool = False
 
 
 class EmailMessageRead(BaseModel):
@@ -43,6 +67,7 @@ class EmailMessageRead(BaseModel):
     is_inbound:          bool
     is_read:             bool
     has_attachments:     bool
+    attachments:         Optional[List[dict]] = None
     sent_by_id:          Optional[uuid.UUID]
 
 
@@ -65,10 +90,12 @@ class EmailThreadRead(BaseModel):
 
 class SendEmailRequest(BaseModel):
     account_id:        uuid.UUID
-    to_emails:         List[str]
-    cc_emails:         List[str] = []
-    subject:           str
-    body_text:         str
+    to_emails:         List[EmailStr] = Field(min_length=1, max_length=50)
+    cc_emails:         List[EmailStr] = Field(default_factory=list, max_length=50)
+    subject:           str = Field(min_length=1, max_length=900)
+    body_text:         str = Field(max_length=200_000)
+
+    _subject_one_line = field_validator("subject")(classmethod(lambda cls, v: _one_line(v)))
     linked_module:     Optional[str]       = None
     linked_object_id:  Optional[uuid.UUID] = None
     linked_object_ref: Optional[str]       = None

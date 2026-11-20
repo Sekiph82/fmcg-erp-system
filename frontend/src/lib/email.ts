@@ -12,6 +12,16 @@ export interface EmailAccount {
   last_sync_at?: string | null;
   sync_error?: string | null;
   created_at: string;
+  imap_host?: string | null;
+  imap_port?: number | null;
+  smtp_host?: string | null;
+  smtp_port?: number | null;
+  username?: string | null;
+  connected: boolean;
+}
+
+export interface MailboxSettings {
+  imap_host?: string; imap_port?: number; smtp_host?: string; smtp_port?: number; username?: string; password?: string;
 }
 
 export interface EmailMessage {
@@ -27,6 +37,7 @@ export interface EmailMessage {
   is_inbound: boolean;
   is_read: boolean;
   has_attachments: boolean;
+  attachments?: { name: string; type: string; size: number }[] | null;
   sent_by_id?: string | null;
 }
 
@@ -63,8 +74,12 @@ export const emailApi = {
     const r = await apiClient.get<EmailAccount[]>(`${BASE}/accounts`);
     return r.data;
   },
-  async addAccount(data: { provider: EmailProvider; email_address: string; display_name?: string; sync_enabled?: boolean }): Promise<EmailAccount> {
+  async addAccount(data: { provider: EmailProvider; email_address: string; display_name?: string; sync_enabled?: boolean } & MailboxSettings): Promise<EmailAccount> {
     const r = await apiClient.post<EmailAccount>(`${BASE}/accounts`, data);
+    return r.data;
+  },
+  async connectAccount(id: string, data: MailboxSettings): Promise<EmailAccount> {
+    const r = await apiClient.put<EmailAccount>(`${BASE}/accounts/${id}/connection`, data);
     return r.data;
   },
   async removeAccount(id: string): Promise<void> {
@@ -91,8 +106,8 @@ export const emailApi = {
     const r = await apiClient.post<EmailThread>(`${BASE}/send`, data);
     return r.data;
   },
-  async syncAccount(accountId: string): Promise<{ synced: number; account: string }> {
-    const r = await apiClient.post<{ synced: number; account: string }>(`${BASE}/sync/${accountId}`);
+  async syncAccount(accountId: string): Promise<{ imported: number; skipped: number; account: string; demo?: boolean }> {
+    const r = await apiClient.post<{ imported: number; skipped: number; account: string; demo?: boolean }>(`${BASE}/sync/${accountId}`);
     return r.data;
   },
   async listTemplates(module?: string): Promise<EmailTemplate[]> {

@@ -2,6 +2,7 @@ import uuid
 import enum
 from datetime import datetime
 from sqlalchemy import (
+    BigInteger,
     Column, String, Text, Boolean, Integer,
     ForeignKey, Enum, DateTime, JSON,
 )
@@ -30,6 +31,15 @@ class EmailAccount(Base, TimestampMixin):
     last_sync_at    = Column(DateTime(timezone=True), nullable=True)
     sync_error      = Column(Text, nullable=True)
     created_by_id   = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    # M36.S01.T001 real mailbox (IMAP in / SMTP out; Gmail and Microsoft 365 work with an app password)
+    imap_host       = Column(String(255), nullable=True)
+    imap_port       = Column(Integer, nullable=True)            # 993 = implicit TLS
+    smtp_host       = Column(String(255), nullable=True)
+    smtp_port       = Column(Integer, nullable=True)            # 465 = implicit TLS, 587 = STARTTLS
+    username        = Column(String(255), nullable=True)
+    secret_enc      = Column(Text, nullable=True)               # password, Fernet-encrypted; wiped on disconnect
+    imap_uidvalidity = Column(BigInteger, nullable=True)
+    imap_last_uid   = Column(BigInteger, nullable=True)         # highest INBOX UID already imported
 
     created_by = relationship("User", foreign_keys=[created_by_id])
     threads    = relationship("EmailThread", back_populates="account", cascade="all, delete-orphan")
@@ -81,6 +91,8 @@ class EmailMessage(Base, TimestampMixin):
     is_inbound          = Column(Boolean, nullable=False, default=True)
     is_read             = Column(Boolean, default=False, nullable=False)
     has_attachments     = Column(Boolean, default=False, nullable=False)
+    attachments         = Column(JSON, nullable=True)        # [{"name", "type", "size"}] metadata only
+    in_reply_to         = Column(String(500), nullable=True)
     sent_by_id          = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
     thread   = relationship("EmailThread", back_populates="messages")

@@ -8,8 +8,9 @@ Routes:
   POST /accounts         – add email account
   GET  /threads          – list threads (filterable by linked_object_id)
   GET  /threads/{id}     – thread detail with messages
-  POST /send             – compose + log outgoing email
-  POST /sync/{account_id} – simulate inbox sync
+  PUT  /accounts/{id}/connection – connect a mailbox (IMAP/SMTP, login tested)
+  POST /send             – send through the mailbox's SMTP server
+  POST /sync/{account_id} – import new mail now
   GET  /templates        – list email templates
   POST /templates        – create template
 """
@@ -18,12 +19,11 @@ from __future__ import annotations
 import uuid
 from datetime import datetime, timezone, timedelta
 from typing import List, Optional
-import random
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import noload, selectinload
 
 from app.core.config import settings
 from app.core.deps import get_current_user, get_db
@@ -32,13 +32,41 @@ from app.models.email_integration import (
 )
 from app.models.user import User
 from app.schemas.email_integration import (
-    EmailAccountCreate, EmailAccountRead,
+    EmailAccountCreate, EmailAccountRead, MailboxSettings,
     EmailThreadRead, EmailMessageRead,
     SendEmailRequest,
     EmailTemplateCreate, EmailTemplateRead,
 )
 
 router = APIRouter()
+
+
+def _read(acc: EmailAccount) -> EmailAccountRead:
+    from app.services.email_mailbox_service import is_connected
+    row = EmailAccountRead.model_validate(acc)
+    row.connected = is_connected(acc)
+    return row
+
+
+async def _apply_mailbox(acc: EmailAccount, body) -> None:
+    """Fill provider defaults, test the IMAP and SMTP login, then store the encrypted password."""
+    import asyncio
+    from app.services import email_mailbox_service as mbx
+
+    d = mbx.DEFAULTS.get(acc.provider, (None, 993, None, 587))
+    imap_host, imap_port = body.imap_host or acc.imap_host or d[0], body.imap_port or acc.imap_port or d[1]
+    smtp_host, smtp_port = body.smtp_host or acc.smtp_host or d[2], body.smtp_port or acc.smtp_port or d[3]
+    username = body.username or acc.username or acc.email_address
+    if not (imap_host and smtp_host):
+        raise HTTPException(422, "IMAP and SMTP server names are required for this provider.")
+    try:
+        await asyncio.to_thread(mbx.validate_host, imap_host, imap_port, mbx.IMAP_PORTS)
+        await asyncio.to_thread(mbx.validate_host, smtp_host, smtp_port, mbx.SMTP_PORTS)
+        await asyncio.to_thread(mbx.check_login, imap_host, imap_port, smtp_host, smtp_port, username, body.password)
+    except mbx.MailboxError as e:
+        raise HTTPException(422, str(e))
+    acc.imap_host, acc.imap_port, acc.smtp_host, acc.smtp_port = imap_host, imap_port, smtp_host, smtp_port
+    acc.username, acc.secret_enc, acc.sync_error = username, mbx.encrypt(body.password), None
 
 
 # Mailboxes are personal: a user reaches only the accounts they connected (superusers: all).
@@ -75,7 +103,7 @@ async def list_accounts(
     if not current_user.is_superuser:
         q = q.where(EmailAccount.created_by_id == current_user.id)
     result = await db.execute(q)
-    return [EmailAccountRead.model_validate(a) for a in result.scalars().all()]
+    return [_read(a) for a in result.scalars().all()]
 
 
 @router.post("/accounts", response_model=EmailAccountRead, status_code=201)
@@ -84,18 +112,41 @@ async def add_account(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    account = EmailAccount(**body.model_dump(), created_by_id=current_user.id)
+    """Add a mailbox. With a password it is connected (login tested first, 422 if it fails); without one it
+    is only a record and cannot send or sync."""
+    account = EmailAccount(provider=body.provider, email_address=body.email_address.strip().lower(),
+                           display_name=body.display_name, sync_enabled=body.sync_enabled, created_by_id=current_user.id)
+    if body.password:
+        await _apply_mailbox(account, body)
     db.add(account)
     await db.commit()
     await db.refresh(account)
-    return EmailAccountRead.model_validate(account)
+    return _read(account)
+
+
+@router.put("/accounts/{account_id}/connection", response_model=EmailAccountRead)
+async def connect_account(account_id: uuid.UUID, body: MailboxSettings, db: AsyncSession = Depends(get_db),
+                          current_user: User = Depends(get_current_user)):
+    """Connect or re-connect (e.g. new app password) a mailbox; the login is tested before anything is stored."""
+    account = await _account_for(db, account_id, current_user)
+    if not account.is_active:
+        raise HTTPException(404, "Account not found")
+    if not body.password:
+        raise HTTPException(422, "password is required")
+    await _apply_mailbox(account, body)
+    await db.commit()
+    await db.refresh(account)
+    return _read(account)
 
 
 @router.delete("/accounts/{account_id}", status_code=204)
 async def remove_account(account_id: uuid.UUID, db: AsyncSession = Depends(get_db),
                          current_user: User = Depends(get_current_user)):
+    """Disconnect: stop syncing and sending and erase the stored password. Threads stay as history."""
     account = await _account_for(db, account_id, current_user)
     account.is_active = False
+    account.sync_enabled = False
+    account.secret_enc = None
     await db.commit()
 
 
@@ -112,7 +163,8 @@ async def list_threads(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    q = select(EmailThread).order_by(EmailThread.last_message_at.desc()).offset(skip).limit(limit)
+    q = (select(EmailThread).options(noload(EmailThread.messages))  # list view: no messages
+         .order_by(EmailThread.last_message_at.desc().nulls_last()).offset(skip).limit(limit))
     if not current_user.is_superuser:
         q = q.where(EmailThread.account_id.in_(
             select(EmailAccount.id).where(EmailAccount.created_by_id == current_user.id)))
@@ -164,11 +216,15 @@ async def link_thread(
 ):
     """Link an email thread to an ERP record."""
     thread = await _thread_for(db, thread_id, current_user)
+    if linked_module == "customer":
+        from app.models.sales import Customer
+        if await db.get(Customer, linked_object_id) is None:
+            raise HTTPException(422, "Customer not found")
     thread.linked_module = linked_module
     thread.linked_object_id = linked_object_id
     thread.linked_object_ref = linked_object_ref
     await db.commit()
-    await db.refresh(thread)
+    await db.refresh(thread, ["messages"])  # serialised below; never lazy-load in async
     row = EmailThreadRead.model_validate(thread)
     return row
 
@@ -181,52 +237,28 @@ async def send_email(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Record an outgoing email in the thread (outbox log). No mail provider is connected yet, so
-    nothing is delivered; M36.S01.T001 adds provider delivery."""
+    """Send through the mailbox's own SMTP server and keep the message in the thread. A reply carries
+    In-Reply-To / References so it stays in the customer's thread too. Nothing is stored if delivery fails."""
+    from app.services import email_mailbox_service as mbx
+
     account = await _account_for(db, body.account_id, current_user)
     if not account.is_active:
         raise HTTPException(404, "Email account not found or inactive")
-
-    now = datetime.now(tz=timezone.utc)
-
-    # Get or create thread
+    thread = None
     if body.thread_id:
         thread = await _thread_for(db, body.thread_id, current_user)
         if thread.account_id != account.id:
             raise HTTPException(422, "Thread belongs to another mailbox")
-    else:
-        thread = EmailThread(
-            account_id=account.id,
-            subject=body.subject,
-            snippet=body.body_text[:200] if body.body_text else "",
-            participants=list({account.email_address} | set(body.to_emails)),
-            is_read=True,
-            message_count=0,
-            last_message_at=now,
-            linked_module=body.linked_module,
-            linked_object_id=body.linked_object_id,
-            linked_object_ref=body.linked_object_ref,
-        )
-        db.add(thread)
-        await db.flush()
-
-    message = EmailMessage(
-        thread_id=thread.id,
-        from_email=account.email_address,
-        from_name=account.display_name or current_user.full_name,
-        to_emails=body.to_emails,
-        cc_emails=body.cc_emails,
-        subject=body.subject,
-        body_text=body.body_text,
-        received_at=now,
-        is_inbound=False,
-        is_read=True,
-        sent_by_id=current_user.id,
-    )
-    db.add(message)
-    thread.message_count += 1
-    thread.last_message_at = now
-    thread.snippet = body.body_text[:200] if body.body_text else ""
+    to = [e.strip().lower() for e in body.to_emails if e.strip()]
+    if not to:
+        raise HTTPException(422, "At least one recipient is required")
+    link = {"linked_module": body.linked_module, "linked_object_id": body.linked_object_id,
+            "linked_object_ref": body.linked_object_ref}
+    try:
+        thread = await mbx.send(db, account, to=to, cc=[e.strip().lower() for e in body.cc_emails if e.strip()],
+                                subject=body.subject, body=body.body_text, thread=thread, sent_by=current_user, link=link)
+    except mbx.MailboxError as e:
+        raise HTTPException(422 if isinstance(e, mbx.MailboxInputError) else 409 if not mbx.is_connected(account) else 502, str(e))
     await db.commit()
 
     result = await db.execute(
@@ -238,114 +270,54 @@ async def send_email(
     return row
 
 
-# ── Simulate Sync ──────────────────────────────────────────────────────────────
+# ── Sync ──────────────────────────────────────────────────────────
+
+# Local development only: sample POVU mail for a mailbox that is not connected.
+_DEMO_THREADS = [
+    ("Order for POVU AllClean 1 L — 20 cartons", "orders@mama-duka.example", "Mama Duka Stores",
+     "Hello,\n\nPlease deliver 20 cartons of POVU AllClean 1 L (POVU-ALC-1L) to our Kawangware shop on Friday.\n\nThanks", 45),
+    ("Broken caps on last delivery", "qc@retail-chain.example", "Retail Chain QC",
+     "Hello,\n\n2 cartons of POVU AllClean 1 L arrived with broken caps (lot on the carton label). Please advise.\n\nRegards", 200),
+    ("Price list request — baby wipes", "buyer@coastal-dist.example", "Coastal Distributors",
+     "Good afternoon,\n\nCould you share your current price list for POVU baby wipes and liquid detergents for Mombasa?\n\nThank you", 360),
+]
+
 
 @router.post("/sync/{account_id}", response_model=dict)
-async def simulate_sync(
+async def sync_mailbox(
     account_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """
-    Demo inbox fill for local development only: inserts sample threads. No mailbox provider is
-    connected, so outside development this refuses instead of fabricating mail.
-    """
-    if settings.ENVIRONMENT != "development":
-        raise HTTPException(501, "No mailbox provider is connected; inbox sync is not available.")
+    """Import new mail now (connected mailboxes are also synced every 5 minutes). A mailbox that is not
+    connected answers 409; only local development fills it with sample POVU mail."""
+    from app.services import email_mailbox_service as mbx
+
     account = await _account_for(db, account_id, current_user)
+    if not account.is_active:
+        raise HTTPException(404, "Account not found")
+    if mbx.is_connected(account):
+        try:
+            result = await mbx.sync_account(db, account)
+        except mbx.MailboxError as e:
+            await db.commit()  # keep sync_error on the account
+            raise HTTPException(502, str(e))
+        await db.commit()
+        return {**result, "account": account.email_address}
+    if settings.ENVIRONMENT != "development":
+        raise HTTPException(409, "Connect this mailbox (IMAP/SMTP) first; nothing was imported.")
 
     now = datetime.now(tz=timezone.utc)
-
-    demo_threads = [
-        {
-            "subject": "RE: Purchase Order PO-2024-0042 Confirmation",
-            "from_email": "supplier@globalfoods.com",
-            "from_name": "Global Foods Supplies",
-            "body": "Dear Team,\n\nWe confirm receipt of your PO-2024-0042 for 5,000 kg of Maize Flour. "
-                    "Expected delivery: 2024-02-15. Attached is our pro-forma invoice.\n\nBest regards,\nGlobal Foods",
-            "linked_module": "procurement",
-            "linked_object_ref": "PO-2024-0042",
-            "minutes_ago": 45,
-        },
-        {
-            "subject": "Invoice INV-2024-0128 — Payment Confirmation",
-            "from_email": "accounts@nairobi-distributors.co.ke",
-            "from_name": "Nairobi Distributors Ltd",
-            "body": "Hi,\n\nPlease find attached our payment confirmation for Invoice INV-2024-0128 "
-                    "(KES 485,000). M-Pesa transaction ref: QHF3G2891K.\n\nThank you.",
-            "linked_module": "finance",
-            "linked_object_ref": "INV-2024-0128",
-            "minutes_ago": 120,
-        },
-        {
-            "subject": "Quality Issue — Batch LOT-2024-0088",
-            "from_email": "qc@retailchain.co.ke",
-            "from_name": "Retail Chain QC Team",
-            "body": "Hello,\n\nWe have identified potential quality issues with batch LOT-2024-0088 "
-                    "(Cooking Oil 1L). 3 consumer complaints received regarding off-smell. "
-                    "Please advise on next steps.\n\nRegards",
-            "linked_module": "quality",
-            "linked_object_ref": "LOT-2024-0088",
-            "minutes_ago": 200,
-        },
-        {
-            "subject": "New Distributor Inquiry — Mombasa Region",
-            "from_email": "john.mwangi@coastal-dist.co.ke",
-            "from_name": "John Mwangi",
-            "body": "Good afternoon,\n\nI represent Coastal Distributors Ltd operating in the Mombasa "
-                    "region. We are interested in becoming an authorized distributor for your product range. "
-                    "Could you share your distributor onboarding requirements?\n\nThank you",
-            "linked_module": "sales",
-            "linked_object_ref": None,
-            "minutes_ago": 360,
-        },
-        {
-            "subject": "Certificate of Analysis Request — Export Shipment",
-            "from_email": "import@middle-east-partner.ae",
-            "from_name": "ME Import Partner",
-            "body": "Dear Quality Team,\n\nFor our upcoming import shipment, please provide the Certificate "
-                    "of Analysis for products in SO-2024-0156. Our customs requires this document prior to clearance.",
-            "linked_module": "sales",
-            "linked_object_ref": "SO-2024-0156",
-            "minutes_ago": 480,
-        },
-    ]
-
     created = 0
-    for demo in demo_threads:
-        msg_time = now - timedelta(minutes=demo["minutes_ago"])
-        thread = EmailThread(
-            account_id=account.id,
-            subject=demo["subject"],
-            snippet=demo["body"][:150],
-            participants=[demo["from_email"], account.email_address],
-            is_read=False,
-            message_count=1,
-            last_message_at=msg_time,
-            linked_module=demo["linked_module"],
-            linked_object_ref=demo["linked_object_ref"],
-        )
-        db.add(thread)
-        await db.flush()
-
-        msg = EmailMessage(
-            thread_id=thread.id,
-            from_email=demo["from_email"],
-            from_name=demo["from_name"],
-            to_emails=[account.email_address],
-            subject=demo["subject"],
-            body_text=demo["body"],
-            received_at=msg_time,
-            is_inbound=True,
-            is_read=False,
-        )
-        db.add(msg)
-        created += 1
-
+    for subject, sender, name, body, minutes in _DEMO_THREADS:
+        p = mbx.Parsed(message_id=f"<demo-{account.id}-{created}@povu.local>", in_reply_to=None, references=[],
+                       from_email=sender, from_name=name, to=[account.email_address.lower()], cc=[], subject=subject,
+                       text=body, when=now - timedelta(minutes=minutes))
+        if await mbx.store(db, account, p):
+            created += 1
     account.last_sync_at = now
-    account.sync_error = None
     await db.commit()
-    return {"synced": created, "account": account.email_address}
+    return {"imported": created, "skipped": len(_DEMO_THREADS) - created, "account": account.email_address, "demo": True}
 
 
 # ── Templates ─────────────────────────────────────────────────────────────────

@@ -103,6 +103,7 @@ class Settings(BaseSettings):
 
     # ── SMTP (email OTP delivery) ───────────────────────────────────────────────
     SMTP_HOST: str = ""
+    MAIL_ALLOW_PRIVATE_HOSTS: bool = False  # mailbox IMAP/SMTP may point at private addresses (self-hosted mail server)
     SMTP_PORT: int = 587
     SMTP_USERNAME: str = ""
     SMTP_PASSWORD: str = ""

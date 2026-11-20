@@ -136,7 +136,7 @@ def test_mailboxes_are_personal_and_demo_sync_is_dev_only(monkeypatch):
     objects = {str(account.id): account, str(thread.id): thread}
     c = _mail_client(other, objects)
     assert c.delete(f"/email/accounts/{account.id}").status_code == 404
-    assert c.post("/email/send", json={"account_id": str(account.id), "to_emails": ["x@example.invalid"],
+    assert c.post("/email/send", json={"account_id": str(account.id), "to_emails": ["x@shops.example"],
                                        "subject": "s", "body_text": "b"}).status_code == 404
     monkeypatch.setattr(email_integration.settings, "ENVIRONMENT", "production")
-    assert _mail_client(owner, objects).post(f"/email/sync/{account.id}").status_code == 501
+    assert _mail_client(owner, objects).post(f"/email/sync/{account.id}").status_code == 409  # not connected: connect it first (M36.S01.T001)
