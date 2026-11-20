@@ -188,7 +188,7 @@ function ContainerModal({ title, initial, shipments, onClose, onSubmit, loading 
           </div>
           <div className="col-span-2">
             <label className="block text-xs font-medium text-gray-600 mb-1">Contents Summary</label>
-            <textarea className="w-full border rounded px-3 py-2 text-sm" rows={2} value={form.contents_summary} onChange={(e) => set("contents_summary", e.target.value)} placeholder="e.g. 500 cartons detergent, 200 bags flour…" />
+            <textarea className="w-full border rounded px-3 py-2 text-sm" rows={2} value={form.contents_summary} onChange={(e) => set("contents_summary", e.target.value)} placeholder="e.g. 500 cartons detergent, 200 cartons baby wipes…" />
           </div>
         </div>
         <div className="flex gap-2 justify-end">

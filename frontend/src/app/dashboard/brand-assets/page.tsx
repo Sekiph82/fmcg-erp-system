@@ -165,7 +165,7 @@ export default function BrandAssetsPage() {
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <div className="sm:col-span-2">
               <label className="text-xs text-gray-500 block mb-1">Asset Name *</label>
-              <input type="text" value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} placeholder="e.g. Mango Juice Label v1 — 500ml"
+              <input type="text" value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} placeholder="e.g. AllClean Label v1 — 1 L Bottle"
                 className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" />
             </div>
             <div>
@@ -177,7 +177,7 @@ export default function BrandAssetsPage() {
             </div>
             {[
               { label: "Brand", key: "brand", ph: "e.g. POVU Naturals" },
-              { label: "Product Name", key: "product_name", ph: "e.g. Mango Juice 500ml" },
+              { label: "Product Name", key: "product_name", ph: "e.g. POVU AllClean Multi-Purpose Cleaner 1 L Bottle" },
               { label: "Product SKU", key: "product_sku", ph: "e.g. MJ-500" },
               { label: "BOM Version", key: "bom_version", ph: "e.g. v2.1" },
               { label: "File URL", key: "file_url", ph: "https://files.company.com/…" },

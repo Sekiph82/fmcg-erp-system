@@ -185,10 +185,10 @@ export default function ChangeoverPage() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-gray-500">From Family (e.g. MILK)</label>
+                  <label className="text-xs text-gray-500">From Family (e.g. DETERGENT)</label>
                   <input
                     className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mt-1"
-                    placeholder="MILK"
+                    placeholder="DETERGENT"
                     value={form.from_family}
                     onChange={(e) => setForm({ ...form, from_family: e.target.value })}
                   />
@@ -197,7 +197,7 @@ export default function ChangeoverPage() {
                   <label className="text-xs text-gray-500">To Family</label>
                   <input
                     className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mt-1"
-                    placeholder="JUICE"
+                    placeholder="BODY-CARE"
                     value={form.to_family}
                     onChange={(e) => setForm({ ...form, to_family: e.target.value })}
                   />

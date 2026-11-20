@@ -68,7 +68,7 @@ Clicking a card navigates to the project detail page at `/dashboard/npd/{id}`.
 
 | Field | Label | Required | Default | Notes |
 |-------|-------|----------|---------|-------|
-| `name` | Product Name | Yes | — | e.g. "New Mango Juice 500ml" |
+| `name` | Product Name | Yes | — | e.g. "POVU AllClean Lemon 1 L Bottle" |
 | `category` | Category | Yes | `NEW_PRODUCT` | See category options below |
 | `brand` | Brand | No | — | e.g. "POVU Naturals" |
 | `target_market` | Target Market | No | — | e.g. "Kenya Urban" |

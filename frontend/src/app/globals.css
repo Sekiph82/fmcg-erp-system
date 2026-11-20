@@ -248,6 +248,7 @@
   input[type="date"], input[type="time"], input[type="datetime-local"], input[type="month"] {
     min-width: 0;
     max-width: 100%;
+    min-height: 2.5rem; /* an empty one collapses to a thin bar on iOS */
     -webkit-appearance: none;
     appearance: none;
   }

@@ -280,7 +280,7 @@ export default function DynamicPricingPage() {
           <h2 className="text-sm font-semibold text-gray-700">Log Competitor Price Observation</h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {([
-              ["Product Name *", "product_name", "e.g. Mango Juice 500ml"],
+              ["Product Name *", "product_name", "e.g. POVU AllClean Multi-Purpose Cleaner 1 L Bottle"],
               ["Our SKU", "our_sku", "e.g. MJ-500"],
               ["Competitor Name *", "competitor_name", "e.g. Fresh Corp"],
               ["Price *", "price", "e.g. 85.00"],
@@ -323,7 +323,7 @@ export default function DynamicPricingPage() {
             <p className="text-xs text-gray-400">Compares your price against recent competitor data and margin rules to produce a recommendation.</p>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {([
-                ["Product Name *", "product_name", "e.g. Mango Juice 500ml"],
+                ["Product Name *", "product_name", "e.g. POVU AllClean Multi-Purpose Cleaner 1 L Bottle"],
                 ["Our SKU", "our_sku", "e.g. MJ-500"],
                 ["Current Price (KES) *", "current_price", "e.g. 95.00"],
                 ["Cost Price / COGS (KES)", "cost_price", "e.g. 55.00"],

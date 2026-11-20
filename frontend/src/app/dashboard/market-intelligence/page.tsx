@@ -252,7 +252,7 @@ export default function MarketIntelligencePage() {
         <div className="bg-white border rounded-lg p-5 shadow-sm space-y-4 max-w-2xl">
           <h2 className="text-sm font-semibold text-gray-700">Log Field Observation</h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {([["Outlet Name *","outlet_name","e.g. Naivas Karen"],["Category *","category","e.g. Juices"],["Our Brand","our_brand","e.g. POVU"],["Observer","observer_name","e.g. Field Rep"],["Location","location","e.g. Nairobi, Karen"],["Our Facings","our_facings","e.g. 6"],["Total Facings","total_facings","e.g. 20"],["Notes","notes","Optional"]] as const).map(([label,key,ph]) => (
+            {([["Outlet Name *","outlet_name","e.g. Naivas Karen"],["Category *","category","e.g. Liquid detergents"],["Our Brand","our_brand","e.g. POVU"],["Observer","observer_name","e.g. Field Rep"],["Location","location","e.g. Nairobi, Karen"],["Our Facings","our_facings","e.g. 6"],["Total Facings","total_facings","e.g. 20"],["Notes","notes","Optional"]] as const).map(([label,key,ph]) => (
               <div key={key}>
                 <label className="text-xs text-gray-500 block mb-1">{label}</label>
                 <input type="text" placeholder={ph} value={(obsForm as unknown as Record<string,string>)[key]}
@@ -293,7 +293,7 @@ export default function MarketIntelligencePage() {
         <div className="bg-white border rounded-lg p-5 shadow-sm space-y-3 max-w-lg">
           <h2 className="text-sm font-semibold text-gray-700">Log Market Share Estimate</h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {([["Category *","category","e.g. Juices"],["Our Brand","our_brand","e.g. POVU"],["Our Share %","our_share_pct","e.g. 18.5"],["Market Value (KES)","total_market_value_kes","e.g. 50000000"],["Source","source","field | nielsen | IRI | manual"],["Notes","notes","Optional"]] as const).map(([label,key,ph]) => (
+            {([["Category *","category","e.g. Liquid detergents"],["Our Brand","our_brand","e.g. POVU"],["Our Share %","our_share_pct","e.g. 18.5"],["Market Value (KES)","total_market_value_kes","e.g. 50000000"],["Source","source","field | nielsen | IRI | manual"],["Notes","notes","Optional"]] as const).map(([label,key,ph]) => (
               <div key={key}>
                 <label className="text-xs text-gray-500 block mb-1">{label}</label>
                 <input type="text" placeholder={ph} value={(shareForm as unknown as Record<string,string>)[key]}

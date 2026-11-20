@@ -222,7 +222,7 @@ export default function CertificatesPage() {
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <div className="sm:col-span-2">
               <label className="text-xs text-gray-500 block mb-1">Entity Name *</label>
-              <input type="text" value={form.entity_name} onChange={(e) => setForm((p) => ({ ...p, entity_name: e.target.value }))} placeholder="e.g. Mango Juice 500ml or Plant A"
+              <input type="text" value={form.entity_name} onChange={(e) => setForm((p) => ({ ...p, entity_name: e.target.value }))} placeholder="e.g. POVU AllClean 1 L or Plant A"
                 className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" />
             </div>
             <div>

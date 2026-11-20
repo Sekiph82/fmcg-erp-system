@@ -228,7 +228,7 @@ export default function ConsumerComplaintsPage() {
               { label: "Consumer Name", key: "consumer_name", placeholder: "Optional" },
               { label: "Contact (Phone/Email)", key: "consumer_contact", placeholder: "Optional" },
               { label: "Consumer Location", key: "consumer_location", placeholder: "e.g. Nairobi, Karen" },
-              { label: "Product Name *", key: "product_name", placeholder: "e.g. Mango Juice 500ml" },
+              { label: "Product Name *", key: "product_name", placeholder: "e.g. POVU AllClean Multi-Purpose Cleaner 1 L Bottle" },
               { label: "Lot Number", key: "lot_number", placeholder: "e.g. LOT-2026-001" },
               { label: "Purchase Date", key: "purchase_date", placeholder: "YYYY-MM-DD" },
               { label: "Purchase Location", key: "purchase_location", placeholder: "e.g. Naivas Karen" },

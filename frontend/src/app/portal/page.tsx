@@ -109,7 +109,7 @@ function OrderTab({ me, fail, onPlaced }: { me: PortalMe; fail: (e: unknown) => 
 
   return (
     <div className="grid md:grid-cols-[1fr_320px] gap-4">
-      <section aria-label="Catalog" className="bg-white rounded-xl border p-3 space-y-2">
+      <section aria-label="Catalog" className="min-w-0 bg-white rounded-xl border p-3 space-y-2">
         <input aria-label="Search products" placeholder="Search product or SKU…" value={search} onChange={(e) => setSearch(e.target.value)}
           className="w-full border rounded-lg px-3 py-2 text-sm" maxLength={100} />
         {items.length === 0 ? <p className="text-sm text-gray-400 p-2">No products found.</p> : (
@@ -124,7 +124,7 @@ function OrderTab({ me, fail, onPlaced }: { me: PortalMe; fail: (e: unknown) => 
                 className="w-20 border rounded-lg px-2 py-1.5 text-sm text-right" />
             </li>))}</ul>)}
       </section>
-      <aside aria-label="Cart" className="bg-white rounded-xl border p-3 space-y-3 h-fit md:sticky md:top-4">
+      <aside aria-label="Cart" className="min-w-0 bg-white rounded-xl border p-3 space-y-3 h-fit md:sticky md:top-4">
         <h2 className="font-semibold">Cart ({lines.length})</h2>
         {!me.can_order && <p className="text-xs text-amber-700">Your role can view but not place orders.</p>}
         {lines.map((l) => <p key={l.item.product_id} className="text-sm flex justify-between gap-2"><span className="truncate">{l.qty} × {l.item.name}</span><span>{money(l.item.unit_price == null ? null : l.item.unit_price * l.qty, me.currency)}</span></p>)}

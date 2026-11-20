@@ -67,12 +67,12 @@ Work centers are also managed from the Shop Floor module for real-time status.
 ![Production — Routing tab](../../../screenshots/captured/module-ui/manufacturing/production/routing-tab.png)
 *Routing tab defining operation sequences and work center assignments per product.*
 
-A routing defines the sequence of operations (and the work center for each) required to produce a product. Example routing for a juice product:
+A routing defines the sequence of operations (and the work center for each) required to produce a product. Example routing for a liquid cleaner:
 
 | Step | Operation | Work Center |
 |------|-----------|-------------|
 | 10 | Pre-mixing | Blending Line 1 |
-| 20 | Pasteurisation | Pasteuriser A |
+| 20 | Quality check (pH, viscosity) | QC Lab |
 | 30 | Filling | Filling Line 2 |
 | 40 | Labelling | Labelling Machine 1 |
 

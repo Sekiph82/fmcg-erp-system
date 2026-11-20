@@ -49,9 +49,9 @@ Existing recipes are identified by `product_sku` + `version`. Existing BOM item 
 
 ```csv
 product_sku,version,name,description,is_active,valid_from,valid_to
-SKU-001,1.0,Povu Mango Juice Standard,,true,2026-01-01,
-SKU-001,2.0,Povu Mango Juice Reformulated,Lower sugar formulation,true,2026-06-01,
-SKU-002,1.0,Povu Passion Juice,,true,,
+POVU-ALC-1L,1.0,POVU AllClean Multi-Purpose Cleaner 1 L Standard,,true,2026-01-01,
+POVU-ALC-1L,2.0,POVU AllClean Multi-Purpose Cleaner 1 L Reformulated,Lower surfactant formulation,true,2026-06-01,
+POVU-CFL-1L,1.0,POVU ColorFresh Liquid Detergent Colors 1 L,,true,,
 ```
 
 ---
@@ -81,10 +81,10 @@ SKU-002,1.0,Povu Passion Juice,,true,,
 
 ```csv
 product_sku,version,line_no,material_code,quantity,unit,loss_percent,optional,alternative_group,notes
-SKU-001,1.0,10,MAT-MANGO,450,KG,2.5,false,,Fresh mango pulp
-SKU-001,1.0,20,MAT-SUGAR,80,KG,0,false,,
-SKU-001,1.0,30,MAT-CITRIC,2.5,KG,0,true,ACID-GRP,Can substitute with ascorbic acid
-SKU-001,1.0,40,MAT-WATER,467.5,L,0,false,,Process water
+POVU-ALC-1L,1.0,10,RAW-SURF-LAS,90,KG,1.5,false,,LAS surfactant blend
+POVU-ALC-1L,1.0,20,RAW-THICK-SALT,15,KG,0,false,,
+POVU-ALC-1L,1.0,30,RAW-FRAG-LAV,3,KG,0,true,FRAG-GRP,Can substitute with another fragrance oil
+POVU-ALC-1L,1.0,40,MAT-WATER,892,L,0,false,,Process water
 ```
 
 ---
@@ -114,11 +114,11 @@ SKU-001,1.0,40,MAT-WATER,467.5,L,0,false,,Process water
 
 ```csv
 product_sku,version,step_no,step_name,temperature_c,target_ph,viscosity_cp,mix_time_min,rpm,notes
-SKU-001,1.0,10,Pre-mixing,,,,10,120,Dry blend sugars and citric
-SKU-001,1.0,20,Blending,25,3.8,,20,200,Add mango pulp and water
-SKU-001,1.0,30,Pasteurisation,85,,,,0,Hold 15 min at 85°C
-SKU-001,1.0,40,Cooling,25,,,,0,Plate cooler to 25°C
-SKU-001,1.0,50,Filling,,,,,0,
+POVU-ALC-1L,1.0,10,Pre-mixing,,,,10,120,Water and LAS surfactant
+POVU-ALC-1L,1.0,20,Blending,25,7.5,,20,200,Add salt thickener slowly
+POVU-ALC-1L,1.0,30,Fragrance,25,,800,10,150,Add lavender fragrance oil
+POVU-ALC-1L,1.0,40,Quality check,25,7.5,800,,0,pH and viscosity before filling
+POVU-ALC-1L,1.0,50,Filling,,,,,0,
 ```
 
 ---
