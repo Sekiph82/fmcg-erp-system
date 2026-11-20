@@ -29,7 +29,7 @@ from app.models.sales import Customer
 from app.models.whatsapp import WAMessageDirection, WhatsAppMessage
 
 DEFAULT_REPLY_HOURS = 24  # reply due for an unanswered e-mail / WhatsApp message
-CHANNELS = ("EMAIL", "WHATSAPP", "TICKET")
+CHANNELS = ("EMAIL", "WHATSAPP", "TICKET", "CHAT")
 STATUSES = ("OPEN", "PENDING", "CLOSED")
 SYNC_LOCK = 3600_1003  # pg advisory lock key for sync()
 _CLOSED_TICKET = (TicketStatus.RESOLVED, TicketStatus.CLOSED)
@@ -51,13 +51,14 @@ async def _upsert(db: AsyncSession, rows: list[dict[str, Any]]) -> None:
         reopened = and_(CRMConversation.status == "CLOSED", ex.last_inbound_at.is_not(None),
                         or_(CRMConversation.closed_at.is_(None), ex.last_inbound_at > CRMConversation.closed_at))
         is_ticket = literal(row["channel"] == "TICKET")
+        source_status = literal(row["channel"] in ("TICKET", "CHAT"))  # open/closed follow the ticket or the chat
         update = {
             "subject": ex.subject, "contact": ex.contact, "customer_id": ex.customer_id,
             "company_id": ex.company_id, "mailbox_owner_id": ex.mailbox_owner_id,
             "last_inbound_at": ex.last_inbound_at, "last_outbound_at": ex.last_outbound_at,
             "last_message_at": ex.last_message_at, "sla_due_at": ex.sla_due_at,
-            "status": case((is_ticket, ex.status), (reopened, "OPEN"), else_=CRMConversation.status),
-            "closed_at": case((is_ticket, ex.closed_at), (reopened, None), else_=CRMConversation.closed_at),
+            "status": case((source_status, ex.status), (reopened, "OPEN"), else_=CRMConversation.status),
+            "closed_at": case((source_status, ex.closed_at), (reopened, None), else_=CRMConversation.closed_at),
             "assignee_id": case((is_ticket, ex.assignee_id), else_=CRMConversation.assignee_id),
             "updated_at": func.now(),
         }
@@ -130,6 +131,22 @@ async def sync(db: AsyncSession) -> int:
                          status="CLOSED" if closed else "OPEN", assignee_id=t.assigned_to_id,
                          closed_at=(t.closed_at or t.resolved_at) if closed else None))
 
+    # Website chats handed to people (M36.S03.T005); chats still with the bot are not in the inbox.
+    from app.models.crm import CRMChatMessage, CRMChatSession
+    visitor = CRMChatMessage.sender == "VISITOR"
+    chat_times = {sid: (cin, cout) for sid, cin, cout in (await db.execute(
+        select(CRMChatMessage.session_id, func.max(case((visitor, CRMChatMessage.created_at))),
+               func.max(case((CRMChatMessage.sender == "AGENT", CRMChatMessage.created_at))))
+        .group_by(CRMChatMessage.session_id))).all()}
+    for c in (await db.execute(select(CRMChatSession).where(CRMChatSession.status != "BOT"))).scalars():
+        cin, cout = chat_times.get(c.id, (None, None))
+        closed = c.status == "CLOSED"
+        rows.append(dict(channel="CHAT", source_ref=str(c.id), subject=f"Website chat: {c.visitor_name or c.visitor_email or 'visitor'}"[:500],
+                         contact=(c.visitor_email or c.visitor_name), customer_id=None, mailbox_owner_id=None,
+                         last_inbound_at=cin, last_outbound_at=cout, last_message_at=c.last_message_at,
+                         sla_due_at=None if closed else _sla(cin, cout, 1),  # visitors wait: 1 hour reply target
+                         status="CLOSED" if closed else "OPEN", assignee_id=c.assignee_id, closed_at=c.closed_at))
+
     # Thread/message links have no foreign key: keep a customer only if it exists (a stale or bogus link
     # must neither break the upsert for everyone nor drop the company filter to "visible to all").
     companies = await _customer_company(db, {r["customer_id"] for r in rows})
@@ -160,7 +177,7 @@ def visible_clause(user: Any):
         return true()
     channel = or_(
         and_(CRMConversation.channel == "EMAIL", CRMConversation.mailbox_owner_id == user.id),
-        and_(CRMConversation.channel == "WHATSAPP", true() if _any(user, "crm.view", "crm.view_all") else false()),
+        and_(CRMConversation.channel.in_(("WHATSAPP", "CHAT")), true() if _any(user, "crm.view", "crm.view_all") else false()),
         and_(CRMConversation.channel == "TICKET", true() if _any(user, "quality.view", "quality.view_all") else false()),
     )
     clause = or_(CRMConversation.assignee_id == user.id, channel)
@@ -179,6 +196,8 @@ def _unread_expr(user_id: UUID):
 
 
 def _link(c: CRMConversation) -> str:
+    if c.channel == "CHAT":
+        return f"/dashboard/crm/chats/{c.source_ref}"
     if c.channel == "TICKET":
         return "/dashboard/helpdesk"
     if c.channel == "WHATSAPP":
@@ -242,7 +261,7 @@ async def assign(db: AsyncSession, conv: CRMConversation, assignee_id: Optional[
 
 
 def set_status(conv: CRMConversation, status: str) -> None:
-    if conv.channel == "TICKET":
-        raise ValueError("Ticket status is managed in the helpdesk")
+    if conv.channel in ("TICKET", "CHAT"):
+        raise ValueError("Ticket status is managed in the helpdesk" if conv.channel == "TICKET" else "Close the chat on the chat page")
     conv.status = status
     conv.closed_at = datetime.now(timezone.utc) if status == "CLOSED" else None

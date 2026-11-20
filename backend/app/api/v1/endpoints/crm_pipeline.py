@@ -1322,7 +1322,7 @@ class InboxPatch(BaseModel):
 
 @router.get("/inbox")
 async def inbox(view: Literal["all", "mine", "unassigned", "unread"] = "all",
-                channel: Optional[Literal["EMAIL", "WHATSAPP", "TICKET"]] = None,
+                channel: Optional[Literal["EMAIL", "WHATSAPP", "TICKET", "CHAT"]] = None,
                 status: Optional[Literal["OPEN", "PENDING", "CLOSED"]] = None,
                 limit: int = Query(100, ge=1, le=300),
                 db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
@@ -1484,3 +1484,55 @@ async def customer_quick_note(customer_id: str, body: QuickNoteIn, db: AsyncSess
 def _uuid_new():
     import uuid as _u
     return _u.uuid4()
+
+
+# ── M36.S03.T005 website chat (staff side) ─────────────────────────────────────
+
+class ChatReplyIn(BaseModel):
+    body: str = Field(min_length=1, max_length=2000)
+
+
+async def _chat(db, chat_id: str):
+    from app.models.crm import CRMChatSession
+    sess = await db.get(CRMChatSession, _uuid(chat_id), with_for_update=True)
+    if sess is None:
+        raise HTTPException(404, "Chat not found")
+    return sess
+
+
+@router.get("/chats/{chat_id}", dependencies=[Depends(require_any_permission(CRM_BROAD_VIEW))])
+async def chat_transcript(chat_id: str, db: AsyncSession = Depends(get_db)):
+    from app.models.crm import CRMChatSession
+    from app.services import crm_chat_service as chat
+
+    sess = await db.get(CRMChatSession, _uuid(chat_id))
+    if sess is None:
+        raise HTTPException(404, "Chat not found")
+    return {"id": str(sess.id), "status": sess.status, "visitor_name": sess.visitor_name, "visitor_email": sess.visitor_email,
+            "consent_given": sess.consent_given, "crm_record_id": str(sess.crm_record_id) if sess.crm_record_id else None,
+            "page_url": sess.page_url, "messages": await chat.messages(db, sess)}
+
+
+@router.post("/chats/{chat_id}/messages", status_code=201)
+async def chat_reply(chat_id: str, body: ChatReplyIn, db: AsyncSession = Depends(get_db),
+                     current_user=Depends(require_any_permission(("crm.edit", "crm.edit_all")))):
+    from app.services import crm_chat_service as chat
+
+    sess = await _chat(db, chat_id)
+    try:
+        await chat.agent_says(db, sess, body.body.strip(), current_user.id)
+    except chat.ChatRefused as e:
+        raise HTTPException(e.status, str(e))
+    await db.commit()
+    return {"status": sess.status}
+
+
+@router.post("/chats/{chat_id}/close")
+async def chat_close(chat_id: str, db: AsyncSession = Depends(get_db),
+                     current_user=Depends(require_any_permission(("crm.edit", "crm.edit_all")))):
+    from datetime import datetime as _dt, timezone as _tz
+    sess = await _chat(db, chat_id)
+    if sess.status != "CLOSED":
+        sess.status, sess.closed_at = "CLOSED", _dt.now(_tz.utc)
+    await db.commit()
+    return {"status": sess.status}

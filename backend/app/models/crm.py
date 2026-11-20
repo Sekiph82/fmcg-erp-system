@@ -659,3 +659,36 @@ class CRMQuoteDecision(Base):
     evidence_hash  = Column(String(64), nullable=False)
     viewer_hash    = Column(String(64), nullable=True)
     document_snapshot = Column(JSON, nullable=True)                         # exactly what the signer saw
+
+
+# ── M36.S03.T005 website live chat ─────────────────────────────────────────────
+
+class CRMChatSession(Base):
+    """A website visitor's chat. The visitor holds a random token (stored as SHA-256) to read and write it."""
+    __tablename__ = "crm_chat_sessions"
+
+    id              = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    token_hash      = Column(String(64), nullable=False, unique=True)
+    visitor_name    = Column(String(120), nullable=True)
+    visitor_email   = Column(String(254), nullable=True)
+    consent_given   = Column(Boolean, nullable=False, default=False)
+    status          = Column(String(10), nullable=False, default="BOT")        # BOT | WAITING (handed off) | CLOSED
+    assignee_id     = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    crm_record_id   = Column(UUID(as_uuid=True), ForeignKey("crm_records.id", ondelete="SET NULL"), nullable=True)
+    company_id      = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="SET NULL"), nullable=True, index=True)
+    ip_hash         = Column(String(64), nullable=True, index=True)
+    page_url        = Column(String(500), nullable=True)
+    created_at      = Column(DateTime(timezone=True), nullable=False)
+    last_message_at = Column(DateTime(timezone=True), nullable=False, index=True)
+    closed_at       = Column(DateTime(timezone=True), nullable=True)
+
+
+class CRMChatMessage(Base):
+    __tablename__ = "crm_chat_messages"
+
+    id          = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    session_id  = Column(UUID(as_uuid=True), ForeignKey("crm_chat_sessions.id", ondelete="CASCADE"), nullable=False, index=True)
+    sender      = Column(String(8), nullable=False)                           # VISITOR | BOT | AGENT
+    body        = Column(Text, nullable=False)
+    agent_id    = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at  = Column(DateTime(timezone=True), nullable=False, index=True)

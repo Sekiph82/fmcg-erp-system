@@ -521,6 +521,7 @@ ENDPOINT_ROUTE_DEFINITIONS: tuple[EndpointRouteDefinition, ...] = (
     EndpointRouteDefinition(key="crm_unsubscribe_public", route_prefix="/public/unsubscribe", import_path="app.api.v1.endpoints.crm_unsubscribe_public", tags=('crm',)),
     EndpointRouteDefinition(key="meetings_public", route_prefix="/public/calendar", import_path="app.api.v1.endpoints.meetings_public", tags=('meetings',)),
     EndpointRouteDefinition(key="documents_public", route_prefix="/public/documents", import_path="app.api.v1.endpoints.documents_public", tags=('quotes',)),
+    EndpointRouteDefinition(key="chat_public", route_prefix="/public/chat", import_path="app.api.v1.endpoints.chat_public", tags=('crm',)),
     EndpointRouteDefinition(key="kb_public", route_prefix="/public/kb", import_path="app.api.v1.endpoints.kb_public", tags=('knowledge-base',)),
     EndpointRouteDefinition(key="crm_lead_forms_public", route_prefix="/public/lead-forms", import_path="app.api.v1.endpoints.crm_lead_forms_public", tags=('crm',)),
     EndpointRouteDefinition(key="helpdesk", route_prefix="/helpdesk", import_path="app.api.v1.endpoints.helpdesk", tags=('helpdesk',)),
@@ -644,6 +645,9 @@ PUBLIC_ROUTES: frozenset[tuple[str, str]] = frozenset({
     ("/public/documents/{token}", "GET"),                # shared quotation, expiring revocable token (M36.S03.T001)
     ("/public/documents/{token}/view", "POST"),          # view event, keyed-hash dedupe, no IP stored
     ("/public/documents/{token}/decision", "POST"),      # customer accept/decline, typed-name e-signature (M36.S04.T003)
+    ("/public/chat/sessions", "POST"),                    # website chat: honeypot + per-IP-hash limits (M36.S03.T005)
+    ("/public/chat/sessions/{session_id}/messages", "POST"),   # X-Chat-Token header proves the visitor's chat
+    ("/public/chat/sessions/{session_id}/messages", "GET"),
 })
 
 

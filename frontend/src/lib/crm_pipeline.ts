@@ -421,6 +421,9 @@ export const crmApi = {
   getAttribution: (params: { date_from: string; date_to: string; model: string }) => r(ax.get<AttributionReport>(`/crm/reports/attribution`, { params })),
   addQuickNote: (customerId: string, body: { channel: string; summary: string; follow_up_date?: string; client_ref: string }) =>
     r(ax.post<{ id: string; duplicate: boolean }>(`/crm/customers/${customerId}/notes`, body)),
+  getChat: (id: string) => r(ax.get<ChatTranscript>(`/crm/chats/${id}`)),
+  replyChat: (id: string, body: string) => r(ax.post(`/crm/chats/${id}/messages`, { body })),
+  closeChat: (id: string) => r(ax.post(`/crm/chats/${id}/close`)),
   customerCopilot: (customerId: string, note?: string) => r(ax.post<CopilotBrief>(`/crm/customers/${customerId}/copilot`, { note })),
   getCustomerTimeline: (customerId: string, params: { limit?: number; before?: string; types?: string }) =>
     r(ax.get<CustomerTimeline>(`/crm/customers/${customerId}/timeline`, { params })),
@@ -549,7 +552,7 @@ export interface FunnelReport {
 }
 
 export interface InboxItem {
-  id: string; channel: "EMAIL" | "WHATSAPP" | "TICKET"; subject: string; contact: string | null;
+  id: string; channel: "EMAIL" | "WHATSAPP" | "TICKET" | "CHAT"; subject: string; contact: string | null;
   customer_id: string | null; assignee_id: string | null; status: "OPEN" | "PENDING" | "CLOSED";
   last_message_at: string | null; sla_due_at: string | null; sla_overdue: boolean; unread: boolean; link: string;
 }
@@ -567,4 +570,10 @@ export interface AttributionReport {
   totals: { journeys: number; customers_with_orders: number; orders: number; revenue: Record<string, string> };
   rows: { source: string; journeys: number; leads: number; opportunities: number; won: number; customers_with_orders: number;
           orders: number; repeat_customers: number; revenue: Record<string, string> }[];
+}
+
+export interface ChatTranscript {
+  id: string; status: "BOT" | "WAITING" | "CLOSED"; visitor_name: string | null; visitor_email: string | null;
+  consent_given: boolean; crm_record_id: string | null; page_url: string | null;
+  messages: { id: string; from: "visitor" | "bot" | "agent"; body: string; at: string }[];
 }

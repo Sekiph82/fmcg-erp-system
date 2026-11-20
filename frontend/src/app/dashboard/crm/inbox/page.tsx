@@ -9,7 +9,7 @@ function errorText(e: unknown) {
   return typeof detail === "string" ? detail : "Request failed.";
 }
 
-const CHANNEL_LABEL: Record<string, string> = { EMAIL: "E-mail", WHATSAPP: "WhatsApp", TICKET: "Ticket" };
+const CHANNEL_LABEL: Record<string, string> = { EMAIL: "E-mail", WHATSAPP: "WhatsApp", TICKET: "Ticket", CHAT: "Website chat" };
 const VIEWS = [["all", "All open"], ["mine", "Mine"], ["unassigned", "Unassigned"], ["unread", "Unread"]] as const;
 
 export default function CRMInboxPage() {
@@ -94,7 +94,7 @@ export default function CRMInboxPage() {
                     ) : nameOf(c.assignee_id)}
                   </td>
                   <td>
-                    {canEdit && c.channel !== "TICKET" ? (
+                    {canEdit && c.channel !== "TICKET" && c.channel !== "CHAT" ? (
                       <select aria-label={`Status for ${c.subject}`} value={c.status} className={input}
                         onChange={(e) => act(() => crmApi.updateInbox(c.id, { status: e.target.value }))}>
                         {["OPEN", "PENDING", "CLOSED"].map((s) => <option key={s} value={s}>{s}</option>)}

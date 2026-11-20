@@ -89,10 +89,12 @@ async def lifespan(app: FastAPI):
     cbk_task = asyncio.create_task(run_cbk_rates(), name="cbk-rates")
     from app.services.email_mailbox_service import run_mailbox_sync
     mailbox_task = asyncio.create_task(run_mailbox_sync(), name="mailbox-sync")
+    from app.services.crm_chat_service import run_purge
+    chat_purge_task = asyncio.create_task(run_purge(), name="chat-purge")
     try:
         yield
     finally:
-        for task in (dispatcher_task, mqtt_task, automation_task, credentials_task, cbk_task, mailbox_task):
+        for task in (dispatcher_task, mqtt_task, automation_task, credentials_task, cbk_task, mailbox_task, chat_purge_task):
             task.cancel()
             with suppress(asyncio.CancelledError):
                 await task
