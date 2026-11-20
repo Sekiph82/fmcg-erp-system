@@ -103,10 +103,10 @@ class SendEmailRequest(BaseModel):
 
 
 class EmailTemplateCreate(BaseModel):
-    name:             str
-    module:           Optional[str] = None
-    subject_template: str
-    body_template:    str
+    name:             str = Field(min_length=1, max_length=200)
+    module:           Optional[str] = Field(None, max_length=50)
+    subject_template: str = Field(min_length=1, max_length=1000)
+    body_template:    str = Field(min_length=1, max_length=50000)
 
 
 class EmailTemplateRead(BaseModel):

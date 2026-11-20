@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { crmApi, type EmailCampaign } from "@/lib/crm_pipeline";
 import { getActiveCompanyId } from "@/lib/company";
+import { emailApi, type EmailTemplate } from "@/lib/email";
 import { useAuth } from "@/context/AuthContext";
 
 function errorText(e: unknown) {
@@ -24,6 +25,8 @@ export default function CRMEmailCampaignsPage() {
   const [preview, setPreview] = useState<Record<string, { customers: number; addresses: number; with_consent: number }>>({});
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
+  const [templates, setTemplates] = useState<EmailTemplate[]>([]);
+  const loadTemplates = useCallback(() => emailApi.listTemplates("crm_campaign").then(setTemplates).catch(() => setTemplates([])), []);
 
   const load = useCallback(async () => {
     try {
@@ -34,8 +37,11 @@ export default function CRMEmailCampaignsPage() {
   }, []);
   useEffect(() => {
     load();
-    if (canAuthor) crmApi.getCampaignCompanies().then(setCompanies).catch(() => setCompanies([]));
-  }, [load, canAuthor]);
+    if (canAuthor) {
+      crmApi.getCampaignCompanies().then(setCompanies).catch(() => setCompanies([]));
+      loadTemplates();
+    }
+  }, [load, canAuthor, loadTemplates]);
 
   async function act(fn: () => Promise<unknown>, msg: string) {
     setError(null);
@@ -56,6 +62,21 @@ export default function CRMEmailCampaignsPage() {
       {canAuthor && <form aria-label="New campaign" className="bg-white rounded-xl border shadow-sm p-4 grid md:grid-cols-2 gap-2"
         onSubmit={(e) => { e.preventDefault(); act(() => crmApi.createEmailCampaign(draft), "Draft campaign created."); setDraft({ ...EMPTY, company_id: draft.company_id }); }}>
         <h2 className="font-semibold text-gray-800 md:col-span-2">New campaign</h2>
+        <div className="md:col-span-2 flex flex-wrap gap-2 items-center">
+          <select aria-label="Start from template" value="" className={input}
+            onChange={(e) => {
+              const t = templates.find((x) => x.id === e.target.value);
+              if (t) setDraft({ ...draft, subject: t.subject_template, body: t.body_template, name: draft.name || t.name });
+            }}>
+            <option value="">{templates.length ? "Start from a saved template…" : "No saved templates yet"}</option>
+            {templates.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+          </select>
+          <button type="button" className="px-3 py-1.5 text-sm border rounded-lg" disabled={!draft.subject || !draft.body}
+            onClick={() => {
+              const name = prompt("Template name", draft.name || draft.subject);
+              if (name) act(() => emailApi.createTemplate({ name, module: "crm_campaign", subject_template: draft.subject, body_template: draft.body }).then(loadTemplates), "Template saved.");
+            }}>Save as template</button>
+        </div>
         <input aria-label="Campaign name" required placeholder="Name" value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} className={input} />
         <select aria-label="Segment" required value={draft.segment_id} onChange={(e) => setDraft({ ...draft, segment_id: e.target.value })} className={input}>
           <option value="">Choose a segment…</option>

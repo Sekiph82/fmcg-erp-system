@@ -227,6 +227,30 @@ class Parsed:
     when: datetime
     attachments: list[dict] = field(default_factory=list)
     sender_verified: bool = False   # receiving server reported DMARC/DKIM pass for the From domain
+    bounces: list[tuple[str, str]] = field(default_factory=list)  # (failed recipient, status) from a DSN
+    bounced_message_id: Optional[str] = None                     # Message-ID of the mail that bounced
+
+
+def _dsn(msg) -> tuple[list[tuple[str, str]], Optional[str]]:
+    """RFC 3464 delivery report: permanently failed recipients and the original Message-ID."""
+    if msg.get_content_type() != "multipart/report":
+        return [], None
+    failed, original = [], None
+    for part in msg.walk():
+        ctype = part.get_content_type()
+        if ctype == "message/delivery-status":
+            for group in part.get_payload() or []:
+                action = str(group.get("Action", "")).strip().lower()
+                status = str(group.get("Status", "")).strip()
+                rcpt = str(group.get("Final-Recipient", "") or group.get("Original-Recipient", ""))
+                addr = rcpt.split(";", 1)[-1].strip().strip("<>").lower()
+                if action == "failed" and status.startswith("5") and "@" in addr:
+                    failed.append((addr[:254], status[:20]))
+        elif ctype in ("message/rfc822", "text/rfc822-headers") and original is None:
+            inner = part.get_payload(0) if ctype == "message/rfc822" else message_from_bytes(
+                part.get_payload(decode=True) or b"", policy=policy.default)
+            original = (_ids(str(inner.get("Message-ID", ""))) or [None])[0]
+    return failed, original
 
 
 def _clean(v: Optional[str]) -> Optional[str]:
@@ -276,6 +300,7 @@ def parse(raw: bytes) -> Parsed:
     mid = (_ids(str(msg.get("Message-ID", ""))) or [""])[0]
     if not mid:  # no Message-ID: derive a stable one so a re-fetch is still recognised
         mid = f"<sha256-{hashlib.sha256(raw).hexdigest()[:40]}@mailbox.local>"
+    dsn = _dsn(msg)
     atts = []
     for part in msg.iter_attachments():
         payload = part.get_payload(decode=True) or b""
@@ -288,6 +313,7 @@ def parse(raw: bytes) -> Parsed:
         cc=[a.lower() for _, a in getaddresses([str(v) for v in msg.get_all("Cc", [])]) if a],
         subject=_clean(str(msg.get("Subject", "") or "(no subject)"))[:1000], text=_text(msg), when=when,
         attachments=atts, sender_verified=_verified(msg, addr.lower()),
+        bounces=dsn[0], bounced_message_id=dsn[1],
     )
 
 
@@ -333,6 +359,8 @@ async def store(db: AsyncSession, acc: EmailAccount, p: Parsed) -> Optional[Emai
     thread.message_count = (thread.message_count or 0) + 1
     if not thread.last_message_at or p.when >= thread.last_message_at:
         thread.last_message_at, thread.snippet = p.when, (p.text or "")[:200]
+    if p.bounces and p.bounced_message_id:
+        await _apply_bounces(db, p)
     if not outbound:
         thread.is_read = False
         if re.sub(r"^((re|aw|fw|fwd)\s*:\s*)+", "", p.subject.strip(), flags=re.I).lower().startswith("unsubscribe"):
@@ -343,6 +371,23 @@ async def store(db: AsyncSession, acc: EmailAccount, p: Parsed) -> Optional[Emai
                 log.info("unverified unsubscribe reply from %s not applied", p.from_email)
     await db.flush()
     return msg
+
+
+async def _apply_bounces(db: AsyncSession, p: Parsed) -> None:
+    """A permanent failure counts only when the report names a CRM e-mail we actually sent (its Message-ID
+    and recipient match an outbox row): a forged bounce cannot silence a customer's address."""
+    from app.models.crm import CRMOutboundMessage
+    from app.services.crm_outbound_service import record_consent
+
+    for rcpt, status in p.bounces:
+        sent = (await db.execute(select(CRMOutboundMessage).where(
+            CRMOutboundMessage.provider_message_id == p.bounced_message_id,
+            func.lower(CRMOutboundMessage.to_email) == rcpt))).scalar_one_or_none()
+        if sent is None:
+            log.info("bounce for %s ignored: no matching CRM e-mail", rcpt)
+            continue
+        await record_consent(db, rcpt, "BOUNCED", "bounce report")
+        sent.status_reason = f"bounced ({status})"
 
 
 async def sync_account(db: AsyncSession, acc: EmailAccount) -> dict:
