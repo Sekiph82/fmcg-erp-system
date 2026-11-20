@@ -1378,3 +1378,47 @@ async def inbox_assignees(db: AsyncSession = Depends(get_db), _=Depends(require_
     rows = (await db.execute(select(User.id, User.full_name, User.username).where(User.is_active.is_(True))
                              .order_by(User.full_name).limit(500))).all()
     return [{"id": str(i), "name": n or u} for i, n, u in rows]
+
+
+# ── M36.S04.T001 AI sales copilot ───────────────────────────────────────────────
+
+class CopilotIn(BaseModel):
+    note: Optional[str] = Field(None, max_length=500, description="what the representative wants help with (optional)")
+
+
+@router.post("/customers/{customer_id}/copilot")
+async def customer_copilot(customer_id: str, body: CopilotIn, db: AsyncSession = Depends(get_db),
+                           current_user=Depends(get_current_user)):
+    """Summary, follow-ups and a draft e-mail for one customer, built only from timeline evidence the caller
+    may see, each claim citing evidence ids. Nothing is sent or saved on the customer: the draft is for the
+    representative to edit and send. Without an AI provider the brief is rule-based (mode='rule_based')."""
+    from app.core.ai_rate_limiter import check_rate_limit
+    from app.core.config import settings
+    from app.models.sales import Customer
+    from app.services import crm_copilot_service as copilot
+
+    await check_rate_limit(str(current_user.id), "crm_copilot", settings.AI_RATE_LIMIT_GENERATE)  # LLM spend per user/hour
+    customer = await db.get(Customer, _uuid(customer_id))
+    if customer is None:
+        raise HTTPException(404, "Customer not found")
+    if not (can_view_record(current_user, "crm", customer) or can_view_record(current_user, "sales", customer)):
+        raise HTTPException(403, "Customer is outside your commercial scope.")
+    result = await copilot.brief(db, customer, current_user, body.note)
+    await db.commit()  # the AI request log
+    return {"customer": {"id": str(customer.id), "name": customer.name}, **result}
+
+
+# ── M36.S05.T001 customer journey attribution ──────────────────────────────────
+
+@router.get("/reports/attribution", dependencies=[Depends(require_any_permission(CRM_BROAD_VIEW))])
+async def attribution_report(date_from: date, date_to: date, model: Literal["first", "last", "linear"] = "first",
+                             company_id: Optional[str] = None, db: AsyncSession = Depends(get_db)):
+    """Source -> lead -> opportunity -> order -> repeat purchase, by first / last / linear touch, per currency,
+    with a reconciliation flag and the stated assumptions."""
+    from app.services import crm_attribution_service as attribution
+
+    if date_from > date_to:
+        raise HTTPException(422, "date_from must not be after date_to")
+    if (date_to - date_from).days > 731:
+        raise HTTPException(422, "Choose a period of at most two years")
+    return await attribution.report(db, date_from, date_to, model, str(_uuid(company_id)) if company_id else None)

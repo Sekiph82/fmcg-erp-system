@@ -418,6 +418,8 @@ export const crmApi = {
   listForecastSnapshots: () => r(ax.get<ForecastSnapshot[]>(`/crm/forecast/snapshots`)),
   getForecastSnapshot: (id: string) => r(ax.get<ForecastSnapshot>(`/crm/forecast/snapshots/${id}`)),
   getFunnel: (params: FunnelFilters) => r(ax.get<FunnelReport>(`/crm/reports/funnel`, { params })),
+  getAttribution: (params: { date_from: string; date_to: string; model: string }) => r(ax.get<AttributionReport>(`/crm/reports/attribution`, { params })),
+  customerCopilot: (customerId: string, note?: string) => r(ax.post<CopilotBrief>(`/crm/customers/${customerId}/copilot`, { note })),
   getCustomerTimeline: (customerId: string, params: { limit?: number; before?: string; types?: string }) =>
     r(ax.get<CustomerTimeline>(`/crm/customers/${customerId}/timeline`, { params })),
   listLeadForms: () => r(ax.get<LeadForm[]>(`/crm/lead-forms`)),
@@ -548,4 +550,19 @@ export interface InboxItem {
   id: string; channel: "EMAIL" | "WHATSAPP" | "TICKET"; subject: string; contact: string | null;
   customer_id: string | null; assignee_id: string | null; status: "OPEN" | "PENDING" | "CLOSED";
   last_message_at: string | null; sla_due_at: string | null; sla_overdue: boolean; unread: boolean; link: string;
+}
+
+export interface CopilotBrief {
+  mode: "ai" | "rule_based"; summary: string; summary_evidence: string[];
+  follow_ups: { action: string; due_in_days: number; evidence: string[] }[];
+  draft: { subject: string; body: string } | null; dropped_unsupported?: number; note?: string;
+  evidence: { id: string; type: string; date: string; title: string | null; status: string | null; ref: string | null; detail: string | null; link: string | null }[];
+  hidden_sources: string[];
+}
+
+export interface AttributionReport {
+  model: string; date_from: string; date_to: string; reconciled: boolean; assumptions: string[];
+  totals: { journeys: number; customers_with_orders: number; orders: number; revenue: Record<string, string> };
+  rows: { source: string; journeys: number; leads: number; opportunities: number; won: number; customers_with_orders: number;
+          orders: number; repeat_customers: number; revenue: Record<string, string> }[];
 }

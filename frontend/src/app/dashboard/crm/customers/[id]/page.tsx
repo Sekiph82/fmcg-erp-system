@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { crmApi, type CustomerTimeline, type TimelineEvent } from "@/lib/crm_pipeline";
+import { CopilotPanel } from "@/components/crm/CopilotPanel";
 
 const TYPE_LABELS: Record<string, string> = {
   crm_record: "CRM", crm_activity: "Activity", interaction: "Interaction", visit: "Visit", field_visit: "Field visit",
@@ -59,6 +60,7 @@ export default function CustomerTimelinePage() {
         </label>
       </div>
       {error && <p role="alert" className="rounded-lg p-3 text-sm bg-red-50 border border-red-200 text-red-700">{error}</p>}
+      {data && <CopilotPanel customerId={id} />}
       {data && data.hidden_sources.length > 0 && (
         <p className="text-xs text-gray-500">Not shown for your role: {data.hidden_sources.map((s) => SOURCE_LABELS[s] ?? s).join(", ")}.</p>
       )}
