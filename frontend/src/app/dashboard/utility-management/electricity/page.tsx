@@ -46,11 +46,11 @@ const BAR_COLORS = [
 ];
 
 // ── Number helpers ─────────────────────────────────────────────────────────────
-const n = (v: string | null | undefined, dp = 1) =>
-  v != null ? parseFloat(v).toLocaleString(undefined, { maximumFractionDigits: dp }) : "—";
+const n = (v: string | number | null | undefined, dp = 1) =>
+  v != null ? Number(v).toLocaleString(undefined, { maximumFractionDigits: dp }) : "—";
 
-const currency = (v: string | null | undefined, code = "USD") =>
-  v != null ? `${code} ${parseFloat(v).toLocaleString(undefined, { minimumFractionDigits: 2 })}` : "—";
+const currency = (v: string | number | null | undefined, code = "USD") =>
+  v != null ? `${code} ${Number(v).toLocaleString(undefined, { minimumFractionDigits: 2 })}` : "—";
 
 // ── KPI Card ───────────────────────────────────────────────────────────────────
 interface KPICardProps {
@@ -495,7 +495,7 @@ export default function ElectricityPage() {
     () => (breakdown?.rows ?? []).slice(0, 12).map((r) => ({
       name: r.label,
       kwh:  parseFloat(r.total_kwh),
-      pct:  r.pct_of_total ? parseFloat(r.pct_of_total) : 0,
+      pct:  r.pct_of_total ? Number(r.pct_of_total) : 0,
     })),
     [breakdown]
   );
@@ -785,7 +785,7 @@ export default function ElectricityPage() {
                   </td>
                   <td className="px-3 py-2 text-xs text-slate-300 whitespace-nowrap">{tx.transaction_date}</td>
                   <td className="px-3 py-2 text-xs whitespace-nowrap">
-                    <span className="font-medium text-slate-200">{parseFloat(tx.quantity).toLocaleString()}</span>
+                    <span className="font-medium text-slate-200">{Number(tx.quantity).toLocaleString()}</span>
                     <span className="text-slate-500 ml-1 text-[10px]">{tx.uom}</span>
                     {tx.variance_from_standard != null && parseFloat(tx.variance_from_standard) !== 0 && (
                       <span className={`ml-1 text-[10px] ${parseFloat(tx.variance_from_standard) > 0 ? "text-red-400" : "text-emerald-400"}`}>
@@ -795,7 +795,7 @@ export default function ElectricityPage() {
                   </td>
                   <td className="px-3 py-2 text-xs text-slate-300 whitespace-nowrap">
                     {tx.total_cost ? (
-                      <span>{tx.currency_code} {parseFloat(tx.total_cost).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                      <span>{tx.currency_code} {Number(tx.total_cost).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                     ) : <span className="text-slate-600">—</span>}
                   </td>
                   <td className="px-3 py-2 text-xs text-slate-300 whitespace-nowrap">
@@ -863,7 +863,7 @@ export default function ElectricityPage() {
             <div className="overflow-y-auto flex-1 px-5 py-4">
               <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-xs">
                 {[
-                  ["kWh Consumed", `${parseFloat(modal.tx.quantity).toLocaleString()} ${modal.tx.uom}`],
+                  ["kWh Consumed", `${Number(modal.tx.quantity).toLocaleString()} ${modal.tx.uom}`],
                   ["Total Cost", currency(modal.tx.total_cost, modal.tx.currency_code ?? "USD")],
                   ["Cost Rate", modal.tx.cost_rate ? `${modal.tx.currency_code} ${parseFloat(modal.tx.cost_rate).toFixed(4)}/kWh` : "—"],
                   ["Variance", modal.tx.variance_from_standard ? `${parseFloat(modal.tx.variance_from_standard).toFixed(2)} kWh` : "—"],

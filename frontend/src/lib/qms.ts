@@ -116,7 +116,7 @@ export interface CCPMonitoringLog {
   recorded_text: string | null;
   is_within_limits: boolean;
   is_violation: boolean;
-  deviation_amount: string | null;
+  deviation_amount: number | null;
   recorded_by_id: string | null;
   corrective_action_taken: string | null;
   corrective_action_id: string | null;
@@ -184,7 +184,7 @@ export interface QCDeviation {
   description: string;
   root_cause: string | null;
   immediate_action: string | null;
-  affected_quantity: string | null;
+  affected_quantity: number | null;
   affected_uom: string | null;
   assigned_to_id: string | null;
   due_date: string | null;

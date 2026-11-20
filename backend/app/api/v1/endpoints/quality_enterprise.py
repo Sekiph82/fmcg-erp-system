@@ -244,8 +244,8 @@ async def approve_specification(spec_id: uuid.UUID, db: AsyncSession = Depends(g
     )).scalars().all()
     spec.parameter_snapshot = [
         {"parameter_name": p.parameter_name, "parameter_type": qa._v(p.parameter_type), "unit": p.unit,
-         "target_value": p.target_value, "min_value": str(p.min_value) if p.min_value is not None else None,
-         "max_value": str(p.max_value) if p.max_value is not None else None, "is_critical": p.is_critical,
+         "target_value": p.target_value, "min_value": float(p.min_value) if p.min_value is not None else None,
+         "max_value": float(p.max_value) if p.max_value is not None else None, "is_critical": p.is_critical,
          "test_method_id": str(p.test_method_id) if p.test_method_id else None}
         for p in params
     ]

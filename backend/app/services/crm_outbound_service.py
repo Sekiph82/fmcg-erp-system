@@ -27,7 +27,7 @@ from app.models.crm import CRMContactConsent, CRMOutboundMessage
 
 logger = logging.getLogger(__name__)
 
-PURPOSES = ("MANUAL", "SEQUENCE", "CAMPAIGN")
+PURPOSES = ("MANUAL", "SEQUENCE", "CAMPAIGN", "INVOICE")  # INVOICE: transactional, no marketing footer
 SUPPRESSING = ("UNSUBSCRIBED", "BOUNCED", "COMPLAINED")
 MAX_ATTEMPTS = 3
 STALE_SENDING = timedelta(minutes=15)
@@ -119,6 +119,8 @@ async def queue(db: AsyncSession, *, to_email: str, subject: str, body: str, pur
 
 
 def _with_footer(msg: CRMOutboundMessage) -> tuple[str, dict]:
+    if msg.purpose == "INVOICE":  # a document the customer is owed, not marketing: no unsubscribe link
+        return msg.body_text, {}
     token = unsubscribe_token(msg.to_email)
     page = f"{settings.PUBLIC_APP_URL.rstrip('/')}/unsubscribe?t={token}"
     one_click = f"{settings.PUBLIC_API_URL.rstrip('/')}/api/v1/public/unsubscribe?t={token}"

@@ -136,7 +136,7 @@ def test_specification_versioning_with_change_control(env):
         "spec_code": "SPEC-PH", "as_of": (today + timedelta(days=20)).isoformat()}).json()
     assert eff_now["version"] == 1 and eff_now["status"] == "SUPERSEDED"
     assert eff_now["effective_to"] == (today + timedelta(days=9)).isoformat()
-    assert eff_later["version"] == 2 and eff_later["parameter_snapshot"][0]["max_value"] == "7"
+    assert eff_later["version"] == 2 and eff_later["parameter_snapshot"][0]["max_value"] == 7  # spec limits are numbers (owner 2026-11-20)
 
 
 def test_qc_plan_activation_and_coverage(env):

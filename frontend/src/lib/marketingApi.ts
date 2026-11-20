@@ -108,7 +108,7 @@ export interface MktPromotion {
   end_date: string;
   discount_type: DiscountType | null;
   discount_value: string | null;
-  minimum_quantity: string | null;
+  minimum_quantity: number | null;
   notes: string | null;
   created_at: string | null;
 }
@@ -345,7 +345,7 @@ export interface TradeSpend {
   customer_id: string | null;
   distributor_id: string | null;
   spend_type: TradeSpendType;
-  amount: string;
+  amount: number;
   currency: string;
   spend_date: string;
   approval_status: ApprovalStatus;
@@ -359,7 +359,7 @@ export interface BrandSpend {
   campaign_id: string | null;
   spend_category: BrandSpendCategory;
   vendor: string | null;
-  amount: string;
+  amount: number;
   currency: string;
   spend_date: string;
   approval_status: ApprovalStatus;

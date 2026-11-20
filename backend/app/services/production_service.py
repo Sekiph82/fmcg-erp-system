@@ -919,7 +919,14 @@ async def complete_order(
         active_dt.end_time = now
         active_dt.duration_minutes = int((now - active_dt.start_time).total_seconds() / 60)
 
-    source_wh_id = req.source_warehouse_id or order.source_warehouse_id
+    from app.services.production_ledger_service import get_warehouse_links, material_warehouse
+
+    # warehouse links (production settings) fill what the order leaves open; packaging and semi-finished
+    # materials come from their own warehouse when one is linked
+    wh_links = await get_warehouse_links(db)
+    source_wh_id = req.source_warehouse_id or order.source_warehouse_id or wh_links["raw_material_warehouse_id"]
+    if order.target_warehouse_id is None and wh_links["finished_goods_warehouse_id"]:
+        order.target_warehouse_id = wh_links["finished_goods_warehouse_id"]
 
     # ── Material consumption ──────────────────────────────────────────────────
     from app.models.material_flow import (
@@ -1001,12 +1008,13 @@ async def complete_order(
                 # consumption event is the authority for genealogy at close.
                 continue
 
+            item_wh_id = material_warehouse(material.material_type, source_wh_id, wh_links)
             loss_factor = 1 + float(item.loss_percentage or 0) / 100
             std_qty = Decimal(str(round(float(item.quantity) * scale, 4)))
             actual_qty_with_loss = Decimal(str(round(float(std_qty) * loss_factor, 4)))
             source_lot_id = await _resolve_material_lot_id(
                 db,
-                warehouse_id=source_wh_id,
+                warehouse_id=item_wh_id,
                 material_id=material.id,
                 requested_lot_id=req.material_lot_ids.get(material.id),
             )
@@ -1015,7 +1023,7 @@ async def complete_order(
                 db=db,
                 order=order,
                 material=material,
-                warehouse_id=source_wh_id,
+                warehouse_id=item_wh_id,
                 quantity=actual_qty_with_loss,
                 lot_id=source_lot_id,
                 reference=order.order_no,
@@ -1031,7 +1039,7 @@ async def complete_order(
                 actual_quantity=actual_qty_with_loss,
                 variance_quantity=actual_qty_with_loss - std_qty,
                 unit=item.unit,
-                source_warehouse_id=source_wh_id,
+                source_warehouse_id=item_wh_id,
                 stock_movement_id=movement.id,
             )
             db.add(consumption)
@@ -1189,6 +1197,10 @@ async def complete_order(
         order.notes = req.notes
 
     await db.flush()
+    # materials, packaging and conversion into WIP, WIP into finished goods: one journal in this transaction
+    from app.services.production_ledger_service import post_production_completion
+
+    await post_production_completion(db, order, user_id)
     await quality_service.create_qc_for_order(
         db,
         production_order_id=order.id,

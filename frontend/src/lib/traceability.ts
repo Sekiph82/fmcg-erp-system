@@ -41,7 +41,7 @@ export interface TraceEventLine {
   material_id: string | null;
   source_lot_id: string | null;
   child_lot_id: string | null;
-  quantity: string;
+  quantity: number;
   uom: string | null;
   source_stage: TraceItemStage | null;
   dest_stage: TraceItemStage | null;
@@ -137,7 +137,7 @@ export interface ForwardTraceResult {
   qty_scrapped: string;
   qty_quarantined: string;
   qty_reworked: string;
-  total_affected_qty: string;
+  total_affected_qty: number;
 }
 
 export interface BackwardTraceResult {
@@ -173,7 +173,7 @@ export interface RecallHeader {
   contained_at: string | null;
   completed_at: string | null;
   closed_at: string | null;
-  total_affected_qty: string | null;
+  total_affected_qty: number | null;
   total_affected_customers: number | null;
   recovery_pct: string | null;
   effectiveness_score: string | null;
@@ -191,7 +191,7 @@ export interface RecallScopeLine {
   affected_material_id: string | null;
   affected_lot_id: string | null;
   affected_warehouse_id: string | null;
-  affected_qty_total: string;
+  affected_qty_total: number;
   affected_qty_in_stock: string;
   affected_qty_in_transit: string;
   affected_qty_shipped: string;
@@ -317,7 +317,7 @@ export interface RecallRegulatoryReport {
   initiation_datetime: string;
   recall_reason: string;
   source_lot_number: string | null;
-  total_affected_qty: string | null;
+  total_affected_qty: number | null;
   total_affected_customers: number | null;
   affected_lots: string[];
   affected_markets: string;

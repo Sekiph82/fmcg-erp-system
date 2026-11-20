@@ -56,8 +56,8 @@ async def list_schemes(db: AsyncSession, status: SchemeStatus = None, active_onl
         for rl in s.rule_lines:
             ti = rl.trigger_item
             ri = rl.reward_item
-            rl.trigger_item_name = ti.product_name if ti else None
-            rl.reward_item_name  = ri.product_name if ri else None
+            rl.trigger_item_name = ti.name if ti else None
+            rl.reward_item_name  = ri.name if ri else None
     return schemes
 
 
@@ -74,8 +74,8 @@ async def get_scheme(db: AsyncSession, scheme_id) -> PromoScheme:
     scheme.usage_count = 0
     scheme.total_cost = Decimal(0)
     for rl in scheme.rule_lines:
-        rl.trigger_item_name = rl.trigger_item.product_name if rl.trigger_item else None
-        rl.reward_item_name  = rl.reward_item.product_name if rl.reward_item else None
+        rl.trigger_item_name = rl.trigger_item.name if rl.trigger_item else None
+        rl.reward_item_name  = rl.reward_item.name if rl.reward_item else None
     return scheme
 
 
@@ -347,7 +347,7 @@ async def evaluate_order(
         for rule in scheme.rule_lines:
             impact = _evaluate_rule(rule, order_lines, order_total)
             if impact:
-                rule_name = rule.reward_item.product_name if rule.reward_item else None
+                rule_name = rule.reward_item.name if rule.reward_item else None
                 impact.reward_item_name = rule_name
                 line_impacts.append(impact)
 
@@ -475,7 +475,7 @@ async def get_order_promos(db: AsyncSession, sales_order_id) -> List[SalesOrderP
         p.scheme_name = p.scheme.scheme_name if p.scheme else None
         p.scheme_code = p.scheme.scheme_code if p.scheme else None
         for l in p.line_impacts:
-            l.reward_item_name = l.reward_item.product_name if l.reward_item else None
+            l.reward_item_name = l.reward_item.name if l.reward_item else None
     return promos
 
 

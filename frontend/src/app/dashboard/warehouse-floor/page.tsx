@@ -5,9 +5,29 @@ import { apiFetch } from "@/lib/api";
 import { ScanInput } from "@/components/ScanInput";
 
 interface PickTask { id: string; task_no: string; product_name: string | null; lot_number: string | null; from_location_code: string | null;
-  requested_qty: string; unit: string; status: string; assignee_name: string | null; warehouse_name: string | null; wave_no: string | null }
+  requested_qty: string; unit: string; status: string; assignee_name: string | null; warehouse_name: string | null; wave_no: string | null;
+  parcel_invoice_no?: string | null }
 interface PutTask { id: string; task_no: string; product_name: string | null; product_sku: string | null; material_name: string | null;
   lot_number: string | null; quantity: string; suggested_location_code: string | null; status: string; warehouse_name: string | null }
+
+interface ParcelInvoice { invoice_no: string; invoice_date: string; currency: string; customer: string | null; subtotal: number;
+  tax_amount: number; total_amount: number; lines: { description: string | null; quantity: number; unit_price: number; discount_pct: number; line_total: number }[] }
+
+const esc = (v: unknown) => String(v ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c] as string));
+
+/** Paper copy for the parcel of a marketplace order (invoice cut when the payment arrived). */
+async function printParcelInvoice(taskId: string) {
+  const inv = await call<ParcelInvoice>(`/picking/tasks/${taskId}/parcel-invoice`);
+  const w = window.open("", "_blank");
+  if (!w) throw new Error("Allow pop-ups to print the invoice.");
+  const rows = inv.lines.map((l) => `<tr><td>${esc(l.description)}</td><td>${l.quantity}</td><td>${l.unit_price.toFixed(2)}</td><td>${l.discount_pct ? (l.discount_pct * 100).toFixed(1) + "%" : ""}</td><td>${l.line_total.toFixed(2)}</td></tr>`).join("");
+  w.document.write(`<html><head><title>${esc(inv.invoice_no)}</title><style>body{font-family:sans-serif;font-size:12px}table{width:100%;border-collapse:collapse}td,th{border-bottom:1px solid #ccc;padding:4px;text-align:left}</style></head><body>
+<h2>Invoice ${esc(inv.invoice_no)}</h2><p>${esc(inv.customer)} · ${esc(inv.invoice_date)}</p>
+<table><tr><th>Item</th><th>Qty</th><th>Unit price</th><th>Discount</th><th>Total</th></tr>${rows}</table>
+<p>Subtotal ${esc(inv.currency)} ${inv.subtotal.toFixed(2)} · Tax ${inv.tax_amount.toFixed(2)} · <b>Total ${esc(inv.currency)} ${inv.total_amount.toFixed(2)}</b></p></body></html>`);
+  w.document.close();
+  w.print();
+}
 
 async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
   const res = await apiFetch(`/api/v1/wms${path}`, { ...init, headers: { "Content-Type": "application/json" } });
@@ -58,7 +78,9 @@ function Picking({ say }: { say: (ok: boolean, t: string) => void }) {
   return (<div className="space-y-2">{tasks.map((x) => (
     <div key={x.id} className={box}>
       <button className="w-full text-left flex justify-between gap-2" aria-expanded={open === x.id} onClick={() => { setOpen(open === x.id ? null : x.id); setScan({ location: "", item: "", qty: "", reason: "" }); }}>
-        <span><span className="font-medium">{x.from_location_code ?? "—"} · {x.product_name}</span><span className="block text-xs text-gray-500">{x.task_no}{x.wave_no ? ` · wave ${x.wave_no}` : ""}{x.lot_number ? ` · lot ${x.lot_number}` : ""}</span></span>
+        <span><span className="font-medium">{x.from_location_code ?? "—"} · {x.product_name}</span><span className="block text-xs text-gray-500">{x.task_no}{x.wave_no ? ` · wave ${x.wave_no}` : ""}{x.lot_number ? ` · lot ${x.lot_number}` : ""}</span>
+          {x.parcel_invoice_no && <span className="block text-xs font-semibold text-amber-700">Put a paper copy of invoice {x.parcel_invoice_no} in the parcel{" "}
+            <span role="button" tabIndex={0} className="underline" onClick={(e) => { e.stopPropagation(); printParcelInvoice(x.id).catch((err) => say(false, (err as Error).message)); }}>Print</span></span>}</span>
         <span className="text-right text-sm font-semibold">{Number(x.requested_qty)} {x.unit}<span className="block text-xs font-normal text-gray-500">{x.assignee_name ?? "unassigned"}</span></span>
       </button>
       {open === x.id && (

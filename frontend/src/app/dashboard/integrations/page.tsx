@@ -245,6 +245,7 @@ function IntegrationsDashboardTab() {
 }
 
 const IntegrationsMpesaPage        = dynamic(() => import("@/app/dashboard/integrations/mpesa/page"),         { ssr: false });
+const ProviderKeysPage             = dynamic(() => import("@/app/dashboard/integrations/provider-keys/page"), { ssr: false });
 const IntegrationsSyncPage         = dynamic(() => import("@/app/dashboard/integrations/sync/page"),          { ssr: false });
 const IntegrationsMarketplacePage  = dynamic(() => import("@/app/dashboard/integrations/marketplace/page"),   { ssr: false });
 const IntegrationsBarcodePage      = dynamic(() => import("@/app/dashboard/integrations/barcode/page"),       { ssr: false });
@@ -262,6 +263,7 @@ export default function IntegrationsDashboardPage() {
     { key: "barcode",         label: "Barcode",         permission: "integrations.view", content: <IntegrationsBarcodePage /> },
     { key: "marketing-sync",  label: "Marketing Sync",  permission: "integrations.view", content: <IntegrationsMarketingSyncPage /> },
     { key: "logs",            label: "Logs",            permission: "integrations.view", content: <IntegrationsLogsPage /> },
+    { key: "provider-keys",   label: "Provider Keys",   permission: "integrations.provider_keys", exact: true, content: <ProviderKeysPage /> },  // superuser or full-access ("*") only
     { key: "webhooks",        label: "Webhooks",        permission: "self.superuser", content: <WebhooksPage /> },  // API is superuser-only
     { key: "developer",       label: "Developer",       permission: "integrations.view", content: <DeveloperPage /> },
   ];

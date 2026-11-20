@@ -414,6 +414,7 @@ PERMISSIONS = [
 
     # ── Webhook / Event Engine ────────────────────────────────────────────────
     ("integrations", "webhooks", "Manage Webhooks",  "Create, delete, and test webhook subscriptions", False),
+    ("integrations", "provider_keys", "Provider Keys", "Enter M-Pesa, SMS, WhatsApp and e-mail provider credentials", False),
 
     # ── ESG / Sustainability ──────────────────────────────────────────────────
     ("esg",  "view",   "View ESG",    "View ESG activities, emissions, and targets",        False),

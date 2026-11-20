@@ -10,6 +10,9 @@ from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
+from app.core import json_numbers
+
+json_numbers.install()  # Decimal → JSON number in every response model (before routes are built)
 from app.api.v1.router import api_router
 from app.core.config import settings
 from app.core.csrf import CSRFOriginMiddleware
@@ -38,6 +41,19 @@ init_error_tracking(settings.ERROR_TRACKING_DSN, settings.ENVIRONMENT)
 logger = logging.getLogger(__name__)
 
 
+async def run_provider_credentials_refresh(interval: int = 60) -> None:
+    """Keys entered in Integrations → Provider keys reach every worker within a minute."""
+    from app.services.provider_credentials import apply
+
+    while True:
+        try:
+            async with AsyncSessionLocal() as db:
+                await apply(db)
+        except Exception:
+            logger.exception("provider credentials refresh failed")
+        await asyncio.sleep(interval)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Starting %s v%s", settings.PROJECT_NAME, settings.VERSION)
@@ -51,6 +67,7 @@ async def lifespan(app: FastAPI):
         from app.db.seed_finance import seed_finance_data
         async with AsyncSessionLocal() as db:
             await seed_finance_data(db)
+            await db.commit()  # the seed only flushes: without this the chart of accounts never persisted
         if settings.SEED_DEMO_DATA:
             from app.db.seed_production import seed_production_data
             async with AsyncSessionLocal() as db:
@@ -67,10 +84,11 @@ async def lifespan(app: FastAPI):
     )
     mqtt_task = asyncio.create_task(run_mqtt_bridge(), name="mqtt-bridge")
     automation_task = asyncio.create_task(run_crm_automation(), name="crm-automation")
+    credentials_task = asyncio.create_task(run_provider_credentials_refresh(), name="provider-credentials")
     try:
         yield
     finally:
-        for task in (dispatcher_task, mqtt_task, automation_task):
+        for task in (dispatcher_task, mqtt_task, automation_task, credentials_task):
             task.cancel()
             with suppress(asyncio.CancelledError):
                 await task

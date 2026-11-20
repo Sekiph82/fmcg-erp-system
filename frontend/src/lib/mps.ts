@@ -80,26 +80,26 @@ export interface MPSDemandSupplyBreakdown {
   product_id: string;
   period_start: string;
   period_end: string;
-  opening_on_hand_qty: string | null;
-  opening_reserved_qty: string;
-  opening_available_qty: string;
-  confirmed_demand_qty: string;
-  forecast_qty: string;
-  safety_stock_target_qty: string;
-  incoming_purchase_order_qty: string;
-  work_in_progress_qty: string;
-  approved_mps_supply_qty: string;
-  locked_mps_supply_qty: string;
-  planned_production_qty: string;
-  projected_ending_available_qty: string;
-  dated_receipts: Array<{ date: string; source: string; quantity: string }>;
+  opening_on_hand_qty: number | null;
+  opening_reserved_qty: number;
+  opening_available_qty: number;
+  confirmed_demand_qty: number;
+  forecast_qty: number;
+  safety_stock_target_qty: number;
+  incoming_purchase_order_qty: number;
+  work_in_progress_qty: number;
+  approved_mps_supply_qty: number;
+  locked_mps_supply_qty: number;
+  planned_production_qty: number;
+  projected_ending_available_qty: number;
+  dated_receipts: Array<{ date: string; source: string; quantity: number }>;
 }
 
 export interface MPSExcludedPurchaseOrder {
   po_no: string;
   product_id: string;
   expected_delivery_date: string;
-  open_quantity: string;
+  open_quantity: number;
   uom: string;
   reason: "PURCHASE_ORDER_DESTINATION_AMBIGUOUS" | "PURCHASE_ORDER_OVERDUE" | "PURCHASE_ORDER_AFTER_HORIZON";
 }
@@ -213,10 +213,10 @@ export interface MPSConstraintIssue {
   message?: string;
   material_id?: string;
   material_code?: string;
-  planned_quantity?: string;
-  required_qty?: string;
-  available_qty?: string;
-  shortage_qty?: string;
+  planned_quantity?: number;
+  required_qty?: number;
+  available_qty?: number;
+  shortage_qty?: number;
   uom?: string;
   required_date?: string;
   lead_time_days?: number;
@@ -256,7 +256,7 @@ export interface MPSLineConstraintDiagnostic {
     warehouse_id: string;
     demand_run_id: string;
     line_no?: string;
-    planned_quantity?: string;
+    planned_quantity?: number;
     required_date?: string;
     evaluation_kind?: string;
     capacity_mode?: string;

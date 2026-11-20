@@ -307,7 +307,7 @@ async def report_by_category(db: AsyncSession = Depends(get_db)):
 async def report_violations(db: AsyncSession = Depends(get_db)):
     violations = await svc.report_policy_violations(db)
     return [{"expense_line_id": str(v.expense_line_id), "receipt_no": v.receipt_no,
-             "claimed_amount": str(v.claimed_amount), "note": v.policy_violation_note,
+             "claimed_amount": float(v.claimed_amount), "note": v.policy_violation_note,
              "severity": v.policy_violation_severity} for v in violations]
 
 

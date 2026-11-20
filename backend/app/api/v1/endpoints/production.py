@@ -471,3 +471,28 @@ async def production_report(
     _=Depends(get_current_user),
 ):
     return await svc.get_production_report(db, date_from, date_to, product_id)
+
+
+# ── Warehouse links (raw material, packaging, semi-finished/WIP, finished goods) ──────────────────────────────────
+
+@router.get("/warehouse-links")
+async def get_warehouse_links(
+    db: AsyncSession = Depends(get_db),
+    _=Depends(require_any_permission(PRODUCTION_VIEW_PERMISSIONS)),
+):
+    from app.services.production_ledger_service import get_warehouse_links as _get
+
+    return {k: (str(v) if v else None) for k, v in (await _get(db)).items()}
+
+
+@router.put("/warehouse-links")
+async def put_warehouse_links(
+    payload: dict,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(require_any_permission(("production.approve",))),
+):
+    from app.services.production_ledger_service import set_warehouse_links
+
+    links = await set_warehouse_links(db, payload, current_user.id)
+    await db.commit()
+    return {k: (str(v) if v else None) for k, v in links.items()}

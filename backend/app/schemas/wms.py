@@ -517,6 +517,7 @@ class PickingTaskRead(BaseModel):
     notes: Optional[str]
     created_at: datetime
     access: Optional[WMSAccessHint] = None
+    parcel_invoice_no: Optional[str] = None  # marketplace order: print this invoice and put it in the parcel
     model_config = {"from_attributes": True}
 
 

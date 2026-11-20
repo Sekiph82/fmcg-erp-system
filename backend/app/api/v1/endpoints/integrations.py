@@ -1149,3 +1149,33 @@ async def test_connector(
     )
     await db.commit()
     return {"connector_code": connector_code, "result": "OK", "message": "Marketplace installation is active. Live credential test is connector-specific.", "installation_id": str(installation.id)}
+
+
+# ── Provider keys (M-Pesa, SMS, WhatsApp, e-mail) entered from the app ───────────────────────────────────────────
+
+def _superuser_only(user) -> None:
+    from app.core.access_control import has_permission
+
+    # system administrator, or integrations.provider_keys (only the full-access owner role has it by default)
+    if not (getattr(user, "is_superuser", False) or has_permission(user, "integrations.provider_keys")):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Only a system administrator can see or change provider keys.")
+
+
+@router.get("/provider-credentials")
+async def list_provider_credentials(db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    """Which providers are set up; secrets are reported only as set / not set."""
+    from app.services.provider_credentials import status as creds_status
+
+    _superuser_only(current_user)
+    return await creds_status(db)
+
+
+@router.put("/provider-credentials/{provider}")
+async def save_provider_credentials(provider: str, payload: dict, db: AsyncSession = Depends(get_db),
+                                    current_user=Depends(get_current_user)):
+    from app.services.provider_credentials import save, status as creds_status
+
+    _superuser_only(current_user)
+    await save(db, provider, payload, current_user.id)
+    await db.commit()
+    return next(p for p in await creds_status(db) if p["provider"] == provider)

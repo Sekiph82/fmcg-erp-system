@@ -103,7 +103,7 @@ function RegulatoryContent() {
           {/* Quantity & Customer Data */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: "Total Affected Qty", value: report.total_affected_qty ? parseFloat(report.total_affected_qty).toLocaleString() : "—" },
+              { label: "Total Affected Qty", value: report.total_affected_qty ? Number(report.total_affected_qty).toLocaleString() : "—" },
               { label: "Customers Affected", value: report.total_affected_customers ?? "—" },
               { label: "Recovery Rate", value: report.recovery_pct ? `${parseFloat(report.recovery_pct).toFixed(1)}%` : "—" },
               { label: "Lots in Scope", value: report.affected_lots.length },

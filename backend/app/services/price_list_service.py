@@ -489,7 +489,8 @@ async def resolve_price(db: AsyncSession, req: PriceResolveRequest) -> dict:
         "quantity": req.quantity,
         "uom": req.uom,
         "unit_price": found_line.base_price if found_line else Decimal("0"),
-        "currency": req.currency or (found_line.currency if found_line else "KES"),
+        # the price is in the list's currency: never relabel it with the currency the caller asked for
+        "currency": found_line.currency if found_line else (req.currency or "KES"),
         "source_price_list": found_pl.price_list_name if found_pl else None,
         "source_pl_id": str(found_pl.id) if found_pl else None,
         "source_pl_type": found_pl.pl_type if found_pl else None,

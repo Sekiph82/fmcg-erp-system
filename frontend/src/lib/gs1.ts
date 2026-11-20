@@ -69,7 +69,7 @@ export interface LotBarcodeRecord {
   qr_image_b64: string | null;
   is_printed: boolean;
   printed_at: string | null;
-  quantity: string | null;
+  quantity: number | null;
   packaging_level: PackagingLevel | null;
   created_at: string;
 }

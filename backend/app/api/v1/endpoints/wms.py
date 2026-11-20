@@ -944,9 +944,16 @@ async def list_picking_tasks(
         q = q.where(PickingTask.assigned_to_id == assigned_to_id)
     result = await db.execute(q.order_by(PickingTask.created_at.desc()).limit(limit))
     tasks = result.scalars().all()
+    from app.models.sales import Invoice, Shipment
+    from app.services.invoice_delivery_service import PARCEL_NOTE
+
+    ship_ids = {t.shipment_id for t in tasks if t.shipment_id}
+    parcel = dict((await db.execute(select(Shipment.id, Invoice.invoice_no).join(Invoice, Invoice.so_id == Shipment.so_id)
+                                    .where(Shipment.id.in_(ship_ids), Invoice.notes == PARCEL_NOTE))).all()) if ship_ids else {}
     rows = []
     for t in tasks:
         r = PickingTaskRead.model_validate(t)
+        r.parcel_invoice_no = parcel.get(t.shipment_id)
         r.product_name = t.product.name if t.product else None
         r.lot_number = t.lot.lot_number if t.lot else None
         r.from_location_code = t.from_location.code if t.from_location else None
@@ -957,6 +964,35 @@ async def list_picking_tasks(
         if r.access.can_view or r.access.can_pick:  # a picker sees the work without the whole inventory module
             rows.append(r)
     return rows
+
+
+@router.get("/picking/tasks/{task_id}/parcel-invoice")
+async def picking_task_parcel_invoice(task_id: uuid.UUID, db: AsyncSession = Depends(get_db),
+                                      current_user=Depends(get_current_user)):
+    """The invoice to print for the parcel of a marketplace order: only for someone who may pick or view this task."""
+    from sqlalchemy import select
+    from sqlalchemy.orm import selectinload
+
+    from app.models.sales import Customer, Invoice, Shipment
+    from app.services.invoice_delivery_service import PARCEL_NOTE
+
+    task = await db.get(PickingTask, task_id)
+    if task is None or task.shipment_id is None:
+        raise HTTPException(404, "No parcel invoice for this task")
+    hint = svc.build_wms_access_hint(current_user, task.warehouse_id)
+    if not (hint.can_view or hint.can_pick):
+        raise HTTPException(403, "Not allowed for this warehouse")
+    inv = (await db.execute(select(Invoice).options(selectinload(Invoice.lines))
+                            .join(Shipment, Shipment.so_id == Invoice.so_id)
+                            .where(Shipment.id == task.shipment_id, Invoice.notes == PARCEL_NOTE))).scalar_one_or_none()
+    if inv is None:
+        raise HTTPException(404, "No parcel invoice for this task")
+    cust = await db.get(Customer, inv.customer_id)
+    return {"invoice_no": inv.invoice_no, "invoice_date": str(inv.invoice_date), "currency": inv.currency,
+            "customer": cust.name if cust else None, "subtotal": float(inv.subtotal), "tax_amount": float(inv.tax_amount),
+            "total_amount": float(inv.total_amount),
+            "lines": [{"description": l.description, "quantity": float(l.quantity), "unit_price": float(l.unit_price),
+                       "discount_pct": float(l.discount_pct or 0), "line_total": float(l.line_total)} for l in inv.lines]}
 
 
 @router.post("/picking/tasks", response_model=PickingTaskRead, status_code=201)

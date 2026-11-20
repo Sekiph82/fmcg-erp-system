@@ -23,7 +23,7 @@ function fmtKES(n: number) {
 }
 
 export default function DashboardPage() {
-  const { user, getFirstAllowedRoute } = useAuth();
+  const { user, getFirstAllowedRoute, hasExactPermission } = useAuth();
   const router = useRouter();
 
   const { data, isLoading, dataUpdatedAt, refetch } = useQuery({
@@ -63,6 +63,7 @@ export default function DashboardPage() {
 
   return (
     <div className="w-full min-w-0 px-4 sm:px-6 lg:px-8 space-y-5 pb-10">
+      {hasExactPermission("integrations.provider_keys") && <ProviderKeysReminder />}
       {/* ── Header ── */}
       <div className="flex items-center justify-between pt-1">
         <div>
@@ -432,6 +433,24 @@ export default function DashboardPage() {
       <p className="text-center text-[11px] text-gray-300 pb-2">
         Auto-refreshes every 60 seconds · Role: {user?.is_superuser ? "CEO / Admin" : "Manager"}
       </p>
+    </div>
+  );
+}
+
+
+/** Administrator reminder: providers still waiting for keys (M-Pesa, SMS, WhatsApp, e-mail). */
+function ProviderKeysReminder() {
+  const { data = [] } = useQuery<{ provider: string; label: string; configured: boolean }[]>({
+    queryKey: ["provider-credentials"],
+    queryFn: async () => (await (await import("@/lib/api")).apiClient.get("/api/v1/integrations/provider-credentials")).data,
+    staleTime: 300_000,
+  });
+  const waiting = data.filter((p) => !p.configured);
+  if (waiting.length === 0) return null;
+  return (
+    <div role="status" className="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 flex flex-wrap items-center gap-2">
+      <span>Waiting for provider keys: {waiting.map((p) => p.label.split(" (")[0]).join(", ")}.</span>
+      <Link href="/dashboard/integrations?tab=provider-keys" className="font-medium underline">Enter keys</Link>
     </div>
   );
 }

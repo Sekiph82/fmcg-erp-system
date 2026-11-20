@@ -1,7 +1,7 @@
 """POVU product range (owner's list and the POVU Catalogue, 2026-11-19) as product master data.
 
-Idempotent: creates missing SKUs, refreshes name/category/description of existing ones, never touches prices or costs.
-The catalogue has no prices, so selling_price/standard_cost stay empty until the owner's price list is loaded.
+Idempotent: creates missing SKUs, refreshes name/category/description of existing ones, never touches costs.
+Prices: the owner's interim USD list goes into price list POVU-INTERIM-USD (product selling_price stays empty).
 Run:  python -m app.db.seed_catalogue
 """
 import asyncio
@@ -115,6 +115,134 @@ RANGE = [
 ]
 
 
+# Owner's interim unit sales prices, USD per piece (2026-11-20, "use these for now"; not the final list)
+PRICE_LIST_CODE = "POVU-INTERIM-USD"
+PRICE_CURRENCY = "USD"
+PRICES_USD = {
+    "POVU-HWP-20G": "0.1700",
+    "POVU-HWP-1KG": "1.6000",
+    "POVU-HWP-10KG": "11.5000",
+    "POVU-WCP-40G": "0.2200",
+    "POVU-WCP-1KG": "2.0000",
+    "POVU-WCP-10KG": "18.5000",
+    "POVU-CGP-40G": "0.1800",
+    "POVU-CGP-1KG": "1.8000",
+    "POVU-CGP-10KG": "13.5000",
+    "POVU-OXB-20G": "0.3200",
+    "POVU-OXB-1KG": "2.9500",
+    "POVU-OXB-10KG": "23.0000",
+    "POVU-SCS-25G": "0.3300",
+    "POVU-SCS-1KG": "2.9000",
+    "POVU-SCS-10KG": "22.0000",
+    "POVU-CFL-1L": "1.2000",
+    "POVU-CFL-40ML": "0.0900",
+    "POVU-WFL-1L": "1.2500",
+    "POVU-WFL-50ML": "0.0900",
+    "POVU-SBL-1L": "1.5000",
+    "POVU-SBL-40ML": "0.0700",
+    "POVU-FLS-1L": "0.9500",
+    "POVU-PRS-1L": "1.0000",
+    "POVU-FSF-30ML": "0.0600",
+    "POVU-SFB-20L": "4.2000",
+    "POVU-PWB-1L": "0.6500",
+    "POVU-LMB-1L": "1.2000",
+    "POVU-LMB-15ML": "0.0900",
+    "POVU-ORS-1L": "1.2500",
+    "POVU-GFD-1L": "1.3000",
+    "POVU-ALC-30ML": "0.0600",
+    "POVU-ALC-1L": "0.9500",
+    "POVU-BGS-1L": "1.9000",
+    "POVU-GRA-1L": "0.8500",
+    "POVU-SCG-1L": "0.9000",
+    "POVU-PLC-500ML": "0.7000",
+    "POVU-PLC-5ML": "0.0700",
+    "POVU-WTT-75G": "0.7500",
+    "POVU-SHH-250ML": "0.6500",
+    "POVU-SHH-8ML": "0.0700",
+    "POVU-SBS-250ML": "0.5500",
+    "POVU-SBS-8ML": "0.0800",
+    "POVU-FSP-250ML": "0.7500",
+    "POVU-FSP-8ML": "0.0800",
+    "POVU-FSP-20L": "15.5000",
+    "POVU-SFH-500ML": "1.5000",
+    "POVU-SLC-250ML": "0.6000",
+    "POVU-SLC-10ML": "0.0600",
+    "POVU-SLC-20L": "15.0000",
+    "POVU-PBP-20L": "4.5000",
+    "POVU-SCP-20L": "15.5000",
+    "POVU-DSP-20L": "12.5000",
+    "POVU-SSP-20L": "5.0000",
+    "POVU-WTT-6G": "0.0800",
+    "POVU-CRV-20ML": "0.0800",
+    "POVU-CRV-500ML": "1.4000",
+    "POVU-FLF-1L": "2.1500",
+    "POVU-FLF-30ML": "0.0800",
+    "POVU-BWG-750ML": "2.0000",
+    "POVU-BWG-50ML": "0.0800",
+    "POVU-CRS-500G": "1.5000",
+    "POVU-STL-50ML": "0.0800",
+    "POVU-STL-500ML": "2.5000",
+    "POVU-SHS-500ML": "2.5000",
+    "POVU-BSP-50ML": "0.0800",
+    "POVU-BSP-500ML": "1.8500",
+    "POVU-AQF-300ML": "2.5000",
+    "POVU-AFM-30ML": "0.0800",
+    "POVU-AFM-500ML": "2.0000",
+    "POVU-CBC-500ML": "2.0000",
+    "POVU-QAC-500ML": "2.0000",
+    "POVU-QAC-20L": "35.0000",
+    "POVU-GTR-250ML": "1.5000",
+    "POVU-GTR-10L": "12.0000",
+    "POVU-LDS-500ML": "2.0000",
+    "POVU-LDS-10L": "16.0000",
+    "POVU-GLC-10ML": "0.3300",
+    "POVU-GLC-150ML": "5.0000",
+    "POVU-SGL-10ML": "0.0800",
+    "POVU-SGL-150ML": "2.5000",
+    "POVU-SMS-100ML": "2.0000",
+    "POVU-BDS-20ML": "0.0800",
+    "POVU-BDS-250ML": "3.0000",
+    "POVU-SFW-64": "1.7500",
+    "POVU-SFW-100": "2.4000",
+    "POVU-MDW-50": "2.8000",
+    "POVU-MDW-100": "4.8000",
+    "POVU-FFT-50": "2.2000",
+    "POVU-FFT-80": "2.9000",
+    "POVU-BBW-48": "1.7500",
+    "POVU-BBW-72": "2.3000",
+}
+assert set(PRICES_USD) == {r[0] for r in RANGE}, "price list and range differ"
+
+
+async def seed_prices(db) -> int:
+    """Active default USD list with one line per SKU (upsert); shops in KES get it converted at finance's latest rate."""
+    from datetime import date
+    from decimal import Decimal
+
+    from app.models.price_list import PLHeader, PLLine, PLStatus, PLType
+
+    hdr = (await db.execute(select(PLHeader).where(PLHeader.price_list_code == PRICE_LIST_CODE))).scalar_one_or_none()
+    if hdr is None:
+        hdr = PLHeader(price_list_code=PRICE_LIST_CODE, price_list_name="POVU interim list price (USD)",
+                       currency=PRICE_CURRENCY, pl_type=PLType.STANDARD, valid_from=date.today(),
+                       status=PLStatus.ACTIVE, default_flag=True, priority_rank=10,
+                       notes="Owner's interim prices 2026-11-20; replace with the final list.")
+        db.add(hdr)
+        await db.flush()
+    products = {p.sku: p for p in (await db.execute(select(Product).where(Product.sku.in_(list(PRICES_USD))))).scalars()}
+    lines = {ln.product_id: ln for ln in (await db.execute(select(PLLine).where(PLLine.header_id == hdr.id))).scalars()}
+    for sku, price in PRICES_USD.items():
+        prod = products[sku]
+        ln = lines.get(prod.id)
+        if ln is None:
+            ln = PLLine(header_id=hdr.id, product_id=prod.id, uom=prod.uom.value, currency=PRICE_CURRENCY, active_flag=True)
+            db.add(ln)
+        ln.base_price = Decimal(price)
+        ln.category = prod.category.value if prod.category else None
+    await db.flush()
+    return len(PRICES_USD)
+
+
 async def seed_catalogue(db) -> int:
     """Upsert the POVU range; returns how many SKUs were created."""
     existing = {p.sku: p for p in (await db.execute(select(Product).where(Product.sku.in_([r[0] for r in RANGE])))).scalars()}
@@ -136,7 +264,8 @@ if __name__ == "__main__":
     async def _main():
         async with AsyncSessionLocal() as db:
             n = await seed_catalogue(db)
+            priced = await seed_prices(db)
             await db.commit()
-            print(f"POVU range: {len(RANGE)} SKUs ({n} new)")
+            print(f"POVU range: {len(RANGE)} SKUs ({n} new); {priced} prices in {PRICE_LIST_CODE}")
 
     asyncio.run(_main())

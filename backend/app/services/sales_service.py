@@ -713,6 +713,8 @@ async def invoice_from_shipment(
     _assert_ship(shipment, ShipmentStatus.DISPATCHED)
     if shipment.invoice:
         raise HTTPException(422, "Shipment already has an invoice")
+    if (await db.execute(select(Invoice.id).where(Invoice.so_id == shipment.so_id, Invoice.shipment_id.is_(None)).limit(1))).first():
+        raise HTTPException(422, "The order was invoiced as a whole when it was paid (marketplace order)")
 
     # Load SO for customer and pricing
     so_result = await db.execute(

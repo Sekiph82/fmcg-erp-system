@@ -104,13 +104,13 @@ export interface UtilityTransaction {
   batch_id: string | null;
   product_id: string | null;
 
-  quantity: string;
+  quantity: number;
   uom: string;
 
   tariff_id: string | null;
   tariff_code: string | null;
   cost_rate: string | null;
-  total_cost: string | null;
+  total_cost: number | null;
   currency_code: string | null;
 
   variance_from_standard: string | null;
@@ -184,16 +184,16 @@ export interface UtilityTransactionSummaryRow {
   group_key: string;
   label: string;
   tx_count: number;
-  total_quantity: string;
+  total_quantity: number;
   uom: string;
-  total_cost: string | null;
+  total_cost: number | null;
   anomaly_count: number;
 }
 
 export interface UtilityTransactionSummary {
   by_utility_type: UtilityTransactionSummaryRow[];
   by_department: UtilityTransactionSummaryRow[];
-  grand_total_cost: string | null;
+  grand_total_cost: number | null;
   grand_total_tx: number;
 }
 

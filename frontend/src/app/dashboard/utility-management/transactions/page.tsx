@@ -466,7 +466,7 @@ function ViewModal({ tx, onClose }: { tx: UtilityTransaction; onClose: () => voi
           <div>
             <SectionTitle>Consumption</SectionTitle>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              <Row label="Quantity" value={`${parseFloat(tx.quantity).toLocaleString()} ${tx.uom}`} />
+              <Row label="Quantity" value={`${Number(tx.quantity).toLocaleString()} ${tx.uom}`} />
               <Row label="Variance from Std" value={
                 tx.variance_from_standard
                   ? <span className={parseFloat(tx.variance_from_standard) > 0 ? "text-red-400" : "text-emerald-400"}>
@@ -484,7 +484,7 @@ function ViewModal({ tx, onClose }: { tx: UtilityTransaction; onClose: () => voi
               <Row label="Cost Rate" value={tx.cost_rate ? `${tx.currency_code} ${parseFloat(tx.cost_rate).toFixed(4)}` : null} />
               <Row label="Total Cost" value={
                 tx.total_cost
-                  ? `${tx.currency_code} ${parseFloat(tx.total_cost).toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+                  ? `${tx.currency_code} ${Number(tx.total_cost).toLocaleString(undefined, { minimumFractionDigits: 2 })}`
                   : null
               } />
               <Row label="Currency" value={tx.currency_code} />
@@ -544,7 +544,7 @@ function SummaryCards({ summary }: { summary: UtilityTransactionSummary }) {
           <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Total Cost</div>
           <div className="text-xl font-bold text-emerald-400">
             {summary.grand_total_cost
-              ? parseFloat(summary.grand_total_cost).toLocaleString(undefined, { minimumFractionDigits: 2 })
+              ? Number(summary.grand_total_cost).toLocaleString(undefined, { minimumFractionDigits: 2 })
               : "—"}
           </div>
         </div>
@@ -567,11 +567,11 @@ function SummaryCards({ summary }: { summary: UtilityTransactionSummary }) {
             <div key={row.group_key} className="bg-slate-800/40 border border-slate-700/40 rounded-lg p-2.5">
               <div className="text-[10px] text-slate-400 font-medium mb-1">{row.label}</div>
               <div className="text-sm font-semibold text-slate-200">
-                {parseFloat(row.total_quantity).toLocaleString()} <span className="text-slate-500 text-[10px]">{row.uom}</span>
+                {Number(row.total_quantity).toLocaleString()} <span className="text-slate-500 text-[10px]">{row.uom}</span>
               </div>
               {row.total_cost && (
                 <div className="text-xs text-emerald-400 mt-0.5">
-                  {parseFloat(row.total_cost).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                  {Number(row.total_cost).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                 </div>
               )}
               <div className="text-[10px] text-slate-600 mt-0.5">{row.tx_count} tx</div>
@@ -834,7 +834,7 @@ export default function TransactionsPage() {
                   <UtilityTypeBadge t={tx.utility_type} />
                 </td>
                 <td className="px-4 py-2.5 text-xs text-slate-300 whitespace-nowrap">
-                  <span className="font-medium text-slate-200">{parseFloat(tx.quantity).toLocaleString()}</span>
+                  <span className="font-medium text-slate-200">{Number(tx.quantity).toLocaleString()}</span>
                   <span className="text-slate-500 ml-1">{tx.uom}</span>
                   {tx.variance_from_standard != null && parseFloat(tx.variance_from_standard) !== 0 && (
                     <span className={`ml-1.5 text-[10px] ${parseFloat(tx.variance_from_standard) > 0 ? "text-red-400" : "text-emerald-400"}`}>
@@ -846,7 +846,7 @@ export default function TransactionsPage() {
                 <td className="px-4 py-2.5 text-xs text-slate-300 whitespace-nowrap">
                   {tx.total_cost != null ? (
                     <span className="text-slate-200">
-                      {tx.currency_code ?? ""} {parseFloat(tx.total_cost).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      {tx.currency_code ?? ""} {Number(tx.total_cost).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                     </span>
                   ) : (
                     <span className="text-slate-600">—</span>

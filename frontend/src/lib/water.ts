@@ -61,7 +61,7 @@ export interface WaterBreakdownRow {
   group_key:    string | null;
   label:        string;
   total_m3:     string;
-  pct_of_total: string | null;
+  pct_of_total: number | null;
   total_cost:   string | null;
   tx_count:     number;
   anomaly_count: number;

@@ -200,3 +200,59 @@ async def test_pos_sale_is_booked_with_output_tax():
         rlines = {(l.account_id, l.debit, l.credit) for l in (await db.execute(select(JournalLine).where(JournalLine.entry_id == back.id))).scalars()}
         assert back.is_posted and rlines == {(a, cr, dr) for a, dr, cr in lines}
         assert await _reverse_pos_sale_in_gl(db, sale, cashier.id) is None   # only once
+
+
+@pytest.mark.asyncio
+async def test_completed_production_is_booked_materials_packaging_conversion_to_finished_goods(monkeypatch):
+    """Owner 2026-11-20: raw material, packaging and conversion flow into WIP, WIP into finished goods, one journal."""
+    from types import SimpleNamespace
+
+    from app.models.master import MaterialType
+    from app.services import production_ledger_service as pls
+
+    async def by_type(_db, _order_id):
+        return {MaterialType.RAW: Decimal("600.00"), MaterialType.PACKAGING: Decimal("150.00")}
+
+    async def order_cost(_db, _order):
+        return {"total_labor_cost": 200.0, "total_machine_cost": 40.0, "total_energy_cost": 10.0}
+
+    monkeypatch.setattr(pls, "material_cost_by_type", by_type)
+    monkeypatch.setattr("app.services.production_cost_service.compute_order_cost", order_cost)
+    s = uuid.uuid4().hex[:6]
+    async with AsyncSessionLocal() as db:
+        assert (await db.execute(select(func.current_database()))).scalar_one() == os.environ[TASK_DB_NAME_ENV]
+        planner = User(email=f"pp-{s}@example.com", username=f"pp{s}", full_name="PP", hashed_password="x")
+        acc = {k: ChartOfAccount(code=f"{k[:4].upper()}{s}", name=k, account_type=t, currency="KES") for k, t in (
+            ("wip", AccountType.ASSET), ("raw", AccountType.ASSET), ("pack", AccountType.ASSET), ("fg", AccountType.ASSET),
+            ("applied", AccountType.EXPENSE))}
+        db.add_all([planner, *acc.values()])
+        await db.flush()
+        order = SimpleNamespace(id=uuid.uuid4(), order_no=f"PO-{s}")
+        assert await pls.post_production_completion(db, order, planner.id) is None   # no rules: nothing booked
+        for event, dr, cr in (("RAW_MATERIAL_ISSUE", "wip", "raw"), ("PACKAGING_ISSUE", "wip", "pack"),
+                              ("CONVERSION_APPLIED", "wip", "applied"), ("FINISHED_GOODS_RECEIPT", "fg", "wip")):
+            db.add(AccountingPostingRule(source_module="production", source_event=event, rule_name=event,
+                                         debit_account_id=acc[dr].id, credit_account_id=acc[cr].id, priority=1, is_active=True))
+        await db.flush()
+        je = await pls.post_production_completion(db, order, planner.id)
+        await db.commit()
+        rows = [(l.account_id, l.debit, l.credit) for l in (await db.execute(select(JournalLine).where(JournalLine.entry_id == je.id))).scalars()]
+        net = {}
+        for a, d, c in rows:
+            net[a] = net.get(a, Decimal("0")) + d - c
+        assert je.source_module == "production" and je.is_posted
+        assert net[acc["fg"].id] == Decimal("1000.00")          # 600 raw + 150 packaging + 250 conversion
+        assert net[acc["raw"].id] == Decimal("-600.00") and net[acc["pack"].id] == Decimal("-150.00")
+        assert net[acc["applied"].id] == Decimal("-250.00") and net[acc["wip"].id] == Decimal("0")
+
+
+def test_packaging_and_semi_finished_come_from_their_linked_warehouse():
+    from app.models.master import MaterialType
+    from app.services.production_ledger_service import material_warehouse
+
+    src, pack, wip = uuid.uuid4(), uuid.uuid4(), uuid.uuid4()
+    links = {"packaging_warehouse_id": pack, "wip_warehouse_id": wip}
+    assert material_warehouse(MaterialType.PACKAGING, src, links) == pack
+    assert material_warehouse(MaterialType.SEMI_FINISHED, src, links) == wip
+    assert material_warehouse(MaterialType.RAW, src, links) == src
+    assert material_warehouse(MaterialType.PACKAGING, src, {}) == src

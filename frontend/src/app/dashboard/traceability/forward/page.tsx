@@ -24,7 +24,7 @@ function ForwardTraceContent() {
     finally { setLoading(false); }
   };
 
-  const fmtQty = (q: string) => parseFloat(q).toLocaleString(undefined, { maximumFractionDigits: 2 });
+  const fmtQty = (q: string | number) => Number(q).toLocaleString(undefined, { maximumFractionDigits: 2 });
 
   return (
     <div className="p-6 space-y-6">

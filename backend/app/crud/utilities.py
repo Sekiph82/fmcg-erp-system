@@ -15,7 +15,7 @@ from app.schemas.utilities import (
 # ── SystemConfig ───────────────────────────────────────────────────────────────
 
 async def list_configs(db: AsyncSession, category: Optional[str] = None, skip=0, limit=100) -> List[SystemConfig]:
-    q = select(SystemConfig)
+    q = select(SystemConfig).where(~SystemConfig.key.like("provider_credentials.%"))  # encrypted keys: own screen only
     if category:
         q = q.where(SystemConfig.category == category)
     result = await db.execute(q.order_by(SystemConfig.category, SystemConfig.key).offset(skip).limit(limit))
@@ -23,7 +23,8 @@ async def list_configs(db: AsyncSession, category: Optional[str] = None, skip=0,
 
 
 async def get_config(db: AsyncSession, config_id: uuid.UUID) -> Optional[SystemConfig]:
-    result = await db.execute(select(SystemConfig).where(SystemConfig.id == config_id))
+    result = await db.execute(select(SystemConfig).where(SystemConfig.id == config_id,
+                                                         ~SystemConfig.key.like("provider_credentials.%")))
     return result.scalar_one_or_none()
 
 

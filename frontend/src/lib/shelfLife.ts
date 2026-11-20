@@ -158,7 +158,7 @@ export interface FEFOAuditLog {
   actual_expiry: string | null;
   is_fefo_compliant: boolean;
   override_reason: string | null;
-  quantity: string | null;
+  quantity: number | null;
   created_at: string;
 }
 

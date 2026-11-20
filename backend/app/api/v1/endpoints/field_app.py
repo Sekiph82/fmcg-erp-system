@@ -18,7 +18,7 @@ from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Query, UploadFile
 from pydantic import BaseModel, Field
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.exc import IntegrityError
@@ -354,9 +354,15 @@ async def place_order(body: OrderIn, db: AsyncSession = Depends(get_db), user=De
         if existing is None or existing.sales_rep_id != rep.id:
             raise HTTPException(409, "The order could not be saved; please send it again.")
         return {"id": str(existing.id), "order_no": existing.order_no, "duplicate": True}
-    for n, (product, qty, price) in enumerate(priced, start=1):
-        db.add(SOLine(so_id=so.id, line_no=n, product_id=product.id, ordered_quantity=qty, unit=product.uom.value,
-                      unit_price=price, cost_price=product.standard_cost))
+    so_lines = [SOLine(so_id=so.id, line_no=n, product_id=product.id, ordered_quantity=qty, unit=product.uom.value,
+                       unit_price=price, cost_price=product.standard_cost, discount_pct=Decimal("0"))
+                for n, (product, qty, price) in enumerate(priced, start=1)]
+    db.add_all(so_lines)
+    await db.flush()
+    from app.services.shop_promotions import apply_to_order  # same list price for all; the shop's promotions on top
+
+    promotions = await apply_to_order(db, so, customer)
+    order_total = sum((l.ordered_quantity * l.unit_price * (1 - l.discount_pct) for l in so_lines), Decimal("0"))  # before commit expires the lines
     if body.visit_id:
         v = await db.get(VisitLog, body.visit_id)
         if v is not None and v.rep_id == rep.id and v.customer_id == customer.id:
@@ -365,7 +371,7 @@ async def place_order(body: OrderIn, db: AsyncSession = Depends(get_db), user=De
     from app.services.notifications_service import notify_new_order
     await notify_new_order(db, so, customer.name, "field")
     return {"id": str(so.id), "order_no": so.order_no, "currency": so.currency,
-            "total": float(sum((q * p for _, q, p in priced), Decimal("0"))), "duplicate": False}
+            "total": float(order_total), "promotions": promotions, "duplicate": False}
 
 
 @router.get("/customers/{customer_id}/invoices")
@@ -506,14 +512,17 @@ async def my_trips(db: AsyncSession = Depends(get_db), user=Depends(get_current_
 
 
 @router.post("/trips/{trip_id}/start")
-async def start_trip(trip_id: uuid.UUID, db: AsyncSession = Depends(get_db), user=Depends(get_current_user)):
+async def start_trip(trip_id: uuid.UUID, background: BackgroundTasks, db: AsyncSession = Depends(get_db),
+                     user=Depends(get_current_user)):
     from app.models.delivery import TripStatus
+    from app.services.customer_messaging import notify_trip_started
 
     trip = await _my_trip(db, user, trip_id)
     if trip.status not in (TripStatus.PLANNED, TripStatus.LOADING):
         raise HTTPException(409, f"Trip is {trip.status.value}.")
     trip.status, trip.departed_at = TripStatus.IN_TRANSIT, datetime.now(timezone.utc)
     await db.commit()
+    background.add_task(notify_trip_started, trip.id)  # "on the way" to each shop (WhatsApp / SMS once set up)
     return {"status": trip.status.value}
 
 
@@ -558,6 +567,10 @@ async def deliver(trip_order_id: uuid.UUID, received_by: str = Form(..., min_len
     to.status = TripOrderStatus.DELIVERED
     shipment = await db.get(Shipment, to.shipment_id)
     if shipment is not None and shipment.status == ShipmentStatus.DISPATCHED:
+        # the invoice is cut at delivery and e-mailed to the shop (never blocks the delivery)
+        from app.services.invoice_delivery_service import invoice_on_delivery
+
+        await invoice_on_delivery(db, shipment.id, user.id)
         shipment.status = ShipmentStatus.DELIVERED
     try:
         await db.commit()

@@ -152,6 +152,10 @@ async def seed_finance_data(db: AsyncSession) -> None:
         db, "1220", "Finished Goods Inventory", AccountType.ASSET,
         parent_id=assets_ctrl.id,
     )
+    await _get_or_create_account(
+        db, "1230", "Packaging Materials Inventory", AccountType.ASSET,
+        parent_id=assets_ctrl.id,
+    )
 
     # Liabilities
     liab_ctrl = await _get_or_create_account(

@@ -135,7 +135,7 @@ export interface QualityCostSummary {
   by_risk_level: Record<string, string>;
   cost_of_good_quality: string;
   cost_of_poor_quality: string;
-  total: string;
+  total: number;
   copq_share_pct: string | null;
   currencies: string[];
   mixed_currency: boolean;
@@ -145,7 +145,7 @@ export interface RetainSample {
   id: string;
   sample_no: string;
   lot_id: string;
-  quantity: string;
+  quantity: number;
   quantity_remaining: string;
   uom: string;
   storage_location: string;

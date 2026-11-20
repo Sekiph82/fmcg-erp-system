@@ -941,3 +941,44 @@ async def margin_summary_report(
             "lines_with_cost": len(lines_with_cost),
         })
     return rows
+
+
+from pydantic import BaseModel as _BaseModel, EmailStr as _EmailStr
+
+
+class MarketplacePaidIn(_BaseModel):
+    buyer_email: Optional[_EmailStr] = None
+    buyer_name: str = "customer"
+
+
+@router.post("/orders/{so_id}/marketplace-paid")
+async def marketplace_order_paid(
+    so_id: uuid.UUID,
+    body: MarketplacePaidIn,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    """Payment received for a marketplace (online) order: invoice now, e-mail the buyer, paper copy for the parcel."""
+    from app.models.sales import OrderSource
+    from app.services.invoice_delivery_service import invoice_paid_marketplace_order
+
+    so = await crud.get_so(db, so_id)
+    if not so:
+        raise HTTPException(404, "Sales order not found")
+    _require_so_action(current_user, so, "edit")
+    if so.source != OrderSource.ECOMMERCE:
+        raise HTTPException(422, "Only online marketplace orders are invoiced on payment; shop orders are invoiced on delivery.")
+    from sqlalchemy import select as _select
+
+    from app.models.sales import Invoice
+
+    had_invoice = (await db.execute(_select(Invoice.id).where(Invoice.so_id == so.id).limit(1))).first() is not None
+    try:
+        inv = await invoice_paid_marketplace_order(db, so.id, body.buyer_email, body.buyer_name[:200], current_user.id)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    if inv is None:
+        raise HTTPException(422, "The invoice could not be created (check the sales posting rule).")
+    await db.commit()
+    return {"invoice_id": str(inv.id), "invoice_no": inv.invoice_no, "already_invoiced": had_invoice,
+            "emailed": bool(body.buyer_email) and not had_invoice, "print_for_parcel": True}

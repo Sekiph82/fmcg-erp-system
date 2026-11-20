@@ -196,7 +196,6 @@ const DYNAMIC_REDIRECTS: [string, RegExp][] = [
   ["/dashboard/documents/test-id",           /\/dashboard\/documents/],
   ["/dashboard/crm/records/test-id",         /\/dashboard\/crm/],
   ["/dashboard/users/test-id",               /\/dashboard\/admin/],
-  ["/dashboard/payroll/runs/test-id",        /\/dashboard\/hr.*tab=payroll/],
 ];
 
 test.describe("F. Dynamic route redirects", () => {

@@ -214,6 +214,7 @@ function ProductionPlansTab() {
 }
 
 const ProductionOrdersPage     = dynamic(() => import("@/app/dashboard/production/orders/page"),         { ssr: false });
+const ProductionWarehouseLinksPage = dynamic(() => import("@/app/dashboard/production/warehouse-links/page"), { ssr: false });
 const ProductionSchedulingPage = dynamic(() => import("@/app/dashboard/production/scheduling/page"),     { ssr: false });
 const ProductionWorkCentersPage= dynamic(() => import("@/app/dashboard/production/work-centers/page"),   { ssr: false });
 const ProductionBatchLotsPage  = dynamic(() => import("@/app/dashboard/production/batch-lots/page"),     { ssr: false });
@@ -255,6 +256,7 @@ export default function ProductionPage() {
     { key: "machine-ops",   label: "Machine Ops",     permission: "production.view", exact: true, content: <MachineOpsPage /> },
     { key: "material-flow", label: "Material Flow",   permission: "production.view", content: <MaterialFlowPage /> },
     { key: "projects",      label: "Projects",        permission: "production.view", content: <ProjectsPage /> },
+    { key: "warehouse-links", label: "Warehouse Links", permission: "production.view", content: <ProductionWarehouseLinksPage /> },
   ];
   return (
     <ModuleWorkspace

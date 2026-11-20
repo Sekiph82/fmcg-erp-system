@@ -7,7 +7,8 @@ import {
   type PortalMe, type CatalogItem, type PortalOrder, type PortalOrderDetail, type PortalStatement, type PortalClaim, type OrderTracking, type PaymentOptions,
 } from "@/lib/portalSelf";
 
-type Tab = "order" | "orders" | "statement" | "claims" | "support";
+type Tab = "order" | "promotions" | "orders" | "statement" | "claims" | "support";
+interface ShopPromotion { code: string; name: string; valid_from: string; valid_to: string; only_for_you: boolean; offers: string[] }
 type Cart = Record<string, { item: CatalogItem; qty: number }>;
 const CLAIM_TYPES = ["SHORTAGE_CLAIM", "DAMAGE_CLAIM", "RETURN_REQUEST", "DELIVERY_DISCREPANCY", "PRICING_DISPUTE", "PRODUCT_COMPLAINT"];
 const newRef = () => (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
@@ -43,7 +44,7 @@ export default function PartnerPortal() {
         <button onClick={signOut} className="text-sm underline shrink-0">Sign out</button>
       </header>
       <nav aria-label="Portal sections" className="flex overflow-x-auto bg-white border-b text-sm">
-        {([["order", "New order"], ["orders", "My orders"], ["statement", "Invoices & statement"], ["claims", "Claims"], ["support", "Support"]] as [Tab, string][]).map(([k, label]) => (
+        {([["order", "New order"], ["promotions", "My promotions"], ["orders", "My orders"], ["statement", "Invoices & statement"], ["claims", "Claims"], ["support", "Support"]] as [Tab, string][]).map(([k, label]) => (
           <button key={k} onClick={() => { setTab(k); setError(null); setInfo(null); }} aria-current={tab === k ? "page" : undefined}
             className={`px-4 py-3 whitespace-nowrap ${tab === k ? "border-b-2 border-indigo-600 font-semibold text-indigo-700" : "text-gray-600"}`}>{label}</button>
         ))}
@@ -53,6 +54,7 @@ export default function PartnerPortal() {
         {info && !error && <p role="status" className="rounded-lg p-3 text-sm bg-emerald-50 border border-emerald-200 text-emerald-800">{info}</p>}
         {!me.linked ? <p className="rounded-lg p-4 bg-amber-50 border border-amber-200 text-amber-800 text-sm">Your account is not linked to a customer yet. Please contact your sales representative.</p> : (<>
           {tab === "order" && <OrderTab me={me} fail={fail} onPlaced={(no) => { setInfo(`Order ${no} received. Our sales team will confirm it.`); setError(null); }} />}
+          {tab === "promotions" && <PromotionsTab fail={fail} />}
           {tab === "orders" && <OrdersTab me={me} fail={fail} />}
           {tab === "statement" && <StatementTab me={me} fail={fail} />}
           {tab === "claims" && <ClaimsTab me={me} fail={fail} onDone={(no) => setInfo(`Claim ${no} submitted.`)} />}
@@ -96,12 +98,12 @@ function OrderTab({ me, fail, onPlaced }: { me: PortalMe; fail: (e: unknown) => 
   async function place() {
     setBusy(true);
     try {
-      const r = await post<{ order_no: string }>("/orders", {
+      const r = await post<{ order_no: string; promotions?: string[] }>("/orders", {
         client_ref: ref, requested_delivery_date: delivery, notes: notes || null, payment_method: pay || null,
         lines: lines.map((l) => ({ product_id: l.item.product_id, quantity: String(l.qty) })),
       });
       setCart({}); setNotes(""); setRef(newRef());
-      onPlaced(r.order_no);
+      onPlaced(r.promotions?.length ? `${r.order_no} (promotions: ${r.promotions.join("; ")})` : r.order_no);
     } catch (e) { fail(e); } finally { setBusy(false); }
   }
 
@@ -150,6 +152,31 @@ const PAY_TEXT: Record<string, (o: PaymentOptions) => string> = {
   mpesa: (o) => (o.prepaid ? "M-Pesa (pay before delivery)" : "M-Pesa"),
   credit: (o) => `On account (${o.terms_days} days)`,
 };
+
+/** Promotions for this shop. List prices are the same for every shop; promotions are applied on top and shown on the invoice. */
+function PromotionsTab({ fail }: { fail: (e: unknown) => void }) {
+  const [rows, setRows] = useState<ShopPromotion[] | null>(null);
+  useEffect(() => { ps<ShopPromotion[]>("/promotions").then(setRows).catch(fail); }, [fail]);
+  if (rows === null) return <p className="text-sm text-gray-500">Loading…</p>;
+  if (rows.length === 0) return <p className="bg-white rounded-xl border p-4 text-sm text-gray-500">No promotions for your shop right now.</p>;
+  return (
+    <section aria-label="My promotions" className="bg-white rounded-xl border overflow-x-auto">
+      <table className="min-w-full text-sm">
+        <thead className="bg-gray-50 text-xs text-gray-500"><tr>
+          <th className="px-3 py-2 text-left">Promotion</th><th className="px-3 py-2 text-left">What you get</th><th className="px-3 py-2 text-left">Valid</th>
+        </tr></thead>
+        <tbody>{rows.map((p) => (
+          <tr key={p.code} className="border-t align-top">
+            <td className="px-3 py-2 font-medium">{p.name}{p.only_for_you && <span className="ml-2 text-xs text-indigo-700">just for you</span>}</td>
+            <td className="px-3 py-2">{p.offers.map((o) => <div key={o}>{o}</div>)}</td>
+            <td className="px-3 py-2 whitespace-nowrap">{p.valid_from} – {p.valid_to}</td>
+          </tr>))}
+        </tbody>
+      </table>
+      <p className="px-3 py-2 text-xs text-gray-500">Applied automatically when your order qualifies; the discount is shown on your invoice.</p>
+    </section>
+  );
+}
 
 function OrdersTab({ me, fail }: { me: PortalMe; fail: (e: unknown) => void }) {
   const [rows, setRows] = useState<PortalOrder[] | null>(null);

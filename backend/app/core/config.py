@@ -130,6 +130,9 @@ class Settings(BaseSettings):
     MPESA_CALLBACK_SECRET: str = ""
     # Meta app secret used to verify X-Hub-Signature-256 on WhatsApp webhooks.
     WHATSAPP_APP_SECRET: str = ""
+    # Meta WhatsApp Cloud API sender for customer notices (set from Integrations → Provider keys or .env)
+    WHATSAPP_PHONE_NUMBER_ID: str = ""
+    WHATSAPP_ACCESS_TOKEN: str = ""
     # Shopify custom app (Admin API access token; never stored in the database).
     SHOPIFY_SHOP_DOMAIN: str = ""          # <store>.myshopify.com
     SHOPIFY_ACCESS_TOKEN: str = ""

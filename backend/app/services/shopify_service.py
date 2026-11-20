@@ -260,6 +260,13 @@ async def _import_one(db: AsyncSession, order: dict, mapping: EcommerceOrderMapp
     mapping.error_message = None
     db.add(mapping)
     await db.flush()
+    if paid:  # marketplace rule: invoice on payment, mailed to the buyer, paper copy in the parcel
+        from app.services.invoice_delivery_service import invoice_paid_marketplace_order
+
+        buyer = order.get("customer") or {}
+        await invoice_paid_marketplace_order(db, so.id, order.get("email"),
+                                             " ".join(filter(None, [buyer.get("first_name"), buyer.get("last_name")])) or "customer",
+                                             actor_id)
     return None
 
 

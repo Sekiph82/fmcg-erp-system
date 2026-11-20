@@ -302,17 +302,32 @@ async def place_order(body: OrderIn, user: PortalUser = Depends(ext.get_portal_u
         if existing is None:
             raise HTTPException(409, "The order could not be saved; please submit it again.")
         return {"id": str(existing.id), "order_no": existing.order_no, "status": existing.status.value, "duplicate": True}
-    for n, (product, qty, price) in enumerate(priced, start=1):
-        db.add(SOLine(so_id=so.id, line_no=n, product_id=product.id, ordered_quantity=qty, unit=product.uom.value,
-                      unit_price=price, cost_price=product.standard_cost))
+    so_lines = [SOLine(so_id=so.id, line_no=n, product_id=product.id, ordered_quantity=qty, unit=product.uom.value,
+                       unit_price=price, cost_price=product.standard_cost, discount_pct=Decimal("0"))
+                for n, (product, qty, price) in enumerate(priced, start=1)]
+    db.add_all(so_lines)
+    await db.flush()
+    from app.services.shop_promotions import apply_to_order  # same list price for all; the shop's promotions on top
+
+    promotions = await apply_to_order(db, so, customer)
+    order_total = sum((l.ordered_quantity * l.unit_price * (1 - l.discount_pct) for l in so_lines), Decimal("0"))  # before commit expires the lines
     await svc._log_activity(db, str(user.id), str(user.portal_account_id), PortalActivityType.SUBMIT_ORDER,
                             "sales_order", str(so.id))
     await db.commit()
     from app.services.notifications_service import notify_new_order
     await notify_new_order(db, so, customer.name, "portal")
-    total = sum((q * p for _, q, p in priced), Decimal("0"))
+    total = order_total
     return {"id": str(so.id), "order_no": so.order_no, "status": so.status.value, "currency": so.currency,
-            "total": float(total) if user.account.can_view_prices else None, "duplicate": False}
+            "total": float(total) if user.account.can_view_prices else None,
+            "promotions": promotions if user.account.can_view_prices else [], "duplicate": False}
+
+
+@router.get("/promotions")
+async def my_promotions(user: PortalUser = Depends(ext.get_portal_user), db: AsyncSession = Depends(get_db)):
+    """The shop's own promotion table (prices stay the same list price for every shop)."""
+    from app.services.shop_promotions import customer_promotions
+
+    return await customer_promotions(db, await _customer(db, user))
 
 
 @router.get("/payment-options")

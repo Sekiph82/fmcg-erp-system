@@ -80,7 +80,7 @@ export default function TraceabilityDashboardPage() {
                   <td className="px-4 py-3">
                     <span className={`px-2 py-0.5 rounded text-xs ${RECALL_STATUS_BG[r.status]}`}>{r.status.replace("_"," ")}</span>
                   </td>
-                  <td className="px-4 py-3">{r.total_affected_qty ? parseFloat(r.total_affected_qty).toLocaleString() : "—"}</td>
+                  <td className="px-4 py-3">{r.total_affected_qty ? Number(r.total_affected_qty).toLocaleString() : "—"}</td>
                   <td className="px-4 py-3">{r.recovery_pct ? `${parseFloat(r.recovery_pct).toFixed(1)}%` : "—"}</td>
                   <td className="px-4 py-3 text-gray-400">{new Date(r.initiation_datetime).toLocaleDateString()}</td>
                 </tr>

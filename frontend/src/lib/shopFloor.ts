@@ -262,7 +262,7 @@ export interface BarcodeResolution {
   data: {
     material_id?: string; material_code?: string; material_name?: string; uom?: string;
     lot_number?: string; expiry_date?: string | null; is_quarantine?: boolean; is_expired?: boolean;
-    prepared_lot_no?: string; quantity?: string | null; consumed?: boolean; quality_status?: string;
+    prepared_lot_no?: string; quantity?: number | null; consumed?: boolean; quality_status?: string;
     [key: string]: unknown;
   };
 }
@@ -272,15 +272,15 @@ export interface PreparedLotLabel {
   code128_svg_b64: string | null;
   qr_png_b64: string | null;
   material_name?: string; material_code?: string; lot_number?: string; expiry_date?: string | null;
-  quantity: string; uom: string; weighed_at: string | null;
+  quantity: number; uom: string; weighed_at: string | null;
 }
 
 export interface DispensingOrder {
-  id: string; order_no: string; product_name: string | null; status: string; planned_qty: string;
+  id: string; order_no: string; product_name: string | null; status: string; planned_qty: number;
   materials: {
     id: string; work_order_id: string; operation: string; item_id: string | null; item_code: string | null;
-    item_name: string | null; uom: string; required_qty: string; issued_qty: string; consumed_qty: string;
-    prepared_lots: { prepared_lot_no: string; lot_no: string; qty: string; dispensed_at: string | null; consumed: boolean }[];
+    item_name: string | null; uom: string; required_qty: number; issued_qty: number; consumed_qty: number;
+    prepared_lots: { prepared_lot_no: string; lot_no: string; qty: number; dispensed_at: string | null; consumed: boolean }[];
   }[];
 }
 

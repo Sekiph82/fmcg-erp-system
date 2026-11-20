@@ -291,7 +291,7 @@ export default function UtilityTransactionTable({
                   <UtilityTypeBadge t={tx.utility_type} />
                 </td>
                 <td className={tdCls}>
-                  <span className="font-medium text-slate-200">{parseFloat(tx.quantity).toLocaleString()}</span>
+                  <span className="font-medium text-slate-200">{Number(tx.quantity).toLocaleString()}</span>
                   <span className="text-slate-500 ml-1">{tx.uom}</span>
                   {tx.variance_from_standard != null && parseFloat(tx.variance_from_standard) !== 0 && (
                     <span className={`ml-1.5 text-[10px] ${parseFloat(tx.variance_from_standard) > 0 ? "text-red-400" : "text-emerald-400"}`}>
@@ -303,7 +303,7 @@ export default function UtilityTransactionTable({
                 <td className={tdCls}>
                   {tx.total_cost != null ? (
                     <span className="text-slate-200">
-                      {tx.currency_code ?? ""} {parseFloat(tx.total_cost).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      {tx.currency_code ?? ""} {Number(tx.total_cost).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                     </span>
                   ) : (
                     <span className="text-slate-600">—</span>
