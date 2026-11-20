@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, Text, Boolean, Integer, ForeignKey, DateTime, JSON
+from sqlalchemy import Column, String, Text, Boolean, Integer, ForeignKey, DateTime, JSON, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -28,6 +28,17 @@ class MeetingRecord(Base, TimestampMixin):
     attendees = Column(JSON, default=list)    # [{name, email, attended: bool}]
     outcome = Column(String(100), nullable=True)
     follow_up_action = Column(Text, nullable=True)
+    time_zone = Column(String(64), nullable=True)          # IANA zone the host booked in; scheduled_at is UTC
+    sequence = Column(Integer, nullable=False, default=0, server_default="0")  # iCalendar SEQUENCE, +1 per change
 
     host = relationship("User", foreign_keys=[host_id])
     customer = relationship("Customer", foreign_keys=[customer_id])
+
+
+class MeetingCalendarFeed(Base):
+    """M36.S01.T005 personal .ics subscription: one revocable token per user (stored as a SHA-256 digest)."""
+    __tablename__ = "meeting_calendar_feeds"
+
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    token_hash = Column(String(64), nullable=False, unique=True)
+    created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())

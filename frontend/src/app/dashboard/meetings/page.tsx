@@ -10,6 +10,9 @@ interface Meeting {
   host_name?: string;
   customer_name?: string;
   scheduled_at: string;
+  local_start?: string;
+  time_zone?: string;
+  can_change?: boolean;
   duration_minutes: number;
   status: string;
   agenda?: string;
@@ -26,6 +29,8 @@ interface Stats {
 }
 
 const PLATFORM_ICONS: Record<string, string> = {
+  jitsi: "🎥",
+  in_person: "🤝",
   google_meet: "🟢",
   zoom: "🔵",
   teams: "💜",
@@ -39,10 +44,31 @@ const STATUS_COLORS: Record<string, string> = {
   NO_SHOW: "bg-red-100 text-red-600",
 };
 
+const BROWSER_TZ = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "Africa/Nairobi"; } catch { return "Africa/Nairobi"; } })();
+const ZONES = Array.from(new Set(["Africa/Nairobi", BROWSER_TZ, "Africa/Kampala", "Africa/Dar_es_Salaam", "Europe/London", "Europe/Istanbul", "Asia/Dubai", "UTC"]));
+
 const BLANK = {
-  title: "", platform: "google_meet", meeting_url: "",
-  customer_id: "", scheduled_at: "", duration_minutes: "60",
-  agenda: "",
+  title: "", platform: "jitsi", meeting_url: "",
+  customer_id: "", start: "", time_zone: "Africa/Nairobi", duration_minutes: "60",
+  agenda: "", attendees: "",
+};
+
+function errorText(e: unknown, fallback: string) {
+  const detail = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
+  if (typeof detail === "string") return detail;
+  if (detail && typeof detail === "object" && "detail" in detail) {
+    const d = detail as { detail: string; conflict?: { title: string; scheduled_at: string } };
+    return d.conflict ? `${d.detail} (${d.conflict.title}, ${new Date(d.conflict.scheduled_at).toLocaleString()})` : d.detail;
+  }
+  if (Array.isArray(detail)) return detail.map((x) => (x as { msg?: string }).msg).join("; ");
+  return fallback;
+}
+
+const INVITE_TEXT: Record<string, string> = {
+  SENT: "Invitations e-mailed from your mailbox.",
+  NO_MAILBOX: "Saved. Invitations were not sent: connect your mailbox under Communication → Email.",
+  NO_ATTENDEES: "Saved.",
+  NOT_REQUESTED: "Saved.",
 };
 
 export default function MeetingsPage() {
@@ -57,6 +83,8 @@ export default function MeetingsPage() {
   const [editId, setEditId] = useState<string | null>(null);
   const [editNotes, setEditNotes] = useState("");
   const [editOutcome, setEditOutcome] = useState("");
+  const [info, setInfo] = useState("");
+  const [feedUrl, setFeedUrl] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -72,37 +100,53 @@ export default function MeetingsPage() {
   useEffect(() => { load(); }, [load]);
 
   const create = async () => {
-    if (!form.title || !form.scheduled_at) { setError("Title and date required"); return; }
+    if (!form.title || !form.start) { setError("Title and date required"); return; }
     setSaving(true); setError("");
     try {
-      await apiClient.post("/api/v1/meetings/", {
+      const r = await apiClient.post<{ invites: string }>("/api/v1/meetings/", {
         title: form.title,
         platform: form.platform,
         meeting_url: form.meeting_url || null,
         customer_id: form.customer_id || null,
-        scheduled_at: new Date(form.scheduled_at).toISOString(),
+        start: form.start,            // wall time in the chosen zone; the server stores UTC
+        time_zone: form.time_zone,
         duration_minutes: parseInt(form.duration_minutes) || 60,
         agenda: form.agenda || null,
+        attendees: form.attendees.split(",").map((x) => x.trim()).filter(Boolean).map((email) => ({ email })),
       });
+      setInfo(INVITE_TEXT[r.data.invites] ?? `Saved. ${r.data.invites}`);
       setShowCreate(false); setForm({ ...BLANK }); await load();
-    } catch { setError("Failed to create meeting"); }
+    } catch (e) { setError(errorText(e, "Failed to create meeting")); }
     finally { setSaving(false); }
   };
 
+  const calendarLink = async (revoke: boolean) => {
+    setError("");
+    try {
+      if (revoke) { await apiClient.delete("/api/v1/meetings/calendar-feed"); setFeedUrl(""); setInfo("Calendar link revoked."); }
+      else { const r = await apiClient.post<{ url: string }>("/api/v1/meetings/calendar-feed"); setFeedUrl(r.data.url); }
+    } catch (e) { setError(errorText(e, "Request failed")); }
+  };
+
   const markComplete = async (id: string) => {
-    await apiClient.patch(`/api/v1/meetings/${id}`, {
-      status: "COMPLETED",
-      notes: editNotes || null,
-      outcome: editOutcome || null,
-    });
-    setEditId(null); setEditNotes(""); setEditOutcome("");
-    await load();
+    try {
+      await apiClient.patch(`/api/v1/meetings/${id}`, {
+        status: "COMPLETED",
+        notes: editNotes || null,
+        outcome: editOutcome || null,
+      });
+      setEditId(null); setEditNotes(""); setEditOutcome("");
+      await load();
+    } catch (e) { setError(errorText(e, "Update failed")); }
   };
 
   const cancel = async (id: string) => {
-    if (!confirm("Cancel this meeting?")) return;
-    await apiClient.delete(`/api/v1/meetings/${id}`);
-    await load();
+    if (!confirm("Cancel this meeting? Invitees get a calendar cancellation.")) return;
+    try {
+      const r = await apiClient.delete<{ invites: string }>(`/api/v1/meetings/${id}`);
+      setInfo(r.data.invites === "SENT" ? "Cancelled; invitees were notified." : "Cancelled.");
+      await load();
+    } catch (e) { setError(errorText(e, "Cancel failed")); }
   };
 
   return (
@@ -110,13 +154,28 @@ export default function MeetingsPage() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-xl font-bold text-gray-900">Video Meetings</h1>
-          <p className="text-xs text-gray-500 mt-0.5">Schedule and track Google Meet, Zoom, and Teams meetings.</p>
+          <p className="text-xs text-gray-500 mt-0.5">Book customer meetings without double booking; invitees get a calendar invitation from your mailbox.</p>
         </div>
-        <button onClick={() => { setShowCreate(true); setError(""); }}
-          className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
-          + Schedule Meeting
-        </button>
+        <div className="flex gap-2 flex-wrap">
+          <button onClick={() => calendarLink(false)}
+            className="rounded border px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
+            My calendar link
+          </button>
+          <button onClick={() => { setShowCreate(true); setError(""); }}
+            className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
+            + Schedule Meeting
+          </button>
+        </div>
       </div>
+      {!showCreate && error && <p role="alert" className="text-sm text-red-700 bg-red-50 border border-red-200 rounded px-3 py-2">{error}</p>}
+      {info && <p role="status" className="text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded px-3 py-2">{info}</p>}
+      {feedUrl && (
+        <div className="text-sm bg-white border rounded px-3 py-2 space-y-1">
+          <p>Add this link in Google Calendar (Other calendars → From URL) or Outlook (Add calendar → Subscribe from web). Keep it private; making a new one turns this one off.</p>
+          <input readOnly value={feedUrl} onFocus={(e) => e.currentTarget.select()} className="w-full border rounded px-2 py-1 text-xs font-mono" aria-label="Calendar link" />
+          <button onClick={() => calendarLink(true)} className="text-xs text-red-600 underline">Turn this link off</button>
+        </div>
+      )}
 
       {stats && (
         <div className="grid grid-cols-3 gap-4">
@@ -192,7 +251,7 @@ export default function MeetingsPage() {
                       </span>
                     </div>
                     <div className="flex gap-3 text-xs text-gray-500 mt-0.5 flex-wrap">
-                      <span>{new Date(m.scheduled_at).toLocaleString()}</span>
+                      <span>{new Date(m.scheduled_at).toLocaleString()}{m.time_zone && m.time_zone !== BROWSER_TZ ? ` (booked as ${m.local_start?.slice(11, 16)} ${m.time_zone})` : ""}</span>
                       <span>{m.duration_minutes}min</span>
                       {m.customer_name && <span>with {m.customer_name}</span>}
                       {m.host_name && <span>by {m.host_name}</span>}
@@ -210,7 +269,7 @@ export default function MeetingsPage() {
                       Join
                     </a>
                   )}
-                  {m.status === "SCHEDULED" && (
+                  {m.status === "SCHEDULED" && m.can_change && (
                     <>
                       <button onClick={() => { setEditId(m.id); setEditNotes(m.notes ?? ""); setEditOutcome(m.outcome ?? ""); }}
                         className="rounded border px-3 py-1.5 text-xs text-blue-600 hover:bg-blue-50 border-blue-200">
@@ -271,7 +330,7 @@ export default function MeetingsPage() {
                 <label className="block text-xs font-medium text-gray-600 mb-1">Title *</label>
                 <input type="text" value={form.title}
                   onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-                  placeholder="Q3 Review with Distributor"
+                  placeholder="POVU AllClean listing review"
                   className="w-full border rounded px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none"
                 />
               </div>
@@ -280,6 +339,8 @@ export default function MeetingsPage() {
                   <label className="block text-xs font-medium text-gray-600 mb-1">Platform</label>
                   <select value={form.platform} onChange={e => setForm(f => ({ ...f, platform: e.target.value }))}
                     className="w-full border rounded px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none">
+                    <option value="jitsi">🎥 Jitsi (link created for you)</option>
+                    <option value="in_person">🤝 In person</option>
                     <option value="google_meet">🟢 Google Meet</option>
                     <option value="zoom">🔵 Zoom</option>
                     <option value="teams">💜 MS Teams</option>
@@ -295,8 +356,23 @@ export default function MeetingsPage() {
                 </div>
                 <div className="col-span-2">
                   <label className="block text-xs font-medium text-gray-600 mb-1">Date & Time *</label>
-                  <input type="datetime-local" value={form.scheduled_at}
-                    onChange={e => setForm(f => ({ ...f, scheduled_at: e.target.value }))}
+                  <input type="datetime-local" value={form.start}
+                    onChange={e => setForm(f => ({ ...f, start: e.target.value }))}
+                    className="w-full border rounded px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Time zone of that time</label>
+                  <select value={form.time_zone} onChange={e => setForm(f => ({ ...f, time_zone: e.target.value }))}
+                    className="w-full border rounded px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none">
+                    {ZONES.map((z) => <option key={z} value={z}>{z}</option>)}
+                  </select>
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Invitees (e-mails, comma separated)</label>
+                  <input type="text" value={form.attendees}
+                    onChange={e => setForm(f => ({ ...f, attendees: e.target.value }))}
+                    placeholder="buyer@duka.co.ke, rep@povu.co.ke"
                     className="w-full border rounded px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none"
                   />
                 </div>
@@ -304,7 +380,7 @@ export default function MeetingsPage() {
                   <label className="block text-xs font-medium text-gray-600 mb-1">Meeting URL (optional)</label>
                   <input type="text" value={form.meeting_url}
                     onChange={e => setForm(f => ({ ...f, meeting_url: e.target.value }))}
-                    placeholder="Paste meeting link here"
+                    placeholder={form.platform === "jitsi" ? "Leave empty: a Jitsi link is created" : "Paste the Google Meet / Zoom / Teams link"}
                     className="w-full border rounded px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none"
                   />
                 </div>
