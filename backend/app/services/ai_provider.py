@@ -112,7 +112,8 @@ class AnthropicProvider(BaseAIProvider):
         try:
             msg = await self._client.messages.create(**kwargs)
             latency = int((time.monotonic() - t0) * 1000)
-            text = msg.content[0].text if msg.content else ""
+            # current models may return thinking blocks first; keep only the text blocks
+            text = "".join(b.text for b in msg.content if b.type == "text")
             return AIResponse(
                 text=text,
                 provider="anthropic",
