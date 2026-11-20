@@ -23,7 +23,8 @@ Firewall — a change only the laptop owner makes.
 Safari gives location and camera only to HTTPS pages, so the phone trusts a test certificate that is valid for this
 one laptop address only (it cannot be used for any other website):
 
-1. In Safari open `https://<LAN_IP>:3443/rootCA.crt`, tap *Show Details → visit this website* on the warning, then *Allow* → "Profile Downloaded". (Safari upgrades a typed `http://` address to `https://`, so `http://<LAN_IP>:8088/rootCA.crt` fails with "cannot establish a secure connection"; it still works from other browsers.)
+1. In Safari open `http://<LAN_IP>:8088/rootCA.crt` (or `https://<LAN_IP>:3443/rootCA.crt` and accept the warning), then *Allow* → "Profile Downloaded".
+   If Safari turns `http://` into `https://` and "visit this website" does nothing, the phone still remembers an older test CA for this address (HSTS from an earlier run): remove the old profile (Settings → General → VPN & Device Management) and clear Safari's website data (Settings → Apps → Safari → Clear History and Website Data), then retry. The LAN proxy no longer sends HSTS, and `dev_lan_tls.py` keeps the existing CA, so this happens at most once.
 2. Settings → *Profile Downloaded* → *Install* (passcode) → *Install*.
 3. Settings → General → About → *Certificate Trust Settings* → switch on "FMCG ERP local test CA".
 4. Open `https://<LAN_IP>:3443` — the app, with the POVU logo.

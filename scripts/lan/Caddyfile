@@ -20,10 +20,13 @@ https://{$LAN_IP}:3443 {
 	}
 }
 
-# the API
+# the API; the backend's HSTS header is dropped here: with a test CA it makes Safari remember the address as
+# HTTPS-only for a year, and once the CA changes the phone can neither bypass the warning nor fetch the new profile
 https://{$LAN_IP}:8443 {
 	tls /certs/lan.crt /certs/lan.key
-	reverse_proxy backend:8000
+	reverse_proxy backend:8000 {
+		header_down -Strict-Transport-Security
+	}
 }
 
 # the test CA for the phone to install (Safari offers it as a profile)

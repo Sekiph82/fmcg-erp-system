@@ -34,10 +34,19 @@ def save(name, obj, private=False):
     (out / name).write_bytes(data)
 
 
-ca_key = key()
 ca_name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, f"FMCG ERP local test CA ({ip} only)"),
                      x509.NameAttribute(NameOID.ORGANIZATION_NAME, "FMCG ERP development")])
-ca = (x509.CertificateBuilder().subject_name(ca_name).issuer_name(ca_name).public_key(ca_key.public_key())
+# keep the CA the phone already trusts (same address, not near expiry): a new CA needs a new profile on the phone
+old_ca = None
+if (out / "rootCA.crt").exists() and (out / "rootCA.key").exists():
+    old_ca = x509.load_pem_x509_certificate((out / "rootCA.crt").read_bytes())
+    if old_ca.subject != ca_name or old_ca.not_valid_after_utc < now + dt.timedelta(days=7):
+        old_ca = None
+if old_ca is not None:
+    ca, ca_key = old_ca, serialization.load_pem_private_key((out / "rootCA.key").read_bytes(), password=None)
+else:
+    ca_key = key()
+    ca = (x509.CertificateBuilder().subject_name(ca_name).issuer_name(ca_name).public_key(ca_key.public_key())
       .serial_number(x509.random_serial_number()).not_valid_before(now - dt.timedelta(minutes=5))
       .not_valid_after(now + dt.timedelta(days=90))
       .add_extension(x509.BasicConstraints(ca=True, path_length=0), critical=True)
@@ -60,8 +69,9 @@ leaf = (x509.CertificateBuilder().subject_name(x509.Name([x509.NameAttribute(Nam
         .add_extension(x509.AuthorityKeyIdentifier.from_issuer_public_key(ca_key.public_key()), critical=False)
         .sign(ca_key, hashes.SHA256()))
 
-save("rootCA.crt", ca)
-save("rootCA.key", ca_key, private=True)
+if old_ca is None:
+    save("rootCA.crt", ca)
+    save("rootCA.key", ca_key, private=True)
 save("lan.crt", leaf)
 save("lan.key", leaf_key, private=True)
-print(f"Created {out} for {ip} (valid 90 days)")
+print(f"{'Kept the existing test CA' if old_ca else 'Created a NEW test CA (install the profile on the phone again)'}; server certificate for {ip} in {out}")
