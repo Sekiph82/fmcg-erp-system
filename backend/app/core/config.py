@@ -168,11 +168,11 @@ class Settings(BaseSettings):
     # the system auto-detects whichever key is present (anthropic → openai → gemini).
     AI_PROVIDER: str = "auto"               # "auto" | "anthropic" | "openai" | "gemini" | "mock"
     ANTHROPIC_API_KEY: str = ""
-    ANTHROPIC_MODEL: str = "claude-sonnet-4-6"
+    ANTHROPIC_MODEL: str = "claude-sonnet-5-5"
     OPENAI_API_KEY: str = ""
     OPENAI_MODEL: str = "gpt-4o"
     GEMINI_API_KEY: str = ""
-    GEMINI_MODEL: str = "gemini-1.5-pro"
+    GEMINI_MODEL: str = "gemini-flash-latest"
     AI_MAX_TOKENS: int = 4096
     AI_TEMPERATURE: float = 0.3             # lower = more deterministic for structured outputs
 
