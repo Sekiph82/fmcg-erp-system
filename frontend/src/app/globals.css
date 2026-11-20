@@ -252,6 +252,16 @@
     -webkit-appearance: none;
     appearance: none;
   }
+  /* owner 2026-11-20: on a phone every button is visible without a sideways scroll — a row that does not fit
+     wraps onto the next line (rows that fit are unchanged; tables keep their own scroll; opt out with flex-nowrap) */
+  [data-testid="dashboard-main"] .flex:not(.flex-nowrap):not(.flex-col) { flex-wrap: wrap; }
+  [data-testid="dashboard-main"] :is(.flex > *, select) { max-width: 100%; } /* a long select / button group never wider than the screen */
+  /* fixed 4–6 column grids (KPI cards, forms) squeeze to unreadable on a phone: two per row instead
+     (calendar 7 / 12-column layouts keep theirs); a card that clips its table lets it scroll instead */
+  [data-testid="dashboard-main"] :is(.grid-cols-4, .grid-cols-5, .grid-cols-6) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  [data-testid="dashboard-main"] .overflow-hidden:has(> table) { overflow-x: auto; }
 }
 .glass-table table  { color: #c8e3f7; width: 100%; }
 .glass-table thead  { background: rgba(15,23,42,0.70); border-bottom: 1px solid rgba(96,165,250,0.20); }

@@ -37,9 +37,9 @@ export default function FieldApp() {
         {me.can_supervise && <Link href="/dashboard/field/supervisor" className="text-sm underline">Team</Link>}
       </header>
       {tabs.length > 1 && (
-        <nav aria-label="Field sections" className="flex overflow-x-auto bg-white border-b text-sm">
+        <nav aria-label="Field sections" className="flex flex-wrap md:flex-nowrap bg-white border-b text-sm">
           {tabs.map(([k, l]) => <button key={k} onClick={() => { setTab(k); setMsg(null); }} aria-current={tab === k ? "page" : undefined}
-            className={`px-4 py-3 whitespace-nowrap ${tab === k ? "border-b-2 border-indigo-600 font-semibold text-indigo-700" : "text-gray-600"}`}>{l}</button>)}
+            className={`flex-1 basis-1/3 md:flex-none px-2 md:px-4 py-3 leading-tight md:whitespace-nowrap ${tab === k ? "border-b-2 border-indigo-600 font-semibold text-indigo-700" : "text-gray-600"}`}>{l}</button>)}
         </nav>)}
       <div className="max-w-2xl mx-auto p-3 space-y-3">
         {msg && <p role={msg.ok ? "status" : "alert"} className={`rounded-lg p-3 text-sm border ${msg.ok ? "bg-emerald-50 border-emerald-200 text-emerald-800" : "bg-red-50 border-red-200 text-red-700"}`}>{msg.text}</p>}

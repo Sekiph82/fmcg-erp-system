@@ -19,7 +19,6 @@ interface ModuleWorkspaceProps {
   actions?: ActionDef[];
   tabs: WorkspaceTab[];
   defaultTab?: string;
-  wrapTabsOnMobile?: boolean;
 }
 
 export function ModuleWorkspace({
@@ -30,7 +29,6 @@ export function ModuleWorkspace({
   actions,
   tabs,
   defaultTab,
-  wrapTabsOnMobile = false,
 }: ModuleWorkspaceProps) {
   const { hasPermission } = useAuth();
 
@@ -57,7 +55,7 @@ export function ModuleWorkspace({
         actions={actions}
         badge={badge}
       />
-      <WorkspaceTabs tabs={tabs} defaultTab={defaultTab} wrapOnMobile={wrapTabsOnMobile} />
+      <WorkspaceTabs tabs={tabs} defaultTab={defaultTab} />
     </div>
   );
 }

@@ -43,10 +43,10 @@ export default function SupplierPortal() {
         <div className="min-w-0"><p className="font-semibold truncate">{me.supplier_name ?? "Supplier"}</p><p className="text-xs text-emerald-100 truncate">{me.full_name} · {me.role}</p></div>
         <button onClick={async () => { await sp("/auth/logout", { method: "POST" }).catch(() => undefined); router.replace("/supplier/login"); }} className="text-sm underline shrink-0">Sign out</button>
       </header>
-      <nav aria-label="Supplier sections" className="flex overflow-x-auto bg-white border-b text-sm">
+      <nav aria-label="Supplier sections" className="flex flex-wrap md:flex-nowrap bg-white border-b text-sm">
         {tabs.map(([k, label]) => (
           <button key={k} onClick={() => { setTab(k); setError(null); setInfo(null); }} aria-current={tab === k ? "page" : undefined}
-            className={`px-4 py-3 whitespace-nowrap ${tab === k ? "border-b-2 border-emerald-600 font-semibold text-emerald-700" : "text-gray-600"}`}>{label}</button>))}
+            className={`flex-1 basis-1/3 md:flex-none px-2 md:px-4 py-3 leading-tight md:whitespace-nowrap ${tab === k ? "border-b-2 border-emerald-600 font-semibold text-emerald-700" : "text-gray-600"}`}>{label}</button>))}
       </nav>
       <div className="max-w-4xl mx-auto p-4 space-y-4">
         {error && <p role="alert" className="rounded-lg p-3 text-sm bg-red-50 border border-red-200 text-red-700">{error}</p>}

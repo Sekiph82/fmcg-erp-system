@@ -786,7 +786,7 @@ export default function MarketingBIPage() {
       </div>
 
       {/* Tabs */}
-      <div className="mb-6 flex gap-1 overflow-x-auto rounded-xl border border-slate-700/50 bg-[#131c2e] p-1">
+      <div className="mb-6 flex flex-wrap gap-1 rounded-xl border border-slate-700/50 bg-[#131c2e] p-1">
         {TABS.map((t) => (
           <button
             key={t.id}

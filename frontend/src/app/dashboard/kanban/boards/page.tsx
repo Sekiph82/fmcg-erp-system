@@ -91,7 +91,7 @@ export default function BoardsPage() {
                   </div>
                 </div>
               </div>
-              <div className="border-t px-4 py-2 bg-gray-50 flex items-center gap-1 overflow-x-auto">
+              <div className="border-t px-4 py-2 bg-gray-50 flex flex-wrap items-center gap-1">
                 {b.columns.map(col => (
                   <div key={col.column_id}
                     className={`shrink-0 rounded px-2 py-1 text-xs font-medium border-t-2 ${STAGE_COLOR[col.stage_type]}`}

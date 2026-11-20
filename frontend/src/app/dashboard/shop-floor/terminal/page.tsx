@@ -652,7 +652,7 @@ export default function OperatorTerminal() {
           {/* Tabs: Qty / Materials / QC / Scrap / Note / Finish */}
           {(selectedWO.live_status === "RUNNING" || selectedWO.live_status === "PAUSED") && (
             <>
-              <div className="flex overflow-x-auto border-b border-gray-100" role="group" aria-label="Work-order action panels">
+              <div className="flex flex-wrap border-b border-gray-100" role="group" aria-label="Work-order action panels">
                 {(["queue", "materials", "qc", "finish", "scrap", "note"] as const).map((t) => (
                   <button
                     type="button"
