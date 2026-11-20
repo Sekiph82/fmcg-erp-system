@@ -520,3 +520,22 @@ async def revoke_share_link(link_id: uuid.UUID, db: AsyncSession = Depends(get_d
     link.revoked_at = link.revoked_at or datetime.now(timezone.utc)
     await db.commit()
     return docs.link_out(link)
+
+
+@router.get("/{quote_id}/decision")
+async def customer_decision(quote_id: uuid.UUID, db: AsyncSession = Depends(get_db),
+                            current_user: User = Depends(get_current_user)):
+    """The customer's online acceptance/decline (M36.S04.T003) and whether the quote content still matches
+    what they signed (`unchanged_since_signing`)."""
+    from types import SimpleNamespace
+
+    from app.services import crm_document_service as docs
+
+    q = await _get_or_404(db, quote_id)
+    ensure_commercial_action_allowed(current_user, q, "view", "sales")
+    rec = await docs.decision_for(db, q.id)
+    if rec is None:
+        return {"decision": None}
+    current = docs.document_hash(await docs.public_document(
+        db, SimpleNamespace(quotation_id=q.id, expires_at=datetime.now(timezone.utc)), any_status=True))
+    return docs.decision_out(rec, current)

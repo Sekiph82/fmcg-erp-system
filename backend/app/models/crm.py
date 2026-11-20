@@ -3,7 +3,7 @@ import uuid
 import enum
 from sqlalchemy import (
     Column, String, Integer, Numeric, Boolean, Text, Date, DateTime,
-    ForeignKey, Enum, UniqueConstraint,
+    ForeignKey, Enum, JSON, UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
@@ -639,3 +639,23 @@ class CRMDocumentView(Base):
     viewer_hash = Column(String(64), nullable=False)
     viewed_at   = Column(DateTime(timezone=True), nullable=False)
     last_seen_at = Column(DateTime(timezone=True), nullable=False)
+
+
+class CRMQuoteDecision(Base):
+    """M36.S04.T003 the customer's signed decision on a shared quotation (one per quotation version).
+    document_hash = SHA-256 of the customer-facing content they saw; evidence_hash binds it to the signer,
+    the time and the link, so later changes to the quote or the record are detectable."""
+    __tablename__ = "crm_quote_decisions"
+
+    id             = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    quotation_id   = Column(UUID(as_uuid=True), ForeignKey("quotations.id", ondelete="CASCADE"), nullable=False, unique=True)
+    link_id        = Column(UUID(as_uuid=True), ForeignKey("crm_document_links.id", ondelete="SET NULL"), nullable=True)
+    decision       = Column(String(10), nullable=False)                    # ACCEPTED | DECLINED
+    signer_name    = Column(String(150), nullable=False)
+    signer_email   = Column(String(254), nullable=False)
+    reason         = Column(Text, nullable=True)                           # decline reason
+    decided_at     = Column(DateTime(timezone=True), nullable=False)
+    document_hash  = Column(String(64), nullable=False)
+    evidence_hash  = Column(String(64), nullable=False)
+    viewer_hash    = Column(String(64), nullable=True)
+    document_snapshot = Column(JSON, nullable=True)                         # exactly what the signer saw

@@ -80,12 +80,12 @@ def _num(v) -> str:
     return format(Decimal(v or 0).normalize(), "f")
 
 
-async def public_document(db: AsyncSession, link: CRMDocumentLink) -> dict:
+async def public_document(db: AsyncSession, link: Any, *, any_status: bool = False) -> dict:
     q = (await db.execute(select(Quotation).options(
         selectinload(Quotation.customer), selectinload(Quotation.lines).selectinload(QuotationLine.product))
         .where(Quotation.id == link.quotation_id))).scalar_one_or_none()
     status = getattr(q.status, "value", q.status) if q is not None else None
-    if q is None or status in ("REJECTED", "EXPIRED"):  # withdrawn offers are not shown any more
+    if q is None or (status in ("REJECTED", "EXPIRED") and not any_status):  # withdrawn offers are not shown any more
         raise LinkGone()
     lines = []
     for ln in sorted(q.lines, key=lambda x: x.line_no):
@@ -93,7 +93,7 @@ async def public_document(db: AsyncSession, link: CRMDocumentLink) -> dict:
                       "sku": ln.product.sku if ln.product else None, "qty": _num(ln.qty), "unit": ln.unit,
                       "unit_price": _money(ln.unit_price), "discount_pct": _num(ln.discount_pct),
                       "tax_rate": _num(ln.tax_rate), "line_total": _money(ln.line_total)})
-    return {
+    doc = {
         "type": "quotation", "number": q.quote_no, "version": q.version, "status": status,
         "customer": q.customer.name if q.customer else None, "quote_date": q.quote_date.isoformat(),
         "valid_until": q.valid_until.isoformat() if q.valid_until else None, "currency": q.currency,
@@ -101,6 +101,9 @@ async def public_document(db: AsyncSession, link: CRMDocumentLink) -> dict:
         "tax_amount": _money(q.tax_amount), "grand_total": _money(q.grand_total), "notes": q.notes,
         "lines": lines, "link_expires_at": link.expires_at.isoformat(),
     }
+    doc["document_hash"] = document_hash(doc)
+    doc["can_decide"] = status == "SENT"
+    return doc
 
 
 def viewer_hash(link_id: UUID, client_ip: str, user_agent: str) -> str:
@@ -122,3 +125,73 @@ async def record_view(db: AsyncSession, link: CRMDocumentLink, viewer: str) -> b
     link.first_viewed_at = link.first_viewed_at or now
     link.last_viewed_at = now
     return True
+
+
+# ── M36.S04.T003 customer decision (accept / decline) ─────────────────────────
+
+class DecisionRefused(Exception):
+    """Shown to the customer as is."""
+
+
+def document_hash(doc: dict) -> str:
+    """SHA-256 of the customer-facing content (status and link expiry excluded: they change by design)."""
+    import json
+    content = {k: v for k, v in doc.items() if k not in ("status", "link_expires_at", "document_hash", "decision", "can_decide")}
+    return hashlib.sha256(json.dumps(content, sort_keys=True, separators=(",", ":"), default=str).encode()).hexdigest()
+
+
+async def decision_for(db: AsyncSession, quotation_id: UUID):
+    from app.models.crm import CRMQuoteDecision
+    return (await db.execute(select(CRMQuoteDecision).where(CRMQuoteDecision.quotation_id == quotation_id))).scalar_one_or_none()
+
+
+def decision_out(d, current_hash: Optional[str] = None) -> Optional[dict]:
+    if d is None:
+        return None
+    out = {"decision": d.decision, "signer_name": d.signer_name, "signer_email": d.signer_email, "reason": d.reason,
+           "decided_at": d.decided_at.isoformat(), "document_hash": d.document_hash, "evidence_hash": d.evidence_hash,
+           "reference": d.evidence_hash[:12].upper()}
+    if current_hash is not None:
+        out["unchanged_since_signing"] = current_hash == d.document_hash
+    return out
+
+
+async def decide(db: AsyncSession, link: CRMDocumentLink, *, decision: str, signer_name: str, signer_email: str,
+                 seen_hash: str, reason: Optional[str], viewer: str):
+    """Record the customer's decision. The same rules as the sales team's own accept: only a SENT quote,
+    not past its validity date, with any discount approval in place. Conversion to a sales order stays a
+    staff step, so pricing and credit checks still run there. Caller holds the link lock and commits."""
+    from app.models.crm import CRMQuoteDecision
+    from app.models.quotation import QuoteStatus
+
+    q = (await db.execute(select(Quotation).where(Quotation.id == link.quotation_id).with_for_update())).scalar_one_or_none()
+    if q is None:
+        raise LinkGone()
+    if await decision_for(db, q.id) is not None:
+        raise DecisionRefused("This quotation has already been answered.")
+    if q.status != QuoteStatus.SENT:
+        raise DecisionRefused("This quotation can no longer be answered online. Please contact your POVU representative.")
+    from zoneinfo import ZoneInfo
+    if q.valid_until and q.valid_until < datetime.now(ZoneInfo("Africa/Nairobi")).date():
+        raise DecisionRefused("This quotation has expired. Ask your POVU representative for a new one.")
+    if decision == "ACCEPTED" and q.discount_approval_required and not q.discount_approved_at:
+        raise DecisionRefused("This quotation is still being approved internally. Please try again later.")
+    shown = await public_document(db, link)
+    current = document_hash(shown)
+    if not hmac.compare_digest(current, seen_hash):
+        raise DecisionRefused("The quotation changed while you were reading it. Please reload the page and check it again.")
+    now = _now()
+    evidence = hashlib.sha256(
+        f"{current}|{decision}|{signer_name}|{signer_email.lower()}|{now.isoformat()}|{link.id}|{q.id}".encode()).hexdigest()
+    rec = CRMQuoteDecision(quotation_id=q.id, link_id=link.id, decision=decision, signer_name=signer_name,
+                           signer_email=signer_email.lower(), reason=reason, decided_at=now, document_hash=current,
+                           evidence_hash=evidence, viewer_hash=viewer,
+                           document_snapshot={k: v for k, v in shown.items() if k not in ("can_decide", "link_expires_at")})
+    db.add(rec)
+    if decision == "ACCEPTED":
+        q.status, q.accepted_at = QuoteStatus.ACCEPTED, now
+    else:
+        q.status, q.rejected_at = QuoteStatus.REJECTED, now
+        q.lost_reason = f"Declined online by {signer_name}" + (f": {reason}" if reason else "")
+    await db.flush()
+    return rec

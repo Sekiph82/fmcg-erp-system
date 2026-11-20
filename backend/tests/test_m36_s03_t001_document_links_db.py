@@ -134,3 +134,89 @@ async def test_share_view_dedupe_expiry_revoke():
             await public.shared_document(_token(fresh["url"]), db)
         with pytest.raises(HTTPException):
             await public.shared_document_viewed(_token(fresh["url"]), _request("1.1.1.1", "x"), db)
+
+
+@pytest.mark.asyncio
+async def test_customer_signs_accept_decline_and_tamper_evidence():
+    """M36.S04.T003: typed-name e-signature through the share link, same rules as staff accept."""
+    from uuid import UUID
+    from pydantic import ValidationError
+    from app.services import crm_document_service as docs
+
+    s = uuid4().hex[:8]
+    async with AsyncSessionLocal() as db:
+        cust = Customer(code=f"DS-{s}", name="Mama Duka", channel=CustomerChannel.RETAIL, currency="KES")
+        rep_row = User(email=f"ds-{s}@povu.example", username=f"ds{s}", full_name="Rep", hashed_password="x")
+        db.add_all([cust, rep_row])
+        await db.flush()
+        ids = {}
+        for key, kw in {"ok": {}, "decline": {}, "old": {"valid_until": date(2020, 1, 1)},
+                        "disc": {"discount_approval_required": True}}.items():
+            q = Quotation(quote_no=f"QS-{s}-{key}", customer_id=cust.id, status=QuoteStatus.SENT, quote_date=date(2026, 11, 20),
+                          valid_until=kw.get("valid_until", date(2099, 1, 1)), currency="KES", grand_total=Decimal("4200"),
+                          discount_approval_required=kw.get("discount_approval_required", False))
+            db.add(q)
+            await db.flush()
+            db.add(QuotationLine(quote_id=q.id, line_no=1, description="POVU AllClean 1 L carton", qty=Decimal("20"),
+                                 unit="CTN", unit_price=Decimal("210"), line_total=Decimal("4200")))
+            ids[key] = q.id
+        await db.commit()
+        rep = _user(rep_row.id, "sales.view", "sales.edit_all", "sales.approve_all")
+        tok = {k: _token((await api.create_share_link(v, api.ShareLinkIn(), db, rep))["url"]) for k, v in ids.items()}
+        req = _request("41.90.1.1", "Safari")
+
+        def body(k, doc, **over):
+            return public.DecisionIn(**{"decision": "ACCEPTED", "signer_name": "Grace Wanjiru", "signer_email": f"Grace-{s}@shops.example",
+                                        "document_hash": doc["document_hash"], "agree": True, **over})
+
+        doc = await public.shared_document(tok["ok"], db)
+        assert doc["can_decide"] is True and len(doc["document_hash"]) == 64
+        with pytest.raises(HTTPException) as e:                       # not ticked
+            await public.shared_document_decision(tok["ok"], body("ok", doc, agree=False), req, db)
+        assert e.value.status_code == 422
+        with pytest.raises(HTTPException) as e:                       # read an older version
+            await public.shared_document_decision(tok["ok"], body("ok", doc, document_hash="0" * 64), req, db)
+        assert e.value.status_code == 409
+        await db.rollback()
+        with pytest.raises(ValidationError):                          # no markup / line breaks in the signature
+            body("ok", doc, signer_name="<script>")
+        r = await public.shared_document_decision(tok["ok"], body("ok", doc), req, db)
+        assert r["decision"] == "ACCEPTED" and len(r["reference"]) == 12
+        q = await db.get(Quotation, ids["ok"])
+        await db.refresh(q)
+        assert q.status == QuoteStatus.ACCEPTED and q.accepted_at is not None and q.converted_so_id is None  # SO stays a staff step
+        again = await public.shared_document(tok["ok"], db)
+        assert again["can_decide"] is False and again["decision"]["signer_name"] == "Grace Wanjiru" and "signer_email" not in again["decision"]
+        with pytest.raises(HTTPException) as e:                       # answered once only
+            await public.shared_document_decision(tok["ok"], body("ok", doc), req, db)
+        assert e.value.status_code == 409
+        await db.rollback()
+
+        staff = await api.customer_decision(ids["ok"], db, rep)
+        assert staff["signer_email"] == f"grace-{s}@shops.example" and staff["unchanged_since_signing"] is True
+        line = (await db.execute(select(QuotationLine).where(QuotationLine.quote_id == ids["ok"]))).scalar_one()
+        line.unit_price = Decimal("190")                              # tampering after signature
+        await db.commit()
+        assert (await api.customer_decision(ids["ok"], db, rep))["unchanged_since_signing"] is False
+
+        # decline: quote rejected with the reason, still verifiable by staff
+        d = await public.shared_document(tok["decline"], db)
+        await public.shared_document_decision(tok["decline"], body("decline", d, decision="DECLINED", reason="Price too high"), req, db)
+        qd = await db.get(Quotation, ids["decline"])
+        await db.refresh(qd)
+        assert qd.status == QuoteStatus.REJECTED and "Price too high" in qd.lost_reason
+        assert (await api.customer_decision(ids["decline"], db, rep))["unchanged_since_signing"] is True
+        reopened = await public.shared_document(tok["decline"], db)   # the signer can re-open their confirmation
+        assert reopened["decision"]["decision"] == "DECLINED" and reopened["can_decide"] is False
+        from app.models.crm import CRMQuoteDecision
+        snap = (await db.execute(select(CRMQuoteDecision.document_snapshot).where(CRMQuoteDecision.quotation_id == ids["ok"]))).scalar_one()
+        assert snap["lines"][0]["unit_price"] == "210.00"               # what was signed, despite the later change
+
+        # past validity date / discount still awaiting internal approval: refused, nothing recorded
+        for key in ("old", "disc"):
+            dd = await public.shared_document(tok[key], db)
+            with pytest.raises(HTTPException) as e:
+                await public.shared_document_decision(tok[key], body(key, dd), req, db)
+            assert e.value.status_code == 409
+            await db.rollback()
+            assert (await api.customer_decision(ids[key], db, rep))["decision"] is None

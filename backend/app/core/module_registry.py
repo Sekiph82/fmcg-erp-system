@@ -643,6 +643,7 @@ PUBLIC_ROUTES: frozenset[tuple[str, str]] = frozenset({
     ("/public/calendar/{token}.ics", "GET"),             # personal revocable calendar feed token (M36.S01.T005)
     ("/public/documents/{token}", "GET"),                # shared quotation, expiring revocable token (M36.S03.T001)
     ("/public/documents/{token}/view", "POST"),          # view event, keyed-hash dedupe, no IP stored
+    ("/public/documents/{token}/decision", "POST"),      # customer accept/decline, typed-name e-signature (M36.S04.T003)
 })
 
 

@@ -266,6 +266,7 @@ function SharePanel({ quote, onClose }: { quote: Quotation; onClose: () => void 
   const [newUrl, setNewUrl] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const links = useQuery({ queryKey: ["share-links", quote.id], queryFn: () => quoteApi.shareLinks(quote.id) });
+  const signed = useQuery({ queryKey: ["quote-decision", quote.id], queryFn: () => quoteApi.decision(quote.id) });
   const refresh = () => qc.invalidateQueries({ queryKey: ["share-links", quote.id] });
   const create = useMutation({
     mutationFn: () => quoteApi.createShareLink(quote.id, { expires_in_days: days, label: label || undefined }),
@@ -281,6 +282,13 @@ function SharePanel({ quote, onClose }: { quote: Quotation; onClose: () => void 
           <h2 className="font-semibold">Share {quote.quote_no}</h2>
           <button onClick={onClose} className="text-gray-400 text-xl" aria-label="Close">×</button>
         </div>
+        {signed.data?.decision && (
+          <p role="status" className={`text-sm rounded p-2 border ${signed.data.unchanged_since_signing ? "border-emerald-300" : "border-red-400"}`}>
+            {signed.data.decision === "ACCEPTED" ? "Accepted" : "Declined"} online by {signed.data.signer_name} ({signed.data.signer_email}) on {when(signed.data.decided_at ?? null)}, ref {signed.data.reference}.
+            {signed.data.reason ? ` Reason: ${signed.data.reason}.` : ""}{" "}
+            {signed.data.unchanged_since_signing ? "Content unchanged since signing." : "WARNING: the quotation content changed after signing."}
+          </p>
+        )}
         <p className="text-xs text-gray-500">The customer opens the quotation without signing in and sees prices, lines and customer notes only (never internal notes). You see when it was opened; no IP address is stored.</p>
         <div className="flex flex-wrap gap-2 items-center">
           <input aria-label="Who is it for" placeholder="Who is it for (optional)" value={label} onChange={(e) => setLabel(e.target.value)} className="border rounded px-2 py-1.5 text-sm flex-1 min-w-[10rem]" />

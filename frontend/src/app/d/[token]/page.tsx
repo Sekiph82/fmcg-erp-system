@@ -1,6 +1,7 @@
 "use client";
 // Public shared quotation (no login, M36.S03.T001). The view is recorded by this page after it renders,
 // not by opening the URL, so mail scanners that pre-fetch links do not count as views.
+// M36.S04.T003: the customer can accept or decline with a typed-name electronic signature.
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { API_ORIGIN } from "@/lib/api";
@@ -9,7 +10,8 @@ interface Line { description: string; sku: string | null; qty: string; unit: str
 interface Doc {
   number: string; version: number; status: string; customer: string | null; quote_date: string; valid_until: string | null;
   currency: string; discount_pct: string; total_amount: string | null; tax_amount: string | null; grand_total: string | null;
-  notes: string | null; lines: Line[]; link_expires_at: string;
+  notes: string | null; lines: Line[]; link_expires_at: string; document_hash: string; can_decide: boolean;
+  decision?: { decision: "ACCEPTED" | "DECLINED"; signer_name: string; decided_at: string; reference: string };
 }
 
 const money = (v: string | null, c: string) => (v == null ? "—" : `${c} ${Number(v).toLocaleString(undefined, { minimumFractionDigits: 2 })}`);
@@ -18,9 +20,32 @@ export default function SharedDocumentPage() {
   const token = String(useParams().token ?? "");
   const [doc, setDoc] = useState<Doc | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [sign, setSign] = useState({ name: "", email: "", agree: false, reason: "" });
+  const [declining, setDeclining] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [signErr, setSignErr] = useState<string | null>(null);
+  const url = `${API_ORIGIN}/api/v1/public/documents/${encodeURIComponent(token)}`;
+
+  async function decide(decision: "ACCEPTED" | "DECLINED") {
+    if (!doc) return;
+    setBusy(true); setSignErr(null);
+    try {
+      const r = await fetch(`${url}/decision`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ decision, signer_name: sign.name, signer_email: sign.email, agree: sign.agree,
+                               document_hash: doc.document_hash, reason: sign.reason || null }),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        const d = j.detail;
+        setSignErr(typeof d === "string" ? d : Array.isArray(d) ? "Please check your name and e-mail address." : "Please try again later.");
+        return;
+      }
+      setDoc({ ...doc, can_decide: false, decision: { decision, signer_name: sign.name, decided_at: j.decided_at, reference: j.reference } });
+    } catch { setSignErr("Please try again later."); } finally { setBusy(false); }
+  }
 
   useEffect(() => {
-    const url = `${API_ORIGIN}/api/v1/public/documents/${encodeURIComponent(token)}`;
     fetch(url)
       .then(async (r) => {
         if (!r.ok) { setError("This link is not available. Ask your POVU contact for a new one."); return; }
@@ -28,7 +53,7 @@ export default function SharedDocumentPage() {
         fetch(`${url}/view`, { method: "POST" }).catch(() => undefined);
       })
       .catch(() => setError("Please try again later."));
-  }, [token]);
+  }, [url]);
 
   return (
     <main className="min-h-screen bg-white text-gray-900 p-4 sm:p-8">
@@ -80,6 +105,41 @@ export default function SharedDocumentPage() {
               <p className="flex justify-between font-bold text-base border-t pt-1"><span>Total</span><span>{money(doc.grand_total, doc.currency)}</span></p>
             </div>
             {doc.notes && <p className="text-sm whitespace-pre-wrap border-t pt-3">{doc.notes}</p>}
+            {doc.decision ? (
+              <p role="status" className={`rounded-lg p-3 text-sm border ${doc.decision.decision === "ACCEPTED" ? "bg-emerald-50 border-emerald-200 text-emerald-900" : "bg-gray-50 border-gray-200"}`}>
+                {doc.decision.decision === "ACCEPTED" ? "Accepted" : "Declined"} by {doc.decision.signer_name} on {new Date(doc.decision.decided_at).toLocaleString()}. Reference {doc.decision.reference}.
+                {doc.decision.decision === "ACCEPTED" && " Your POVU representative will confirm the order."}
+              </p>
+            ) : doc.can_decide && (
+              <section aria-label="Your decision" className="border rounded-lg p-4 space-y-3">
+                <h2 className="font-semibold">Your decision</h2>
+                <div className="grid sm:grid-cols-2 gap-2">
+                  <input aria-label="Your full name" placeholder="Your full name" value={sign.name} onChange={(e) => setSign({ ...sign, name: e.target.value })} className="border rounded px-3 py-2 text-sm" />
+                  <input aria-label="Your e-mail" type="email" placeholder="Your e-mail" value={sign.email} onChange={(e) => setSign({ ...sign, email: e.target.value })} className="border rounded px-3 py-2 text-sm" />
+                </div>
+                {declining && <textarea aria-label="Reason (optional)" placeholder="Reason (optional)" rows={2} value={sign.reason} onChange={(e) => setSign({ ...sign, reason: e.target.value })} className="w-full border rounded px-3 py-2 text-sm" />}
+                <label className="flex gap-2 text-sm items-start">
+                  <input type="checkbox" className="mt-1" checked={sign.agree} onChange={(e) => setSign({ ...sign, agree: e.target.checked })} />
+                  <span>I {declining ? "decline" : "accept"} quotation {doc.number} as shown above on behalf of {doc.customer ?? "my business"}, and I agree that typing my name is my electronic signature.</span>
+                </label>
+                {signErr && <p role="alert" className="text-sm text-red-700">{signErr}</p>}
+                <div className="flex flex-wrap gap-2">
+                  {!declining ? (
+                    <>
+                      <button disabled={busy || !sign.agree || sign.name.trim().length < 2 || !sign.email.includes("@")} onClick={() => decide("ACCEPTED")}
+                        className="px-4 py-2 rounded bg-emerald-600 text-white text-sm disabled:opacity-50">Accept quotation</button>
+                      <button onClick={() => setDeclining(true)} className="px-4 py-2 rounded border text-sm">Decline…</button>
+                    </>
+                  ) : (
+                    <>
+                      <button disabled={busy || !sign.agree || sign.name.trim().length < 2 || !sign.email.includes("@")} onClick={() => decide("DECLINED")}
+                        className="px-4 py-2 rounded bg-gray-700 text-white text-sm disabled:opacity-50">Decline quotation</button>
+                      <button onClick={() => setDeclining(false)} className="px-4 py-2 rounded border text-sm">Back</button>
+                    </>
+                  )}
+                </div>
+              </section>
+            )}
             <p className="text-xs text-gray-400">This private link works until {new Date(doc.link_expires_at).toLocaleDateString()}.</p>
           </>
         )}

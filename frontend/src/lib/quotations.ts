@@ -118,7 +118,13 @@ export const quoteApi = {
   createShareLink: (id: string, body: { expires_in_days: number; label?: string }) =>
     req<ShareLink & { url: string }>(`${BASE}/${id}/share-links`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }),
   revokeShareLink: (linkId: string) => req<ShareLink>(`${BASE}/share-links/${linkId}/revoke`, { method: "POST" }),
+  decision: (id: string) => req<CustomerDecision>(`${BASE}/${id}/decision`),
 };
+
+export interface CustomerDecision {
+  decision: "ACCEPTED" | "DECLINED" | null; signer_name?: string; signer_email?: string; reason?: string | null;
+  decided_at?: string; reference?: string; unchanged_since_signing?: boolean;
+}
 
 export interface ShareLink {
   id: string; label: string | null; state: "ACTIVE" | "EXPIRED" | "REVOKED"; created_at: string; expires_at: string;
