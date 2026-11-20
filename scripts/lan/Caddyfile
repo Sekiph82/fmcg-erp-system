@@ -6,10 +6,18 @@
 	default_sni {$LAN_IP}
 }
 
-# the app
+# the app; /rootCA.crt is also here because Safari upgrades plain http:// addresses to https:// and then fails on
+# port 8088 ("cannot establish a secure connection"): accept the warning once, download the profile, then trust it
 https://{$LAN_IP}:3443 {
 	tls /certs/lan.crt /certs/lan.key
-	reverse_proxy frontend:3000
+	handle /rootCA.crt {
+		root * /certs
+		header Content-Type application/x-x509-ca-cert
+		file_server
+	}
+	handle {
+		reverse_proxy frontend:3000
+	}
 }
 
 # the API

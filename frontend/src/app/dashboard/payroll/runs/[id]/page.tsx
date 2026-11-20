@@ -33,9 +33,14 @@ function PayrollRunDetail({ id }: { id: string }) {
   if (isLoading) return <div className="p-6 text-sm text-gray-500">Loading payroll run…</div>;
   if (isError || !run) return <div className="p-6 text-sm text-red-600">Payroll run not found.</div>;
 
+  // employer's own statutory cost (NSSF employer, housing levy employer, NITA): on top of gross, never deducted
+  const employerOf = (l: { components_json?: unknown }) =>
+    Number(((l.components_json as { employer?: { total?: number } } | undefined)?.employer?.total) ?? 0);
+  const employerTotal = lines.reduce((s, l) => s + employerOf(l), 0);
   const totals: [string, unknown][] = [
     ["Gross", run.total_gross], ["PAYE", run.total_paye], ["NSSF", run.total_nssf],
     ["SHIF / NHIF", run.total_nhif], ["Housing levy", run.total_housing_levy], ["Net pay", run.total_net],
+    ["Employer contributions", employerTotal], ["Total cost to company", Number(run.total_gross) + employerTotal],
   ];
   const actionError = calculate.error || approve.error;
 
@@ -70,7 +75,7 @@ function PayrollRunDetail({ id }: { id: string }) {
       </div>
       {actionError && <p className="text-sm text-red-600">{errorText(actionError)}</p>}
 
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {totals.map(([label, v]) => (
           <div key={label} className="border rounded-lg p-3 bg-white">
             <div className="text-xs text-gray-500">{label}</div>
@@ -83,14 +88,14 @@ function PayrollRunDetail({ id }: { id: string }) {
         <table className="min-w-full text-sm">
           <thead className="bg-gray-50 text-xs text-gray-500">
             <tr>
-              {["Employee", "Basic", "Allowances", "Gross", "NSSF", "PAYE", "SHIF/NHIF", "Housing levy", "Other ded.", "Net"].map((h) => (
+              {["Employee", "Basic", "Allowances", "Gross", "NSSF", "PAYE", "SHIF/NHIF", "Housing levy", "Other ded.", "Net", "Employer contrib.", "Cost to company"].map((h) => (
                 <th key={h} className="px-3 py-2 text-left font-medium whitespace-nowrap">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {lines.length === 0 && (
-              <tr><td colSpan={10} className="px-3 py-6 text-center text-gray-400">
+              <tr><td colSpan={12} className="px-3 py-6 text-center text-gray-400">
                 {run.status === "DRAFT" ? "Not calculated yet." : "No employees in this run."}
               </td></tr>
             )}
@@ -106,6 +111,8 @@ function PayrollRunDetail({ id }: { id: string }) {
                 <td className="px-3 py-2">{kes(l.housing_levy)}</td>
                 <td className="px-3 py-2">{kes(l.other_deductions)}</td>
                 <td className="px-3 py-2 font-medium">{kes(l.net_salary)}</td>
+                <td className="px-3 py-2">{kes(employerOf(l))}</td>
+                <td className="px-3 py-2 font-medium">{kes(Number(l.gross_salary) + employerOf(l))}</td>
               </tr>
             ))}
           </tbody>

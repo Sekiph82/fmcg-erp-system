@@ -72,9 +72,10 @@ KE_NHIF_TIERS_2023 = [
 ]
 
 KE_STATUTORY_RATES_2024 = [
-    # NSSF: 6% of gross, max Tier I (7000 LEL → 420) + Tier II (36000 UEL → 1,740)
+    # NSSF Act 2013, phase from Feb 2025: 6 % of pensionable pay up to the upper earnings limit KES 72,000
+    # (Tier I up to 8,000 + Tier II), i.e. at most KES 4,320 a month; the employer pays the same again
     # Simplified: employee contributes 6% up to 36,000 gross
-    (KeComponentType.NSSF,           D("0.06"),  True,  D("1080"),   "6% of gross, max KES 1,080 (simplified 2024)"),
+    (KeComponentType.NSSF,           D("0.06"),  True,  D("4320"),   "6% of gross, max KES 4,320 (UEL 72,000, from Feb 2025)"),
     (KeComponentType.HOUSING_LEVY,   D("0.015"), True,  None,        "Affordable Housing Levy 1.5% of gross"),
     (KeComponentType.PERSONAL_RELIEF,D("2400"),  False, None,        "Monthly personal relief — Finance Act 2023"),
 ]
@@ -240,7 +241,7 @@ async def calculate_employee(
             nssf_emp = _round(nssf_rate.rate_value)
     else:
         nssf_emp = _round(gross * D("0.06"))
-        nssf_emp = min(nssf_emp, D("1080"))
+        nssf_emp = min(nssf_emp, D("4320"))  # UEL KES 72,000 × 6 % (from Feb 2025)
 
     # Taxable income = gross - NSSF
     taxable = max(gross - nssf_emp, ZERO)
@@ -304,8 +305,27 @@ async def calculate_employee(
                 "Housing Levy (AHL)": float(ahl),
                 "Other Deductions": float(other_deductions),
             },
+            # paid by the company on top of gross pay: never deducted from the employee (owner 2026-11-20)
+            "employer": employer_contributions(nssf_emp, ahl),
         },
     }
+
+
+# Employer-side statutory contributions (Kenya): NSSF employer share matches the employee's tier I+II contribution,
+# the Affordable Housing Levy employer share matches the employee's 1.5 %, NITA industrial training levy KES 50 a month.
+# ponytail: rates follow the employee side computed above; move to statutory_rates if the employer rates ever diverge.
+NITA_MONTHLY = D("50")
+
+
+def employer_contributions(nssf_employee: Decimal, housing_levy_employee: Decimal) -> dict:
+    nssf, ahl, nita = _round(nssf_employee), _round(housing_levy_employee), NITA_MONTHLY
+    return {"NSSF (Employer)": float(nssf), "Housing Levy (Employer)": float(ahl), "NITA": float(nita),
+            "total": float(_round(nssf + ahl + nita))}
+
+
+def run_employer_total(lines) -> Decimal:
+    """Employer contributions of a calculated run (sum of the lines' employer block)."""
+    return _round(sum((D(str(((l.components_json or {}).get("employer") or {}).get("total", 0))) for l in lines), ZERO))
 
 
 def _calc_paye_builtin(taxable: Decimal) -> Decimal:
@@ -642,13 +662,41 @@ async def ai_compliance_monitor(db: AsyncSession) -> PayrollInsight:
     return PayrollInsight(agent="Compliance Monitor", insights=insights, details=details, generated_at=_now().isoformat())
 
 
+async def _post_employer_contributions(db: AsyncSession, run: PayrollRun, user_id: uuid.UUID):
+    """Employer's own statutory cost of the run (not deducted from anyone): Dr expense, Cr contributions payable."""
+    from app.models.finance import AccountingPostingRule, AccountType
+    from app.services.posting_rules_catalog import missing_rule
+    from app.services.sales_service import _post_sales_journal, _require_sales_account_types
+
+    lines = (await db.execute(select(KePayrollLine).where(KePayrollLine.run_id == run.id))).scalars().all()
+    total = run_employer_total(lines)
+    if total <= 0:
+        return None
+    rule = (await db.execute(select(AccountingPostingRule).where(
+        AccountingPostingRule.source_module == "payroll", AccountingPostingRule.source_event == "EMPLOYER_CONTRIBUTIONS",
+        AccountingPostingRule.is_active.is_(True)).order_by(AccountingPostingRule.priority).limit(1))).scalar_one_or_none()
+    if rule is None:
+        await missing_rule(db, "payroll", "EMPLOYER_CONTRIBUTIONS", f"employer contributions of payroll run {run.run_no}")
+        return None
+    if not rule.debit_account_id or not rule.credit_account_id:
+        raise HTTPException(422, "The employer contributions rule needs the expense and contributions payable accounts.")
+    await _require_sales_account_types(db, [(rule.debit_account_id, AccountType.EXPENSE, "employer contributions expense"),
+                                            (rule.credit_account_id, AccountType.LIABILITY, "employer contributions payable")])
+    return await _post_sales_journal(
+        db, source_event="EMPLOYER_CONTRIBUTIONS", source_id=run.id, source_ref=run.run_no,
+        entry_date=run.period_end or date.today(), description=f"Employer contributions {run.run_no}", amount=total,
+        currency="KES", debit_lines=[(rule.debit_account_id, total, "Employer NSSF, housing levy and NITA")],
+        credit_lines=[(rule.credit_account_id, total, "Employer contributions payable")],
+        user_id=user_id, source_module="payroll", entry_prefix="AUTO-PER")  # entry no. = prefix + run id: own prefix
+
+
 async def post_payroll_to_gl(db: AsyncSession, run: PayrollRun, user_id: uuid.UUID):
     """Book an approved payroll run in the general ledger (M39 hand-off: HR → accounting), using the posting rule
     payroll/PAYROLL_APPROVED: debit = salaries expense (gross), credit = net pay payable (net), tax account =
     statutory deductions payable (PAYE, SHIF/NHIF, NSSF, housing levy and other deductions: gross − net).
-    ponytail: employer-side contributions are not in the run totals yet; add a line when payroll computes them.
-    Without a configured rule nothing is posted (logged) — finance turns posting on by creating the rule."""
-    import logging
+    Employer contributions (NSSF employer, housing levy employer, NITA) are booked in a second journal through
+    payroll/EMPLOYER_CONTRIBUTIONS: debit = employer contributions expense, credit = contributions payable.
+    A missing rule is refused once finance has approved the rule set (posting_rules_catalog.missing_rule)."""
 
     from app.models.finance import AccountingPostingRule, AccountType
     from app.services.sales_service import _post_sales_journal, _require_sales_account_types
@@ -657,7 +705,9 @@ async def post_payroll_to_gl(db: AsyncSession, run: PayrollRun, user_id: uuid.UU
         AccountingPostingRule.source_module == "payroll", AccountingPostingRule.source_event == "PAYROLL_APPROVED",
         AccountingPostingRule.is_active.is_(True)).order_by(AccountingPostingRule.priority).limit(1))).scalar_one_or_none()
     if rule is None:
-        logging.getLogger(__name__).warning("payroll run %s approved without GL posting: no payroll/PAYROLL_APPROVED rule", run.id)
+        from app.services.posting_rules_catalog import missing_rule
+
+        await missing_rule(db, "payroll", "PAYROLL_APPROVED", f"payroll run {run.run_no}")
         return None
     gross, net = Decimal(run.total_gross or 0), Decimal(run.total_net or 0)
     deductions = gross - net
@@ -671,6 +721,7 @@ async def post_payroll_to_gl(db: AsyncSession, run: PayrollRun, user_id: uuid.UU
         (rule.tax_account_id if deductions > 0 else None, AccountType.LIABILITY, "statutory deductions payable"),
     ])
     ref = run.run_no
+    await _post_employer_contributions(db, run, user_id)
     return await _post_sales_journal(  # booked in the payroll period (accrual), so the expense lands in its month
         db, source_event="PAYROLL_APPROVED", source_id=run.id, source_ref=ref, entry_date=run.period_end or date.today(),
         description=f"Payroll run {ref}", amount=gross, currency="KES",

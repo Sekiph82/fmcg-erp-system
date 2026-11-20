@@ -442,7 +442,6 @@ async def _post_adjustment_to_gl(db: AsyncSession, entry: CountEntry, adjustment
     inventory/STOCK_ADJUSTMENT: debit = stock adjustment / shrinkage expense, credit = inventory. A shortage debits the
     expense and credits inventory; a surplus does the reverse. Value: the adjustment value, else qty × unit cost.
     Without a rule nothing is posted (logged), as for payroll and expenses."""
-    import logging
     from decimal import Decimal
 
     from fastapi import HTTPException
@@ -454,7 +453,9 @@ async def _post_adjustment_to_gl(db: AsyncSession, entry: CountEntry, adjustment
         AccountingPostingRule.source_module == "inventory", AccountingPostingRule.source_event == "STOCK_ADJUSTMENT",
         AccountingPostingRule.is_active.is_(True)).order_by(AccountingPostingRule.priority).limit(1))).scalar_one_or_none()
     if rule is None:
-        logging.getLogger(__name__).warning("stock adjustment %s posted without GL entry: no inventory rule", adjustment.id)
+        from app.services.posting_rules_catalog import missing_rule
+
+        await missing_rule(db, "inventory", "STOCK_ADJUSTMENT", f"stock adjustment {adjustment.stock_movement_ref or adjustment.id}")
         return None
     qty = Decimal(adjustment.adjustment_qty or 0)
     value = abs(Decimal(adjustment.adjustment_value)) if adjustment.adjustment_value is not None         else abs(qty) * Decimal(entry.unit_cost or 0)

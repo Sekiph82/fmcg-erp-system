@@ -256,3 +256,86 @@ def test_packaging_and_semi_finished_come_from_their_linked_warehouse():
     assert material_warehouse(MaterialType.SEMI_FINISHED, src, links) == wip
     assert material_warehouse(MaterialType.RAW, src, links) == src
     assert material_warehouse(MaterialType.PACKAGING, src, {}) == src
+
+
+def test_employer_contributions_are_on_top_of_gross():
+    from app.services.payroll_ke_service import employer_contributions
+
+    e = employer_contributions(Decimal("2160"), Decimal("1500"))
+    assert e == {"NSSF (Employer)": 2160.0, "Housing Levy (Employer)": 1500.0, "NITA": 50.0, "total": 3710.0}
+
+
+@pytest.mark.asyncio
+async def test_employer_contributions_are_booked_with_the_payroll():
+    from app.models.payroll_ke import KePayrollLine
+    from app.services.payroll_ke_service import employer_contributions
+
+    s = uuid.uuid4().hex[:6]
+    async with AsyncSessionLocal() as db:
+        assert (await db.execute(select(func.current_database()))).scalar_one() == os.environ[TASK_DB_NAME_ENV]
+        hr = User(email=f"hr2-{s}@example.com", username=f"hr2{s}", full_name="HR", hashed_password="x")
+        accs = {k: ChartOfAccount(code=f"{k}{s}", name=k, account_type=t, currency="KES") for k, t in (
+            ("SAL", AccountType.EXPENSE), ("NET", AccountType.LIABILITY), ("DED", AccountType.LIABILITY),
+            ("EMX", AccountType.EXPENSE), ("EMP", AccountType.LIABILITY))}
+        db.add_all([hr, *accs.values()])
+        await db.flush()
+        for r in (await db.execute(select(AccountingPostingRule).where(AccountingPostingRule.source_module == "payroll"))).scalars():
+            r.is_active = False                                       # this test's own rules only
+        db.add(AccountingPostingRule(source_module="payroll", source_event="PAYROLL_APPROVED", rule_name="pay", priority=1,
+                                     debit_account_id=accs["SAL"].id, credit_account_id=accs["NET"].id,
+                                     tax_account_id=accs["DED"].id, is_active=True))
+        db.add(AccountingPostingRule(source_module="payroll", source_event="EMPLOYER_CONTRIBUTIONS", rule_name="emp", priority=1,
+                                     debit_account_id=accs["EMX"].id, credit_account_id=accs["EMP"].id, is_active=True))
+        run = _run(2103)
+        db.add(run)
+        await db.flush()
+        from app.models.hr import Employee
+        emp = Employee(employee_code=f"E-{s}", full_name="Test Worker", department="Production", role="Operator",
+                       hire_date=date(2100, 1, 1))
+        db.add(emp)
+        await db.flush()
+        db.add(KePayrollLine(run_id=run.id, employee_id=emp.id, basic_salary=Decimal("100000"), gross_salary=Decimal("100000"),
+                             taxable_income=Decimal("97840"), total_deductions=Decimal("26410"), net_salary=Decimal("73590"),
+                             components_json={"employer": employer_contributions(Decimal("2160"), Decimal("1500"))}))
+        await db.flush()
+        await approve_payroll_run(db, run, hr.id)
+        await db.commit()
+        je = (await db.execute(select(JournalEntry).where(JournalEntry.source_id == run.id,
+                                                          JournalEntry.source_event == "EMPLOYER_CONTRIBUTIONS"))).scalar_one()
+        lines = {(l.account_id, l.debit, l.credit) for l in (await db.execute(select(JournalLine).where(JournalLine.entry_id == je.id))).scalars()}
+        assert lines == {(accs["EMX"].id, Decimal("3710"), Decimal("0")), (accs["EMP"].id, Decimal("0"), Decimal("3710"))}
+
+
+@pytest.mark.asyncio
+async def test_rule_set_is_proposed_editable_and_mandatory_after_approval():
+    """Runs last in this file: approval switches posting to mandatory for the whole database."""
+    from fastapi import HTTPException
+
+    from app.db.seed_finance import seed_finance_data
+    from app.models.utilities import SystemConfig
+    from app.services import posting_rules_catalog as cat
+
+    async with AsyncSessionLocal() as db:
+        assert (await db.execute(select(func.current_database()))).scalar_one() == os.environ[TASK_DB_NAME_ENV]
+        await seed_finance_data(db)
+        for r in (await db.execute(select(AccountingPostingRule))).scalars():
+            await db.delete(r)                                        # start from an empty rule table
+        await db.flush()
+        assert await cat.propose(db) == len(cat.CATALOG)
+        view = await cat.overview(db)
+        assert {r["status"] for r in view["rules"]} == {"proposed"} and not view["mandatory"]
+        inv = next(r for r in view["rules"] if r["event"] == "SALES_INVOICE_ISSUED")
+        assert (inv["debit"]["code"], inv["credit"]["code"], inv["tax"]["code"]) == ("1100", "4100", "2200")
+        cash = next(a for a in view["accounts"] if a["code"] == "1020")
+        await cat.update_rule(db, uuid.UUID(inv["rule_id"]), {"debit": uuid.UUID(cash["id"])})   # finance edits one
+        await cat.missing_rule(db, "pos", "POS_SALE", "sale before approval")                    # not mandatory: no error
+        assert await cat.approve(db, None) == len(cat.CATALOG)
+        view = await cat.overview(db)
+        assert view["mandatory"] and {r["status"] for r in view["rules"]} == {"active"}
+        assert next(r for r in view["rules"] if r["event"] == "SALES_INVOICE_ISSUED")["debit"]["code"] == "1020"
+        with pytest.raises(HTTPException) as e:
+            await cat.missing_rule(db, "pos", "POS_SALE", "sale after approval")
+        assert e.value.status_code == 422
+        await db.rollback()                                          # leave the database as it was
+        cfg = (await db.execute(select(SystemConfig).where(SystemConfig.key == cat.MANDATORY_KEY))).scalar_one_or_none()
+        assert cfg is None

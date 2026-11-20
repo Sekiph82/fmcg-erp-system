@@ -221,7 +221,6 @@ async def _post_pos_sale_to_gl(db: AsyncSession, sale: POSSale, user_id):
     """Book a counter sale in the general ledger (M39 hand-off: POS → accounting) through the rule pos/POS_SALE:
     debit = cash / till clearing (sale total), credit = sales revenue (net of discount), tax account = output VAT.
     Without a rule nothing is posted (logged), as for payroll and expenses."""
-    import logging
 
     from app.models.finance import AccountingPostingRule, AccountType
     from app.services.sales_service import _post_sales_journal, _require_sales_account_types
@@ -230,7 +229,9 @@ async def _post_pos_sale_to_gl(db: AsyncSession, sale: POSSale, user_id):
         AccountingPostingRule.source_module == "pos", AccountingPostingRule.source_event == "POS_SALE",
         AccountingPostingRule.is_active.is_(True)).order_by(AccountingPostingRule.priority).limit(1))).scalar_one_or_none()
     if rule is None:
-        logging.getLogger(__name__).warning("POS sale %s recorded without GL entry: no pos rule", sale.sale_no)
+        from app.services.posting_rules_catalog import missing_rule
+
+        await missing_rule(db, "pos", "POS_SALE", f"POS sale {sale.sale_no}")
         return None
     total, tax = Decimal(sale.sale_total), Decimal(sale.tax_total or 0)
     if total <= 0:

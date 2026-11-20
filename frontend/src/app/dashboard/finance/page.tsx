@@ -180,6 +180,7 @@ const FinanceBudgetPage       = dynamic(() => import("@/app/dashboard/finance/bu
 const FinanceMpesaPage        = dynamic(() => import("@/app/dashboard/finance/mpesa/page"),          { ssr: false });
 const FinanceCostingPage      = dynamic(() => import("@/app/dashboard/finance/costing/page"),        { ssr: false });
 const FinanceExchangeRatesPage= dynamic(() => import("@/app/dashboard/finance/exchange-rates/page"), { ssr: false });
+const FinancePostingRulesPage = dynamic(() => import("@/app/dashboard/finance/posting-rules/page"), { ssr: false });
 const FinanceEtimsPage        = dynamic(() => import("@/app/dashboard/finance/etims/page"),          { ssr: false });
 const FinanceVATPage          = dynamic(() => import("@/app/dashboard/finance/vat-returns/page"),    { ssr: false });
 const BankReconPage           = dynamic(() => import("@/app/dashboard/bank-reconciliation/page"),    { ssr: false });
@@ -201,6 +202,7 @@ export default function FinanceDashboardPage() {
     { key: "mpesa",          label: "M-Pesa",          permission: "finance.view", exact: true, content: <FinanceMpesaPage /> },
     { key: "costing",        label: "Costing",         permission: "finance.view", exact: true, content: <FinanceCostingPage /> },
     { key: "exchange-rates", label: "Exchange Rates",  permission: "finance.view", exact: true, content: <FinanceExchangeRatesPage /> },
+    { key: "posting-rules", label: "Posting Rules",   permission: "finance.view", exact: true, content: <FinancePostingRulesPage /> },
     { key: "etims",          label: "eTIMS",           permission: "finance.view", exact: true, content: <FinanceEtimsPage /> },
     { key: "vat-returns",    label: "VAT Returns",     permission: "finance.view", exact: true, content: <FinanceVATPage /> },
     { key: "bank-recon",     label: "Bank Recon",      permission: "finance.view", content: <BankReconPage /> },

@@ -334,7 +334,9 @@ async def post_supplier_payment_to_gl(db: AsyncSession, payment: SupplierPayment
         AccountingPostingRule.source_module == "procurement", AccountingPostingRule.source_event == "SUPPLIER_PAYMENT_MADE",
         AccountingPostingRule.is_active.is_(True)).order_by(AccountingPostingRule.priority).limit(1))).scalar_one_or_none()
     if rule is None:
-        logging.getLogger(__name__).warning("supplier payment on %s recorded without GL posting: no rule", po.po_no)
+        from app.services.posting_rules_catalog import missing_rule
+
+        await missing_rule(db, "procurement", "SUPPLIER_PAYMENT_MADE", f"supplier payment on {po.po_no}")
         return None
     amount = Decimal(payment.amount or 0)
     if amount <= 0:

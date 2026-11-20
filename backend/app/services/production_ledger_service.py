@@ -122,7 +122,10 @@ async def post_production_completion(db, order, user_id):
 
     raw_rule, fg_rule = await _rule(db, "RAW_MATERIAL_ISSUE"), await _rule(db, "FINISHED_GOODS_RECEIPT")
     if raw_rule is None or fg_rule is None:
-        log.warning("production order %s completed without GL entry: production posting rules missing", order.id)
+        from app.services.posting_rules_catalog import missing_rule
+
+        await missing_rule(db, "production", "RAW_MATERIAL_ISSUE" if raw_rule is None else "FINISHED_GOODS_RECEIPT",
+                           f"production order {order.order_no}")
         return None
     by_type = await material_cost_by_type(db, order.id)
     cost = await compute_order_cost(db, order)
@@ -147,7 +150,9 @@ async def post_production_completion(db, order, user_id):
     if conversion > 0:
         conv_rule = await _rule(db, "CONVERSION_APPLIED")
         if conv_rule is None:
-            log.warning("production order %s: conversion cost %s not booked (no CONVERSION_APPLIED rule)", order.id, conversion)
+            from app.services.posting_rules_catalog import missing_rule
+
+            await missing_rule(db, "production", "CONVERSION_APPLIED", f"production order {order.order_no} conversion cost")
             conversion = Decimal("0")
         elif not conv_rule.debit_account_id or not conv_rule.credit_account_id:
             raise HTTPException(422, "The production rule CONVERSION_APPLIED needs the WIP and applied-overhead accounts.")

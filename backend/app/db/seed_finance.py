@@ -156,6 +156,30 @@ async def seed_finance_data(db: AsyncSession) -> None:
         db, "1230", "Packaging Materials Inventory", AccountType.ASSET,
         parent_id=assets_ctrl.id,
     )
+    await _get_or_create_account(
+        db, "1010", "Bank Account", AccountType.ASSET,
+        parent_id=assets_ctrl.id,
+    )
+    await _get_or_create_account(
+        db, "1020", "Cash on Hand / Till", AccountType.ASSET,
+        parent_id=assets_ctrl.id,
+    )
+    await _get_or_create_account(
+        db, "1030", "M-Pesa Clearing", AccountType.ASSET,
+        parent_id=assets_ctrl.id,
+    )
+    await _get_or_create_account(
+        db, "1100", "Trade Receivables", AccountType.ASSET,
+        parent_id=assets_ctrl.id,
+    )
+    await _get_or_create_account(
+        db, "1215", "Semi-finished Goods Inventory", AccountType.ASSET,
+        parent_id=assets_ctrl.id,
+    )
+    await _get_or_create_account(
+        db, "1300", "VAT Input Recoverable", AccountType.ASSET,
+        parent_id=assets_ctrl.id,
+    )
 
     # Liabilities
     liab_ctrl = await _get_or_create_account(
@@ -168,6 +192,30 @@ async def seed_finance_data(db: AsyncSession) -> None:
     )
     await _get_or_create_account(
         db, "2110", "Goods Received Not Invoiced (GRNI)", AccountType.LIABILITY,
+        parent_id=liab_ctrl.id,
+    )
+    await _get_or_create_account(
+        db, "2010", "Trade Payables", AccountType.LIABILITY,
+        parent_id=liab_ctrl.id,
+    )
+    await _get_or_create_account(
+        db, "2200", "VAT Output Payable", AccountType.LIABILITY,
+        parent_id=liab_ctrl.id,
+    )
+    await _get_or_create_account(
+        db, "2300", "Net Salaries Payable", AccountType.LIABILITY,
+        parent_id=liab_ctrl.id,
+    )
+    await _get_or_create_account(
+        db, "2310", "PAYE and Statutory Deductions Payable", AccountType.LIABILITY,
+        parent_id=liab_ctrl.id,
+    )
+    await _get_or_create_account(
+        db, "2320", "Employee Expense Claims Payable", AccountType.LIABILITY,
+        parent_id=liab_ctrl.id,
+    )
+    await _get_or_create_account(
+        db, "2330", "Employer Payroll Contributions Payable", AccountType.LIABILITY,
         parent_id=liab_ctrl.id,
     )
 
@@ -215,6 +263,22 @@ async def seed_finance_data(db: AsyncSession) -> None:
     )
     await _get_or_create_account(
         db, "5500", "Scrap and Waste Expense", AccountType.EXPENSE,
+        parent_id=exp_ctrl.id,
+    )
+    await _get_or_create_account(
+        db, "5410", "Stock Adjustments and Shrinkage", AccountType.EXPENSE,
+        parent_id=exp_ctrl.id,
+    )
+    await _get_or_create_account(
+        db, "5600", "Salaries and Wages", AccountType.EXPENSE,
+        parent_id=exp_ctrl.id,
+    )
+    await _get_or_create_account(
+        db, "5610", "Employer Payroll Contributions", AccountType.EXPENSE,
+        parent_id=exp_ctrl.id,
+    )
+    await _get_or_create_account(
+        db, "5700", "Operating Expenses (Employee Claims)", AccountType.EXPENSE,
         parent_id=exp_ctrl.id,
     )
 

@@ -184,3 +184,49 @@ Türkiye'deki karşılığı SGK işveren payıdır.
 - **Yeniden denenecekler:**
   - SYNTH-TRIP-CC47 seferinde teslimat imzası. Bu sefer fatura da otomatik kesilecek; satış muhasebe kuralı tanımlıysa.
   - SYNTH-PICK-CC47 toplamasında kamerayla okutma.
+
+---
+
+# Ek: 20 Kasım öğleden önce — kararlarınızın uygulanması
+
+## Muhasebe kural seti [v] — finans onayı bekliyor [!]
+- Kural setini ben hazırladım: **16 kural**. Kapsadığı işlemler:
+  - satış faturası;
+  - müşteri tahsilatı (nakit, banka, M-Pesa);
+  - POS satışı;
+  - tedarikçi faturası ve tedarikçi ödemesi;
+  - bordro ve işveren payları;
+  - masraf;
+  - sayım farkı;
+  - üretimin 5 adımı.
+- Hesap planı bunun için tamamlandı (34 hesap): banka, kasa, M-Pesa, alıcılar, KDV, satıcılar, bordro borçları, ücret ve işveren payı giderleri, fire, yarı mamul.
+- Ekran: **Finans → Posting Rules**.
+  - Her kuralın borç, alacak, vergi ve kasa/banka hesabı açılır listeden değiştirilebilir.
+  - Finans **"Approve the rule set"** düğmesiyle onaylar. Hesabı eksik kural varsa onay verilmez ve eksikler listelenir.
+- **Onaydan sonra hepsi zorunlu.** Kuralı olmayan bir işlem kaydedilmez, hata verir. Böylece muhasebeye düşmeyen işlem kalmaz.
+- Onaya kadar eski davranış sürer: işlem kaydedilir, yalnızca deftere yazılmaz. Finans incelerken iş durmaz.
+
+## İşveren bordro payları [v]
+- Her çalışan için hesaplanıyor:
+  - NSSF işveren payı (çalışanınkiyle aynı),
+  - konut vergisi işveren payı (%1,5),
+  - NITA (aylık 50 KES).
+- Muhasebeye ayrı yevmiye olarak yazılıyor: işveren payı gideri borç, ödenecek işveren payları alacak.
+- Bordro detay sayfasında çalışan bazında **işveren payı** ve **şirkete toplam maliyet** sütunları var.
+- **Düzeltme:** NSSF tavanı eski 2023 değerinde kalmıştı (1.080 KES). Şubat 2025'ten beri geçerli limite göre güncellendi: üst sınır 72.000 KES × %6 = en fazla **4.320 KES**. İşveren de aynı tutarı öder. Maliyetler artık tam çıkıyor.
+
+## Döviz kuru [v]
+- Kenya Merkez Bankası'nın en son yayımladığı kur girildi: **1 USD = 129,99 KES** (19.11.2026). Bugünün kuru henüz yayımlanmamıştı.
+- Dükkân fiyatları artık KES olarak çıkıyor. Örnek: 20 g toz deterjan 0,17 USD → **22,10 KES**.
+- Yeni kurlar Finans → Exchange Rates ekranından girilir. Sistem her zaman en son tarihli kuru kullanır.
+
+## iPhone sertifikası [v]
+- **Sebep:** Safari, yazılan `http://` adresini otomatik olarak `https://`'e çeviriyor. 8088 portu düz HTTP olduğu için "güvenli bağlantı kurulamıyor" hatası çıkıyordu.
+- **Çözüm:** Sertifika artık uygulamanın HTTPS adresinden de iniyor: `https://<IP>:3443/rootCA.crt`. Uyarıda "Ayrıntıları göster → web sitesini ziyaret et" deyip profili indirmek yeterli. `docs/PHONE_ACCEPTANCE_TEST.md` buna göre güncellendi.
+- Telefonu çıkardığınız için geliştirme ortamı normal moda (localhost) alındı. Telefon testine döndüğünüzde LAN ortamını yeniden kurarım.
+
+## Test ve inceleme
+- Arka uç testleri: 1737 geçti, 0 başarısız.
+- Etkilenen akışlar ayrı test veritabanlarında 26 dosyada ayrıca test edildi; hepsi geçti.
+- Bağımsız inceleme ciddi bir hata bulmadı. Önerdiği iki iyileştirme uygulandı: onaydan önce eksik hesap kontrolü ve pasif kuralın doğru gösterilmesi.
+- Yazdığım testler bir hatayı yakaladı: iki bordro yevmiyesi aynı numarayı alıyordu. Düzeltildi.

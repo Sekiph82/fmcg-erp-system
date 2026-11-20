@@ -2106,3 +2106,46 @@ def _build_purchase_invoice_read(inv: PurchaseInvoice) -> PurchaseInvoiceRead:
             lines.append(lr)
         r.lines = lines
     return r
+
+
+# ── Proposed rule set: Claude prepares, finance edits and approves; then rules are mandatory ─────────────────────
+
+@router.get("/accounting/posting-rules/catalog", dependencies=[Depends(require_permission("finance", "view"))])
+async def posting_rules_catalog(db: AsyncSession = Depends(get_db)):
+    from app.services.posting_rules_catalog import overview
+
+    return await overview(db)
+
+
+@router.post("/accounting/posting-rules/propose")
+async def propose_posting_rules(db: AsyncSession = Depends(get_db),
+                                current_user=Depends(require_permission("finance", "configure"))):
+    from app.services.posting_rules_catalog import overview, propose
+
+    n = await propose(db)
+    await db.commit()
+    return {"proposed": n, **(await overview(db))}
+
+
+@router.patch("/accounting/posting-rules/{rule_id}/accounts")
+async def edit_posting_rule_accounts(rule_id: uuid.UUID, body: dict, db: AsyncSession = Depends(get_db),
+                                     current_user=Depends(require_permission("finance", "configure"))):
+    from app.services.posting_rules_catalog import overview, update_rule
+
+    try:
+        data = {k: (uuid.UUID(v) if v else None) for k, v in body.items() if k in ("debit", "credit", "tax", "clearing")}
+    except (ValueError, TypeError):
+        raise HTTPException(422, "Accounts must be account ids") from None
+    await update_rule(db, rule_id, data)
+    await db.commit()
+    return await overview(db)
+
+
+@router.post("/accounting/posting-rules/approve")
+async def approve_posting_rules(db: AsyncSession = Depends(get_db),
+                                current_user=Depends(require_permission("finance", "approve"))):
+    from app.services.posting_rules_catalog import approve, overview
+
+    n = await approve(db, current_user.id)
+    await db.commit()
+    return {"approved": n, **(await overview(db))}

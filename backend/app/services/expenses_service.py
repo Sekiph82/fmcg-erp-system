@@ -381,7 +381,6 @@ async def _post_claim_to_gl(db: AsyncSession, claim: ExpenseClaim):
     expenses/EXPENSE_FINANCE_APPROVED: debit = expense account (amount less recoverable tax), tax account = input tax
     (when the claim carries tax and the rule has one), credit = employee payable (the approved total). Without a rule
     the sub-ledger entry above is kept and nothing is posted (logged), as for payroll."""
-    import logging
 
     from fastapi import HTTPException
     from decimal import Decimal
@@ -393,7 +392,9 @@ async def _post_claim_to_gl(db: AsyncSession, claim: ExpenseClaim):
         AccountingPostingRule.source_module == "expenses", AccountingPostingRule.source_event == "EXPENSE_FINANCE_APPROVED",
         AccountingPostingRule.is_active.is_(True)).order_by(AccountingPostingRule.priority).limit(1))).scalar_one_or_none()
     if rule is None:
-        logging.getLogger(__name__).warning("expense claim %s approved without GL posting: no expenses rule", claim.claim_no)
+        from app.services.posting_rules_catalog import missing_rule
+
+        await missing_rule(db, "expenses", "EXPENSE_FINANCE_APPROVED", f"expense claim {claim.claim_no}")
         return None
     total = Decimal(claim.total_approved_amount or 0)
     if total <= 0:
