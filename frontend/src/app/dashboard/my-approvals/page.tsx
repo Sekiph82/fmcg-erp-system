@@ -7,7 +7,7 @@ import { apiClient } from "@/lib/api";
 import { approvalsApi } from "@/lib/approvals";
 import { useAuth } from "@/context/AuthContext";
 
-interface Item { id: string; ref: string; since: string | null; rfq_id?: string; asset_id?: string }
+interface Item { id: string; ref: string; since: string | null; rfq_id?: string; asset_id?: string; entry_id?: string }
 interface Group { key: string; label: string; count: number; link: string; items: Item[] }
 
 // Decide right here, through each module's own approve/reject endpoint (each keeps its own permission rules).
@@ -36,7 +36,7 @@ const DECIDE: Record<string, { approve: Call; reject?: Call }> = {
                reject: (i, u, n) => post(`${A}/timesheets/${i.id}/reject`, { approver_user_id: u, comments: n }) },
   payroll_run: { approve: (i) => post(`${A}/payroll-ke/runs/${i.id}/approve`) },
   stock_count: { approve: (i) => post(`${A}/wms/counts/${i.id}/approve`) },
-  count_adjustment: { approve: (i) => post(`${A}/cycle-count/adjustments/approve`, { entry_ids: [i.id] }) },
+  count_adjustment: { approve: (i) => post(`${A}/cycle-count/adjustments/approve`, { entry_ids: [i.entry_id] }) },
   return: { approve: (i) => post(`${A}/returns/${i.id}/approve`) },
   portal_claim: { approve: (i) => patch(`${A}/portal/claims/${i.id}/review`, { status: "RESOLVED" }),
                   reject: (i, _u, n) => patch(`${A}/portal/claims/${i.id}/review`, { status: "REJECTED", resolution_notes: n }) },

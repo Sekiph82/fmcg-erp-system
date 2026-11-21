@@ -4,7 +4,7 @@ from datetime import date
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import require_permission
+from app.core.deps import get_current_user, require_permission
 from app.db.session import get_db
 from app.schemas.timesheets import (
     TimesheetCreate, TimesheetSubmit, TimesheetApprove, TimesheetReject,
@@ -62,7 +62,10 @@ async def submit(timesheet_id: UUID, data: TimesheetSubmit, db: AsyncSession = D
 
 @router.post("/{timesheet_id}/approve", response_model=TimesheetOut,
              dependencies=[Depends(require_permission("hr", "approve"))])
-async def approve(timesheet_id: UUID, data: TimesheetApprove, db: AsyncSession = Depends(get_db)):
+async def approve(timesheet_id: UUID, data: TimesheetApprove, db: AsyncSession = Depends(get_db),
+                  current_user=Depends(get_current_user)):
+    data.approver_id, data.approver_user_id = str(current_user.id), current_user.id   # session identity, not body
+    data.approver_name = current_user.full_name or current_user.username
     obj = await svc.approve_timesheet(db, timesheet_id, data)
     if not obj:
         raise HTTPException(400, "Cannot approve in current status")
@@ -71,7 +74,10 @@ async def approve(timesheet_id: UUID, data: TimesheetApprove, db: AsyncSession =
 
 @router.post("/{timesheet_id}/reject", response_model=TimesheetOut,
              dependencies=[Depends(require_permission("hr", "approve"))])
-async def reject(timesheet_id: UUID, data: TimesheetReject, db: AsyncSession = Depends(get_db)):
+async def reject(timesheet_id: UUID, data: TimesheetReject, db: AsyncSession = Depends(get_db),
+                 current_user=Depends(get_current_user)):
+    data.approver_id, data.approver_user_id = str(current_user.id), current_user.id
+    data.approver_name = current_user.full_name or current_user.username
     obj = await svc.reject_timesheet(db, timesheet_id, data)
     if not obj:
         raise HTTPException(400, "Cannot reject in current status")

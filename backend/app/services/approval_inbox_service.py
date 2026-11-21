@@ -18,9 +18,9 @@ logger = logging.getLogger(__name__)
 
 # key, label, "module:Model", status column, waiting values, decider permissions, screen
 ENTRIES: list[tuple[str, str, str, str, tuple[str, ...], tuple[str, ...], str]] = [
-    ("purchase_request", "Purchase request", "procurement:PurchaseRequisition", "status", ("PENDING_APPROVAL",), ("procurement.approve_all",), "/dashboard/procurement?tab=purchase-requests"),
-    ("purchase_order", "Purchase order (draft)", "procurement:PurchaseOrder", "status", ("DRAFT",), ("procurement.approve_all",), "/dashboard/procurement?tab=orders"),
-    ("rfq_award", "Supplier award", "procurement:RFQAward", "status", ("PENDING_APPROVAL",), ("procurement.approve_all",), "/dashboard/procurement?tab=rfq"),
+    ("purchase_request", "Purchase request", "procurement:PurchaseRequisition", "status", ("PENDING_APPROVAL",), ("procurement.approve", "procurement.approve_all"), "/dashboard/procurement?tab=purchase-requests"),
+    ("purchase_order", "Purchase order (draft)", "procurement:PurchaseOrder", "status", ("DRAFT",), ("procurement.approve", "procurement.approve_all"), "/dashboard/procurement?tab=orders"),
+    ("rfq_award", "Supplier award", "procurement:RFQAward", "status", ("PENDING_APPROVAL",), ("procurement.approve", "procurement.approve_all"), "/dashboard/procurement?tab=rfq"),
     ("supplier_document", "Supplier document", "supplier_portal:SPDocument", "review_status", ("PENDING",), ("procurement.edit",), "/dashboard/procurement?tab=supplier-portal"),
     ("leave", "Leave request", "hr:LeaveRequest", "approval_status", ("PENDING",), ("hr.approve",), "/dashboard/hr?tab=leave"),
     ("ess_leave", "Leave request (self-service)", "ess:ESSLeaveRequest", "status", ("SUBMITTED",), ("hr.approve",), "/dashboard/hr?tab=ess"),
@@ -39,13 +39,13 @@ ENTRIES: list[tuple[str, str, str, str, tuple[str, ...], tuple[str, ...], str]] 
     ("campaign", "Marketing campaign", "marketing:Campaign", "approval_status", ("PENDING",), ("campaigns.approve", "marketing.approve"), "/dashboard/marketing?tab=campaigns"),
     ("trade_spend", "Trade spend", "marketing:TradeSpend", "approval_status", ("PENDING",), ("trade_spend.approve", "marketing.approve"), "/dashboard/marketing?tab=trade-spend"),
     ("brand_spend", "Brand spend", "marketing:BrandSpend", "approval_status", ("PENDING",), ("brand_spend.approve", "marketing.approve"), "/dashboard/marketing?tab=brand-spend"),
-    ("tpm_claim", "Trade promotion claim", "tpm:TPMClaim", "status", ("SUBMITTED",), ("maintenance.edit", "production.edit"), "/dashboard/marketing?tab=tpm"),
+    ("tpm_claim", "Trade promotion claim", "tpm:TPMClaim", "status", ("SUBMITTED",), ("trade_spend.approve", "promotions.approve", "marketing.approve"), "/dashboard/marketing?tab=tpm"),
     ("brand_asset", "Brand asset review", "brand_assets:AssetApprovalStage", "status", ("PENDING",), ("marketing.approve", "campaigns.approve"), "/dashboard/quality?tab=brand-assets"),
     ("shelf_life_extension", "Shelf-life extension", "shelf_life:ShelfLifeExtension", "status", ("PENDING",), ("shelf_life.approve", "quality.approve"), "/dashboard/inventory?tab=shelf-life"),
     ("supplier_food_safety", "Supplier food-safety approval", "quality:SupplierFoodSafetyApproval", "status", ("PENDING",), ("quality.approve",), "/dashboard/quality?tab=qms"),
 ]
 # extra fields the inline Approve/Reject buttons need to build the decision URL
-_CTX = {"rfq_award": ("rfq_id",), "brand_asset": ("asset_id",)}
+_CTX = {"rfq_award": ("rfq_id",), "brand_asset": ("asset_id",), "count_adjustment": ("entry_id",)}
 _REF_ATTRS = ("pr_no", "po_no", "leave_no", "request_no", "claim_no", "order_no", "return_no", "count_no", "run_no",
               "reference", "reference_no", "number", "code", "name", "title", "shop_name")
 _PER_ENTRY = 20
@@ -87,13 +87,18 @@ def _codes(user) -> set[str]:
 
 
 def _access(user, perms: tuple[str, ...]) -> str | None:
-    """'all' = decides every row; 'scoped' = only rows inside the user's scopes; None = not a decider."""
-    from app.core.access_control import has_any_permission
+    """'all' = decides every row; 'scoped' = only rows inside the user's scopes; None = not a decider.
+    Mirrors can_modify_record: *_all is unscoped; a plain right is unscoped only for users without any scope."""
+    from app.core.access_control import ACTION_FIELD_BY_ACTION, _has_any_scope, has_permission
 
-    if getattr(user, "is_superuser", False) or has_any_permission(user, perms):
+    codes = _codes(user)
+    if getattr(user, "is_superuser", False) or "*" in codes or any(f"{p.removesuffix('_all')}_all" in codes for p in perms):
         return "all"
     module, action = _scoped(perms)
-    return "scoped" if any(c.startswith(f"{module}.{action}_own") for c in _codes(user)) else None
+    if any(has_permission(user, p) for p in perms):
+        # rights outside the standard scope actions (e.g. manage_access) cannot be scope-checked per row
+        return "scoped" if _has_any_scope(user) and action in ACTION_FIELD_BY_ACTION else "all"
+    return "scoped" if any(c.startswith(f"{module}.{action}_own") for c in codes) else None
 
 
 def _may_decide(user, perms: tuple[str, ...], row) -> bool:
@@ -108,8 +113,25 @@ def can_decide_any(user) -> bool:
     return any(_access(user, e[5]) for e in ENTRIES)
 
 
-async def _rows(db: AsyncSession, model, col: str, values: tuple[str, ...], limit: int, extra=None, newest=False):
-    q = select(model).where(getattr(model, col).in_(values))
+def _only_next_stage(model):
+    """Brand-asset stages are decided in order: only the lowest open stage of each asset is waiting for a decision."""
+    from sqlalchemy.orm import aliased
+
+    earlier = aliased(model)
+    return ~exists().where(earlier.asset_id == model.asset_id, earlier.stage_order < model.stage_order,
+                           earlier.status != "APPROVED")
+
+
+_ROW_FILTER = {"brand_asset": _only_next_stage}
+
+
+def _waiting(key: str, model, col: str, values: tuple[str, ...]):
+    cond = getattr(model, col).in_(values)
+    return and_(cond, _ROW_FILTER[key](model)) if key in _ROW_FILTER else cond
+
+
+async def _rows(db: AsyncSession, model, cond, limit: int, extra=None, newest=False):
+    q = select(model).where(cond)
     if extra is not None:
         q = q.where(extra)
     if hasattr(model, "created_at"):
@@ -127,10 +149,11 @@ async def inbox(db: AsyncSession, user) -> dict:
         model = _model(path)
         if access == "all":
             count = (await db.execute(select(func.count()).select_from(model)
-                                      .where(getattr(model, col).in_(values)))).scalar_one()
-            rows = await _rows(db, model, col, values, _PER_ENTRY) if count else []
+                                      .where(_waiting(key, model, col, values)))).scalar_one()
+            rows = await _rows(db, model, _waiting(key, model, col, values), _PER_ENTRY) if count else []
         else:
-            rows = [r for r in await _rows(db, model, col, values, _SCOPED_SCAN) if _may_decide(user, perms, r)]
+            rows = [r for r in await _rows(db, model, _waiting(key, model, col, values), _SCOPED_SCAN)
+                    if _may_decide(user, perms, r)]
             count = len(rows)
             rows = rows[:_PER_ENTRY]
         if not count:
@@ -174,6 +197,7 @@ async def notify_new(db: AsyncSession, days: int = 7) -> int:
                                           NotificationType)
 
     since, sent = datetime.utcnow() - timedelta(days=days), 0
+    cache: dict = {}   # deciders per permission set, once per tick
     for key, label, path, col, values, perms, link in ENTRIES:
         model = _model(path)
         ref_type = f"approval:{key}"
@@ -181,10 +205,14 @@ async def notify_new(db: AsyncSession, days: int = 7) -> int:
         extra = ~already
         if hasattr(model, "created_at"):
             extra = and_(extra, model.created_at >= since)
-        rows = await _rows(db, model, col, values, 50, extra, newest=True)
+        if perms not in cache:
+            cache[perms] = [(u, _access(u, perms)) for u in await _deciders(db, perms)]
+        people = cache[perms]
+        if not people:   # nobody may decide this type: nothing to send (and no query for its rows)
+            continue
+        rows = await _rows(db, model, _waiting(key, model, col, values), 50, extra, newest=True)
         if not rows:
             continue
-        people = [(u, _access(u, perms)) for u in await _deciders(db, perms)]
         now = datetime.utcnow()
         for row in rows:
             ref = _ref(row)

@@ -3,7 +3,7 @@ from typing import List, Optional
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.deps import require_permission
+from app.core.deps import get_current_user, require_permission
 from app.db.session import get_db
 from app.models.ess import (
     LeaveStatus, ESSRequestStatus, ESSDocumentType, ESSAIRecStatus, ESSAccountStatus,
@@ -150,7 +150,9 @@ async def submit_leave_request(leave_request_id: UUID, db: AsyncSession = Depend
 
 @router.post("/leave-requests/{leave_request_id}/approve", response_model=ESSLeaveRequestRead,
              dependencies=[Depends(require_permission("hr", "approve"))])
-async def approve_leave(leave_request_id: UUID, data: ESSLeaveApproveReject, db: AsyncSession = Depends(get_db)):
+async def approve_leave(leave_request_id: UUID, data: ESSLeaveApproveReject, db: AsyncSession = Depends(get_db),
+                        current_user=Depends(get_current_user)):
+    data.approver_id = current_user.id   # recorded under the signed-in approver, never a client-supplied id
     req = await svc.approve_leave(db, leave_request_id, data)
     if not req:
         raise HTTPException(400, "Cannot approve")
@@ -159,7 +161,9 @@ async def approve_leave(leave_request_id: UUID, data: ESSLeaveApproveReject, db:
 
 @router.post("/leave-requests/{leave_request_id}/reject", response_model=ESSLeaveRequestRead,
              dependencies=[Depends(require_permission("hr", "approve"))])
-async def reject_leave(leave_request_id: UUID, data: ESSLeaveApproveReject, db: AsyncSession = Depends(get_db)):
+async def reject_leave(leave_request_id: UUID, data: ESSLeaveApproveReject, db: AsyncSession = Depends(get_db),
+                       current_user=Depends(get_current_user)):
+    data.approver_id = current_user.id
     req = await svc.reject_leave(db, leave_request_id, data)
     if not req:
         raise HTTPException(400, "Cannot reject")
@@ -241,7 +245,9 @@ async def submit_request(request_id: UUID, db: AsyncSession = Depends(get_db)):
 
 @router.patch("/requests/{request_id}/review", response_model=ESSRequestRead,
               dependencies=[Depends(require_permission("hr", "approve"))])
-async def review_request(request_id: UUID, data: ESSRequestReview, db: AsyncSession = Depends(get_db)):
+async def review_request(request_id: UUID, data: ESSRequestReview, db: AsyncSession = Depends(get_db),
+                         current_user=Depends(get_current_user)):
+    data.approver_id = current_user.id
     req = await svc.review_request(db, request_id, data)
     if not req:
         raise HTTPException(404, "Request not found")

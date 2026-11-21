@@ -217,6 +217,11 @@ async def approve_stage(
         raise HTTPException(404, "Stage not found")
     if stage.status != ApprovalStageStatus.PENDING:
         raise HTTPException(409, "This stage was already decided.")
+    earlier = (await db.execute(select(AssetApprovalStage.id).where(
+        AssetApprovalStage.asset_id == stage.asset_id, AssetApprovalStage.stage_order < stage.stage_order,
+        AssetApprovalStage.status != ApprovalStageStatus.APPROVED).limit(1))).first()
+    if earlier:
+        raise HTTPException(409, "An earlier approval stage is still open.")
     stage.status = ApprovalStageStatus.APPROVED
     stage.approved_by = current_user.full_name or current_user.username
     stage.approved_at = datetime.utcnow()

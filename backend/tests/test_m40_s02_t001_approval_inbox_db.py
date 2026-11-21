@@ -75,7 +75,7 @@ async def test_inbox_and_notifications():
         requester = await _actor(db, "procurement.create_all")
         broad = await _actor(db, "procurement.approve_all")
         scoped = await _actor(db, "procurement.approve_own_scope", "procurement.view_all", department=f"POVU-PACK-{tag}")
-        plain_hr = await _actor(db, "hr.approve", "procurement.approve")   # plain procurement.approve cannot decide PRs
+        plain_hr = await _actor(db, "hr.approve", "procurement.approve")   # plain right, no scopes: company-wide
         pack = PurchaseRequisition(pr_no=f"PR-POVU-P{tag}", requester_id=requester, required_date=date(2026, 12, 1),
                                    department=f"POVU-PACK-{tag}", status=PRStatus.PENDING_APPROVAL)
         other = PurchaseRequisition(pr_no=f"PR-POVU-O{tag}", requester_id=requester, required_date=date(2026, 12, 1),
@@ -95,7 +95,7 @@ async def test_inbox_and_notifications():
         assert {f"PR-POVU-P{tag}", f"PR-POVU-O{tag}"} <= refs(await svc.inbox(db, b))
         assert f"PR-POVU-D{tag}" not in refs(await svc.inbox(db, b))
         assert refs(await svc.inbox(db, s)) == {f"PR-POVU-P{tag}"}          # only the request inside their department
-        assert refs(await svc.inbox(db, h)) == set() and refs(await svc.inbox(db, r)) == set()
+        assert {f"PR-POVU-P{tag}", f"PR-POVU-O{tag}"} <= refs(await svc.inbox(db, h)) and refs(await svc.inbox(db, r)) == set()
         assert svc.can_decide_any(b) and svc.can_decide_any(s) and svc.can_decide_any(h) and not svc.can_decide_any(r)
         box = await svc.inbox(db, b)
         assert next(g for g in box["groups"] if g["key"] == "purchase_request")["link"].startswith("/dashboard/procurement")
@@ -106,7 +106,8 @@ async def test_inbox_and_notifications():
             Notification.reference_type == "approval:purchase_request",
             Notification.reference_id.in_([pack_id, other_id])))).all()
         got = sorted((u, ref) for u, ref in rows)
-        assert got == sorted([(str(broad), pack_id), (str(broad), other_id), (str(scoped), pack_id)])
+        assert got == sorted([(str(broad), pack_id), (str(broad), other_id), (str(scoped), pack_id),
+                             (str(plain_hr), pack_id), (str(plain_hr), other_id)])
 
         # every registry entry is queryable on the migrated schema (columns and status values exist)
         from app.models.user import User
@@ -191,3 +192,101 @@ async def test_scoped_manager_turns_an_approved_request_into_a_purchase_order():
         app.dependency_overrides.pop(get_current_user, None)
     async with AsyncSessionLocal() as db:
         assert (await db.get(PurchaseRequisition, ids["in"])).status == PRStatus.CONVERTED
+
+
+@pytest.mark.asyncio
+async def test_approved_unpaid_leave_reduces_basic_pay_in_the_payroll_run():
+    from decimal import Decimal
+
+    from app.models.ess import ESSLeaveRequest, ESSLeaveType, LeaveStatus
+    from app.models.hr import ApprovalStatus, Employee, LeaveRequest, LeaveType
+    from app.models.payroll_ke import EmployeePayrollProfile, KePayrollLine, PayrollRun, PayrollRunStatus
+    from app.services.payroll_ke_service import calculate_payroll_run
+
+    tag = uuid4().hex[:8].upper()
+    async with AsyncSessionLocal() as db:
+        assert (await db.execute(select(func.current_database()))).scalar_one() == os.environ[TASK_DB_NAME_ENV]
+        emp = Employee(employee_code=f"POVU-E-{tag}", full_name="POVU Line Operator", department="Packaging",
+                       role="Operator", hire_date=date(2024, 1, 8))
+        paid = Employee(employee_code=f"POVU-P-{tag}", full_name="POVU Packer", department="Packaging",
+                        role="Packer", hire_date=date(2024, 1, 8))
+        db.add_all([emp, paid])
+        await db.flush()
+        db.add_all([EmployeePayrollProfile(employee_id=emp.id, basic_salary=Decimal("63000")),
+                    EmployeePayrollProfile(employee_id=paid.id, basic_salary=Decimal("63000"))])
+        # HR leave: unpaid Mon 16 – Wed 18 Nov (3 working days); annual leave never deducts
+        db.add_all([LeaveRequest(employee_id=emp.id, leave_type=LeaveType.UNPAID, start_date=date(2026, 11, 16),
+                                 end_date=date(2026, 11, 18), days_requested=3, approval_status=ApprovalStatus.APPROVED),
+                    LeaveRequest(employee_id=paid.id, leave_type=LeaveType.ANNUAL, start_date=date(2026, 11, 16),
+                                 end_date=date(2026, 11, 18), days_requested=3, approval_status=ApprovalStatus.APPROVED),
+                    LeaveRequest(employee_id=paid.id, leave_type=LeaveType.UNPAID, start_date=date(2026, 11, 23),
+                                 end_date=date(2026, 11, 24), days_requested=2, approval_status=ApprovalStatus.PENDING)])
+        # self-service leave of an unpaid type: Thu 19 – Sun 22 Nov (2 working days)
+        lt = ESSLeaveType(type_code=f"UNP{tag}", type_name="Unpaid (POVU)", paid_leave=False)
+        db.add(lt)
+        await db.flush()
+        db.add(ESSLeaveRequest(leave_request_no=f"LV-{tag}", employee_id=emp.id, leave_type_id=lt.leave_type_id,
+                               start_date=date(2026, 11, 19), end_date=date(2026, 11, 22), days_requested=4,
+                               status=LeaveStatus.APPROVED))
+        run = PayrollRun(run_no=f"PR-{tag}", period_month=11, period_year=2026, period_start=date(2026, 11, 1),
+                         period_end=date(2026, 11, 30), status=PayrollRunStatus.DRAFT)
+        db.add(run)
+        await db.commit()
+        await calculate_payroll_run(db, run, 2026)
+        await db.commit()
+        lines = {l.employee_id: l for l in (await db.execute(select(KePayrollLine).where(KePayrollLine.run_id == run.id))).scalars()}
+        assert lines[emp.id].basic_salary == Decimal("48000.00")          # 63 000 − 63 000 × 5 / 21
+        assert lines[emp.id].components_json["unpaid_leave"] == {"days": 5, "working_days": 21, "deducted": 15000.0}
+        assert lines[paid.id].basic_salary == Decimal("63000.00")         # annual leave and pending requests: no change
+
+
+@pytest.mark.asyncio
+async def test_review_fixes_scope_leak_self_approval_stage_order():
+    import httpx
+
+    from app.core.deps import get_current_user
+    from app.main import app
+    from app.models.brand_assets import AssetApprovalStage, BrandAsset
+    from app.models.procurement import PRStatus, PurchaseRequisition
+    from app.services import approval_inbox_service as svc
+
+    tag = uuid4().hex[:8].upper()
+    async with AsyncSessionLocal() as db:
+        assert (await db.execute(select(func.current_database()))).scalar_one() == os.environ[TASK_DB_NAME_ENV]
+        both = await _actor(db, "procurement.create", "procurement.approve", "procurement.view_all")   # unscoped, plain
+        plain_scoped = await _actor(db, "procurement.approve", "procurement.view_all", department=f"POVU-PACK-{tag}")
+        marketing = await _actor(db, "marketing.approve")
+        mine = PurchaseRequisition(pr_no=f"PR-POVU-M{tag}", requester_id=both, required_date=date(2026, 12, 1),
+                                   department=f"POVU-OTHER-{tag}", status=PRStatus.PENDING_APPROVAL)
+        pack = PurchaseRequisition(pr_no=f"PR-POVU-K{tag}", requester_id=both, required_date=date(2026, 12, 1),
+                                   department=f"POVU-PACK-{tag}", status=PRStatus.PENDING_APPROVAL)
+        asset = BrandAsset(asset_ref=f"BA-POVU-{tag}", name="POVU AllClean 5L label")
+        asset.approval_stages = [AssetApprovalStage(stage_name="R&D", stage_order=1),
+                                 AssetApprovalStage(stage_name="Regulatory", stage_order=2)]
+        db.add_all([mine, pack, asset])
+        await db.commit()
+        mine_id, s1, s2 = mine.id, asset.approval_stages[0].id, asset.approval_stages[1].id
+        asset_id = asset.id
+    async with AsyncSessionLocal() as db:
+        b, ps, mk = [await _load(db, x) for x in (both, plain_scoped, marketing)]
+
+        def refs(box, key):
+            return {i["ref"] for g in box["groups"] if g["key"] == key for i in g["items"]}
+
+        # plain right + assigned scope: only rows inside the scope (no refs leak from other departments)
+        assert refs(await svc.inbox(db, ps), "purchase_request") == {f"PR-POVU-K{tag}"}
+        # plain right, no scopes at all: company-wide decider, and now listed for procurement entries
+        assert {f"PR-POVU-M{tag}", f"PR-POVU-K{tag}"} <= refs(await svc.inbox(db, b), "purchase_request")
+        # brand-asset stages in order: only the first open stage is waiting
+        stage_ids = {i["id"] for g in (await svc.inbox(db, mk))["groups"] if g["key"] == "brand_asset" for i in g["items"]}
+        assert str(s1) in stage_ids and str(s2) not in stage_ids
+    who = {"u": b}
+    app.dependency_overrides[get_current_user] = lambda: who["u"]
+    try:
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as c:
+            r = await c.post(f"/api/v1/procurement/pr/{mine_id}/approve", json={"approve": True})
+            assert r.status_code == 403 and "own" in r.text      # requester cannot approve their own request
+            who["u"] = mk
+            assert (await c.post(f"/api/v1/brand-assets/{asset_id}/stages/{s2}/approve", json={})).status_code == 409
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)

@@ -68,7 +68,7 @@ MODULE_GUARDS: dict[str, tuple[str, ...]] = {
     "/shelf-life": ("shelf_life", *QUALITY, "inventory"),
     "/surveys": ("surveys", "marketing", "crm"),
     "/tax": ("tax", "finance"),
-    "/tpm": ("maintenance", "production"),
+    "/tpm": ("trade_spend", "promotions", "marketing", "sales"),   # trade promotion management
     "/traceability": ("traceability", *QUALITY),
     "/van-sales": ("sales", "field", "logistics"),
     "/warehouses": ("warehouses", "inventory", "wms"),

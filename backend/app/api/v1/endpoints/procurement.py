@@ -186,6 +186,8 @@ async def approve_pr(
     if not pr:
         raise HTTPException(404, "PR not found")
     _require_procurement_action(current_user, pr, "approve")
+    if pr.requester_id == current_user.id and not current_user.is_superuser:
+        raise HTTPException(403, forbidden_detail("You cannot approve or reject your own purchase request."))
     if body.approve:
         pr = await svc.approve_pr(db, pr, current_user.id)
     else:

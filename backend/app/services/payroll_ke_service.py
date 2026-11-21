@@ -214,8 +214,10 @@ async def calculate_employee(
     tax_year: int,
     overtime_pay: Decimal = ZERO,
     other_deductions: Decimal = ZERO,
+    unpaid_leave: tuple[int, int] = (0, 0),
 ) -> dict:
-    """Calculate Kenya statutory deductions for one employee."""
+    """Calculate Kenya statutory deductions for one employee. `unpaid_leave` = (unpaid working days, working days in
+    the period): approved unpaid leave reduces basic pay pro rata, before tax and statutory deductions."""
     bands = await _get_tax_bands(db, tax_year)
     nhif_tiers = await _get_nhif_tiers(db, tax_year)
     nssf_rate = await _get_statutory_rate(db, KeComponentType.NSSF, tax_year)
@@ -223,6 +225,9 @@ async def calculate_employee(
     relief_rate = await _get_statutory_rate(db, KeComponentType.PERSONAL_RELIEF, tax_year)
 
     basic = _round(profile.basic_salary)
+    unpaid_days, period_days = unpaid_leave
+    unpaid_deduction = _round(basic * D(min(unpaid_days, period_days)) / D(period_days)) if unpaid_days and period_days else ZERO
+    basic -= unpaid_deduction
     housing = _round(profile.housing_allowance)
     transport = _round(profile.transport_allowance)
     other_allow = ZERO
@@ -291,6 +296,7 @@ async def calculate_employee(
         "total_deductions": total_deductions,
         "net_salary": net,
         "components_json": {
+            "unpaid_leave": {"days": unpaid_days, "working_days": period_days, "deducted": float(unpaid_deduction)},
             "earnings": {
                 "Basic Salary": float(basic),
                 "Housing Allowance": float(housing),
@@ -384,6 +390,34 @@ async def create_payroll_run(
     return run
 
 
+def _weekdays(start: date, end: date) -> int:
+    from datetime import timedelta
+
+    return sum(1 for i in range((end - start).days + 1) if (start + timedelta(days=i)).weekday() < 5)
+
+
+async def unpaid_leave_days(db: AsyncSession, year: int, month: int) -> tuple[dict, int]:
+    """Approved unpaid leave per employee in the month (working days), from HR leave (type UNPAID) and self-service
+    leave whose type is not paid; plus the month's working days. Leave → payroll hand-off (M40.S02.T001)."""
+    import calendar
+
+    from app.models.ess import ESSLeaveRequest, ESSLeaveType, LeaveStatus
+    from app.models.hr import ApprovalStatus, LeaveRequest, LeaveType
+
+    first, last = date(year, month, 1), date(year, month, calendar.monthrange(year, month)[1])
+    out: dict = {}
+    hr_rows = (await db.execute(select(LeaveRequest.employee_id, LeaveRequest.start_date, LeaveRequest.end_date).where(
+        LeaveRequest.leave_type == LeaveType.UNPAID, LeaveRequest.approval_status == ApprovalStatus.APPROVED,
+        LeaveRequest.start_date <= last, LeaveRequest.end_date >= first))).all()
+    ess_rows = (await db.execute(select(ESSLeaveRequest.employee_id, ESSLeaveRequest.start_date, ESSLeaveRequest.end_date)
+        .join(ESSLeaveType, ESSLeaveType.leave_type_id == ESSLeaveRequest.leave_type_id).where(
+        ESSLeaveType.paid_leave.is_(False), ESSLeaveRequest.status == LeaveStatus.APPROVED,
+        ESSLeaveRequest.start_date <= last, ESSLeaveRequest.end_date >= first))).all()
+    for emp, start, end in [*hr_rows, *ess_rows]:
+        out[emp] = out.get(emp, 0) + _weekdays(max(start, first), min(end, last))
+    return out, _weekdays(first, last)
+
+
 async def calculate_payroll_run(
     db: AsyncSession, run: PayrollRun, tax_year: Optional[int] = None
 ) -> PayrollRun:
@@ -407,8 +441,10 @@ async def calculate_payroll_run(
 
     totals = {k: ZERO for k in ["gross", "paye", "nhif", "nssf", "housing_levy", "net"]}
 
+    unpaid, working_days = await unpaid_leave_days(db, run.period_year, run.period_month)
     for profile in profiles:
-        calc = await calculate_employee(db, profile, ty)
+        calc = await calculate_employee(db, profile, ty,
+                                        unpaid_leave=(unpaid.get(profile.employee_id, 0), working_days))
         line = KePayrollLine(
             run_id=run.id,
             employee_id=profile.employee_id,
