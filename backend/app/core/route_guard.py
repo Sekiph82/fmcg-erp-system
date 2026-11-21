@@ -28,7 +28,7 @@ MODULE_GUARDS: dict[str, tuple[str, ...]] = {
     "/utility-kpi": UTIL, "/utility-management": UTIL, "/wastewater": UTIL, "/steam": UTIL, "/soft-water": UTIL,
     "/allergen": (*QUALITY, "production", "recipe", "bom", "npd"),
     "/appraisals": HR, "/training": HR, "/recruitment": HR,
-    "/brand-assets": ("marketing", "campaigns", "brand_spend", "social_media"),
+    "/brand-assets": ("marketing", "campaigns", "brand_spend", "social_media", *QUALITY),   # quality signs regulatory stages
     "/bulk-import": ("company", "products", "materials", "sales", "inventory"),
     "/commissions": ("sales", "finance"),
     "/containers": ("logistics", "procurement", "inventory"),

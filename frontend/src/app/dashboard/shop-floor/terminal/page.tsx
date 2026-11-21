@@ -50,7 +50,7 @@ export default function OperatorTerminal() {
   const [activeTab, setActiveTab] = useState<"queue" | "materials" | "qc" | "finish" | "scrap" | "note">("queue");
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string; requiresRefresh?: boolean } | null>(null);
 
-  const { data: queue = [], isLoading, isFetching, isError } = useQuery<LiveWOItem[]>({
+  const { data: queue = [], isLoading, isFetching, isError, error: queueError } = useQuery<LiveWOItem[]>({
     queryKey: ["sf-live-queue", lineId],
     queryFn: () => sfApi.getLiveQueue(lineId ? { line_id: lineId } : undefined),
     refetchInterval: 15_000,
@@ -406,7 +406,9 @@ export default function OperatorTerminal() {
 
       {isError && (
         <div role="alert" className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
-          <p>Could not refresh the work-order queue. Check the connection. Shop Floor changes are not saved offline.</p>
+          <p>{(queueError as { response?: { status?: number } } | null)?.response?.status === 403
+            ? "No production line is assigned to you yet, so there is no work-order queue to show. Ask your supervisor or an administrator to assign your line (Admin → Users → access scopes)."
+            : "Could not refresh the work-order queue. Check the connection. Shop Floor changes are not saved offline."}</p>
           <button type="button" onClick={() => void refreshShopFloorState()} className="mt-2 min-h-11 rounded-md border border-amber-500 px-3 font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-700">
             Refresh Shop Floor state
           </button>

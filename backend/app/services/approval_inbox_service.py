@@ -40,7 +40,7 @@ ENTRIES: list[tuple[str, str, str, str, tuple[str, ...], tuple[str, ...], str]] 
     ("trade_spend", "Trade spend", "marketing:TradeSpend", "approval_status", ("PENDING",), ("trade_spend.approve", "marketing.approve"), "/dashboard/marketing?tab=trade-spend"),
     ("brand_spend", "Brand spend", "marketing:BrandSpend", "approval_status", ("PENDING",), ("brand_spend.approve", "marketing.approve"), "/dashboard/marketing?tab=brand-spend"),
     ("tpm_claim", "Trade promotion claim", "tpm:TPMClaim", "status", ("SUBMITTED",), ("trade_spend.approve", "promotions.approve", "marketing.approve"), "/dashboard/marketing?tab=tpm"),
-    ("brand_asset", "Brand asset review", "brand_assets:AssetApprovalStage", "status", ("PENDING",), ("marketing.approve", "campaigns.approve"), "/dashboard/quality?tab=brand-assets"),
+    ("brand_asset", "Brand asset review", "brand_assets:AssetApprovalStage", "status", ("PENDING",), ("marketing.approve", "campaigns.approve", "quality.approve"), "/dashboard/quality?tab=brand-assets"),
     ("shelf_life_extension", "Shelf-life extension", "shelf_life:ShelfLifeExtension", "status", ("PENDING",), ("shelf_life.approve", "quality.approve"), "/dashboard/inventory?tab=shelf-life"),
     ("supplier_food_safety", "Supplier food-safety approval", "quality:SupplierFoodSafetyApproval", "status", ("PENDING",), ("quality.approve",), "/dashboard/quality?tab=qms"),
 ]

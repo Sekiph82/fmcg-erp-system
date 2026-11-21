@@ -25,7 +25,7 @@ export default function AdminPage() {
     { key: "approvals",      label: "Approvals",     permission: "self.superuser",     content: <ApprovalsPage /> },
     { key: "custom-fields",  label: "Custom Fields", permission: "hr.view",          content: <CustomFieldsPage /> },
     { key: "system-config",  label: "System Config", permission: "utilities.view",   content: <UtilitiesPage /> },
-    { key: "mobile",         label: "Mobile Apps",   permission: "hr.view",          content: <MobilePage /> },
+    { key: "mobile",         label: "Mobile Apps",   permission: "users.edit|company.edit|integrations.edit",          content: <MobilePage /> },
     { key: "logs",           label: "System Logs",   permission: "audit.view",       content: <LogsPage /> },
     { key: "import-history", label: "Import History",permission: "audit.view",       content: <ImportHistPage /> },
   ];
