@@ -13,27 +13,12 @@ from app.models.ess import (
 
 # ── Auth ──────────────────────────────────────────────────────────────────────
 
-class ESSLoginRequest(BaseModel):
-    email: str
-    password: str
-
-
-class ESSLoginResponse(BaseModel):
-    ess_account_id: UUID
-    employee_id: UUID
-    hr_employee_id: Optional[UUID] = None
-    user_id: Optional[UUID] = None
-    email: str
-    token: str
-    status: ESSAccountStatus
-
-
 class ESSAccountCreate(BaseModel):
     employee_id: UUID
     hr_employee_id: Optional[UUID] = None
     user_id: Optional[UUID] = None
     email: str
-    password: str
+    # no password: ESS is used with the employee's staff sign-in (M40.S01.T005)
 
 
 class ESSAccountRead(BaseModel):
@@ -46,15 +31,6 @@ class ESSAccountRead(BaseModel):
     last_login: Optional[datetime]
     created_at: datetime
     model_config = {"from_attributes": True}
-
-
-class ESSPasswordReset(BaseModel):
-    email: str
-
-
-class ESSPasswordChange(BaseModel):
-    token: str
-    new_password: str
 
 
 # ── Profile ───────────────────────────────────────────────────────────────────

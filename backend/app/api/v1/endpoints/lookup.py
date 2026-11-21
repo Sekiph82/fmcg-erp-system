@@ -51,6 +51,12 @@ KINDS: dict[str, tuple[str, tuple[str, ...], tuple[str, ...], tuple[str, ...]]] 
     "gl_account": ("app.models.finance:ChartOfAccount", ("code", "name"), ("name", "account_type"), ("finance.view", "accounting.view")),
     "utility_asset": ("app.models.utility_management:UtilityAsset", ("name", "asset_no"), ("asset_no", "utility_type"), ("utility.view", "utility_management.view", "maintenance.view")),
     "spare_part": ("app.models.maintenance:SparePart", ("name", "part_no"), ("part_no", "unit"), ("maintenance.view", "maintenance.edit", "inventory.view")),
+    "product": ("app.models.master:Product", ("name", "sku", "barcode"), ("sku", "barcode"), ("products.view", "sales.view", "inventory.view", "production.view", "pricing.view", "marketing.view", "procurement.view", "quality.view")),
+    "material": ("app.models.master:Material", ("name", "code"), ("code",), ("materials.view", "inventory.view", "procurement.view", "production.view", "quality.view")),
+    "warehouse": ("app.models.master:Warehouse", ("name", "code"), ("code",), ("warehouses.view", "inventory.view", "wms.view", "sales.view", "procurement.view", "production.view")),
+    "supplier": ("app.models.master:Supplier", ("name", "code"), ("code",), ("suppliers.view", "procurement.view", "finance.view", "quality.view")),
+    "production_order": ("app.models.production:ProductionOrder", ("order_no", "batch_no"), ("batch_no", "status"), ("production.view", "production_execution.view", "planning.view", "quality.view", "maintenance.view", "inventory.view")),
+    "recipe": ("app.models.recipe:Recipe", ("name",), ("version", "status"), ("recipe.view", "production.view", "quality.view", "bom.view")),
     "payroll_period": ("app.models.hr:PayrollPeriod", ("period_year", "period_month"), ("status",), ("payroll.view", "hr.view", "finance.view")),
 }
 

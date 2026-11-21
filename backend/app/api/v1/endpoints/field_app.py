@@ -792,3 +792,128 @@ async def moto_overview(days: int = Query(7, ge=1, le=92), db: AsyncSession = De
         "leaderboard": [{**b, "rider": names.get(uuid.UUID(b["driver_id"])) if b["driver_id"] not in (None, "None") else None}
                         for b in board],
     }
+
+
+
+# ── Merchandiser shelf check (M40.S01.T004) ─────────────────────────────────────
+# During a visit the rep records, per product, the facings on the shelf, out-of-stock, the shelf price and whether
+# the planogram is followed, with an optional photo. Supervisors see per outlet and product what is missing.
+
+class ShelfLineIn(BaseModel):
+    product_id: uuid.UUID
+    facings: int = Field(ge=0, le=500)
+    out_of_stock: bool = False
+    shelf_price: Optional[Decimal] = Field(default=None, ge=0, le=Decimal("10000000"))
+    planogram_ok: Optional[bool] = None
+    notes: Optional[str] = Field(default=None, max_length=300)
+
+
+class ShelfIn(BaseModel):
+    lines: List[ShelfLineIn] = Field(min_length=1, max_length=200)
+
+
+async def _my_visit(db: AsyncSession, user, visit_id: uuid.UUID):
+    from app.models.field_sales import VisitLog
+    rep = await _rep_or_403(db, user)
+    v = await db.get(VisitLog, visit_id)
+    if v is None or v.rep_id != rep.id:
+        raise HTTPException(404, "Visit not found")
+    return v
+
+
+@router.put("/visits/{visit_id}/shelf")
+async def save_shelf(visit_id: uuid.UUID, body: ShelfIn, db: AsyncSession = Depends(get_db), user=Depends(get_current_user)):
+    """Record (or correct) the shelf check of a visit; a product sent again replaces its earlier line."""
+    from sqlalchemy.dialects.postgresql import insert
+    from app.models.field_sales import ShelfCheck
+    from app.models.master import Product
+
+    v = await _my_visit(db, user, visit_id)
+    ids = {line.product_id for line in body.lines}
+    if len(ids) != len(body.lines):
+        raise HTTPException(422, "Each product once per shelf check.")
+    known = set((await db.execute(select(Product.id).where(Product.id.in_(ids)))).scalars().all())
+    if known != ids:
+        raise HTTPException(422, "Unknown product in the shelf check.")
+    for line in body.lines:
+        facings = 0 if line.out_of_stock else line.facings
+        stmt = insert(ShelfCheck).values(id=uuid.uuid4(), visit_id=v.id, product_id=line.product_id, facings=facings,
+                                         out_of_stock=line.out_of_stock, shelf_price=line.shelf_price,
+                                         planogram_ok=line.planogram_ok, notes=line.notes)
+        await db.execute(stmt.on_conflict_do_update(
+            constraint="uq_field_shelf_checks_visit_product",
+            set_={"facings": facings, "out_of_stock": line.out_of_stock, "shelf_price": line.shelf_price,
+                  "planogram_ok": line.planogram_ok, "notes": line.notes, "updated_at": func.now()}))
+    await db.commit()
+    return await shelf_of_visit(visit_id, db, user)
+
+
+@router.get("/visits/{visit_id}/shelf")
+async def shelf_of_visit(visit_id: uuid.UUID, db: AsyncSession = Depends(get_db), user=Depends(get_current_user)):
+    from app.models.field_sales import ShelfCheck
+    from app.models.master import Product
+
+    await _my_visit(db, user, visit_id)
+    rows = (await db.execute(select(ShelfCheck, Product.name, Product.sku).join(Product, Product.id == ShelfCheck.product_id)
+                             .where(ShelfCheck.visit_id == visit_id).order_by(Product.name))).all()
+    return [{"id": str(c.id), "product_id": str(c.product_id), "product": n, "sku": k, "facings": c.facings,
+             "out_of_stock": c.out_of_stock, "shelf_price": float(c.shelf_price) if c.shelf_price is not None else None,
+             "planogram_ok": c.planogram_ok, "notes": c.notes, "has_photo": bool(c.photo_key)} for c, n, k in rows]
+
+
+@router.post("/shelf/{check_id}/photo")
+async def shelf_photo(check_id: uuid.UUID, file: UploadFile = File(...), db: AsyncSession = Depends(get_db),
+                      user=Depends(get_current_user)):
+    from app.models.field_sales import ShelfCheck
+    c = await db.get(ShelfCheck, check_id)
+    if c is None:
+        raise HTTPException(404, "Shelf check not found")
+    await _my_visit(db, user, c.visit_id)
+    old = c.photo_key
+    key = await _store(file)
+    c.photo_key = key
+    try:
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        _forget([key])
+        raise
+    if old:
+        _forget([old])
+    return {"ok": True}
+
+
+@router.get("/shelf-report")
+async def shelf_report(days: int = Query(7, ge=1, le=92), db: AsyncSession = Depends(get_db), user=Depends(get_current_user)):
+    """Supervisor: per product over the last N days — outlets checked, out-of-stock outlets, average facings,
+    planogram compliance and shelf price range; plus the latest out-of-stock findings with outlet and rep."""
+    from app.models.field_sales import SalesRep, ShelfCheck, VisitLog
+    from app.models.master import Product
+    from app.models.sales import Customer
+
+    _perm(user, "field.supervise")
+    since = date.today() - timedelta(days=days - 1)
+    base = select(ShelfCheck).join(VisitLog, VisitLog.id == ShelfCheck.visit_id).where(VisitLog.visit_date >= since).subquery()
+    rows = (await db.execute(select(
+        Product.name, Product.sku, func.count(func.distinct(VisitLog.customer_id)),
+        func.count(func.distinct(VisitLog.customer_id)).filter(base.c.out_of_stock.is_(True)),
+        func.avg(base.c.facings).filter(base.c.out_of_stock.is_(False)),
+        func.count().filter(base.c.planogram_ok.is_(True)), func.count(base.c.planogram_ok),
+        func.min(base.c.shelf_price), func.max(base.c.shelf_price))
+        .select_from(base).join(VisitLog, VisitLog.id == base.c.visit_id).join(Product, Product.id == base.c.product_id)
+        .group_by(Product.name, Product.sku).order_by(Product.name))).all()
+    oos = (await db.execute(select(Product.name, Customer.name, SalesRep.name, VisitLog.visit_date, base.c.id, base.c.photo_key)
+                            .select_from(base).join(VisitLog, VisitLog.id == base.c.visit_id)
+                            .join(Product, Product.id == base.c.product_id).join(Customer, Customer.id == VisitLog.customer_id)
+                            .join(SalesRep, SalesRep.id == VisitLog.rep_id)
+                            .where(base.c.out_of_stock.is_(True)).order_by(VisitLog.visit_date.desc()).limit(50))).all()
+    return {
+        "days": days,
+        "products": [{"product": n, "sku": k, "outlets_checked": checked, "outlets_out_of_stock": oos_n,
+                      "avg_facings": round(float(avgf), 1) if avgf is not None else None,
+                      "planogram_compliance_pct": round(ok * 100 / assessed) if assessed else None,
+                      "min_price": float(lo) if lo is not None else None, "max_price": float(hi) if hi is not None else None}
+                     for n, k, checked, oos_n, avgf, ok, assessed, lo, hi in rows],
+        "out_of_stock": [{"product": p, "outlet": c, "rep": r, "date": d.isoformat(), "check_id": str(i), "has_photo": bool(ph)}
+                         for p, c, r, d, i, ph in oos],
+    }

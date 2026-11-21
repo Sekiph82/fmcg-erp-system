@@ -16,12 +16,14 @@ export default function FieldSupervisor() {
   const [rows, setRows] = useState<ComplianceRow[] | null>(null);
   const [audits, setAudits] = useState<AuditRow[]>([]);
   const [moto, setMoto] = useState<Moto | null>(null);
+  const [shelf, setShelf] = useState<ShelfReport | null>(null);
   const [error, setError] = useState<string | null>(null);
   const load = useCallback(() => {
     setError(null);
     fx<{ reps: ComplianceRow[] }>(`/field/compliance?days=${days}`).then((r) => setRows(r.reps)).catch((e) => setError(e.message));
     fx<AuditRow[]>(`/field/audits?days=${days}`).then(setAudits).catch(() => setAudits([]));
     fx<Moto>(`/field/moto?days=${days}`).then(setMoto).catch(() => setMoto(null));
+    fx<ShelfReport>(`/field/shelf-report?days=${days}`).then(setShelf).catch(() => setShelf(null));
   }, [days]);
   useEffect(load, [load]);
   async function review(id: string, status: string) {
@@ -40,6 +42,21 @@ export default function FieldSupervisor() {
         </div>
       </div>
       {error && <p role="alert" className="rounded-lg p-3 text-sm bg-red-50 border border-red-200 text-red-700">{error}</p>}
+
+      {shelf && (
+        <section aria-label="Shelf checks" className="bg-white rounded-xl border p-3 space-y-2">
+          <h2 className="font-semibold text-gray-900">Shelf checks</h2>
+          {shelf.products.length === 0 ? <p className="text-sm text-gray-400">No shelf checks in this period.</p> : (
+            <div className="overflow-x-auto"><table className="w-full text-sm">
+              <thead><tr className="text-left text-xs text-gray-500"><th>Product</th><th>Outlets</th><th>Out of stock</th><th>Avg facings</th><th>Planogram</th><th>Shelf price</th></tr></thead>
+              <tbody>{shelf.products.map((p) => <tr key={p.sku} className="border-t"><td>{p.product}</td><td>{p.outlets_checked}</td>
+                <td className={p.outlets_out_of_stock ? "text-red-700 font-semibold" : ""}>{p.outlets_out_of_stock}</td><td>{p.avg_facings ?? "—"}</td>
+                <td>{p.planogram_compliance_pct === null ? "—" : `${p.planogram_compliance_pct}%`}</td>
+                <td>{p.min_price === null ? "—" : p.min_price === p.max_price ? kes(p.min_price) : `${kes(p.min_price)}–${kes(p.max_price!)}`}</td></tr>)}</tbody></table></div>)}
+          {shelf.out_of_stock.length > 0 && (<div><h3 className="text-xs font-semibold text-gray-500 mt-2 mb-1">Out of stock found</h3>
+            <ul className="text-sm divide-y">{shelf.out_of_stock.map((o) => <li key={o.check_id} className="py-1">{o.product} — {o.outlet} <span className="text-xs text-gray-500">({o.rep}, {o.date}{o.has_photo ? ", photo" : ""})</span></li>)}</ul></div>)}
+        </section>
+      )}
 
       <section aria-label="Rep compliance" className="bg-white rounded-xl border overflow-x-auto">
         <table className="w-full text-sm">
@@ -89,4 +106,12 @@ export default function FieldSupervisor() {
       </div>
     </div>
   );
+}
+
+
+interface ShelfReport {
+  days: number;
+  products: { product: string; sku: string; outlets_checked: number; outlets_out_of_stock: number; avg_facings: number | null;
+    planogram_compliance_pct: number | null; min_price: number | null; max_price: number | null }[];
+  out_of_stock: { product: string; outlet: string; rep: string; date: string; check_id: string; has_photo: boolean }[];
 }

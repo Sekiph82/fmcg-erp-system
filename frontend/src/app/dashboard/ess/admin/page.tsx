@@ -1,4 +1,5 @@
 "use client";
+import { EntityPicker } from "@/components/EntityPicker";
 import { useEffect, useState } from "react";
 import { essApi, ESSLeaveRequest, ESSRequest, ESSAccount } from "@/lib/ess";
 
@@ -10,7 +11,7 @@ export default function HRAdminPage() {
   const [pendingLeave, setPendingLeave] = useState<ESSLeaveRequest[]>([]);
   const [pendingReqs, setPendingReqs] = useState<ESSRequest[]>([]);
   const [accounts, setAccounts] = useState<ESSAccount[]>([]);
-  const [newAcc, setNewAcc] = useState({ employee_id: "", email: "", password: "" });
+  const [newAcc, setNewAcc] = useState({ employee_id: "", email: "" });
   const [newProfile, setNewProfile] = useState({ employee_id: "", full_name: "", email: "", job_title: "", department_name: "", joining_date: "" });
   const [msg, setMsg] = useState("");
 
@@ -24,7 +25,7 @@ export default function HRAdminPage() {
   const handleApproveLeave = async (id: string) => { await essApi.approveLeave(id, { approver_id: "00000000-0000-0000-0000-000000000002" }); await load(); flash("Leave approved"); };
   const handleRejectLeave = async (id: string) => { await essApi.rejectLeave(id, { approver_id: "00000000-0000-0000-0000-000000000002", rejection_reason: "Operational requirements" }); await load(); flash("Leave rejected"); };
   const handleReviewReq = async (id: string, approved: boolean) => { await essApi.reviewRequest(id, { approver_id: "00000000-0000-0000-0000-000000000002", status: approved ? "approved" : "rejected", hr_notes: approved ? "Processed by HR" : "Request declined" }); await load(); flash(approved ? "Request approved" : "Request rejected"); };
-  const handleCreateAccount = async () => { await essApi.createAccount(newAcc); flash("Account created"); setNewAcc({ employee_id: "", email: "", password: "" }); await load(); };
+  const handleCreateAccount = async () => { await essApi.createAccount(newAcc); flash("Account created"); setNewAcc({ employee_id: "", email: "" }); await load(); };
   const handleCreateProfile = async () => { await essApi.upsertProfile({ ...newProfile, employment_status: "active" }); flash("Profile saved"); };
   const handleSeedLeaveTypes = async () => { await essApi.seedLeaveTypes(); flash("7 leave types seeded"); };
 
@@ -112,16 +113,16 @@ export default function HRAdminPage() {
           <div className="glow-card p-5 space-y-3">
             <h2 className="text-sm font-semibold text-white">Create ESS Account</h2>
             <div className="grid grid-cols-3 gap-3">
-              <div><label className={labelCls}>Employee ID (UUID)</label><input value={newAcc.employee_id} onChange={(e) => setNewAcc({ ...newAcc, employee_id: e.target.value })} className={inputCls} /></div>
+              <div><label className={labelCls}>Employee</label><EntityPicker kind="employee" label="Employee" value={newAcc.employee_id} onChange={(id) => setNewAcc({ ...newAcc, employee_id: id })} /></div>
               <div><label className={labelCls}>Email</label><input value={newAcc.email} onChange={(e) => setNewAcc({ ...newAcc, email: e.target.value })} className={inputCls} /></div>
-              <div><label className={labelCls}>Password</label><input type="password" value={newAcc.password} onChange={(e) => setNewAcc({ ...newAcc, password: e.target.value })} className={inputCls} /></div>
             </div>
             <button onClick={handleCreateAccount} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm">Create Account</button>
           </div>
           <div className="glow-card p-5 space-y-3">
             <h2 className="text-sm font-semibold text-white">Create / Update Profile</h2>
             <div className="grid grid-cols-3 gap-3">
-              {[["employee_id", "Employee ID (UUID)"], ["full_name", "Full Name"], ["email", "Work Email"], ["job_title", "Job Title"], ["department_name", "Department"], ["joining_date", "Joining Date"]].map(([k, l]) => (
+              <div><label className={labelCls}>Employee</label><EntityPicker kind="employee" label="Employee for profile" value={newProfile.employee_id} onChange={(id) => setNewProfile({ ...newProfile, employee_id: id })} /></div>
+              {[["full_name", "Full Name"], ["email", "Work Email"], ["job_title", "Job Title"], ["department_name", "Department"], ["joining_date", "Joining Date"]].map(([k, l]) => (
                 <div key={k}><label className={labelCls}>{l}</label><input value={(newProfile as any)[k]} onChange={(e) => setNewProfile({ ...newProfile, [k]: e.target.value })} className={inputCls} /></div>
               ))}
             </div>

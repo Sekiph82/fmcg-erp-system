@@ -61,7 +61,7 @@ function EntriesContent() {
           <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Count task</label>
-              <EntityPicker kind="count_task" label="Count task" required value={form.task_id} onChange={(id) => setForm({ ...form, task_id: id })} />
+              <EntityPicker kind="count_task" label="Count task" scan required value={form.task_id} onChange={(id) => setForm({ ...form, task_id: id })} />
             </div>
             <Input id="qty" label="Counted Quantity" type="number" step="0.001" value={form.counted_qty || ""} onChange={(e) => setForm({ ...form, counted_qty: e.target.value })} required autoFocus />
             <div>

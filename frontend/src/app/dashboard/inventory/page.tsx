@@ -1,5 +1,6 @@
 "use client";
 
+import { EntityPicker } from "@/components/EntityPicker";
 import dynamic from "next/dynamic";
 import { ModuleWorkspace } from "@/components/workspace";
 import { useState } from "react";
@@ -311,8 +312,10 @@ function InventoryContent() {
               }}
             className="space-y-4 max-w-lg"
           >
-            <Select label="Product *" options={productOptions} value={entry.product_id ?? ""}
-              onChange={(e) => setE("product_id", e.target.value || undefined)} />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Product * <span className="text-xs text-gray-500">(scan the barcode or search)</span></label>
+              <EntityPicker kind="product" label="Product" scan required value={entry.product_id ?? ""} onChange={(id) => setE("product_id", id || undefined)} />
+            </div>
             <Select label="Warehouse *" options={warehouseOptions} value={entry.warehouse_id ?? ""}
               onChange={(e) => setE("warehouse_id", e.target.value || undefined)} />
             <div className="grid grid-cols-2 gap-4">
@@ -359,8 +362,10 @@ function InventoryContent() {
               }}
             className="space-y-4 max-w-lg"
           >
-            <Select label="Product *" options={productOptions} value={issue.product_id ?? ""}
-              onChange={(e) => setI("product_id", e.target.value || undefined)} />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Product * <span className="text-xs text-gray-500">(scan the barcode or search)</span></label>
+              <EntityPicker kind="product" label="Product" scan required value={issue.product_id ?? ""} onChange={(id) => setI("product_id", id || undefined)} />
+            </div>
             <Select label="Warehouse *" options={warehouseOptions} value={issue.warehouse_id ?? ""}
               onChange={(e) => setI("warehouse_id", e.target.value || undefined)} />
             <div className="grid grid-cols-2 gap-4">
@@ -402,8 +407,10 @@ function InventoryContent() {
               }}
             className="space-y-4 max-w-lg"
           >
-            <Select label="Product *" options={productOptions} value={transfer.product_id ?? ""}
-              onChange={(e) => setT("product_id", e.target.value || undefined)} />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Product * <span className="text-xs text-gray-500">(scan the barcode or search)</span></label>
+              <EntityPicker kind="product" label="Product" scan required value={transfer.product_id ?? ""} onChange={(id) => setT("product_id", id || undefined)} />
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <Select label="From Warehouse *" options={warehouseOptions} value={transfer.from_warehouse_id ?? ""}
                 onChange={(e) => setT("from_warehouse_id", e.target.value || undefined)} />

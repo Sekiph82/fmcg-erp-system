@@ -134,3 +134,21 @@ class VisitLog(Base, TimestampMixin):
     customer = relationship("Customer")
     route = relationship("SalesRoute")
     order = relationship("SalesOrder")
+
+
+
+class ShelfCheck(Base, TimestampMixin):
+    """Merchandiser shelf check of one product during an outlet visit (M40.S01.T004)."""
+
+    __tablename__ = "field_shelf_checks"
+    __table_args__ = (UniqueConstraint("visit_id", "product_id", name="uq_field_shelf_checks_visit_product"),)
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    visit_id = Column(UUID(as_uuid=True), ForeignKey("visit_logs.id", ondelete="CASCADE"), nullable=False, index=True)
+    product_id = Column(UUID(as_uuid=True), ForeignKey("products.id", ondelete="CASCADE"), nullable=False, index=True)
+    facings = Column(Integer, nullable=False, default=0)              # product fronts visible on the shelf
+    out_of_stock = Column(Boolean, nullable=False, default=False)
+    shelf_price = Column(Numeric(14, 2), nullable=True)                # price shown to shoppers
+    planogram_ok = Column(Boolean, nullable=True)                      # placed as agreed (None = not assessed)
+    notes = Column(String(300), nullable=True)
+    photo_key = Column(String(64), nullable=True)

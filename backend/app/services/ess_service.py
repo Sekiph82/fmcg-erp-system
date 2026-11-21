@@ -1,6 +1,4 @@
 from __future__ import annotations
-import hashlib
-import secrets
 from datetime import datetime, date, timedelta
 from decimal import Decimal
 from typing import Optional, List
@@ -27,18 +25,6 @@ from app.schemas.ess import (
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
-
-def _hash_password(password: str) -> str:
-    return hashlib.sha256(password.encode()).hexdigest()
-
-
-def _verify_password(password: str, hash_: str) -> bool:
-    return hashlib.sha256(password.encode()).hexdigest() == hash_
-
-
-def _generate_token() -> str:
-    return secrets.token_urlsafe(32)
-
 
 async def _next_leave_no(db: AsyncSession) -> str:
     n = (await db.execute(select(func.count()).select_from(ESSLeaveRequest))).scalar_one() + 1
@@ -77,7 +63,7 @@ async def create_account(db: AsyncSession, data: ESSAccountCreate) -> ESSAccount
     acc = ESSAccount(
         employee_id=data.employee_id,
         email=data.email,
-        password_hash=_hash_password(data.password),
+        password_hash="!",  # unusable: ESS has no own password; staff sign-in is used (M40.S01.T005)
     )
     db.add(acc)
     await db.commit()
@@ -93,30 +79,6 @@ async def get_account_by_email(db: AsyncSession, email: str) -> Optional[ESSAcco
 async def get_account_by_employee(db: AsyncSession, employee_id: UUID) -> Optional[ESSAccount]:
     r = await db.execute(select(ESSAccount).where(ESSAccount.employee_id == employee_id))
     return r.scalar_one_or_none()
-
-
-async def login(db: AsyncSession, email: str, password: str) -> Optional[dict]:
-    acc = await get_account_by_email(db, email)
-    if not acc or acc.status != ESSAccountStatus.ACTIVE:
-        return None
-    if not _verify_password(password, acc.password_hash):
-        acc.failed_attempts = (acc.failed_attempts or 0) + 1
-        if acc.failed_attempts >= 5:
-            acc.status = ESSAccountStatus.SUSPENDED
-        await db.commit()
-        return None
-    acc.last_login = datetime.utcnow()
-    acc.failed_attempts = 0
-    token = _generate_token()
-    await _log_activity(db, acc.employee_id, "LOGIN", f"Login from email {email}")
-    await db.commit()
-    return {
-        "ess_account_id": acc.ess_account_id,
-        "employee_id": acc.employee_id,
-        "email": acc.email,
-        "token": token,
-        "status": acc.status,
-    }
 
 
 async def list_accounts(db: AsyncSession, limit: int = 200) -> List[ESSAccount]:

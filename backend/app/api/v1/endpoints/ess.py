@@ -9,7 +9,6 @@ from app.models.ess import (
     LeaveStatus, ESSRequestStatus, ESSDocumentType, ESSAIRecStatus, ESSAccountStatus,
 )
 from app.schemas.ess import (
-    ESSLoginRequest, ESSLoginResponse,
     ESSAccountCreate, ESSAccountRead,
     ESSProfileCreate, ESSProfileRead, ESSProfileUpdate,
     ESSLeaveTypeCreate, ESSLeaveTypeRead,

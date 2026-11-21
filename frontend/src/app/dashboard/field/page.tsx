@@ -104,7 +104,7 @@ function RouteTab({ say, fail }: Say) {
 }
 
 function StopPanel({ stop, say, fail, reload }: Say & { stop: Stop; reload: () => void }) {
-  const [mode, setMode] = useState<"visit" | "order" | "collect">(stop.visit ? "order" : "visit");
+  const [mode, setMode] = useState<"visit" | "shelf" | "order" | "collect">(stop.visit ? "order" : "visit");
   const maps = mapsLink(stop.lat, stop.lng, stop.address);
   return (
     <div className="mt-2 border-t pt-2 space-y-2">
@@ -113,10 +113,12 @@ function StopPanel({ stop, say, fail, reload }: Say & { stop: Stop; reload: () =
         {maps && <a href={maps} target="_blank" rel="noreferrer" className="underline text-indigo-700">Directions</a>}
       </div>
       <div className="flex gap-1" role="tablist">
-        {(["visit", "order", "collect"] as const).map((m) => <button key={m} role="tab" aria-selected={mode === m} onClick={() => setMode(m)}
-          className={`${btn} flex-1 ${mode === m ? "bg-indigo-600 text-white" : "bg-gray-100"}`}>{m === "visit" ? "Check in" : m === "order" ? "Order" : "Collect"}</button>)}
+        {(["visit", "shelf", "order", "collect"] as const).map((m) => <button key={m} role="tab" aria-selected={mode === m} onClick={() => setMode(m)}
+          className={`${btn} flex-1 ${mode === m ? "bg-indigo-600 text-white" : "bg-gray-100"}`}>{m === "visit" ? "Check in" : m === "shelf" ? "Shelf" : m === "order" ? "Order" : "Collect"}</button>)}
       </div>
       {mode === "visit" && <VisitForm stop={stop} say={say} fail={fail} reload={reload} />}
+      {mode === "shelf" && (stop.visit ? <ShelfForm stop={stop} say={say} fail={fail} />
+        : <p className="text-sm text-gray-600">Check in first — the shelf check belongs to the visit.</p>)}
       {mode === "order" && <OrderForm stop={stop} say={say} fail={fail} reload={reload} />}
       {mode === "collect" && <CollectForm stop={stop} say={say} fail={fail} reload={reload} />}
     </div>
@@ -379,6 +381,67 @@ function AuditsTab({ say, fail }: Say) {
         {recent.length === 0 ? <p className="text-sm text-gray-500">None yet.</p> : recent.map((a) => (
           <p key={a.id} className="text-sm border-t py-1.5 flex justify-between gap-2"><span className="min-w-0 truncate">{a.outlet}{a.failed.length ? <span className="block text-xs text-red-700 truncate">{a.failed.join(", ")}</span> : null}</span><span className="shrink-0 font-semibold">{a.score}%</span></p>))}
       </div>
+    </div>
+  );
+}
+
+
+// Merchandiser shelf check (M40.S01.T004): per product facings, out of stock, shelf price, planogram, photo.
+interface ShelfLine { product_id: string; name: string; facings: string; out_of_stock: boolean; shelf_price: string; planogram_ok: boolean | null; photo: File | null; saved?: boolean }
+function ShelfForm({ stop, say, fail }: Say & { stop: Stop }) {
+  const visitId = stop.visit!.id;
+  const [items, setItems] = useState<CatalogItem[]>([]);
+  const [search, setSearch] = useState("");
+  const [lines, setLines] = useState<ShelfLine[]>([]);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    fx<{ product_id: string; product: string; facings: number; out_of_stock: boolean; shelf_price: number | null; planogram_ok: boolean | null }[]>(`/field/visits/${visitId}/shelf`)
+      .then((rows) => setLines(rows.map((r) => ({ product_id: r.product_id, name: r.product, facings: String(r.facings), out_of_stock: r.out_of_stock,
+        shelf_price: r.shelf_price === null ? "" : String(r.shelf_price), planogram_ok: r.planogram_ok, photo: null, saved: true })))).catch(fail);
+  }, [visitId, fail]);
+  useEffect(() => {
+    const t = setTimeout(() => fx<{ items: CatalogItem[] }>(`/field/catalog?customer_id=${stop.customer_id}&search=${encodeURIComponent(search)}`).then((r) => setItems(r.items)).catch(fail), 250);
+    return () => clearTimeout(t);
+  }, [search, stop.customer_id, fail]);
+  const add = (i: CatalogItem) => { if (!lines.some((l) => l.product_id === i.product_id))
+    setLines([...lines, { product_id: i.product_id, name: i.name, facings: "", out_of_stock: false, shelf_price: "", planogram_ok: null, photo: null }]); setSearch(""); };
+  const upd = (id: string, patch: Partial<ShelfLine>) => setLines((ls) => ls.map((l) => (l.product_id === id ? { ...l, ...patch } : l)));
+  async function save() {
+    setBusy(true);
+    try {
+      const rows = await fx<{ id: string; product_id: string }[]>(`/field/visits/${visitId}/shelf`, { method: "PUT", body: JSON.stringify({ lines: lines.map((l) => ({
+        product_id: l.product_id, facings: Number(l.facings) || 0, out_of_stock: l.out_of_stock,
+        shelf_price: l.shelf_price === "" ? null : l.shelf_price, planogram_ok: l.planogram_ok })) }) });
+      for (const l of lines.filter((x) => x.photo)) {
+        const row = rows.find((r) => r.product_id === l.product_id);
+        if (row) { const fd = new FormData(); fd.append("file", l.photo!); await fpost(`/field/shelf/${row.id}/photo`, fd); }
+      }
+      setLines((ls) => ls.map((l) => ({ ...l, photo: null, saved: true })));
+      say(true, `Shelf check for ${stop.name} saved (${lines.length} products).`);
+    } catch (e) { fail(e); } finally { setBusy(false); }
+  }
+  return (
+    <div className="space-y-2">
+      <input aria-label="Add product to shelf check" placeholder="Add product…" value={search} onChange={(e) => setSearch(e.target.value)} className={input} />
+      {search && <ul className="divide-y max-h-40 overflow-y-auto border rounded-lg">{items.slice(0, 8).map((i) => (
+        <li key={i.product_id}><button onClick={() => add(i)} className="w-full text-left px-2 py-1.5 text-sm">{i.name}</button></li>))}</ul>}
+      {lines.map((l) => (
+        <div key={l.product_id} className="border rounded-lg p-2 space-y-1.5 text-sm">
+          <p className="font-medium">{l.name}</p>
+          <label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={l.out_of_stock} onChange={(e) => upd(l.product_id, { out_of_stock: e.target.checked })} /> Out of stock on the shelf</label>
+          <div className="grid grid-cols-2 gap-2">
+            <label className="text-xs text-gray-600">Facings<input type="number" min={0} inputMode="numeric" aria-label={`Facings of ${l.name}`} disabled={l.out_of_stock} value={l.out_of_stock ? "0" : l.facings} onChange={(e) => upd(l.product_id, { facings: e.target.value })} className={input} /></label>
+            <label className="text-xs text-gray-600">Shelf price<input type="number" min={0} step="0.01" inputMode="decimal" aria-label={`Shelf price of ${l.name}`} value={l.shelf_price} onChange={(e) => upd(l.product_id, { shelf_price: e.target.value })} className={input} /></label>
+          </div>
+          <div className="flex gap-2 text-xs" role="radiogroup" aria-label={`Planogram for ${l.name}`}>
+            <span className="text-gray-600 self-center">Planogram:</span>
+            {([[true, "As agreed"], [false, "Not as agreed"]] as const).map(([v, t]) => (
+              <button key={t} type="button" role="radio" aria-checked={l.planogram_ok === v} onClick={() => upd(l.product_id, { planogram_ok: v })}
+                className={`px-2 py-1 rounded border ${l.planogram_ok === v ? (v ? "bg-emerald-600 text-white" : "bg-red-600 text-white") : ""}`}>{t}</button>))}
+          </div>
+          <PhotoInput label="Shelf photo (optional)" onFile={(f) => upd(l.product_id, { photo: f })} />
+        </div>))}
+      <button onClick={save} disabled={busy || lines.length === 0} className={`${btn} w-full bg-indigo-600 text-white`}>{busy ? "Saving…" : "Save shelf check"}</button>
     </div>
   );
 }
