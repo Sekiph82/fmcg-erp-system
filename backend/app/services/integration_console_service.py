@@ -35,12 +35,12 @@ LOG_REF = "console:"  # IntegrationLog.reference prefix for console-run syncs
 
 # capability → (credential store key, IntegrationLog provider used for its runs)
 CRED_KEY = {"MPESA_DARAJA": "mpesa", "WHATSAPP": "whatsapp"}
-LOG_PROVIDER = {"MPESA_DARAJA": IntegrationProvider.MPESA, "ECOMMERCE_SYNC": IntegrationProvider.SHOPIFY,
+LOG_PROVIDER = {"ECOMMERCE_SYNC": IntegrationProvider.SHOPIFY,
                 "CRM_SYNC": IntegrationProvider.CRM, "IOT": IntegrationProvider.IOT,
                 "BARCODE_PRINTING": IntegrationProvider.BARCODE}
 SYNCABLE = {"EMAIL_SYNC", "ECOMMERCE_SYNC"}
 
-_SECRETISH = re.compile(r"(?i)\b(password|passwd|pwd|secret|token|api[_-]?key|passkey)\b\s*[:=]?\s*(?!\*\*\*)\S+")
+_SECRETISH = re.compile(r"""(?i)(password|passwd|pwd|secret|token|api[_-]?key|passkey|authorization)(["']?\s*(?:[:=]|\bis\b)\s*["']?)(?!\*\*\*)[^\s"',;&}]+""")
 _BEARER = re.compile(r"(?i)\b(bearer|basic)\s+[A-Za-z0-9._~+/=-]+")
 _URL_CREDS = re.compile(r"(?i)(https?://)[^/\s:@]+:[^/\s@]+@")
 
@@ -51,7 +51,7 @@ def scrub(text: Optional[str]) -> Optional[str]:
         return None
     text = _BEARER.sub(lambda m: f"{m.group(1)} ***", text)
     text = _URL_CREDS.sub(r"\1***@", text)
-    text = _SECRETISH.sub(lambda m: f"{m.group(1)}=***", text)
+    text = _SECRETISH.sub(lambda m: f"{m.group(1)}{m.group(2)}***", text)
     return text[:300]
 
 
@@ -139,6 +139,9 @@ async def overview(db: AsyncSession) -> dict:
         last_ok = next((r.created_at for r in runs if _ok(r.status)), None)
         last_fail = next((r for r in runs if not _ok(r.status)), None)
         streak = _streak(runs)
+        if key == "EMAIL_SYNC" and streak and not mail["with_errors"] and mail["last_sync_at"] and last_fail \
+                and mail["last_sync_at"] > last_fail.created_at:
+            streak = 0  # mailboxes synced fine after the failed manual run
         if key == "EMAIL_SYNC" and mail["connected"]:  # the mailbox loop records its result on each account
             last_ok = mail["last_sync_at"] or last_ok
         if status == Cap.STUB_ONLY:
@@ -195,6 +198,9 @@ async def run_sync(db: AsyncSession, key: str, user) -> dict:
     """Manual sync of one connector. Refuses stubs (501), unconnected (409) and runs inside backoff (429).
     Each run is recorded; a run that did nothing is never reported as synced."""
     key = key.upper()
+    from sqlalchemy import text as _sql
+    if not (await db.execute(_sql("SELECT pg_try_advisory_xact_lock(hashtext(:k))"), {"k": "integration-console:" + key})).scalar_one():
+        raise SyncRefused(409, "A sync of this connector is already running.")
     rows = {r["provider"]: r for r in (await overview(db))["connectors"]}
     row = rows.get(key)
     if row is None:
@@ -224,7 +230,7 @@ async def run_sync(db: AsyncSession, key: str, user) -> dict:
                 res = await shopify.import_orders(db, client, None, user.id, limit=50)
             finally:
                 await client.aclose()
-            ok = not res.errors or res.imported > 0
+            ok = not res.errors and not res.failed  # a partial import is reported as failed, with its errors
             result = {"imported": res.imported, "failed": res.failed}
             err = None if ok else "; ".join(res.errors[:3])
     except Exception as e:  # provider error: record it, never claim success

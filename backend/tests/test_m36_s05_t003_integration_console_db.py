@@ -34,6 +34,9 @@ def test_scrub_and_backoff_pure():
     assert "hunter2" not in console.scrub("login failed password=hunter2 for x")
     assert "s3cr3t" not in console.scrub("GET https://user:s3cr3t@shop.example/api failed")
     assert "abc123" not in console.scrub("Authorization: Bearer abc123")
+    for leak in ('{"password": "hunter2"}', "access_token=hunter2&x=1", "client_secret=hunter2", "shopify_api_key=hunter2",
+                 "the password is hunter2", "token: 'hunter2'"):
+        assert "hunter2" not in console.scrub(leak), leak
     t = datetime(2026, 11, 21, tzinfo=timezone.utc)
     assert console.backoff_until(0, t) is None
     assert console.backoff_until(1, t) == t + timedelta(minutes=1)
