@@ -78,10 +78,10 @@ CAPABILITIES: tuple[IntegrationCapability, ...] = (
     IntegrationCapability(
         provider="EMAIL_SYNC",
         label="Email Sync",
-        status=IntegrationCapabilityStatus.SIMULATED_ONLY,
-        simulation_supported=True,
+        status=IntegrationCapabilityStatus.LIVE_READY,
         frontend_route="/dashboard/email",
-        notes="Current sync creates demo email threads.",
+        notes="Real IMAP in / SMTP out per connected mailbox (M36.S01.T001); Gmail and Microsoft 365 work with an "
+              "app password. Google/Microsoft OAuth sign-in is a live gate.",
     ),
     IntegrationCapability(
         provider="WHATSAPP",

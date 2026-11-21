@@ -244,6 +244,7 @@ function IntegrationsDashboardTab() {
   );
 }
 
+const IntegrationConsolePage      = dynamic(() => import("@/app/dashboard/integrations/console/page"),       { ssr: false });
 const IntegrationsMpesaPage        = dynamic(() => import("@/app/dashboard/integrations/mpesa/page"),         { ssr: false });
 const ProviderKeysPage             = dynamic(() => import("@/app/dashboard/integrations/provider-keys/page"), { ssr: false });
 const IntegrationsSyncPage         = dynamic(() => import("@/app/dashboard/integrations/sync/page"),          { ssr: false });
@@ -257,6 +258,7 @@ const DeveloperPage                = dynamic(() => import("@/app/dashboard/devel
 export default function IntegrationsDashboardPage() {
   const tabs = [
     { key: "overview",        label: "Overview",        permission: "integrations.view", content: <IntegrationsDashboardTab /> },
+    { key: "console",         label: "Console",         permission: "integrations.view", content: <IntegrationConsolePage /> },
     { key: "mpesa",           label: "M-Pesa",          permission: "integrations.view", content: <IntegrationsMpesaPage /> },
     { key: "sync",            label: "Sync",            permission: "integrations.view", content: <IntegrationsSyncPage /> },
     { key: "marketplace",     label: "Marketplace",     permission: "integrations.view", content: <IntegrationsMarketplacePage /> },

@@ -1179,3 +1179,34 @@ async def save_provider_credentials(provider: str, payload: dict, db: AsyncSessi
     await save(db, provider, payload, current_user.id)
     await db.commit()
     return next(p for p in await creds_status(db) if p["provider"] == provider)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# INTEGRATION CONSOLE (M36.S05.T003)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@router.get("/console", dependencies=[Depends(require_permission("integrations", "view"))])
+async def integration_console(db: AsyncSession = Depends(get_db)):
+    """Evidence-based health per connector, credential status (set / not set), mapping health, retry times."""
+    from app.services import integration_console_service as console
+    return await console.overview(db)
+
+
+@router.post("/console/{provider}/sync", dependencies=[Depends(require_permission("integrations", "edit"))])
+async def integration_console_sync(provider: str, db: AsyncSession = Depends(get_db),
+                                   current_user=Depends(get_current_user)):
+    from datetime import datetime, timezone
+    from fastapi.responses import JSONResponse
+    from app.services import integration_console_service as console
+    if provider.upper() == "ECOMMERCE_SYNC":  # importing orders creates sales orders
+        from app.core.access_control import has_permission
+        if not (getattr(current_user, "is_superuser", False) or has_permission(current_user, "sales.create")):
+            raise HTTPException(403, "Importing shop orders needs the right to create sales orders.")
+    try:
+        return await console.run_sync(db, provider, current_user)
+    except console.SyncRefused as e:
+        headers = {}
+        if e.retry_at:
+            headers["Retry-After"] = str(max(1, int((e.retry_at - datetime.now(timezone.utc)).total_seconds())))
+        return JSONResponse(status_code=e.status, headers=headers,
+                            content={"detail": e.detail, "retry_at": e.retry_at.isoformat() if e.retry_at else None})
