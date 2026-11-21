@@ -730,3 +730,41 @@ class CRMAccountContact(Base, TimestampMixin):
     phone          = Column(String(50), nullable=True)
     committee_role = Column(String(20), nullable=False, default="INFLUENCER")
     notes          = Column(String(500), nullable=True)
+
+
+
+# ── M36.S05.T002 landing pages and A/B tests ─────────────────────────────────────
+
+class CRMLandingPage(Base, TimestampMixin):
+    __tablename__ = "crm_landing_pages"
+
+    id           = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    slug         = Column(String(80), nullable=False, unique=True, index=True)
+    name         = Column(String(150), nullable=False)
+    status       = Column(String(8), nullable=False, default="DRAFT")       # DRAFT | LIVE | PAUSED
+    lead_form_id = Column(UUID(as_uuid=True), ForeignKey("crm_lead_forms.id", ondelete="RESTRICT"), nullable=False)
+    min_sample   = Column(Integer, nullable=False, default=100)              # views per variant before any verdict
+
+
+class CRMLandingVariant(Base):
+    __tablename__ = "crm_landing_variants"
+
+    id        = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    page_id   = Column(UUID(as_uuid=True), ForeignKey("crm_landing_pages.id", ondelete="CASCADE"), nullable=False, index=True)
+    key       = Column(String(4), nullable=False)                            # A = control, B, C …
+    headline  = Column(String(200), nullable=False)
+    body      = Column(Text, nullable=True)
+    cta_label = Column(String(60), nullable=False, default="Send")
+    weight    = Column(Integer, nullable=False, default=50)
+    is_active = Column(Boolean, nullable=False, default=True)
+
+
+class CRMLandingEvent(Base):
+    __tablename__ = "crm_landing_events"
+
+    id           = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    page_id      = Column(UUID(as_uuid=True), ForeignKey("crm_landing_pages.id", ondelete="CASCADE"), nullable=False)
+    variant_id   = Column(UUID(as_uuid=True), ForeignKey("crm_landing_variants.id", ondelete="CASCADE"), nullable=False, index=True)
+    visitor_hash = Column(String(64), nullable=False)
+    kind         = Column(String(8), nullable=False)                         # VIEW | CONVERT
+    created_at   = Column(DateTime(timezone=True), nullable=False)

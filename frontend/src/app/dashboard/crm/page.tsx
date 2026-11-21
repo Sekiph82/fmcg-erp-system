@@ -161,6 +161,7 @@ const CRMLeadFormsPage   = dynamic(() => import("@/app/dashboard/crm/lead-forms/
 const CRMAutomationPage  = dynamic(() => import("@/app/dashboard/crm/automation/page"),  { ssr: false });
 const CRMOutboxPage      = dynamic(() => import("@/app/dashboard/crm/outbox/page"),      { ssr: false });
 const CRMInboxPage       = dynamic(() => import("@/app/dashboard/crm/inbox/page"),       { ssr: false });
+const CRMLandingPages = dynamic(() => import("@/app/dashboard/crm/landing/page"), { ssr: false });
 const CRMABMPage = dynamic(() => import("@/app/dashboard/crm/abm/page"), { ssr: false });
 const CRMAttributionPage = dynamic(() => import("@/app/dashboard/crm/attribution/page"), { ssr: false });
 const CRMSequencesPage   = dynamic(() => import("@/app/dashboard/crm/sequences/page"),   { ssr: false });
@@ -183,6 +184,7 @@ export default function CRMPage() {
     { key: "funnel",      label: "Funnel",      permission: "crm.view", content: <CRMFunnelPage /> },
     { key: "attribution", label: "Attribution", permission: "crm.view_all", content: <CRMAttributionPage /> },
     { key: "abm", label: "Key accounts", permission: "crm.view_all", content: <CRMABMPage /> },
+    { key: "landing", label: "Landing pages", permission: "marketing.view", content: <CRMLandingPages /> },
     { key: "scoring",     label: "Lead Scoring", permission: "crm.view", content: <CRMScoringPage /> },
     { key: "lead-forms",  label: "Lead Forms",  permission: "crm.view", content: <CRMLeadFormsPage /> },
     { key: "automation",  label: "Automation",  permission: "crm.view", content: <CRMAutomationPage /> },

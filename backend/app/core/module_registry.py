@@ -521,6 +521,8 @@ ENDPOINT_ROUTE_DEFINITIONS: tuple[EndpointRouteDefinition, ...] = (
     EndpointRouteDefinition(key="crm_unsubscribe_public", route_prefix="/public/unsubscribe", import_path="app.api.v1.endpoints.crm_unsubscribe_public", tags=('crm',)),
     EndpointRouteDefinition(key="meetings_public", route_prefix="/public/calendar", import_path="app.api.v1.endpoints.meetings_public", tags=('meetings',)),
     EndpointRouteDefinition(key="documents_public", route_prefix="/public/documents", import_path="app.api.v1.endpoints.documents_public", tags=('quotes',)),
+    EndpointRouteDefinition(key="crm_landing", route_prefix="/landing", import_path="app.api.v1.endpoints.crm_landing", tags=('crm',)),
+    EndpointRouteDefinition(key="crm_landing_public", route_prefix="/public/lp", import_path="app.api.v1.endpoints.crm_landing_public", tags=('crm',)),
     EndpointRouteDefinition(key="crm_abm", route_prefix="/abm", import_path="app.api.v1.endpoints.crm_abm", tags=('crm',)),
     EndpointRouteDefinition(key="lookup", route_prefix="/lookup", import_path="app.api.v1.endpoints.lookup", tags=('lookup',)),
     EndpointRouteDefinition(key="nps_public", route_prefix="/public/nps", import_path="app.api.v1.endpoints.nps_public", tags=('crm',)),
@@ -648,6 +650,8 @@ PUBLIC_ROUTES: frozenset[tuple[str, str]] = frozenset({
     ("/public/documents/{token}", "GET"),                # shared quotation, expiring revocable token (M36.S03.T001)
     ("/public/documents/{token}/view", "POST"),          # view event, keyed-hash dedupe, no IP stored
     ("/public/documents/{token}/decision", "POST"),      # customer accept/decline, typed-name e-signature (M36.S04.T003)
+    ("/public/lp/{slug}", "GET"),                         # landing page: visitor id → one variant, one view (M36.S05.T002)
+    ("/public/lp/{slug}/convert", "POST"),                # lead form submission through the lead-capture rules
     ("/public/nps/{token}", "GET"),                       # one-time survey link: token is the credential (M40.S01.T001)
     ("/public/nps/{token}", "POST"),
     ("/public/chat/sessions", "POST"),                    # website chat: honeypot + per-IP-hash limits (M36.S03.T005)
