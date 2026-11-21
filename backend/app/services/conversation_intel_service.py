@@ -71,7 +71,7 @@ async def source_text(db: AsyncSession, source_type: str, source_id: uuid.UUID, 
         if not any(m.sender == "AGENT" for m in msgs):
             raise IntelError(422, "Only chats handled by a person are analysed.")
         text = "\n".join(f"{'Customer' if m.sender == 'VISITOR' else 'Agent' if m.sender == 'AGENT' else 'Bot'}: {m.body}" for m in msgs)
-        return text, None
+        return text, sess.assignee_id
     raise IntelError(404, "Unknown source")
 
 
@@ -127,6 +127,8 @@ async def analyse(db: AsyncSession, source_type: str, source_id: uuid.UUID, user
     if row is None:
         row = CRMConversationInsight(source_type=source_type, source_id=source_id, agent_id=owner)
         db.add(row)
+    elif row.status != "PENDING_REVIEW" and not is_manager(user):
+        raise IntelError(409, "This conversation has been reviewed; only a manager can analyse it again.")
     row.findings, row.counts, row.engine, row.status = findings, counts, engine, "PENDING_REVIEW"
     row.analysed_by_id, row.analysed_at = user.id, datetime.now(timezone.utc)
     row.reviewed_by_id = row.reviewed_at = row.coaching_note = None

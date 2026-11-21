@@ -61,6 +61,8 @@ async def test_abm_flow():
         # rights: viewers read, only editors change
         with pytest.raises(HTTPException):
             await api.WRITE(viewer)
+        with pytest.raises(HTTPException):
+            await api.WRITE(_user(u.id, "marketing.create"))
         await api.READ(viewer)
         with pytest.raises(HTTPException):
             await api.READ(_user(u.id, "sales.view"))   # a plain sales right does not open key-account lists
@@ -95,11 +97,14 @@ async def test_abm_flow():
         assert acc["key_roles_missing"] == ["CHAMPION"] and acc["emails_sent"] == 0
         assert ov["attribution"] is None                                    # no campaign yet
 
+        from app.models.crm import CRMContactConsent
+        db.add(CRMContactConsent(email=f"grace-{s}@chain.example", status="SUBSCRIBED", source="test", updated_at=datetime.now(timezone.utc)))
+        await db.commit()
         # coordinated campaign: one message per committee address through the outbox; running it again adds nothing
         out = await api.group_campaign(gid, api.CampaignIn(subject="New POVU range for {company_name}", body="Hello {contact_name}, ...", roles=None), db, mkt)
-        assert out["queued"] == 2
+        assert out == {"queued": 1, "suppressed": 1}           # David has no marketing consent → suppressed, never sent
         again = await api.group_campaign(gid, api.CampaignIn(subject="New POVU range for {company_name}", body="Hello {contact_name}, ...", roles=None), db, mkt)
-        assert again["queued"] == 2
+        assert again == out
         msgs = (await db.execute(select(CRMOutboundMessage).where(CRMOutboundMessage.customer_id == chain_id))).scalars().all()
         assert len(msgs) == 2 and all(m.purpose == "CAMPAIGN" for m in msgs)
         assert all(m.status in ("QUEUED", "SUPPRESSED") for m in msgs)        # the outbox applies consent before sending

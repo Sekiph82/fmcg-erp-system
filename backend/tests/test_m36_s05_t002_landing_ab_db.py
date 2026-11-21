@@ -67,7 +67,7 @@ async def test_landing_pages_ab():
         await staff.save_variant(pid, staff.VariantIn(key="A", headline="Stock POVU AllClean", cta_label="Join"), db, mkt)
         await staff.save_variant(pid, staff.VariantIn(key="B", headline="Earn more with POVU", cta_label="Apply now"), db, mkt)
         with pytest.raises(HTTPException):                                       # not live → public 404
-            await public.show(f"stockist-{s}", "v" * 20, db)
+            await public.show(f"stockist-{s}", _req("41.1.1.9"), "v" * 20, db)
         await staff.set_status(pid, staff.StatusIn(status="LIVE"), db, mkt)
 
         # consistent assignment and a fair split
@@ -76,8 +76,8 @@ async def test_landing_pages_ab():
         vs = await lp.variants(db, pid)
         split = Counter(lp.assign(pid, v, vs).key for v in vis)
         assert 850 < split["A"] < 1150 and split["A"] + split["B"] == 2000
-        first = await public.show(f"stockist-{s}", vis[0], db)
-        again = await public.show(f"stockist-{s}", vis[0], db)
+        first = await public.show(f"stockist-{s}", _req("41.1.1.1"), vis[0], db)
+        again = await public.show(f"stockist-{s}", _req("41.1.1.1"), vis[0], db)
         assert first["variant"] == again["variant"] and first["require_consent"] is True
         assert (await db.execute(select(func.count()).select_from(CRMLandingEvent).where(CRMLandingEvent.page_id == pid))).scalar_one() == 1
 
@@ -90,10 +90,24 @@ async def test_landing_pages_ab():
         lead["consent"] = True
         await public.convert(f"stockist-{s}", public.ConvertIn(visitor=vis[0], lead=capture.LeadSubmission(**lead)), _req("41.1.1.1"), db)
         await public.convert(f"stockist-{s}", public.ConvertIn(visitor=vis[0], lead=capture.LeadSubmission(**lead)), _req("41.1.1.1"), db)
+        # review fixes: a conversion needs a counted view; the variant stays the one first shown even if weights change
+        await public.convert(f"stockist-{s}", public.ConvertIn(visitor=vis[5], lead=capture.LeadSubmission(company_name=f"No view {s}", consent=True)), _req("41.1.1.5"), db)
+        shown = (await public.show(f"stockist-{s}", _req("41.1.1.6"), vis[6], db))["variant"]
+        other = "B" if shown == "A" else "A"
+        await staff.save_variant(pid, staff.VariantIn(key=shown, headline="changed weight", weight=0), db, mkt)
+        await staff.save_variant(pid, staff.VariantIn(key=other, headline="changed weight", weight=100), db, mkt)
+        assert (await public.show(f"stockist-{s}", _req("41.1.1.6"), vis[6], db))["variant"] == shown
+        await staff.save_variant(pid, staff.VariantIn(key="A", headline="Stock POVU AllClean", cta_label="Join"), db, mkt)
+        await staff.save_variant(pid, staff.VariantIn(key="B", headline="Earn more with POVU", cta_label="Apply now"), db, mkt)
+        # view inflation: one connection counts at most VIEWS_PER_CONNECTION_HOUR views an hour
+        for i in range(lp.VIEWS_PER_CONNECTION_HOUR + 5):
+            await public.show(f"stockist-{s}", _req("102.9.9.9"), f"flood-visitor-{i:05d}-{s}", db)
+        flood = (await db.execute(select(func.count()).select_from(CRMLandingEvent).where(CRMLandingEvent.ip_hash == lp.ip_hash("102.9.9.9")))).scalar_one()
+        assert flood == lp.VIEWS_PER_CONNECTION_HOUR
         bot = dict(company_name="spam", consent=True, website="http://spam.example")
         await public.convert(f"stockist-{s}", public.ConvertIn(visitor=vis[1], lead=capture.LeadSubmission(**bot)), _req("41.1.1.2"), db)
         conv = (await db.execute(select(func.count()).select_from(CRMLandingEvent).where(CRMLandingEvent.page_id == pid, CRMLandingEvent.kind == "CONVERT"))).scalar_one()
-        assert conv == 1
+        assert conv == 1                     # one real lead; the repeat, the bot and the no-view visitor are not counted
         sub = (await db.execute(select(CRMLeadSubmission).where(CRMLeadSubmission.form_id == form.id, CRMLeadSubmission.status != "SPAM"))).scalars().first()
         assert sub.landing_page == f"lp:stockist-{s}:{first['variant']}"
 

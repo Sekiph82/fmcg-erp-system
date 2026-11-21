@@ -24,6 +24,7 @@ from app.core.config import settings
 from app.models.crm import CRMLandingEvent, CRMLandingPage, CRMLandingVariant
 
 MIN_CONVERSIONS = 5
+VIEWS_PER_CONNECTION_HOUR = 30      # more page views from one connection are shown but not counted
 
 
 def visitor_hash(page_id: uuid.UUID, visitor: str) -> str:
@@ -56,11 +57,32 @@ async def variants(db: AsyncSession, page_id: uuid.UUID) -> list[CRMLandingVaria
                                   .order_by(CRMLandingVariant.key))).scalars().all())
 
 
-async def record(db: AsyncSession, page: CRMLandingPage, variant: CRMLandingVariant, visitor: str, kind: str) -> bool:
-    """Count once per visitor and kind. Returns True if this was new."""
+def ip_hash(ip: Optional[str]) -> Optional[str]:
+    return hmac.new(settings.SECRET_KEY.encode(), f"lp-ip:{ip}".encode(), hashlib.sha256).hexdigest() if ip else None
+
+
+async def seen_variant(db: AsyncSession, page: CRMLandingPage, visitor: str) -> Optional[CRMLandingVariant]:
+    """The variant this visitor was shown (pinned at the first counted view)."""
+    vid = (await db.execute(select(CRMLandingEvent.variant_id).where(
+        CRMLandingEvent.page_id == page.id, CRMLandingEvent.visitor_hash == visitor_hash(page.id, visitor),
+        CRMLandingEvent.kind == "VIEW"))).scalar_one_or_none()
+    return await db.get(CRMLandingVariant, vid) if vid else None
+
+
+async def record(db: AsyncSession, page: CRMLandingPage, variant: CRMLandingVariant, visitor: str, kind: str,
+                 ip: Optional[str] = None) -> bool:
+    """Count once per visitor and kind; views beyond the per-connection hourly cap are not counted."""
+    from datetime import datetime, timedelta, timezone
+    h = ip_hash(ip)
+    if kind == "VIEW" and h:
+        recent = (await db.execute(select(func.count()).select_from(CRMLandingEvent).where(
+            CRMLandingEvent.ip_hash == h, CRMLandingEvent.kind == "VIEW",
+            CRMLandingEvent.created_at >= datetime.now(timezone.utc) - timedelta(hours=1)))).scalar_one()
+        if recent >= VIEWS_PER_CONNECTION_HOUR:
+            return False
     res = await db.execute(insert(CRMLandingEvent).values(
         id=uuid.uuid4(), page_id=page.id, variant_id=variant.id, visitor_hash=visitor_hash(page.id, visitor), kind=kind,
-        created_at=func.now()).on_conflict_do_nothing(index_elements=["page_id", "visitor_hash", "kind"]))
+        ip_hash=h, created_at=func.now()).on_conflict_do_nothing(index_elements=["page_id", "visitor_hash", "kind"]))
     return bool(res.rowcount)
 
 

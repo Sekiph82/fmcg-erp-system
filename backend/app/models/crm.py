@@ -1,7 +1,7 @@
 from __future__ import annotations
 import uuid
 import enum
-from sqlalchemy import func  # noqa: E402
+from sqlalchemy import Index, func, text  # noqa: E402
 from sqlalchemy import (
     Column, String, Integer, Numeric, Boolean, Text, Date, DateTime,
     ForeignKey, Enum, JSON, UniqueConstraint,
@@ -721,6 +721,8 @@ class CRMAccountGroupMember(Base):
 class CRMAccountContact(Base, TimestampMixin):
     """A person in an account's buying committee."""
     __tablename__ = "crm_account_contacts"
+    __table_args__ = (Index("uq_crm_account_contacts_customer_email", "customer_id", text("lower(email)"),
+                            unique=True, postgresql_where=text("email IS NOT NULL")),)
 
     id             = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     customer_id    = Column(UUID(as_uuid=True), ForeignKey("customers.id", ondelete="CASCADE"), nullable=False, index=True)
@@ -748,6 +750,7 @@ class CRMLandingPage(Base, TimestampMixin):
 
 class CRMLandingVariant(Base):
     __tablename__ = "crm_landing_variants"
+    __table_args__ = (UniqueConstraint("page_id", "key", name="uq_crm_landing_variant_key"),)
 
     id        = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     page_id   = Column(UUID(as_uuid=True), ForeignKey("crm_landing_pages.id", ondelete="CASCADE"), nullable=False, index=True)
@@ -761,12 +764,14 @@ class CRMLandingVariant(Base):
 
 class CRMLandingEvent(Base):
     __tablename__ = "crm_landing_events"
+    __table_args__ = (UniqueConstraint("page_id", "visitor_hash", "kind", name="uq_crm_landing_event_once"),)
 
     id           = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     page_id      = Column(UUID(as_uuid=True), ForeignKey("crm_landing_pages.id", ondelete="CASCADE"), nullable=False)
     variant_id   = Column(UUID(as_uuid=True), ForeignKey("crm_landing_variants.id", ondelete="CASCADE"), nullable=False, index=True)
     visitor_hash = Column(String(64), nullable=False)
     kind         = Column(String(8), nullable=False)                         # VIEW | CONVERT
+    ip_hash      = Column(String(64), nullable=True, index=True)             # keyed hash of the connection (rate limit)
     created_at   = Column(DateTime(timezone=True), nullable=False)
 
 
@@ -808,7 +813,8 @@ class CRMWorkflow(Base, TimestampMixin):
 
 class CRMWorkflowVersion(Base):
     __tablename__ = "crm_workflow_versions"
-    __table_args__ = (UniqueConstraint("workflow_id", "version_no", name="uq_crm_workflow_version_no"),)
+    __table_args__ = (UniqueConstraint("workflow_id", "version_no", name="uq_crm_workflow_version_no"),
+                      Index("uq_crm_workflow_one_published", "workflow_id", unique=True, postgresql_where=text("status = 'PUBLISHED'")))
 
     id              = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     workflow_id     = Column(UUID(as_uuid=True), ForeignKey("crm_workflows.id", ondelete="CASCADE"), nullable=False, index=True)

@@ -66,6 +66,9 @@ async def test_workflow_designer():
     assert any("'yes' and one 'no'" in p for p in wfs.validate(g))
     g = graph(); g["nodes"][4]["config"]["payload"] = {}
     assert any("subject" in p for p in wfs.validate(g))
+    g = graph(); g["nodes"][0]["id"] = "x" * 41
+    assert any("40 characters" in p for p in wfs.validate(g))
+    assert wfs.validate({"nodes": ["junk"], "edges": []}) == ["Steps and connections must be objects."]
     g = graph(); g["nodes"].append({"id": "t2", "type": "trigger", "config": {"event": "won"}})
     assert any("Exactly one trigger" in p for p in wfs.validate(g))
 
@@ -92,6 +95,14 @@ async def test_workflow_designer():
         assert e.value.status_code == 422
         v1 = await api.save_draft(wid, api.GraphIn(graph=graph()), db, editor)
         assert v1["problems"] == [] and v1["version_no"] == 2
+
+        # notify steps may only name users with company-wide CRM view
+        bad_g = graph(); bad_g["nodes"][4]["config"] = {"action_type": "notify", "payload": {"usernames": ["nobody-" + s], "title": "x"}}
+        drafted = await api.save_draft(wid, api.GraphIn(graph=bad_g), db, editor)
+        assert any("company-wide CRM view" in p for p in drafted["problems"])
+        with pytest.raises(HTTPException) as e:
+            await api.publish(uuid.UUID(drafted["id"]), db, approver)
+        assert e.value.status_code == 422
 
         # simulation changes nothing
         rec = CRMRecord(company_name=f"Mama Duka {s}", temperature=CRMTemperature.HOT)
@@ -148,7 +159,7 @@ async def test_workflow_designer():
         assert run2.status == "WAITING_APPROVAL"
 
         info = await api.get_workflow(wid, db, viewer)
-        assert [v["status"] for v in info["versions"]] == ["PUBLISHED", "ARCHIVED", "DRAFT"]
+        assert [v["status"] for v in info["versions"]] == ["PUBLISHED", "DRAFT", "ARCHIVED", "DRAFT"]
         await api.publish(uuid.UUID(v1["id"]), db, approver)                       # rollback
         info = await api.get_workflow(wid, db, viewer)
-        assert {v["version_no"]: v["status"] for v in info["versions"]} == {3: "ARCHIVED", 2: "PUBLISHED", 1: "DRAFT"}
+        assert {v["version_no"]: v["status"] for v in info["versions"]} == {4: "ARCHIVED", 3: "DRAFT", 2: "PUBLISHED", 1: "DRAFT"}

@@ -18,7 +18,7 @@ from app.services import crm_abm_service as abm
 
 router = APIRouter()
 READ = require_any_permission(("crm.view_all", "crm.edit_all", "marketing.view", "marketing.edit"))
-WRITE = require_any_permission(("crm.edit_all", "marketing.edit", "marketing.create"))
+WRITE = require_any_permission(("crm.edit_all", "marketing.edit"))
 
 
 class GroupIn(BaseModel):

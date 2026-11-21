@@ -16,7 +16,7 @@ from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 from typing import Optional
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -26,6 +26,7 @@ from app.services import crm_automation_service as auto
 NODE_TYPES = ("trigger", "condition", "delay", "approval", "action", "end")
 MAX_NODES = 60
 MAX_STEPS_PER_TICK = 25
+MAX_RUNS_PER_RECORD_HOUR = 10   # runaway protection: a record flipping stages does not fire endlessly
 
 
 class WorkflowError(Exception):
@@ -43,9 +44,11 @@ def validate(graph: dict) -> list[str]:
         return ["The workflow needs nodes and connections."]
     if len(nodes) > MAX_NODES:
         return [f"At most {MAX_NODES} steps."]
+    if not all(isinstance(n, dict) and isinstance(n.get("config", {}) or {}, dict) for n in nodes) or not all(isinstance(e, dict) for e in edges):
+        return ["Steps and connections must be objects."]
     ids = [n.get("id") for n in nodes]
-    if len(set(ids)) != len(ids) or not all(isinstance(i, str) and i for i in ids):
-        errs.append("Every step needs a unique id.")
+    if not all(isinstance(i, str) and 0 < len(i) <= 40 for i in ids) or len(set(ids)) != len(ids):
+        return ["Every step needs a unique id of at most 40 characters."]
     by = {n.get("id"): n for n in nodes}
     triggers = [n for n in nodes if n.get("type") == "trigger"]
     if len(triggers) != 1:
@@ -68,7 +71,7 @@ def validate(graph: dict) -> list[str]:
         if t == "action":
             try:
                 auto.validate("created", None, None, cfg.get("action_type", ""), cfg.get("payload") or {})
-            except ValueError as e:
+            except (ValueError, TypeError) as e:
                 errs.append(f"{n['id']}: {e}")
     out: dict[str, list[tuple[str, Optional[str]]]] = {i: [] for i in by}
     for e in edges:
@@ -164,8 +167,21 @@ async def simulate(db: AsyncSession, graph: dict, record: CRMRecord, approvals: 
     return steps
 
 
+async def recipient_problems(db: AsyncSession, graph: dict) -> list[str]:
+    """Notify steps may only name active users with company-wide CRM view (the message names the record)."""
+    out = []
+    for n in graph.get("nodes", []) if isinstance(graph, dict) else []:
+        cfg = n.get("config") or {} if isinstance(n, dict) else {}
+        if n.get("type") == "action" and cfg.get("action_type") == "notify":
+            try:
+                await auto.check_recipients(db, cfg.get("payload") or {})
+            except ValueError as e:
+                out.append(f"{n['id']}: {e}")
+    return out
+
+
 async def publish(db: AsyncSession, version: CRMWorkflowVersion, user) -> None:
-    problems = validate(version.graph)
+    problems = validate(version.graph) or await recipient_problems(db, version.graph)
     if problems:
         raise WorkflowError(422, problems)
     wf = await db.get(CRMWorkflow, version.workflow_id)
@@ -189,21 +205,37 @@ async def enqueue(db: AsyncSession, now: Optional[datetime] = None) -> int:
         CRMWorkflowVersion, CRMWorkflowVersion.id == CRMWorkflow.published_version_id))).all()
     created = 0
     for wf, ver in rows:
-        since = max(auto._aware(ver.published_at), auto._aware(wf.enqueued_until) - auto.WATERMARK_OVERLAP) if wf.enqueued_until else auto._aware(ver.published_at)
-        since = max(since, auto._aware(ver.published_at))
-        hist = (await db.execute(select(CRMStageHistory).where(CRMStageHistory.changed_at >= since))).scalars().all()
-        trig = next(n for n in ver.graph["nodes"] if n["type"] == "trigger")
-        for h in hist:
-            if wf.trigger_event not in auto._events(h):
-                continue
-            res = await db.execute(insert(CRMWorkflowRun).values(
-                id=uuid.uuid4(), version_id=ver.id, crm_record_id=h.crm_record_id, event_key=f"{wf.trigger_event}:{h.id}",
-                current_node=_next(ver.graph, trig["id"]), status="RUNNING", resume_at=now, log=[], created_at=now
-            ).on_conflict_do_nothing(constraint="uq_crm_workflow_run_event"))
-            created += res.rowcount or 0
-        wf.enqueued_until = now
+        try:
+            async with db.begin_nested():   # one broken workflow never stops the others
+                created += await _enqueue_one(db, wf, ver, now)
+        except Exception:
+            import logging
+            logging.getLogger(__name__).exception("workflow %s enqueue failed", wf.id)
     await db.commit()
     return created
+
+
+async def _enqueue_one(db: AsyncSession, wf, ver, now: datetime) -> int:
+    made = 0
+    since = max(auto._aware(ver.published_at), auto._aware(wf.enqueued_until) - auto.WATERMARK_OVERLAP) if wf.enqueued_until else auto._aware(ver.published_at)
+    since = max(since, auto._aware(ver.published_at))
+    hist = (await db.execute(select(CRMStageHistory).where(CRMStageHistory.changed_at >= since))).scalars().all()
+    trig = next(n for n in ver.graph["nodes"] if n["type"] == "trigger")
+    for h in hist:
+        if wf.trigger_event not in auto._events(h):
+            continue
+        recent = (await db.execute(select(func.count()).select_from(CRMWorkflowRun).where(
+            CRMWorkflowRun.version_id == ver.id, CRMWorkflowRun.crm_record_id == h.crm_record_id,
+            CRMWorkflowRun.created_at >= now - timedelta(hours=1)))).scalar_one()
+        if recent >= MAX_RUNS_PER_RECORD_HOUR:
+            continue
+        res = await db.execute(insert(CRMWorkflowRun).values(
+            id=uuid.uuid4(), version_id=ver.id, crm_record_id=h.crm_record_id, event_key=f"{wf.trigger_event}:{h.id}",
+            current_node=_next(ver.graph, trig["id"]), status="RUNNING", resume_at=now, log=[], created_at=now
+        ).on_conflict_do_nothing(constraint="uq_crm_workflow_run_event"))
+        made += res.rowcount or 0
+    wf.enqueued_until = now
+    return made
 
 
 async def advance(db: AsyncSession, run: CRMWorkflowRun, now: datetime, approval: Optional[str] = None) -> None:
@@ -266,6 +298,11 @@ async def process(db: AsyncSession, limit: int = 50, now: Optional[datetime] = N
         CRMWorkflowRun.status.in_(("RUNNING", "WAITING")), CRMWorkflowRun.resume_at <= now)
         .order_by(CRMWorkflowRun.created_at).limit(limit).with_for_update(skip_locked=True))).scalars().all()
     for run in runs:
+        ver = await db.get(CRMWorkflowVersion, run.version_id)
+        if ver is None or ver.status != "PUBLISHED":      # rolled back / replaced: the old version stops here
+            run.status, run.finished_at = "CANCELLED", now
+            run.log = [*(run.log or []), {"at": now.isoformat(), "note": "version no longer published; stopped"}]
+            continue
         try:
             await advance(db, run, now)
         except Exception as exc:  # recorded; the run stops instead of looping

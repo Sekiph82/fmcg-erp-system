@@ -112,8 +112,9 @@ async def run_campaign(db: AsyncSession, group: CRMAccountGroup, subject: str, b
                              .join(CRMAccountGroupMember, and_(CRMAccountGroupMember.customer_id == CRMAccountContact.customer_id,
                                                                CRMAccountGroupMember.group_id == group.id))
                              .where(CRMAccountContact.email.is_not(None)))).all()
-    queued, seen = 0, set()
-    key = uuid.uuid5(uuid.NAMESPACE_URL, f"{group.id}:{subject}").hex[:12]
+    queued = suppressed = 0
+    seen = set()
+    key = uuid.uuid5(uuid.NAMESPACE_URL, f"{group.id}:{subject}:{body}").hex[:12]
     for contact, customer in rows:
         if roles and contact.committee_role not in roles:
             continue
@@ -122,11 +123,14 @@ async def run_campaign(db: AsyncSession, group: CRMAccountGroup, subject: str, b
             continue
         seen.add(email)
         text = body.replace("{contact_name}", contact.full_name).replace("{company_name}", customer.name)
-        await outbound.queue(db, to_email=email, subject=subject.replace("{company_name}", customer.name)[:300], body=text,
-                             purpose="CAMPAIGN", dedupe_key=f"abm:{key}:{email}", customer_id=customer.id,
-                             created_by=f"abm:{created_by}"[:100])
-        queued += 1
+        msg = await outbound.queue(db, to_email=email, subject=subject.replace("{company_name}", customer.name)[:300], body=text,
+                                   purpose="CAMPAIGN", dedupe_key=f"abm:{key}:{email}", customer_id=customer.id,
+                                   created_by=f"abm:{created_by}"[:100])
+        if msg.status in ("QUEUED", "SENT"):
+            queued += 1
+        else:
+            suppressed += 1
     if queued and group.campaign_started_at is None:
         group.campaign_started_at = datetime.now(timezone.utc)
     await db.flush()
-    return {"queued": queued}
+    return {"queued": queued, "suppressed": suppressed}

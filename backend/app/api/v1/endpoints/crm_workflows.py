@@ -17,7 +17,7 @@ from app.models.crm import CRMRecord, CRMWorkflow, CRMWorkflowRun, CRMWorkflowVe
 from app.services import crm_workflow_service as wfs
 
 router = APIRouter()
-READ = require_any_permission(("crm.view_all", "crm.edit_all", "crm.approve"))
+READ = require_any_permission(("crm.view_all", "crm.edit_all"))
 EDIT = require_any_permission(("crm.edit_all",))
 PUBLISH = require_any_permission(("crm.approve", "crm.approve_all"))
 
@@ -89,7 +89,7 @@ async def save_draft(workflow_id: uuid.UUID, body: GraphIn, db: AsyncSession = D
     v = CRMWorkflowVersion(workflow_id=wf.id, version_no=n + 1, graph=body.graph, created_by=user.username)
     db.add(v)
     await db.commit()
-    return {**_ver(v), "problems": wfs.validate(body.graph)}
+    return {**_ver(v), "problems": wfs.validate(body.graph) or await wfs.recipient_problems(db, body.graph)}
 
 
 @router.post("/validate")

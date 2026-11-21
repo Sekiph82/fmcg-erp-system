@@ -115,6 +115,9 @@ async def test_conversation_intelligence(monkeypatch):
         assert e.value.status_code == 403
         done = await api.review(iid, api.ReviewIn(status="REVIEWED", coaching_note="Offer the 12-carton price tier when price comes up."), db, mgr)
         assert done["status"] == "REVIEWED" and done["coaching_note"].startswith("Offer")
+        with pytest.raises(HTTPException) as e:                                  # the agent cannot wipe a review by re-analysing
+            await api.analyse("call", cid, db, ann)
+        assert e.value.status_code == 409
         self_mgr = _user(rows[0].id, "crm.edit_all")
         with pytest.raises(HTTPException) as e:
             await api.review(iid, api.ReviewIn(status="REJECTED"), db, self_mgr)

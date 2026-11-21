@@ -32,10 +32,11 @@ async def _resolve(db: AsyncSession, slug: str, visitor: str):
 
 
 @router.get("/{slug}")
-async def show(slug: str, visitor: str = Query(..., min_length=16, max_length=64, pattern=r"^[A-Za-z0-9-]+$"),
+async def show(slug: str, request: Request, visitor: str = Query(..., min_length=16, max_length=64, pattern=r"^[A-Za-z0-9-]+$"),
                db: AsyncSession = Depends(get_db)):
     page, v = await _resolve(db, slug, visitor)
-    await lp.record(db, page, v, visitor, "VIEW")
+    v = await lp.seen_variant(db, page, visitor) or v          # a returning visitor keeps the variant first shown
+    await lp.record(db, page, v, visitor, "VIEW", request.client.host if request.client else None)
     await db.commit()
     form = await db.get(CRMLeadForm, page.lead_form_id)
     return {"slug": page.slug, "variant": v.key, "headline": v.headline, "body": v.body, "cta_label": v.cta_label,
@@ -44,18 +45,20 @@ async def show(slug: str, visitor: str = Query(..., min_length=16, max_length=64
 
 @router.post("/{slug}/convert", status_code=202)
 async def convert(slug: str, body: ConvertIn, request: Request, db: AsyncSession = Depends(get_db)):
-    page, v = await _resolve(db, slug, body.visitor)
+    page, _ = await _resolve(db, slug, body.visitor)
+    v = await lp.seen_variant(db, page, body.visitor)   # credited to the variant actually shown; no view → not counted
     form = await db.get(CRMLeadForm, page.lead_form_id)
     if form is None or not form.active_flag:
         raise HTTPException(404, "Page not found")
-    lead = body.lead.model_copy(update={"landing_page": f"lp:{page.slug}:{v.key}", "utm_content": body.lead.utm_content or f"variant-{v.key}"})
+    key = v.key if v else "-"
+    lead = body.lead.model_copy(update={"landing_page": f"lp:{page.slug}:{key}", "utm_content": body.lead.utm_content or f"variant-{key}"})
     try:
         sub = await capture.submit(db, form, lead, request.client.host if request.client else None)
     except capture.RateLimited:
         raise HTTPException(429, "Too many submissions; please try again later.")
     except capture.ConsentRequired:
         raise HTTPException(422, "Please accept the consent statement to send the form.")
-    if getattr(sub, "status", None) != "SPAM":        # bots never count as conversions
+    if v is not None and getattr(sub, "status", None) == "ACCEPTED":   # new, real leads only (not spam or repeats)
         await lp.record(db, page, v, body.visitor, "CONVERT")
     await db.commit()
     return {"status": "received", "message": form.success_message or "Thank you — we will be in touch."}
