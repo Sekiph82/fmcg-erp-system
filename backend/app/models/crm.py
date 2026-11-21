@@ -790,3 +790,49 @@ class CRMConversationInsight(Base):
     analysed_at    = Column(DateTime(timezone=True), nullable=True)
     reviewed_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     reviewed_at    = Column(DateTime(timezone=True), nullable=True)
+
+
+
+# ── M36.S03.T004 visual workflow designer ────────────────────────────────────────
+
+class CRMWorkflow(Base, TimestampMixin):
+    __tablename__ = "crm_workflows"
+
+    id                   = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name                 = Column(String(150), nullable=False, unique=True)
+    trigger_event        = Column(String(20), nullable=True)
+    published_version_id = Column(UUID(as_uuid=True), nullable=True)
+    enqueued_until       = Column(DateTime(timezone=True), nullable=True)
+    created_by           = Column(String(100), nullable=True)
+
+
+class CRMWorkflowVersion(Base):
+    __tablename__ = "crm_workflow_versions"
+    __table_args__ = (UniqueConstraint("workflow_id", "version_no", name="uq_crm_workflow_version_no"),)
+
+    id              = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    workflow_id     = Column(UUID(as_uuid=True), ForeignKey("crm_workflows.id", ondelete="CASCADE"), nullable=False, index=True)
+    version_no      = Column(Integer, nullable=False)
+    graph           = Column(JSON, nullable=False)
+    status          = Column(String(10), nullable=False, default="DRAFT")   # DRAFT | PUBLISHED | ARCHIVED
+    created_by      = Column(String(100), nullable=True)
+    created_at      = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    published_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    published_at    = Column(DateTime(timezone=True), nullable=True)
+
+
+class CRMWorkflowRun(Base):
+    __tablename__ = "crm_workflow_runs"
+    __table_args__ = (UniqueConstraint("version_id", "event_key", name="uq_crm_workflow_run_event"),)
+
+    id            = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    version_id    = Column(UUID(as_uuid=True), ForeignKey("crm_workflow_versions.id", ondelete="CASCADE"), nullable=False, index=True)
+    crm_record_id = Column(UUID(as_uuid=True), ForeignKey("crm_records.id", ondelete="CASCADE"), nullable=False)
+    event_key     = Column(String(120), nullable=False)
+    current_node  = Column(String(40), nullable=True)
+    waiting_node  = Column(String(40), nullable=True)
+    status        = Column(String(16), nullable=False, default="RUNNING")   # RUNNING | WAITING | WAITING_APPROVAL | DONE | FAILED
+    resume_at     = Column(DateTime(timezone=True), nullable=True, index=True)
+    log           = Column(JSON, nullable=False, default=list)
+    created_at    = Column(DateTime(timezone=True), nullable=False)
+    finished_at   = Column(DateTime(timezone=True), nullable=True)

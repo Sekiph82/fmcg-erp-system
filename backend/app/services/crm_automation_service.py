@@ -267,6 +267,10 @@ async def run_crm_automation(interval: float = 15.0) -> None:
             async with AsyncSessionLocal() as db:
                 await enqueue(db)
                 await process(db)
+            from app.services import crm_workflow_service as designer   # published visual workflows (M36.S03.T004)
+            async with AsyncSessionLocal() as db:
+                await designer.enqueue(db)
+                await designer.process(db)
         except asyncio.CancelledError:
             raise
         except Exception:
