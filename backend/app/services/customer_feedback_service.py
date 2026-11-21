@@ -72,6 +72,9 @@ async def answer(db: AsyncSession, customer_id: uuid.UUID, survey_id: uuid.UUID,
                  score: int, comment: Optional[str], channel: str) -> NPSResponse:
     if not 0 <= score <= 10:
         raise FeedbackError(422, "Score must be between 0 and 10.")
+    from app.models.sales import Customer
+    # one answer at a time per customer: a double click or retry cannot record the same survey twice
+    await db.execute(select(Customer.id).where(Customer.id == customer_id).with_for_update())
     offered = {(o["survey_id"], o["so_id"]) for o in await open_surveys(db, customer_id)}
     if (str(survey_id), str(so_id) if so_id else None) not in offered:
         raise FeedbackError(409, "This survey is not open for you (already answered or not available).")

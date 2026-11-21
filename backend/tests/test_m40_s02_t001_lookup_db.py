@@ -48,12 +48,12 @@ async def test_lookup_kinds_search_and_rights():
             rows = await lookup.search(kind, None, 5, db, admin)
             assert all(set(r) == {"id", "label", "sub"} for r in rows), kind
 
-        lot = Lot(lot_number=f"POVU-LOT-{s}", batch_number=f"B-{s}")
+        lot = Lot(lot_number=f"POVU_LOT-{s}", batch_number=f"B-{s}")
         db.add(lot)
         await db.commit()
-        found = await lookup.search("lot", f"lot-{s}", 20, db, _user("inventory.view"))
-        assert [r["label"] for r in found] == [f"POVU-LOT-{s}"] and found[0]["id"] == str(lot.id)
-        assert (await lookup.one("lot", lot.id, db, _user("quality.view")))["label"] == f"POVU-LOT-{s}"
+        found = await lookup.search("lot", f"u_lot-{s}", 20, db, _user("inventory.view"))   # underscores searchable
+        assert [r["label"] for r in found] == [f"POVU_LOT-{s}"] and found[0]["id"] == str(lot.id)
+        assert (await lookup.one("lot", lot.id, db, _user("quality.view")))["label"] == f"POVU_LOT-{s}"
         assert await lookup.search("lot", "%", 20, db, admin) is not None        # LIKE wildcards are neutralised
 
         with pytest.raises(HTTPException) as e:                                # no module right → 403
@@ -61,6 +61,9 @@ async def test_lookup_kinds_search_and_rights():
         assert e.value.status_code == 403
         with pytest.raises(HTTPException) as e:
             await lookup.search("candidate", None, 5, db, _user("sales.view"))
+        assert e.value.status_code == 403
+        with pytest.raises(HTTPException) as e:                                # claims: only finance/HR see everyone's
+            await lookup.search("expense", None, 5, db, _user("expenses.view"))
         assert e.value.status_code == 403
         with pytest.raises(HTTPException) as e:
             await lookup.search("not_a_kind", None, 5, db, admin)

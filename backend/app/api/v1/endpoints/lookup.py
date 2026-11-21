@@ -39,7 +39,7 @@ KINDS: dict[str, tuple[str, tuple[str, ...], tuple[str, ...], tuple[str, ...]]] 
     "location": ("app.models.wms:StorageLocation", ("code", "name"), ("name", "barcode"), ("inventory.view", "wms.view")),
     "contract": ("app.models.contracts:Contract", ("contract_name", "contract_code"), ("contract_code", "status"), ("contracts.view", "sales.view", "procurement.view")),
     "crm_record": ("app.models.crm:CRMRecord", ("company_name", "lead_code", "opportunity_code"), ("contact_person_name", "status"), ("crm.view",)),
-    "expense": ("app.models.expenses:ExpenseClaim", ("claim_no",), ("status", "period_start"), ("expenses.view", "finance.view", "hr.view")),
+    "expense": ("app.models.expenses:ExpenseClaim", ("claim_no",), ("status", "period_start"), ("finance.view", "hr.view")),  # others see only own claims
     "bom": ("app.models.bom:AdvancedBOM", ("bom_name", "bom_code"), ("bom_code", "product_name", "version_no"), ("bom.view", "production.view")),
     "mpesa_transaction": ("app.models.sales:MpesaTransaction", ("mpesa_reference", "phone_number"), ("status",), ("finance.view", "sales.view")),
     "cash_transaction": ("app.models.finance:CashTransaction", ("reference", "source_ref"), ("mpesa_name", "status"), ("finance.view",)),
@@ -86,8 +86,9 @@ async def search(kind: str, search: Optional[str] = Query(None, max_length=100),
         raise HTTPException(403, "Required permission is missing.")
     q = select(model)
     if search and search.strip():
-        like = f"%{search.strip().replace('%', '').replace('_', '')}%"
-        q = q.where(or_(*[cast(getattr(model, c), String).ilike(like) for c in label_cols]))
+        term = search.strip().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+        like = f"%{term}%"
+        q = q.where(or_(*[cast(getattr(model, c), String).ilike(like, escape="\\") for c in label_cols]))
     order = getattr(model, "updated_at", None) or getattr(model, "created_at", None)
     if order is not None:
         q = q.order_by(order.desc())

@@ -45,14 +45,15 @@ export function EntityPicker({ kind, value, onChange, placeholder, required, lab
   const [rows, setRows] = useState<Row[]>([]);
   const [open, setOpen] = useState(false);
   const [chosen, setChosen] = useState<string>("");
+  const [chosenFor, setChosenFor] = useState<string>("");   // the id the shown label belongs to
   const listId = useId();
   const box = useRef<HTMLDivElement>(null);
 
   useEffect(() => {  // show the name of an id set from outside (edit forms, prefilled links)
-    if (!value) { setChosen(""); return; }
-    if (chosen) return;
-    apiClient.get(`${cfg.url}/${value}`).then((r) => setChosen(cfg.label(r.data as Row) || value.slice(0, 8)))
-      .catch(() => setChosen(value.slice(0, 8)));
+    if (!value) { setChosen(""); setChosenFor(""); return; }
+    if (chosenFor === value) return;
+    apiClient.get(`${cfg.url}/${value}`).then((r) => { setChosen(cfg.label(r.data as Row) || value.slice(0, 8)); setChosenFor(value); })
+      .catch(() => { setChosen(value.slice(0, 8)); setChosenFor(value); });
   }, [value]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -87,7 +88,7 @@ export function EntityPicker({ kind, value, onChange, placeholder, required, lab
         <ul id={listId} role="listbox" className="absolute z-50 mt-1 w-full max-h-60 overflow-auto rounded border bg-white shadow-lg text-sm">
           {shown.length === 0 ? <li className="px-3 py-2 text-gray-400">No matches</li> : shown.map((r) => (
             <li key={s(r.id)} role="option" aria-selected={s(r.id) === value}
-              onMouseDown={(e) => { e.preventDefault(); onChange(s(r.id)); setChosen(cfg.label(r)); setOpen(false); }}
+              onMouseDown={(e) => { e.preventDefault(); onChange(s(r.id)); setChosen(cfg.label(r)); setChosenFor(s(r.id)); setOpen(false); }}
               className="px-3 py-2 cursor-pointer hover:bg-blue-50">
               <span className="block text-gray-900">{cfg.label(r) || s(r.id).slice(0, 8)}</span>
               {cfg.sub?.(r) && <span className="block text-xs text-gray-500">{cfg.sub(r)}</span>}
