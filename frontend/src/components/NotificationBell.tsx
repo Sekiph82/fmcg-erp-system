@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { disablePush, enablePush, pushState } from "@/lib/webPush";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { apiClient } from "@/lib/api";
@@ -203,6 +204,7 @@ export function NotificationBell({ compact = false }: Props) {
             )}
           </div>
 
+          <PushToggle />
           {/* Footer */}
           <div className="px-4 py-2.5 border-t border-white/[0.08]">
             <Link
@@ -215,6 +217,30 @@ export function NotificationBell({ compact = false }: Props) {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+
+// "Notify me on this phone" (M37.S03.T001): Web Push for the installed app.
+function PushToggle() {
+  const [state, setState] = useState<"unsupported" | "denied" | "on" | "off" | "busy">("off");
+  const [err, setErr] = useState<string | null>(null);
+  useEffect(() => { pushState().then(setState).catch(() => setState("unsupported")); }, []);
+  if (state === "unsupported") return null;
+  const flip = async () => {
+    setErr(null);
+    const was = state; setState("busy");
+    try { if (was === "on") { await disablePush(); setState("off"); } else { await enablePush(); setState("on"); } }
+    catch (e) { setErr((e as Error).message); setState(await pushState().catch(() => "off" as const)); }
+  };
+  return (
+    <div className="px-4 py-2 border-t border-white/[0.08] text-[11px]">
+      {state === "denied" ? <p className="text-slate-400">Phone notifications are blocked in this browser&apos;s settings.</p> : (
+        <button onClick={flip} disabled={state === "busy"} className="text-cyan-400 hover:text-cyan-300 disabled:opacity-50">
+          {state === "on" ? "Stop notifications on this device" : "Notify me on this device"}
+        </button>)}
+      {err && <p className="text-red-400 mt-1">{err}</p>}
     </div>
   );
 }

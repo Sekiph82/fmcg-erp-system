@@ -95,14 +95,11 @@ export default function MobileHubPage() {
 
       {/* Info box */}
       <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-800">
-        <p className="font-semibold mb-1">Push Notification Setup</p>
+        <p className="font-semibold mb-1">Phone notifications</p>
         <p>
-          Register devices via the{" "}
-          <code className="bg-amber-100 px-1 rounded">POST /api/v1/mobile/devices</code> endpoint from your
-          native app. Supply <code className="bg-amber-100 px-1 rounded">platform</code>,{" "}
-          <code className="bg-amber-100 px-1 rounded">device_id</code>, and your FCM/APNs{" "}
-          <code className="bg-amber-100 px-1 rounded">token</code>. Wire FCM/APNs SDK on the server side
-          to send real push notifications via{" "}
+          Each person turns notifications on from the bell menu (&quot;Notify me on this device&quot;) in the installed app.
+          Approvals, assignments and other in-app notifications then also arrive on that phone (Web Push; iPhone needs the
+          app added to the Home Screen, iOS 16.4+). Administrators can send a message with{" "}
           <code className="bg-amber-100 px-1 rounded">POST /api/v1/mobile/push/send</code>.
         </p>
       </div>

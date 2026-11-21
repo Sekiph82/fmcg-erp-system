@@ -43,3 +43,24 @@ self.addEventListener("fetch", (event) => {
     );
   }
 });
+
+
+// Web Push (M37.S03.T001): show the message; a tap opens (or focuses) the app at its link.
+self.addEventListener("push", (event) => {
+  let data = {};
+  try { data = event.data ? event.data.json() : {}; } catch (e) { data = { title: "POVU ERP", body: event.data ? event.data.text() : "" }; }
+  event.waitUntil(self.registration.showNotification(data.title || "POVU ERP", {
+    body: data.body || "", tag: data.tag || undefined, icon: "/icons/icon-192.png", badge: "/icons/icon-192.png",
+    data: { url: data.url || "/dashboard" },
+  }));
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = new URL((event.notification.data && event.notification.data.url) || "/dashboard", self.location.origin);
+  if (url.origin !== self.location.origin) return; // never open other sites from a push
+  event.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((wins) => {
+    for (const w of wins) { if ("focus" in w) { w.navigate(url.href); return w.focus(); } }
+    return self.clients.openWindow(url.href);
+  }));
+});
