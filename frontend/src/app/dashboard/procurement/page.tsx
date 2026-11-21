@@ -4,7 +4,6 @@ import dynamic from "next/dynamic";
 import { ModuleWorkspace } from "@/components/workspace";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
 import { procurementApi, PRStatus } from "@/lib/procurement";
 import { materialsApi } from "@/lib/materials";
 import { suppliersApi } from "@/lib/suppliers";
@@ -53,7 +52,6 @@ const emptyLine = (n: number): LineForm => ({
 
 function ProcurementPRsTab() {
   const qc = useQueryClient();
-  const router = useRouter();
   const { toasts, toast, dismiss } = useToast();
   const [open, setOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<PRStatus | "">("");
@@ -61,6 +59,28 @@ function ProcurementPRsTab() {
     pr_no: "", department: "", required_date: "", notes: "",
   });
   const [lines, setLines] = useState<LineForm[]>([emptyLine(1)]);
+  // PR workflow (M40.S02.T001): submit → approve/reject → convert to a purchase order
+  const [convertPr, setConvertPr] = useState<{ id: string; pr_no: string } | null>(null);
+  const [conv, setConv] = useState({ po_no: "", supplier_id: "", order_date: new Date().toISOString().slice(0, 10), expected_delivery_date: "", currency: "KES" });
+  const act = useMutation({
+    mutationFn: ({ id, step, reason }: { id: string; step: "submit" | "approve" | "reject"; reason?: string }) =>
+      step === "submit" ? procurementApi.submitPR(id) : procurementApi.approvePR(id, step === "approve", reason),
+    onSuccess: (pr, v) => {
+      qc.invalidateQueries({ queryKey: ["prs"] });
+      toast("success", v.step === "submit" ? "Sent for approval" : v.step === "approve" ? "Approved" : "Rejected", pr.pr_no);
+    },
+    onError: (e) => toast("error", "Failed", extractApiError(e)),
+  });
+  const convert = useMutation({
+    mutationFn: () => procurementApi.convertPRToPO(convertPr!.id, conv),
+    onSuccess: (po) => {
+      qc.invalidateQueries({ queryKey: ["prs"] });
+      qc.invalidateQueries({ queryKey: ["pos"] });
+      setConvertPr(null);
+      toast("success", "Purchase order created", `${po.po_no} is a draft in Purchase Orders, waiting for approval.`);
+    },
+    onError: (e) => toast("error", "Failed", extractApiError(e)),
+  });
 
   const { data: prs = [], isLoading } = useQuery({
     queryKey: ["prs", statusFilter],
@@ -76,7 +96,7 @@ function ProcurementPRsTab() {
   const { data: suppliers = [] } = useQuery({
     queryKey: ["suppliers"],
     queryFn: () => suppliersApi.list(0, 200),
-    enabled: open,
+    enabled: open || !!convertPr,
   });
 
   const matOpts = [{ value: "", label: "Select material…" }, ...materials.map((m) => ({ value: m.id, label: `${m.code} — ${m.name}` }))];
@@ -137,9 +157,7 @@ function ProcurementPRsTab() {
             {
               header: "PR No",
               accessor: (p) => (
-                <button className="font-mono text-xs font-medium text-indigo-600 hover:underline" onClick={() => router.push(`/dashboard/procurement/${p.id}`)}>
-                  {p.pr_no}
-                </button>
+                <span className="font-mono text-xs font-medium text-gray-900">{p.pr_no}</span>
               ),
             },
             { header: "Requester", accessor: (p) => p.requester_name ?? "—" },
@@ -162,7 +180,18 @@ function ProcurementPRsTab() {
             {
               header: "",
               accessor: (p) => (
-                <Button variant="secondary" onClick={() => router.push(`/dashboard/procurement/${p.id}`)}>View</Button>
+                <div className="flex gap-1.5 justify-end">
+                  {p.status === "DRAFT" && p.access?.can_edit !== false && (
+                    <Button variant="secondary" loading={act.isPending} onClick={() => act.mutate({ id: p.id, step: "submit" })}>Submit</Button>
+                  )}
+                  {p.status === "PENDING_APPROVAL" && p.access?.can_approve && (<>
+                    <Button loading={act.isPending} onClick={() => act.mutate({ id: p.id, step: "approve" })}>Approve</Button>
+                    <Button variant="secondary" onClick={() => { const reason = window.prompt("Reason for rejecting"); if (reason) act.mutate({ id: p.id, step: "reject", reason }); }}>Reject</Button>
+                  </>)}
+                  {p.status === "APPROVED" && p.access?.can_convert && (
+                    <Button variant="secondary" onClick={() => { setConv((c) => ({ ...c, po_no: `PO-${p.pr_no.replace(/^PR-?/, "")}` })); setConvertPr({ id: p.id, pr_no: p.pr_no }); }}>Create PO</Button>
+                  )}
+                </div>
               ),
             },
             ]}
@@ -217,6 +246,22 @@ function ProcurementPRsTab() {
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" type="button" onClick={() => setOpen(false)}>Cancel</Button>
             <Button type="submit" loading={create.isPending} disabled={!form.pr_no || !form.required_date}>Create PR</Button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal open={!!convertPr} onClose={() => setConvertPr(null)} title={`Create purchase order from ${convertPr?.pr_no ?? ""}`}>
+        <form onSubmit={(e) => { e.preventDefault(); convert.mutate(); }} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <Input label="PO No *" value={conv.po_no} onChange={(e) => setConv((c) => ({ ...c, po_no: e.target.value }))} required />
+            <Select label="Supplier *" options={suppOpts.map((o) => o.value ? o : { value: "", label: "Select supplier…" })} value={conv.supplier_id} onChange={(e) => setConv((c) => ({ ...c, supplier_id: e.target.value }))} />
+            <Input label="Order date *" type="date" value={conv.order_date} onChange={(e) => setConv((c) => ({ ...c, order_date: e.target.value }))} required />
+            <Input label="Expected delivery *" type="date" value={conv.expected_delivery_date} onChange={(e) => setConv((c) => ({ ...c, expected_delivery_date: e.target.value }))} required />
+            <Input label="Currency" value={conv.currency} onChange={(e) => setConv((c) => ({ ...c, currency: e.target.value.toUpperCase() }))} />
+          </div>
+          <div className="flex justify-end gap-3 pt-2">
+            <Button variant="secondary" type="button" onClick={() => setConvertPr(null)}>Cancel</Button>
+            <Button type="submit" loading={convert.isPending} disabled={!conv.po_no || !conv.supplier_id || !conv.expected_delivery_date}>Create PO</Button>
           </div>
         </form>
       </Modal>

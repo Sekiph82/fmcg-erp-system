@@ -27,6 +27,7 @@ export interface ProcurementAccessHint {
   can_edit: boolean;
   can_delete: boolean;
   can_approve: boolean;
+  can_convert?: boolean;
   can_receive: boolean;
   can_post: boolean;
   can_cancel: boolean;

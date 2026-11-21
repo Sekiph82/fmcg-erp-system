@@ -292,10 +292,21 @@ def can_access_scope(user: Any, module: str, action: str, scope_type: str, scope
     if has_permission(user, permission_code(module, f"{action}_all")):
         return True
 
-    own_permissions = _own_permission_candidates(module, action, scope_type)
+    plain = permission_code(module, action)
+    if has_permission(user, plain) and not _has_any_scope(user):
+        return True   # no scopes assigned at all: a plain right is company-wide (single-site default)
+    own_permissions = [plain, *_own_permission_candidates(module, action, scope_type)]
     if not has_any_permission(user, own_permissions):
         return False
     return can_perform_in_scope(user, scope_type, scope_id, action)
+
+
+def _has_any_scope(user: Any) -> bool:
+    """Scopes restrict plain rights; a user with none (own or via roles) is not scope-limited."""
+    if any(getattr(s, "is_active", True) for s in getattr(user, "access_scopes", None) or []):
+        return True
+    return any(getattr(s, "is_active", True) for r in getattr(user, "roles", None) or [] if getattr(r, "is_active", False)
+               for s in getattr(r, "access_scopes", None) or [])
 
 
 def can_view_scope(user: Any, module: str, scope_type: str, scope_id: Any) -> bool:
@@ -356,6 +367,8 @@ def can_modify_record(user: Any, module: str, action: str, record: Any) -> bool:
         return False
     if has_permission(user, permission_code(module, f"{action}_all")):
         return True
+    if has_permission(user, permission_code(module, action)) and not _has_any_scope(user):
+        return True   # unscoped user with the plain right (records without scope fields included)
     scopes = resolve_record_scopes(record, module)
     return any(can_modify_scope(user, module, action, scope_type, scope_id) for scope_type, scope_id in scopes)
 

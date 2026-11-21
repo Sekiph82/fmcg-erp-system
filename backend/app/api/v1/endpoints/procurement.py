@@ -206,7 +206,8 @@ async def convert_pr_to_po(
     pr = await crud.get_pr(db, pr_id)
     if not pr:
         raise HTTPException(404, "PR not found")
-    _require_procurement_action(current_user, pr, "create")
+    if not svc.can_create_po_from(current_user, pr):
+        raise HTTPException(403, forbidden_detail("You cannot create purchase orders in this request's scope."))
     supplier = await db.get(Supplier, body.supplier_id)
     blocked_reason = svc.supplier_procurement_block_reason(
         supplier,

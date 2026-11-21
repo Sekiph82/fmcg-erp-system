@@ -353,4 +353,6 @@ async def _work_links(db: AsyncSession, user) -> dict[str, bool]:
     my_jobs = has_permission(user, "maintenance.edit") or bool((await db.execute(select(
         exists().where(PMWorkOrder.technician_id == user.id)
         | exists().where(BreakdownRecord.assigned_to_id == user.id)))).scalar())   # technicians (M40.S01.T002)
-    return {"field_app": field, "my_hr": employee, "my_jobs": my_jobs, "superuser": bool(user.is_superuser)}
+    from app.services.approval_inbox_service import can_decide_any
+    return {"field_app": field, "my_hr": employee, "my_jobs": my_jobs, "my_approvals": can_decide_any(user),
+            "superuser": bool(user.is_superuser)}

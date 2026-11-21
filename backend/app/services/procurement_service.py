@@ -270,6 +270,8 @@ def build_procurement_access_hint(user, record) -> ProcurementAccessHint:
         "can_cancel": can_change_procurement_status(record, "cancel") and can_modify_record(user, "procurement", "cancel", record),
         "can_export": can_modify_record(user, "procurement", "export", record),
         "can_import": can_modify_record(user, "procurement", "import", record),
+        "can_convert": _status_value(record) == "APPROVED" and procurement_document_key(record) == "pr"
+        and can_create_po_from(user, record),
     }
     mutation_allowed = any(actions.values())
     reason = None
@@ -281,6 +283,16 @@ def build_procurement_access_hint(user, record) -> ProcurementAccessHint:
         reason=reason,
         **actions,
     )
+
+
+def can_create_po_from(user, pr) -> bool:
+    """Turning an approved request into a purchase order = creating a new procurement record in the request's scope.
+    (The request itself is APPROVED, so a status-locked "create" check on it would block everyone.)"""
+    from types import SimpleNamespace
+
+    target = SimpleNamespace(company_id=pr.company_id, branch_id=pr.branch_id, cost_center_id=pr.cost_center_id,
+                             department=pr.department, status=None)
+    return can_modify_record(user, "procurement", "create", target)
 
 
 def ensure_procurement_action_allowed(user, record, action: str) -> None:

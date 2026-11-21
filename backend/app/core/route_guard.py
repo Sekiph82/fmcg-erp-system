@@ -124,6 +124,14 @@ def _body_source(fn) -> str:
     return "\n".join(ast.get_source_segment(src, n) or "" for n in body)
 
 
+_RECORD_CHECK = re.compile(r"\b(_require_\w+_action|ensure_\w+_action_allowed|can_modify_record|can_modify_scope|can_access_scope)\s*\(")
+
+
+def has_record_check(route: APIRoute) -> bool:
+    """The handler checks the user's right on the record itself (scope-aware), so scoped approval rights may pass."""
+    return bool(_RECORD_CHECK.search(_body_source(route.endpoint)))
+
+
 def has_own_check(route: APIRoute, router_deps: list) -> bool:
     """True when the route already enforces a permission: a permission dependency, or a check in its body."""
     names = [n for n in _dep_names(route.dependant, []) if n not in _BASE_DEPS]
@@ -138,7 +146,7 @@ def _literal_segments(request: Request) -> list[str]:
     return [seg for seg in path.split("/") if seg and not seg.startswith("{")]
 
 
-def module_guard(modules: tuple[str, ...], read_extra: tuple[str, ...] = ()):
+def module_guard(modules: tuple[str, ...], read_extra: tuple[str, ...] = (), scoped_approval: bool = False):
     from app.core.deps import get_current_user
 
     mods = frozenset(modules)
@@ -165,7 +173,8 @@ def module_guard(modules: tuple[str, ...], read_extra: tuple[str, ...] = ()):
             if module not in need_mods:
                 continue
             if approval:
-                if action in APPROVAL_ACTIONS:
+                # approve_own_scope / approve_own_region … only where the handler then checks the record's scope
+                if action in APPROVAL_ACTIONS or (scoped_approval and action.startswith(("approve_", "post_"))):
                     return current_user
             elif read or not (action.startswith("view") or action == "export"):
                 return current_user

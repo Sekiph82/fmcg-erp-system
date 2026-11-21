@@ -33,6 +33,7 @@ class ProcurementAccessHint(BaseModel):
     can_cancel: bool = False
     can_export: bool = False
     can_import: bool = False
+    can_convert: bool = False   # approved request → purchase order (M40.S02.T001)
     view_only: bool = False
     reason: Optional[str] = None
 

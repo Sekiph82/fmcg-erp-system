@@ -61,6 +61,10 @@ async def test_review_fixes():
             # approvals need an approval right, not just any write right (segregation of duties)
             assert await call(_user("sales.create"), "POST", f"/commissions/transactions/{fake}/approve") == 403
             assert await call(_user("sales.approve"), "POST", f"/commissions/transactions/{fake}/approve") in (404, 400, 422)
+            # scoped approval rights pass only where the handler checks the record's scope itself
+            assert await call(_user("procurement.approve_own_scope"), "POST", f"/procurement/pr/{fake}/approve",
+                              json={"approve": True}) == 404
+            assert await call(_user("sales.approve_own_region"), "POST", f"/commissions/transactions/{fake}/approve") == 403
             assert await call(_user("finance.create"), "POST", "/fixed-assets/depreciation/post", json={}) == 403
             # MRP results were left open by an incidental word match before; now they need a planning-type right
             assert await call(_user("crm.view"), "GET", f"/mrp/runs/{fake}/results") == 403

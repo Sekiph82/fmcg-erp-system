@@ -55,6 +55,22 @@ async def my_pending_approvals(
     return [_build_request(r) for r in requests]
 
 
+@router.get("/inbox")
+async def approval_inbox(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Everything waiting for this user's decision across modules (filtered by their approve rights), plus
+    approval-engine steps assigned to their role."""
+    from app.services import approval_inbox_service as inbox_svc
+
+    data = await inbox_svc.inbox(db, current_user)
+    engine = await svc.get_pending_for_user(db, current_user.id)
+    if engine:
+        data["groups"].insert(0, {"key": "approval_engine", "label": "Approval workflow", "count": len(engine),
+                                  "link": "/dashboard/my-approvals?engine=1",
+                                  "items": [{"id": str(r.id), "ref": r.object_ref, "since": r.created_at} for r in engine[:20]]})
+        data["total"] += len(engine)
+    return data
+
+
 @router.get("/all", response_model=List[ApprovalRequestRead],
             dependencies=[Depends(require_permission("admin", "view"))])
 async def all_approval_requests(

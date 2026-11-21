@@ -272,7 +272,9 @@ async def list_documents(
 
 
 @router.post("/documents/{doc_id}/review", response_model=SPDocumentOut)
-async def review_document(doc_id: uuid.UUID, payload: SPDocumentReview, db: AsyncSession = Depends(get_db)):
+async def review_document(doc_id: uuid.UUID, payload: SPDocumentReview, db: AsyncSession = Depends(get_db),
+                          staff=Depends(_staff_access)):
+    payload.reviewed_by = staff.full_name or staff.username   # recorded under the signed-in reviewer, not typed text
     doc = await svc.review_document(db, doc_id, payload)
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")

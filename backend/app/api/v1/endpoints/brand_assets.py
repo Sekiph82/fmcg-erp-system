@@ -86,7 +86,7 @@ class AssetIn(BaseModel):
 
 
 class StageApproveIn(BaseModel):
-    approved_by: str
+    approved_by: Optional[str] = None   # ignored: the decision is recorded under the signed-in user
     notes: Optional[str] = None
 
 
@@ -204,7 +204,7 @@ async def approve_stage(
     stage_id: str,
     payload: StageApproveIn,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    current_user=Depends(get_current_user),
 ):
     r = await db.execute(
         select(AssetApprovalStage).where(
@@ -215,8 +215,10 @@ async def approve_stage(
     stage = r.scalar_one_or_none()
     if not stage:
         raise HTTPException(404, "Stage not found")
+    if stage.status != ApprovalStageStatus.PENDING:
+        raise HTTPException(409, "This stage was already decided.")
     stage.status = ApprovalStageStatus.APPROVED
-    stage.approved_by = payload.approved_by
+    stage.approved_by = current_user.full_name or current_user.username
     stage.approved_at = datetime.utcnow()
     stage.notes = payload.notes
 
@@ -232,7 +234,7 @@ async def approve_stage(
             asset.status = AssetStatus.PRINT_READY
 
     await db.commit()
-    return {"stage_id": stage_id, "approved": True, "approved_by": payload.approved_by}
+    return {"stage_id": stage_id, "approved": True, "approved_by": stage.approved_by}
 
 
 @router.post("/{asset_id}/stages/{stage_id}/reject")
@@ -241,7 +243,7 @@ async def reject_stage(
     stage_id: str,
     payload: StageApproveIn,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    current_user=Depends(get_current_user),
 ):
     r = await db.execute(
         select(AssetApprovalStage).where(
@@ -252,8 +254,10 @@ async def reject_stage(
     stage = r.scalar_one_or_none()
     if not stage:
         raise HTTPException(404, "Stage not found")
+    if stage.status != ApprovalStageStatus.PENDING:
+        raise HTTPException(409, "This stage was already decided.")
     stage.status = ApprovalStageStatus.REJECTED
-    stage.approved_by = payload.approved_by
+    stage.approved_by = current_user.full_name or current_user.username
     stage.notes = payload.notes
 
     # Set asset status to IN_REVIEW

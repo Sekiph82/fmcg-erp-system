@@ -394,17 +394,24 @@ async def list_extensions(
 @router.post("/extensions/{ext_id}/approve")
 async def approve_extension(
     ext_id: str,
-    approved_by: str = Query(...),
+    approved_by: Optional[str] = Query(None),   # ignored: recorded under the signed-in user
     db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
 ):
     from app.models.shelf_life import ShelfLifeExtension, ExtensionStatus
     r = await db.execute(select(ShelfLifeExtension).where(ShelfLifeExtension.id == uuid.UUID(ext_id)))
     ext = r.scalar_one_or_none()
     if not ext:
         raise HTTPException(404, "Extension request not found")
+    if ext.status != ExtensionStatus.PENDING:
+        raise HTTPException(409, "This extension request was already decided.")
     ext.status = ExtensionStatus.APPROVED
-    ext.approved_by = approved_by
+    ext.approved_by = current_user.full_name or current_user.username
     ext.approved_at = datetime.utcnow()
+    from app.models.inventory import Lot
+    lot = await db.get(Lot, ext.lot_id)
+    if lot is not None:
+        lot.expiry_date = ext.proposed_expiry   # the approved extension takes effect on the lot (FEFO, expiry checks)
     await db.commit()
     return {"id": ext_id, "status": "APPROVED", "new_expiry": str(ext.proposed_expiry)}
 
@@ -420,6 +427,8 @@ async def reject_extension(
     ext = r.scalar_one_or_none()
     if not ext:
         raise HTTPException(404, "Extension request not found")
+    if ext.status != ExtensionStatus.PENDING:
+        raise HTTPException(409, "This extension request was already decided.")
     ext.status = ExtensionStatus.REJECTED
     ext.rejection_reason = reason
     await db.commit()
