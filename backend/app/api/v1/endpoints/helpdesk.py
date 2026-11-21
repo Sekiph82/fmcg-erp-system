@@ -377,8 +377,10 @@ async def add_comment(
 
 # ── M36.S04.T004 attachments (staff side) ──────────────────────────────────────
 
-_FILES_READ = ("quality.view", "quality.view_all")
-_FILES_WRITE = ("quality.edit", "quality.edit_all")
+# ticket files (customer photos, documents): CRM support, quality and complaints teams; sales sees ticket text only
+_SUPPORT = ("crm", "quality", "consumer_complaints")
+_FILES_READ = tuple(f"{m}.view" for m in _SUPPORT)
+_FILES_WRITE = tuple(f"{m}.edit" for m in _SUPPORT)
 
 
 def _require(user, codes):

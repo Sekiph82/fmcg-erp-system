@@ -1,0 +1,394 @@
+[
+ {
+  "mode": "desktop",
+  "url": "/dashboard/crm?tab=overview",
+  "errors": [],
+  "bad": false,
+  "landed": "/dashboard/crm?tab=overview"
+ },
+ {
+  "mode": "desktop",
+  "url": "/dashboard/crm?tab=pipeline",
+  "errors": [],
+  "bad": false,
+  "landed": "/dashboard/crm?tab=pipeline"
+ },
+ {
+  "mode": "desktop",
+  "url": "/dashboard/crm?tab=leads",
+  "errors": [],
+  "bad": false,
+  "landed": "/dashboard/crm?tab=leads"
+ },
+ {
+  "mode": "desktop",
+  "url": "/dashboard/crm?tab=opportunities",
+  "errors": [],
+  "bad": false,
+  "landed": "/dashboard/crm?tab=opportunities"
+ },
+ {
+  "mode": "desktop",
+  "url": "/dashboard/crm?tab=activities",
+  "errors": [],
+  "bad": false,
+  "landed": "/dashboard/crm?tab=activities"
+ },
+ {
+  "mode": "desktop",
+  "url": "/dashboard/crm?tab=forecast",
+  "errors": [],
+  "bad": false,
+  "landed": "/dashboard/crm?tab=forecast"
+ },
+ {
+  "mode": "desktop",
+  "url": "/dashboard/crm?tab=territory",
+  "errors": [],
+  "bad": false,
+  "landed": "/dashboard/crm?tab=territory"
+ },
+ {
+  "mode": "desktop",
+  "url": "/dashboard/crm?tab=stages",
+  "errors": [],
+  "bad": false,
+  "landed": "/dashboard/crm?tab=stages"
+ },
+ {
+  "mode": "desktop",
+  "url": "/dashboard/crm?tab=win-loss",
+  "errors": [],
+  "bad": false,
+  "landed": "/dashboard/crm?tab=win-loss"
+ },
+ {
+  "mode": "desktop",
+  "url": "/dashboard/crm?tab=funnel",
+  "errors": [],
+  "bad": false,
+  "landed": "/dashboard/crm?tab=funnel"
+ },
+ {
+  "mode": "desktop",
+  "url": "/dashboard/crm?tab=attribution",
+  "errors": [],
+  "bad": false,
+  "landed": "/dashboard/crm?tab=attribution"
+ },
+ {
+  "mode": "desktop",
+  "url": "/dashboard/crm?tab=abm",
+  "errors": [],
+  "bad": false,
+  "landed": "/dashboard/crm?tab=abm"
+ },
+ {
+  "mode": "desktop",
+  "url": "/dashboard/crm?tab=landing",
+  "errors": [],
+  "bad": false,
+  "landed": "/dashboard/crm?tab=landing"
+ },
+ {
+  "mode": "desktop",
+  "url": "/dashboard/crm?tab=insights",
+  "errors": [],
+  "bad": false,
+  "landed": "/dashboard/crm?tab=insights"
+ },
+ {
+  "mode": "desktop",
+  "url": "/dashboard/crm?tab=workflows",
+  "errors": [],
+  "bad": false,
+  "landed": "/dashboard/crm?tab=workflows"
+ },
+ {
+  "mode": "desktop",
+  "url": "/dashboard/crm?tab=scoring",
+  "errors": [],
+  "bad": false,
+  "landed": "/dashboard/crm?tab=scoring"
+ },
+ {
+  "mode": "desktop",
+  "url": "/dashboard/crm?tab=lead-forms",
+  "errors": [],
+  "bad": false,
+  "landed": "/dashboard/crm?tab=lead-forms"
+ },
+ {
+  "mode": "desktop",
+  "url": "/dashboard/crm?tab=automation",
+  "errors": [],
+  "bad": false,
+  "landed": "/dashboard/crm?tab=automation"
+ },
+ {
+  "mode": "desktop",
+  "url": "/dashboard/crm?tab=inbox",
+  "errors": [],
+  "bad": false,
+  "landed": "/dashboard/crm?tab=inbox"
+ },
+ {
+  "mode": "desktop",
+  "url": "/dashboard/crm?tab=outbox",
+  "errors": [],
+  "bad": false,
+  "landed": "/dashboard/crm?tab=outbox"
+ },
+ {
+  "mode": "desktop",
+  "url": "/dashboard/crm?tab=sequences",
+  "errors": [],
+  "bad": false,
+  "landed": "/dashboard/crm?tab=sequences"
+ },
+ {
+  "mode": "desktop",
+  "url": "/dashboard/crm?tab=email-campaigns",
+  "errors": [],
+  "bad": false,
+  "landed": "/dashboard/crm?tab=email-campaigns"
+ },
+ {
+  "mode": "desktop",
+  "url": "/dashboard/crm?tab=loyalty",
+  "errors": [],
+  "bad": false,
+  "landed": "/dashboard/crm?tab=loyalty"
+ },
+ {
+  "mode": "desktop",
+  "url": "/dashboard/crm?tab=nps",
+  "errors": [],
+  "bad": false,
+  "landed": "/dashboard/crm?tab=nps"
+ },
+ {
+  "mode": "desktop",
+  "url": "/dashboard/crm?tab=surveys",
+  "errors": [],
+  "bad": false,
+  "landed": "/dashboard/crm?tab=surveys"
+ },
+ {
+  "mode": "desktop",
+  "url": "/dashboard/helpdesk",
+  "errors": [],
+  "bad": false,
+  "landed": "/dashboard/helpdesk"
+ },
+ {
+  "mode": "desktop",
+  "url": "/dashboard/helpdesk?tab=open",
+  "errors": [],
+  "bad": false,
+  "landed": "/dashboard/helpdesk?tab=open"
+ },
+ {
+  "mode": "desktop",
+  "url": "/dashboard/helpdesk?tab=sla",
+  "errors": [],
+  "bad": false,
+  "landed": "/dashboard/helpdesk?tab=sla"
+ },
+ {
+  "mode": "phone",
+  "url": "/dashboard/crm?tab=overview",
+  "errors": [],
+  "bad": false,
+  "landed": "/dashboard/crm?tab=overview"
+ },
+ {
+  "mode": "phone",
+  "url": "/dashboard/crm?tab=pipeline",
+  "errors": [],
+  "bad": false,
+  "landed": "/dashboard/crm?tab=pipeline"
+ },
+ {
+  "mode": "phone",
+  "url": "/dashboard/crm?tab=leads",
+  "errors": [],
+  "bad": false,
+  "landed": "/dashboard/crm?tab=leads"
+ },
+ {
+  "mode": "phone",
+  "url": "/dashboard/crm?tab=opportunities",
+  "errors": [],
+  "bad": false,
+  "landed": "/dashboard/crm?tab=opportunities"
+ },
+ {
+  "mode": "phone",
+  "url": "/dashboard/crm?tab=activities",
+  "errors": [],
+  "bad": false,
+  "landed": "/dashboard/crm?tab=activities"
+ },
+ {
+  "mode": "phone",
+  "url": "/dashboard/crm?tab=forecast",
+  "errors": [],
+  "bad": false,
+  "landed": "/dashboard/crm?tab=forecast"
+ },
+ {
+  "mode": "phone",
+  "url": "/dashboard/crm?tab=territory",
+  "errors": [],
+  "bad": false,
+  "landed": "/dashboard/crm?tab=territory"
+ },
+ {
+  "mode": "phone",
+  "url": "/dashboard/crm?tab=stages",
+  "errors": [],
+  "bad": false,
+  "landed": "/dashboard/crm?tab=stages"
+ },
+ {
+  "mode": "phone",
+  "url": "/dashboard/crm?tab=win-loss",
+  "errors": [],
+  "bad": false,
+  "landed": "/dashboard/crm?tab=win-loss"
+ },
+ {
+  "mode": "phone",
+  "url": "/dashboard/crm?tab=funnel",
+  "errors": [],
+  "bad": false,
+  "landed": "/dashboard/crm?tab=funnel"
+ },
+ {
+  "mode": "phone",
+  "url": "/dashboard/crm?tab=attribution",
+  "errors": [],
+  "bad": false,
+  "landed": "/dashboard/crm?tab=attribution"
+ },
+ {
+  "mode": "phone",
+  "url": "/dashboard/crm?tab=abm",
+  "errors": [],
+  "bad": false,
+  "landed": "/dashboard/crm?tab=abm"
+ },
+ {
+  "mode": "phone",
+  "url": "/dashboard/crm?tab=landing",
+  "errors": [],
+  "bad": false,
+  "landed": "/dashboard/crm?tab=landing"
+ },
+ {
+  "mode": "phone",
+  "url": "/dashboard/crm?tab=insights",
+  "errors": [],
+  "bad": false,
+  "landed": "/dashboard/crm?tab=insights"
+ },
+ {
+  "mode": "phone",
+  "url": "/dashboard/crm?tab=workflows",
+  "errors": [],
+  "bad": false,
+  "landed": "/dashboard/crm?tab=workflows"
+ },
+ {
+  "mode": "phone",
+  "url": "/dashboard/crm?tab=scoring",
+  "errors": [],
+  "bad": false,
+  "landed": "/dashboard/crm?tab=scoring"
+ },
+ {
+  "mode": "phone",
+  "url": "/dashboard/crm?tab=lead-forms",
+  "errors": [],
+  "bad": false,
+  "landed": "/dashboard/crm?tab=lead-forms"
+ },
+ {
+  "mode": "phone",
+  "url": "/dashboard/crm?tab=automation",
+  "errors": [],
+  "bad": false,
+  "landed": "/dashboard/crm?tab=automation"
+ },
+ {
+  "mode": "phone",
+  "url": "/dashboard/crm?tab=inbox",
+  "errors": [],
+  "bad": false,
+  "landed": "/dashboard/crm?tab=inbox"
+ },
+ {
+  "mode": "phone",
+  "url": "/dashboard/crm?tab=outbox",
+  "errors": [],
+  "bad": false,
+  "landed": "/dashboard/crm?tab=outbox"
+ },
+ {
+  "mode": "phone",
+  "url": "/dashboard/crm?tab=sequences",
+  "errors": [],
+  "bad": false,
+  "landed": "/dashboard/crm?tab=sequences"
+ },
+ {
+  "mode": "phone",
+  "url": "/dashboard/crm?tab=email-campaigns",
+  "errors": [],
+  "bad": false,
+  "landed": "/dashboard/crm?tab=email-campaigns"
+ },
+ {
+  "mode": "phone",
+  "url": "/dashboard/crm?tab=loyalty",
+  "errors": [],
+  "bad": false,
+  "landed": "/dashboard/crm?tab=loyalty"
+ },
+ {
+  "mode": "phone",
+  "url": "/dashboard/crm?tab=nps",
+  "errors": [],
+  "bad": false,
+  "landed": "/dashboard/crm?tab=nps"
+ },
+ {
+  "mode": "phone",
+  "url": "/dashboard/crm?tab=surveys",
+  "errors": [],
+  "bad": false,
+  "landed": "/dashboard/crm?tab=surveys"
+ },
+ {
+  "mode": "phone",
+  "url": "/dashboard/helpdesk",
+  "errors": [],
+  "bad": false,
+  "landed": "/dashboard/helpdesk"
+ },
+ {
+  "mode": "phone",
+  "url": "/dashboard/helpdesk?tab=open",
+  "errors": [],
+  "bad": false,
+  "landed": "/dashboard/helpdesk?tab=open"
+ },
+ {
+  "mode": "phone",
+  "url": "/dashboard/helpdesk?tab=sla",
+  "errors": [],
+  "bad": false,
+  "landed": "/dashboard/helpdesk?tab=sla"
+ }
+]

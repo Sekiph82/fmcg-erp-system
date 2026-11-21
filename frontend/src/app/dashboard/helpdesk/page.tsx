@@ -482,17 +482,17 @@ const HelpdeskTicketsPage   = dynamic(() => import("@/app/dashboard/helpdesk/tic
 
 export default function HelpdeskPage() {
   const tabs = [
-    { key: "all",       label: "All Tickets", permission: "quality.view", content: <HelpdeskAllTab /> },
-    { key: "open",      label: "Open",        permission: "quality.view", content: <HelpdeskOpenPage /> },
-    { key: "escalated", label: "Escalated",   permission: "quality.view", content: <HelpdeskEscalatedPage /> },
-    { key: "sla",       label: "SLA",         permission: "quality.view", content: <HelpdeskSLAPage /> },
-    { key: "tickets",   label: "Tickets",     permission: "quality.view", content: <HelpdeskTicketsPage /> },
+    { key: "all",       label: "All Tickets", permission: "crm.view|sales.view|quality.view|consumer_complaints.view", content: <HelpdeskAllTab /> },
+    { key: "open",      label: "Open",        permission: "crm.view|sales.view|quality.view|consumer_complaints.view", content: <HelpdeskOpenPage /> },
+    { key: "escalated", label: "Escalated",   permission: "crm.view|sales.view|quality.view|consumer_complaints.view", content: <HelpdeskEscalatedPage /> },
+    { key: "sla",       label: "SLA",         permission: "crm.view|sales.view|quality.view|consumer_complaints.view", content: <HelpdeskSLAPage /> },
+    { key: "tickets",   label: "Tickets",     permission: "crm.view|sales.view|quality.view|consumer_complaints.view", content: <HelpdeskTicketsPage /> },
   ];
   return (
     <ModuleWorkspace
       title="Helpdesk"
       description="Support tickets, escalations, SLA tracking"
-      permission="quality.view"
+      permission="crm.view|sales.view|quality.view|consumer_complaints.view"
       tabs={tabs}
       defaultTab="all"
     />
