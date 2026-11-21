@@ -10,7 +10,7 @@ interface Kind { url: string; label: (r: Row) => string; sub?: (r: Row) => strin
 const LOOKUP = ["purchase_order", "goods_receipt", "shipment", "qc_inspection", "asset", "campaign", "promotion", "influencer",
   "delivery_trip", "work_center", "machine", "flow_txn", "candidate", "requisition", "sales_rep", "production_plan", "mrp_run",
   "location", "contract", "crm_record", "expense", "bom", "mpesa_transaction", "cash_transaction", "payroll_period",
-  "count_task", "operator", "work_order", "purchase_invoice", "segment", "gl_account", "utility_asset", "lot"] as const;
+  "count_task", "operator", "work_order", "purchase_invoice", "segment", "gl_account", "utility_asset", "lot", "spare_part"] as const;
 type LookupKind = (typeof LOOKUP)[number];
 function lookupKinds(): Record<LookupKind, Kind> {
   return Object.fromEntries(LOOKUP.map((k) => [k, { url: `/api/v1/lookup/${k}`, label: (r: Row) => s(r.label), sub: (r: Row) => s(r.sub) }])) as Record<LookupKind, Kind>;

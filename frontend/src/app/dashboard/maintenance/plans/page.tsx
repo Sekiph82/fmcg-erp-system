@@ -1,5 +1,6 @@
 "use client";
 
+import { EntityPicker } from "@/components/EntityPicker";
 import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { maintenanceApi, PMPlan, PMPlanSparePartRequirementsReport, PMWorkOrder, PMFrequency, PMStatus } from "@/lib/maintenance";
@@ -409,7 +410,7 @@ function NewPMPlanModal({ assets, onClose, onSubmit, loading }: { assets: { id: 
 
 function NewWOModal({ plans, onClose, onSubmit, loading }: { plans: PMPlan[]; onClose: () => void; onSubmit: (d: object) => void; loading: boolean }) {
   const today = new Date().toISOString().slice(0, 10);
-  const [form, setForm] = useState({ plan_id: "", scheduled_date: today, window_start: "", window_end: "", technician: "" });
+  const [form, setForm] = useState({ plan_id: "", scheduled_date: today, window_start: "", window_end: "", technician: "", technician_id: "" });
   const requirementsQuery = useQuery({
     queryKey: ["maint-plan-spare-parts", form.plan_id],
     queryFn: () => maintenanceApi.getPMPlanSpareParts(form.plan_id),
@@ -463,8 +464,8 @@ function NewWOModal({ plans, onClose, onSubmit, loading }: { plans: PMPlan[]; on
           ) : null)}
           <div className="col-span-2 text-xs text-gray-500">Times are saved as UTC instants after conversion from your browser&apos;s local time.</div>
           <div className="col-span-2">
-            <label className="block text-xs font-medium text-gray-600 mb-1">Technician</label>
-            <input className="w-full border rounded px-3 py-2 text-sm" value={form.technician} onChange={(e) => set("technician", e.target.value)} />
+            <label className="block text-xs font-medium text-gray-600 mb-1">Technician (the job appears on their phone under My Jobs)</label>
+            <EntityPicker kind="user" label="Technician" value={form.technician_id} onChange={(id) => set("technician_id", id)} />
           </div>
         </div>
         <div className="flex gap-2 justify-end">
@@ -473,6 +474,7 @@ function NewWOModal({ plans, onClose, onSubmit, loading }: { plans: PMPlan[]; on
             plan_id: form.plan_id,
             scheduled_date: form.scheduled_date,
             technician: form.technician || null,
+            technician_id: form.technician_id || null,
             window_start: form.window_start ? new Date(form.window_start).toISOString() : null,
             window_end: form.window_end ? new Date(form.window_end).toISOString() : null,
           })}>Schedule</Button>

@@ -142,11 +142,13 @@ class PMWorkOrder(Base, TimestampMixin):
     completed_at = Column(DateTime(timezone=True), nullable=True)
     actual_duration_minutes = Column(Integer, nullable=True)
     technician = Column(String(255), nullable=True)
+    technician_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)  # M40.S01.T002
+    photo_keys = Column(Text, nullable=True)                 # comma-separated storage keys of completion photos
     checklist_notes = Column(Text, nullable=True)            # completion notes per item
     completed_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
     plan = relationship("PMPlan", back_populates="work_orders")
-    completed_by = relationship("User")
+    completed_by = relationship("User", foreign_keys=[completed_by_id])
     spare_part_reservations = relationship(
         "PMWorkOrderSparePartReservation", back_populates="work_order", cascade="all, delete-orphan"
     )
@@ -205,6 +207,8 @@ class BreakdownRecord(Base, TimestampMixin):
     corrective_action = Column(Text, nullable=True)
     reported_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     resolved_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    assigned_to_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)  # M40.S01.T002
+    photo_keys = Column(Text, nullable=True)
 
     asset = relationship("Asset", back_populates="breakdowns")
     downtime_reason = relationship("DowntimeReasonCode", foreign_keys=[reason_code])

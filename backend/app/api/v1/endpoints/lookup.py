@@ -50,6 +50,7 @@ KINDS: dict[str, tuple[str, tuple[str, ...], tuple[str, ...], tuple[str, ...]]] 
     "segment": ("app.models.marketing:CustomerSegment", ("segment_name",), ("segment_type", "region"), ("marketing.view", "crm.view")),
     "gl_account": ("app.models.finance:ChartOfAccount", ("code", "name"), ("name", "account_type"), ("finance.view", "accounting.view")),
     "utility_asset": ("app.models.utility_management:UtilityAsset", ("name", "asset_no"), ("asset_no", "utility_type"), ("utility.view", "utility_management.view", "maintenance.view")),
+    "spare_part": ("app.models.maintenance:SparePart", ("name", "part_no"), ("part_no", "unit"), ("maintenance.view", "maintenance.edit", "inventory.view")),
     "payroll_period": ("app.models.hr:PayrollPeriod", ("period_year", "period_month"), ("status",), ("payroll.view", "hr.view", "finance.view")),
 }
 

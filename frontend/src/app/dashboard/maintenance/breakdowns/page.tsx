@@ -233,7 +233,7 @@ export default function BreakdownsPage() {
 
 function NewBreakdownModal({ assets, reasonCodes, onClose, onSubmit, loading }: { assets: { id: string; name: string; asset_no: string }[]; reasonCodes: DowntimeReasonCode[]; onClose: () => void; onSubmit: (d: object) => void; loading: boolean }) {
   const now = new Date().toISOString().slice(0, 16);
-  const [form, setForm] = useState({ asset_id: "", start_time: now, reason: "", reason_code: "", severity: "MEDIUM", production_order_id: "" });
+  const [form, setForm] = useState({ asset_id: "", start_time: now, reason: "", reason_code: "", severity: "MEDIUM", production_order_id: "", assigned_to_id: "" });
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
   const categories = reasonCodes.filter((reasonCode) => reasonCode.parent_code == null);
 
@@ -285,6 +285,10 @@ function NewBreakdownModal({ assets, reasonCodes, onClose, onSubmit, loading }: 
             <label className="block text-xs font-medium text-gray-600 mb-1">Production order (optional)</label>
             <EntityPicker kind="production_order" label="Production order" value={form.production_order_id} onChange={(id) => set("production_order_id", id)} />
           </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Technician (gets it on My Jobs)</label>
+            <EntityPicker kind="user" label="Technician" value={form.assigned_to_id} onChange={(id) => set("assigned_to_id", id)} />
+          </div>
         </div>
         <div className="flex gap-2 justify-end">
           <Button variant="secondary" onClick={onClose}>Cancel</Button>
@@ -293,6 +297,7 @@ function NewBreakdownModal({ assets, reasonCodes, onClose, onSubmit, loading }: 
             start_time: new Date(form.start_time).toISOString(),
             reason_code: form.reason_code || undefined,
             production_order_id: form.production_order_id || undefined,
+            assigned_to_id: form.assigned_to_id || undefined,
           })}>Log</Button>
         </div>
       </div>

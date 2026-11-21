@@ -76,9 +76,13 @@ export async function apiFetch(input: string, init: RequestInit = {}): Promise<R
   return fetch(url, options);
 }
 
-apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+// File uploads: drop the default JSON content type so the browser sends multipart with its boundary (M40).
+const formDataContentType = (config: InternalAxiosRequestConfig) => {
+  if (typeof FormData !== "undefined" && config.data instanceof FormData) config.headers.delete("Content-Type");
   return config;
-});
+};
+apiClient.interceptors.request.use(formDataContentType);
+apiV1Client.interceptors.request.use(formDataContentType);
 
 const handleResponseError = async (error: AxiosError) => {
     if (error.response?.status === 401) {

@@ -169,6 +169,7 @@ class PMWorkOrderCreate(BaseModel):
     window_start: Optional[datetime] = None
     window_end: Optional[datetime] = None
     technician: Optional[str] = None
+    technician_id: Optional[str] = None   # assigned user: the job shows on their "my work" screen
 
     @model_validator(mode="after")
     def validate_window(self):
@@ -310,6 +311,7 @@ class BreakdownCreate(BaseModel):
     root_cause: Optional[str] = None
     severity: BreakdownSeverity = BreakdownSeverity.MEDIUM
     corrective_action: Optional[str] = None
+    assigned_to_id: Optional[str] = None   # technician who gets it on My Jobs (M40.S01.T002)
 
 
 class BreakdownUpdate(BaseModel):
@@ -321,6 +323,7 @@ class BreakdownUpdate(BaseModel):
     status: Optional[BreakdownStatus] = None
     corrective_action: Optional[str] = None
     resolved_by_id: Optional[str] = None
+    assigned_to_id: Optional[str] = None
 
 
 class BreakdownRead(BaseModel):

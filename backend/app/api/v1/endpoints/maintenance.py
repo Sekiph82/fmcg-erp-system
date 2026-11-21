@@ -673,6 +673,13 @@ async def create_work_order(
     count = count_res.scalar() or 0
     data = body.model_dump()
     data["plan_id"] = uuid.UUID(data["plan_id"])
+    if data.get("technician_id"):  # the assignee must be a real active user; their name is kept for reports
+        tech = await db.get(User, uuid.UUID(data["technician_id"]))
+        if tech is None or not tech.is_active:
+            raise HTTPException(status_code=422, detail="Unknown or inactive technician.")
+        data["technician_id"], data["technician"] = tech.id, data.get("technician") or tech.full_name
+    else:
+        data.pop("technician_id", None)
     try:
         wo = await crud.create_work_order(db, data, svc.next_wo_no(count))
     except LookupError as exc:
@@ -766,6 +773,13 @@ async def create_breakdown(
     data["asset_id"] = uuid.UUID(data["asset_id"])
     if data.get("production_order_id"):
         data["production_order_id"] = uuid.UUID(data["production_order_id"])
+    if data.get("assigned_to_id"):
+        tech = await db.get(User, uuid.UUID(data["assigned_to_id"]))
+        if tech is None or not tech.is_active:
+            raise HTTPException(status_code=422, detail="Unknown or inactive technician.")
+        data["assigned_to_id"] = tech.id
+    else:
+        data.pop("assigned_to_id", None)
     bd = await crud.create_breakdown(db, data, current_user.id, svc.next_bd_no(count))
     await db.commit()
     bd = await crud.get_breakdown(db, bd.id)
@@ -816,6 +830,11 @@ async def update_breakdown(
     update_data = body.model_dump(exclude_none=True)
     if "reason_code" in update_data:
         update_data["reason_code"] = await validate_downtime_reason_code(db, update_data["reason_code"])
+    if "assigned_to_id" in update_data:
+        tech = await db.get(User, uuid.UUID(update_data["assigned_to_id"]))
+        if tech is None or not tech.is_active:
+            raise HTTPException(status_code=422, detail="Unknown or inactive technician.")
+        update_data["assigned_to_id"] = tech.id
     for k, v in update_data.items():
         setattr(bd, k, v)
     await db.flush()
@@ -1022,3 +1041,191 @@ async def report_overdue_pm(
     _=Depends(require_permission("maintenance", "view")),
 ):
     return await svc.overdue_pm_list(db)
+
+
+
+# ── Technician "my work" (M40.S01.T002) ───────────────────────────────────────
+# A technician sees and works only the jobs assigned to them (PM work orders by technician_id, or by name for
+# older rows; breakdowns by assigned_to_id). Starting, completing, photos and spare parts are allowed for the
+# assignee or anyone with maintenance.edit.
+
+from decimal import Decimal  # noqa: E402
+
+from fastapi import File, UploadFile  # noqa: E402
+from pydantic import BaseModel as _BaseModel, Field as _Field  # noqa: E402
+from sqlalchemy import and_ as _and, or_ as _or  # noqa: E402
+
+from app.core.access_control import has_permission as _has_permission  # noqa: E402
+from app.core.deps import get_current_user as _current_user  # noqa: E402
+from app.models.maintenance import (  # noqa: E402
+    Asset as _Asset, BreakdownRecord as _BD, BreakdownStatus as _BDS, PMPlan as _Plan, PMStatus as _PMS,
+    PMWorkOrder as _WO, SparePart as _Spare,
+)
+
+MAX_JOB_PHOTOS = 10
+
+
+def _can_edit_all(user) -> bool:
+    return getattr(user, "is_superuser", False) or _has_permission(user, "maintenance.edit")
+
+
+def _mine_wo(user):
+    return _or(_WO.technician_id == user.id, _and(_WO.technician_id.is_(None), _WO.technician == user.full_name))
+
+
+async def _my_wo(db: AsyncSession, wo_id: uuid.UUID, user, lock: bool = False) -> _WO:
+    q = select(_WO).where(_WO.id == wo_id)
+    wo = (await db.execute(q.with_for_update() if lock else q)).scalar_one_or_none()
+    if wo is None:
+        raise HTTPException(404, "Work order not found")
+    mine = wo.technician_id == user.id or (wo.technician_id is None and wo.technician and wo.technician == user.full_name)
+    if not (mine or _can_edit_all(user)):
+        raise HTTPException(403, "This job is assigned to someone else.")
+    return wo
+
+
+async def _my_bd(db: AsyncSession, bd_id: uuid.UUID, user, lock: bool = False) -> _BD:
+    q = select(_BD).where(_BD.id == bd_id)
+    bd = (await db.execute(q.with_for_update() if lock else q)).scalar_one_or_none()
+    if bd is None:
+        raise HTTPException(404, "Breakdown not found")
+    if not (bd.assigned_to_id == user.id or _can_edit_all(user)):
+        raise HTTPException(403, "This breakdown is assigned to someone else.")
+    return bd
+
+
+@router.get("/my-work")
+async def my_work(db: AsyncSession = Depends(get_db), current_user=Depends(_current_user)):
+    rows = (await db.execute(
+        select(_WO, _Plan, _Asset).join(_Plan, _Plan.id == _WO.plan_id).join(_Asset, _Asset.id == _Plan.asset_id)
+        .where(_mine_wo(current_user), _WO.status.in_([_PMS.PENDING, _PMS.IN_PROGRESS, _PMS.OVERDUE]))
+        .order_by(_WO.scheduled_date))).all()
+    bds = (await db.execute(
+        select(_BD, _Asset).join(_Asset, _Asset.id == _BD.asset_id)
+        .where(_BD.assigned_to_id == current_user.id, _BD.status != _BDS.RESOLVED).order_by(_BD.start_time))).all()
+    return {
+        "work_orders": [{
+            "id": str(w.id), "wo_no": w.wo_no, "status": w.status.value, "scheduled_date": w.scheduled_date.isoformat(),
+            "started_at": w.started_at.isoformat() if w.started_at else None, "plan": p.name if hasattr(p, "name") else None,
+            "checklist": getattr(p, "checklist", None) or getattr(p, "description", None),
+            "asset": a.name, "asset_no": a.asset_no, "asset_id": str(a.id),
+            "photos": len([k for k in (w.photo_keys or "").split(",") if k]),
+        } for w, p, a in rows],
+        "breakdowns": [{
+            "id": str(b.id), "breakdown_no": b.breakdown_no, "status": b.status.value, "severity": b.severity.value,
+            "reason": b.reason, "since": b.start_time.isoformat(), "asset": a.name, "asset_no": a.asset_no, "asset_id": str(a.id),
+            "photos": len([k for k in (b.photo_keys or "").split(",") if k]),
+        } for b, a in bds],
+    }
+
+
+class _DoneIn(_BaseModel):
+    notes: str = _Field(min_length=3, max_length=5000)
+    duration_minutes: Optional[int] = _Field(None, ge=0, le=24 * 60)
+
+
+class _FixIn(_BaseModel):
+    root_cause: str = _Field(min_length=3, max_length=5000)
+    corrective_action: str = _Field(min_length=3, max_length=5000)
+
+
+class _SpareIn(_BaseModel):
+    spare_part_id: uuid.UUID
+    quantity: Decimal = _Field(gt=Decimal("0"), max_digits=16, decimal_places=4)
+
+
+@router.post("/my-work/work-orders/{wo_id}/start")
+async def my_start(wo_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user=Depends(_current_user)):
+    wo = await _my_wo(db, wo_id, current_user, lock=True)
+    if wo.status not in (_PMS.PENDING, _PMS.OVERDUE):
+        raise HTTPException(409, f"Work order is {wo.status.value.lower().replace('_', ' ')}.")
+    wo.status, wo.started_at = _PMS.IN_PROGRESS, datetime.now(timezone.utc)
+    await db.commit()
+    return {"id": str(wo.id), "status": wo.status.value}
+
+
+@router.post("/my-work/work-orders/{wo_id}/complete")
+async def my_complete(wo_id: uuid.UUID, body: _DoneIn, db: AsyncSession = Depends(get_db), current_user=Depends(_current_user)):
+    wo = await _my_wo(db, wo_id, current_user, lock=True)
+    if wo.status != _PMS.IN_PROGRESS:
+        raise HTTPException(409, "Start the job before completing it.")
+    now = datetime.now(timezone.utc)
+    minutes = body.duration_minutes if body.duration_minutes is not None else (
+        int((now - wo.started_at).total_seconds() // 60) if wo.started_at else None)
+    await crud.complete_work_order(db, wo, {"checklist_notes": body.notes, "completed_at": now,
+                                            "actual_duration_minutes": minutes}, current_user.id)
+    await db.commit()
+    return {"id": str(wo.id), "status": "COMPLETED"}
+
+
+@router.post("/my-work/breakdowns/{bd_id}/start")
+async def my_bd_start(bd_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user=Depends(_current_user)):
+    bd = await _my_bd(db, bd_id, current_user, lock=True)
+    if bd.status != _BDS.OPEN:
+        raise HTTPException(409, f"Breakdown is {bd.status.value.lower().replace('_', ' ')}.")
+    bd.status = _BDS.IN_REPAIR
+    await db.commit()
+    return {"id": str(bd.id), "status": bd.status.value}
+
+
+@router.post("/my-work/breakdowns/{bd_id}/resolve")
+async def my_bd_resolve(bd_id: uuid.UUID, body: _FixIn, db: AsyncSession = Depends(get_db), current_user=Depends(_current_user)):
+    bd = await _my_bd(db, bd_id, current_user, lock=True)
+    if bd.status == _BDS.RESOLVED:
+        raise HTTPException(409, "Breakdown is already resolved.")
+    await crud.resolve_breakdown(db, bd, {"root_cause": body.root_cause, "corrective_action": body.corrective_action,
+                                          "end_time": datetime.now(timezone.utc)}, current_user.id)
+    await db.commit()
+    return {"id": str(bd.id), "status": "RESOLVED"}
+
+
+@router.post("/my-work/{kind}/{job_id}/photo")
+async def my_photo(kind: str, job_id: uuid.UUID, file: UploadFile = File(...), db: AsyncSession = Depends(get_db),
+                   current_user=Depends(_current_user)):
+    from app.api.v1.endpoints.field_app import _forget, _store
+    if kind not in ("work-orders", "breakdowns"):
+        raise HTTPException(404, "Not found")
+    job = await (_my_wo if kind == "work-orders" else _my_bd)(db, job_id, current_user)
+    keys = [k for k in (job.photo_keys or "").split(",") if k]
+    if len(keys) >= MAX_JOB_PHOTOS:
+        raise HTTPException(422, f"At most {MAX_JOB_PHOTOS} photos per job.")
+    key = await _store(file)
+    try:
+        job = await (_my_wo if kind == "work-orders" else _my_bd)(db, job_id, current_user, lock=True)
+        keys = [k for k in (job.photo_keys or "").split(",") if k]
+        if len(keys) >= MAX_JOB_PHOTOS:
+            raise HTTPException(422, f"At most {MAX_JOB_PHOTOS} photos per job.")
+        job.photo_keys = ",".join([*keys, key])
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        _forget([key])
+        raise
+    return {"photos": len(keys) + 1}
+
+
+@router.post("/my-work/{kind}/{job_id}/spares", status_code=201)
+async def my_spares(kind: str, job_id: uuid.UUID, body: _SpareIn, db: AsyncSession = Depends(get_db),
+                    current_user=Depends(_current_user)):
+    if kind not in ("work-orders", "breakdowns"):
+        raise HTTPException(404, "Not found")
+    if kind == "work-orders":
+        wo = await _my_wo(db, job_id, current_user)
+        asset_id = (await db.get(_Plan, wo.plan_id)).asset_id
+        link = {"pm_work_order_id": wo.id}
+    else:
+        bd = await _my_bd(db, job_id, current_user)
+        asset_id, link = bd.asset_id, {"breakdown_id": bd.id}
+    if await db.get(_Spare, body.spare_part_id) is None:
+        raise HTTPException(422, "Unknown spare part.")
+    try:
+        await crud.record_spare_usage(db, {"spare_part_id": body.spare_part_id, "asset_id": asset_id,
+                                           "quantity_used": body.quantity, **link}, current_user.id)
+    except LookupError as exc:
+        await db.rollback()
+        raise HTTPException(404, str(exc)) from exc
+    except crud.SparePartAvailabilityError as exc:
+        await db.rollback()
+        raise HTTPException(409, exc.detail) from exc
+    await db.commit()
+    return {"detail": "Recorded"}
