@@ -855,6 +855,8 @@ async def record_payment(
     outstanding = invoice.total_amount - invoice.paid_amount
     if outstanding <= Decimal("0.005"):
         invoice.status = InvoiceStatus.PAID
+        from app.services.customer_feedback_service import award_invoice_points
+        await award_invoice_points(db, invoice)  # loyalty: once per paid invoice, enrolled customers only
     elif invoice.paid_amount > 0:
         invoice.status = InvoiceStatus.PARTIALLY_PAID
     await db.flush()

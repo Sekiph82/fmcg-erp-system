@@ -8,7 +8,7 @@ import {
   type PortalMe, type CatalogItem, type PortalOrder, type PortalOrderDetail, type PortalStatement, type PortalClaim, type OrderTracking, type PaymentOptions,
 } from "@/lib/portalSelf";
 
-type Tab = "order" | "promotions" | "orders" | "statement" | "claims" | "support";
+type Tab = "order" | "promotions" | "orders" | "statement" | "claims" | "support" | "feedback" | "points";
 interface ShopPromotion { code: string; name: string; valid_from: string; valid_to: string; only_for_you: boolean; offers: string[] }
 type Cart = Record<string, { item: CatalogItem; qty: number }>;
 const CLAIM_TYPES = ["SHORTAGE_CLAIM", "DAMAGE_CLAIM", "RETURN_REQUEST", "DELIVERY_DISCREPANCY", "PRICING_DISPUTE", "PRODUCT_COMPLAINT"];
@@ -45,7 +45,7 @@ export default function PartnerPortal() {
         <button onClick={signOut} className="text-sm underline shrink-0">Sign out</button>
       </header>
       <nav aria-label="Portal sections" className="grid grid-cols-3 md:flex bg-white border-b text-sm">
-        {([["order", "New order"], ["promotions", "My promotions"], ["orders", "My orders"], ["statement", "Invoices & statement"], ["claims", "Claims"], ["support", "Support"]] as [Tab, string][]).map(([k, label]) => (
+        {([["order", "New order"], ["promotions", "My promotions"], ["orders", "My orders"], ["statement", "Invoices & statement"], ["claims", "Claims"], ["support", "Support"], ["feedback", "Feedback"], ["points", "My points"]] as [Tab, string][]).map(([k, label]) => (
           <button key={k} onClick={() => { setTab(k); setError(null); setInfo(null); }} aria-current={tab === k ? "page" : undefined}
             className={`px-2 md:px-4 py-3 leading-tight md:whitespace-nowrap ${tab === k ? "border-b-2 border-indigo-600 font-semibold text-indigo-700" : "text-gray-600"}`}>{label}</button>
         ))}
@@ -60,6 +60,8 @@ export default function PartnerPortal() {
           {tab === "statement" && <StatementTab me={me} fail={fail} />}
           {tab === "claims" && <ClaimsTab me={me} fail={fail} onDone={(no) => setInfo(`Claim ${no} submitted.`)} />}
           {tab === "support" && <SupportTab fail={fail} onDone={(t) => setInfo(t)} />}
+          {tab === "feedback" && <FeedbackTab fail={fail} onDone={(t) => setInfo(t)} />}
+          {tab === "points" && <PointsTab fail={fail} />}
         </>)}
       </div>
     </main>
@@ -382,6 +384,79 @@ function SupportTab({ fail, onDone }: { fail: (e: unknown) => void; onDone: (t: 
                   <button disabled={!reply.trim()} onClick={async () => { try { await post(`/tickets/${open.id}/reply`, { body: reply }); setReply(""); show(open.id); load(); } catch (e) { fail(e); } }} className="px-3 rounded-lg bg-indigo-600 text-white disabled:opacity-50">Send</button></div>)}
             </div>)}
         </div>))}
+    </div>
+  );
+}
+
+
+// ── Feedback (NPS) and loyalty points (M40.S01.T001) ─────────────────────────
+interface OpenSurvey { survey_id: string; so_id: string | null; order_no: string | null; question: string; follow_up: string | null }
+
+function ScoreScale({ value, onChange }: { value: number | null; onChange: (n: number) => void }) {
+  return (
+    <div role="radiogroup" aria-label="Score from 0 to 10" className="grid grid-cols-11 gap-1">
+      {Array.from({ length: 11 }, (_, n) => (
+        <button key={n} type="button" role="radio" aria-checked={value === n} onClick={() => onChange(n)}
+          className={`py-2 rounded text-sm border ${value === n ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-gray-700"}`}>{n}</button>
+      ))}
+      <span className="col-span-5 text-[11px] text-gray-500">Not likely</span><span className="col-span-6 text-right text-[11px] text-gray-500">Very likely</span>
+    </div>
+  );
+}
+
+function FeedbackTab({ fail, onDone }: { fail: (e: unknown) => void; onDone: (t: string) => void }) {
+  const [rows, setRows] = useState<OpenSurvey[] | null>(null);
+  const [score, setScore] = useState<Record<string, number>>({});
+  const [comment, setComment] = useState<Record<string, string>>({});
+  const load = useCallback(() => { ps<OpenSurvey[]>("/feedback").then(setRows).catch(fail); }, [fail]);
+  useEffect(load, [load]);
+  const key = (r: OpenSurvey) => `${r.survey_id}:${r.so_id ?? ""}`;
+  if (!rows) return <p className="text-sm text-gray-500">Loading…</p>;
+  if (!rows.length) return <p className="text-sm text-gray-500">Nothing to rate right now. Thank you for your feedback!</p>;
+  return (
+    <div className="space-y-3">
+      {rows.map((r) => (
+        <form key={key(r)} aria-label={r.question} className="bg-white rounded-xl border p-3 space-y-2" onSubmit={async (e) => {
+          e.preventDefault();
+          if (score[key(r)] === undefined) return;
+          try { await post("/feedback", { survey_id: r.survey_id, so_id: r.so_id, score: score[key(r)], comment: comment[key(r)] || null }); onDone("Thank you for your feedback."); load(); }
+          catch (err) { fail(err); }
+        }}>
+          <p className="text-sm font-medium">{r.question}</p>
+          {r.order_no && <p className="text-xs text-gray-500">Order {r.order_no}</p>}
+          <ScoreScale value={score[key(r)] ?? null} onChange={(n) => setScore({ ...score, [key(r)]: n })} />
+          <textarea aria-label="Comment (optional)" maxLength={2000} rows={2} placeholder={r.follow_up ?? "Anything we should know? (optional)"}
+            value={comment[key(r)] ?? ""} onChange={(e) => setComment({ ...comment, [key(r)]: e.target.value })} className="w-full border rounded-lg px-2 py-1.5 text-sm" />
+          <button disabled={score[key(r)] === undefined} className="w-full py-2 rounded-lg bg-indigo-600 text-white text-sm disabled:opacity-50">Send</button>
+        </form>
+      ))}
+    </div>
+  );
+}
+
+interface Points { enrolled: boolean; balance?: number; lifetime?: number; tier?: string | null;
+  next_tier?: { name: string; points_needed: number } | null; history?: { at: string; type: string; points: number; balance_after: number; description: string | null }[] }
+
+function PointsTab({ fail }: { fail: (e: unknown) => void }) {
+  const [p, setP] = useState<Points | null>(null);
+  useEffect(() => { ps<Points>("/loyalty").then(setP).catch(fail); }, [fail]);
+  if (!p) return <p className="text-sm text-gray-500">Loading…</p>;
+  if (!p.enrolled) return <p className="text-sm text-gray-600 bg-white rounded-xl border p-4">You are not in the POVU loyalty programme yet. Ask your sales representative to join — you earn points on every paid invoice.</p>;
+  return (
+    <div className="space-y-3">
+      <div className="bg-white rounded-xl border p-4 grid grid-cols-2 gap-2 text-sm">
+        <div><p className="text-xs text-gray-500">Points</p><p className="text-2xl font-bold text-indigo-700">{p.balance}</p></div>
+        <div><p className="text-xs text-gray-500">Level</p><p className="text-lg font-semibold">{p.tier ?? "—"}</p></div>
+        {p.next_tier && <p className="col-span-2 text-xs text-gray-600">{p.next_tier.points_needed} more points to {p.next_tier.name}.</p>}
+      </div>
+      <div className="bg-white rounded-xl border divide-y text-sm">
+        {(p.history ?? []).length === 0 ? <p className="p-3 text-gray-500">No points yet.</p> : p.history!.map((h, i) => (
+          <div key={i} className="p-3 flex justify-between gap-2">
+            <span><span className="block">{h.description ?? h.type.toLowerCase()}</span><span className="text-xs text-gray-500">{h.at ? new Date(h.at).toLocaleDateString() : ""}</span></span>
+            <span className={`font-semibold ${h.points >= 0 ? "text-emerald-700" : "text-red-700"}`}>{h.points > 0 ? "+" : ""}{h.points}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

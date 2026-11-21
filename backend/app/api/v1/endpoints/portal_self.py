@@ -600,3 +600,38 @@ async def reply(ticket_id: uuid.UUID, body: ReplyIn, user: PortalUser = Depends(
         t.status = TicketStatus.IN_PROGRESS  # the customer says it is not solved yet
     await db.commit()
     return {"status": t.status.value}
+
+
+# ── feedback (NPS) and loyalty (M40.S01.T001) ────────────────────────────────
+
+class FeedbackIn(BaseModel):
+    survey_id: uuid.UUID
+    so_id: Optional[uuid.UUID] = None
+    score: int = Field(ge=0, le=10)
+    comment: Optional[str] = Field(default=None, max_length=2000)
+
+
+@router.get("/feedback")
+async def feedback_open(user: PortalUser = Depends(ext.get_portal_user), db: AsyncSession = Depends(get_db)):
+    from app.services import customer_feedback_service as fb
+    customer = await _customer(db, user)
+    return await fb.open_surveys(db, customer.id)
+
+
+@router.post("/feedback", status_code=201)
+async def feedback_answer(body: FeedbackIn, user: PortalUser = Depends(ext.get_portal_user), db: AsyncSession = Depends(get_db)):
+    from app.services import customer_feedback_service as fb
+    customer = await _customer(db, user)
+    try:
+        await fb.answer(db, customer.id, body.survey_id, body.so_id, body.score, body.comment, "portal")
+    except fb.FeedbackError as e:
+        raise HTTPException(e.status, e.detail)
+    await db.commit()
+    return {"detail": "Thank you for your feedback."}
+
+
+@router.get("/loyalty")
+async def loyalty(user: PortalUser = Depends(ext.get_portal_user), db: AsyncSession = Depends(get_db)):
+    from app.services import customer_feedback_service as fb
+    customer = await _customer(db, user)
+    return await fb.loyalty_summary(db, customer.id)

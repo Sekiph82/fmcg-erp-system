@@ -4,7 +4,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import Request, APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -12,7 +12,16 @@ from sqlalchemy.orm import selectinload
 from app.core.deps import get_current_user, get_db
 from app.models.loyalty import LoyaltyTier, CustomerLoyaltyAccount, LoyaltyTransaction
 
-router = APIRouter()
+async def _guard(request: Request, current_user=Depends(get_current_user)):
+    """Reads need sales or CRM view rights; changes need sales or CRM edit rights (M40.S01.T001)."""
+    from app.core.access_control import has_any_permission
+    need = ("sales.view", "crm.view") if request.method in ("GET", "HEAD") else ("sales.edit", "crm.edit")
+    if not (getattr(current_user, "is_superuser", False) or has_any_permission(current_user, need)):
+        raise HTTPException(403, "Required permission is missing.")
+    return current_user
+
+
+router = APIRouter(dependencies=[Depends(_guard)])
 
 
 # ── Tiers ──────────────────────────────────────────────────────────────────────

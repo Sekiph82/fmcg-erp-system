@@ -4,7 +4,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import Request, APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -12,7 +12,16 @@ from sqlalchemy.orm import selectinload
 from app.core.deps import get_current_user, get_db
 from app.models.nps import NPSSurvey, NPSResponse
 
-router = APIRouter()
+async def _guard(request: Request, current_user=Depends(get_current_user)):
+    """Reads need sales or CRM view rights; changes need sales or CRM edit rights (M40.S01.T001)."""
+    from app.core.access_control import has_any_permission
+    need = ("sales.view", "crm.view") if request.method in ("GET", "HEAD") else ("sales.edit", "crm.edit")
+    if not (getattr(current_user, "is_superuser", False) or has_any_permission(current_user, need)):
+        raise HTTPException(403, "Required permission is missing.")
+    return current_user
+
+
+router = APIRouter(dependencies=[Depends(_guard)])
 
 
 def _classify(score: int) -> str:
@@ -239,3 +248,21 @@ async def nps_by_customer(
             "classification": _classify(round(float(row.avg_score))),
         })
     return result
+
+
+@router.post("/surveys/{survey_id}/links", status_code=201)
+async def create_survey_link(survey_id: uuid.UUID, body: dict, db: AsyncSession = Depends(get_db),
+                             current_user=Depends(get_current_user)):
+    """One-time link for a customer without a portal login; share it by SMS, WhatsApp or e-mail."""
+    from app.core.config import settings
+    from app.services import customer_feedback_service as fb
+    try:
+        token = await fb.create_link(db, survey_id, uuid.UUID(str(body["customer_id"])),
+                                     uuid.UUID(str(body["so_id"])) if body.get("so_id") else None, current_user.id)
+    except (KeyError, ValueError):
+        raise HTTPException(422, "customer_id is required.")
+    except fb.FeedbackError as e:
+        raise HTTPException(e.status, e.detail)
+    await db.commit()
+    base = (getattr(settings, "PUBLIC_APP_URL", "") or getattr(settings, "FRONTEND_URL", "") or "").rstrip("/")
+    return {"url": f"{base}/nps/{token}", "expires_in_days": fb.LINK_DAYS}
