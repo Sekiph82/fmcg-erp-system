@@ -66,6 +66,10 @@ async def test_review_fixes():
             assert await call(_user("crm.view"), "GET", f"/mrp/runs/{fake}/results") == 403
             # custom-field definitions are administration
             assert await call(_user("sales.create"), "POST", "/custom-fields", json={}) == 403
+            # maintenance reads work centres for the asset pick list; other production data and writes stay closed
+            assert await call(_user("maintenance.view"), "GET", "/production-adv/work-centers") == 200
+            assert await call(_user("maintenance.edit"), "POST", "/production-adv/work-centers", json={}) == 403
+            assert await call(_user("crm.view"), "GET", "/production-adv/work-centers") == 403
             # appraisals: a payroll clerk (not HR) gets only their own/team rows — none here
             who["u"] = _user("payroll.view")
             r = await c.get("/api/v1/appraisals/")

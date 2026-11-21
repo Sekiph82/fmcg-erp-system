@@ -80,6 +80,8 @@ MODULE_GUARDS: dict[str, tuple[str, ...]] = {
 _OPS = ("production", "production_execution", "planning", "shop_floor", "sales", "procurement", "logistics", "quality",
         "qms", "inventory", "wms", "warehouses", "finance", "maintenance", "field", "mrp", "mps")
 READ_EXTRA: dict[str, tuple[str, ...]] = {"/warehouses": _OPS, "/materials": _OPS, "/products": _OPS}
+# single collections inside a module router that other modules read for pick lists
+READ_EXTRA_SEGMENTS: dict[str, frozenset[str]] = {"work-centers": frozenset({"maintenance", "tpm"})}
 
 # A handler counts as checking permissions itself only for real calls in its BODY (signature/decorator excluded).
 _OWN_CHECK = re.compile(
@@ -151,6 +153,9 @@ def module_guard(modules: tuple[str, ...], read_extra: tuple[str, ...] = ()):
         read = request.method in ("GET", "HEAD", "OPTIONS")
         segments = _literal_segments(request) + [p for p in request.url.path.split("/") if p]
         need_mods, approval = (read_mods if read else mods), (not read and bool(APPROVAL_SEGMENTS.intersection(segments)))
+        if read:
+            for seg in set(segments) & READ_EXTRA_SEGMENTS.keys():
+                need_mods = need_mods | READ_EXTRA_SEGMENTS[seg]
         if not read and "payments" in segments and "sales" in segments:
             need_mods = frozenset({"finance"})          # recording customer money is a finance task
         if not read and "custom-fields" in segments and "values" not in segments:

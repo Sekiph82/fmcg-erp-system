@@ -27,7 +27,7 @@ KINDS: dict[str, tuple[str, tuple[str, ...], tuple[str, ...], tuple[str, ...]]] 
     "promotion": ("app.models.marketing:MarketingPromotion", ("promotion_name", "promotion_code"), ("promotion_code", "status"), ("marketing.view", "sales.view")),
     "influencer": ("app.models.marketing:Influencer", ("influencer_name",), ("status",), ("marketing.view",)),
     "delivery_trip": ("app.models.delivery:DeliveryTrip", ("trip_no",), ("driver_name", "trip_date"), ("logistics.view", "delivery.view", "sales.view")),
-    "work_center": ("app.models.production_advanced:WorkCenter", ("name",), ("status",), ("production.view",)),
+    "work_center": ("app.models.production_advanced:WorkCenter", ("name",), ("status",), ("production.view", "maintenance.view")),
     "machine": ("app.models.machine_operator:Machine", ("machine_name", "machine_code"), ("machine_code", "status"), ("production.view", "maintenance.view")),
     "flow_txn": ("app.models.material_flow:MaterialFlowTransaction", ("flow_no",), ("status", "transaction_datetime"), ("inventory.view", "production.view")),
     "candidate": ("app.models.recruitment:Candidate", ("full_name", "candidate_code"), ("candidate_code", "current_title"), ("recruitment.view", "hr.view")),
