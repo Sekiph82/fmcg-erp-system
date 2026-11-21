@@ -10,8 +10,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M40 — ERP completion sweep (linkage, personas, approvals) [v] 2026-11-21
 - Current Sprint: M40.S03 — final regression [v]
-- Current Task: none open in software — all ledger rows done except [!] external gates (live provider keys, Shopify store, physical devices, app stores M37.S02.T003)
-- Current Task Status: DONE (2026-11-21) — 1740 backend tests, 157/157 DB-gated files, tsc/eslint clean, 42-role live sweep 0 problems
+- Current Task: M41.S01.T001 — discount approval on quotations/sales orders (3 internal gaps reopened by the 2026-11-21 re-check)
+- Current Task Status: OPEN — M41.S01.T001–T003 not started; everything else done except [!] external gates
 - Next Task/Action: owner: assign production-line/department scopes to real users; provide live provider keys (M-Pesa, SMTP, WhatsApp, Shopify) and production domain for app-store work
 - Required Actor: CLAUDE (sole active task runner and tracker writer; per coordination/CLAUDE_AUTONOMOUS_EXECUTION_POLICY.md)
 - Tracking Repository: Sekiph82/fmcg-erp-system
@@ -1812,3 +1812,10 @@ Owner: "add the whole list to TASKS.md and complete it; check for real by openin
   Done 2026-11-21 [v]: every listed earlier row is [v] above with evidence (M36.S03.T004, S05.T002–T005, S06.T001–T004, M37.S03.T001–T003, M37.S04.T008).
 - [v] M40.S03.T002 — Final regression (backend suite + DB suites on disposable PostgreSQL + tsc/eslint), TASKS.md status, commit and push.
   Done 2026-11-21 [v]: backend suite 1740 passed; 157/157 DB-gated files passed on disposable PostgreSQL (MQTT/SMTP/ClamAV gated files run against local test services); frontend tsc and eslint clean; committed and pushed to main.
+
+## M41 — Open internal gaps found in the 2026-11-21 re-check (not external)
+
+- [ ] M41.S01.T001 — Discount approval on quotations and sales orders: `discount_approval_required` / `discount_approved_*` columns exist but nothing sets them, so the accept guard in crm_document_service is inert and `PLDiscountRule.requires_approval` / `max_discount_pct` are not enforced. Set the flag when a line or header discount exceeds the rule, approve/reject endpoint (approver ≠ creator), My Approvals entry + bell notice, block send/convert until approved, screen buttons, DB test, live click-through.
+- [ ] M41.S01.T002 — Verify the signer's e-mail on the customer quote signature (one-time code to the quoted contact's e-mail before accept/decline), stored in the decision evidence. Native part of M36.S04.T003; third-party e-sign provider stays [!].
+- [ ] M41.S01.T003 — eTIMS item classification: `Product.etims_item_code` and `tax_type_code` fields (migration, product screen) and use them in the eTIMS payload instead of the TODO placeholders. Provider auth/cancel/status stay [!] until the provider is chosen.
+

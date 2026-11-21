@@ -146,6 +146,30 @@ Sonra yeniden başlatın.
 
 ---
 
+## 5b. KRA eTIMS (e-fatura) — önce karar gerekir
+
+Kod şu an `ETIMS_PROVIDER=simulation` ile çalışır; KRA'ya hiçbir şey gitmez.
+Canlıya geçmeden önce **bağlantı yolu seçilmeli**: doğrudan KRA OSCU/VSCU, KRA onaylı ara yazılım (middleware) veya üçüncü taraf servis sağlayıcı. Seçilen sağlayıcının API dokümanı geldiğinde kodda sağlayıcıya özel 3 parça tamamlanacak: kimlik doğrulama başlığı, iptal ve durum sorgulama (etims_connector.py'de işaretli).
+
+**KRA'dan / sağlayıcıdan alınacaklar:** KRA PIN, şube kodu (bhfId), OSCU/VSCU cihaz seri numarası, sağlayıcının API adresi.
+
+**Sunucu `.env.production`:**
+```
+ETIMS_PROVIDER=http
+ETIMS_ENV=sandbox
+ETIMS_API_URL=<sağlayıcı adresi>
+ETIMS_PIN=<KRA PIN>
+ETIMS_BRANCH_ID=<bhfId>
+ETIMS_DEVICE_SERIAL_NO=<cihaz seri no>
+```
+**Test:** sandbox'ta bir fatura gönderin → KRA kontrol numarası ve QR faturaya gelmeli → sonra `ETIMS_ENV=production`.
+
+## 5c. Banka bağlantısı
+
+Bankaya göre değişir (Equity, KCB, Co-op, NCBA… her birinin kendi API'si ve sözleşmesi var). Banka seçilip API erişimi alınınca bağlayıcı o bankaya göre tamamlanır; şimdilik banka ekstresi dosya ile içe aktarılır.
+
+---
+
 ## 6. Yapay zekâ (isteğe bağlı)
 
 `.env.production` içine **birini** girin (sıra: Anthropic → OpenAI → Gemini):
@@ -180,6 +204,8 @@ Canlıya geçmeden önce **Yönetim → Kullanıcılar → Kapsamlar**: operatö
 - [ ] WhatsApp: webhook doğrulandı, gelen ve giden mesaj test edildi
 - [ ] SMTP: SPF/DKIM/DMARC eklendi, test e-postası geldi
 - [ ] Shopify: müşteri/depo id'leri girildi, SKU'lar eşleşti, test siparişi aktarıldı
+- [ ] eTIMS: sağlayıcı seçildi, sandbox faturası KRA'dan onay aldı
+- [ ] Banka: banka seçildi, API erişimi alındı
 - [ ] Console'da bağlanan her satır HEALTHY
 - [ ] Kullanıcı kapsamları atandı
 - [ ] TASKS.md'deki ilgili [!] satırları kanıtla güncellendi
