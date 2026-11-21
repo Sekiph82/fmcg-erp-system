@@ -53,7 +53,7 @@ _CTX = {"rfq_award": ("rfq_id",), "brand_asset": ("asset_id",), "count_adjustmen
 _REF_ATTRS = ("quote_no", "pr_no", "po_no", "leave_no", "request_no", "claim_no", "order_no", "return_no", "count_no", "run_no",
               "reference", "reference_no", "number", "code", "name", "title", "shop_name")
 _PER_ENTRY = 20
-_SCOPED_SCAN = 500   # ponytail: scoped approvers are filtered in Python over the oldest 500 waiting rows per type
+_SCOPED_BATCH = 500   # scoped approvers: rows are checked in Python, batch by batch over all waiting rows
 
 
 def _model(path: str):
@@ -138,13 +138,30 @@ def _waiting(key: str, model, col: str, values: tuple[str, ...]):
     return and_(cond, _ROW_FILTER[key](model)) if key in _ROW_FILTER else cond
 
 
-async def _rows(db: AsyncSession, model, cond, limit: int, extra=None, newest=False):
+async def _rows(db: AsyncSession, model, cond, limit: int, extra=None, newest=False, offset: int = 0, by: str = "created_at"):
     q = select(model).where(cond)
     if extra is not None:
         q = q.where(extra)
-    if hasattr(model, "created_at"):
-        q = q.order_by(model.created_at.desc() if newest else model.created_at.asc())
-    return (await db.execute(q.limit(limit))).scalars().all()
+    if hasattr(model, by):
+        q = q.order_by(getattr(model, by).desc() if newest else getattr(model, by).asc(), _pk(model))
+    else:
+        q = q.order_by(_pk(model))
+    return (await db.execute(q.offset(offset).limit(limit))).scalars().all()
+
+
+async def _scoped_rows(db: AsyncSession, model, cond, user, perms) -> tuple[int, list]:
+    """Every waiting row the scoped user may decide: exact count and the oldest _PER_ENTRY."""
+    count, first, offset = 0, [], 0
+    while True:
+        batch = await _rows(db, model, cond, _SCOPED_BATCH, offset=offset)
+        for r in batch:
+            if _may_decide(user, perms, r):
+                count += 1
+                if len(first) < _PER_ENTRY:
+                    first.append(r)
+        if len(batch) < _SCOPED_BATCH:
+            return count, first
+        offset += _SCOPED_BATCH
 
 
 async def inbox(db: AsyncSession, user) -> dict:
@@ -163,9 +180,7 @@ async def inbox(db: AsyncSession, user) -> dict:
             count = (await db.execute(select(func.count()).select_from(model).where(cond))).scalar_one()
             rows = await _rows(db, model, cond, _PER_ENTRY) if count else []
         else:
-            rows = [r for r in await _rows(db, model, cond, _SCOPED_SCAN) if _may_decide(user, perms, r)]
-            count = len(rows)
-            rows = rows[:_PER_ENTRY]
+            count, rows = await _scoped_rows(db, model, cond, user, perms)
         if not count:
             continue
         groups.append({"key": key, "label": label, "count": count, "link": link,
@@ -201,8 +216,21 @@ async def _deciders(db: AsyncSession, perms: tuple[str, ...]):
     return (await db.execute(select(User).where(User.id.in_(ids)).options(*opts))).scalars().unique().all()
 
 
+def _notice_key(row) -> str:
+    """Dedupe key: the record plus its last change, so a record that waits again after a change is sent again."""
+    changed = getattr(row, "updated_at", None)
+    return f"{_pk_value(row)}@{int(changed.timestamp() * 1000)}" if changed else _pk_value(row)
+
+
+def _naive_utc(dt):
+    from datetime import timezone
+
+    return dt.astimezone(timezone.utc).replace(tzinfo=None) if dt is not None and dt.tzinfo else dt
+
+
 async def notify_new(db: AsyncSession, days: int = 7) -> int:
-    """Send each item that became waiting (created in the last `days`) once to the people who may decide it."""
+    """Send each item that became waiting (or waits again after a change, in the last `days`) once to the people
+    who may decide it."""
     from app.models.notifications import (Notification, NotificationChannel, NotificationPriority, NotificationStatus,
                                           NotificationType)
 
@@ -211,20 +239,31 @@ async def notify_new(db: AsyncSession, days: int = 7) -> int:
     for key, label, path, col, values, perms, link in ENTRIES:
         model = _model(path)
         ref_type = f"approval:{key}"
-        already = exists().where(and_(Notification.reference_type == ref_type, Notification.reference_id == cast(_pk(model), String)))
-        extra = ~already
-        if hasattr(model, "created_at"):
-            extra = and_(extra, model.created_at >= since)
+        by = "updated_at" if hasattr(model, "updated_at") else "created_at"
+        extra = getattr(model, by) >= since if hasattr(model, by) else None
         if perms not in cache:
             cache[perms] = [(u, _access(u, perms)) for u in await _deciders(db, perms)]
         people = cache[perms]
         if not people:   # nobody may decide this type: nothing to send (and no query for its rows)
             continue
-        rows = await _rows(db, model, _waiting(key, model, col, values), 50, extra, newest=True)
+        rows = await _rows(db, model, _waiting(key, model, col, values), 200, extra, newest=True, by=by)
         if not rows:
             continue
+        keys = {_pk_value(r): _notice_key(r) for r in rows}
+        sent_refs = (await db.execute(select(Notification.reference_id, Notification.created_at).where(
+            Notification.reference_type == ref_type,
+            Notification.reference_id.in_(list(keys.values()) + list(keys))))).all()
+        done = {ref for ref, _ in sent_refs}
+        legacy = {}   # notices from before versioned keys: plain id, valid if sent after the last change
+        for ref, at in sent_refs:
+            if "@" not in ref:
+                legacy[ref] = max(legacy.get(ref, at), at)
         now = datetime.utcnow()
         for row in rows:
+            pk, nkey = _pk_value(row), keys[_pk_value(row)]
+            changed = _naive_utc(getattr(row, "updated_at", None))
+            if nkey in done or (pk in legacy and (changed is None or legacy[pk] >= changed)):
+                continue
             ref = _ref(row)
             for u, access in people:
                 if key in _NOT_OWN and u.id in (getattr(row, "created_by_id", None), getattr(row, "discount_changed_by_id", None)):
@@ -234,7 +273,7 @@ async def notify_new(db: AsyncSession, days: int = 7) -> int:
                                         title=f"Waiting for your approval: {label} {ref}"[:255],
                                         message=f"{label} {ref} is waiting for your decision. Open My Approvals.",
                                         notification_type=NotificationType.APPROVAL_REQUIRED, priority=NotificationPriority.HIGH,
-                                        channel=NotificationChannel.IN_APP, reference_type=ref_type, reference_id=_pk_value(row),
+                                        channel=NotificationChannel.IN_APP, reference_type=ref_type, reference_id=nkey,
                                         module="approvals", status=NotificationStatus.SENT, sent_at=now))
                     sent += 1
         await db.commit()

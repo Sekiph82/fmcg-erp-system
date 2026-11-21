@@ -104,8 +104,8 @@ async def test_inbox_and_notifications():
         await svc.notify_new(db)   # second tick sends nothing new
         rows = (await db.execute(select(Notification.user_id, Notification.reference_id).where(
             Notification.reference_type == "approval:purchase_request",
-            Notification.reference_id.in_([pack_id, other_id])))).all()
-        got = sorted((u, ref) for u, ref in rows)
+            Notification.reference_id.like(f"{pack_id}@%") | Notification.reference_id.like(f"{other_id}@%")))).all()
+        got = sorted((u, ref.split("@")[0]) for u, ref in rows)   # key = record @ last change (M41 re-notify)
         assert got == sorted([(str(broad), pack_id), (str(broad), other_id), (str(scoped), pack_id),
                              (str(plain_hr), pack_id), (str(plain_hr), other_id)])
 

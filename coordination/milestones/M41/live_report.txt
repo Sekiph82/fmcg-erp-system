@@ -55,3 +55,11 @@ order status after confirm: CONFIRMED
 product etims saved: KE1NTXU0000099 47131800 B
 page errors: []
 Customer phone now shows Subtotal 3,400 + Tax 544 = Total 3,944 (before: 3,944 + 544 = 4,488, tax counted twice).
+
+Run 4 (known limits fixed): re-bell after a corrected rejection, m41b_live.js:
+quote QT-20261121-0004 PENDING_DISCOUNT
+first bell: true
+reject 200 DISCOUNT_REJECTED
+rep corrects to 14 %: 200 PENDING_DISCOUNT
+second bell after correction: true | notices: 2
+After deploy, two notifier ticks sent no repeats of earlier approval notices (105 before and after).

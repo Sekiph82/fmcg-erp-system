@@ -130,7 +130,7 @@ async def test_quote_discount_approval_and_conversion_units():
                    for g in (await inbox.inbox(db, rep))["groups"])
         await inbox.notify_new(db)
         bell = (await db.execute(select(Notification.user_id).where(Notification.reference_type == "approval:quote_discount",
-                                                                    Notification.reference_id == str(big.id)))).scalars().all()
+                                                                    Notification.reference_id.like(f"{big.id}@%")))).scalars().all()
         assert str(mgr_id) in bell and str(rep_id) not in bell
 
         # reject needs a reason; the creator is told; the quote stays blocked until changed
@@ -153,6 +153,14 @@ async def test_quote_discount_approval_and_conversion_units():
         # the rep changes the discount: asked again (still above), then approved, then sent
         changed = await api.update_quote(big.id, QuotationUpdate(discount_pct=Decimal("4"), lines=body(Decimal("8")).lines), db, rep)
         assert changed.approval_status == "PENDING_DISCOUNT"
+        # waiting again after the correction: the approvers are told again (once per waiting version)
+        await inbox.notify_new(db)
+        await inbox.notify_new(db)
+        notices = (await db.execute(select(Notification.reference_id).where(
+            Notification.reference_type == "approval:quote_discount", Notification.user_id == str(mgr_id),
+            Notification.reference_id.like(f"{big.id}@%")))).scalars().all()
+        assert len(notices) == 2 and len(set(notices)) == 2
+        rep, mgr = await _load(db, rep_id), await _load(db, mgr_id)
         ok = await api.approve_discount(big.id, api.DiscountDecisionIn(), db, mgr)
         assert ok.approval_status == "DISCOUNT_APPROVED" and ok.discount_approved_at is not None
         with pytest.raises(HTTPException) as e:                                  # decided once
@@ -403,3 +411,32 @@ async def test_etims_item_codes_reach_payload_and_gaps_block_live(monkeypatch):
         with pytest.raises(HTTPException) as e:
             await tax.submit_etims(inv_id, db, user)
         assert e.value.status_code == 422 and "POVU Handwash 500 ml" in e.value.detail
+
+
+@pytest.mark.asyncio
+async def test_scoped_approver_sees_items_beyond_the_first_500():
+    """Before: a scoped approver only looked at the oldest 500 waiting rows of a type, so their region's item could be
+    hidden behind other regions' backlog."""
+    from datetime import datetime, timezone
+
+    from app.models.quotation import Quotation, QuoteStatus
+    from app.models.role import AccessScope
+    from app.services import approval_inbox_service as inbox
+
+    tag = uuid4().hex[:8].upper()
+    async with AsyncSessionLocal() as db:
+        cust, _ = await _setup(db, tag)
+        old = datetime(2026, 1, 1, tzinfo=timezone.utc)
+        db.add_all([Quotation(quote_no=f"QT-BACKLOG-{tag}-{i:03d}", customer_id=cust, status=QuoteStatus.DRAFT, quote_date=date(2026, 1, 1),
+                              currency="KES", sales_region_id=f"POVU-WEST-{tag}", approval_status="PENDING_DISCOUNT",
+                              discount_approval_required=True, created_at=old) for i in range(520)])
+        mine = Quotation(quote_no=f"QT-COAST-{tag}", customer_id=cust, status=QuoteStatus.DRAFT, quote_date=date(2026, 6, 1), currency="KES",
+                         sales_region_id=f"POVU-COAST-{tag}", approval_status="PENDING_DISCOUNT", discount_approval_required=True,
+                         created_at=datetime(2026, 6, 1, tzinfo=timezone.utc))
+        db.add(mine)
+        uid = await _actor(db, "sales.approve_own_region", "sales.view_all")
+        db.add(AccessScope(user_id=uid, scope_type="sales_region", scope_id=f"POVU-COAST-{tag}", can_view=True, can_approve=True))
+        await db.commit()
+        box = await inbox.inbox(db, await _load(db, uid))
+        group = next(g for g in box["groups"] if g["key"] == "quote_discount")
+        assert group["count"] == 1 and [i["ref"] for i in group["items"]] == [f"QT-COAST-{tag}"]
