@@ -1,6 +1,7 @@
 from __future__ import annotations
 import uuid
 import enum
+from sqlalchemy import func  # noqa: E402
 from sqlalchemy import (
     Column, String, Integer, Numeric, Boolean, Text, Date, DateTime,
     ForeignKey, Enum, JSON, UniqueConstraint,
@@ -692,3 +693,40 @@ class CRMChatMessage(Base):
     body        = Column(Text, nullable=False)
     agent_id    = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at  = Column(DateTime(timezone=True), nullable=False, index=True)
+
+
+
+# ── M36.S05.T005 account-based marketing ─────────────────────────────────────────
+
+class CRMAccountGroup(Base, TimestampMixin):
+    """Target-account list (ERP customers) worked together by sales and marketing."""
+    __tablename__ = "crm_account_groups"
+
+    id                  = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name                = Column(String(150), nullable=False, unique=True)
+    description         = Column(Text, nullable=True)
+    owner_user_id       = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    campaign_started_at = Column(DateTime(timezone=True), nullable=True)
+
+
+class CRMAccountGroupMember(Base):
+    __tablename__ = "crm_account_group_members"
+
+    group_id    = Column(UUID(as_uuid=True), ForeignKey("crm_account_groups.id", ondelete="CASCADE"), primary_key=True)
+    customer_id = Column(UUID(as_uuid=True), ForeignKey("customers.id", ondelete="CASCADE"), primary_key=True)
+    tier        = Column(Integer, nullable=False, default=2)        # 1 = strategic, 2 = core, 3 = watch
+    added_at    = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+
+class CRMAccountContact(Base, TimestampMixin):
+    """A person in an account's buying committee."""
+    __tablename__ = "crm_account_contacts"
+
+    id             = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    customer_id    = Column(UUID(as_uuid=True), ForeignKey("customers.id", ondelete="CASCADE"), nullable=False, index=True)
+    full_name      = Column(String(150), nullable=False)
+    title          = Column(String(150), nullable=True)
+    email          = Column(String(254), nullable=True)
+    phone          = Column(String(50), nullable=True)
+    committee_role = Column(String(20), nullable=False, default="INFLUENCER")
+    notes          = Column(String(500), nullable=True)

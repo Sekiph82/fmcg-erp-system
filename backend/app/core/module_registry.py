@@ -521,6 +521,7 @@ ENDPOINT_ROUTE_DEFINITIONS: tuple[EndpointRouteDefinition, ...] = (
     EndpointRouteDefinition(key="crm_unsubscribe_public", route_prefix="/public/unsubscribe", import_path="app.api.v1.endpoints.crm_unsubscribe_public", tags=('crm',)),
     EndpointRouteDefinition(key="meetings_public", route_prefix="/public/calendar", import_path="app.api.v1.endpoints.meetings_public", tags=('meetings',)),
     EndpointRouteDefinition(key="documents_public", route_prefix="/public/documents", import_path="app.api.v1.endpoints.documents_public", tags=('quotes',)),
+    EndpointRouteDefinition(key="crm_abm", route_prefix="/abm", import_path="app.api.v1.endpoints.crm_abm", tags=('crm',)),
     EndpointRouteDefinition(key="lookup", route_prefix="/lookup", import_path="app.api.v1.endpoints.lookup", tags=('lookup',)),
     EndpointRouteDefinition(key="nps_public", route_prefix="/public/nps", import_path="app.api.v1.endpoints.nps_public", tags=('crm',)),
     EndpointRouteDefinition(key="chat_public", route_prefix="/public/chat", import_path="app.api.v1.endpoints.chat_public", tags=('crm',)),
