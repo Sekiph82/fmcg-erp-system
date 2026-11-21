@@ -500,7 +500,7 @@ async def _my_ticket(db: AsyncSession, user: PortalUser, ticket_id: uuid.UUID):
 def _ticket_out(t, with_thread: bool = False) -> dict:
     out = {"id": str(t.id), "ticket_no": t.ticket_no, "category": t.category.value, "status": t.status.value,
            "subject": t.subject, "created_at": t.created_at.isoformat() if t.created_at else None,
-           "resolution_notes": t.resolution_notes}
+           "resolution_notes": t.resolution_notes, "rating": t.customer_satisfaction}
     if with_thread:  # internal staff notes are never shown to the customer
         out["description"] = t.description if t.source.value == "PORTAL" else None  # staff-entered text stays internal
         out["thread"] = [{"body": c.body, "from_us": c.created_by_id is not None,
@@ -600,6 +600,30 @@ async def reply(ticket_id: uuid.UUID, body: ReplyIn, user: PortalUser = Depends(
         t.status = TicketStatus.IN_PROGRESS  # the customer says it is not solved yet
     await db.commit()
     return {"status": t.status.value}
+
+
+class RateIn(BaseModel):
+    score: int = Field(ge=1, le=5)
+    comment: Optional[str] = Field(default=None, max_length=2000)
+
+
+@router.post("/tickets/{ticket_id}/rate")
+async def rate_ticket(ticket_id: uuid.UUID, body: RateIn, user: PortalUser = Depends(ext.get_portal_user),
+                      db: AsyncSession = Depends(get_db)):
+    """Ticket → resolution → the customer's rating (1–5), once, after we resolved it (M40.S02.T001)."""
+    from app.models.helpdesk import TicketComment, TicketStatus
+
+    t = await _my_ticket(db, user, ticket_id)
+    if t.status not in (TicketStatus.RESOLVED, TicketStatus.CLOSED):
+        raise HTTPException(409, "You can rate a ticket once it is resolved.")
+    if t.customer_satisfaction is not None:
+        raise HTTPException(409, "You already rated this ticket.")
+    t.customer_satisfaction = body.score
+    if body.comment and body.comment.strip():
+        db.add(TicketComment(ticket_id=t.id, body=f"Rating {body.score}/5: {body.comment.strip()}\n\n— {user.full_name}",
+                             is_internal=False))
+    await db.commit()
+    return {"rating": t.customer_satisfaction}
 
 
 # ── feedback (NPS) and loyalty (M40.S01.T001) ────────────────────────────────

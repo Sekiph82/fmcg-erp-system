@@ -314,7 +314,7 @@ function ClaimsTab({ me, fail, onDone }: { me: PortalMe; fail: (e: unknown) => v
   );
 }
 
-interface Ticket { id: string; ticket_no: string; category: string; status: string; subject: string; created_at: string | null; resolution_notes: string | null;
+interface Ticket { id: string; ticket_no: string; category: string; status: string; subject: string; created_at: string | null; resolution_notes: string | null; rating?: number | null;
   description?: string; thread?: { body: string; from_us: boolean; at: string | null }[];
   attachments?: { id: string; file_name: string; size: number; from_customer: boolean; downloadable: boolean; scan_status: string }[] }
 
@@ -324,6 +324,7 @@ function SupportTab({ fail, onDone }: { fail: (e: unknown) => void; onDone: (t: 
   const [form, setForm] = useState({ category: "DELIVERY", subject: "", description: "" });
   const [reply, setReply] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [rateNote, setRateNote] = useState("");
   const load = useCallback(() => { ps<Ticket[]>("/tickets").then(setRows).catch(fail); }, [fail]);
   useEffect(load, [load]);
   const show = (id: string) => ps<Ticket>(`/tickets/${id}`).then(setOpen).catch(fail);
@@ -366,6 +367,15 @@ function SupportTab({ fail, onDone }: { fail: (e: unknown) => void; onDone: (t: 
                 </ul>
               )}
               {open.resolution_notes && <p className="text-xs text-emerald-700">Resolution: {open.resolution_notes}</p>}
+              {(open.status === "RESOLVED" || open.status === "CLOSED") && (open.rating
+                ? <p className="text-xs text-gray-600">Your rating: {"★".repeat(open.rating)}{"☆".repeat(5 - open.rating)}</p>
+                : <div role="group" aria-label="Rate how we solved this" className="rounded-lg bg-amber-50 p-2 space-y-1.5">
+                    <p className="text-xs font-medium text-amber-900">How well did we solve this?</p>
+                    <input aria-label="Comment (optional)" placeholder="Comment (optional)" value={rateNote} onChange={(e) => setRateNote(e.target.value)} className="w-full border rounded-lg px-2 py-1 text-xs" />
+                    <div className="flex gap-1">{[1, 2, 3, 4, 5].map((n) => (
+                      <button key={n} aria-label={`${n} of 5`} onClick={async () => { try { await post(`/tickets/${open.id}/rate`, { score: n, comment: rateNote || null }); setRateNote(""); onDone("Thank you for your rating."); show(open.id); } catch (e) { fail(e); } }}
+                        className="w-9 h-9 rounded-lg border bg-white text-sm leading-none">{n}★</button>))}</div>
+                  </div>)}
               {open.status !== "CLOSED" && (
                 <label className="text-xs text-indigo-700 inline-flex items-center gap-1 cursor-pointer">
                   <input type="file" className="sr-only" accept=".pdf,.png,.jpg,.jpeg,.txt,.csv,.docx,.xlsx" disabled={uploading}

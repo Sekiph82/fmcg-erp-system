@@ -290,3 +290,39 @@ async def test_review_fixes_scope_leak_self_approval_stage_order():
             assert (await c.post(f"/api/v1/brand-assets/{asset_id}/stages/{s2}/approve", json={})).status_code == 409
     finally:
         app.dependency_overrides.pop(get_current_user, None)
+
+
+@pytest.mark.asyncio
+async def test_customer_rates_a_resolved_ticket_once():
+    from types import SimpleNamespace
+
+    import httpx
+
+    from app.core.external_auth import get_portal_user
+    from app.main import app
+    from app.models.helpdesk import HelpdeskTicket, TicketStatus
+    from app.models.sales import Customer
+
+    tag = uuid4().hex[:8].upper()
+    async with AsyncSessionLocal() as db:
+        assert (await db.execute(select(func.current_database()))).scalar_one() == os.environ[TASK_DB_NAME_ENV]
+        cust = Customer(code=f"C-POVU-{tag}", name="POVU Kisumu Shop", currency="KES")
+        db.add(cust)
+        await db.flush()
+        open_t = HelpdeskTicket(ticket_no=f"TK-O{tag}", customer_id=cust.id, subject="Late POVU delivery")
+        done_t = HelpdeskTicket(ticket_no=f"TK-R{tag}", customer_id=cust.id, subject="Broken POVU carton",
+                                status=TicketStatus.RESOLVED, resolution_notes="Replacement delivered")
+        db.add_all([open_t, done_t])
+        await db.commit()
+        cid, open_id, done_id = cust.id, open_t.id, done_t.id
+    app.dependency_overrides[get_portal_user] = lambda: SimpleNamespace(
+        full_name="Shop Owner", account=SimpleNamespace(linked_customer_id=str(cid)))
+    try:
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as c:
+            assert (await c.post(f"/api/v1/portal-self/tickets/{open_id}/rate", json={"score": 5})).status_code == 409
+            r = await c.post(f"/api/v1/portal-self/tickets/{done_id}/rate", json={"score": 4, "comment": "Quick fix"})
+            assert r.status_code == 200 and r.json() == {"rating": 4}
+            assert (await c.post(f"/api/v1/portal-self/tickets/{done_id}/rate", json={"score": 1})).status_code == 409
+            assert (await c.get(f"/api/v1/portal-self/tickets/{done_id}")).json()["rating"] == 4
+    finally:
+        app.dependency_overrides.pop(get_portal_user, None)
