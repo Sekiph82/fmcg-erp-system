@@ -71,10 +71,11 @@ export function EntityPicker({ kind, value, onChange, placeholder, required, lab
 
   const pendingScan = useRef<string | null>(null);
   const pick = (r: Row) => { onChange(s(r.id)); setChosen(cfg.label(r)); setChosenFor(s(r.id)); setOpen(false); };
-  const exact = (rows: Row[], code: string) => {
+  const exact = (rows: Row[], code: string, allowSingle = false) => {
     const c = code.trim().toLowerCase();
     const hits = rows.filter((r) => [cfg.label(r), ...(cfg.sub?.(r) ?? "").split(" · ")].some((v) => v.trim().toLowerCase() === c));
-    return hits.length === 1 ? hits[0] : rows.length === 1 ? rows[0] : null;
+    // a scan must match a code exactly; a typed search + Enter may take the only result
+    return hits.length === 1 ? hits[0] : allowSingle && rows.length === 1 ? rows[0] : null;
   };
   useEffect(() => {  // a scanned code: choose it as soon as the search for it returns
     if (pendingScan.current === null || pendingScan.current !== q) return;
@@ -88,7 +89,7 @@ export function EntityPicker({ kind, value, onChange, placeholder, required, lab
       <input role="combobox" aria-expanded={open} aria-controls={listId} aria-label={label ?? placeholder ?? kind}
         required={required && !value} value={open ? q : chosen} placeholder={placeholder ?? `Search ${kind.replace("_", " ")}…`}
         onFocus={() => { setOpen(true); setQ(""); }} onChange={(e) => { setQ(e.target.value); setOpen(true); }}
-        onKeyDown={(e) => { if (e.key === "Enter" && open) { e.preventDefault(); const hit = exact(shown, q); if (hit) pick(hit); else pendingScan.current = q; } }}
+        onKeyDown={(e) => { if (e.key === "Enter" && open) { e.preventDefault(); const hit = exact(shown, q, true); if (hit) pick(hit); else pendingScan.current = q; } }}
         className="w-full border rounded px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none" />
       {scan && (
         <div className="absolute right-7 top-1/2 -translate-y-1/2">

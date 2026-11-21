@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional, List
 from app.db.session import get_db
+from app.core.deps import get_current_user
 from app.schemas.chatter import (
     ActivityOut, ActivityCreate, ActivityPage,
     CommentCreate, CommentOut, CommentEdit,
@@ -87,7 +88,9 @@ async def get_sla_breached(limit: int = Query(50, ge=1, le=200), db: AsyncSessio
 @router.post("/activities/{activity_id}/comment", response_model=ActivityOut)
 async def post_comment(
     activity_id: str, data: CommentCreate, db: AsyncSession = Depends(get_db)
+, current_user=Depends(get_current_user)
 ):
+    data = data.model_copy(update={"user_id": str(current_user.id), "user_name": current_user.full_name or current_user.username})
     try:
         return await chatter_service.post_comment(db, activity_id, data)
     except ValueError as e:
@@ -96,8 +99,9 @@ async def post_comment(
 
 @router.patch("/comments/{comment_id}", response_model=CommentOut)
 async def edit_comment(
-    comment_id: str, data: CommentEdit, db: AsyncSession = Depends(get_db)
+    comment_id: str, data: CommentEdit, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)
 ):
+    await _own_comment(db, comment_id, current_user)
     try:
         return await chatter_service.edit_comment(db, comment_id, data.message)
     except ValueError as e:
@@ -105,7 +109,8 @@ async def edit_comment(
 
 
 @router.delete("/comments/{comment_id}")
-async def delete_comment(comment_id: str, db: AsyncSession = Depends(get_db)):
+async def delete_comment(comment_id: str, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    await _own_comment(db, comment_id, current_user)
     try:
         await chatter_service.delete_comment(db, comment_id)
         return {"ok": True}
@@ -156,3 +161,13 @@ async def ack_ai_rec(rec_id: str, data: CTAIRecAck, db: AsyncSession = Depends(g
         return await chatter_service.ack_ai_rec(db, rec_id, data)
     except ValueError as e:
         raise HTTPException(404, str(e))
+
+
+
+async def _own_comment(db: AsyncSession, comment_id: str, user) -> None:
+    from app.models.chatter import ActivityComment
+    c = await db.get(ActivityComment, comment_id)
+    if c is None:
+        raise HTTPException(404, "Comment not found")
+    if not (getattr(user, "is_superuser", False) or (c.user_id and c.user_id == str(user.id))):
+        raise HTTPException(403, "Only the author can change this comment.")

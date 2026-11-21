@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
+from app.core.deps import get_current_user
 from app.schemas.appraisals import (
     AppraisalPeriodCreate, AppraisalPeriodUpdate, AppraisalPeriodOut,
     AppraisalTemplateCreate, AppraisalTemplateOut,
@@ -91,20 +92,26 @@ async def list_records(
     department_id: Optional[str] = None,
     status: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
 ):
-    return await svc.list_records(db, period_id, employee_id, department_id, status)
+    rows = await svc.list_records(db, period_id, employee_id, department_id, status)
+    if _is_hr(current_user) or _hr_viewer(current_user):
+        return rows
+    mine = await _my_employee_ids(db, current_user)   # others: their own and their team's appraisals only
+    return [r for r in rows if str(r.employee_id) in mine or (r.manager_id is not None and str(r.manager_id) in mine)]
 
 
 @router.get("/{appraisal_id}", response_model=AppraisalRecordOut)
-async def get_record(appraisal_id: UUID, db: AsyncSession = Depends(get_db)):
+async def get_record(appraisal_id: UUID, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
     obj = await svc.get_record(db, appraisal_id)
-    if not obj:
+    if not obj or not await _may(db, obj, current_user, "view"):
         raise HTTPException(404, "Appraisal not found")
     return obj
 
 
 @router.post("/{appraisal_id}/self-submit", response_model=AppraisalRecordOut)
-async def self_submit(appraisal_id: UUID, data: SelfSubmitRequest, db: AsyncSession = Depends(get_db)):
+async def self_submit(appraisal_id: UUID, data: SelfSubmitRequest, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    await _require(db, appraisal_id, current_user, "self")
     obj = await svc.self_submit(db, appraisal_id, data)
     if not obj:
         raise HTTPException(400, "Cannot self-submit in current status")
@@ -112,7 +119,8 @@ async def self_submit(appraisal_id: UUID, data: SelfSubmitRequest, db: AsyncSess
 
 
 @router.post("/{appraisal_id}/manager-review", response_model=AppraisalRecordOut)
-async def manager_review(appraisal_id: UUID, data: ManagerReviewRequest, db: AsyncSession = Depends(get_db)):
+async def manager_review(appraisal_id: UUID, data: ManagerReviewRequest, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    await _require(db, appraisal_id, current_user, "manager")
     obj = await svc.manager_review(db, appraisal_id, data)
     if not obj:
         raise HTTPException(400, "Cannot manager-review in current status")
@@ -120,7 +128,8 @@ async def manager_review(appraisal_id: UUID, data: ManagerReviewRequest, db: Asy
 
 
 @router.post("/{appraisal_id}/hr-review", response_model=AppraisalRecordOut)
-async def hr_review(appraisal_id: UUID, data: HRReviewRequest, db: AsyncSession = Depends(get_db)):
+async def hr_review(appraisal_id: UUID, data: HRReviewRequest, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    await _require(db, appraisal_id, current_user, "hr")
     obj = await svc.hr_review(db, appraisal_id, data)
     if not obj:
         raise HTTPException(400, "Cannot HR-review in current status")
@@ -128,7 +137,8 @@ async def hr_review(appraisal_id: UUID, data: HRReviewRequest, db: AsyncSession 
 
 
 @router.post("/{appraisal_id}/finalize", response_model=AppraisalRecordOut)
-async def finalize(appraisal_id: UUID, data: FinalizeRequest, db: AsyncSession = Depends(get_db)):
+async def finalize(appraisal_id: UUID, data: FinalizeRequest, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    await _require(db, appraisal_id, current_user, "hr_approve")
     obj = await svc.finalize_appraisal(db, appraisal_id, data)
     if not obj:
         raise HTTPException(400, "Cannot finalize in current status")
@@ -136,7 +146,8 @@ async def finalize(appraisal_id: UUID, data: FinalizeRequest, db: AsyncSession =
 
 
 @router.post("/{appraisal_id}/reject", response_model=AppraisalRecordOut)
-async def reject(appraisal_id: UUID, notes: Optional[str] = None, db: AsyncSession = Depends(get_db)):
+async def reject(appraisal_id: UUID, notes: Optional[str] = None, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    await _require(db, appraisal_id, current_user, "hr_approve")
     obj = await svc.reject_appraisal(db, appraisal_id, notes)
     if not obj:
         raise HTTPException(404, "Appraisal not found")
@@ -144,7 +155,8 @@ async def reject(appraisal_id: UUID, notes: Optional[str] = None, db: AsyncSessi
 
 
 @router.post("/{appraisal_id}/calculate-scores", response_model=AppraisalRecordOut)
-async def calculate_scores(appraisal_id: UUID, db: AsyncSession = Depends(get_db)):
+async def calculate_scores(appraisal_id: UUID, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    await _require(db, appraisal_id, current_user, "hr")
     obj = await svc.calculate_scores(db, appraisal_id)
     if not obj:
         raise HTTPException(404, "Appraisal not found")
@@ -269,3 +281,49 @@ async def ack_ai_rec(rec_id: UUID, data: APAIRecAck, db: AsyncSession = Depends(
     if not obj:
         raise HTTPException(404, "Recommendation not found")
     return obj
+
+
+
+# ── who may do what (M40 review): the employee their own self-review, their manager the manager review,
+# HR everything (finalize/reject need an approval right) ──────────────────────────────────────────────
+
+async def _my_employee_ids(db: AsyncSession, user) -> set[str]:
+    from sqlalchemy import select
+    from app.models.hr import Employee
+    ids = (await db.execute(select(Employee.id).where(Employee.user_id == user.id))).scalars().all()
+    return {str(i) for i in ids} | {str(user.id)}
+
+
+def _hr_viewer(user) -> bool:
+    from app.core.access_control import has_any_permission
+    return has_any_permission(user, ("hr.view_all",))
+
+
+def _is_hr(user, approve: bool = False) -> bool:
+    from app.core.access_control import has_any_permission
+    if getattr(user, "is_superuser", False):
+        return True
+    return has_any_permission(user, ("hr.approve",) if approve else ("hr.edit", "hr.approve", "hr.create"))
+
+
+async def _may(db: AsyncSession, rec, user, role: str) -> bool:
+    mine = await _my_employee_ids(db, user)
+    if role == "self":
+        return str(rec.employee_id) in mine
+    if role == "manager":
+        return rec.manager_id is not None and str(rec.manager_id) in mine
+    if role == "hr":
+        return _is_hr(user)
+    if role == "hr_approve":
+        return _is_hr(user, approve=True)
+    from app.core.access_control import has_any_permission
+    return (str(rec.employee_id) in mine or (rec.manager_id is not None and str(rec.manager_id) in mine)
+            or _is_hr(user) or _hr_viewer(user))
+
+
+async def _require(db: AsyncSession, appraisal_id, user, role: str) -> None:
+    rec = await svc.get_record(db, appraisal_id)
+    if rec is None:
+        raise HTTPException(404, "Appraisal not found")
+    if not await _may(db, rec, user, role):
+        raise HTTPException(403, "You cannot do this on this appraisal.")

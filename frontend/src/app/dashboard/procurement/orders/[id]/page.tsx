@@ -117,31 +117,28 @@ export default function PODetailPage() {
     onError: (e) => toast("error", "Failed", extractApiError(e)),
   });
 
-  // M40.S01.T003: scan-driven receipt — item barcode/code → its PO line +1; anything else after an item → that line's lot
+  // M40.S01.T003: scan-driven receipt — an item scan adds one to its PO line; a lot scan sets the lot of the last item
   const [scanMsg, setScanMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const lastLine = useRef<number | null>(null);
   const grnScan = async (code: string) => {
     let hit: { id: string } | undefined;
-    try { hit = ((await apiClient.get("/api/v1/lookup/material", { params: { search: code, limit: 5 } })).data as { id: string; label: string; sub: string }[])
-      .find((r) => [r.label, ...r.sub.split(" · ")].some((v) => v.trim().toLowerCase() === code.trim().toLowerCase())); } catch { hit = undefined; }
+    try { hit = ((await apiClient.get("/api/v1/lookup/material", { params: { search: code, exact: true, limit: 5 } })).data as { id: string }[])[0]; }
+    catch { hit = undefined; }
     const idx = hit ? grnLines.findIndex((l) => l.material_id === hit!.id) : -1;
-    if (idx >= 0) {
-      lastLine.current = idx;
-      setGrnLines((ls) => ls.map((r, i) => {
-        if (i !== idx) return r;
-        const n = String((parseFloat(r.received_quantity) || 0) + 1);
-        return { ...r, received_quantity: n, accepted_quantity: n };
-      }));
-      setScanMsg({ ok: true, text: `${grnLines[idx].material_name}: +1` });
-    } else if (hit) {
-      setScanMsg({ ok: false, text: "That item is not on this purchase order." });
-    } else if (lastLine.current !== null) {
-      const li = lastLine.current;
-      setGrnLines((ls) => ls.map((r, i) => (i === li ? { ...r, lot_number: code } : r)));
-      setScanMsg({ ok: true, text: `Lot ${code} set for ${grnLines[li].material_name}` });
-    } else {
-      setScanMsg({ ok: false, text: "Unknown barcode — scan an item on this order first." });
-    }
+    if (idx < 0) { setScanMsg({ ok: false, text: hit ? "That item is not on this purchase order." : `Unknown item code ${code}.` }); return; }
+    lastLine.current = idx;
+    setGrnLines((ls) => ls.map((r, i) => {
+      if (i !== idx) return r;
+      const received = (parseFloat(r.received_quantity) || 0) + 1;
+      return { ...r, received_quantity: String(received), accepted_quantity: String(Math.max(0, received - (parseFloat(r.rejected_quantity) || 0))) };
+    }));
+    setScanMsg({ ok: true, text: `${grnLines[idx].material_name}: +1` });
+  };
+  const lotScan = (code: string) => {
+    if (lastLine.current === null) { setScanMsg({ ok: false, text: "Scan an item first, then its lot label." }); return; }
+    const li = lastLine.current;
+    setGrnLines((ls) => ls.map((r, i) => (i === li ? { ...r, lot_number: code } : r)));
+    setScanMsg({ ok: true, text: `Lot ${code} set for ${grnLines[li].material_name}` });
   };
 
   const createGRN = useMutation({
@@ -506,7 +503,8 @@ export default function PODetailPage() {
           <div>
             <p className="text-sm font-semibold text-gray-700 mb-2">Receipt Lines</p>
             <div className="mb-3 space-y-1">
-              <ScanInput id="grn-scan" label="Scan item barcode (adds 1 to its line) — or a lot label after an item" onScan={grnScan} />
+              <ScanInput id="grn-scan" label="Scan item code (adds 1 to its line)" onScan={grnScan} />
+              <ScanInput id="grn-lot" label="Scan lot label (for the last scanned item)" onScan={lotScan} />
               {scanMsg && <p role="status" className={`text-xs ${scanMsg.ok ? "text-emerald-700" : "text-red-700"}`}>{scanMsg.text}</p>}
             </div>
             <div className="space-y-3">

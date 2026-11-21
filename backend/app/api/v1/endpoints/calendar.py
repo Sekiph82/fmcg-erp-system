@@ -5,6 +5,10 @@ from typing import Optional, List
 from datetime import datetime, timezone
 from pydantic import BaseModel as _BM
 from app.db.session import get_db
+from app.core.deps import get_current_user
+from app.core.access_control import require_any_permission
+SHIFT_ADMIN = require_any_permission(("hr.edit", "hr.approve", "production.edit", "shop_floor.edit", "planning.edit"))
+CAL_ADMIN = require_any_permission(("company.edit", "company.manage", "users.edit"))
 from app.schemas.calendar import (
     ResourceOut, ResourceCreate, ResourceUpdate,
     EventOut, EventCreate, EventUpdate,
@@ -36,12 +40,12 @@ async def list_resources(
     return await calendar_service.list_resources(db, resource_type, status)
 
 
-@router.post("/resources", response_model=ResourceOut)
+@router.post("/resources", response_model=ResourceOut, dependencies=[Depends(CAL_ADMIN)])
 async def create_resource(data: ResourceCreate, db: AsyncSession = Depends(get_db)):
     return await calendar_service.create_resource(db, data)
 
 
-@router.patch("/resources/{resource_id}", response_model=ResourceOut)
+@router.patch("/resources/{resource_id}", response_model=ResourceOut, dependencies=[Depends(CAL_ADMIN)])
 async def update_resource(
     resource_id: str, data: ResourceUpdate, db: AsyncSession = Depends(get_db)
 ):
@@ -66,7 +70,8 @@ async def list_events(
 
 
 @router.post("/events", response_model=EventOut)
-async def create_event(data: EventCreate, db: AsyncSession = Depends(get_db)):
+async def create_event(data: EventCreate, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    data = data.model_copy(update={"created_by": current_user.username})   # organiser = signed-in user
     try:
         return await calendar_service.create_event(db, data)
     except ValueError as e:
@@ -83,8 +88,9 @@ async def get_event(event_id: str, db: AsyncSession = Depends(get_db)):
 
 @router.patch("/events/{event_id}", response_model=EventOut)
 async def update_event(
-    event_id: str, data: EventUpdate, db: AsyncSession = Depends(get_db)
+    event_id: str, data: EventUpdate, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)
 ):
+    await _own_event(db, event_id, current_user)
     try:
         return await calendar_service.update_event(db, event_id, data)
     except ValueError as e:
@@ -92,7 +98,8 @@ async def update_event(
 
 
 @router.delete("/events/{event_id}")
-async def cancel_event(event_id: str, db: AsyncSession = Depends(get_db)):
+async def cancel_event(event_id: str, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    await _own_event(db, event_id, current_user)
     try:
         await calendar_service.cancel_event(db, event_id)
         return {"ok": True}
@@ -122,7 +129,7 @@ async def create_booking(data: BookingCreate, db: AsyncSession = Depends(get_db)
         raise HTTPException(400, str(e))
 
 
-@router.post("/bookings/{booking_id}/confirm", response_model=BookingOut)
+@router.post("/bookings/{booking_id}/confirm", response_model=BookingOut, dependencies=[Depends(CAL_ADMIN)])
 async def confirm_booking(booking_id: str, db: AsyncSession = Depends(get_db)):
     try:
         return await calendar_service.confirm_booking(db, booking_id)
@@ -174,19 +181,19 @@ async def list_ai_recs(db: AsyncSession = Depends(get_db)):
     return await calendar_service.list_ai_recs(db)
 
 
-@router.post("/ai/run/schedule-optimizer")
+@router.post("/ai/run/schedule-optimizer", dependencies=[Depends(CAL_ADMIN)])
 async def run_schedule_optimizer(db: AsyncSession = Depends(get_db)):
     count = await calendar_service.run_schedule_optimizer(db)
     return {"generated": count}
 
 
-@router.post("/ai/run/conflict-resolver")
+@router.post("/ai/run/conflict-resolver", dependencies=[Depends(CAL_ADMIN)])
 async def run_conflict_resolver(db: AsyncSession = Depends(get_db)):
     count = await calendar_service.run_conflict_resolver(db)
     return {"generated": count}
 
 
-@router.patch("/ai/recs/{rec_id}", response_model=CAIRecOut)
+@router.patch("/ai/recs/{rec_id}", response_model=CAIRecOut, dependencies=[Depends(CAL_ADMIN)])
 async def ack_ai_rec(rec_id: str, data: CAIRecAck, db: AsyncSession = Depends(get_db)):
     try:
         return await calendar_service.ack_ai_rec(db, rec_id, data)
@@ -208,7 +215,7 @@ class ShiftIn(_BM):
     notes: Optional[str] = None
 
 
-@router.post("/shifts", status_code=201)
+@router.post("/shifts", status_code=201, dependencies=[Depends(SHIFT_ADMIN)])
 async def create_shift(payload: ShiftIn, db: AsyncSession = Depends(get_db)):
     """Create a staff shift schedule entry."""
     from app.models.calendar import ShiftSchedule, ShiftType
@@ -288,7 +295,8 @@ async def list_shifts(
 
 
 @router.patch("/shifts/{shift_id}/approve")
-async def approve_shift(shift_id: str, approved_by: str = Query(...), db: AsyncSession = Depends(get_db)):
+async def approve_shift(shift_id: str, db: AsyncSession = Depends(get_db), current_user=Depends(SHIFT_ADMIN)):
+    approved_by = current_user.full_name or current_user.username   # the approver is the signed-in user
     """Approve a shift entry."""
     from app.models.calendar import ShiftSchedule
     result = await db.execute(select(ShiftSchedule).where(ShiftSchedule.shift_id == shift_id))
@@ -301,7 +309,7 @@ async def approve_shift(shift_id: str, approved_by: str = Query(...), db: AsyncS
     return {"shift_id": shift_id, "approved": True, "approved_by": approved_by}
 
 
-@router.delete("/shifts/{shift_id}", status_code=204)
+@router.delete("/shifts/{shift_id}", status_code=204, dependencies=[Depends(SHIFT_ADMIN)])
 async def delete_shift(shift_id: str, db: AsyncSession = Depends(get_db)):
     from app.models.calendar import ShiftSchedule
     result = await db.execute(select(ShiftSchedule).where(ShiftSchedule.shift_id == shift_id))
@@ -310,3 +318,15 @@ async def delete_shift(shift_id: str, db: AsyncSession = Depends(get_db)):
         raise HTTPException(404, "Shift not found")
     await db.delete(shift)
     await db.commit()
+
+
+
+async def _own_event(db: AsyncSession, event_id: str, user) -> None:
+    from app.core.access_control import has_any_permission
+    from app.models.calendar import CalendarEvent
+    ev = await db.get(CalendarEvent, event_id)
+    if ev is None:
+        raise HTTPException(404, "Event not found")
+    if not (getattr(user, "is_superuser", False) or ev.created_by in (user.username, str(user.id))
+            or has_any_permission(user, ("company.edit", "company.manage", "users.edit"))):
+        raise HTTPException(403, "Only the organiser can change this event.")

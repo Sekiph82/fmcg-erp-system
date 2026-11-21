@@ -18,7 +18,7 @@ from fastapi.routing import APIRoute
 from app.core.access_control import get_effective_permission_codes
 
 UTIL = ("utilities", "utility_management")
-HR = ("hr", "employees", "payroll")
+HR = ("hr",)  # appraisals, training, recruitment: HR only (not payroll clerks)
 PROD = ("production", "production_execution", "planning", "shop_floor", "mps")
 QUALITY = ("quality", "qms")
 
@@ -35,6 +35,8 @@ MODULE_GUARDS: dict[str, tuple[str, ...]] = {
     "/contracts": ("sales", "procurement", "finance"),
     "/copacking": ("production", "procurement"),
     "/custom-fields": ("company", "roles", "users", "sales", "crm", "inventory", "procurement", "production", "hr", "finance"),
+    "/procurement/suggestions": ("procurement", "mrp", "planning"),
+    "/production-cost": ("production", "finance"),
     "/cycle-count": ("cycle_count", "inventory", "wms"),
     "/dimensions": ("finance",),
     "/dunning": ("finance", "sales"),
@@ -74,12 +76,19 @@ MODULE_GUARDS: dict[str, tuple[str, ...]] = {
     "/wms": ("wms", "inventory"),
 }
 
+# A handler counts as checking permissions itself only for real calls in its BODY (signature/decorator excluded).
 _OWN_CHECK = re.compile(
-    r"has_permission|has_any_permission|require_permission|require_any_permission|ensure_\w+|_superuser_only|"
-    r"is_superuser|_guard|_can_\w+|_my_\w+|_scope\(|_own_or_404|can_modify_record|check_permission|"
-    r"_require\w*|_assert\w*|get_portal_user|get_supplier_user|verify_\w+|_mine|current_user\.id\s*[!=]=|"
-    r"user_id\s*==\s*current_user|_allowed\(|forbid|403|_scoped|scope_|_visible|_owned", re.I)
+    r"\b(has_permission|has_any_permission|require_permission|require_any_permission|can_modify_record|can_view_record|"
+    r"can_view_scope|can_modify_scope|can_access_scope|check_permission|ensure_\w+|_superuser_only|_can_\w+|_my_\w+|"
+    r"_own_or_404|_scope|apply_\w*scope\w*|get_portal_user|get_supplier_user)\s*\(|"
+    r"\bis_superuser\b|current_user\.id\s*[!=]=|==\s*current_user\.id|"
+    r"HTTPException\(\s*(status_code\s*=\s*)?(403|status\.HTTP_403_FORBIDDEN)")
 _BASE_DEPS = {"get_current_user", "get_db"}
+_PERMISSION_DEP = re.compile(r"permission|require|superuser|guard|portal_user|supplier_user|verify_|realm", re.I)
+# write actions that need an approval-level right, not just any write right (segregation of duties)
+APPROVAL_SEGMENTS = {"approve", "reject", "post", "finalize", "mark-paid", "pay", "void", "dispose", "revalue", "impair",
+                     "close-period", "reverse", "write-off", "release"}
+APPROVAL_ACTIONS = {"approve", "approve_all", "post", "manage"}
 
 
 def _dep_names(dependant, out: list[str]) -> list[str]:
@@ -91,15 +100,35 @@ def _dep_names(dependant, out: list[str]) -> list[str]:
     return out
 
 
-def has_own_check(route: APIRoute, router_deps: list) -> bool:
-    """True when the route already enforces a permission (dependency or a check in its handler)."""
-    if router_deps or any(n not in _BASE_DEPS for n in _dep_names(route.dependant, [])):
-        return True
+def _body_source(fn) -> str:
+    import ast
+    import textwrap
     try:
-        body = inspect.getsource(route.endpoint).split("\n", 1)[1]
-    except (OSError, TypeError, IndexError):
-        return False
-    return bool(_OWN_CHECK.search(body))
+        src = textwrap.dedent(inspect.getsource(fn))
+        tree = ast.parse(src)
+    except (OSError, TypeError, SyntaxError):
+        return ""
+    node = next((n for n in tree.body if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))), None)
+    if node is None:
+        return ""
+    body = node.body
+    if body and isinstance(body[0], ast.Expr) and isinstance(getattr(body[0], "value", None), ast.Constant):
+        body = body[1:]  # docstring
+    return "\n".join(ast.get_source_segment(src, n) or "" for n in body)
+
+
+def has_own_check(route: APIRoute, router_deps: list) -> bool:
+    """True when the route already enforces a permission: a permission dependency, or a check in its body."""
+    names = [n for n in _dep_names(route.dependant, []) if n not in _BASE_DEPS]
+    if any(_PERMISSION_DEP.search(n) for n in names) or any(_PERMISSION_DEP.search(str(d)) for d in router_deps):
+        return True
+    return bool(_OWN_CHECK.search(_body_source(route.endpoint)))
+
+
+def _literal_segments(request: Request) -> list[str]:
+    route = request.scope.get("route")
+    path = getattr(route, "path", "") or request.url.path
+    return [seg for seg in path.split("/") if seg and not seg.startswith("{")]
 
 
 def module_guard(modules: tuple[str, ...]):
@@ -110,13 +139,26 @@ def module_guard(modules: tuple[str, ...]):
     async def _module_permission(request: Request, current_user=Depends(get_current_user)):
         if getattr(current_user, "is_superuser", False):
             return current_user
+        codes = get_effective_permission_codes(current_user)
+        if "*" in codes:
+            return current_user
         read = request.method in ("GET", "HEAD", "OPTIONS")
-        for code in get_effective_permission_codes(current_user):
-            if code == "*":
-                return current_user
+        segments = _literal_segments(request) + [p for p in request.url.path.split("/") if p]
+        need_mods, approval = mods, (not read and bool(APPROVAL_SEGMENTS.intersection(segments)))
+        if not read and "payments" in segments and "sales" in segments:
+            need_mods = frozenset({"finance"})          # recording customer money is a finance task
+        if not read and "custom-fields" in segments and "values" not in segments:
+            need_mods = frozenset({"company", "roles", "users"})   # field definitions are administration
+        for code in codes:
             module, _, action = code.partition(".")
-            if module in mods and (read or not (action.startswith("view") or action == "export")):
+            if module not in need_mods:
+                continue
+            if approval:
+                if action in APPROVAL_ACTIONS:
+                    return current_user
+            elif read or not (action.startswith("view") or action == "export"):
                 return current_user
-        raise HTTPException(403, {"detail": "Required permission is missing.", "modules": sorted(mods)})
+        detail = "This needs an approval right." if approval else "Required permission is missing."
+        raise HTTPException(403, {"detail": detail, "modules": sorted(need_mods)})
 
     return _module_permission

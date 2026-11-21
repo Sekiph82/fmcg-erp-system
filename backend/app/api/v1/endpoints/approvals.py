@@ -84,7 +84,7 @@ async def all_approval_requests(
 async def get_approval_request(
     request_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     result = await db.execute(
         select(ApprovalRequest)
@@ -93,7 +93,7 @@ async def get_approval_request(
         .where(ApprovalRequest.id == request_id)
     )
     req = result.scalar_one_or_none()
-    if not req:
+    if not req or not await _may_see(db, req, current_user):
         raise HTTPException(404, "Approval request not found")
     return _build_request(req)
 
@@ -167,12 +167,20 @@ async def reject(
 async def cancel(
     request_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
+    existing = await db.get(ApprovalRequest, request_id)
+    if existing is None or not (existing.requested_by_id == current_user.id or _approvals_admin(current_user)):
+        raise HTTPException(404, "Approval request not found")   # only the requester (or an administrator) cancels
     req = await svc.cancel_request(db, request_id)
     await db.commit()
-    await db.refresh(req)
-    return _build_request(req)
+    result = await db.execute(  # steps and requester loaded eagerly (a lazy load here was a 500)
+        select(ApprovalRequest)
+        .options(selectinload(ApprovalRequest.steps).selectinload(ApprovalStep.action_by),
+                 selectinload(ApprovalRequest.requested_by))
+        .where(ApprovalRequest.id == req.id).execution_options(populate_existing=True)
+    )
+    return _build_request(result.scalar_one())
 
 
 @router.post("/admin/escalate-overdue", response_model=dict,
@@ -236,3 +244,16 @@ async def delete_rule(rule_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
         raise HTTPException(404, "Rule not found")
     await db.delete(rule)
     await db.commit()
+
+
+
+def _approvals_admin(user) -> bool:
+    from app.core.access_control import has_any_permission
+    return bool(getattr(user, "is_superuser", False)) or has_any_permission(user, ("admin.manage", "company.manage", "users.manage"))
+
+
+async def _may_see(db: AsyncSession, req, user) -> bool:
+    """Requester, someone whose role is asked to act on it, or an approvals administrator (M40 review)."""
+    if req.requested_by_id == user.id or any(st.action_by_id == user.id for st in req.steps) or _approvals_admin(user):
+        return True
+    return any(r.id == req.id for r in await svc.get_pending_for_user(db, user.id))

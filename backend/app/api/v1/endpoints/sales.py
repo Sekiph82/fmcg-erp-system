@@ -551,9 +551,11 @@ async def list_invoices(
     status: Optional[InvoiceStatus] = None,
     customer_id: Optional[uuid.UUID] = None,
     db: AsyncSession = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user=Depends(require_any_permission(("sales.view", "sales.view_all", "sales.view_own_scope", "finance.view", "finance.view_all"))),
 ):
     invs = await crud.list_invoices(db, status=status, customer_id=customer_id)
+    if not _has_broad_sales_view(current_user) and not has_any_permission(current_user, ("finance.view", "finance.view_all")):
+        invs = [inv for inv in invs if _can_view_customer(current_user, await db.get(Customer, inv.customer_id))]
     return [_build_invoice_read(inv) for inv in invs]
 
 
@@ -584,10 +586,11 @@ async def create_invoice_from_shipment(
 async def get_invoice(
     invoice_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user=Depends(require_any_permission(("sales.view", "sales.view_all", "sales.view_own_scope", "finance.view", "finance.view_all"))),
 ):
     inv = await crud.get_invoice(db, invoice_id)
-    if not inv:
+    if not inv or (not _has_broad_sales_view(current_user) and not has_any_permission(current_user, ("finance.view", "finance.view_all"))
+                   and not _can_view_customer(current_user, await db.get(Customer, inv.customer_id))):
         raise HTTPException(404, "Invoice not found")
     return _build_invoice_detail(inv)
 

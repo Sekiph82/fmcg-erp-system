@@ -674,7 +674,7 @@ async def create_work_order(
     data = body.model_dump()
     data["plan_id"] = uuid.UUID(data["plan_id"])
     if data.get("technician_id"):  # the assignee must be a real active user; their name is kept for reports
-        tech = await db.get(User, uuid.UUID(data["technician_id"]))
+        tech = await db.get(User, _uuid_or_422(data["technician_id"]))
         if tech is None or not tech.is_active:
             raise HTTPException(status_code=422, detail="Unknown or inactive technician.")
         data["technician_id"], data["technician"] = tech.id, data.get("technician") or tech.full_name
@@ -707,6 +707,13 @@ async def complete_work_order(
     await db.commit()
     wo = await crud.get_work_order(db, wo_id)
     return _wo_read(wo)
+
+
+def _uuid_or_422(value) -> uuid.UUID:
+    try:
+        return uuid.UUID(str(value))
+    except ValueError:
+        raise HTTPException(status_code=422, detail="Invalid technician id.")
 
 
 # ── Breakdowns ─────────────────────────────────────────────────────────────────
@@ -774,7 +781,7 @@ async def create_breakdown(
     if data.get("production_order_id"):
         data["production_order_id"] = uuid.UUID(data["production_order_id"])
     if data.get("assigned_to_id"):
-        tech = await db.get(User, uuid.UUID(data["assigned_to_id"]))
+        tech = await db.get(User, _uuid_or_422(data["assigned_to_id"]))
         if tech is None or not tech.is_active:
             raise HTTPException(status_code=422, detail="Unknown or inactive technician.")
         data["assigned_to_id"] = tech.id
@@ -831,7 +838,7 @@ async def update_breakdown(
     if "reason_code" in update_data:
         update_data["reason_code"] = await validate_downtime_reason_code(db, update_data["reason_code"])
     if "assigned_to_id" in update_data:
-        tech = await db.get(User, uuid.UUID(update_data["assigned_to_id"]))
+        tech = await db.get(User, _uuid_or_422(update_data["assigned_to_id"]))
         if tech is None or not tech.is_active:
             raise HTTPException(status_code=422, detail="Unknown or inactive technician.")
         update_data["assigned_to_id"] = tech.id
@@ -1070,7 +1077,7 @@ def _can_edit_all(user) -> bool:
 
 
 def _mine_wo(user):
-    return _or(_WO.technician_id == user.id, _and(_WO.technician_id.is_(None), _WO.technician == user.full_name))
+    return _WO.technician_id == user.id   # by user id only (names are free text and may repeat)
 
 
 async def _my_wo(db: AsyncSession, wo_id: uuid.UUID, user, lock: bool = False) -> _WO:
@@ -1078,8 +1085,7 @@ async def _my_wo(db: AsyncSession, wo_id: uuid.UUID, user, lock: bool = False) -
     wo = (await db.execute(q.with_for_update() if lock else q)).scalar_one_or_none()
     if wo is None:
         raise HTTPException(404, "Work order not found")
-    mine = wo.technician_id == user.id or (wo.technician_id is None and wo.technician and wo.technician == user.full_name)
-    if not (mine or _can_edit_all(user)):
+    if not (wo.technician_id == user.id or _can_edit_all(user)):
         raise HTTPException(403, "This job is assigned to someone else.")
     return wo
 
@@ -1215,6 +1221,8 @@ async def my_spares(kind: str, job_id: uuid.UUID, body: _SpareIn, db: AsyncSessi
         link = {"pm_work_order_id": wo.id}
     else:
         bd = await _my_bd(db, job_id, current_user)
+        if bd.status == _BDS.RESOLVED:
+            raise HTTPException(409, "This breakdown is already resolved.")
         asset_id, link = bd.asset_id, {"breakdown_id": bd.id}
     if await db.get(_Spare, body.spare_part_id) is None:
         raise HTTPException(422, "Unknown spare part.")

@@ -8,7 +8,7 @@ import uuid
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import String, cast, or_, select
+from sqlalchemy import String, cast, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.access_control import has_any_permission
@@ -87,12 +87,14 @@ def _row(m, label_cols, sub_cols) -> dict:
 
 @router.get("/{kind}")
 async def search(kind: str, search: Optional[str] = Query(None, max_length=100), limit: int = Query(20, ge=1, le=50),
-                 db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+                 db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user), exact: bool = False):
     model, (_, label_cols, sub_cols, perms) = _model(kind)
     if not _allowed(current_user, perms):
         raise HTTPException(403, "Required permission is missing.")
     q = select(model)
-    if search and search.strip():
+    if exact and search and search.strip():  # scanners: the whole code must match (case-insensitive)
+        q = q.where(or_(*[func.lower(cast(getattr(model, c), String)) == search.strip().lower() for c in label_cols]))
+    elif search and search.strip():
         term = search.strip().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
         like = f"%{term}%"
         q = q.where(or_(*[cast(getattr(model, c), String).ilike(like, escape="\\") for c in label_cols]))
