@@ -1,0 +1,1597 @@
+{
+ "owner": [
+  {
+   "group": "Main",
+   "items": [
+    "Dashboard",
+    "Help Center"
+   ]
+  },
+  {
+   "group": "Supply Chain",
+   "items": [
+    "Products",
+    "Materials",
+    "Suppliers",
+    "Inventory",
+    "Warehouses & WMS",
+    "Procurement"
+   ]
+  },
+  {
+   "group": "Manufacturing",
+   "items": [
+    "Production",
+    "Planning",
+    "NPD",
+    "BOM & Formula",
+    "Recipes",
+    "Quality",
+    "Compliance",
+    "Shop Floor"
+   ]
+  },
+  {
+   "group": "Commercial",
+   "items": [
+    "Sales",
+    "Warehouse Floor",
+    "Field App",
+    "My Jobs",
+    "CRM",
+    "Marketing",
+    "POS"
+   ]
+  },
+  {
+   "group": "Finance",
+   "items": [
+    "Finance"
+   ]
+  },
+  {
+   "group": "Factory Operations",
+   "items": [
+    "Maintenance",
+    "Utilities"
+   ]
+  },
+  {
+   "group": "Logistics",
+   "items": [
+    "Logistics"
+   ]
+  },
+  {
+   "group": "HR & Payroll",
+   "items": [
+    "HR",
+    "Kenya Payroll"
+   ]
+  },
+  {
+   "group": "Documents & Communication",
+   "items": [
+    "Documents",
+    "Communication",
+    "Helpdesk"
+   ]
+  },
+  {
+   "group": "Intelligence",
+   "items": [
+    "AI",
+    "Analytics"
+   ]
+  },
+  {
+   "group": "Administration",
+   "items": [
+    "Admin",
+    "Integrations"
+   ]
+  }
+ ],
+ "admin": [
+  {
+   "group": "Main",
+   "items": [
+    "Dashboard",
+    "Help Center"
+   ]
+  },
+  {
+   "group": "Manufacturing",
+   "items": [
+    "NPD",
+    "BOM & Formula",
+    "Recipes"
+   ]
+  },
+  {
+   "group": "Commercial",
+   "items": [
+    "My Jobs"
+   ]
+  },
+  {
+   "group": "Factory Operations",
+   "items": [
+    "Maintenance"
+   ]
+  },
+  {
+   "group": "Documents & Communication",
+   "items": [
+    "Documents",
+    "Communication"
+   ]
+  },
+  {
+   "group": "Intelligence",
+   "items": [
+    "AI"
+   ]
+  },
+  {
+   "group": "Administration",
+   "items": [
+    "Admin"
+   ]
+  }
+ ],
+ "ceo": [
+  {
+   "group": "Main",
+   "items": [
+    "Dashboard",
+    "Help Center"
+   ]
+  },
+  {
+   "group": "Supply Chain",
+   "items": [
+    "Products",
+    "Materials",
+    "Suppliers",
+    "Inventory",
+    "Warehouses & WMS",
+    "Procurement"
+   ]
+  },
+  {
+   "group": "Manufacturing",
+   "items": [
+    "Production",
+    "Planning",
+    "NPD",
+    "BOM & Formula",
+    "Recipes",
+    "Quality",
+    "Shop Floor"
+   ]
+  },
+  {
+   "group": "Commercial",
+   "items": [
+    "Sales",
+    "POS"
+   ]
+  },
+  {
+   "group": "Finance",
+   "items": [
+    "Finance"
+   ]
+  },
+  {
+   "group": "Factory Operations",
+   "items": [
+    "Maintenance",
+    "Utilities"
+   ]
+  },
+  {
+   "group": "Logistics",
+   "items": [
+    "Logistics"
+   ]
+  },
+  {
+   "group": "HR & Payroll",
+   "items": [
+    "HR",
+    "Kenya Payroll"
+   ]
+  },
+  {
+   "group": "Documents & Communication",
+   "items": [
+    "Documents",
+    "Communication",
+    "Helpdesk"
+   ]
+  },
+  {
+   "group": "Intelligence",
+   "items": [
+    "AI",
+    "Analytics"
+   ]
+  },
+  {
+   "group": "Administration",
+   "items": [
+    "Integrations"
+   ]
+  }
+ ],
+ "coo": [
+  {
+   "group": "Main",
+   "items": [
+    "Dashboard",
+    "Help Center"
+   ]
+  },
+  {
+   "group": "Supply Chain",
+   "items": [
+    "Products",
+    "Materials",
+    "Suppliers",
+    "Inventory",
+    "Warehouses & WMS",
+    "Procurement"
+   ]
+  },
+  {
+   "group": "Manufacturing",
+   "items": [
+    "Production",
+    "Planning",
+    "NPD",
+    "BOM & Formula",
+    "Recipes",
+    "Quality",
+    "Shop Floor"
+   ]
+  },
+  {
+   "group": "Commercial",
+   "items": [
+    "Sales",
+    "My Jobs",
+    "POS"
+   ]
+  },
+  {
+   "group": "Finance",
+   "items": [
+    "Finance"
+   ]
+  },
+  {
+   "group": "Factory Operations",
+   "items": [
+    "Maintenance"
+   ]
+  },
+  {
+   "group": "Logistics",
+   "items": [
+    "Logistics"
+   ]
+  },
+  {
+   "group": "HR & Payroll",
+   "items": [
+    "HR"
+   ]
+  },
+  {
+   "group": "Documents & Communication",
+   "items": [
+    "Documents",
+    "Communication",
+    "Helpdesk"
+   ]
+  },
+  {
+   "group": "Intelligence",
+   "items": [
+    "AI",
+    "Analytics"
+   ]
+  }
+ ],
+ "cfo": [
+  {
+   "group": "Main",
+   "items": [
+    "Dashboard",
+    "Help Center"
+   ]
+  },
+  {
+   "group": "Supply Chain",
+   "items": [
+    "Suppliers",
+    "Inventory",
+    "Warehouses & WMS",
+    "Procurement"
+   ]
+  },
+  {
+   "group": "Commercial",
+   "items": [
+    "Sales",
+    "POS"
+   ]
+  },
+  {
+   "group": "Finance",
+   "items": [
+    "Finance"
+   ]
+  },
+  {
+   "group": "HR & Payroll",
+   "items": [
+    "HR"
+   ]
+  },
+  {
+   "group": "Documents & Communication",
+   "items": [
+    "Documents",
+    "Communication"
+   ]
+  },
+  {
+   "group": "Intelligence",
+   "items": [
+    "Analytics"
+   ]
+  },
+  {
+   "group": "Administration",
+   "items": [
+    "Integrations"
+   ]
+  }
+ ],
+ "cto": [
+  {
+   "group": "Main",
+   "items": [
+    "Dashboard",
+    "Help Center"
+   ]
+  },
+  {
+   "group": "Supply Chain",
+   "items": [
+    "Products",
+    "Materials",
+    "Suppliers",
+    "Inventory",
+    "Warehouses & WMS",
+    "Procurement"
+   ]
+  },
+  {
+   "group": "Manufacturing",
+   "items": [
+    "Production",
+    "Planning",
+    "Quality",
+    "Shop Floor"
+   ]
+  },
+  {
+   "group": "Commercial",
+   "items": [
+    "Sales",
+    "POS"
+   ]
+  },
+  {
+   "group": "Finance",
+   "items": [
+    "Finance"
+   ]
+  },
+  {
+   "group": "Factory Operations",
+   "items": [
+    "Maintenance",
+    "Utilities"
+   ]
+  },
+  {
+   "group": "Logistics",
+   "items": [
+    "Logistics"
+   ]
+  },
+  {
+   "group": "HR & Payroll",
+   "items": [
+    "HR"
+   ]
+  },
+  {
+   "group": "Documents & Communication",
+   "items": [
+    "Documents",
+    "Communication",
+    "Helpdesk"
+   ]
+  },
+  {
+   "group": "Intelligence",
+   "items": [
+    "AI",
+    "Analytics"
+   ]
+  },
+  {
+   "group": "Administration",
+   "items": [
+    "Admin",
+    "Integrations"
+   ]
+  }
+ ],
+ "cmo": [
+  {
+   "group": "Main",
+   "items": [
+    "Dashboard",
+    "Help Center"
+   ]
+  },
+  {
+   "group": "Supply Chain",
+   "items": [
+    "Products",
+    "Inventory",
+    "Warehouses & WMS"
+   ]
+  },
+  {
+   "group": "Commercial",
+   "items": [
+    "Sales",
+    "CRM",
+    "Marketing",
+    "POS"
+   ]
+  },
+  {
+   "group": "Finance",
+   "items": [
+    "Finance"
+   ]
+  },
+  {
+   "group": "Documents & Communication",
+   "items": [
+    "Communication"
+   ]
+  },
+  {
+   "group": "Administration",
+   "items": [
+    "Integrations"
+   ]
+  }
+ ],
+ "data_manager": [
+  {
+   "group": "Main",
+   "items": [
+    "Dashboard",
+    "Help Center"
+   ]
+  },
+  {
+   "group": "Supply Chain",
+   "items": [
+    "Products",
+    "Materials",
+    "Suppliers",
+    "Inventory",
+    "Warehouses & WMS",
+    "Procurement"
+   ]
+  },
+  {
+   "group": "Manufacturing",
+   "items": [
+    "Production",
+    "Planning",
+    "Quality",
+    "Shop Floor"
+   ]
+  },
+  {
+   "group": "Commercial",
+   "items": [
+    "Sales",
+    "POS"
+   ]
+  },
+  {
+   "group": "Finance",
+   "items": [
+    "Finance"
+   ]
+  },
+  {
+   "group": "Factory Operations",
+   "items": [
+    "Maintenance"
+   ]
+  },
+  {
+   "group": "Logistics",
+   "items": [
+    "Logistics"
+   ]
+  },
+  {
+   "group": "HR & Payroll",
+   "items": [
+    "HR"
+   ]
+  },
+  {
+   "group": "Documents & Communication",
+   "items": [
+    "Documents",
+    "Communication",
+    "Helpdesk"
+   ]
+  },
+  {
+   "group": "Intelligence",
+   "items": [
+    "AI",
+    "Analytics"
+   ]
+  },
+  {
+   "group": "Administration",
+   "items": [
+    "Admin"
+   ]
+  }
+ ],
+ "finance_manager": [
+  {
+   "group": "Main",
+   "items": [
+    "Dashboard",
+    "Help Center"
+   ]
+  },
+  {
+   "group": "Commercial",
+   "items": [
+    "Sales",
+    "POS"
+   ]
+  },
+  {
+   "group": "Finance",
+   "items": [
+    "Finance"
+   ]
+  },
+  {
+   "group": "HR & Payroll",
+   "items": [
+    "Kenya Payroll"
+   ]
+  },
+  {
+   "group": "Documents & Communication",
+   "items": [
+    "Communication"
+   ]
+  }
+ ],
+ "sales_manager": [
+  {
+   "group": "Main",
+   "items": [
+    "Dashboard",
+    "Help Center"
+   ]
+  },
+  {
+   "group": "Supply Chain",
+   "items": [
+    "Products",
+    "Inventory",
+    "Warehouses & WMS"
+   ]
+  },
+  {
+   "group": "Commercial",
+   "items": [
+    "Sales",
+    "CRM",
+    "POS"
+   ]
+  },
+  {
+   "group": "Documents & Communication",
+   "items": [
+    "Communication"
+   ]
+  }
+ ],
+ "procurement_officer": [
+  {
+   "group": "Main",
+   "items": [
+    "Dashboard",
+    "Help Center"
+   ]
+  },
+  {
+   "group": "Supply Chain",
+   "items": [
+    "Materials",
+    "Suppliers",
+    "Inventory",
+    "Warehouses & WMS",
+    "Procurement"
+   ]
+  },
+  {
+   "group": "Documents & Communication",
+   "items": [
+    "Communication"
+   ]
+  }
+ ],
+ "warehouse_operator": [
+  {
+   "group": "Main",
+   "items": [
+    "Dashboard",
+    "Help Center"
+   ]
+  },
+  {
+   "group": "Supply Chain",
+   "items": [
+    "Products",
+    "Materials",
+    "Inventory",
+    "Warehouses & WMS"
+   ]
+  },
+  {
+   "group": "Documents & Communication",
+   "items": [
+    "Communication"
+   ]
+  }
+ ],
+ "production_supervisor": [
+  {
+   "group": "Main",
+   "items": [
+    "Dashboard",
+    "Help Center"
+   ]
+  },
+  {
+   "group": "Supply Chain",
+   "items": [
+    "Materials",
+    "Inventory",
+    "Warehouses & WMS"
+   ]
+  },
+  {
+   "group": "Manufacturing",
+   "items": [
+    "Production",
+    "Planning",
+    "Recipes",
+    "Quality",
+    "Shop Floor"
+   ]
+  },
+  {
+   "group": "Documents & Communication",
+   "items": [
+    "Communication",
+    "Helpdesk"
+   ]
+  }
+ ],
+ "quality_officer": [
+  {
+   "group": "Main",
+   "items": [
+    "Dashboard",
+    "Help Center"
+   ]
+  },
+  {
+   "group": "Supply Chain",
+   "items": [
+    "Products",
+    "Inventory",
+    "Warehouses & WMS"
+   ]
+  },
+  {
+   "group": "Manufacturing",
+   "items": [
+    "Production",
+    "Quality",
+    "Shop Floor"
+   ]
+  },
+  {
+   "group": "Documents & Communication",
+   "items": [
+    "Documents",
+    "Communication",
+    "Helpdesk"
+   ]
+  }
+ ],
+ "logistics_officer": [
+  {
+   "group": "Main",
+   "items": [
+    "Dashboard",
+    "Help Center"
+   ]
+  },
+  {
+   "group": "Supply Chain",
+   "items": [
+    "Suppliers",
+    "Inventory",
+    "Warehouses & WMS",
+    "Procurement"
+   ]
+  },
+  {
+   "group": "Logistics",
+   "items": [
+    "Logistics"
+   ]
+  },
+  {
+   "group": "Documents & Communication",
+   "items": [
+    "Documents",
+    "Communication"
+   ]
+  }
+ ],
+ "maintenance_technician": [
+  {
+   "group": "Main",
+   "items": [
+    "Dashboard",
+    "Help Center"
+   ]
+  },
+  {
+   "group": "Supply Chain",
+   "items": [
+    "Inventory",
+    "Warehouses & WMS"
+   ]
+  },
+  {
+   "group": "Commercial",
+   "items": [
+    "My Jobs"
+   ]
+  },
+  {
+   "group": "Factory Operations",
+   "items": [
+    "Maintenance"
+   ]
+  },
+  {
+   "group": "Documents & Communication",
+   "items": [
+    "Communication"
+   ]
+  }
+ ],
+ "hr_manager": [
+  {
+   "group": "Main",
+   "items": [
+    "Dashboard",
+    "Help Center"
+   ]
+  },
+  {
+   "group": "HR & Payroll",
+   "items": [
+    "HR",
+    "Kenya Payroll"
+   ]
+  },
+  {
+   "group": "Documents & Communication",
+   "items": [
+    "Documents",
+    "Communication"
+   ]
+  },
+  {
+   "group": "Administration",
+   "items": [
+    "Admin"
+   ]
+  }
+ ],
+ "company_admin": [
+  {
+   "group": "Main",
+   "items": [
+    "Dashboard",
+    "Help Center"
+   ]
+  },
+  {
+   "group": "Supply Chain",
+   "items": [
+    "Suppliers",
+    "Inventory",
+    "Warehouses & WMS",
+    "Procurement"
+   ]
+  },
+  {
+   "group": "Manufacturing",
+   "items": [
+    "Production",
+    "Planning",
+    "Quality",
+    "Shop Floor"
+   ]
+  },
+  {
+   "group": "Commercial",
+   "items": [
+    "Sales",
+    "POS"
+   ]
+  },
+  {
+   "group": "Finance",
+   "items": [
+    "Finance"
+   ]
+  },
+  {
+   "group": "Factory Operations",
+   "items": [
+    "Maintenance"
+   ]
+  },
+  {
+   "group": "Documents & Communication",
+   "items": [
+    "Communication",
+    "Helpdesk"
+   ]
+  },
+  {
+   "group": "Administration",
+   "items": [
+    "Admin"
+   ]
+  }
+ ],
+ "factory_manager": [
+  {
+   "group": "Main",
+   "items": [
+    "Dashboard",
+    "Help Center"
+   ]
+  },
+  {
+   "group": "Supply Chain",
+   "items": [
+    "Inventory",
+    "Warehouses & WMS"
+   ]
+  },
+  {
+   "group": "Manufacturing",
+   "items": [
+    "Production",
+    "Planning",
+    "NPD",
+    "BOM & Formula",
+    "Recipes",
+    "Quality",
+    "Shop Floor"
+   ]
+  },
+  {
+   "group": "Factory Operations",
+   "items": [
+    "Maintenance"
+   ]
+  },
+  {
+   "group": "Documents & Communication",
+   "items": [
+    "Communication",
+    "Helpdesk"
+   ]
+  }
+ ],
+ "warehouse_manager": [
+  {
+   "group": "Main",
+   "items": [
+    "Dashboard",
+    "Help Center"
+   ]
+  },
+  {
+   "group": "Supply Chain",
+   "items": [
+    "Products",
+    "Materials",
+    "Inventory",
+    "Warehouses & WMS"
+   ]
+  },
+  {
+   "group": "Commercial",
+   "items": [
+    "Warehouse Floor"
+   ]
+  },
+  {
+   "group": "Documents & Communication",
+   "items": [
+    "Communication"
+   ]
+  }
+ ],
+ "production_manager": [
+  {
+   "group": "Main",
+   "items": [
+    "Dashboard",
+    "Help Center"
+   ]
+  },
+  {
+   "group": "Manufacturing",
+   "items": [
+    "Production",
+    "Planning",
+    "NPD",
+    "BOM & Formula",
+    "Recipes",
+    "Shop Floor"
+   ]
+  },
+  {
+   "group": "Factory Operations",
+   "items": [
+    "Maintenance"
+   ]
+  },
+  {
+   "group": "Documents & Communication",
+   "items": [
+    "Communication"
+   ]
+  }
+ ],
+ "quality_manager": [
+  {
+   "group": "Main",
+   "items": [
+    "Dashboard",
+    "Help Center"
+   ]
+  },
+  {
+   "group": "Manufacturing",
+   "items": [
+    "NPD",
+    "BOM & Formula",
+    "Recipes",
+    "Quality"
+   ]
+  },
+  {
+   "group": "Documents & Communication",
+   "items": [
+    "Communication",
+    "Helpdesk"
+   ]
+  }
+ ],
+ "procurement_manager": [
+  {
+   "group": "Main",
+   "items": [
+    "Dashboard",
+    "Help Center"
+   ]
+  },
+  {
+   "group": "Supply Chain",
+   "items": [
+    "Materials",
+    "Suppliers",
+    "Inventory",
+    "Warehouses & WMS",
+    "Procurement"
+   ]
+  },
+  {
+   "group": "Documents & Communication",
+   "items": [
+    "Communication"
+   ]
+  }
+ ],
+ "regional_sales_manager": [
+  {
+   "group": "Main",
+   "items": [
+    "Dashboard",
+    "Help Center"
+   ]
+  },
+  {
+   "group": "Commercial",
+   "items": [
+    "Sales",
+    "CRM",
+    "POS"
+   ]
+  },
+  {
+   "group": "Documents & Communication",
+   "items": [
+    "Communication"
+   ]
+  }
+ ],
+ "scoped_finance_manager": [
+  {
+   "group": "Main",
+   "items": [
+    "Dashboard",
+    "Help Center"
+   ]
+  },
+  {
+   "group": "Finance",
+   "items": [
+    "Finance"
+   ]
+  },
+  {
+   "group": "Documents & Communication",
+   "items": [
+    "Communication"
+   ]
+  }
+ ],
+ "scoped_hr_manager": [
+  {
+   "group": "Main",
+   "items": [
+    "Dashboard",
+    "Help Center"
+   ]
+  },
+  {
+   "group": "Documents & Communication",
+   "items": [
+    "Communication"
+   ]
+  }
+ ],
+ "read_only_auditor": [
+  {
+   "group": "Main",
+   "items": [
+    "Dashboard",
+    "Help Center"
+   ]
+  },
+  {
+   "group": "Supply Chain",
+   "items": [
+    "Inventory",
+    "Warehouses & WMS",
+    "Procurement"
+   ]
+  },
+  {
+   "group": "Manufacturing",
+   "items": [
+    "Production",
+    "Planning",
+    "NPD",
+    "BOM & Formula",
+    "Recipes",
+    "Quality",
+    "Shop Floor"
+   ]
+  },
+  {
+   "group": "Commercial",
+   "items": [
+    "Sales",
+    "POS"
+   ]
+  },
+  {
+   "group": "Finance",
+   "items": [
+    "Finance"
+   ]
+  },
+  {
+   "group": "Documents & Communication",
+   "items": [
+    "Communication",
+    "Helpdesk"
+   ]
+  }
+ ],
+ "shop_floor_operator": [
+  {
+   "group": "Main",
+   "items": [
+    "Dashboard",
+    "Help Center"
+   ]
+  },
+  {
+   "group": "Manufacturing",
+   "items": [
+    "Production",
+    "Planning",
+    "Shop Floor"
+   ]
+  },
+  {
+   "group": "Documents & Communication",
+   "items": [
+    "Communication"
+   ]
+  }
+ ],
+ "field_auditor": [
+  {
+   "group": "Main",
+   "items": [
+    "Dashboard",
+    "Help Center"
+   ]
+  },
+  {
+   "group": "Commercial",
+   "items": [
+    "Field App"
+   ]
+  },
+  {
+   "group": "Documents & Communication",
+   "items": [
+    "Communication"
+   ]
+  }
+ ],
+ "field_supervisor": [
+  {
+   "group": "Main",
+   "items": [
+    "Dashboard",
+    "Help Center"
+   ]
+  },
+  {
+   "group": "Commercial",
+   "items": [
+    "Field App"
+   ]
+  },
+  {
+   "group": "Documents & Communication",
+   "items": [
+    "Communication"
+   ]
+  }
+ ],
+ "warehouse_picker": [
+  {
+   "group": "Main",
+   "items": [
+    "Dashboard",
+    "Help Center"
+   ]
+  },
+  {
+   "group": "Commercial",
+   "items": [
+    "Warehouse Floor"
+   ]
+  },
+  {
+   "group": "Documents & Communication",
+   "items": [
+    "Communication"
+   ]
+  }
+ ],
+ "accountant": [
+  {
+   "group": "Main",
+   "items": [
+    "Dashboard",
+    "Help Center"
+   ]
+  },
+  {
+   "group": "Supply Chain",
+   "items": [
+    "Procurement"
+   ]
+  },
+  {
+   "group": "Commercial",
+   "items": [
+    "Sales",
+    "POS"
+   ]
+  },
+  {
+   "group": "Finance",
+   "items": [
+    "Finance"
+   ]
+  },
+  {
+   "group": "Documents & Communication",
+   "items": [
+    "Communication"
+   ]
+  }
+ ],
+ "payroll_officer": [
+  {
+   "group": "Main",
+   "items": [
+    "Dashboard",
+    "Help Center"
+   ]
+  },
+  {
+   "group": "HR & Payroll",
+   "items": [
+    "HR",
+    "Kenya Payroll"
+   ]
+  },
+  {
+   "group": "Documents & Communication",
+   "items": [
+    "Communication"
+   ]
+  }
+ ],
+ "planner": [
+  {
+   "group": "Main",
+   "items": [
+    "Dashboard",
+    "Help Center"
+   ]
+  },
+  {
+   "group": "Supply Chain",
+   "items": [
+    "Inventory",
+    "Warehouses & WMS",
+    "Procurement"
+   ]
+  },
+  {
+   "group": "Manufacturing",
+   "items": [
+    "Production",
+    "Planning",
+    "Shop Floor"
+   ]
+  },
+  {
+   "group": "Commercial",
+   "items": [
+    "Sales",
+    "POS"
+   ]
+  },
+  {
+   "group": "Documents & Communication",
+   "items": [
+    "Communication"
+   ]
+  }
+ ],
+ "sales_order_desk": [
+  {
+   "group": "Main",
+   "items": [
+    "Dashboard",
+    "Help Center"
+   ]
+  },
+  {
+   "group": "Supply Chain",
+   "items": [
+    "Inventory",
+    "Warehouses & WMS"
+   ]
+  },
+  {
+   "group": "Commercial",
+   "items": [
+    "Sales",
+    "CRM",
+    "POS"
+   ]
+  },
+  {
+   "group": "Documents & Communication",
+   "items": [
+    "Communication"
+   ]
+  }
+ ],
+ "marketing_manager": [
+  {
+   "group": "Main",
+   "items": [
+    "Dashboard",
+    "Help Center"
+   ]
+  },
+  {
+   "group": "Supply Chain",
+   "items": [
+    "Products",
+    "Inventory",
+    "Warehouses & WMS"
+   ]
+  },
+  {
+   "group": "Commercial",
+   "items": [
+    "Sales",
+    "CRM",
+    "Marketing",
+    "POS"
+   ]
+  },
+  {
+   "group": "Documents & Communication",
+   "items": [
+    "Communication"
+   ]
+  },
+  {
+   "group": "Administration",
+   "items": [
+    "Integrations"
+   ]
+  }
+ ],
+ "field_marketing_agent": [
+  {
+   "group": "Main",
+   "items": [
+    "Dashboard",
+    "Help Center"
+   ]
+  },
+  {
+   "group": "Supply Chain",
+   "items": [
+    "Products"
+   ]
+  },
+  {
+   "group": "Commercial",
+   "items": [
+    "Sales",
+    "CRM",
+    "Marketing",
+    "POS"
+   ]
+  },
+  {
+   "group": "Documents & Communication",
+   "items": [
+    "Communication"
+   ]
+  }
+ ],
+ "brand_manager": [
+  {
+   "group": "Main",
+   "items": [
+    "Dashboard",
+    "Help Center"
+   ]
+  },
+  {
+   "group": "Supply Chain",
+   "items": [
+    "Products"
+   ]
+  },
+  {
+   "group": "Commercial",
+   "items": [
+    "Sales",
+    "Marketing",
+    "POS"
+   ]
+  },
+  {
+   "group": "Documents & Communication",
+   "items": [
+    "Communication"
+   ]
+  }
+ ],
+ "trade_marketing_manager": [
+  {
+   "group": "Main",
+   "items": [
+    "Dashboard",
+    "Help Center"
+   ]
+  },
+  {
+   "group": "Supply Chain",
+   "items": [
+    "Products",
+    "Inventory",
+    "Warehouses & WMS"
+   ]
+  },
+  {
+   "group": "Commercial",
+   "items": [
+    "Sales",
+    "CRM",
+    "Marketing",
+    "POS"
+   ]
+  },
+  {
+   "group": "Documents & Communication",
+   "items": [
+    "Communication"
+   ]
+  }
+ ],
+ "digital_marketing_manager": [
+  {
+   "group": "Main",
+   "items": [
+    "Dashboard",
+    "Help Center"
+   ]
+  },
+  {
+   "group": "Supply Chain",
+   "items": [
+    "Products"
+   ]
+  },
+  {
+   "group": "Commercial",
+   "items": [
+    "Sales",
+    "Marketing",
+    "POS"
+   ]
+  },
+  {
+   "group": "Documents & Communication",
+   "items": [
+    "Communication"
+   ]
+  }
+ ],
+ "ecommerce_manager": [
+  {
+   "group": "Main",
+   "items": [
+    "Dashboard",
+    "Help Center"
+   ]
+  },
+  {
+   "group": "Supply Chain",
+   "items": [
+    "Products",
+    "Inventory",
+    "Warehouses & WMS"
+   ]
+  },
+  {
+   "group": "Commercial",
+   "items": [
+    "Sales",
+    "CRM",
+    "Marketing",
+    "POS"
+   ]
+  },
+  {
+   "group": "Documents & Communication",
+   "items": [
+    "Communication"
+   ]
+  }
+ ],
+ "crm_manager": [
+  {
+   "group": "Main",
+   "items": [
+    "Dashboard",
+    "Help Center"
+   ]
+  },
+  {
+   "group": "Supply Chain",
+   "items": [
+    "Products"
+   ]
+  },
+  {
+   "group": "Commercial",
+   "items": [
+    "Sales",
+    "CRM",
+    "Marketing",
+    "POS"
+   ]
+  },
+  {
+   "group": "Documents & Communication",
+   "items": [
+    "Communication"
+   ]
+  }
+ ]
+}
