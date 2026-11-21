@@ -1,5 +1,6 @@
 "use client";
 
+import { EntityPicker } from "@/components/EntityPicker";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { returnsApi, ReturnOrder, ReturnStatus, ReturnReason } from "@/lib/returns";
@@ -281,12 +282,7 @@ export default function ReturnsPage() {
             </div>
           </div>
 
-          <Input
-            label="Original Sales Order (optional)"
-            value={form.original_so_id}
-            onChange={(e) => set("original_so_id", e.target.value)}
-            placeholder="Order ID or order number"
-          />
+          <div><label className="block text-sm font-medium text-gray-700 mb-1">Original Sales Order (optional)</label><EntityPicker kind="sales_order" label="Original sales order" value={form.original_so_id} onChange={(id) => set("original_so_id", id)} /></div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>

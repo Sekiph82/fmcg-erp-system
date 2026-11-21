@@ -1,5 +1,6 @@
 "use client";
 
+import { EntityPicker } from "@/components/EntityPicker";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { allergenApi, presenceColor, riskColor, type MaterialAllergenProfile } from "@/lib/allergen";
@@ -50,8 +51,8 @@ export default function MaterialProfilesPage() {
           <h2 className="text-sm font-medium text-gray-700">New / Update Material Allergen Profile</h2>
           <div className="grid grid-cols-3 gap-3">
             <div className="col-span-1">
-              <label className="text-xs text-gray-500">Material ID (UUID) *</label>
-              <input className="mt-0.5 w-full border rounded px-2 py-1.5 text-sm font-mono" value={form.material_id} onChange={(e) => setForm((p) => ({ ...p, material_id: e.target.value }))} placeholder="material-uuid..." />
+              <label className="text-xs text-gray-500">Material *</label>
+              <EntityPicker kind="material" label="Material" required value={form.material_id} onChange={(id) => setForm((p) => ({ ...p, material_id: id }))} />
             </div>
             <div>
               <label className="text-xs text-gray-500">Cross-Contact Risk</label>

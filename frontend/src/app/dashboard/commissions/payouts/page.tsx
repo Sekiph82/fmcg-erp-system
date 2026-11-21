@@ -1,4 +1,5 @@
 "use client";
+import { EntityPicker } from "@/components/EntityPicker";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { commissionsApi, PAYOUT_STATUS_COLORS, PayoutStatus } from "@/lib/commissions";
@@ -46,9 +47,14 @@ export default function PayoutsPage() {
         <h2 className="text-sm font-semibold text-white">Generate Payout for Period</h2>
         <div className="grid grid-cols-3 gap-3">
           <div>
-            <label className="text-[10px] text-slate-400 mb-1 block">Entity ID (UUID)</label>
-            <input value={form.entity_id} onChange={(e) => upd("entity_id", e.target.value)}
-              className="w-full bg-white/[0.04] border border-white/[0.08] rounded px-3 py-2 text-sm text-white focus:outline-none font-mono" />
+            <label className="text-[10px] text-slate-400 mb-1 block">{form.applies_to === "DISTRIBUTOR" ? "Distributor" : form.applies_to === "TEAM" ? "Team code" : "Sales rep"}</label>
+            {form.applies_to === "TEAM" ? (
+              <input value={form.entity_id} onChange={(e) => upd("entity_id", e.target.value)}
+                className="w-full bg-white/[0.04] border border-white/[0.08] rounded px-3 py-2 text-sm text-white focus:outline-none" />
+            ) : (
+              <EntityPicker key={form.applies_to} kind={form.applies_to === "DISTRIBUTOR" ? "distributor" : "user"} label="Payee"
+                value={form.entity_id} onChange={(id) => upd("entity_id", id)} />
+            )}
           </div>
           <div>
             <label className="text-[10px] text-slate-400 mb-1 block">Applies To</label>

@@ -1,4 +1,5 @@
 "use client";
+import { EntityPicker, type EntityKind } from "@/components/EntityPicker";
 import { useCallback, useEffect, useState } from "react";
 import { procurementApi, AutoReorderPolicy } from "@/lib/procurement";
 
@@ -8,6 +9,8 @@ const BLANK_FORM = {
   lead_time_days: "7", preferred_supplier_id: "",
   auto_create_pr: true, active_flag: true, notes: "",
 };
+
+const PICK: Record<string, EntityKind> = { supplier_id: "supplier", preferred_supplier_id: "supplier", material_id: "material", product_id: "product", warehouse_id: "warehouse" };
 
 export default function ReorderPoliciesPage() {
   const [policies, setPolicies] = useState<AutoReorderPolicy[]>([]);
@@ -57,7 +60,7 @@ export default function ReorderPoliciesPage() {
       setError("Reorder point and quantity required"); return;
     }
     if (!form.material_id && !form.product_id) {
-      setError("Set either Material ID or Product ID"); return;
+      setError("Set either Material or Product"); return;
     }
     setSaving(true); setError("");
     try {
@@ -223,16 +226,12 @@ export default function ReorderPoliciesPage() {
                 <p className="text-xs font-semibold text-gray-600 mb-2">Item (set one)</p>
                 <div className="grid grid-cols-2 gap-3">
                   {[
-                    { label: "Material ID (UUID)", key: "material_id" },
-                    { label: "Product ID (UUID)", key: "product_id" },
+                    { label: "Material", key: "material_id" },
+                    { label: "Product", key: "product_id" },
                   ].map(f => (
                     <div key={f.key}>
                       <label className="block text-xs text-gray-500 mb-1">{f.label}</label>
-                      <input type="text" value={(form as unknown as Record<string, string>)[f.key]}
-                        onChange={e => setForm(prev => ({ ...prev, [f.key]: e.target.value }))}
-                        className="w-full border rounded px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none bg-white font-mono text-xs"
-                        placeholder="Leave blank if using other"
-                      />
+                      <EntityPicker kind={PICK[f.key]} label={f.label} value={(form as unknown as Record<string, string>)[f.key]} onChange={(id) => setForm(prev => ({ ...prev, [f.key]: id }))} />
                     </div>
                   ))}
                 </div>
@@ -244,16 +243,16 @@ export default function ReorderPoliciesPage() {
                   { label: "Reorder Quantity *", key: "reorder_quantity", type: "number", placeholder: "500" },
                   { label: "Max Stock Level", key: "max_stock_level", type: "number", placeholder: "" },
                   { label: "Lead Time (days)", key: "lead_time_days", type: "number", placeholder: "7" },
-                  { label: "Warehouse ID (optional)", key: "warehouse_id", placeholder: "UUID" },
-                  { label: "Preferred Supplier ID (optional)", key: "preferred_supplier_id", placeholder: "UUID" },
+                  { label: "Warehouse (optional)", key: "warehouse_id", placeholder: "UUID" },
+                  { label: "Preferred Supplier (optional)", key: "preferred_supplier_id", placeholder: "UUID" },
                 ].map(f => (
                   <div key={f.key}>
                     <label className="block text-xs font-medium text-gray-600 mb-1">{f.label}</label>
-                    <input type={f.type ?? "text"} placeholder={f.placeholder}
+                    {PICK[f.key] ? (<EntityPicker kind={PICK[f.key]} label={f.label} value={(form as unknown as Record<string, string>)[f.key]} onChange={(id) => setForm(prev => ({ ...prev, [f.key]: id }))} />) : (<input type={f.type ?? "text"} placeholder={f.placeholder}
                       value={(form as unknown as Record<string, string>)[f.key]}
                       onChange={e => setForm(prev => ({ ...prev, [f.key]: e.target.value }))}
                       className="w-full border rounded px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none"
-                    />
+                    />)}
                   </div>
                 ))}
               </div>

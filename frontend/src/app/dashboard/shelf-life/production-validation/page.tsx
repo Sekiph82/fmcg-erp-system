@@ -1,4 +1,5 @@
 "use client";
+import { EntityPicker } from "@/components/EntityPicker";
 import { useState } from "react";
 import { shelfLifeApi, FEFORankResponse, FEFOValidateIssueResponse, SL_STATUS_BG, fmtDays } from "@/lib/shelfLife";
 
@@ -69,19 +70,16 @@ export default function ProductionValidationPage() {
           <h2 className="font-semibold text-gray-800">FEFO Lot Ranking</h2>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-medium text-gray-600">Product ID</label>
-              <input className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
-                value={rankForm.product_id} onChange={e => setRankForm(f => ({ ...f, product_id: e.target.value }))} />
+              <label className="text-xs font-medium text-gray-600">Product</label>
+              <EntityPicker kind="product" label="Product" value={rankForm.product_id} onChange={(id) => setRankForm(f => ({ ...f, product_id: id }))} />
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-600">Material ID</label>
-              <input className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
-                value={rankForm.material_id} onChange={e => setRankForm(f => ({ ...f, material_id: e.target.value }))} />
+              <label className="text-xs font-medium text-gray-600">Material</label>
+              <EntityPicker kind="material" label="Material" value={rankForm.material_id} onChange={(id) => setRankForm(f => ({ ...f, material_id: id }))} />
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-600">Warehouse ID</label>
-              <input className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
-                value={rankForm.warehouse_id} onChange={e => setRankForm(f => ({ ...f, warehouse_id: e.target.value }))} />
+              <label className="text-xs font-medium text-gray-600">Warehouse</label>
+              <EntityPicker kind="warehouse" label="Warehouse" value={rankForm.warehouse_id} onChange={(id) => setRankForm(f => ({ ...f, warehouse_id: id }))} />
             </div>
             <div>
               <label className="text-xs font-medium text-gray-600">Quantity Needed</label>
@@ -139,9 +137,8 @@ export default function ProductionValidationPage() {
           <h2 className="font-semibold text-gray-800">Validate Specific Lot for Issue</h2>
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2">
-              <label className="text-xs font-medium text-gray-600">Lot ID *</label>
-              <input className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
-                value={valForm.lot_id} onChange={e => setValForm(f => ({ ...f, lot_id: e.target.value }))} />
+              <label className="text-xs font-medium text-gray-600">Lot *</label>
+              <EntityPicker kind="lot" label="Lot" value={valForm.lot_id} onChange={(id) => setValForm(f => ({ ...f, lot_id: id }))} />
             </div>
             <div>
               <label className="text-xs font-medium text-gray-600">Quantity</label>
@@ -149,14 +146,12 @@ export default function ProductionValidationPage() {
                 value={valForm.quantity} onChange={e => setValForm(f => ({ ...f, quantity: e.target.value }))} />
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-600">Product ID</label>
-              <input className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
-                value={valForm.product_id} onChange={e => setValForm(f => ({ ...f, product_id: e.target.value }))} />
+              <label className="text-xs font-medium text-gray-600">Product</label>
+              <EntityPicker kind="product" label="Product" value={valForm.product_id} onChange={(id) => setValForm(f => ({ ...f, product_id: id }))} />
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-600">Material ID</label>
-              <input className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
-                value={valForm.material_id} onChange={e => setValForm(f => ({ ...f, material_id: e.target.value }))} />
+              <label className="text-xs font-medium text-gray-600">Material</label>
+              <EntityPicker kind="material" label="Material" value={valForm.material_id} onChange={(id) => setValForm(f => ({ ...f, material_id: id }))} />
             </div>
           </div>
           <button onClick={handleValidate} disabled={!valForm.lot_id || validating}

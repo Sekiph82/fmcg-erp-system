@@ -1,5 +1,6 @@
 "use client";
 
+import { EntityPicker } from "@/components/EntityPicker";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -251,13 +252,7 @@ export default function PricingPage() {
             </div>
           </div>
 
-          <Input
-            label="Product ID *"
-            value={ruleForm.product_id}
-            onChange={(e) => setR("product_id", e.target.value)}
-            required
-            placeholder="Product UUID or SKU"
-          />
+          <div><label className="block text-sm font-medium text-gray-700 mb-1">Product *</label><EntityPicker kind="product" label="Product" required value={ruleForm.product_id} onChange={(id) => setR("product_id", id)} /></div>
 
           {ruleForm.pricing_level === "REGION" && (
             <Input

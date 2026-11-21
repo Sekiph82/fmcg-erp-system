@@ -1,4 +1,5 @@
 "use client";
+import { EntityPicker } from "@/components/EntityPicker";
 import { useEffect, useState } from "react";
 import {
   notificationsApi, NCTemplate, NotificationType, NotificationChannel,
@@ -137,9 +138,8 @@ export default function TemplatesPage() {
               <h2 className="font-bold text-gray-900">Send: {preview.template_name}</h2>
               <button onClick={() => setPreview(null)} className="text-gray-400 hover:text-gray-700">✕</button>
             </div>
-            <div><label className="text-xs text-gray-500">User ID *</label>
-              <input className="w-full border rounded px-2 py-1 text-sm mt-1" value={sendUserId}
-                onChange={(e) => setSendUserId(e.target.value)} /></div>
+            <div><label className="text-xs text-gray-500">User *</label>
+              <EntityPicker kind="user" label="User" value={sendUserId} onChange={setSendUserId} /></div>
             {extractVars(preview).map(v => (
               <div key={v}><label className="text-xs text-gray-500">{v}</label>
                 <input className="w-full border rounded px-2 py-1 text-sm mt-1"

@@ -1,5 +1,6 @@
 "use client";
 
+import { EntityPicker } from "@/components/EntityPicker";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { planningApi, ChangeoverRow } from "@/lib/planning";
@@ -175,13 +176,8 @@ export default function ChangeoverPage() {
             </div>
             <div className="space-y-3">
               <div>
-                <label className="text-xs text-gray-500">Work Center ID (UUID)</label>
-                <input
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mt-1"
-                  placeholder="e.g. 550e8400-e29b-41d4-a716-…"
-                  value={form.work_center_id}
-                  onChange={(e) => setForm({ ...form, work_center_id: e.target.value })}
-                />
+                <label className="text-xs text-gray-500">Work center</label>
+                <EntityPicker kind="work_center" label="Work center" value={form.work_center_id} onChange={(id) => setForm((f) => ({ ...f, work_center_id: id }))} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>

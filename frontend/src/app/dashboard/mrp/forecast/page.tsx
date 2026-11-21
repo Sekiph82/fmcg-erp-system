@@ -1,4 +1,5 @@
 "use client";
+import { EntityPicker } from "@/components/EntityPicker";
 import React, { useState } from "react";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -216,9 +217,8 @@ export default function ForecastPage() {
           <h3 className="text-sm font-semibold mb-4">Generate Statistical Forecast</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Product ID (UUID)</label>
-              <input type="text" className={sel} placeholder="xxxxxxxx-xxxx-…"
-                value={productId} onChange={e => setProductId(e.target.value)} />
+              <label className="block text-xs text-gray-500 mb-1">Product</label>
+              <EntityPicker kind="product" label="Product" value={productId} onChange={setProductId} />
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1">Forecast Model</label>

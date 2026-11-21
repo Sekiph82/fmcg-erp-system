@@ -1,5 +1,6 @@
 "use client";
 
+import { EntityPicker } from "@/components/EntityPicker";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
@@ -104,11 +105,8 @@ export default function NewBrandSpendPage() {
           </div>
 
           <div>
-            <label className="block text-xs text-slate-400 mb-1">Campaign ID <span className="text-slate-600">(optional)</span></label>
-            <input type="text" value={form.campaign_id}
-              onChange={(e) => set("campaign_id", e.target.value)}
-              placeholder="UUID of linked campaign"
-              className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600" />
+            <label className="block text-xs text-slate-400 mb-1">Campaign <span className="text-slate-600">(optional)</span></label>
+            <EntityPicker kind="campaign" label="Campaign" value={form.campaign_id} onChange={(id) => set("campaign_id", id)} />
           </div>
 
           <div>

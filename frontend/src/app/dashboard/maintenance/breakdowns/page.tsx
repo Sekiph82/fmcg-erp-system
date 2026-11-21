@@ -1,5 +1,6 @@
 "use client";
 
+import { EntityPicker } from "@/components/EntityPicker";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { maintenanceApi, BreakdownRecord, BreakdownStatus, BreakdownSeverity, DowntimeReasonCode } from "@/lib/maintenance";
@@ -281,8 +282,8 @@ function NewBreakdownModal({ assets, reasonCodes, onClose, onSubmit, loading }: 
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Production Order ID (optional)</label>
-            <input className="w-full border rounded px-3 py-2 text-sm font-mono" placeholder="UUID" value={form.production_order_id} onChange={(e) => set("production_order_id", e.target.value)} />
+            <label className="block text-xs font-medium text-gray-600 mb-1">Production order (optional)</label>
+            <EntityPicker kind="production_order" label="Production order" value={form.production_order_id} onChange={(id) => set("production_order_id", id)} />
           </div>
         </div>
         <div className="flex gap-2 justify-end">

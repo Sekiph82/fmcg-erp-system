@@ -1,5 +1,6 @@
 "use client";
 
+import { EntityPicker } from "@/components/EntityPicker";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { financeApi, MpesaReconciliation, ReconciliationStatus } from "@/lib/finance";
@@ -201,12 +202,12 @@ function ManualMatchModal({ recon, onClose, onSubmit, loading }: { recon: MpesaR
         </div>
         <div className="space-y-3">
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Invoice ID (UUID)</label>
-            <input className="w-full border rounded px-3 py-2 text-sm font-mono" placeholder="Leave blank if matching to SO" value={form.invoice_id} onChange={(e) => set("invoice_id", e.target.value)} />
+            <label className="block text-xs font-medium text-gray-600 mb-1">Invoice (or choose a sales order)</label>
+            <EntityPicker kind="invoice" label="Invoice" value={form.invoice_id} onChange={(id) => set("invoice_id", id)} />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Sales Order ID (UUID)</label>
-            <input className="w-full border rounded px-3 py-2 text-sm font-mono" placeholder="Leave blank if matching to Invoice" value={form.so_id} onChange={(e) => set("so_id", e.target.value)} />
+            <label className="block text-xs font-medium text-gray-600 mb-1">Sales order (or choose an invoice)</label>
+            <EntityPicker kind="sales_order" label="Sales order" value={form.so_id} onChange={(id) => set("so_id", id)} />
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Matched Amount</label>

@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { EntityPicker } from "@/components/EntityPicker";
 import { apiClient } from "@/lib/api";
 
 interface NPSAnalytics {
@@ -62,6 +63,21 @@ export default function NPSPage() {
     survey_id: "", customer_id: "", score: "8", comment: "", channel: "manual",
   });
   const [saving, setSaving] = useState(false);
+  const [linkFor, setLinkFor] = useState<string | null>(null);   // survey id whose link form is open
+  const [linkCustomer, setLinkCustomer] = useState("");
+  const [linkUrl, setLinkUrl] = useState("");
+  const [linkErr, setLinkErr] = useState("");
+  const makeLink = async (surveyId: string) => {
+    setLinkErr(""); setLinkUrl("");
+    if (!linkCustomer) { setLinkErr("Choose a customer"); return; }
+    try {
+      const r = await apiClient.post<{ url: string }>(`/api/v1/nps/surveys/${surveyId}/links`, { customer_id: linkCustomer });
+      setLinkUrl(r.data.url);
+    } catch (e: unknown) {
+      const d = (e as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail;
+      setLinkErr(typeof d === "string" ? d : "Could not create the link");
+    }
+  };
   const [error, setError] = useState("");
 
   const load = async () => {
@@ -79,7 +95,7 @@ export default function NPSPage() {
   useEffect(() => { load(); }, []);
 
   const logResponse = async () => {
-    if (!logForm.customer_id || !logForm.survey_id) { setError("Customer ID + Survey required"); return; }
+    if (!logForm.customer_id || !logForm.survey_id) { setError("Choose a survey and a customer"); return; }
     setSaving(true); setError("");
     try {
       await apiClient.post("/api/v1/nps/responses", {
@@ -176,6 +192,24 @@ export default function NPSPage() {
                 {surveys.map(s => (
                   <div key={s.id} className="border rounded-lg p-3">
                     <p className="text-xs font-medium text-gray-800">{s.title}</p>
+                    <button onClick={() => { setLinkFor(linkFor === s.id ? null : s.id); setLinkUrl(""); setLinkErr(""); }}
+                      className="mt-1 text-xs text-blue-700 underline">Send to a customer</button>
+                    {linkFor === s.id && (
+                      <div className="mt-2 space-y-2">
+                        <EntityPicker kind="customer" label="Customer for survey link" value={linkCustomer} onChange={setLinkCustomer} />
+                        <button onClick={() => makeLink(s.id)} className="w-full rounded bg-blue-600 py-1.5 text-xs text-white">Create one-time link</button>
+                        {linkErr && <p className="text-xs text-red-600">{linkErr}</p>}
+                        {linkUrl && (
+                          <div className="text-xs space-y-1">
+                            <input readOnly value={linkUrl} aria-label="Survey link" onFocus={e => e.target.select()} className="w-full border rounded px-2 py-1 font-mono" />
+                            <div className="flex gap-2">
+                              <button onClick={() => navigator.clipboard?.writeText(linkUrl)} className="rounded border px-2 py-1">Copy</button>
+                              <a href={`https://wa.me/?text=${encodeURIComponent("Please rate POVU: " + linkUrl)}`} target="_blank" rel="noopener noreferrer" className="rounded border px-2 py-1">WhatsApp</a>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                     <div className="flex items-center justify-between mt-1">
                       <span className="text-xs text-gray-400">{s.response_count} responses</span>
                       <span className={`text-xs font-bold ${s.nps_score >= 50 ? "text-green-600" : s.nps_score >= 0 ? "text-amber-600" : "text-red-600"}`}>
@@ -279,12 +313,9 @@ export default function NPSPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Customer ID (UUID) *</label>
-                <input type="text" value={logForm.customer_id}
-                  onChange={e => setLogForm(f => ({ ...f, customer_id: e.target.value }))}
-                  placeholder="UUID"
-                  className="w-full border rounded px-3 py-2 text-sm font-mono focus:ring-1 focus:ring-blue-500 outline-none"
-                />
+                <label className="block text-xs font-medium text-gray-600 mb-1">Customer *</label>
+                <EntityPicker kind="customer" label="Customer" value={logForm.customer_id}
+                  onChange={id => setLogForm(f => ({ ...f, customer_id: id }))} />
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-2">Score (0-10) *</label>

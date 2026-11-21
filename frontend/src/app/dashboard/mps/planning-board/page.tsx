@@ -1,5 +1,6 @@
 "use client";
 
+import { EntityPicker } from "@/components/EntityPicker";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -256,13 +257,8 @@ export default function PlanningBoardPage() {
             <h2 className="text-lg font-semibold mb-4">Generate Lines from MRP</h2>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">MRP Run ID *</label>
-                <input
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
-                  placeholder="Paste MRP run UUID"
-                  value={genForm.mrp_run_id}
-                  onChange={(e) => setGenForm({ ...genForm, mrp_run_id: e.target.value })}
-                />
+                <label className="block text-xs font-medium text-gray-500 mb-1">MRP run *</label>
+                <EntityPicker kind="mrp_run" label="MRP run" value={genForm.mrp_run_id} onChange={(id) => setGenForm((f) => ({ ...f, mrp_run_id: id }))} />
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-500 mb-1">Period Type</label>
@@ -299,14 +295,9 @@ export default function PlanningBoardPage() {
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
             <h2 className="text-lg font-semibold mb-2">Release Plan</h2>
             <p className="text-sm text-gray-500 mb-4">
-              This will create Production Orders for all feasible lines. Enter the target warehouse ID.
+              This will create Production Orders for all feasible lines. Choose the target warehouse.
             </p>
-            <input
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
-              placeholder="Target Warehouse UUID"
-              value={releaseWarehouseId}
-              onChange={(e) => setReleaseWarehouseId(e.target.value)}
-            />
+            <EntityPicker kind="warehouse" label="Target warehouse" value={releaseWarehouseId} onChange={setReleaseWarehouseId} />
             <div className="flex gap-3 mt-4">
               <button
                 onClick={() => releasePlan.mutate()}

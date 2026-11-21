@@ -1,4 +1,5 @@
 "use client";
+import { EntityPicker } from "@/components/EntityPicker";
 import { useEffect, useState } from "react";
 import { shelfLifeApi, RetestRequest, RetestStatus } from "@/lib/shelfLife";
 
@@ -114,10 +115,8 @@ export default function RetestQueuePage() {
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4">
             <h3 className="font-semibold text-gray-800">New Retest Request</h3>
             <div>
-              <label className="text-xs font-medium text-gray-600">Lot ID</label>
-              <input className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
-                placeholder="Lot UUID" value={form.lot_id}
-                onChange={e => setForm(f => ({ ...f, lot_id: e.target.value }))} />
+              <label className="text-xs font-medium text-gray-600">Lot</label>
+              <EntityPicker kind="lot" label="Lot" value={form.lot_id} onChange={(id) => setForm((f) => ({ ...f, lot_id: id }))} />
             </div>
             <div>
               <label className="text-xs font-medium text-gray-600">Reason</label>

@@ -1,5 +1,6 @@
 "use client";
 
+import { EntityPicker } from "@/components/EntityPicker";
 import { Fragment, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -235,13 +236,8 @@ export default function ETimsPage() {
         <h2 className="font-semibold text-gray-800 mb-3">Submit Invoice to KRA</h2>
         <div className="flex gap-3 items-end">
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Invoice ID (UUID)</label>
-            <input
-              value={submitInvoiceId}
-              onChange={(e) => setSubmitInvoiceId(e.target.value)}
-              placeholder="paste invoice UUID…"
-              className="border border-gray-200 rounded-lg px-3 py-2 text-sm w-80 focus:outline-none focus:ring-2 focus:ring-indigo-300 font-mono"
-            />
+            <label className="block text-xs font-medium text-gray-500 mb-1">Invoice</label>
+            <EntityPicker kind="invoice" label="Invoice" className="w-80 max-w-full" value={submitInvoiceId} onChange={setSubmitInvoiceId} />
           </div>
           <Button
             loading={submitMut.isPending}

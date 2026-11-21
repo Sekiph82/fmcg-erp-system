@@ -1,5 +1,6 @@
 "use client";
 
+import { EntityPicker, kindFor } from "@/components/EntityPicker";
 import { useState, useEffect } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -173,12 +174,14 @@ function NewDocumentContent() {
               </select>
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Entity ID</label>
-              <input
-                className="w-full border rounded px-3 py-2 text-sm font-mono"
-                placeholder="UUID of the linked record"
-                {...f("related_entity_id")}
-              />
+              <label className="block text-xs text-gray-500 mb-1">Record</label>
+              {form.related_entity_type && kindFor(form.related_entity_type) ? (
+                <EntityPicker key={form.related_entity_type} kind={kindFor(form.related_entity_type)!} label="Linked record"
+                  value={form.related_entity_id} onChange={(id) => setForm((p) => ({ ...p, related_entity_id: id }))} />
+              ) : (
+                <input className="w-full border rounded px-3 py-2 text-sm" placeholder={form.related_entity_type ? "Record number" : "Choose a type first"}
+                  disabled={!form.related_entity_type} {...f("related_entity_id")} />
+              )}
             </div>
           </div>
           {(form.related_entity_type === "mpesa_transaction" || form.related_entity_type === "cash_transaction") && (

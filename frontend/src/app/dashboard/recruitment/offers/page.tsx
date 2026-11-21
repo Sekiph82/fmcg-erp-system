@@ -1,4 +1,5 @@
 "use client";
+import { EntityPicker } from "@/components/EntityPicker";
 import { useEffect, useState } from "react";
 import { recruitmentApi, Offer, JobRequisition, OFFER_STATUS_COLOR, OfferStatus, fmtCurrency } from "@/lib/recruitment";
 
@@ -42,7 +43,7 @@ export default function OffersPage() {
       {showForm && (
         <div className="glow-card p-5 space-y-3">
           <div className="grid grid-cols-3 gap-3">
-            <div><label className={labelCls}>Candidate ID</label><input value={form.candidate_id} onChange={(e) => setForm({ ...form, candidate_id: e.target.value })} placeholder="UUID" className={inputCls} /></div>
+            <div><label className={labelCls}>Candidate</label><EntityPicker kind="candidate" label="Candidate" value={form.candidate_id} onChange={(id) => setForm({ ...form, candidate_id: id })} /></div>
             <div><label className={labelCls}>Requisition</label>
               <select value={form.requisition_id} onChange={(e) => setForm({ ...form, requisition_id: e.target.value })} className={selectCls}>
                 <option value="">Select…</option>

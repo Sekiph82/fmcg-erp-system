@@ -1,4 +1,5 @@
 "use client";
+import { EntityPicker } from "@/components/EntityPicker";
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import {
@@ -344,9 +345,8 @@ export default function PLDetail() {
           <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md space-y-4">
             <h2 className="text-lg font-bold text-gray-900">Add Price Line</h2>
             <div>
-              <label className="text-xs font-medium text-gray-700">Product ID</label>
-              <input value={lineForm.product_id} onChange={(e) => setLineForm({ ...lineForm, product_id: e.target.value })}
-                className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" placeholder="UUID" />
+              <label className="text-xs font-medium text-gray-700">Product</label>
+              <EntityPicker kind="product" label="Product" value={lineForm.product_id} onChange={(id) => setLineForm((f) => ({ ...f, product_id: id }))} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -423,9 +423,8 @@ export default function PLDetail() {
           <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md space-y-4">
             <h2 className="text-lg font-bold text-gray-900">Add Assignment</h2>
             <div>
-              <label className="text-xs font-medium text-gray-700">Customer ID (optional)</label>
-              <input value={asnForm.customer_id} onChange={(e) => setAsnForm({ ...asnForm, customer_id: e.target.value })}
-                className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+              <label className="text-xs font-medium text-gray-700">Customer (optional)</label>
+              <EntityPicker kind="customer" label="Customer" value={asnForm.customer_id} onChange={(id) => setAsnForm({ ...asnForm, customer_id: id })} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>

@@ -1,4 +1,5 @@
 "use client";
+import { EntityPicker } from "@/components/EntityPicker";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import {
@@ -168,9 +169,7 @@ export default function OpportunitiesPage() {
               <option value="">Select Stage</option>
               {stages.map(s => <option key={s.id} value={s.id}>{s.stage_name}</option>)}
             </select>
-            <input placeholder="Assigned Rep ID" value={form.assigned_rep_id}
-              onChange={e => setForm(f => ({ ...f, assigned_rep_id: e.target.value }))}
-              className="w-full border rounded-lg px-3 py-2 text-sm" />
+            <EntityPicker kind="user" label="Assigned rep" value={form.assigned_rep_id} onChange={(id) => setForm(f => ({ ...f, assigned_rep_id: id }))} />
             <div className="flex gap-2 pt-1">
               <button onClick={handleCreate} disabled={saving || !form.company_name}
                 className="flex-1 bg-purple-600 text-white py-2 rounded-lg text-sm hover:bg-purple-700 disabled:opacity-50">

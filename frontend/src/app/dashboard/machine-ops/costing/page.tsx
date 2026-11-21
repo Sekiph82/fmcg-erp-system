@@ -1,5 +1,6 @@
 "use client";
 
+import { EntityPicker } from "@/components/EntityPicker";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { moApi, CostContribution } from "@/lib/machineOperator";
@@ -37,8 +38,8 @@ export default function CostingPage() {
 
       <div className="bg-white rounded-lg border p-4 flex gap-3 items-end">
         <div className="flex-1 max-w-md">
-          <label className="block text-xs font-medium text-gray-600 mb-1">Production Order ID</label>
-          <input value={orderId} onChange={(e) => setOrderId(e.target.value)} className="w-full border rounded px-3 py-2 text-sm" placeholder="UUID" />
+          <label className="block text-xs font-medium text-gray-600 mb-1">Production order</label>
+          <EntityPicker kind="production_order" label="Production order" value={orderId} onChange={setOrderId} />
         </div>
         <button onClick={() => setFetchId(orderId)} disabled={!orderId} className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-indigo-700 disabled:opacity-50">Load</button>
       </div>

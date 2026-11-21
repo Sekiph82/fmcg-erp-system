@@ -1,4 +1,5 @@
 "use client";
+import { EntityPicker } from "@/components/EntityPicker";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { subscriptionApi } from "@/lib/subscription";
@@ -102,10 +103,8 @@ export default function NewTemplatePage() {
           </div>
 
           <div>
-            <label className="text-xs text-slate-400 mb-1 block">Customer ID *</label>
-            <input value={form.customer_id} onChange={(e) => upd("customer_id", e.target.value)} required
-              className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 font-mono"
-              placeholder="UUID" />
+            <label className="text-xs text-slate-400 mb-1 block">Customer *</label>
+            <EntityPicker kind="customer" label="Customer" required value={form.customer_id} onChange={(id) => upd("customer_id", id)} />
           </div>
         </div>
 

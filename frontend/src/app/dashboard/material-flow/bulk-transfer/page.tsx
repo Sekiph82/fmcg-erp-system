@@ -1,5 +1,6 @@
 "use client";
 
+import { EntityPicker } from "@/components/EntityPicker";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { mfApi, TankOccupancy, FlowTransaction, TANK_STATUS_COLORS, FLOW_STATUS_COLORS } from "@/lib/materialFlow";
@@ -102,7 +103,7 @@ export default function BulkTransferPage() {
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Production Order</label>
-              <input value={form.production_order_id} onChange={(e) => setForm((p) => ({ ...p, production_order_id: e.target.value }))} className="w-full border rounded px-3 py-2 text-sm" placeholder="UUID (optional)" />
+              <EntityPicker kind="production_order" label="Production order" value={form.production_order_id} onChange={(id) => setForm((f) => ({ ...f, production_order_id: id }))} />
             </div>
           </div>
           <div>

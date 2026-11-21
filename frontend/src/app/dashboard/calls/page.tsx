@@ -1,4 +1,5 @@
 "use client";
+import { EntityPicker } from "@/components/EntityPicker";
 import { useCallback, useEffect, useState } from "react";
 import { voipApi, CallLog, CallStats, OUTCOME_COLORS, fmtDuration } from "@/lib/voip";
 
@@ -213,7 +214,6 @@ export default function CallsPage() {
               <div className="grid grid-cols-2 gap-3">
                 {[
                   { label: "Phone Number *", key: "phone_number", placeholder: "+254712345678", col: 2 },
-                  { label: "Customer ID (UUID, optional)", key: "customer_id", placeholder: "", col: 2 },
                   { label: "Duration (seconds)", key: "duration_seconds", type: "number", placeholder: "0", col: 1 },
                   { label: "Follow-up Date", key: "follow_up_date", type: "date", col: 1 },
                   { label: "Tags", key: "tags", placeholder: "sales, cold-call", col: 2 },
@@ -227,6 +227,10 @@ export default function CallsPage() {
                     />
                   </div>
                 ))}
+                <div className="col-span-2">
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Customer (optional)</label>
+                  <EntityPicker kind="customer" label="Customer" value={form.customer_id} onChange={id => setForm(p => ({ ...p, customer_id: id }))} />
+                </div>
                 {[
                   { label: "Direction", key: "direction", options: ["OUTBOUND", "INBOUND"] },
                   { label: "Outcome", key: "outcome", options: OUTCOMES },

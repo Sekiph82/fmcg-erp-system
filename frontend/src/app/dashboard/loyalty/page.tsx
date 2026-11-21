@@ -1,4 +1,5 @@
 "use client";
+import { EntityPicker } from "@/components/EntityPicker";
 import { useCallback, useEffect, useState } from "react";
 import { loyaltyApi, LoyaltyAccount, LoyaltyTier, LoyaltyStats, TXN_COLORS, LoyaltyAccountDetail } from "@/lib/loyalty";
 
@@ -270,12 +271,9 @@ export default function LoyaltyPage() {
             <div className="p-6 space-y-3">
               {error && <p className="text-xs text-red-500 bg-red-50 border border-red-200 rounded px-3 py-2">{error}</p>}
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Customer ID (UUID) *</label>
-                <input type="text" value={enrollForm.customer_id}
-                  onChange={e => setEnrollForm(f => ({ ...f, customer_id: e.target.value }))}
-                  placeholder="UUID"
-                  className="w-full border rounded px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none"
-                />
+                <label className="block text-xs font-medium text-gray-600 mb-1">Customer *</label>
+                <EntityPicker kind="customer" label="Customer" value={enrollForm.customer_id}
+                  onChange={id => setEnrollForm(f => ({ ...f, customer_id: id }))} />
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Welcome Bonus Points</label>

@@ -1,4 +1,5 @@
 "use client";
+import { EntityPicker } from "@/components/EntityPicker";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { advProductionApi } from "@/lib/productionAdvanced";
@@ -81,10 +82,10 @@ export default function BatchLotsPage() {
         <form onSubmit={e=>{e.preventDefault();create.mutate();}} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <Input label="Batch ID *" value={form.batch_id} onChange={e=>setForm(f=>({...f,batch_id:e.target.value}))} required placeholder="BATCH001"/>
-            <Input label="Production Order ID" value={form.production_order_id} onChange={e=>setForm(f=>({...f,production_order_id:e.target.value}))} placeholder="UUID"/>
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">Production Order</label><EntityPicker kind="production_order" label="Production order" value={form.production_order_id} onChange={(id) => setForm((f) => ({ ...f, production_order_id: id }))} /></div>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Product ID (UUID)" value={form.product_id} onChange={e=>setForm(f=>({...f,product_id:e.target.value}))} placeholder="UUID"/>
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">Product</label><EntityPicker kind="product" label="Product" value={form.product_id} onChange={(id) => setForm((f) => ({ ...f, product_id: id }))} /></div>
             <Input label="Product SKU"       value={form.product_sku} onChange={e=>setForm(f=>({...f,product_sku:e.target.value}))} placeholder="DET001"/>
           </div>
           <div className="grid grid-cols-3 gap-4">

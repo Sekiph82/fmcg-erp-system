@@ -1,5 +1,6 @@
 "use client";
 
+import { EntityPicker } from "@/components/EntityPicker";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { moApi, WorkOrderAssignment, AssignmentValidateResult, Machine, OperatorProfile, ProductionTeam } from "@/lib/machineOperator";
@@ -50,8 +51,8 @@ export default function AssignmentPage() {
         <h2 className="font-semibold text-gray-800">Assign Machine + Operator to Work Order</h2>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Work Order ID *</label>
-            <input value={form.work_order_id} onChange={(e) => setForm((p) => ({ ...p, work_order_id: e.target.value }))} className="w-full border rounded px-3 py-2 text-sm" placeholder="UUID" />
+            <label className="block text-xs font-medium text-gray-600 mb-1">Work order *</label>
+            <EntityPicker kind="work_order" label="Work order" required value={form.work_order_id} onChange={(id) => setForm((p) => ({ ...p, work_order_id: id }))} />
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Machine</label>

@@ -1,5 +1,6 @@
 "use client";
 
+import { EntityPicker } from "@/components/EntityPicker";
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { listEntries, createEntry, CountEntry } from "@/lib/cycleCount";
@@ -58,7 +59,10 @@ function EntriesContent() {
         <div className="bg-white rounded-2xl border border-gray-200 p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Record Physical Count</h2>
           <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
-            <Input id="task" label="Task ID" value={form.task_id} onChange={(e) => setForm({ ...form, task_id: e.target.value })} required placeholder="UUID" />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Count task</label>
+              <EntityPicker kind="count_task" label="Count task" required value={form.task_id} onChange={(id) => setForm({ ...form, task_id: id })} />
+            </div>
             <Input id="qty" label="Counted Quantity" type="number" step="0.001" value={form.counted_qty || ""} onChange={(e) => setForm({ ...form, counted_qty: e.target.value })} required autoFocus />
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Unit</label>

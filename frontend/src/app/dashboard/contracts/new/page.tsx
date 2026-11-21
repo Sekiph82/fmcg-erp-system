@@ -1,4 +1,5 @@
 "use client";
+import { EntityPicker } from "@/components/EntityPicker";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { contractsApi } from "@/lib/contracts";
@@ -85,9 +86,9 @@ export default function NewContractPage() {
             </div>
           </div>
           <div>
-            <label className="text-xs text-slate-400 mb-1 block">Party ID *</label>
-            <input value={form.party_id} onChange={(e) => upd("party_id", e.target.value)} required
-              className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 font-mono" placeholder="UUID of customer/distributor/supplier" />
+            <label className="text-xs text-slate-400 mb-1 block">{form.party_type.charAt(0) + form.party_type.slice(1).toLowerCase()} *</label>
+            <EntityPicker key={form.party_type} kind={form.party_type === "SUPPLIER" ? "supplier" : form.party_type === "DISTRIBUTOR" ? "distributor" : "customer"}
+              label="Contract party" required value={form.party_id} onChange={(id) => upd("party_id", id)} />
           </div>
         </div>
 

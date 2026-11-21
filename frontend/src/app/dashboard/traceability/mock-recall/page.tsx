@@ -1,4 +1,5 @@
 "use client";
+import { EntityPicker } from "@/components/EntityPicker";
 import { useState } from "react";
 import { traceApi, RecallHeader, RecallDetail, SEVERITY_BG } from "@/lib/traceability";
 
@@ -105,9 +106,8 @@ export default function MockRecallPage() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-medium text-gray-600">Source Lot ID (to trace)</label>
-                <input className="mt-1 w-full border rounded-lg px-3 py-2 text-sm" placeholder="UUID"
-                  value={form.source_lot_id} onChange={e => setForm(f => ({ ...f, source_lot_id: e.target.value }))} />
+                <label className="text-xs font-medium text-gray-600">Source lot (to trace)</label>
+                <EntityPicker kind="lot" label="Source lot" value={form.source_lot_id} onChange={(id) => setForm(f => ({ ...f, source_lot_id: id }))} />
               </div>
               <div>
                 <label className="text-xs font-medium text-gray-600">Severity Level</label>

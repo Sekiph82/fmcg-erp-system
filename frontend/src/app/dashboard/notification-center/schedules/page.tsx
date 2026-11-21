@@ -1,4 +1,5 @@
 "use client";
+import { EntityPicker } from "@/components/EntityPicker";
 import { useEffect, useState } from "react";
 import {
   notificationsApi, NCSchedule, NotificationType, NotificationChannel,
@@ -68,9 +69,8 @@ export default function SchedulesPage() {
         <div className="bg-white border rounded-lg p-4 shadow-sm space-y-3">
           <h2 className="font-semibold text-gray-800">New Scheduled Notification</h2>
           <div className="grid grid-cols-2 gap-3">
-            <div><label className="text-xs text-gray-500">User ID *</label>
-              <input className="w-full border rounded px-2 py-1 text-sm mt-1" value={form.user_id}
-                onChange={(e) => setForm({ ...form, user_id: e.target.value })} /></div>
+            <div><label className="text-xs text-gray-500">User *</label>
+              <EntityPicker kind="user" label="User" value={form.user_id} onChange={(id) => setForm({ ...form, user_id: id })} /></div>
             <div><label className="text-xs text-gray-500">Scheduled For *</label>
               <input type="datetime-local" className="w-full border rounded px-2 py-1 text-sm mt-1" value={form.scheduled_for}
                 onChange={(e) => setForm({ ...form, scheduled_for: e.target.value })} /></div>

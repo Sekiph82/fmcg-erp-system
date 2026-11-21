@@ -1,4 +1,5 @@
 "use client";
+import { EntityPicker } from "@/components/EntityPicker";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
@@ -43,8 +44,7 @@ export default function MyTimesheetsPage() {
           <option value="">All Statuses</option>
           {STATUSES.map(s => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
         </select>
-        <input className="border rounded px-2 py-1 text-sm w-40" placeholder="Employee ID…"
-          value={empId} onChange={(e) => setEmpId(e.target.value)} />
+        <EntityPicker kind="employee" label="Filter by employee" value={empId} onChange={setEmpId} />
       </div>
 
       {loading ? (

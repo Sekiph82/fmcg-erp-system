@@ -1,4 +1,5 @@
 "use client";
+import { EntityPicker } from "@/components/EntityPicker";
 import { useEffect, useState } from "react";
 import { shelfLifeApi, BulkHoldRecord } from "@/lib/shelfLife";
 
@@ -152,19 +153,16 @@ export default function BulkHoldMonitorPage() {
             <h3 className="font-semibold text-gray-800">Register Bulk Hold</h3>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-medium text-gray-600">Lot ID</label>
-                <input className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
-                  value={form.lot_id} onChange={e => setForm(f => ({ ...f, lot_id: e.target.value }))} />
+                <label className="text-xs font-medium text-gray-600">Lot</label>
+                <EntityPicker kind="lot" label="Lot" value={form.lot_id} onChange={(id) => setForm(f => ({ ...f, lot_id: id }))} />
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-600">Material ID</label>
-                <input className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
-                  value={form.material_id} onChange={e => setForm(f => ({ ...f, material_id: e.target.value }))} />
+                <label className="text-xs font-medium text-gray-600">Material</label>
+                <EntityPicker kind="material" label="Material" value={form.material_id} onChange={(id) => setForm(f => ({ ...f, material_id: id }))} />
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-600">Warehouse ID</label>
-                <input className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
-                  value={form.warehouse_id} onChange={e => setForm(f => ({ ...f, warehouse_id: e.target.value }))} />
+                <label className="text-xs font-medium text-gray-600">Warehouse</label>
+                <EntityPicker kind="warehouse" label="Warehouse" value={form.warehouse_id} onChange={(id) => setForm(f => ({ ...f, warehouse_id: id }))} />
               </div>
               <div>
                 <label className="text-xs font-medium text-gray-600">Location Ref</label>

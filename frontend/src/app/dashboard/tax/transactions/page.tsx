@@ -1,5 +1,6 @@
 "use client";
 
+import { EntityPicker, kindFor } from "@/components/EntityPicker";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { taxApi, CountryTaxConfig, TransactionTax, TaxType, TxTaxStatus } from "@/lib/tax_regulatory";
@@ -199,8 +200,12 @@ function TaxLineModal({ countries, onClose, onSubmit, loading }: {
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Entity ID (UUID)</label>
-            <input className="w-full border rounded px-3 py-2 text-sm font-mono" value={form.entity_id} onChange={(e) => set("entity_id", e.target.value)} placeholder="UUID of PO/SO/Invoice" />
+            <label className="block text-xs font-medium text-gray-600 mb-1">Record</label>
+            {kindFor(form.entity_type) ? (
+              <EntityPicker key={form.entity_type} kind={kindFor(form.entity_type)!} label="Record" value={form.entity_id} onChange={(id) => set("entity_id", id)} />
+            ) : (
+              <input className="w-full border rounded px-3 py-2 text-sm" value={form.entity_id} onChange={(e) => set("entity_id", e.target.value)} placeholder="Record number" />
+            )}
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Country</label>

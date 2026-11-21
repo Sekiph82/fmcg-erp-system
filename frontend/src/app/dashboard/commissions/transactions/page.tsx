@@ -1,4 +1,5 @@
 "use client";
+import { EntityPicker } from "@/components/EntityPicker";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { commissionsApi, TXN_STATUS_COLORS, TxnStatus } from "@/lib/commissions";
@@ -54,8 +55,11 @@ export default function TransactionsPage() {
           className="rounded-xl border border-indigo-500/30 bg-indigo-500/10 p-4 space-y-3">
           <h2 className="text-sm font-semibold text-indigo-300">Calculate Commission</h2>
           <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="text-[10px] text-slate-400 mb-1 block">Sales rep</label>
+              <EntityPicker kind="user" label="Sales rep" required value={calcForm.sales_rep_id} onChange={(id) => upd("sales_rep_id", id)} />
+            </div>
             {[
-              { k: "sales_rep_id", label: "Sales Rep ID (UUID)" },
               { k: "base_amount", label: "Base Amount (KES)" },
               { k: "calculation_date", label: "Calculation Date", type: "date" },
             ].map(({ k, label, type }) => (

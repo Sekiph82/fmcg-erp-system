@@ -1,4 +1,5 @@
 "use client";
+import { EntityPicker } from "@/components/EntityPicker";
 import { useEffect, useState } from "react";
 import { appraisalsApi, AppraisalRecord, KPILine, CompetencyLine } from "@/lib/appraisals";
 
@@ -62,12 +63,7 @@ export default function SelfReviewPage() {
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-gray-900">Employee Self Review</h1>
-        <input
-          className="border rounded px-2 py-1 text-sm w-48"
-          placeholder="Filter by employee ID…"
-          value={employeeId}
-          onChange={(e) => setEmployeeId(e.target.value)}
-        />
+        <EntityPicker kind="employee" label="Filter by employee" value={employeeId} onChange={setEmployeeId} />
       </div>
       <p className="text-sm text-gray-500">Appraisals pending self-review. Employees enter self scores and submit to manager.</p>
 

@@ -1,4 +1,5 @@
 "use client";
+import { EntityPicker } from "@/components/EntityPicker";
 import { useSearchParams } from "next/navigation";
 import { useState, useEffect, Suspense } from "react";
 import { traceApi, ForwardTraceResult } from "@/lib/traceability";
@@ -35,10 +36,8 @@ function ForwardTraceContent() {
 
       <div className="bg-white rounded-xl border border-gray-200 p-5 flex gap-3">
         <div className="flex-1">
-          <label className="text-xs font-medium text-gray-600">Lot ID</label>
-          <input className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
-            placeholder="UUID of the lot to trace forward" value={lotId}
-            onChange={e => setLotId(e.target.value)} />
+          <label className="text-xs font-medium text-gray-600">Lot</label>
+          <EntityPicker kind="lot" label="Lot" value={lotId} onChange={setLotId} />
         </div>
         <div className="flex items-end">
           <button onClick={() => handleTrace()} disabled={!lotId || loading}

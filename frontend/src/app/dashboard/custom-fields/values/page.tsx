@@ -1,4 +1,5 @@
 "use client";
+import { EntityPicker, kindFor } from "@/components/EntityPicker";
 import { useState } from "react";
 import {
   customFieldsApi, FieldValueOut, EntityType,
@@ -92,11 +93,15 @@ export default function ValuesBrowserPage() {
             </select>
           </div>
           <div className="col-span-2">
-            <label className="text-xs text-gray-500 block mb-1">Entity ID</label>
+            <label className="text-xs text-gray-500 block mb-1">Record</label>
             <div className="flex gap-2">
-              <input className="flex-1 border rounded px-2 py-1.5 text-sm" placeholder="Paste UUID of the record…"
-                value={entityId} onChange={e => setEntityId(e.target.value)}
-                onKeyDown={e => { if (e.key === "Enter") lookup(); }} />
+              {kindFor(entityType) ? (
+                <EntityPicker key={entityType} kind={kindFor(entityType)!} label="Record" className="flex-1" value={entityId} onChange={setEntityId} />
+              ) : (
+                <input className="flex-1 border rounded px-2 py-1.5 text-sm" placeholder="Record number"
+                  value={entityId} onChange={e => setEntityId(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter") lookup(); }} />
+              )}
               <button onClick={lookup} className="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700">
                 Look Up
               </button>

@@ -1,4 +1,5 @@
 "use client";
+import { EntityPicker, type EntityKind } from "@/components/EntityPicker";
 import { useCallback, useEffect, useState } from "react";
 import { procurementApi, BlanketAgreement, BlanketAgreementPriceBreakInput, BlanketAgreementReleaseInput, PODetail, BPAStatus } from "@/lib/procurement";
 
@@ -14,6 +15,8 @@ const BLANK_FORM = {
   agreed_unit_price: "", currency: "KES", agreed_quantity: "",
   unit: "KG", valid_from: "", valid_to: "", payment_terms: "", notes: "",
 };
+
+const PICK: Record<string, EntityKind> = { supplier_id: "supplier", preferred_supplier_id: "supplier", material_id: "material", product_id: "product", warehouse_id: "warehouse" };
 
 export default function BlanketAgreementsPage() {
   const [bpas, setBPAs] = useState<BlanketAgreement[]>([]);
@@ -76,7 +79,7 @@ export default function BlanketAgreementsPage() {
 
   const save = async () => {
     if (!form.bpa_no || !form.supplier_id || !form.agreed_unit_price || !form.valid_from || !form.valid_to) {
-      setError("BPA No., Supplier ID, Price, and validity dates required"); return;
+      setError("BPA No., Supplier, Price, and validity dates required"); return;
     }
     if (Boolean(form.material_id.trim()) === Boolean(form.product_id.trim())) {
       setError("Choose exactly one material ID or product ID for a releasable agreement."); return;
@@ -351,9 +354,9 @@ export default function BlanketAgreementsPage() {
               <div className="grid grid-cols-2 gap-4">
                 {[
                   { label: "BPA No. *", key: "bpa_no", placeholder: "BPA-2026-001", col: 1 },
-                  { label: "Supplier ID *", key: "supplier_id", placeholder: "UUID", col: 1 },
-                  { label: "Material ID (choose one target)", key: "material_id", placeholder: "Material UUID", col: 1 },
-                  { label: "Product ID (choose one target)", key: "product_id", placeholder: "Product UUID", col: 1 },
+                  { label: "Supplier *", key: "supplier_id", placeholder: "", col: 1 },
+                  { label: "Material (choose one target)", key: "material_id", placeholder: "", col: 1 },
+                  { label: "Product (choose one target)", key: "product_id", placeholder: "", col: 1 },
                   { label: "Description", key: "description", placeholder: "e.g. Palm Oil FY2026", col: 2 },
                   { label: "Agreed Unit Price *", key: "agreed_unit_price", type: "number", placeholder: "0.00", col: 1 },
                   { label: "Currency", key: "currency", placeholder: "KES", col: 1 },
@@ -366,11 +369,11 @@ export default function BlanketAgreementsPage() {
                 ].map(f => (
                   <div key={f.key} className={f.col === 2 ? "col-span-2" : ""}>
                     <label className="block text-xs font-medium text-gray-600 mb-1">{f.label}</label>
-                    <input type={f.type ?? "text"} placeholder={f.placeholder}
+                    {PICK[f.key] ? (<EntityPicker kind={PICK[f.key]} label={f.label} value={(form as Record<string, string>)[f.key]} onChange={(id) => setForm(prev => ({ ...prev, [f.key]: id }))} />) : (<input type={f.type ?? "text"} placeholder={f.placeholder}
                       value={(form as Record<string, string>)[f.key]}
                       onChange={e => setForm(prev => ({ ...prev, [f.key]: e.target.value }))}
                       className="w-full border rounded px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none"
-                    />
+                    />)}
                   </div>
                 ))}
               </div>

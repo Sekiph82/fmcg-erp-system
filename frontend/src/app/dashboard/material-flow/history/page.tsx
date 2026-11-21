@@ -1,5 +1,6 @@
 "use client";
 
+import { EntityPicker } from "@/components/EntityPicker";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { mfApi, FlowTransaction, FlowType, FLOW_TYPE_LABELS, FLOW_STATUS_COLORS } from "@/lib/materialFlow";
@@ -28,8 +29,8 @@ export default function FlowHistoryPage() {
       {/* Filters */}
       <div className="bg-white rounded-lg border p-4 flex flex-wrap gap-4">
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Production Order ID</label>
-          <input value={orderId} onChange={(e) => setOrderId(e.target.value)} className="border rounded px-3 py-2 text-sm w-64" placeholder="Filter by order UUID" />
+          <label className="block text-xs font-medium text-gray-600 mb-1">Production order</label>
+          <EntityPicker kind="production_order" label="Production order" value={orderId} onChange={setOrderId} />
         </div>
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-1">Flow Type</label>

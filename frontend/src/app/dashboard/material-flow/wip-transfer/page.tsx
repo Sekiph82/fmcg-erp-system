@@ -1,5 +1,6 @@
 "use client";
 
+import { EntityPicker } from "@/components/EntityPicker";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { FlowStage, WIPBalance, mfApi } from "@/lib/materialFlow";
@@ -118,8 +119,8 @@ export default function WIPTransferPage() {
       <section className="bg-white rounded-lg border p-5 space-y-4">
         <h2 className="font-semibold text-gray-800">Production order</h2>
         <label className="block text-xs font-medium text-gray-600">
-          Production Order ID
-          <input value={orderId} onChange={(event) => { setOrderId(event.target.value); setSelectedBalanceKey(""); setSelectedBalanceKeys([]); }} className="mt-1 w-full border rounded px-3 py-2 text-sm font-normal" placeholder="UUID" />
+          Production order
+          <EntityPicker kind="production_order" label="Production order" value={orderId} onChange={setOrderId} />
         </label>
       </section>
 

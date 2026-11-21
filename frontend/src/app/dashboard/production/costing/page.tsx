@@ -1,5 +1,6 @@
 "use client";
 
+import { EntityPicker } from "@/components/EntityPicker";
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -319,12 +320,8 @@ export default function ProductionCostingPage() {
               Only COMPLETED orders can be finalized.
             </p>
             <div className="flex flex-col gap-1">
-              <label className="text-xs text-slate-400">Production Order ID (UUID)</label>
-              <input
-                value={finalizeId} onChange={e => setFinalizeId(e.target.value)}
-                placeholder="e.g. 550e8400-e29b-41d4-a716-..."
-                className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white"
-              />
+              <label className="text-xs text-slate-400">Production order</label>
+              <EntityPicker kind="production_order" label="Production order" value={finalizeId} onChange={setFinalizeId} />
             </div>
             <div className="flex gap-2 justify-end">
               <button

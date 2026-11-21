@@ -16,6 +16,7 @@
  *   7. Transactions table (create / edit / delete / export)
  */
 
+import { EntityPicker } from "@/components/EntityPicker";
 import React, { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -314,10 +315,8 @@ function SolarRecordForm({
         <Section>Identification</Section>
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1">
-            <label className={lbl}>Asset ID (Solar Panel / Inverter) *</label>
-            <input required type="text" value={f.asset_id}
-              onChange={(e) => s("asset_id", e.target.value)} className={inp}
-              placeholder="UUID of solar asset" />
+            <label className={lbl}>Asset (solar panel / inverter) *</label>
+            <EntityPicker kind="utility_asset" label="Solar asset" required value={f.asset_id} onChange={(id) => s("asset_id", id)} />
           </div>
           <div className="flex flex-col gap-1">
             <label className={lbl}>Record Datetime *</label>

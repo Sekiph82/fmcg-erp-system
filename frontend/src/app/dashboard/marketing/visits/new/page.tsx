@@ -1,5 +1,6 @@
 "use client";
 
+import { EntityPicker } from "@/components/EntityPicker";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
@@ -136,20 +137,13 @@ export default function NewVisitPage() {
 
           {/* IDs — optional, collapsible feel */}
           <details className="text-sm">
-            <summary className="text-xs text-slate-500 cursor-pointer hover:text-slate-400">Optional: Link to Customer / CRM</summary>
+            <summary className="text-xs text-slate-500 cursor-pointer hover:text-slate-400">Optional: link to a customer</summary>
             <div className="mt-3 space-y-3">
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Customer ID (UUID)</label>
-                <input value={form.customer_id} onChange={(e) => set("customer_id", e.target.value)}
-                  placeholder="Optional"
-                  className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600 font-mono" />
+                <label className="block text-xs text-slate-400 mb-1">Customer</label>
+                <EntityPicker kind="customer" label="Customer" value={form.customer_id} onChange={(id) => set("customer_id", id)} />
               </div>
-              <div>
-                <label className="block text-xs text-slate-400 mb-1">CRM Profile ID (UUID)</label>
-                <input value={form.crm_profile_id} onChange={(e) => set("crm_profile_id", e.target.value)}
-                  placeholder="Optional"
-                  className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600 font-mono" />
-              </div>
+              <p className="text-xs text-slate-500">The customer&apos;s CRM profile is linked automatically.</p>
             </div>
           </details>
 

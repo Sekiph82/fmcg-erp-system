@@ -1,5 +1,6 @@
 "use client";
 
+import { EntityPicker } from "@/components/EntityPicker";
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -299,11 +300,8 @@ export default function InfluencerDetailPage() {
               <div className="mb-5 p-4 bg-[#0b1120] rounded-lg border border-slate-700/50 space-y-3">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs text-slate-400 mb-1">Campaign ID *</label>
-                    <input type="text" value={linkForm.campaign_id}
-                      onChange={(e) => setLinkForm((f) => ({ ...f, campaign_id: e.target.value }))}
-                      placeholder="UUID"
-                      className="w-full bg-[#0d1527] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white" />
+                    <label className="block text-xs text-slate-400 mb-1">Campaign *</label>
+                    <EntityPicker kind="campaign" label="Campaign" required value={linkForm.campaign_id} onChange={(id) => setLinkForm((f) => ({ ...f, campaign_id: id }))} />
                   </div>
                   <div>
                     <label className="block text-xs text-slate-400 mb-1">Content Type</label>

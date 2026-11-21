@@ -1,4 +1,5 @@
 "use client";
+import { EntityPicker } from "@/components/EntityPicker";
 import { useEffect, useState } from "react";
 import {
   traceApi, RecallHeader, RecallStatus, RecallType,
@@ -144,9 +145,8 @@ export default function RecallListPage() {
                 </select>
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-600">Source Lot ID</label>
-                <input className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
-                  value={form.source_lot_id} onChange={e => setForm(f => ({ ...f, source_lot_id: e.target.value }))} />
+                <label className="text-xs font-medium text-gray-600">Source Lot</label>
+                <EntityPicker kind="lot" label="Source lot" value={form.source_lot_id} onChange={(id) => setForm(f => ({ ...f, source_lot_id: id }))} />
               </div>
               <div>
                 <label className="text-xs font-medium text-gray-600">Target Market</label>

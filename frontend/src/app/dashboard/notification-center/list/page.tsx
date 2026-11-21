@@ -1,4 +1,5 @@
 "use client";
+import { EntityPicker } from "@/components/EntityPicker";
 import { useEffect, useState } from "react";
 import {
   notificationsApi, NCNotification, NotificationType, NotificationPriority,
@@ -108,9 +109,8 @@ export default function NotificationListPage() {
         <div className="bg-white border rounded-lg p-4 shadow-sm space-y-3">
           <h2 className="font-semibold text-gray-800">Send Notification</h2>
           <div className="grid grid-cols-2 gap-3">
-            <div><label className="text-xs text-gray-500">User ID *</label>
-              <input className="w-full border rounded px-2 py-1 text-sm mt-1" value={compose.user_id}
-                onChange={(e) => setCompose({ ...compose, user_id: e.target.value })} /></div>
+            <div><label className="text-xs text-gray-500">User *</label>
+              <EntityPicker kind="user" label="User" value={compose.user_id} onChange={(id) => setCompose({ ...compose, user_id: id })} /></div>
             <div><label className="text-xs text-gray-500">Type</label>
               <select className="w-full border rounded px-2 py-1 text-sm mt-1" value={compose.notification_type}
                 onChange={(e) => setCompose({ ...compose, notification_type: e.target.value as NotificationType })}>

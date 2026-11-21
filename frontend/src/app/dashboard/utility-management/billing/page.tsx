@@ -1,5 +1,6 @@
 "use client";
 
+import { EntityPicker } from "@/components/EntityPicker";
 import React, { useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { integrationApi } from "@/lib/utilityIntegration";
@@ -131,24 +132,12 @@ function PostToGLModal({
             </strong>
           </p>
           <div>
-            <label className={labelCls}>Debit Account ID *</label>
-            <input
-              className={inputCls}
-              placeholder="UUID of the debit account"
-              value={debitAccountId}
-              onChange={e => setDebitAccountId(e.target.value)}
-              required
-            />
+            <label className={labelCls}>Debit account *</label>
+            <EntityPicker kind="gl_account" label="Debit account" required value={debitAccountId} onChange={setDebitAccountId} />
           </div>
           <div>
-            <label className={labelCls}>Credit Account ID *</label>
-            <input
-              className={inputCls}
-              placeholder="UUID of the credit account"
-              value={creditAccountId}
-              onChange={e => setCreditAccountId(e.target.value)}
-              required
-            />
+            <label className={labelCls}>Credit account *</label>
+            <EntityPicker kind="gl_account" label="Credit account" required value={creditAccountId} onChange={setCreditAccountId} />
           </div>
           {mut.isError && (
             <p className="text-xs text-red-600 dark:text-red-400">

@@ -1,5 +1,6 @@
 "use client";
 
+import { EntityPicker } from "@/components/EntityPicker";
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -185,10 +186,8 @@ export default function TradeSpendDetailPage() {
             </div>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Campaign ID</label>
-              <input type="text" value={form.campaign_id ?? ""}
-                onChange={(e) => set("campaign_id", e.target.value)}
-                className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white" />
+              <label className="block text-xs text-slate-400 mb-1">Campaign</label>
+              <EntityPicker kind="campaign" label="Campaign" value={form.campaign_id ?? ""} onChange={(id) => set("campaign_id", id)} />
             </div>
 
             <div>

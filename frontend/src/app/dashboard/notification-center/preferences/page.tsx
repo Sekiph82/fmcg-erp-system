@@ -1,4 +1,5 @@
 "use client";
+import { EntityPicker } from "@/components/EntityPicker";
 import { useEffect, useState } from "react";
 import {
   notificationsApi, NCPreference, NotificationType, NotificationChannel,
@@ -52,9 +53,8 @@ export default function PreferencesPage() {
 
       <div className="flex gap-3 items-end">
         <div>
-          <label className="text-xs text-gray-500">User ID</label>
-          <input className="block border rounded px-2 py-1 text-sm mt-1 w-40" value={userId}
-            onChange={(e) => setUserId(e.target.value)} />
+          <label className="text-xs text-gray-500">User</label>
+          <EntityPicker kind="user" label="User" value={userId} onChange={setUserId} />
         </div>
         <button onClick={load} className="rounded border px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50">Load</button>
         <button onClick={seed} className="rounded border border-blue-200 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50">

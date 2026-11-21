@@ -1,4 +1,5 @@
 "use client";
+import { EntityPicker } from "@/components/EntityPicker";
 import { useCallback, useState, useEffect } from "react";
 import { spApi, SPAccount, SPAccountStatus, SP_STATUS_COLORS } from "@/lib/supplier_portal";
 
@@ -104,9 +105,8 @@ export default function SupplierPortalAdmin() {
             <h2 className="text-lg font-bold text-gray-900 mb-4">Onboard Supplier to Portal</h2>
             <form onSubmit={handleCreate} className="space-y-4">
               <div>
-                <label className="text-xs font-medium text-gray-700">Supplier ID</label>
-                <input required value={form.supplier_id} onChange={(e) => setForm({ ...form, supplier_id: e.target.value })}
-                  className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="UUID of supplier" />
+                <label className="text-xs font-medium text-gray-700">Supplier</label>
+                <EntityPicker kind="supplier" label="Supplier" value={form.supplier_id} onChange={(id) => setForm((f) => ({ ...f, supplier_id: id }))} />
               </div>
               <div>
                 <label className="text-xs font-medium text-gray-700">Primary Contact Name</label>

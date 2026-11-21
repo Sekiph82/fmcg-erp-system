@@ -1,4 +1,5 @@
 "use client";
+import { EntityPicker } from "@/components/EntityPicker";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
@@ -42,12 +43,8 @@ export default function MatchListPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Invoice Match Results</h1>
         <div className="flex gap-2">
-          <input
-            className="border rounded-lg px-3 py-1.5 text-sm w-72"
-            placeholder="Invoice ID (UUID) to run match…"
-            value={invoiceId}
-            onChange={(e) => setInvoiceId(e.target.value)}
-          />
+          <EntityPicker kind="purchase_invoice" label="Supplier invoice to match" placeholder="Supplier invoice to match…"
+            className="w-72 max-w-full" value={invoiceId} onChange={setInvoiceId} />
           <button
             onClick={() => invoiceId && runMatch.mutate(invoiceId)}
             disabled={!invoiceId || runMatch.isPending}

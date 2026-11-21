@@ -1,4 +1,5 @@
 "use client";
+import { EntityPicker } from "@/components/EntityPicker";
 import { useState } from "react";
 import { shelfLifeApi, FEFOValidateShipmentResponse } from "@/lib/shelfLife";
 
@@ -39,9 +40,8 @@ export default function ShipmentValidationPage() {
 
         <div className="grid grid-cols-2 gap-4">
           <div className="col-span-2">
-            <label className="text-xs font-medium text-gray-600">Lot ID *</label>
-            <input className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
-              placeholder="UUID of lot" value={lotId} onChange={e => setLotId(e.target.value)} />
+            <label className="text-xs font-medium text-gray-600">Lot *</label>
+            <EntityPicker kind="lot" label="Lot" required value={lotId} onChange={setLotId} />
           </div>
           <div>
             <label className="text-xs font-medium text-gray-600">Quantity</label>
@@ -49,14 +49,12 @@ export default function ShipmentValidationPage() {
               value={qty} onChange={e => setQty(e.target.value)} />
           </div>
           <div>
-            <label className="text-xs font-medium text-gray-600">Product ID</label>
-            <input className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
-              placeholder="Optional UUID" value={productId} onChange={e => setProductId(e.target.value)} />
+            <label className="text-xs font-medium text-gray-600">Product</label>
+            <EntityPicker kind="product" label="Product" value={productId} onChange={setProductId} />
           </div>
           <div className="col-span-2">
-            <label className="text-xs font-medium text-gray-600">Customer ID (for customer-specific rules)</label>
-            <input className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
-              placeholder="Optional UUID" value={customerId} onChange={e => setCustomerId(e.target.value)} />
+            <label className="text-xs font-medium text-gray-600">Customer (for customer-specific rules)</label>
+            <EntityPicker kind="customer" label="Customer" value={customerId} onChange={setCustomerId} />
           </div>
         </div>
 

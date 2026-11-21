@@ -1,5 +1,6 @@
 "use client";
 
+import { EntityPicker } from "@/components/EntityPicker";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { serialApi, SerialNumber, SerialStatus, SerialMovement } from "@/lib/inventory";
@@ -309,20 +310,14 @@ function CreateSerialModal({
       <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 space-y-4">
         <h2 className="font-semibold text-lg">Assign Serial Number</h2>
         <div className="space-y-3">
-          {[
-            { k: "serial_no", label: "Serial No.", required: true, placeholder: "SN-001234" },
-            { k: "product_id", label: "Product ID (UUID)", required: true, placeholder: "product UUID" },
-            { k: "lot_id", label: "Lot ID (optional)", required: false, placeholder: "lot UUID" },
-            { k: "warehouse_id", label: "Warehouse ID (optional)", required: false, placeholder: "warehouse UUID" },
-          ].map(({ k, label, placeholder }) => (
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Serial No.</label>
+            <input className="w-full border rounded px-3 py-2 text-sm" value={form.serial_no} onChange={(e) => set("serial_no", e.target.value)} placeholder="SN-001234" />
+          </div>
+          {([["product_id", "Product", "product"], ["lot_id", "Lot (optional)", "lot"], ["warehouse_id", "Warehouse (optional)", "warehouse"]] as const).map(([k, label, kind]) => (
             <div key={k}>
               <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
-              <input
-                className="w-full border rounded px-3 py-2 text-sm"
-                value={(form as Record<string, string>)[k]}
-                onChange={(e) => set(k, e.target.value)}
-                placeholder={placeholder}
-              />
+              <EntityPicker kind={kind} label={label} value={(form as Record<string, string>)[k]} onChange={(id) => set(k, id)} />
             </div>
           ))}
           <div>
@@ -385,8 +380,8 @@ function TransferModal({
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">New Warehouse ID (optional)</label>
-            <input className="w-full border rounded px-3 py-2 text-sm" value={form.to_warehouse_id} onChange={(e) => set("to_warehouse_id", e.target.value)} placeholder="warehouse UUID" />
+            <label className="block text-xs font-medium text-gray-600 mb-1">New warehouse (optional)</label>
+            <EntityPicker kind="warehouse" label="New warehouse" value={form.to_warehouse_id} onChange={(id) => set("to_warehouse_id", id)} />
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Reference Type</label>

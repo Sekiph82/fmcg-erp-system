@@ -1,4 +1,5 @@
 "use client";
+import { EntityPicker } from "@/components/EntityPicker";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { advProductionApi } from "@/lib/productionAdvanced";
@@ -73,7 +74,7 @@ export default function WasteYieldPage() {
         <form onSubmit={e=>{e.preventDefault();create.mutate();}} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <Input label="Waste ID *" value={form.waste_id} onChange={e=>setForm(f=>({...f,waste_id:e.target.value}))} required placeholder="W001"/>
-            <Input label="Production Order ID" value={form.production_order_id} onChange={e=>setForm(f=>({...f,production_order_id:e.target.value}))} placeholder="UUID"/>
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">Production Order</label><EntityPicker kind="production_order" label="Production order" value={form.production_order_id} onChange={(id) => setForm((f) => ({ ...f, production_order_id: id }))} /></div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <Input label="Material Code" value={form.material_code} onChange={e=>setForm(f=>({...f,material_code:e.target.value}))} placeholder="e.g. SLES"/>

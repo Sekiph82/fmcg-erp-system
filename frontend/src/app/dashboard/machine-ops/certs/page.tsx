@@ -1,5 +1,6 @@
 "use client";
 
+import { EntityPicker } from "@/components/EntityPicker";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { moApi, SkillCert, CertStatus, CERT_STATUS_COLORS } from "@/lib/machineOperator";
@@ -119,9 +120,15 @@ export default function CertsPage() {
           <div className="bg-white rounded-xl shadow-xl p-6 w-[480px] space-y-4">
             <h2 className="font-bold text-gray-900">Add Skill / Certification</h2>
             <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Operator *</label>
+                <EntityPicker kind="operator" label="Operator" required value={form.operator_id} onChange={(id) => setForm((p) => ({ ...p, operator_id: id }))} />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Machine</label>
+                <EntityPicker kind="machine" label="Machine" value={form.machine_id} onChange={(id) => setForm((p) => ({ ...p, machine_id: id }))} />
+              </div>
               {[
-                { label: "Operator ID *", field: "operator_id", placeholder: "UUID" },
-                { label: "Machine ID", field: "machine_id", placeholder: "UUID (optional)" },
                 { label: "Operation Code", field: "operation_code", placeholder: "e.g. FILLING-OPS" },
                 { label: "Expiry Date", field: "certification_expiry", type: "date" },
               ].map(({ label, field, placeholder, type }) => (

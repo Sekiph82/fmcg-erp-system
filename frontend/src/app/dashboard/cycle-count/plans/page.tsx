@@ -1,5 +1,6 @@
 "use client";
 
+import { EntityPicker } from "@/components/EntityPicker";
 import { useEffect, useState } from "react";
 import { listPlans, createPlan, updatePlan, generateTasks, CycleCountPlan, PlanStatus, PlanType, PLAN_STATUS_BADGE } from "@/lib/cycleCount";
 import { Button } from "@/components/ui/Button";
@@ -73,7 +74,10 @@ export default function PlansPage() {
           <form onSubmit={handleCreate} className="grid grid-cols-2 gap-4">
             <Input id="code" label="Plan Code" value={form.plan_code || ""} onChange={(e) => setForm({ ...form, plan_code: e.target.value })} placeholder="Auto-generated if blank" />
             <Input id="name" label="Plan Name" value={form.name || ""} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
-            <Input id="wh" label="Warehouse ID" value={form.warehouse_id || ""} onChange={(e) => setForm({ ...form, warehouse_id: e.target.value })} required placeholder="UUID" />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Warehouse</label>
+              <EntityPicker kind="warehouse" label="Warehouse" required value={form.warehouse_id || ""} onChange={(id) => setForm({ ...form, warehouse_id: id })} />
+            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Plan Type</label>
               <select className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm capitalize" value={form.plan_type} onChange={(e) => setForm({ ...form, plan_type: e.target.value })}>

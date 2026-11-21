@@ -1,5 +1,6 @@
 "use client";
 
+import { EntityPicker } from "@/components/EntityPicker";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { allergenApi, riskColor, type ProductAllergenSummary } from "@/lib/allergen";
@@ -29,13 +30,13 @@ export default function ProductAllergensPage() {
           <div className="bg-white rounded-lg p-4 w-96 space-y-3">
             <h3 className="text-sm font-medium text-gray-900">Recalculate Allergen Summary</h3>
             <div>
-              <label className="text-xs text-gray-500">BOM ID (UUID)</label>
-              <input className="mt-0.5 w-full border rounded px-2 py-1.5 text-sm font-mono" value={calcForm.bom_id} onChange={(e) => setCalcForm((p) => ({ ...p, bom_id: e.target.value }))} placeholder="bom-uuid..." />
+              <label className="text-xs text-gray-500">Bill of materials</label>
+              <EntityPicker kind="bom" label="Bill of materials" value={calcForm.bom_id} onChange={(id) => setCalcForm((p) => ({ ...p, bom_id: id }))} />
             </div>
             <p className="text-xs text-gray-400 text-center">— or —</p>
             <div>
-              <label className="text-xs text-gray-500">Recipe ID (UUID)</label>
-              <input className="mt-0.5 w-full border rounded px-2 py-1.5 text-sm font-mono" value={calcForm.recipe_id} onChange={(e) => setCalcForm((p) => ({ ...p, recipe_id: e.target.value }))} placeholder="recipe-uuid..." />
+              <label className="text-xs text-gray-500">Recipe</label>
+              <EntityPicker kind="recipe" label="Recipe" value={calcForm.recipe_id} onChange={(id) => setCalcForm((p) => ({ ...p, recipe_id: id }))} />
             </div>
             <div className="flex gap-2">
               <button onClick={() => calculate.mutate(showCalc)} disabled={calculate.isPending || (!calcForm.bom_id && !calcForm.recipe_id)} className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded disabled:opacity-50">Calculate</button>

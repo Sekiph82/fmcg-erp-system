@@ -1,5 +1,6 @@
 "use client";
 
+import { EntityPicker } from "@/components/EntityPicker";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { mfApi, MaterialPickList, Reservation, ReservationStatus } from "@/lib/materialFlow";
@@ -216,8 +217,8 @@ export default function ReservationsPage() {
             <h2 className="font-bold text-gray-900">New Material Reservation</h2>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Production Order ID</label>
-                <input value={form.production_order_id} onChange={(e) => setForm((p) => ({ ...p, production_order_id: e.target.value }))} className="w-full border rounded px-3 py-2 text-sm" placeholder="UUID" />
+                <label className="block text-xs font-medium text-gray-600 mb-1">Production order</label>
+                <EntityPicker kind="production_order" label="Production order" value={form.production_order_id} onChange={(id) => setForm((f) => ({ ...f, production_order_id: id }))} />
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
@@ -231,8 +232,8 @@ export default function ReservationsPage() {
               </div>
               {lines.map((ln, i) => (
                 <div key={i} className="grid grid-cols-5 gap-2 mb-2">
-                  <input value={ln.material_id} onChange={(e) => setLines((p) => p.map((l, idx) => idx === i ? { ...l, material_id: e.target.value } : l))} className="border rounded px-2 py-1.5 text-xs" placeholder="Material UUID" />
-                  <input value={ln.warehouse_id} onChange={(e) => setLines((p) => p.map((l, idx) => idx === i ? { ...l, warehouse_id: e.target.value, staging_location_id: "" } : l))} className="border rounded px-2 py-1.5 text-xs" placeholder="Warehouse UUID" />
+                  <EntityPicker kind="material" label="Material" value={ln.material_id} onChange={(id) => setLines((p) => p.map((l, idx) => idx === i ? { ...l, material_id: id } : l))} />
+                  <EntityPicker kind="warehouse" label="Warehouse" value={ln.warehouse_id} onChange={(id) => setLines((p) => p.map((l, idx) => idx === i ? { ...l, warehouse_id: id, staging_location_id: "" } : l))} />
                   <select value={ln.staging_location_id} onChange={(e) => setLines((p) => p.map((l, idx) => idx === i ? { ...l, staging_location_id: e.target.value } : l))} className="border rounded px-2 py-1.5 text-xs">
                     <option value="">Automatic when unique</option>
                     {locations.filter((location) => location.warehouse_id === ln.warehouse_id).map((location) => (

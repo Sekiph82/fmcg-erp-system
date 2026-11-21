@@ -1,4 +1,5 @@
 "use client";
+import { EntityPicker } from "@/components/EntityPicker";
 import { useCallback, useEffect, useState } from "react";
 import { apiClient } from "@/lib/api";
 
@@ -385,12 +386,9 @@ export default function MeetingsPage() {
                   />
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Customer ID (UUID, optional)</label>
-                  <input type="text" value={form.customer_id}
-                    onChange={e => setForm(f => ({ ...f, customer_id: e.target.value }))}
-                    placeholder="UUID"
-                    className="w-full border rounded px-3 py-2 text-sm font-mono focus:ring-1 focus:ring-blue-500 outline-none"
-                  />
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Customer (optional)</label>
+                  <EntityPicker kind="customer" label="Customer" value={form.customer_id}
+                    onChange={id => setForm(f => ({ ...f, customer_id: id }))} />
                 </div>
                 <div className="col-span-2">
                   <label className="block text-xs font-medium text-gray-600 mb-1">Agenda</label>

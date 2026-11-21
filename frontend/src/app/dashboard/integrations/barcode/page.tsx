@@ -1,5 +1,6 @@
 "use client";
 
+import { EntityPicker, kindFor } from "@/components/EntityPicker";
 import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -185,14 +186,9 @@ export default function BarcodePage() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Entity ID (UUID)</label>
-                <input
-                  type="text"
-                  value={genForm.entity_id}
-                  onChange={(e) => setGenForm((f) => ({ ...f, entity_id: e.target.value }))}
-                  placeholder="e.g. 123e4567-e89b-12d3-..."
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                />
+                <label className="block text-xs font-medium text-gray-700 mb-1">{genForm.entity_type.charAt(0) + genForm.entity_type.slice(1).toLowerCase()}</label>
+                <EntityPicker key={genForm.entity_type} kind={kindFor(genForm.entity_type) ?? "product"} label="Record to label"
+                  value={genForm.entity_id} onChange={(id) => setGenForm((f) => ({ ...f, entity_id: id }))} />
               </div>
 
               <div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { EntityPicker } from "@/components/EntityPicker";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
@@ -226,12 +227,15 @@ export default function WhatIfPage() {
                       <span className="col-span-2 text-xs text-gray-500">Added time: {shiftDurationHours() == null ? "choose a valid interval" : `${shiftDurationHours()} hours`}</span>
                     </>
                   ) : (
+                    changeType === "LINE_CHANGE" ? (
+                      <EntityPicker kind="work_center" label="New work center" value={changeValue} onChange={setChangeValue} />
+                    ) : (
                     <input
                       className="border border-gray-200 rounded px-2 py-1.5 text-xs"
-                      placeholder={changeType === "DELAY" ? "Days to delay" : changeType === "LINE_CHANGE" ? "Work center UUID" : "New value"}
+                      placeholder={changeType === "DELAY" ? "Days to delay" : "New value"}
                       value={changeValue}
                       onChange={(e) => setChangeValue(e.target.value)}
-                    />
+                    />)
                   )}
                 </div>
                 {["SPLIT", "MERGE", "SHIFT_ADD"].includes(changeType) && (

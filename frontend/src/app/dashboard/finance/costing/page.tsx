@@ -1,5 +1,6 @@
 "use client";
 
+import { EntityPicker } from "@/components/EntityPicker";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { financeApi, ProductCost, CostType } from "@/lib/finance";
@@ -156,8 +157,8 @@ function RollupModal({ defaultPeriod, onClose, onSubmit, loading }: { defaultPer
         </div>
         <div className="space-y-3">
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Product ID (UUID)</label>
-            <input className="w-full border rounded px-3 py-2 text-sm font-mono" value={productId} onChange={(e) => setProductId(e.target.value)} placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
+            <label className="block text-xs font-medium text-gray-600 mb-1">Product</label>
+            <EntityPicker kind="product" label="Product" value={productId} onChange={setProductId} />
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Period (YYYYMM)</label>

@@ -1,4 +1,5 @@
 "use client";
+import { EntityPicker } from "@/components/EntityPicker";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { portalApi, PortalAccount, ACCOUNT_TYPE_LABELS, ACCOUNT_STATUS_COLORS } from "@/lib/portal";
@@ -191,12 +192,8 @@ export default function PortalAdminPage() {
               className="w-full border rounded-lg px-3 py-2 text-sm">
               {Object.entries(ACCOUNT_TYPE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
-            <input placeholder="Linked Customer ID" value={form.linked_customer_id}
-              onChange={e => setForm(f => ({ ...f, linked_customer_id: e.target.value }))}
-              className="w-full border rounded-lg px-3 py-2 text-sm" />
-            <input placeholder="Linked Distributor ID" value={form.linked_distributor_id}
-              onChange={e => setForm(f => ({ ...f, linked_distributor_id: e.target.value }))}
-              className="w-full border rounded-lg px-3 py-2 text-sm" />
+            <EntityPicker kind="customer" label="Linked customer" value={form.linked_customer_id} onChange={(id) => setForm(f => ({ ...f, linked_customer_id: id }))} />
+            <EntityPicker kind="distributor" label="Linked distributor" value={form.linked_distributor_id} onChange={(id) => setForm(f => ({ ...f, linked_distributor_id: id }))} />
             <input placeholder="Primary Contact Name" value={form.primary_contact_name}
               onChange={e => setForm(f => ({ ...f, primary_contact_name: e.target.value }))}
               className="w-full border rounded-lg px-3 py-2 text-sm" />

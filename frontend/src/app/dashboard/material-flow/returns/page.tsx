@@ -1,5 +1,6 @@
 "use client";
 
+import { EntityPicker } from "@/components/EntityPicker";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { mfApi, FlowTransaction, FLOW_STATUS_COLORS } from "@/lib/materialFlow";
@@ -87,7 +88,7 @@ export default function ReturnsPage() {
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Production Order</label>
-              <input value={form.production_order_id} onChange={(e) => setForm((p) => ({ ...p, production_order_id: e.target.value }))} className="w-full border rounded px-3 py-2 text-sm" placeholder="UUID" />
+              <EntityPicker kind="production_order" label="Production order" value={form.production_order_id} onChange={(id) => setForm((f) => ({ ...f, production_order_id: id }))} />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Item Type</label>
@@ -97,12 +98,12 @@ export default function ReturnsPage() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Material ID</label>
-              <input value={form.material_id} onChange={(e) => setForm((p) => ({ ...p, material_id: e.target.value }))} className="w-full border rounded px-3 py-2 text-sm" placeholder="UUID" />
+              <label className="block text-xs font-medium text-gray-600 mb-1">Material</label>
+              <EntityPicker kind="material" label="Material" value={form.material_id} onChange={(id) => setForm((f) => ({ ...f, material_id: id }))} />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Lot ID</label>
-              <input value={form.lot_id} onChange={(e) => setForm((p) => ({ ...p, lot_id: e.target.value }))} className="w-full border rounded px-3 py-2 text-sm" placeholder="UUID" />
+              <label className="block text-xs font-medium text-gray-600 mb-1">Lot</label>
+              <EntityPicker kind="lot" label="Lot" value={form.lot_id} onChange={(id) => setForm((f) => ({ ...f, lot_id: id }))} />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Return Quantity</label>
@@ -145,8 +146,8 @@ export default function ReturnsPage() {
             Reversals can only be applied to POSTED transactions that have not yet been consumed. The system will auto-generate a mirror transaction.
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Transaction ID to Reverse</label>
-            <input value={reversalId} onChange={(e) => setReversalId(e.target.value)} className="w-full border rounded px-3 py-2 text-sm max-w-sm" placeholder="Flow Transaction UUID" />
+            <label className="block text-xs font-medium text-gray-600 mb-1">Transaction to reverse</label>
+            <EntityPicker kind="flow_txn" label="Transaction to reverse" value={reversalId} onChange={setReversalId} />
           </div>
           <div className="flex justify-end">
             <button onClick={() => reverse.mutate()} disabled={reverse.isPending || !reversalId} className="bg-orange-600 text-white px-5 py-2 rounded-lg text-sm hover:bg-orange-700 disabled:opacity-50">

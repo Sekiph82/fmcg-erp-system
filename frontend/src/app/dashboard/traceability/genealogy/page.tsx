@@ -1,4 +1,5 @@
 "use client";
+import { EntityPicker } from "@/components/EntityPicker";
 import { useSearchParams } from "next/navigation";
 import { useState, useEffect, Suspense } from "react";
 import { traceApi, GenealogyTree, GenealogyEdge, STAGE_COLOR } from "@/lib/traceability";
@@ -36,10 +37,8 @@ function GenealogyContent() {
 
       <div className="bg-white rounded-xl border border-gray-200 p-5 flex flex-wrap gap-3">
         <div className="flex-1 min-w-48">
-          <label className="text-xs font-medium text-gray-600">Lot ID</label>
-          <input className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
-            placeholder="UUID" value={lotId}
-            onChange={e => setLotId(e.target.value)} />
+          <label className="text-xs font-medium text-gray-600">Lot</label>
+          <EntityPicker kind="lot" label="Lot" value={lotId} onChange={setLotId} />
         </div>
         <div className="w-36">
           <label className="text-xs font-medium text-gray-600">Direction</label>

@@ -1,4 +1,5 @@
 "use client";
+import { EntityPicker } from "@/components/EntityPicker";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { crmApi, type LeadForm, type LeadSubmissionRow } from "@/lib/crm_pipeline";
@@ -72,7 +73,7 @@ export default function LeadFormsPage() {
           <input aria-label="Name" required placeholder="Internal name" value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} className="text-sm border rounded-lg px-2 py-1.5" />
           <input aria-label="Title" required placeholder="Title shown to visitors" value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })} className="text-sm border rounded-lg px-2 py-1.5" />
           <input aria-label="Intro" placeholder="Intro text" value={draft.intro} onChange={(e) => setDraft({ ...draft, intro: e.target.value })} className="text-sm border rounded-lg px-2 py-1.5 md:col-span-2" />
-          <input aria-label="Owner" placeholder="Owner rep id" value={draft.assigned_rep_id} onChange={(e) => setDraft({ ...draft, assigned_rep_id: e.target.value })} className="text-sm border rounded-lg px-2 py-1.5" />
+          <EntityPicker kind="user" label="Owner" value={draft.assigned_rep_id} onChange={(id) => setDraft({ ...draft, assigned_rep_id: id })} />
           <input aria-label="Consent text" placeholder="Consent statement" value={draft.consent_text} onChange={(e) => setDraft({ ...draft, consent_text: e.target.value })} className="text-sm border rounded-lg px-2 py-1.5 md:col-span-2" />
           <button type="submit" className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg">Create form</button>
         </form>

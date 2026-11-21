@@ -1,4 +1,5 @@
 "use client";
+import { EntityPicker } from "@/components/EntityPicker";
 import { useEffect, useState } from "react";
 import { shelfLifeApi, CustomerShelfLifeRule } from "@/lib/shelfLife";
 
@@ -109,9 +110,8 @@ export default function CustomerRulesPage() {
             <h3 className="font-semibold text-gray-800">Add Customer Shelf-Life Rule</h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-xs font-medium text-gray-600">Customer ID (UUID)</label>
-                <input className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
-                  value={form.customer_id} onChange={e => setForm(f => ({ ...f, customer_id: e.target.value }))} />
+                <label className="text-xs font-medium text-gray-600">Customer</label>
+                <EntityPicker kind="customer" label="Customer" value={form.customer_id} onChange={(id) => setForm((f) => ({ ...f, customer_id: id }))} />
               </div>
               <div>
                 <label className="text-xs font-medium text-gray-600">Customer Group</label>
@@ -129,9 +129,8 @@ export default function CustomerRulesPage() {
                   value={form.channel} onChange={e => setForm(f => ({ ...f, channel: e.target.value }))} />
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-600">Product ID</label>
-                <input className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
-                  value={form.product_id} onChange={e => setForm(f => ({ ...f, product_id: e.target.value }))} />
+                <label className="text-xs font-medium text-gray-600">Product</label>
+                <EntityPicker kind="product" label="Product" value={form.product_id} onChange={(id) => setForm(f => ({ ...f, product_id: id }))} />
               </div>
               <div>
                 <label className="text-xs font-medium text-gray-600">Rule Type</label>

@@ -374,7 +374,11 @@ async def list_visits(
 @router.post("/visits", response_model=VisitRead, status_code=201,
              dependencies=[Depends(require_permission("customer_visits", "create"))])
 async def create_visit(data: VisitCreate, db: AsyncSession = Depends(get_db)):
-    obj = CustomerVisit(**data.model_dump())
+    values = data.model_dump()
+    if values.get("customer_id") and not values.get("crm_profile_id"):  # link the customer's CRM profile (M40.S02.T001)
+        values["crm_profile_id"] = (await db.execute(select(CRMProfile.id).where(
+            CRMProfile.customer_id == values["customer_id"]).limit(1))).scalar_one_or_none()
+    obj = CustomerVisit(**values)
     db.add(obj)
     await db.commit()
     await db.refresh(obj)
