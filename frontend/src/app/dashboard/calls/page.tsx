@@ -1,6 +1,7 @@
 "use client";
 import { EntityPicker } from "@/components/EntityPicker";
 import { useCallback, useEffect, useState } from "react";
+import { apiClient } from "@/lib/api";
 import { voipApi, CallLog, CallStats, OUTCOME_COLORS, fmtDuration } from "@/lib/voip";
 
 const BLANK_FORM = {
@@ -73,6 +74,10 @@ export default function CallsPage() {
       window.location.href = r.dial;
       await load();
     } catch { setError("Could not start the call"); }
+  };
+  const analyse = async (c: CallLog) => {   // conversation insights (M36.S05.T004)
+    try { await apiClient.post(`/api/v1/conversation-intel/call/${c.id}/analyse`); setError(""); window.location.href = "/dashboard/crm?tab=insights"; }
+    catch (e: unknown) { const d = (e as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail; setError(typeof d === "string" ? d : "Could not analyse this call."); }
   };
   const setOutcome = async (c: CallLog, outcome: string) => {
     try { await voipApi.updateCall(c.id, { outcome }); await load(); }   // server flags failed calls for follow-up
@@ -193,6 +198,8 @@ export default function CallsPage() {
                   <td className="px-4 py-3 text-xs">
                     {c.recording_url ? <a href={c.recording_url} target="_blank" rel="noopener noreferrer" className="text-blue-700 underline">Listen</a>
                       : <span className="text-gray-300">{c.recording_consent ? "—" : "No consent"}</span>}
+                    {c.has_transcript && c.recording_consent && (
+                      <button onClick={() => analyse(c)} className="ml-2 text-xs text-indigo-700 underline">Analyse</button>)}
                   </td>
                   <td className="px-4 py-3 text-xs text-gray-500 max-w-xs truncate">{c.notes ?? "—"}</td>
                 </tr>

@@ -768,3 +768,25 @@ class CRMLandingEvent(Base):
     visitor_hash = Column(String(64), nullable=False)
     kind         = Column(String(8), nullable=False)                         # VIEW | CONVERT
     created_at   = Column(DateTime(timezone=True), nullable=False)
+
+
+
+# ── M36.S05.T004 conversation intelligence ───────────────────────────────────────
+
+class CRMConversationInsight(Base):
+    __tablename__ = "crm_conversation_insights"
+    __table_args__ = (UniqueConstraint("source_type", "source_id", name="uq_crm_conversation_insight_source"),)
+
+    id             = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    source_type    = Column(String(8), nullable=False)                     # call | chat
+    source_id      = Column(UUID(as_uuid=True), nullable=False)
+    agent_id       = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    findings       = Column(JSON, nullable=False, default=list)            # [{kind, label, quote, offset}]
+    counts         = Column(JSON, nullable=False, default=dict)
+    engine         = Column(String(12), nullable=False, default="rules")
+    status         = Column(String(16), nullable=False, default="PENDING_REVIEW")   # PENDING_REVIEW | REVIEWED | REJECTED
+    coaching_note  = Column(Text, nullable=True)
+    analysed_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    analysed_at    = Column(DateTime(timezone=True), nullable=True)
+    reviewed_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    reviewed_at    = Column(DateTime(timezone=True), nullable=True)
