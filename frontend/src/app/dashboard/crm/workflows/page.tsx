@@ -15,8 +15,9 @@ const STARTER: Graph = { nodes: [{ id: "start", type: "trigger", config: { event
 const EVENTS = ["created", "stage_changed", "won", "lost", "status_changed"];
 const FIELDS = ["temperature", "record_type", "source_type", "to_stage_code", "industry_segment", "expected_revenue", "assigned_rep_id"];
 const ACTIONS = ["create_task", "notify", "set_field", "assign_owner", "enroll_in_sequence"];
-const COLORS: Record<NodeType, string> = { trigger: "border-indigo-400 bg-indigo-50", condition: "border-amber-400 bg-amber-50", delay: "border-sky-400 bg-sky-50",
-  approval: "border-fuchsia-400 bg-fuchsia-50", action: "border-emerald-400 bg-emerald-50", end: "border-gray-300 bg-gray-50" };
+// fixed colours (not theme classes) so the cards stay readable in light and dark mode
+const COLORS: Record<NodeType, [string, string]> = { trigger: ["#6366f1", "#eef2ff"], condition: ["#f59e0b", "#fffbeb"], delay: ["#0ea5e9", "#f0f9ff"],
+  approval: ["#d946ef", "#fdf4ff"], action: ["#10b981", "#ecfdf5"], end: ["#9ca3af", "#f9fafb"] };
 const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail; return Array.isArray(d) ? d.join(" ") : typeof d === "string" ? d : "Request failed."; };
 const newId = (t: string) => `${t}-${Math.random().toString(36).slice(2, 6)}`;
 
@@ -94,8 +95,9 @@ export default function WorkflowDesigner() {
     const branching = n.type === "condition" || n.type === "approval";
     return (
       <div className="flex flex-col items-center">
-        <button onClick={() => setSel(n.id)} className={`w-56 max-w-full rounded-lg border-2 px-3 py-2 text-left text-xs ${COLORS[n.type]} ${sel === n.id ? "ring-2 ring-blue-500" : ""}`}>
-          <span className="block font-semibold uppercase tracking-wide text-[10px] text-gray-500">{n.type}</span>{summary(n)}
+        <button onClick={() => setSel(n.id)} style={{ borderColor: COLORS[n.type][0], background: COLORS[n.type][1], color: "#111827" }}
+          className={`w-56 max-w-full rounded-lg border-2 px-3 py-2 text-left text-xs ${sel === n.id ? "ring-2 ring-blue-500" : ""}`}>
+          <span className="block font-semibold uppercase tracking-wide text-[10px]" style={{ color: "#4b5563" }}>{n.type}</span>{summary(n)}
         </button>
         {n.type !== "end" && !branching && (<><div className="h-4 w-px bg-gray-400" /><AddMenu onAdd={(t) => insert(n.id, t)} /><div className="h-4 w-px bg-gray-400" /><Flow id={next(n.id)} depth={depth + 1} /></>)}
         {branching && (
