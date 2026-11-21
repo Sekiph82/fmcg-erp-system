@@ -76,6 +76,11 @@ MODULE_GUARDS: dict[str, tuple[str, ...]] = {
     "/wms": ("wms", "inventory"),
 }
 
+# Master data many modules must read (pick lists), while changing it stays with the owning module.
+_OPS = ("production", "production_execution", "planning", "shop_floor", "sales", "procurement", "logistics", "quality",
+        "qms", "inventory", "wms", "warehouses", "finance", "maintenance", "field", "mrp", "mps")
+READ_EXTRA: dict[str, tuple[str, ...]] = {"/warehouses": _OPS, "/materials": _OPS, "/products": _OPS}
+
 # A handler counts as checking permissions itself only for real calls in its BODY (signature/decorator excluded).
 _OWN_CHECK = re.compile(
     r"\b(has_permission|has_any_permission|require_permission|require_any_permission|can_modify_record|can_view_record|"
@@ -131,10 +136,11 @@ def _literal_segments(request: Request) -> list[str]:
     return [seg for seg in path.split("/") if seg and not seg.startswith("{")]
 
 
-def module_guard(modules: tuple[str, ...]):
+def module_guard(modules: tuple[str, ...], read_extra: tuple[str, ...] = ()):
     from app.core.deps import get_current_user
 
     mods = frozenset(modules)
+    read_mods = mods | frozenset(read_extra)
 
     async def _module_permission(request: Request, current_user=Depends(get_current_user)):
         if getattr(current_user, "is_superuser", False):
@@ -144,7 +150,7 @@ def module_guard(modules: tuple[str, ...]):
             return current_user
         read = request.method in ("GET", "HEAD", "OPTIONS")
         segments = _literal_segments(request) + [p for p in request.url.path.split("/") if p]
-        need_mods, approval = mods, (not read and bool(APPROVAL_SEGMENTS.intersection(segments)))
+        need_mods, approval = (read_mods if read else mods), (not read and bool(APPROVAL_SEGMENTS.intersection(segments)))
         if not read and "payments" in segments and "sales" in segments:
             need_mods = frozenset({"finance"})          # recording customer money is a finance task
         if not read and "custom-fields" in segments and "values" not in segments:

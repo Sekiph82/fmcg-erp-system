@@ -704,10 +704,10 @@ def _register_routes(
             public, protected = _split_public_routes(router, definition.route_prefix)
             if public.routes:
                 api_router.include_router(public, prefix=definition.route_prefix, tags=list(tags))
-            from app.core.route_guard import MODULE_GUARDS, has_own_check, module_guard
+            from app.core.route_guard import MODULE_GUARDS, READ_EXTRA, has_own_check, module_guard
             mods = MODULE_GUARDS.get(definition.route_prefix)
             if mods:  # routes without their own permission check get the module baseline; order is kept
-                guard = [Depends(module_guard(mods))]
+                guard = [Depends(module_guard(mods, READ_EXTRA.get(definition.route_prefix, ())))]
                 router_deps = list(router.dependencies or [])
                 guarded = APIRouter()
                 for route in protected.routes:
