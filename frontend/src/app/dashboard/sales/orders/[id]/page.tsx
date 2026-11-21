@@ -58,6 +58,12 @@ export default function SODetailPage() {
     onError: (e) => toast("error", extractApiError(e)),
   });
 
+  const discountMut = useMutation({
+    mutationFn: (v: { approve: boolean; reason?: string }) => salesApi.decideOrderDiscount(id, v.approve, v.reason),
+    onSuccess: (_d, v) => { qc.invalidateQueries({ queryKey: ["sales-order", id] }); toast("success", v.approve ? "Discount approved" : "Discount rejected"); },
+    onError: (e) => toast("error", extractApiError(e)),
+  });
+
   const allocateMut = useMutation({
     mutationFn: () => salesApi.allocateOrder(id, allocWarehouse),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["sales-order", id] }); setShowAllocate(false); toast("success", "Stock allocated"); },
@@ -162,7 +168,22 @@ export default function SODetailPage() {
               Request M-Pesa Payment
             </Button>
           )}
-          {canConfirm && (
+          {so.approval_status === "PENDING_DISCOUNT" && (
+            <span className="self-center text-xs px-2 py-1 rounded bg-amber-50 text-amber-800">Discount waiting for approval</span>
+          )}
+          {so.approval_status === "DISCOUNT_REJECTED" && (
+            <span className="self-center text-xs px-2 py-1 rounded bg-red-50 text-red-700">Discount rejected — cancel and enter a new order</span>
+          )}
+          {so.access?.can_discount_approve && (
+            <>
+              <Button onClick={() => discountMut.mutate({ approve: true })} disabled={discountMut.isPending}>Approve discount</Button>
+              <Button variant="danger" disabled={discountMut.isPending} onClick={() => {
+                const reason = window.prompt("Why is the discount rejected?");
+                if (reason?.trim()) discountMut.mutate({ approve: false, reason });
+              }}>Reject discount</Button>
+            </>
+          )}
+          {canConfirm && !["PENDING_DISCOUNT", "DISCOUNT_REJECTED"].includes(so.approval_status ?? "") && (
             <Button onClick={() => confirmMut.mutate()} disabled={confirmMut.isPending}>Confirm</Button>
           )}
           {canAllocate && (

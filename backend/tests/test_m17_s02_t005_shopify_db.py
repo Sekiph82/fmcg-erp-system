@@ -142,7 +142,7 @@ async def test_orders_import_once_as_draft_sales_orders_and_stock_is_pushed(monk
         assert (profile.acquisition_source, profile.acquisition_channel) == (AcquisitionSource.DIRECT, "SHOPIFY")
         assert so.source == OrderSource.ECOMMERCE and so.payment_method == PaymentMethod.BANK_TRANSFER
         line = (await db.execute(select(SOLine).where(SOLine.so_id == so.id))).scalar_one()  # refunded line dropped
-        assert (line.ordered_quantity, line.unit_price, line.tax_rate) == (Decimal("3"), Decimal("146.6667"), Decimal("16.00"))
+        assert (line.ordered_quantity, line.unit_price, line.tax_rate) == (Decimal("3"), Decimal("146.6667"), Decimal("0.1600"))  # fraction, as the invoice computes tax = subtotal x rate
         so2 = await so_for(inclusive)
         line2 = (await db.execute(select(SOLine).where(SOLine.so_id == so2.id))).scalar_one()
         assert line2.unit_price == Decimal("100.0000") and so2.payment_method == PaymentMethod.CREDIT  # net of 16% VAT

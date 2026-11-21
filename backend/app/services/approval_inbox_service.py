@@ -11,7 +11,7 @@ import logging
 from datetime import datetime, timedelta
 from typing import Any
 
-from sqlalchemy import String, and_, cast, exists, func, select
+from sqlalchemy import String, and_, cast, exists, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
@@ -43,10 +43,14 @@ ENTRIES: list[tuple[str, str, str, str, tuple[str, ...], tuple[str, ...], str]] 
     ("brand_asset", "Brand asset review", "brand_assets:AssetApprovalStage", "status", ("PENDING",), ("marketing.approve", "campaigns.approve", "quality.approve"), "/dashboard/quality?tab=brand-assets"),
     ("shelf_life_extension", "Shelf-life extension", "shelf_life:ShelfLifeExtension", "status", ("PENDING",), ("shelf_life.approve", "quality.approve"), "/dashboard/inventory?tab=shelf-life"),
     ("supplier_food_safety", "Supplier food-safety approval", "quality:SupplierFoodSafetyApproval", "status", ("PENDING",), ("quality.approve",), "/dashboard/quality?tab=qms"),
+    ("quote_discount", "Quotation discount", "quotation:Quotation", "approval_status", ("PENDING_DISCOUNT",), ("sales.approve", "sales.approve_all"), "/dashboard/sales/quotes"),
+    ("so_discount", "Sales order discount", "sales:SalesOrder", "approval_status", ("PENDING_DISCOUNT",), ("sales.approve", "sales.approve_all"), "/dashboard/sales/orders"),
 ]
+# nobody decides their own document (the decision endpoints refuse it too)
+_NOT_OWN = {"quote_discount", "so_discount"}
 # extra fields the inline Approve/Reject buttons need to build the decision URL
 _CTX = {"rfq_award": ("rfq_id",), "brand_asset": ("asset_id",), "count_adjustment": ("entry_id",)}
-_REF_ATTRS = ("pr_no", "po_no", "leave_no", "request_no", "claim_no", "order_no", "return_no", "count_no", "run_no",
+_REF_ATTRS = ("quote_no", "pr_no", "po_no", "leave_no", "request_no", "claim_no", "order_no", "return_no", "count_no", "run_no",
               "reference", "reference_no", "number", "code", "name", "title", "shop_name")
 _PER_ENTRY = 20
 _SCOPED_SCAN = 500   # ponytail: scoped approvers are filtered in Python over the oldest 500 waiting rows per type
@@ -122,7 +126,11 @@ def _only_next_stage(model):
                            earlier.status != "APPROVED")
 
 
-_ROW_FILTER = {"brand_asset": _only_next_stage}
+def _draft(model):
+    return model.status == "DRAFT"   # a discount is decided only while the document is still a draft
+
+
+_ROW_FILTER = {"brand_asset": _only_next_stage, "quote_discount": _draft, "so_discount": _draft}
 
 
 def _waiting(key: str, model, col: str, values: tuple[str, ...]):
@@ -147,13 +155,15 @@ async def inbox(db: AsyncSession, user) -> dict:
         if access is None:
             continue
         model = _model(path)
+        cond = _waiting(key, model, col, values)
+        if key in _NOT_OWN:
+            cond = and_(cond, or_(model.created_by_id.is_(None), model.created_by_id != user.id),
+                        or_(model.discount_changed_by_id.is_(None), model.discount_changed_by_id != user.id))
         if access == "all":
-            count = (await db.execute(select(func.count()).select_from(model)
-                                      .where(_waiting(key, model, col, values)))).scalar_one()
-            rows = await _rows(db, model, _waiting(key, model, col, values), _PER_ENTRY) if count else []
+            count = (await db.execute(select(func.count()).select_from(model).where(cond))).scalar_one()
+            rows = await _rows(db, model, cond, _PER_ENTRY) if count else []
         else:
-            rows = [r for r in await _rows(db, model, _waiting(key, model, col, values), _SCOPED_SCAN)
-                    if _may_decide(user, perms, r)]
+            rows = [r for r in await _rows(db, model, cond, _SCOPED_SCAN) if _may_decide(user, perms, r)]
             count = len(rows)
             rows = rows[:_PER_ENTRY]
         if not count:
@@ -217,6 +227,8 @@ async def notify_new(db: AsyncSession, days: int = 7) -> int:
         for row in rows:
             ref = _ref(row)
             for u, access in people:
+                if key in _NOT_OWN and u.id in (getattr(row, "created_by_id", None), getattr(row, "discount_changed_by_id", None)):
+                    continue
                 if access == "all" or (access == "scoped" and _may_decide(u, perms, row)):
                     db.add(Notification(user_id=str(u.id), user_name=u.full_name or u.username,
                                         title=f"Waiting for your approval: {label} {ref}"[:255],

@@ -123,7 +123,9 @@ function ProductsListTab() {
       sku: p.sku, name: p.name, category: p.category, uom: p.uom,
       units_per_carton: p.units_per_carton, reorder_point: p.reorder_point,
       selling_price: p.selling_price, standard_cost: p.standard_cost,
-      shelf_life_days: p.shelf_life_days, is_active: p.is_active,
+      shelf_life_days: p.shelf_life_days,   // activity changes only through the governed deactivate action (PATCH refuses is_active)
+      etims_item_code: p.etims_item_code ?? null, etims_item_class_code: p.etims_item_class_code ?? null,
+      etims_tax_type: p.etims_tax_type ?? null,
     });
   };
 
@@ -350,6 +352,20 @@ function ProductsListTab() {
               value={editForm.shelf_life_days ?? ""}
               onChange={(e) => setEdit("shelf_life_days", parseInt(e.target.value) || undefined)} />
           </div>
+          <fieldset className="border rounded-lg p-3 space-y-3">
+            <legend className="text-sm font-medium px-1">KRA eTIMS (needed before invoices go to KRA)</legend>
+            <div className="grid grid-cols-2 gap-4">
+              <Input label="eTIMS item code" value={editForm.etims_item_code ?? ""} maxLength={30}
+                onChange={(e) => setEdit("etims_item_code", e.target.value.trim() || null)} />
+              <Input label="KRA item classification code" inputMode="numeric" value={editForm.etims_item_class_code ?? ""} maxLength={20}
+                onChange={(e) => setEdit("etims_item_class_code", e.target.value.replace(/[^0-9]/g, "") || null)} />
+            </div>
+            <Select label="Tax type" value={editForm.etims_tax_type ?? ""}
+              options={[{ value: "", label: "From the tax rate (16 % = B, 8 % = E)" }, { value: "A", label: "A — exempt" },
+                        { value: "B", label: "B — 16 % VAT" }, { value: "C", label: "C — zero-rated" },
+                        { value: "D", label: "D — non-VAT" }, { value: "E", label: "E — 8 % VAT" }]}
+              onChange={(e) => setEdit("etims_tax_type", e.target.value || null)} />
+          </fieldset>
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" type="button" onClick={() => setEditingProduct(null)}>Cancel</Button>
             <Button type="submit" loading={update.isPending}>Save Changes</Button>

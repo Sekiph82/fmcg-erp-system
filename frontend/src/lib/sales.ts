@@ -391,6 +391,10 @@ export const salesApi = {
     const res = await apiClient.patch<SalesOrder>(`/api/v1/sales/orders/${id}`, data);
     return res.data;
   },
+  async decideOrderDiscount(id: string, approve: boolean, reason?: string): Promise<SalesOrder> {
+    const res = await apiClient.post<SalesOrder>(`/api/v1/sales/orders/${id}/discount/${approve ? "approve" : "reject"}`, { reason });
+    return res.data;
+  },
   async confirmOrder(id: string): Promise<SalesOrder> {
     const res = await apiClient.post<SalesOrder>(`/api/v1/sales/orders/${id}/confirm`, {});
     return res.data;

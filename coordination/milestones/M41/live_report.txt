@@ -1,0 +1,57 @@
+M41.S01 live click-through 2026-11-21 (LAN HTTPS dev stack, synthetic POVU data; desk = synth-role-sales-order-desk,
+manager = synth-role-sales-manager with sales_region NAIROBI scope, customer phone = iPhone 14 Pro emulation)
+
+Run 1 (m41_live.js):
+customer 201
+manager region scope 200
+product POVU Liquid Detergent 1L
+quote QT-20261121-0002 approval_status PENDING_DISCOUNT          (created on the quote screen, 20 x 200, line discount 15 %)
+desk sees badge: 1 | Send button: 0 | Approve discount button (own): 0
+send while waiting: 409 "The discount on this document is above the approval limit and is waiting for approval ..."
+manager bell notice: true
+inbox shows quote: 1                                               (My Approvals -> Quotation discount)
+after approve: DISCOUNT_APPROVED                                   (inline Approve in My Approvals)
+desk sees approved: 1
+status after Send: SENT
+share link 201
+code message: If this e-mail is on file for your company, a code is on its way. It works for 15 minutes.
+code found in dev log: true                                        (dev stack has no SMTP: code logged, not sent)
+customer page: Accepted by Wanjiku Kamau on 11/21/2026, 9:13:59 PM. Reference 2427456F4F6A.
+staff sees e-mail verified: true | quote status: ACCEPTED
+convert 201 SO-20261121-0011
+order line discount 0.15 tax 0.16 total 3944 approval DISCOUNT_APPROVED   (20 x 200 less 15 % plus 16 % VAT = 3944)
+order 201 PENDING_DISCOUNT                                         (sales order with 20 % line discount)
+confirm while waiting: 409
+order status after confirm: CONFIRMED                              (manager pressed Approve discount on the order screen, desk pressed Confirm)
+product etims saved: null null null                                -> found: product edit always failed with 422 (form sent is_active); fixed
+page errors: []
+
+Run 2 after the product-form fix (m41_live_product.js):
+product etims saved: KE1NTXU0000099 47131800 B
+page errors: []
+
+Run 3 after the independent-review fixes (row locks, editor may not approve, status-based gate, signer-code limits, quote totals fix + migrations 0069/0070), live_report_rerun.txt:
+customer 201 
+manager region scope 200
+product POVU Dishwashing Liquid 500ml
+quote QT-20261121-0003 approval_status PENDING_DISCOUNT
+desk sees badge: 1 | Send button: 0 | Approve discount button (own): 0
+send while waiting: 409 {"error":"conflict","detail":"The discount on this document is above the approval limit and is waiting for approval befo
+manager bell notice: true
+inbox shows quote: 1
+after approve: DISCOUNT_APPROVED
+desk sees approved: 1
+status after Send: SENT
+share link 201
+code message: If this e-mail is on file for your company, a code is on its way. It works for 15 minutes.
+code found in dev log: true
+customer page: Accepted by Wanjiku Kamau on 11/21/2026, 9:32:42 PM. Reference 94EB756A7A6A. Your POVU representative will confirm the order.
+staff sees e-mail verified: true | quote status: ACCEPTED
+convert 201 SO-20261121-0013
+order line discount 0.15 tax 0.16 total 3944 approval DISCOUNT_APPROVED
+order 201 PENDING_DISCOUNT
+confirm while waiting: 409
+order status after confirm: CONFIRMED
+product etims saved: KE1NTXU0000099 47131800 B
+page errors: []
+Customer phone now shows Subtotal 3,400 + Tax 544 = Total 3,944 (before: 3,944 + 544 = 4,488, tax counted twice).

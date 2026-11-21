@@ -108,8 +108,9 @@ export default function SalesOrdersPage() {
             ordered_quantity: parseFloat(l.ordered_quantity),
             unit: l.unit,
             unit_price: parseFloat(l.unit_price) || 0,
-            discount_pct: parseFloat(l.discount_pct) || 0,
-            tax_rate: parseFloat(l.tax_rate) || 0,
+            // typed as percentages (10 = 10 %); sales-order lines store fractions (0.10)
+            discount_pct: (parseFloat(l.discount_pct) || 0) / 100,
+            tax_rate: (parseFloat(l.tax_rate) || 0) / 100,
             notes: l.notes || undefined,
           })),
       }),
@@ -234,8 +235,8 @@ export default function SalesOrdersPage() {
                     <Input placeholder="Unit Price" type="number" value={line.unit_price} onChange={(e) => updateLine(idx, "unit_price", e.target.value)} />
                   </div>
                   <div className="grid grid-cols-2 gap-2">
-                    <Input placeholder="Discount %" type="number" value={line.discount_pct} onChange={(e) => updateLine(idx, "discount_pct", e.target.value)} />
-                    <Input placeholder="Tax Rate" type="number" value={line.tax_rate} onChange={(e) => updateLine(idx, "tax_rate", e.target.value)} />
+                    <Input placeholder="Discount %" type="number" min={0} max={100} value={line.discount_pct} onChange={(e) => updateLine(idx, "discount_pct", e.target.value)} />
+                    <Input placeholder="Tax %" type="number" min={0} max={100} value={line.tax_rate} onChange={(e) => updateLine(idx, "tax_rate", e.target.value)} />
                   </div>
                 </div>
               ))}

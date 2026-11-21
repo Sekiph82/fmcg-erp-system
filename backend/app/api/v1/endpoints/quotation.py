@@ -43,6 +43,7 @@ from app.services.commercial_access_service import (
     ensure_commercial_action_allowed,
     inherit_commercial_scope,
 )
+from app.services import discount_approval_service as discount_approval
 
 router = APIRouter()
 
@@ -61,10 +62,12 @@ def _calc_line_total(qty: Decimal, price: Decimal, disc: Decimal, tax: Decimal) 
 
 
 def _compute_totals(lines: List[QuotationLine], overall_disc: Decimal) -> tuple[Decimal, Decimal, Decimal]:
-    subtotal = sum(l.line_total for l in lines)
-    disc_amt = subtotal * overall_disc / 100
-    after_disc = subtotal - disc_amt
-    tax = sum((l.qty * l.unit_price * (1 - l.discount_pct / 100)) * (l.tax_rate / 100) for l in lines)
+    # line_total includes tax, so the subtotal is built from the net amounts (before: tax was counted twice);
+    # the overall discount lowers the taxable base too
+    keep = 1 - Decimal(str(overall_disc or 0)) / 100
+    nets = [l.qty * l.unit_price * (1 - l.discount_pct / 100) for l in lines]
+    after_disc = (sum(nets, Decimal("0")) * keep).quantize(Decimal("0.0001"))
+    tax = (sum((n * l.tax_rate / 100 for n, l in zip(nets, lines)), Decimal("0")) * keep).quantize(Decimal("0.0001"))
     grand = after_disc + tax
     return after_disc, tax, grand
 
@@ -83,7 +86,13 @@ async def _build_read(db: AsyncSession, q: Quotation, user: User | None = None) 
         row.lines.append(lr)
     if user is not None:
         row.access = build_commercial_access_hint(user, q, "sales")
+        row.access.can_discount_approve = discount_approval.can_decide(user, q)
     return row
+
+
+async def _lock(db: AsyncSession, quote_id: uuid.UUID) -> None:
+    """Row lock for status/discount changes, so an edit, a send and an approval cannot interleave (M41 review)."""
+    await db.execute(select(Quotation.id).where(Quotation.id == quote_id).with_for_update())
 
 
 async def _get_or_404(db: AsyncSession, quote_id: uuid.UUID) -> Quotation:
@@ -226,6 +235,7 @@ async def create_quote(
     quote.total_amount = subtotal
     quote.tax_amount = tax
     quote.grand_total = grand
+    await discount_approval.refresh(db, quote, line_objs, body.discount_pct, editor_id=current_user.id)
     await db.commit()
 
     return await _build_read(db, await _get_or_404(db, quote.id), current_user)
@@ -249,6 +259,7 @@ async def update_quote(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    await _lock(db, quote_id)
     q = await _get_or_404(db, quote_id)
     ensure_commercial_action_allowed(current_user, q, "edit", "sales")
     if q.status not in (QuoteStatus.DRAFT,):
@@ -281,6 +292,11 @@ async def update_quote(
         q.total_amount = subtotal
         q.tax_amount = tax
         q.grand_total = grand
+        await discount_approval.refresh(db, q, line_objs, q.discount_pct, editor_id=current_user.id)
+    elif body.discount_pct is not None:
+        subtotal, tax, grand = _compute_totals(list(q.lines), q.discount_pct)
+        q.total_amount, q.tax_amount, q.grand_total = subtotal, tax, grand
+        await discount_approval.refresh(db, q, list(q.lines), q.discount_pct, editor_id=current_user.id)
 
     await db.commit()
     return await _build_read(db, await _get_or_404(db, quote_id), current_user)
@@ -290,10 +306,12 @@ async def update_quote(
 
 @router.post("/{quote_id}/send", response_model=QuotationRead)
 async def send_quote(quote_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    await _lock(db, quote_id)
     q = await _get_or_404(db, quote_id)
     ensure_commercial_action_allowed(current_user, q, "edit", "sales")
     if q.status not in (QuoteStatus.DRAFT,):
         raise HTTPException(422, "Only DRAFT quotes can be sent")
+    discount_approval.ensure_approved(q, "send it")
     q.status = QuoteStatus.SENT
     q.sent_at = datetime.now(tz=timezone.utc)
     await db.commit()
@@ -302,10 +320,12 @@ async def send_quote(quote_id: uuid.UUID, db: AsyncSession = Depends(get_db), cu
 
 @router.post("/{quote_id}/accept", response_model=QuotationRead)
 async def accept_quote(quote_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    await _lock(db, quote_id)
     q = await _get_or_404(db, quote_id)
     ensure_commercial_action_allowed(current_user, q, "approve", "sales")
     if q.status not in (QuoteStatus.SENT,):
         raise HTTPException(422, "Only SENT quotes can be accepted")
+    discount_approval.ensure_approved(q, "accept it")
     q.status = QuoteStatus.ACCEPTED
     q.accepted_at = datetime.now(tz=timezone.utc)
     await db.commit()
@@ -390,6 +410,8 @@ async def revise_quote(
             unit_price=ol.unit_price, discount_pct=ol.discount_pct,
             tax_rate=ol.tax_rate, line_total=ol.line_total,
         ))
+    await db.flush()
+    await discount_approval.refresh(db, new_q, list(old.lines), old.discount_pct, editor_id=current_user.id)
 
     await db.commit()
     return await _build_read(db, await _get_or_404(db, new_q.id), current_user)
@@ -439,7 +461,10 @@ async def convert_to_so(
     product_lines = [ql for ql in q.lines if ql.product_id is not None]
     if not product_lines:
         raise HTTPException(422, "Cannot convert: quotation has no product lines")
+    header = Decimal(str(q.discount_pct or 0)) / 100
     for i, ql in enumerate(product_lines, start=1):
+        # quotation discount/tax are percentages (10 = 10 %), sales-order lines use fractions (0.10)
+        line_disc = 1 - (1 - Decimal(str(ql.discount_pct or 0)) / 100) * (1 - header)
         db.add(SOLine(
             so_id=so.id,
             line_no=i,
@@ -447,9 +472,15 @@ async def convert_to_so(
             ordered_quantity=ql.qty,
             unit=ql.unit,
             unit_price=ql.unit_price,
-            discount_pct=ql.discount_pct,
-            tax_rate=ql.tax_rate,
+            discount_pct=line_disc.quantize(Decimal("0.0001")),
+            tax_rate=(Decimal(str(ql.tax_rate or 0)) / 100).quantize(Decimal("0.0001")),
         ))
+    # the discount was already decided on the quotation: the order carries that decision
+    so.discount_approval_required = bool(q.discount_approval_required)
+    if q.discount_approved_at:
+        so.approval_status = discount_approval.APPROVED
+        so.discount_approved_by_id, so.discount_approved_at = q.discount_approved_by_id, q.discount_approved_at
+    so.discount_changed_by_id = q.discount_changed_by_id
 
     q.status = QuoteStatus.CONVERTED
     q.converted_so_id = so.id
@@ -539,3 +570,36 @@ async def customer_decision(quote_id: uuid.UUID, db: AsyncSession = Depends(get_
     current = docs.document_hash(await docs.public_document(
         db, SimpleNamespace(quotation_id=q.id, expires_at=datetime.now(timezone.utc)), any_status=True))
     return docs.decision_out(rec, current)
+
+
+# ── M41.S01.T001 discount approval ────────────────────────────────────────────
+
+class DiscountDecisionIn(_BaseModel):
+    reason: Optional[str] = _Field(default=None, max_length=1000)
+
+
+async def _decide_discount(quote_id: uuid.UUID, approve: bool, body: DiscountDecisionIn, db, user):
+    await _lock(db, quote_id)
+    q = await _get_or_404(db, quote_id)
+    ensure_commercial_action_allowed(user, q, "view", "sales")
+    if q.status != QuoteStatus.DRAFT:
+        raise HTTPException(409, "Only a draft quotation's discount can be decided.")
+    await discount_approval.decide(db, q, user, approve, body.reason, "/dashboard/sales/quotes")
+    await db.commit()
+    return await _build_read(db, await _get_or_404(db, quote_id), user)
+
+
+@router.post("/{quote_id}/discount/approve", response_model=QuotationRead)
+async def approve_discount(quote_id: uuid.UUID, body: DiscountDecisionIn = DiscountDecisionIn(),
+                           db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Approve a discount above the limit (sales approve right on this record; never on your own quotation)."""
+    ensure_commercial_action_allowed(current_user, await _get_or_404(db, quote_id), "view", "sales")
+    return await _decide_discount(quote_id, True, body, db, current_user)
+
+
+@router.post("/{quote_id}/discount/reject", response_model=QuotationRead)
+async def reject_discount(quote_id: uuid.UUID, body: DiscountDecisionIn = DiscountDecisionIn(),
+                          db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Reject it with a reason; the creator is told and must change the discount (which asks again)."""
+    ensure_commercial_action_allowed(current_user, await _get_or_404(db, quote_id), "view", "sales")
+    return await _decide_discount(quote_id, False, body, db, current_user)

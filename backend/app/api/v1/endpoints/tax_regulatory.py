@@ -399,7 +399,7 @@ async def submit_etims(
 
     invoice = (await db.execute(
         _tsel(Invoice)
-        .options(selectinload(Invoice.lines).selectinload(InvoiceLine.product))
+        .options(selectinload(Invoice.lines).selectinload(InvoiceLine.product), selectinload(Invoice.customer))
         .where(Invoice.id == invoice_id)
     )).scalar_one_or_none()
     if not invoice:
@@ -417,6 +417,12 @@ async def submit_etims(
         sub = ETimsSubmission(invoice_id=invoice_id, submitted_by_id=current_user.id)
         db.add(sub)
 
+    if (settings.ETIMS_PROVIDER or "simulation") != "simulation":
+        from app.services.etims_connector import missing_item_codes
+        gaps = missing_item_codes(invoice)
+        if gaps:  # KRA refuses items without registration/classification codes: say which products need them
+            raise HTTPException(422, "Add the KRA eTIMS item code, classification code and tax type on these products first: "
+                                     + ", ".join(sorted(set(gaps))[:20]))
     payload = build_etims_payload(invoice, settings)
     connector = get_etims_connector(settings)
     now = datetime.now(timezone.utc)
@@ -452,12 +458,18 @@ async def retry_etims(
 
     invoice = (await db.execute(
         _tsel(Invoice)
-        .options(selectinload(Invoice.lines).selectinload(InvoiceLine.product))
+        .options(selectinload(Invoice.lines).selectinload(InvoiceLine.product), selectinload(Invoice.customer))
         .where(Invoice.id == sub.invoice_id)
     )).scalar_one_or_none()
     if not invoice:
         raise HTTPException(404, "Invoice not found for submission")
 
+    if (settings.ETIMS_PROVIDER or "simulation") != "simulation":
+        from app.services.etims_connector import missing_item_codes
+        gaps = missing_item_codes(invoice)
+        if gaps:  # KRA refuses items without registration/classification codes: say which products need them
+            raise HTTPException(422, "Add the KRA eTIMS item code, classification code and tax type on these products first: "
+                                     + ", ".join(sorted(set(gaps))[:20]))
     payload = build_etims_payload(invoice, settings)
     connector = get_etims_connector(settings)
     now = datetime.now(timezone.utc)

@@ -652,6 +652,7 @@ PUBLIC_ROUTES: frozenset[tuple[str, str]] = frozenset({
     ("/public/documents/{token}", "GET"),                # shared quotation, expiring revocable token (M36.S03.T001)
     ("/public/documents/{token}/view", "POST"),          # view event, keyed-hash dedupe, no IP stored
     ("/public/documents/{token}/decision", "POST"),      # customer accept/decline, typed-name e-signature (M36.S04.T003)
+    ("/public/documents/{token}/signer-code", "POST"),   # one-time code to an e-mail on file, 5/h per link (M41.S01.T002)
     ("/public/lp/{slug}", "GET"),                         # landing page: visitor id → one variant, one view (M36.S05.T002)
     ("/public/lp/{slug}/convert", "POST"),                # lead form submission through the lead-capture rules
     ("/public/nps/{token}", "GET"),                       # one-time survey link: token is the credential (M40.S01.T001)

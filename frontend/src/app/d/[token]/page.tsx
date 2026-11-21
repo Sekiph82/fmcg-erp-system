@@ -2,6 +2,7 @@
 // Public shared quotation (no login, M36.S03.T001). The view is recorded by this page after it renders,
 // not by opening the URL, so mail scanners that pre-fetch links do not count as views.
 // M36.S04.T003: the customer can accept or decline with a typed-name electronic signature.
+// M41.S01.T002: first a one-time code is e-mailed to an address on file for the customer; the signer types it.
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { API_ORIGIN } from "@/lib/api";
@@ -20,7 +21,8 @@ export default function SharedDocumentPage() {
   const token = String(useParams().token ?? "");
   const [doc, setDoc] = useState<Doc | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [sign, setSign] = useState({ name: "", email: "", agree: false, reason: "" });
+  const [sign, setSign] = useState({ name: "", email: "", agree: false, reason: "", code: "" });
+  const [codeMsg, setCodeMsg] = useState<string | null>(null);
   const [declining, setDeclining] = useState(false);
   const [busy, setBusy] = useState(false);
   const [signErr, setSignErr] = useState<string | null>(null);
@@ -33,7 +35,7 @@ export default function SharedDocumentPage() {
       const r = await fetch(`${url}/decision`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ decision, signer_name: sign.name, signer_email: sign.email, agree: sign.agree,
-                               document_hash: doc.document_hash, reason: sign.reason || null }),
+                               document_hash: doc.document_hash, reason: sign.reason || null, code: sign.code.trim() }),
       });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) {
@@ -42,6 +44,18 @@ export default function SharedDocumentPage() {
         return;
       }
       setDoc({ ...doc, can_decide: false, decision: { decision, signer_name: sign.name, decided_at: j.decided_at, reference: j.reference } });
+    } catch { setSignErr("Please try again later."); } finally { setBusy(false); }
+  }
+
+  async function sendCode() {
+    setBusy(true); setSignErr(null); setCodeMsg(null);
+    try {
+      const r = await fetch(`${url}/signer-code`, {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ signer_email: sign.email }),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) { setSignErr(typeof j.detail === "string" ? j.detail : "Please check your e-mail address."); return; }
+      setCodeMsg(j.message);
     } catch { setSignErr("Please try again later."); } finally { setBusy(false); }
   }
 
@@ -117,22 +131,30 @@ export default function SharedDocumentPage() {
                   <input aria-label="Your full name" placeholder="Your full name" value={sign.name} onChange={(e) => setSign({ ...sign, name: e.target.value })} className="border rounded px-3 py-2 text-sm" />
                   <input aria-label="Your e-mail" type="email" placeholder="Your e-mail" value={sign.email} onChange={(e) => setSign({ ...sign, email: e.target.value })} className="border rounded px-3 py-2 text-sm" />
                 </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button type="button" disabled={busy || !sign.email.includes("@")} onClick={sendCode}
+                    className="px-3 py-2 rounded border text-sm disabled:opacity-50">E-mail me a code</button>
+                  <input aria-label="Code from the e-mail" inputMode="numeric" maxLength={6} placeholder="6-digit code" value={sign.code}
+                    onChange={(e) => setSign({ ...sign, code: e.target.value.replace(/[^0-9]/g, "") })} className="border rounded px-3 py-2 text-sm w-32" />
+                  <span className="text-xs text-gray-500">Use the e-mail address your company gave POVU.</span>
+                </div>
+                {codeMsg && <p role="status" className="text-sm text-emerald-800">{codeMsg}</p>}
                 {declining && <textarea aria-label="Reason (optional)" placeholder="Reason (optional)" rows={2} value={sign.reason} onChange={(e) => setSign({ ...sign, reason: e.target.value })} className="w-full border rounded px-3 py-2 text-sm" />}
                 <label className="flex gap-2 text-sm items-start">
                   <input type="checkbox" className="mt-1" checked={sign.agree} onChange={(e) => setSign({ ...sign, agree: e.target.checked })} />
-                  <span>I {declining ? "decline" : "accept"} quotation {doc.number} as shown above on behalf of {doc.customer ?? "my business"}, and I agree that typing my name is my electronic signature.</span>
+                  <span>I {declining ? "decline" : "accept"} quotation {doc.number} as shown above on behalf of {doc.customer ?? "my business"}, and I agree that typing my name, confirmed with the code sent to my e-mail, is my electronic signature.</span>
                 </label>
                 {signErr && <p role="alert" className="text-sm text-red-700">{signErr}</p>}
                 <div className="flex flex-wrap gap-2">
                   {!declining ? (
                     <>
-                      <button disabled={busy || !sign.agree || sign.name.trim().length < 2 || !sign.email.includes("@")} onClick={() => decide("ACCEPTED")}
+                      <button disabled={busy || !sign.agree || sign.name.trim().length < 2 || !sign.email.includes("@") || sign.code.length !== 6} onClick={() => decide("ACCEPTED")}
                         className="px-4 py-2 rounded bg-emerald-600 text-white text-sm disabled:opacity-50">Accept quotation</button>
                       <button onClick={() => setDeclining(true)} className="px-4 py-2 rounded border text-sm">Decline…</button>
                     </>
                   ) : (
                     <>
-                      <button disabled={busy || !sign.agree || sign.name.trim().length < 2 || !sign.email.includes("@")} onClick={() => decide("DECLINED")}
+                      <button disabled={busy || !sign.agree || sign.name.trim().length < 2 || !sign.email.includes("@") || sign.code.length !== 6} onClick={() => decide("DECLINED")}
                         className="px-4 py-2 rounded bg-gray-700 text-white text-sm disabled:opacity-50">Decline quotation</button>
                       <button onClick={() => setDeclining(false)} className="px-4 py-2 rounded border text-sm">Back</button>
                     </>

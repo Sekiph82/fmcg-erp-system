@@ -150,14 +150,15 @@ def decision_out(d, current_hash: Optional[str] = None) -> Optional[dict]:
         return None
     out = {"decision": d.decision, "signer_name": d.signer_name, "signer_email": d.signer_email, "reason": d.reason,
            "decided_at": d.decided_at.isoformat(), "document_hash": d.document_hash, "evidence_hash": d.evidence_hash,
-           "reference": d.evidence_hash[:12].upper()}
+           "reference": d.evidence_hash[:12].upper(),
+           "email_verified_at": d.email_verified_at.isoformat() if d.email_verified_at else None}
     if current_hash is not None:
         out["unchanged_since_signing"] = current_hash == d.document_hash
     return out
 
 
 async def decide(db: AsyncSession, link: CRMDocumentLink, *, decision: str, signer_name: str, signer_email: str,
-                 seen_hash: str, reason: Optional[str], viewer: str):
+                 seen_hash: str, reason: Optional[str], viewer: str, code: str = ""):
     """Record the customer's decision. The same rules as the sales team's own accept: only a SENT quote,
     not past its validity date, with any discount approval in place. Conversion to a sales order stays a
     staff step, so pricing and credit checks still run there. Caller holds the link lock and commits."""
@@ -174,19 +175,23 @@ async def decide(db: AsyncSession, link: CRMDocumentLink, *, decision: str, sign
     from zoneinfo import ZoneInfo
     if q.valid_until and q.valid_until < datetime.now(ZoneInfo("Africa/Nairobi")).date():
         raise DecisionRefused("This quotation has expired. Ask your POVU representative for a new one.")
-    if decision == "ACCEPTED" and q.discount_approval_required and not q.discount_approved_at:
+    from app.services.discount_approval_service import is_approved
+
+    if decision == "ACCEPTED" and not is_approved(q):
         raise DecisionRefused("This quotation is still being approved internally. Please try again later.")
     shown = await public_document(db, link)
     current = document_hash(shown)
     if not hmac.compare_digest(current, seen_hash):
         raise DecisionRefused("The quotation changed while you were reading it. Please reload the page and check it again.")
+    await _use_signer_code(db, link, signer_email, code)   # M41: the signer proves the e-mail on file
     now = _now()
     evidence = hashlib.sha256(
-        f"{current}|{decision}|{signer_name}|{signer_email.lower()}|{now.isoformat()}|{link.id}|{q.id}".encode()).hexdigest()
+        f"{current}|{decision}|{signer_name}|{signer_email.lower()}|email-verified|{now.isoformat()}|{link.id}|{q.id}".encode()).hexdigest()
     rec = CRMQuoteDecision(quotation_id=q.id, link_id=link.id, decision=decision, signer_name=signer_name,
                            signer_email=signer_email.lower(), reason=reason, decided_at=now, document_hash=current,
                            evidence_hash=evidence, viewer_hash=viewer,
-                           document_snapshot={k: v for k, v in shown.items() if k not in ("can_decide", "link_expires_at")})
+                           document_snapshot={k: v for k, v in shown.items() if k not in ("can_decide", "link_expires_at")},
+                           email_verified_at=now)
     db.add(rec)
     if decision == "ACCEPTED":
         q.status, q.accepted_at = QuoteStatus.ACCEPTED, now
@@ -195,3 +200,80 @@ async def decide(db: AsyncSession, link: CRMDocumentLink, *, decision: str, sign
         q.lost_reason = f"Declined online by {signer_name}" + (f": {reason}" if reason else "")
     await db.flush()
     return rec
+
+
+# ── M41.S01.T002 signer e-mail verification ─────────────────────────────────────────────────────────────────────────
+CODE_TTL = timedelta(minutes=15)
+CODE_TRIES = 5
+CODES_PER_HOUR = 5
+FAILED_TRIES_PER_DAY = 10   # wrong codes across all codes of one link: then the link stops taking codes for 24 h
+
+
+async def _failed_tries(db: AsyncSession, link_id) -> int:
+    from sqlalchemy import func
+
+    from app.models.crm import CRMQuoteSignerCode
+
+    return (await db.execute(select(func.coalesce(func.sum(CRMQuoteSignerCode.attempts), 0)).where(
+        CRMQuoteSignerCode.link_id == link_id, CRMQuoteSignerCode.created_at > _now() - timedelta(hours=24)))).scalar_one()
+
+
+def _code_hash(link_id, email: str, code: str) -> str:
+    key = hashlib.sha256(b"fmcg-erp:quote-signer-code:v1\0" + settings.SECRET_KEY.encode()).digest()
+    return hmac.new(key, f"{link_id}|{email}|{code}".encode(), hashlib.sha256).hexdigest()
+
+
+async def emails_on_file(db: AsyncSession, customer_id) -> set[str]:
+    """The customer's own e-mail and its account contacts' e-mails (lower-case)."""
+    from app.models.crm import CRMAccountContact
+    from app.models.sales import Customer
+
+    found = {(await db.execute(select(Customer.email).where(Customer.id == customer_id))).scalar_one_or_none()}
+    found |= set((await db.execute(select(CRMAccountContact.email).where(CRMAccountContact.customer_id == customer_id))).scalars())
+    return {e.strip().lower() for e in found if e and e.strip()}
+
+
+async def request_signer_code(db: AsyncSession, link: CRMDocumentLink, email: str) -> Optional[str]:
+    """Create a code when the e-mail is on file for the quoted customer; returns it for sending (None = not on file).
+    The caller answers the same way either way, so the page does not reveal which addresses are on file."""
+    from sqlalchemy import func
+
+    from app.models.crm import CRMQuoteSignerCode
+
+    email = email.strip().lower()
+    q = (await db.execute(select(Quotation).where(Quotation.id == link.quotation_id))).scalar_one_or_none()
+    if q is None:
+        raise LinkGone()
+    recent = (await db.execute(select(func.count()).select_from(CRMQuoteSignerCode).where(
+        CRMQuoteSignerCode.link_id == link.id, CRMQuoteSignerCode.created_at > _now() - timedelta(hours=1)))).scalar_one()
+    if recent >= CODES_PER_HOUR:
+        raise DecisionRefused("Too many codes were requested for this quotation. Please try again in an hour.")
+    if await _failed_tries(db, link.id) >= FAILED_TRIES_PER_DAY:
+        raise DecisionRefused("Too many wrong codes for this quotation. Please try again tomorrow or contact your POVU representative.")
+    if email not in await emails_on_file(db, q.customer_id):
+        # counted like a real request (same limits), but unusable and without the address
+        db.add(CRMQuoteSignerCode(link_id=link.id, email="-", code_hash=secrets.token_hex(32), expires_at=_now()))
+        await db.flush()
+        return None
+    code = f"{secrets.randbelow(1_000_000):06d}"
+    db.add(CRMQuoteSignerCode(link_id=link.id, email=email, code_hash=_code_hash(link.id, email, code),
+                              expires_at=_now() + CODE_TTL))
+    await db.flush()
+    return code
+
+
+async def _use_signer_code(db: AsyncSession, link: CRMDocumentLink, email: str, code: str) -> None:
+    from app.models.crm import CRMQuoteSignerCode
+
+    email = email.strip().lower()
+    row = (await db.execute(select(CRMQuoteSignerCode).where(
+        CRMQuoteSignerCode.link_id == link.id, CRMQuoteSignerCode.email == email, CRMQuoteSignerCode.used_at.is_(None),
+        CRMQuoteSignerCode.expires_at > _now()).order_by(CRMQuoteSignerCode.created_at.desc()).limit(1)
+        .with_for_update())).scalar_one_or_none()
+    if row is None or row.attempts >= CODE_TRIES or await _failed_tries(db, link.id) >= FAILED_TRIES_PER_DAY:
+        raise DecisionRefused("Ask for a new code: send a code to your e-mail first (codes last 15 minutes).")
+    if not (code or "").strip().isdigit() or not hmac.compare_digest(row.code_hash, _code_hash(link.id, email, code.strip())):
+        row.attempts += 1
+        await db.commit()   # keep the failed try even though the decision is refused
+        raise DecisionRefused("The code is not correct. Check the e-mail and try again.")
+    row.used_at = _now()

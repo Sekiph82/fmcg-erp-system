@@ -660,6 +660,22 @@ class CRMQuoteDecision(Base):
     evidence_hash  = Column(String(64), nullable=False)
     viewer_hash    = Column(String(64), nullable=True)
     document_snapshot = Column(JSON, nullable=True)                         # exactly what the signer saw
+    email_verified_at = Column(DateTime(timezone=True), nullable=True)      # M41: signer proved the e-mail with a code
+
+
+class CRMQuoteSignerCode(Base):
+    """M41.S01.T002 one-time code e-mailed to the signer before they accept or decline a shared quotation.
+    Sent only to an e-mail on file for the quoted customer; stored as a keyed hash; 15 minutes, 5 tries, single use."""
+    __tablename__ = "crm_quote_signer_codes"
+
+    id         = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    link_id    = Column(UUID(as_uuid=True), ForeignKey("crm_document_links.id", ondelete="CASCADE"), nullable=False, index=True)
+    email      = Column(String(254), nullable=False)                     # lower-case
+    code_hash  = Column(String(64), nullable=False)
+    attempts   = Column(Integer, nullable=False, default=0)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    used_at    = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
 
 # ── M36.S03.T005 website live chat ─────────────────────────────────────────────

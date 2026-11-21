@@ -157,7 +157,7 @@ def _order_lines(order: dict, products: dict, skus: list[str], lines: list[dict]
         so_lines.append({"line_no": len(so_lines) + 1, "product_id": product.id, "ordered_quantity": qty,
                          "unit": getattr(product.uom, "value", str(product.uom)),
                          "unit_price": max(unit, Decimal("0")).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP),
-                         "tax_rate": (rate * 100).quantize(Decimal("0.01")), "discount_pct": Decimal("0"),
+                         "tax_rate": rate.quantize(Decimal("0.0001")), "discount_pct": Decimal("0"),
                          "notes": f"Shopify line {li.get('id')}"})
     return so_lines
 

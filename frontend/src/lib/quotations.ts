@@ -107,12 +107,16 @@ export const quoteApi = {
   get: (id: string) => req<Quotation>(`${BASE}/${id}`),
   create: (body: QuoteCreate) =>
     req<Quotation>(BASE + "/", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }),
+  update: (id: string, body: Omit<QuoteCreate, "customer_id" | "quote_date">) =>
+    req<Quotation>(`${BASE}/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }),
   send: (id: string) => req<Quotation>(`${BASE}/${id}/send`, { method: "POST" }),
   accept: (id: string) => req<Quotation>(`${BASE}/${id}/accept`, { method: "POST" }),
   reject: (id: string, reason?: string) =>
     req<Quotation>(`${BASE}/${id}/reject`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ lost_reason: reason }) }),
   expire: (id: string) => req<Quotation>(`${BASE}/${id}/expire`, { method: "POST" }),
   revise: (id: string) => req<Quotation>(`${BASE}/${id}/revise`, { method: "POST" }),
+  decideDiscount: (id: string, approve: boolean, reason?: string) =>
+    req<Quotation>(`${BASE}/${id}/discount/${approve ? "approve" : "reject"}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reason }) }),
   convert: (id: string) => req<{ so_id: string; so_no: string; quote_no: string; version: number }>(`${BASE}/${id}/convert`, { method: "POST" }),
   shareLinks: (id: string) => req<ShareLink[]>(`${BASE}/${id}/share-links`),
   createShareLink: (id: string, body: { expires_in_days: number; label?: string }) =>
@@ -122,7 +126,7 @@ export const quoteApi = {
 };
 
 export interface CustomerDecision {
-  decision: "ACCEPTED" | "DECLINED" | null; signer_name?: string; signer_email?: string; reason?: string | null;
+  decision: "ACCEPTED" | "DECLINED" | null; signer_name?: string; signer_email?: string; reason?: string | null; email_verified_at?: string | null;
   decided_at?: string; reference?: string; unchanged_since_signing?: boolean;
 }
 

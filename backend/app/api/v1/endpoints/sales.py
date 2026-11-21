@@ -11,6 +11,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_
 
 from app.core.deps import get_current_user, get_db
+from app.services import discount_approval_service as disc
+from pydantic import BaseModel as _PydBaseModel, Field as _PydField
 from app.core.access_control import (
     can_modify_scope,
     can_view_scope,
@@ -115,6 +117,12 @@ def _require_so_action(user, so: SalesOrder, action: str = "edit") -> None:
     warehouse_id = getattr(so, "warehouse_id", None)
     if warehouse_id and can_modify_scope(user, "sales", action, "warehouse", warehouse_id):
         return
+    if not region and not warehouse_id:
+        # no region and no warehouse yet: nothing to scope by, so the record-level right decides (before, nobody could)
+        from app.core.access_control import can_modify_record
+
+        if can_modify_record(user, "sales", action, so):
+            return
     raise _sales_forbidden("You can view this sales order but cannot modify it in this scope.")
 
 
@@ -145,6 +153,7 @@ def _build_so_read(so: SalesOrder, user=None) -> SORead:
     d.days_until_delivery = delta
     if user is not None:
         d.access = build_commercial_access_hint(user, so, "sales")
+        d.access.can_discount_approve = disc.can_decide(user, so)
     return d
 
 
@@ -174,6 +183,7 @@ def _build_so_detail(so: SalesOrder, user=None) -> SODetailRead:
     d.days_until_delivery = delta
     if user is not None:
         d.access = build_commercial_access_hint(user, so, "sales")
+        d.access.can_discount_approve = disc.can_decide(user, so)
     return d
 
 
@@ -397,6 +407,7 @@ async def confirm_order(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
+    await _lock_so(db, so_id)
     so = await crud.get_so(db, so_id)
     if not so:
         raise HTTPException(404, "Sales order not found")
@@ -405,6 +416,47 @@ async def confirm_order(
     await db.commit()
     so = await crud.get_so(db, so_id)
     return _build_so_detail(so)
+
+
+class DiscountDecisionIn(_PydBaseModel):
+    reason: Optional[str] = _PydField(default=None, max_length=1000)
+
+
+async def _lock_so(db, so_id: uuid.UUID) -> None:
+    """Row lock so a confirm and a discount decision cannot interleave (M41 review)."""
+    await db.execute(select(SalesOrder.id).where(SalesOrder.id == so_id).with_for_update())
+
+
+async def _decide_so_discount(so_id: uuid.UUID, approve: bool, body: DiscountDecisionIn, db, user) -> SODetailRead:
+    await _lock_so(db, so_id)
+    so = await crud.get_so(db, so_id)
+    if not so:
+        raise HTTPException(404, "Sales order not found")
+    if so.status != SOStatus.DRAFT:
+        raise HTTPException(409, "Only a draft order's discount can be decided.")
+    await disc.decide(db, so, user, approve, body.reason, f"/dashboard/sales/orders/{so.id}")
+    await db.commit()
+    return _build_so_detail(await crud.get_so(db, so_id), user)
+
+
+@router.post("/orders/{so_id}/discount/approve", response_model=SODetailRead)
+async def approve_order_discount(so_id: uuid.UUID, body: DiscountDecisionIn = DiscountDecisionIn(),
+                                 db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    """M41.S01.T001: approve a discount above the limit (sales approve right on this order; not your own order)."""
+    so = await crud.get_so(db, so_id)
+    if so:
+        ensure_commercial_action_allowed(current_user, so, "view", "sales")
+    return await _decide_so_discount(so_id, True, body, db, current_user)
+
+
+@router.post("/orders/{so_id}/discount/reject", response_model=SODetailRead)
+async def reject_order_discount(so_id: uuid.UUID, body: DiscountDecisionIn = DiscountDecisionIn(),
+                                db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    """Reject with a reason; the creator is told."""
+    so = await crud.get_so(db, so_id)
+    if so:
+        ensure_commercial_action_allowed(current_user, so, "view", "sales")
+    return await _decide_so_discount(so_id, False, body, db, current_user)
 
 
 @router.post("/orders/{so_id}/allocate", response_model=SODetailRead)

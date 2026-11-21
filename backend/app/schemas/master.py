@@ -149,6 +149,10 @@ class ProductBase(BaseModel):
     standard_cost_currency: Optional[str] = Field(default=None, pattern=r"^[A-Z]{3}$")
     selling_price: Optional[Decimal] = None
     is_active: bool = True
+    # KRA eTIMS (M41.S01.T003): item code from item registration, KRA item classification code, tax type A-E
+    etims_item_code: Optional[str] = Field(default=None, max_length=30, pattern=r"^[A-Za-z0-9-]+$")
+    etims_item_class_code: Optional[str] = Field(default=None, max_length=20, pattern=r"^[0-9]+$")
+    etims_tax_type: Optional[str] = Field(default=None, pattern=r"^[A-E]$")
 
 
 class ProductCreate(ProductBase):
@@ -170,6 +174,10 @@ class ProductUpdate(BaseModel):
     standard_cost_currency: Optional[str] = Field(default=None, pattern=r"^[A-Z]{3}$")
     selling_price: Optional[Decimal] = None
     is_active: Optional[bool] = None
+    # KRA eTIMS (M41.S01.T003): item code from item registration, KRA item classification code, tax type A-E
+    etims_item_code: Optional[str] = Field(default=None, max_length=30, pattern=r"^[A-Za-z0-9-]+$")
+    etims_item_class_code: Optional[str] = Field(default=None, max_length=20, pattern=r"^[0-9]+$")
+    etims_tax_type: Optional[str] = Field(default=None, pattern=r"^[A-E]$")
 
 
 class ProductRead(ProductBase):

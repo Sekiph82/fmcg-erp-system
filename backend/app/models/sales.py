@@ -159,6 +159,7 @@ class SalesOrder(Base, TimestampMixin):
     discount_approval_required = Column(Boolean, nullable=False, default=False)
     discount_approved_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
     discount_approved_at = Column(DateTime(timezone=True), nullable=True)
+    discount_changed_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)  # M41: may not approve
     payment_method = Column(Enum(PaymentMethod), nullable=False, default=PaymentMethod.CASH)
     payment_status = Column(Enum(SOPaymentStatus), nullable=False, default=SOPaymentStatus.PENDING)
     mpesa_reference = Column(String(100), nullable=True)

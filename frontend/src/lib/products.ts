@@ -18,6 +18,9 @@ export interface Product {
   standard_cost?: number;
   selling_price?: number;
   is_active: boolean;
+  etims_item_code?: string | null;
+  etims_item_class_code?: string | null;
+  etims_tax_type?: string | null;
 }
 
 export interface ProductCreate {
@@ -31,6 +34,9 @@ export interface ProductCreate {
   standard_cost?: number;
   shelf_life_days?: number;
   is_active?: boolean;
+  etims_item_code?: string | null;
+  etims_item_class_code?: string | null;
+  etims_tax_type?: string | null;
 }
 
 export const productsApi = {

@@ -311,6 +311,9 @@ async def confirm_so(db: AsyncSession, so: SalesOrder, user_id: uuid.UUID) -> Sa
     _assert_so(so, SOStatus.DRAFT)
     if not so.lines:
         raise HTTPException(422, "Sales order must have at least one line")
+    from app.services import discount_approval_service as disc
+
+    disc.ensure_approved(so, "confirm it")
     # Credit limit check
     if so.customer and so.customer.credit_limit is not None:
         order_value = sum(

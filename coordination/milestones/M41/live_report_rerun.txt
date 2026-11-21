@@ -1,0 +1,23 @@
+customer 201 
+manager region scope 200
+product POVU Dishwashing Liquid 500ml
+quote QT-20261121-0003 approval_status PENDING_DISCOUNT
+desk sees badge: 1 | Send button: 0 | Approve discount button (own): 0
+send while waiting: 409 {"error":"conflict","detail":"The discount on this document is above the approval limit and is waiting for approval befo
+manager bell notice: true
+inbox shows quote: 1
+after approve: DISCOUNT_APPROVED
+desk sees approved: 1
+status after Send: SENT
+share link 201
+code message: If this e-mail is on file for your company, a code is on its way. It works for 15 minutes.
+code found in dev log: true
+customer page: Accepted by Wanjiku Kamau on 11/21/2026, 9:32:42 PM. Reference 94EB756A7A6A. Your POVU representative will confirm the order.
+staff sees e-mail verified: true | quote status: ACCEPTED
+convert 201 SO-20261121-0013
+order line discount 0.15 tax 0.16 total 3944 approval DISCOUNT_APPROVED
+order 201 PENDING_DISCOUNT
+confirm while waiting: 409
+order status after confirm: CONFIRMED
+product etims saved: KE1NTXU0000099 47131800 B
+page errors: []

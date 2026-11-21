@@ -19,6 +19,7 @@ Failure simulation (test/demo only — normal path unaffected):
 from __future__ import annotations
 
 import hashlib
+from decimal import Decimal
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Protocol, runtime_checkable
@@ -81,13 +82,39 @@ class ETIMSConnector(Protocol):
 
 # ── Payload builder ────────────────────────────────────────────────────────────
 
+# KRA eTIMS tax types: A exempt, B 16 % VAT, C zero-rated, D non-VAT, E 8 % VAT. Only B and E follow from the rate.
+_RATE_TAX_TYPE = {Decimal("0.16"): "B", Decimal("0.08"): "E"}
+
+
+def tax_type(product: Any, rate: Any) -> str:
+    own = getattr(product, "etims_tax_type", None) if product is not None else None
+    if own:
+        return own
+    try:
+        return _RATE_TAX_TYPE.get(Decimal(str(rate or 0)).quantize(Decimal("0.01")), "")
+    except ArithmeticError:
+        return ""
+
+
+def missing_item_codes(invoice: Any) -> list[str]:
+    """Lines KRA would refuse: no product, or no item code / classification code / tax type."""
+    gaps = []
+    for line in getattr(invoice, "lines", []):
+        product = getattr(line, "product", None)
+        name = (product.name if product else None) or (line.description or "line")
+        if product is None or not getattr(product, "etims_item_code", None) or not getattr(product, "etims_item_class_code", None) \
+                or not tax_type(product, line.tax_rate):
+            gaps.append(name)
+    return gaps
+
+
 def build_etims_payload(invoice: Any, settings: Any) -> dict[str, Any]:
     """
     Build a KRA eTIMS-compatible saveSales payload from an Invoice instance.
 
     Requires invoice.lines to be eagerly loaded before calling.
-    KRA item classification codes (itemCd / taxTyCd) are marked TODO
-    because the Product model does not yet carry eTIMS-specific fields.
+    Item codes come from the product (etims_item_code, etims_item_class_code, etims_tax_type); the tax type
+    falls back to the rate (16 % = B, 8 % = E) when the product has none. missing_item_codes() lists the gaps.
     """
     lines = []
     for idx, line in enumerate(getattr(invoice, "lines", []), start=1):
@@ -95,10 +122,9 @@ def build_etims_payload(invoice: Any, settings: Any) -> dict[str, Any]:
         lines.append({
             "itemSeq": idx,
             "itemNm": (product.name if product else None) or (line.description or ""),
-            # TODO: populate itemCd from Product.etims_item_code once field is added
-            "itemCd": "",
-            # TODO: populate taxTyCd from Product.tax_type_code once field is added
-            "taxTyCd": "VAT",
+            "itemCd": (getattr(product, "etims_item_code", None) or "") if product else "",
+            "itemClsCd": (getattr(product, "etims_item_class_code", None) or "") if product else "",
+            "taxTyCd": tax_type(product, line.tax_rate),
             "qty": float(line.quantity),
             "unitPrice": float(line.unit_price),
             "discountRt": float(line.discount_pct),

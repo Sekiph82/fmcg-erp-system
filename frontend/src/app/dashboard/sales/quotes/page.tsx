@@ -140,13 +140,25 @@ function LineEditor({ lines, products, onChange }: LineEditorProps) {
 
 // ── Create modal ──────────────────────────────────────────────────────────────
 
-function CreateModal({ customers, products, onClose }: {
+function CreateModal({ customers, products, onClose, editing }: {
   customers: Customer[];
   products: Product[];
   onClose: () => void;
+  editing?: Quotation;   // a draft being changed (e.g. after its discount was rejected)
 }) {
   const qc = useQueryClient();
-  const [form, setForm] = useState<QuoteCreate>({
+  const [form, setForm] = useState<QuoteCreate>(editing ? {
+    customer_id: editing.customer_id,
+    quote_date: editing.quote_date,
+    valid_until: editing.valid_until ?? "",
+    currency: editing.currency,
+    discount_pct: Number(editing.discount_pct),
+    notes: editing.notes ?? "",
+    lines: editing.lines.map((l) => ({
+      line_no: l.line_no, product_id: l.product_id ?? undefined, description: l.description ?? undefined,
+      qty: Number(l.qty), unit: l.unit, unit_price: Number(l.unit_price), discount_pct: Number(l.discount_pct), tax_rate: Number(l.tax_rate),
+    })),
+  } : {
     customer_id: "",
     quote_date: new Date().toISOString().slice(0, 10),
     valid_until: "",
@@ -157,7 +169,12 @@ function CreateModal({ customers, products, onClose }: {
   });
 
   const mut = useMutation({
-    mutationFn: () => quoteApi.create({ ...form, valid_until: form.valid_until || undefined }),
+    mutationFn: () => {
+      const { customer_id: _c, quote_date: _d, ...rest } = form;
+      return editing
+        ? quoteApi.update(editing.id, { ...rest, valid_until: form.valid_until || undefined })
+        : quoteApi.create({ ...form, valid_until: form.valid_until || undefined });
+    },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["quotes"] }); onClose(); },
   });
 
@@ -169,14 +186,14 @@ function CreateModal({ customers, products, onClose }: {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-6 space-y-4">
         <div className="flex justify-between items-center">
-          <h2 className="text-lg font-bold">New Quotation</h2>
+          <h2 className="text-lg font-bold">{editing ? `Edit ${editing.quote_no}` : "New Quotation"}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl">✕</button>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="text-sm font-medium text-gray-700">Customer *</label>
-            <select className="w-full border rounded px-3 py-2 text-sm mt-1"
+            <select className="w-full border rounded px-3 py-2 text-sm mt-1" disabled={!!editing}
               value={form.customer_id} onChange={e => setForm({ ...form, customer_id: e.target.value })}>
               <option value="">— select —</option>
               {customers.map(c => <option key={c.id} value={c.id}>{c.name} ({c.code})</option>)}
@@ -220,7 +237,7 @@ function CreateModal({ customers, products, onClose }: {
           <div className="flex gap-2">
             <Button variant="secondary" onClick={onClose}>Cancel</Button>
             <Button onClick={() => mut.mutate()} disabled={!form.customer_id || mut.isPending}>
-              {mut.isPending ? "Creating…" : "Create Quote"}
+              {mut.isPending ? "Saving…" : editing ? "Save changes" : "Create Quote"}
             </Button>
           </div>
         </div>
@@ -284,7 +301,7 @@ function SharePanel({ quote, onClose }: { quote: Quotation; onClose: () => void 
         </div>
         {signed.data?.decision && (
           <p role="status" className={`text-sm rounded p-2 border ${signed.data.unchanged_since_signing ? "border-emerald-300" : "border-red-400"}`}>
-            {signed.data.decision === "ACCEPTED" ? "Accepted" : "Declined"} online by {signed.data.signer_name} ({signed.data.signer_email}) on {when(signed.data.decided_at ?? null)}, ref {signed.data.reference}.
+            {signed.data.decision === "ACCEPTED" ? "Accepted" : "Declined"} online by {signed.data.signer_name} ({signed.data.signer_email}{signed.data.email_verified_at ? ", e-mail verified by code" : ", e-mail not verified"}) on {when(signed.data.decided_at ?? null)}, ref {signed.data.reference}.
             {signed.data.reason ? ` Reason: ${signed.data.reason}.` : ""}{" "}
             {signed.data.unchanged_since_signing ? "Content unchanged since signing." : "WARNING: the quotation content changed after signing."}
           </p>
@@ -324,7 +341,7 @@ function SharePanel({ quote, onClose }: { quote: Quotation; onClose: () => void 
   );
 }
 
-function QuoteActions({ quote, onReject }: { quote: Quotation; onReject: () => void }) {
+function QuoteActions({ quote, onReject, onEdit }: { quote: Quotation; onReject: () => void; onEdit: () => void }) {
   const qc = useQueryClient();
   const useQuoteMutation = (fn: () => Promise<unknown>) =>
     useMutation({ mutationFn: fn, onSuccess: () => qc.invalidateQueries({ queryKey: ["quotes"] }) });
@@ -334,8 +351,15 @@ function QuoteActions({ quote, onReject }: { quote: Quotation; onReject: () => v
   const expireM = useQuoteMutation(() => quoteApi.expire(quote.id));
   const reviseM = useQuoteMutation(() => quoteApi.revise(quote.id));
   const convertM = useQuoteMutation(() => quoteApi.convert(quote.id));
+  const discountM = useMutation({
+    mutationFn: (v: { approve: boolean; reason?: string }) => quoteApi.decideDiscount(quote.id, v.approve, v.reason),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["quotes"] }),
+  });
+  const failed = [sendM, acceptM, expireM, reviseM, convertM, discountM].find((m) => m.isError)?.error as Error | undefined;
+  const discountWaiting = quote.approval_status === "PENDING_DISCOUNT";
+  const discountRejected = quote.approval_status === "DISCOUNT_REJECTED";
 
-  const busy = sendM.isPending || acceptM.isPending || expireM.isPending || reviseM.isPending || convertM.isPending;
+  const busy = sendM.isPending || acceptM.isPending || expireM.isPending || reviseM.isPending || convertM.isPending || discountM.isPending;
   const access = quote.access;
   const [sharing, setSharing] = useState(false);
 
@@ -345,7 +369,22 @@ function QuoteActions({ quote, onReject }: { quote: Quotation; onReject: () => v
 
   return (
     <div className="flex flex-wrap gap-1">
+      {discountWaiting && <span className="text-xs px-2 py-1 rounded bg-amber-50 text-amber-800">Discount waiting for approval</span>}
+      {discountRejected && <span className="text-xs px-2 py-1 rounded bg-red-50 text-red-700">Discount rejected — change it</span>}
+      {quote.approval_status === "DISCOUNT_APPROVED" && <span className="text-xs px-2 py-1 rounded bg-green-50 text-green-700">Discount approved</span>}
+      {access?.can_discount_approve && (
+        <>
+          <button disabled={busy} onClick={() => discountM.mutate({ approve: true })}
+            className="text-xs px-2 py-1 rounded bg-green-600 text-white hover:bg-green-700">Approve discount</button>
+          <button disabled={busy} onClick={() => { const reason = window.prompt("Why is the discount rejected?"); if (reason?.trim()) discountM.mutate({ approve: false, reason }); }}
+            className="text-xs px-2 py-1 rounded bg-red-600 text-white hover:bg-red-700">Reject discount</button>
+        </>
+      )}
       {quote.status === "DRAFT" && (access?.can_edit ?? true) && (
+        <button disabled={busy} onClick={onEdit}
+          className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-700 hover:bg-gray-200">Edit</button>
+      )}
+      {quote.status === "DRAFT" && !discountWaiting && !discountRejected && (access?.can_edit ?? true) && (
         <button disabled={busy} onClick={() => sendM.mutate()}
           className="text-xs px-2 py-1 rounded bg-blue-50 text-blue-700 hover:bg-blue-100">Send</button>
       )}
@@ -372,6 +411,7 @@ function QuoteActions({ quote, onReject }: { quote: Quotation; onReject: () => v
       {access && !access.view_only && !(access.can_edit || access.can_approve || access.can_convert || access.can_cancel) && (
         <ViewOnlyBadge reason={access.reason} />
       )}
+      {failed && <span role="alert" className="text-xs text-red-700 w-full">{failed.message}</span>}
       {(convertM.isSuccess) && (
         <span className="text-xs text-purple-700">SO created</span>
       )}
@@ -390,6 +430,7 @@ export default function QuotesPage() {
   const [statusFilter, setStatusFilter] = useState<QuoteStatus | "">("");
   const [showCreate, setShowCreate] = useState(false);
   const [rejectTarget, setRejectTarget] = useState<Quotation | null>(null);
+  const [editTarget, setEditTarget] = useState<Quotation | null>(null);
 
   const { data: dash } = useQuery({ queryKey: ["quotes", "dashboard"], queryFn: quoteApi.dashboard });
   const { data: quotes = [], isLoading } = useQuery({
@@ -481,7 +522,7 @@ export default function QuotesPage() {
                       {fmtCcy(q.grand_total, q.currency)}
                     </td>
                     <td className="px-4 py-3">
-                      <QuoteActions quote={q} onReject={() => setRejectTarget(q)} />
+                      <QuoteActions quote={q} onReject={() => setRejectTarget(q)} onEdit={() => setEditTarget(q)} />
                     </td>
                   </tr>
                 ))}
@@ -492,6 +533,9 @@ export default function QuotesPage() {
       </div>
 
       {/* Modals */}
+      {editTarget && (
+        <CreateModal customers={customers} products={products} editing={editTarget} onClose={() => setEditTarget(null)} />
+      )}
       {showCreate && (
         <CreateModal customers={customers} products={products} onClose={() => setShowCreate(false)} />
       )}

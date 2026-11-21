@@ -145,7 +145,8 @@ async def test_customer_signs_accept_decline_and_tamper_evidence():
 
     s = uuid4().hex[:8]
     async with AsyncSessionLocal() as db:
-        cust = Customer(code=f"DS-{s}", name="Mama Duka", channel=CustomerChannel.RETAIL, currency="KES")
+        cust = Customer(code=f"DS-{s}", name="Mama Duka", channel=CustomerChannel.RETAIL, currency="KES",
+                        email=f"grace-{s}@shops.example")   # M41.S01.T002: the signer's e-mail must be on file
         rep_row = User(email=f"ds-{s}@povu.example", username=f"ds{s}", full_name="Rep", hashed_password="x")
         db.add_all([cust, rep_row])
         await db.flush()
@@ -164,10 +165,14 @@ async def test_customer_signs_accept_decline_and_tamper_evidence():
         rep = _user(rep_row.id, "sales.view", "sales.edit_all", "sales.approve_all")
         tok = {k: _token((await api.create_share_link(v, api.ShareLinkIn(), db, rep))["url"]) for k, v in ids.items()}
         req = _request("41.90.1.1", "Safari")
+        codes = {}
+        for k in ("ok", "decline"):   # M41.S01.T002: one-time code e-mailed to the address on file
+            codes[k] = await docs.request_signer_code(db, await docs.resolve(db, tok[k]), f"Grace-{s}@shops.example")
+        await db.commit()
 
         def body(k, doc, **over):
             return public.DecisionIn(**{"decision": "ACCEPTED", "signer_name": "Grace Wanjiru", "signer_email": f"Grace-{s}@shops.example",
-                                        "document_hash": doc["document_hash"], "agree": True, **over})
+                                        "document_hash": doc["document_hash"], "agree": True, "code": codes.get(k, "000000"), **over})
 
         doc = await public.shared_document(tok["ok"], db)
         assert doc["can_decide"] is True and len(doc["document_hash"]) == 64

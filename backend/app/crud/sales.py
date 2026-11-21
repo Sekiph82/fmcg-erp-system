@@ -82,8 +82,12 @@ async def create_so(db: AsyncSession, data: dict, created_by_id: uuid.UUID) -> S
     so = SalesOrder(**data, created_by_id=created_by_id)
     db.add(so)
     await db.flush()
-    for ld in lines_data:
-        db.add(SOLine(so_id=so.id, **ld))
+    lines = [SOLine(so_id=so.id, **ld) for ld in lines_data]
+    db.add_all(lines)
+    await db.flush()
+    from app.services import discount_approval_service as disc
+
+    await disc.refresh(db, so, lines, fraction=True, editor_id=created_by_id)  # SO discounts are fractions (0.10 = 10 %)
     await db.flush()
     await db.refresh(so)
     return so

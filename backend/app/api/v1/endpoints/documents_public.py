@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import Literal, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -51,6 +51,46 @@ async def shared_document_viewed(token: str, request: Request, db: AsyncSession 
     return {"recorded": counted}
 
 
+class SignerCodeIn(BaseModel):
+    signer_email: EmailStr
+
+
+@router.post("/{token}/signer-code")
+async def send_signer_code(token: str, body: SignerCodeIn, background: BackgroundTasks, db: AsyncSession = Depends(get_db)):
+    """E-mail a one-time code to the signer — only to an address on file for the quoted customer. The answer (and its
+    timing: the e-mail goes out after the response) is the same whether or not the address is on file."""
+    import logging
+
+    from app.core.config import settings
+    from app.services.email_sender import send_email
+
+    _check(token)
+    if not settings.SMTP_HOST and not settings.OTP_DEV_DELIVERY_MODE:
+        raise HTTPException(503, "E-mail is not set up yet. Please contact your POVU representative.")
+    try:
+        link = await docs.resolve(db, token, for_update=True)
+        code = await docs.request_signer_code(db, link, str(body.signer_email))
+    except docs.LinkGone:
+        raise HTTPException(404, GONE)
+    except docs.DecisionRefused as e:
+        raise HTTPException(429, str(e))
+    await db.commit()   # the code exists before it is sent
+    if code:
+        to = str(body.signer_email)
+        if settings.SMTP_HOST:
+            def _send() -> None:
+                try:
+                    send_email(to, "Your code to sign the POVU quotation",
+                               f"Your code is {code}. It works for 15 minutes on the quotation page.\n"
+                               "If you did not ask for it, you can ignore this e-mail.")
+                except Exception:
+                    logging.getLogger(__name__).exception("signer code e-mail failed")
+            background.add_task(_send)
+        else:
+            logging.getLogger(__name__).info("[DEV SIGNER CODE] To=%s code=%s (dev mode, not sent)", to, code)
+    return {"message": "If this e-mail is on file for your company, a code is on its way. It works for 15 minutes."}
+
+
 class DecisionIn(BaseModel):
     decision: Literal["ACCEPTED", "DECLINED"]
     signer_name: str = Field(min_length=2, max_length=150, pattern=r"^[^\r\n<>]+$")
@@ -58,6 +98,7 @@ class DecisionIn(BaseModel):
     document_hash: str = Field(pattern=r"^[0-9a-f]{64}$", description="document_hash of the version the customer read")
     agree: bool = Field(description="must be true: the signer confirms the statement shown on the page")
     reason: Optional[str] = Field(None, max_length=1000)
+    code: str = Field(default="", max_length=6, description="one-time code e-mailed to signer_email (M41.S01.T002)")
 
 
 @router.post("/{token}/decision")
@@ -71,6 +112,7 @@ async def shared_document_decision(token: str, body: DecisionIn, request: Reques
         client = request.client.host if request.client else ""
         rec = await docs.decide(db, link, decision=body.decision, signer_name=body.signer_name.strip(),
                                 signer_email=str(body.signer_email), seen_hash=body.document_hash, reason=body.reason,
+                                code=body.code,
                                 viewer=docs.viewer_hash(link.id, client, request.headers.get("user-agent", "")))
     except docs.LinkGone:
         raise HTTPException(404, GONE)

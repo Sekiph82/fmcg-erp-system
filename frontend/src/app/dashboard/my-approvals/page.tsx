@@ -17,6 +17,10 @@ const patch = (u: string, b: object) => apiClient.patch(u, b);
 const A = "/api/v1";
 const DECIDE: Record<string, { approve: Call; reject?: Call }> = {
   approval_engine: { approve: (i) => approvalsApi.approve(i.id), reject: (i, _u, n) => approvalsApi.reject(i.id, n) },
+  quote_discount: { approve: (i) => post(`${A}/quotes/${i.id}/discount/approve`, {}),
+                    reject: (i, _u, n) => post(`${A}/quotes/${i.id}/discount/reject`, { reason: n }) },
+  so_discount: { approve: (i) => post(`${A}/sales/orders/${i.id}/discount/approve`, {}),
+                 reject: (i, _u, n) => post(`${A}/sales/orders/${i.id}/discount/reject`, { reason: n }) },
   purchase_request: { approve: (i) => post(`${A}/procurement/pr/${i.id}/approve`, { approve: true }),
                       reject: (i, _u, n) => post(`${A}/procurement/pr/${i.id}/approve`, { approve: false, rejection_reason: n }) },
   purchase_order: { approve: (i) => post(`${A}/procurement/po/${i.id}/approve`) },

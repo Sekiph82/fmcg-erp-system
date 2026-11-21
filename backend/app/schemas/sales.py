@@ -4,7 +4,7 @@ from decimal import Decimal
 from typing import Optional, List
 import uuid
 
-from pydantic import BaseModel, ConfigDict, computed_field
+from pydantic import BaseModel, ConfigDict, Field, computed_field
 
 from app.models.sales import (
     CustomerChannel, SOStatus, ShipmentStatus, InvoiceStatus,
@@ -125,8 +125,8 @@ class SOLineCreate(BaseModel):
     ordered_quantity: Decimal
     unit: str = "PCS"
     unit_price: Decimal = Decimal("0")
-    discount_pct: Decimal = Decimal("0")
-    tax_rate: Decimal = Decimal("0")
+    discount_pct: Decimal = Field(default=Decimal("0"), ge=0, le=1, description="fraction: 0.10 = 10 %")
+    tax_rate: Decimal = Field(default=Decimal("0"), ge=0, le=1, description="fraction: 0.16 = 16 %")
     cost_price: Optional[Decimal] = None
     notes: Optional[str] = None
 
