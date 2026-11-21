@@ -108,7 +108,10 @@ def test_production_manager_has_maintenance_view_export():
 def test_maintenance_endpoints_use_require_permission():
     src = _source("app/api/v1/endpoints/maintenance.py")
     assert "require_permission" in src
-    assert "get_current_user" not in src, "maintenance.py still uses bare get_current_user"
+    # M40.S01.T002: the technician "My Jobs" section signs in the user and checks the job assignee itself
+    head, _, mine = src.partition('# ── Technician "my work"')
+    assert "get_current_user" not in head, "maintenance.py still uses bare get_current_user"
+    assert "_my_wo(" in mine and "_my_bd(" in mine and "_can_edit_all" in mine
 
 
 def test_maintenance_endpoints_predict_permission_guard():

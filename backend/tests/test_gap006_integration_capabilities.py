@@ -18,7 +18,7 @@ def test_capability_registry_classifies_real_and_stub_providers():
     assert providers["MPESA_DARAJA"].production_execution_allowed is True
     assert providers["IOT"].status == IntegrationCapabilityStatus.SANDBOX_READY  # MQTT bridge
     assert providers["CRM_SYNC"].status == IntegrationCapabilityStatus.STUB_ONLY  # external CRM is optional
-    assert providers["EMAIL_SYNC"].status == IntegrationCapabilityStatus.SIMULATED_ONLY
+    assert providers["EMAIL_SYNC"].status == IntegrationCapabilityStatus.LIVE_READY  # real IMAP/SMTP since M36.S01.T001
     assert providers["GRAPHQL_API"].status == IntegrationCapabilityStatus.LIVE_READY
 
 

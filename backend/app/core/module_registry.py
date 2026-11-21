@@ -697,6 +697,30 @@ def _register_routes(
             public, protected = _split_public_routes(router, definition.route_prefix)
             if public.routes:
                 api_router.include_router(public, prefix=definition.route_prefix, tags=list(tags))
+            from app.core.route_guard import MODULE_GUARDS, has_own_check, module_guard
+            mods = MODULE_GUARDS.get(definition.route_prefix)
+            if mods:  # routes without their own permission check get the module baseline; order is kept
+                guard = [Depends(module_guard(mods))]
+                router_deps = list(router.dependencies or [])
+                guarded = APIRouter()
+                for route in protected.routes:
+                    if isinstance(route, APIRoute) and not has_own_check(route, router_deps):
+                        guarded.add_api_route(
+                            route.path, route.endpoint, methods=list(route.methods), dependencies=[*route.dependencies, *guard],
+                            response_model=route.response_model, status_code=route.status_code, tags=route.tags,
+                            summary=route.summary, description=route.description, responses=route.responses,
+                            response_description=route.response_description, deprecated=route.deprecated,
+                            operation_id=route.operation_id, response_model_include=route.response_model_include,
+                            response_model_exclude=route.response_model_exclude,
+                            response_model_by_alias=route.response_model_by_alias,
+                            response_model_exclude_unset=route.response_model_exclude_unset,
+                            response_model_exclude_defaults=route.response_model_exclude_defaults,
+                            response_model_exclude_none=route.response_model_exclude_none,
+                            include_in_schema=route.include_in_schema, response_class=route.response_class,
+                            name=route.name, callbacks=route.callbacks, openapi_extra=route.openapi_extra)
+                    else:
+                        guarded.routes.append(route)
+                protected = guarded
             api_router.include_router(
                 protected,
                 prefix=definition.route_prefix,
