@@ -16,3 +16,5 @@ cards after import: achieng-otieno-37524:live, kipchoge-mutai-37524:live, wanjik
 print sheet cards: 2 fronts, 2 backs
 my card 200 true
 page errors: []
+
+Same-name check (owner question 2026-11-24): two employees named exactly "Amani Wekesa" -> /kartvizit/amani-wekesa and /kartvizit/amani-wekesa-2; both cards show only "Amani Wekesa" (10_same_name_1/2.png). The number in the earlier screenshots ("Wanjiku Kamau 37524") was part of the synthetic test name the script typed, not something the system adds.
