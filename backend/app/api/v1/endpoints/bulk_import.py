@@ -224,9 +224,12 @@ class EmployeeAdapter(BaseImportAdapter):
         return r.scalar_one_or_none() is not None
 
     async def insert(self, data: dict, db: AsyncSession) -> Any:
+        from app.services.business_card_service import after_employee_change
+
         obj = Employee(**{k: v for k, v in data.items() if v is not None})
         db.add(obj)
         await db.flush()
+        await after_employee_change(db, obj)   # M42: every imported employee gets a business card and QR
         return obj
 
 

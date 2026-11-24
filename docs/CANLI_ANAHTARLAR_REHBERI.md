@@ -20,7 +20,9 @@ Zamanı gelince bu dosyayı açın ve sırayla ilerleyin. Kontrol listesi en alt
      ```powershell
      python -c "import secrets; print(secrets.token_hex(32))"
      ```
-   - `PUBLIC_APP_URL=https://<alan-adınız>`
+   - `PUBLIC_APP_URL=https://<alan-adınız>` — çalışan kartvizitlerinin QR kodları bu adresi taşır; canlıda https olmadan QR üretilmez. QR'ları basmadan önce kesinleştirin (basılan QR sonradan değişmez).
+   - `FORWARDED_ALLOW_IPS=<önündeki proxy/yük dengeleyicinin IP'si>` — yoksa tüm ziyaretçiler tek IP görünür ve kartvizit sayfalarının istek sınırı herkese birlikte uygulanır.
+   - Kartvizitlerdeki ortak POVU içerikleri (kapak videosu, logo, videolar, galeri, katalog) `CARD_ASSETS_BASE_URL` adresinden gelir; varsayılan GitHub'daki SekipHayit sayfası.
    - `OTP_DEV_DELIVERY_MODE=false` (üretimde zorunlu)
 3. Uygulamayı yeniden başlatın: `docker compose -f docker-compose.prod.yml up -d`
 

@@ -1,0 +1,18 @@
+hr manager has hr.cards_manage: true
+Business cards button: 1
+employee created on screen: true
+card: wanjiku-kamau-37524 PUBLISHED live true url https://172.20.10.4:3443/kartvizit/wanjiku-kamau-37524
+photo with consent: true
+QR decodes to: https://172.20.10.4:3443/kartvizit/wanjiku-kamau-37524 ec M
+iphone: shows name true, phone true, mpesa/bank hidden true
+iphone Save contact: wanjiku-kamau-37524.vcf vCard true photo true tel true
+language switch -> sw: true
+android: shows name true, phone true, mpesa/bank hidden true
+android Save contact: wanjiku-kamau-37524.vcf vCard true photo true tel true
+phone change 200 -> same QR shows new number: true
+terminate 200 -> card: POVU This card is no longer valid. Kadi hii haitumiki tena. · Bu kartvizit artık geçerli d | name hidden: true
+import 200 {"total_rows":2,"valid_rows":2,"failed_rows":0,"imported":true,"import_mode":"import_valid_only","module":"employees","e
+cards after import: achieng-otieno-37524:live, kipchoge-mutai-37524:live, wanjiku-kamau-37524:closed
+print sheet cards: 2 fronts, 2 backs
+my card 200 true
+page errors: []

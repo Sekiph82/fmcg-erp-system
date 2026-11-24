@@ -292,3 +292,30 @@ class PayrollLine(Base, TimestampMixin):
     period = relationship("PayrollPeriod", back_populates="lines")
     employee = relationship("Employee", back_populates="payroll_lines")
     paid_by = relationship("User", foreign_keys=[paid_by_id])
+
+
+# ── M42 employee digital business cards ───────────────────────────────────────
+
+class EmployeeBusinessCard(Base, TimestampMixin):
+    """Public digital business card of one employee (M42). Name, role, work phone/e-mail and company are read live
+    from the employee record; this row holds only what the card adds: a permanent slug, publish state, what may be
+    shown, an optional card title and the photo (published only with recorded consent). Cover, logo, videos,
+    gallery and catalogue are the shared POVU brand content (settings.CARD_ASSETS_BASE_URL)."""
+    __tablename__ = "employee_business_cards"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    employee_id = Column(UUID(as_uuid=True), ForeignKey("hr_employees.id", ondelete="CASCADE"), nullable=False, unique=True)
+    slug = Column(String(120), nullable=False, unique=True)        # issued once, never changes (printed QR codes)
+    status = Column(String(12), nullable=False, default="PUBLISHED")   # PUBLISHED | REVOKED
+    show_phone = Column(Boolean, nullable=False, default=True)
+    show_whatsapp = Column(Boolean, nullable=False, default=True)
+    show_email = Column(Boolean, nullable=False, default=True)
+    title_en = Column(String(150), nullable=True)                  # card title; employee role when empty
+    photo = Column(Text, nullable=True)                            # data:image/jpeg;base64,... (max 400 KB)
+    photo_consent_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    photo_consent_at = Column(DateTime(timezone=True), nullable=True)
+    published_at = Column(DateTime(timezone=True), nullable=True)
+    revoked_at = Column(DateTime(timezone=True), nullable=True)
+    revoked_reason = Column(String(200), nullable=True)
+
+    employee = relationship("Employee")

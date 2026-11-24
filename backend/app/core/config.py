@@ -116,6 +116,9 @@ class Settings(BaseSettings):
     CRM_OUTBOUND_EMAIL_ENABLED: bool = False
     CRM_OUTBOUND_MAX_PER_TICK: int = 30            # delivery rate limit per 15 s worker tick
     PUBLIC_APP_URL: str = "http://localhost:3000"  # used in unsubscribe links
+    # M42 business cards: shared POVU brand content (cover video, logo, videos, gallery, catalogue). Owner decision
+    # 2026-11-24: the GitHub Pages card repo is the source; point this at a self-hosted copy later if wanted.
+    CARD_ASSETS_BASE_URL: str = "https://sekiph82.github.io/SekipHayit"
     PUBLIC_API_URL: str = "http://localhost:8000"  # used for one-click List-Unsubscribe-Post
 
     # ── SMS OTP delivery (Twilio or compatible) ────────────────────────────────

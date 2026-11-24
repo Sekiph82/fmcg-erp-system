@@ -61,12 +61,17 @@ async def list_employees(
 
 @router.post("/employees/", response_model=EmployeeRead, status_code=201,
              dependencies=[Depends(require_permission("hr", "create"))])
-async def create_employee(body: EmployeeCreate, db: AsyncSession = Depends(get_db)):
+async def create_employee(body: EmployeeCreate, db: AsyncSession = Depends(get_db),
+                          current_user=Depends(get_current_user)):
+    from app.services.business_card_service import after_employee_change
+
     existing = await db.execute(select(Employee).where(Employee.employee_code == body.employee_code))
     if existing.scalar_one_or_none():
         raise HTTPException(400, "Employee code already exists")
     emp = Employee(**body.model_dump())
     db.add(emp)
+    await db.flush()
+    await after_employee_change(db, emp, current_user.id)   # M42: business card + QR, published at once
     await db.commit()
     await db.refresh(emp)
     return emp
@@ -87,12 +92,16 @@ async def update_employee(
     employee_id: uuid.UUID,
     body: EmployeeUpdate,
     db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
 ):
+    from app.services.business_card_service import after_employee_change
+
     emp = await db.get(Employee, employee_id)
     if not emp:
         raise HTTPException(404, "Employee not found")
     for k, v in body.model_dump(exclude_none=True).items():
         setattr(emp, k, v)
+    await after_employee_change(db, emp, current_user.id)   # M42: terminated/archived -> card closed
     await db.commit()
     await db.refresh(emp)
     return emp

@@ -87,7 +87,7 @@ READ_EXTRA_SEGMENTS: dict[str, frozenset[str]] = {"work-centers": frozenset({"ma
 _OWN_CHECK = re.compile(
     r"\b(has_permission|has_any_permission|require_permission|require_any_permission|can_modify_record|can_view_record|"
     r"can_view_scope|can_modify_scope|can_access_scope|check_permission|ensure_\w+|_superuser_only|_can_\w+|_my_\w+|"
-    r"_own_or_404|_scope|apply_\w*scope\w*|get_portal_user|get_supplier_user)\s*\(|"
+    r"_own_or_404|_scope|apply_\w*scope\w*|get_portal_user|get_supplier_user|_assert_perm)\s*\(|"
     r"\bis_superuser\b|current_user\.id\s*[!=]=|==\s*current_user\.id|"
     r"HTTPException\(\s*(status_code\s*=\s*)?(403|status\.HTTP_403_FORBIDDEN)")
 _BASE_DEPS = {"get_current_user", "get_db"}

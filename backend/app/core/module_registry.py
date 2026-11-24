@@ -521,6 +521,8 @@ ENDPOINT_ROUTE_DEFINITIONS: tuple[EndpointRouteDefinition, ...] = (
     EndpointRouteDefinition(key="crm_unsubscribe_public", route_prefix="/public/unsubscribe", import_path="app.api.v1.endpoints.crm_unsubscribe_public", tags=('crm',)),
     EndpointRouteDefinition(key="meetings_public", route_prefix="/public/calendar", import_path="app.api.v1.endpoints.meetings_public", tags=('meetings',)),
     EndpointRouteDefinition(key="documents_public", route_prefix="/public/documents", import_path="app.api.v1.endpoints.documents_public", tags=('quotes',)),
+    EndpointRouteDefinition(key="business_cards", route_prefix="/hr", import_path="app.api.v1.endpoints.business_cards", tags=('hr',)),
+    EndpointRouteDefinition(key="business_cards_public", route_prefix="/public/cards", import_path="app.api.v1.endpoints.business_cards_public", tags=('hr',)),
     EndpointRouteDefinition(key="crm_landing", route_prefix="/landing", import_path="app.api.v1.endpoints.crm_landing", tags=('crm',)),
     EndpointRouteDefinition(key="crm_landing_public", route_prefix="/public/lp", import_path="app.api.v1.endpoints.crm_landing_public", tags=('crm',)),
     EndpointRouteDefinition(key="conversation_intel", route_prefix="/conversation-intel", import_path="app.api.v1.endpoints.conversation_intel", tags=('crm',)),
@@ -653,6 +655,9 @@ PUBLIC_ROUTES: frozenset[tuple[str, str]] = frozenset({
     ("/public/documents/{token}/view", "POST"),          # view event, keyed-hash dedupe, no IP stored
     ("/public/documents/{token}/decision", "POST"),      # customer accept/decline, typed-name e-signature (M36.S04.T003)
     ("/public/documents/{token}/signer-code", "POST"),   # one-time code to an e-mail on file, 5/h per link (M41.S01.T002)
+    ("/public/cards/{slug}", "GET"),                      # employee business card, live employee data, noindex, rate-limited (M42)
+    ("/public/cards/{slug}.vcf", "GET"),                  # vCard of the same card
+    ("/public/cards/{slug}/photo", "GET"),                # profile photo, only with recorded consent
     ("/public/lp/{slug}", "GET"),                         # landing page: visitor id → one variant, one view (M36.S05.T002)
     ("/public/lp/{slug}/convert", "POST"),                # lead form submission through the lead-capture rules
     ("/public/nps/{token}", "GET"),                       # one-time survey link: token is the credential (M40.S01.T001)

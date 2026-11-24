@@ -55,6 +55,9 @@ class FakeModel:
 
 @pytest.mark.asyncio
 async def test_copilot_grounding_pii_fallbacks(monkeypatch):
+    # the AI rate limiter must not count against a reachable dev Redis (the synthetic users have id=None,
+    # so earlier runs would share one key): keep it in this process
+    monkeypatch.setattr("app.core.ai_rate_limiter._get_redis", lambda: None)
     s = uuid4().hex[:8]
     async with AsyncSessionLocal() as db:
         assert engine.url.host in {"127.0.0.1", "localhost", "::1"} and engine.url.password is None

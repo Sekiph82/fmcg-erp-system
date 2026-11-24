@@ -8,6 +8,9 @@ import { RequirePermission } from "@/components/PermissionGuard";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
+import Link from "next/link";
+import { useAuth } from "@/context/AuthContext";
+import { BusinessCardPanel } from "@/components/BusinessCardPanel";
 
 const STATUS_VARIANT: Record<EmployeeStatus, "green" | "gray" | "yellow" | "red"> = {
   ACTIVE: "green",
@@ -112,6 +115,9 @@ function EmployeesContent() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Employee | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [cardFor, setCardFor] = useState<{ id: string; name: string } | null>(null);
+  const { hasPermission } = useAuth();
+  const canCards = hasPermission("hr.cards_manage");
 
   const { data: employees = [], isLoading } = useQuery({
     queryKey: ["hr-employees", dept, status, search],
@@ -145,6 +151,9 @@ function EmployeesContent() {
           <p className="text-sm text-gray-500 mt-1">{employees.length} records</p>
         </div>
         <div className="flex items-center gap-2">
+          {canCards && (
+            <Link href="/dashboard/hr/employees/cards" className="px-4 py-2 border rounded text-sm hover:bg-gray-50">Business cards</Link>
+          )}
           <ImportModal module="employees" onSuccess={() => qc.invalidateQueries({ queryKey: ["hr-employees"] })} />
           <button
             onClick={() => setShowForm(true)}
@@ -215,6 +224,11 @@ function EmployeesContent() {
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex justify-end gap-3">
+                      {canCards && (
+                        <button onClick={() => setCardFor({ id: emp.id, name: emp.full_name })} className="text-xs text-indigo-600 hover:underline">
+                          Card
+                        </button>
+                      )}
                       <button
                         onClick={() => setEditing(emp as unknown as Employee)}
                         className="text-xs text-indigo-600 hover:underline"
@@ -235,6 +249,11 @@ function EmployeesContent() {
           </table>
         )}
       </div>
+      {/* M42 business card of one employee */}
+      <Modal open={!!cardFor} onClose={() => setCardFor(null)} title={cardFor ? `Business card — ${cardFor.name}` : ""}>
+        {cardFor && <BusinessCardPanel employeeId={cardFor.id} />}
+      </Modal>
+
       {/* Delete Confirm Modal */}
       <Modal open={!!deletingId} onClose={() => setDeletingId(null)} title="Delete Employee">
         <p className="text-sm text-gray-600 mb-4">

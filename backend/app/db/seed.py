@@ -230,6 +230,7 @@ PERMISSIONS = [
     ("hr",          "edit",   "Edit HR",               "Edit HR records",                          False),
     ("hr",          "approve","Approve HR",            "Approve leave requests and payroll",       False),
     ("hr",          "export", "Export HR",             "Export HR and payroll reports",            False),
+    ("hr",          "cards_manage", "Manage Business Cards", "Employee digital business cards: photo, visibility, QR, revoke", False),
 
     # Documents
     ("documents",   "view",   "View Documents",        "View document repository",                 False),
@@ -657,6 +658,7 @@ ROLE_DEFINITIONS = {
             "knowledge_base.view", "knowledge_base.create", "knowledge_base.edit", "knowledge_base.publish", "knowledge_base.delete", "knowledge_base.admin",
             "esign.view", "esign.request", "esign.sign", "esign.cancel", "esign.admin",
             "partner_portal.manage_access",
+            "hr.view", "hr.cards_manage",   # IT prints and fixes business cards (M42)
             "reports.view", "reports.create", "reports.edit", "reports.run", "reports.export", "reports.admin",
             "notifications.view", "notifications.manage", "notifications.send", "notifications.configure", "notifications.report", "notifications.admin",
             "consumer_complaints.view", "consumer_complaints.create", "consumer_complaints.edit",
@@ -984,7 +986,7 @@ ROLE_DEFINITIONS = {
     "hr_manager": {
         "description": "HR operations — employees, attendance, leave and payroll",
         "permissions": [
-            "hr.view", "hr.create", "hr.edit", "hr.approve", "hr.export",
+            "hr.view", "hr.create", "hr.edit", "hr.approve", "hr.export", "hr.cards_manage",
             "payroll_ke.view", "payroll_ke.create", "payroll_ke.approve", "payroll_ke.export",
             "users.view",
             "documents.view", "documents.create", "knowledge_base.view", "esign.sign",

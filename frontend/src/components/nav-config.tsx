@@ -247,6 +247,7 @@ export const NAV_CONFIG: NavEntry[] = [
       { label: "My Attendance",       href: "/dashboard/ess/attendance" },
       { label: "My Payslips",         href: "/dashboard/ess/payslips" },
       { label: "My Requests",         href: "/dashboard/ess/requests" },
+      { label: "My Business Card",    href: "/dashboard/ess/card" },
     ]}),
 
   // Warehouse floor (M38): scan-driven picking and putaway for warehouse operators

@@ -14,6 +14,7 @@ export default function ESSDashboardPage() {
 
   const links = [
     { href: "/dashboard/ess/profile",       label: "My Profile",    icon: "👤" },
+    { href: "/dashboard/ess/card",          label: "My Business Card", icon: "🪪" },
     { href: "/dashboard/ess/leave",         label: "Leave",         icon: "🏖️" },
     { href: "/dashboard/ess/attendance",    label: "Attendance",    icon: "📅" },
     { href: "/dashboard/ess/documents",     label: "Documents",     icon: "📄" },
