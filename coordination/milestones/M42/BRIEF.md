@@ -3,7 +3,7 @@
 Requested by Şekip Hayıt. Approved plan (Turkish, full text): https://claude.ai/artifact/EenmsQ1hRxUSh8QMbMjF5E — tasks are in root `TASKS.md` under M42.
 
 ## Goal
-The digital business card made for Şekip Hayıt and Nihal Hayıt on GitHub Pages (repos Sekiph82/SekipHayit, Sekiph82/NihalHayit: static index.html + .vcf, cover video, large photo, Call/WhatsApp/E-mail tiles, Save contact, TR/EN) must be produced by the ERP for every employee. The single source is the employee record in HR → Employees. Staff join and leave all the time, so cards are created, updated and closed automatically.
+The digital business card made for Şekip Hayıt on GitHub Pages (repo Sekiph82/SekipHayit: static index.html + .vcf, cover video, large photo, Call/WhatsApp/E-mail tiles, Save contact, TR/EN) must be produced by the ERP for every employee. The single source is the employee record in HR → Employees. Staff join and leave all the time, so cards are created, updated and closed automatically.
 
 ## Owner decisions (binding)
 1. Built inside this ERP project, same codebase and domain. No separate site.
