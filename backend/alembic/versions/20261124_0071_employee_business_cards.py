@@ -45,14 +45,18 @@ def upgrade() -> None:
     conn = op.get_bind()
     taken = set(conn.execute(sa.text("SELECT slug FROM employee_business_cards")).scalars())
     rows = conn.execute(sa.text("""
-        SELECT e.id, e.full_name, e.status::text AS status, e.archived_at FROM hr_employees e
+        SELECT e.id, e.full_name, e.department, e.status::text AS status, e.archived_at FROM hr_employees e
          WHERE NOT EXISTS (SELECT 1 FROM employee_business_cards c WHERE c.employee_id = e.id)
          ORDER BY e.hire_date, e.created_at, e.id""")).all()
-    for emp_id, name, status, archived in rows:
-        base, n = _slug(name), 2
-        slug = base
-        while slug in taken:
-            slug, n = f"{base}-{n}", n + 1
+    for emp_id, name, department, status, archived in rows:
+        # same rule as business_card_service.pick_slug: name, then name-department, then name-department-2
+        slug = base = _slug(name)
+        if slug in taken:
+            dept = _slug(department) if (department or "").strip() else ""
+            stem = f"{base}-{dept}" if dept and dept != "employee" else base
+            slug, n = stem, 2
+            while slug in taken or slug == base:
+                slug, n = f"{stem}-{n}", n + 1
         taken.add(slug)
         live = status != "TERMINATED" and archived is None
         conn.execute(sa.text("""

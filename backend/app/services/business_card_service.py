@@ -37,15 +37,28 @@ def slugify(name: str) -> str:
     return slug or "employee"
 
 
-async def _free_slug(db: AsyncSession, base: str) -> str:
-    taken = set((await db.execute(select(EmployeeBusinessCard.slug).where(
-        (EmployeeBusinessCard.slug == base) | EmployeeBusinessCard.slug.like(f"{base}-%")))).scalars())
+def pick_slug(name: str, department: str | None, taken: set[str]) -> str:
+    """Owner rule (2026-11-24): the first person gets the name (amani-wekesa); a second person with the same name gets
+    the department added (amani-wekesa-sales); same name and department again -> amani-wekesa-sales-2. Without a
+    department the number rule applies (amani-wekesa-2)."""
+    base = slugify(name)
     if base not in taken:
         return base
+    dept = slugify(department or "") if (department or "").strip() else ""
+    stem = f"{base}-{dept}" if dept and dept != "employee" else base
+    if stem != base and stem not in taken:
+        return stem
     n = 2
-    while f"{base}-{n}" in taken:
+    while f"{stem}-{n}" in taken:
         n += 1
-    return f"{base}-{n}"
+    return f"{stem}-{n}"
+
+
+async def _free_slug(db: AsyncSession, name: str, department: str | None) -> str:
+    base = slugify(name)
+    taken = set((await db.execute(select(EmployeeBusinessCard.slug).where(
+        (EmployeeBusinessCard.slug == base) | EmployeeBusinessCard.slug.like(f"{base}-%")))).scalars())
+    return pick_slug(name, department, taken)
 
 
 def closed(emp: Employee) -> bool:
@@ -81,7 +94,7 @@ async def ensure_card(db: AsyncSession, emp: Employee, actor_id=None) -> Employe
         return card
     now = datetime.now(timezone.utc)
     live = not closed(emp)
-    card = EmployeeBusinessCard(employee_id=emp.id, slug=await _free_slug(db, slugify(emp.full_name)),
+    card = EmployeeBusinessCard(employee_id=emp.id, slug=await _free_slug(db, emp.full_name, emp.department),
                                 status=PUBLISHED if live else REVOKED, published_at=now if live else None,
                                 revoked_at=None if live else now, revoked_reason=None if live else "employee closed")
     db.add(card)

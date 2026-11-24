@@ -90,12 +90,18 @@ async def test_cards_created_live_closed_and_private():
 
         name = f"Wanjiku Kamau {tag}"
         a = await hr_api.create_employee(body("A", name), db, hr)
-        b = await hr_api.create_employee(body("B", name), db, hr)            # same name -> -2
+        b = await hr_api.create_employee(body("B", name), db, hr)            # same name -> department added
         t = await hr_api.create_employee(body("T", f"Şekip Hayıt {tag}"), db, hr)
+        c3 = await hr_api.create_employee(body("C", name), db, hr)           # same name and department -> -sales-2
+        c4 = await hr_api.create_employee(body("D", name, department="Logistics"), db, hr)
         ca = (await db.execute(select(EmployeeBusinessCard).where(EmployeeBusinessCard.employee_id == a.id))).scalar_one()
         cb = (await db.execute(select(EmployeeBusinessCard).where(EmployeeBusinessCard.employee_id == b.id))).scalar_one()
         ct = (await db.execute(select(EmployeeBusinessCard).where(EmployeeBusinessCard.employee_id == t.id))).scalar_one()
-        assert (ca.status, ca.slug) == ("PUBLISHED", f"wanjiku-kamau-{tag}") and cb.slug == f"wanjiku-kamau-{tag}-2"
+        assert (ca.status, ca.slug) == ("PUBLISHED", f"wanjiku-kamau-{tag}") and cb.slug == f"wanjiku-kamau-{tag}-sales"
+        more = {r.employee_id: r.slug for r in (await db.execute(select(EmployeeBusinessCard).where(
+            EmployeeBusinessCard.employee_id.in_([c3.id, c4.id])))).scalars()}
+        assert more == {c3.id: f"wanjiku-kamau-{tag}-sales-2", c4.id: f"wanjiku-kamau-{tag}-logistics"}
+        extra_slugs = list(more.values())
         assert ct.slug == f"sekip-hayit-{tag}"
         slug_a, slug_b, slug_t = ca.slug, cb.slug, ct.slug
         a_id, b_id = a.id, b.id
@@ -157,7 +163,7 @@ async def test_cards_created_live_closed_and_private():
         png = await staff.card_qr(a_id, "png", db, hr)
         assert b"<svg" in svg.body[:200] and png.body.startswith(b"\x89PNG")
         z = zipfile.ZipFile(io.BytesIO((await staff.qr_zip(None, None, None, tag, db)).body))
-        assert set(z.namelist()) == {f"{slug_a}.png", f"{slug_b}.png", f"{slug_t}.png"}
+        assert set(z.namelist()) == {f"{x}.png" for x in (slug_a, slug_b, slug_t, *extra_slugs)}
 
         # terminated -> closed: same answer as an unknown slug, nothing personal; republish needs an active employee
         await hr_api.update_employee(b_id, EmployeeUpdate(status="TERMINATED"), db, hr)

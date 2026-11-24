@@ -18,3 +18,5 @@ my card 200 true
 page errors: []
 
 Same-name check (owner question 2026-11-24): two employees named exactly "Amani Wekesa" -> /kartvizit/amani-wekesa and /kartvizit/amani-wekesa-2; both cards show only "Amani Wekesa" (10_same_name_1/2.png). The number in the earlier screenshots ("Wanjiku Kamau 37524") was part of the synthetic test name the script typed, not something the system adds.
+
+Department rule (owner 2026-11-24): second "Baraka Njoroge" (Sales) -> /kartvizit/baraka-njoroge-sales; first keeps /kartvizit/baraka-njoroge; both cards show only "Baraka Njoroge" (11_same_name_department_1/2.png). Earlier issued slugs (amani-wekesa-2) are kept: slugs never change.
