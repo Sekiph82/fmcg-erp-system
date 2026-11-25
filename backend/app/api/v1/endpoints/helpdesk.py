@@ -219,6 +219,8 @@ async def create_ticket(
         created_by_id=current_user.id,
     )
     db.add(ticket)
+    from app.services import service_desk_service as sd   # M45.S01.T019 routing + conditional SLA
+    await sd.on_created(db, ticket)
     await db.commit()
     return await _build_read(await _get_or_404(db, ticket.id))
 
@@ -327,6 +329,8 @@ async def close_ticket(
         t.first_response_at = now
     if body.customer_satisfaction is not None:
         t.customer_satisfaction = body.customer_satisfaction
+    from app.services import service_desk_service as sd   # M45.S01.T019 CSAT + CES surveys, sent once
+    await sd.on_closed(db, t)
     await db.commit()
     return await _build_read(await _get_or_404(db, ticket_id))
 

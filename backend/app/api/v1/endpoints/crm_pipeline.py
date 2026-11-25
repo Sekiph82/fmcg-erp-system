@@ -1582,6 +1582,13 @@ async def chat_close(chat_id: str, db: AsyncSession = Depends(get_db),
     sess = await _chat(db, chat_id)
     if sess.status != "CLOSED":
         sess.status, sess.closed_at = "CLOSED", _dt.now(_tz.utc)
+        from app.core.config import settings as _settings
+        from app.models.crm import CRMChatMessage
+        from app.services import service_desk_service as sd   # M45.S01.T019 post-chat survey, once per chat
+        tok = await sd.create_survey(db, "POST_CHAT", sess.id, None, sess.assignee_id)
+        if tok:
+            db.add(CRMChatMessage(session_id=sess.id, sender="BOT", created_at=_dt.now(_tz.utc),
+                                  body=f"Thanks for chatting with us. How did we do? {_settings.PUBLIC_APP_URL.rstrip('/')}/survey/{tok}"))
     await db.commit()
     return {"status": sess.status}
 

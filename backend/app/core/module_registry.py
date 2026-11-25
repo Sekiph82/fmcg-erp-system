@@ -553,6 +553,8 @@ ENDPOINT_ROUTE_DEFINITIONS: tuple[EndpointRouteDefinition, ...] = (
     EndpointRouteDefinition(key="sales_docs_public", route_prefix="/public/docs", import_path="app.api.v1.endpoints.sales_docs_public", tags=('sales',)),
     EndpointRouteDefinition(key="config_bundles", route_prefix="/config-bundles", import_path="app.api.v1.endpoints.config_bundles", tags=('admin',)),
     EndpointRouteDefinition(key="warehouse_exports", route_prefix="/warehouse-exports", import_path="app.api.v1.endpoints.warehouse_exports", tags=('reports',)),
+    EndpointRouteDefinition(key="service_desk", route_prefix="/service-desk", import_path="app.api.v1.endpoints.service_desk", tags=('helpdesk',)),
+    EndpointRouteDefinition(key="service_desk_public", route_prefix="/public/survey", import_path="app.api.v1.endpoints.service_desk_public", tags=('helpdesk',)),
     EndpointRouteDefinition(key="customer_intel", route_prefix="/customer-intel", import_path="app.api.v1.endpoints.customer_intel", tags=('crm',)),
     EndpointRouteDefinition(key="marketing_assets", route_prefix="/marketing-assets", import_path="app.api.v1.endpoints.marketing_assets", tags=('marketing',)),
     EndpointRouteDefinition(key="marketing_assets_public", route_prefix="/public/assets", import_path="app.api.v1.endpoints.marketing_assets_public", tags=('marketing',)),
@@ -724,6 +726,8 @@ PUBLIC_ROUTES: frozenset[tuple[str, str]] = frozenset({
     ("/public/docs/{token}", "GET"),                       # shared sales document (M45.S01.T013): token, expiry, revocation
     ("/public/docs/{token}/view", "POST"),
     ("/public/docs/{token}/file", "GET"),                  # only APPROVED + malware-scan CLEAN files
+    ("/public/survey/{token}", "GET"),                     # CSAT / CES / post-chat survey (M45.S01.T019), answered once
+    ("/public/survey/{token}", "POST"),
     ("/public/crm-addin/lookup", "GET"),                   # Outlook/Gmail add-in: Bearer token with crm.addin scope (M45.S01.T012)
     ("/public/crm-addin/log-email", "POST"),
     ("/public/crm-addin/note", "POST"),

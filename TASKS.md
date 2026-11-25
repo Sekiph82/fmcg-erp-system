@@ -2472,11 +2472,32 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
   - Refused: tampered bundles (checksum) and other schema revisions.
   - UI: Security → Configuration sandbox.
   - Round trip between two disposable databases: tests/test_m45_s01_t018_config_bundle.py. The gate runner creates the second DB.
-- [ ] M45.S01.T019 — Service routing, conditional SLAs and CSAT/CES (additional gap, Source: HubSpot parity matrix 2026-11-25 (coordination/milestones/M43/HUBSPOT_PARITY_MATRIX_2026-11-25.md).)
+- [v] M45.S01.T019 — Service routing, conditional SLAs and CSAT/CES (additional gap, Source: HubSpot parity matrix 2026-11-25 (coordination/milestones/M43/HUBSPOT_PARITY_MATRIX_2026-11-25.md).)
   - **Scope:** Agent skills and availability; skill-based and round-robin ticket routing; SLA policies by priority, channel and customer tier with business hours and pause states; CSAT/CES surveys after ticket close (portal and e-mail), results on dashboard. Extended by matrix v2: ticket CSAT already exists in the portal; add CES and post-chat survey, automatic assignment, capacity limits and agent presence, macros, reply recommendations, help desk spaces and custom views, QA and customer-experience scores, handoff summaries.
   - **Acceptance at milestone gate:** Synthetic tickets routed by skill; SLA timers with business hours and breaches; survey sent once, answered once; reports; permissions.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable.
   - **Claude checkpoint:** [v] pending milestone gate, tests NOT RUN until gate; never [x] before milestone PASS.
+  Implemented 2026-11-26 [v] (tests NOT RUN as gate):
+  - Agents: skills, capacity and presence (Helpdesk → Service desk; agents set their own presence).
+  - Automatic assignment on ticket create (staff and portal): skill by category, then round robin among AVAILABLE agents below capacity.
+  - SLA policies:
+    - matched by priority, channel and key-account tier; first match wins;
+    - clock or business hours (time zone, weekdays, opening hours, holidays);
+    - "waiting for customer" pause/resume shifts the due times;
+    - breaches are marked once by the M45 job runner and the assignee is notified.
+  - Surveys:
+    - on close, CSAT (1–5) and CES (1–7) are sent once each by portal link and e-mail;
+    - closing a website chat sends one post-chat survey;
+    - each survey is answered once at /survey/{token}; CSAT also fills the ticket's existing satisfaction field.
+  - Dashboard: CSAT/CES/post-chat averages and SLA met %.
+  - Also added:
+    - macros (reply + status);
+    - reply recommendations from approved help articles;
+    - rule-based hand-off summary;
+    - QA reviews (accuracy, tone, resolution; never one's own tickets);
+    - saved personal/shared views (help desk spaces);
+    - customer-experience scores through the survey report.
+  - Tests: tests/test_m45_s01_t019_service_desk.py (real endpoints).
 - [v] M45.S01.T020 — Data warehouse export connectors (additional gap, Source: HubSpot parity matrix 2026-11-25 (coordination/milestones/M43/HUBSPOT_PARITY_MATRIX_2026-11-25.md).)
   - **Scope:** Incremental, schema-documented export of CRM/ERP datasets to Parquet/CSV object storage (local MinIO/S3-compatible) and a PostgreSQL warehouse target; documented adapters for Snowflake/BigQuery left NOT_CONFIGURED until activation; row-level permission and field masking honoured.
   - **Acceptance at milestone gate:** Local S3-compatible bucket and a second PostgreSQL receive incremental loads; deletes and schema changes; masked fields; resume after failure.

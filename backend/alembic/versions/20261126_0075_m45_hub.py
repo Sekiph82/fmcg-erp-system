@@ -21,6 +21,7 @@ TABLES = [
     "auth_impersonations", "nc_notification_policies", "auth_sso_configs", "auth_sso_states",
     "pay_links", "pay_link_attempts", "doc_share_links", "doc_share_events",
     "dw_targets", "dw_jobs", "dw_runs",
+    "sd_agents", "sd_sla_policies", "sd_ticket_sla", "sd_surveys", "sd_macros", "sd_qa_reviews", "sd_views",
 ]
 
 COLUMNS = [

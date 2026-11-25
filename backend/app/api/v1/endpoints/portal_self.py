@@ -582,6 +582,8 @@ async def open_ticket(body: TicketIn, user: PortalUser = Depends(ext.get_portal_
                        description=f"{body.description}\n\n— {user.full_name} ({user.email}) via partner portal",
                        sla_hours=SLA_DEFAULTS[TicketPriority.MEDIUM])
     db.add(t)
+    from app.services import service_desk_service as sd   # M45.S01.T019 routing + conditional SLA
+    await sd.on_created(db, t)
     await db.commit()
     return {"id": str(t.id), "ticket_no": t.ticket_no, "status": t.status.value}
 

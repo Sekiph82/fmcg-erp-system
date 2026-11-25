@@ -37,7 +37,13 @@ async def _warehouse_exports(db) -> None:
     await warehouse_export_service.tick(db)
 
 
-JOBS = [_daily_customer_intel, _agents, _warehouse_exports]
+async def _sla(db) -> None:
+    from app.services import service_desk_service
+    await service_desk_service.tick(db)
+    await db.commit()
+
+
+JOBS = [_daily_customer_intel, _agents, _warehouse_exports, _sla]
 
 
 async def tick() -> None:
