@@ -253,15 +253,7 @@ async def run_now(aid: uuid.UUID, body: RunIn, db: AsyncSession = Depends(get_db
 async def fire_event(name: str, payload: dict, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
     """Queue every active agent whose trigger is this event (webhook-style trigger)."""
     _can(current_user, "ai.edit")
-    n = 0
-    key = str(payload.get("event_id") or uuid.uuid4().hex)[:60]
-    for a in (await db.execute(select(AIAgent).where(AIAgent.status == "ACTIVE", AIAgent.stopped.is_(False)))).scalars():
-        ver = (await db.execute(select(AIAgentVersion).where(AIAgentVersion.agent_id == a.id,
-                                                             AIAgentVersion.version == a.current_version))).scalar_one_or_none()
-        trig = (ver.definition.get("trigger") or {}) if ver else {}
-        if trig.get("type") == "event" and trig.get("event") == name:
-            await ags.enqueue(db, a, "EVENT", f"event:{a.id}:{name}:{key}", current_user.id, payload)
-            n += 1
+    n = await ags.fire(db, name, payload, current_user.id)
     await db.commit()
     return {"queued": n}
 

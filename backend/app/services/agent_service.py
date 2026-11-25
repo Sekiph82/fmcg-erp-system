@@ -428,3 +428,18 @@ async def tick(db: AsyncSession, now: Optional[datetime] = None, limit: int = 5)
         await db.commit()
         done += 1
     return {"queued": queued, "processed": done}
+
+
+async def fire(db: AsyncSession, name: str, payload: dict, user_id=None) -> int:
+    """Queue every active agent whose trigger is this event (once per event id)."""
+    n = 0
+    key = str(payload.get("event_id") or uuid.uuid4().hex)[:60]
+    for a in (await db.execute(select(AIAgent).where(AIAgent.status == "ACTIVE", AIAgent.stopped.is_(False),
+                                                     AIAgent.current_version.is_not(None)))).scalars():
+        ver = (await db.execute(select(AIAgentVersion).where(AIAgentVersion.agent_id == a.id,
+                                                             AIAgentVersion.version == a.current_version))).scalar_one_or_none()
+        trig = (ver.definition.get("trigger") or {}) if ver else {}
+        if trig.get("type") == "event" and trig.get("event") == name:
+            await enqueue(db, a, "EVENT", f"event:{a.id}:{name}:{key}", user_id, payload)
+            n += 1
+    return n

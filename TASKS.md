@@ -2370,11 +2370,25 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable. Do not rebuild already working functionality; record evidence and bounded delta.
   - **Claude checkpoint:** update TASKS.md/Project Status immediately after this task, [v] pending milestone gate, tests NOT RUN; automatically continue next dependency-ready task. Never [x] before milestone PASS.
 
-- [ ] M45.S01.T015 — Custom objects and associations (additional gap, Source: HubSpot parity matrix 2026-11-25 (coordination/milestones/M43/HUBSPOT_PARITY_MATRIX_2026-11-25.md).)
+- [v] M45.S01.T015 — Custom objects and associations (additional gap, Source: HubSpot parity matrix 2026-11-25 (coordination/milestones/M43/HUBSPOT_PARITY_MATRIX_2026-11-25.md).)
   - **Scope:** Admin-defined object types (typed fields, required/unique, display name), records, many-to-many associations to customers, CRM records, products and orders with labels, list/detail UI, import/export, report-builder source and workflow triggers. Per-object permissions; no arbitrary SQL.
   - **Acceptance at milestone gate:** Define object, create records, associate them, report on them, delete with association cleanup; validation and RBAC; company isolation; migration.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable.
   - **Claude checkpoint:** [v] pending milestone gate, tests NOT RUN until gate; never [x] before milestone PASS.
+  Implemented 2026-11-26 [v] (tests NOT RUN as gate):
+  - Object types: admin-defined key, labels and typed fields (text, number, date, bool, select, email, phone) with required/unique flags and a display field (CRM → Custom objects).
+  - Records are JSONB, validated against the type. Unique values are enforced under a per-type advisory lock. No SQL is built from user input.
+  - Associations: many-to-many with labels to customers, CRM records, products, sales orders and other custom records. Each association is checked and idempotent, and they are listed per ERP record.
+  - Import/export: CSV. Import refuses each bad row with a reason.
+  - Reports: grouped count/sum per field.
+  - Workflow triggers: custom_object.<key>.created|updated events start AI agents with that event trigger.
+  - Access:
+    - per-type view/edit role lists on top of the module rights;
+    - company isolation through the user's company scopes;
+    - audited type and record changes.
+  - Deleting a record removes its associations.
+  - Bounded delta: the generic report builder has no per-user row-level context for JSONB sources, so custom-object reporting lives on the object screen and in the CSV export. Adding it as a report-builder catalog source is left to M46 (content/reporting).
+  - Tests: tests/test_m45_s01_t015_custom_objects.py.
 - [ ] M45.S01.T016 — Staff single sign-on (OIDC, then SAML) (additional gap, Source: HubSpot parity matrix 2026-11-25 (coordination/milestones/M43/HUBSPOT_PARITY_MATRIX_2026-11-25.md).)
   - **Scope:** Standards-based OIDC authorization-code + PKCE login for staff, IdP discovery, JIT user linking only to pre-provisioned accounts, role mapping, enforced-SSO switch per company, break-glass admin, logout. SAML 2.0 SP where a maintained library is available. Tested against a local OIDC test provider; no real IdP account.
   - **Acceptance at milestone gate:** Local IdP: login, state/nonce/PKCE replay refusal, unknown user refused, disabled user refused, enforced SSO blocks password login, break-glass works; audit.
