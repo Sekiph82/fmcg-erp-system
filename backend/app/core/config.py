@@ -123,6 +123,17 @@ class Settings(BaseSettings):
     # 2026-11-24: the GitHub Pages card repo is the source; point this at a self-hosted copy later if wanted.
     CARD_ASSETS_BASE_URL: str = "https://sekiph82.github.io/SekipHayit"
     PUBLIC_API_URL: str = "http://localhost:8000"  # used for one-click List-Unsubscribe-Post
+    # M43.S01.T008 voice provider (blank = no provider: tel: fallback); callbacks carry VOICE_CALLBACK_SECRET
+    VOICE_PROVIDER: str = ""
+    VOICE_AT_USERNAME: str = ""
+    VOICE_AT_API_KEY: str = ""
+    VOICE_AT_PHONE_NUMBER: str = ""
+    VOICE_AT_BASE_URL: str = "https://voice.africastalking.com"
+    VOICE_CALLBACK_SECRET: str = ""
+    # M43.S01.T009 transcription adapter: "" (off) | "local" (offline engine if installed) | "http" (configured endpoint)
+    TRANSCRIPTION_PROVIDER: str = ""
+    TRANSCRIPTION_HTTP_URL: str = ""
+    TRANSCRIPTION_HTTP_KEY: str = ""
 
     # ── Provider egress + delegated OAuth (M43.S00.T004) ─────────────────────
     # PROVIDER_EGRESS: live | local | off; blank = live in production, local (simulators only) elsewhere.

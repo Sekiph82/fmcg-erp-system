@@ -2,7 +2,7 @@ import uuid
 import enum
 from datetime import datetime
 from sqlalchemy import Column, String, Text, Boolean, Integer, ForeignKey, DateTime, Numeric
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
 
 from app.db.base import Base, TimestampMixin
@@ -46,6 +46,21 @@ class CallLog(Base, TimestampMixin):
     consent_note = Column(String(300), nullable=True)            # how consent was given, e.g. "agreed at call start"
     recording_expires_at = Column(DateTime(timezone=True), nullable=True)
     transcript = Column(Text, nullable=True)
+    # M43.S01.T008 provider lifecycle
+    provider = Column(String(30), nullable=True)
+    provider_session_id = Column(String(100), nullable=True)   # partial unique index in migration 0073
+    status = Column(String(15), nullable=True)            # QUEUED|RINGING|ANSWERED|COMPLETED|NO_ANSWER|BUSY|FAILED
+    ivr_menu_id = Column(UUID(as_uuid=True), ForeignKey("voice_ivr_menus.id", ondelete="SET NULL"), nullable=True)
+    ivr_step = Column(String(20), nullable=True)
+    dialer_session_id = Column(UUID(as_uuid=True), ForeignKey("voice_dialer_sessions.id", ondelete="SET NULL"), nullable=True)
+    cost_amount = Column(String(20), nullable=True)
+    cost_currency = Column(String(10), nullable=True)
+    # M43.S01.T009 transcription
+    transcript_segments = Column(JSONB, nullable=True)     # [{"start": s, "end": s, "speaker": "A", "text": "..."}]
+    transcript_language = Column(String(10), nullable=True)
+    transcription_status = Column(String(15), nullable=True)   # PENDING|DONE|FAILED|WITHDRAWN
+    transcription_error = Column(String(300), nullable=True)
+    transcription_attempts = Column(Integer, nullable=False, default=0, server_default="0")
 
     customer = relationship("Customer", foreign_keys=[customer_id])
     agent = relationship("User", foreign_keys=[agent_id])
@@ -65,3 +80,38 @@ class CallScript(Base, TimestampMixin):
     created_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
     created_by = relationship("User", foreign_keys=[created_by_id])
+
+
+class VoiceAgentProfile(Base):
+    """M43.S01.T008: the phone an agent answers on (click-to-call rings it first; IVR teams dial it)."""
+    __tablename__ = "voice_agent_profiles"
+
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    phone_number = Column(String(50), nullable=False)
+    available = Column(Boolean, nullable=False, default=True)
+
+
+class VoiceIvrMenu(Base, TimestampMixin):
+    """Inbound IVR menu on one provider number: greeting, digit options → team users / numbers."""
+    __tablename__ = "voice_ivr_menus"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name = Column(String(150), nullable=False)
+    phone_number = Column(String(50), nullable=False, unique=True)
+    greeting_text = Column(Text, nullable=False)
+    options = Column(JSONB, nullable=False, default=list)    # [{"digit": "1", "label": "Sales", "user_ids": [...], "phone_numbers": [...]}]
+    record_calls = Column(Boolean, nullable=False, default=False)
+    consent_text = Column(Text, nullable=True)
+    is_active = Column(Boolean, nullable=False, default=True)
+
+
+class DialerSession(Base, TimestampMixin):
+    """Power dialer: one agent works through a queue of numbers, one call at a time."""
+    __tablename__ = "voice_dialer_sessions"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    agent_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    name = Column(String(150), nullable=False)
+    status = Column(String(10), nullable=False, default="ACTIVE")    # ACTIVE | PAUSED | DONE
+    items = Column(JSONB, nullable=False, default=list)              # [{"phone", "crm_record_id", "customer_id", "label", "state", "call_id"}]
+    current_index = Column(Integer, nullable=True)

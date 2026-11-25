@@ -669,6 +669,7 @@ PUBLIC_ROUTES: frozenset[tuple[str, str]] = frozenset({
     ("/public/nps/{token}", "GET"),                       # one-time survey link: token is the credential (M40.S01.T001)
     ("/public/nps/{token}", "POST"),
     ("/integrations/oauth/callback", "GET"),
+    ("/calls/provider/callback", "POST"),                # voice provider callbacks: secret token in the URL (M43.S01.T008)
     ("/public/t/o/{token}.gif", "GET"),                  # e-mail open pixel, HMAC token (M43.S01.T006)
     ("/public/t/c/{token}", "GET"),                      # click → only links stored with that message
     ("/public/t/optout", "POST"),                        # recipient stops tracking (signed unsubscribe token)

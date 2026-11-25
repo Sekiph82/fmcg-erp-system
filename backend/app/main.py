@@ -95,6 +95,8 @@ async def lifespan(app: FastAPI):
     booking_task = asyncio.create_task(run_reminders(), name="booking-reminders")
     from app.services.quota_service import run_weekly_snapshots
     quota_task = asyncio.create_task(run_weekly_snapshots(), name="quota-snapshots")
+    from app.services.transcription_service import run_pending as run_transcriptions
+    transcription_task = asyncio.create_task(run_transcriptions(), name="call-transcription")
     from app.services.crm_chat_service import run_purge
     chat_purge_task = asyncio.create_task(run_purge(), name="chat-purge")
     from app.services.approval_inbox_service import run_approval_notifier
@@ -104,7 +106,7 @@ async def lifespan(app: FastAPI):
     try:
         yield
     finally:
-        for task in (dispatcher_task, mqtt_task, automation_task, credentials_task, cbk_task, mailbox_task, calendar_task, booking_task, quota_task, chat_purge_task, approval_task):
+        for task in (dispatcher_task, mqtt_task, automation_task, credentials_task, cbk_task, mailbox_task, calendar_task, booking_task, quota_task, transcription_task, chat_purge_task, approval_task):
             task.cancel()
             with suppress(asyncio.CancelledError):
                 await task

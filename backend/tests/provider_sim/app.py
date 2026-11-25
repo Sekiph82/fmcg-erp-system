@@ -36,6 +36,10 @@ def sim_settings(base: str) -> dict:
         "MICROSOFT_GRAPH_BASE_URL": f"{base}/graph/v1.0",
         "GOOGLE_GMAIL_API_URL": f"{base}/gmail/v1",
         "GOOGLE_CALENDAR_API_URL": f"{base}/calendar/v3",
+        "VOICE_PROVIDER": "africastalking", "VOICE_AT_USERNAME": "sandbox", "VOICE_AT_API_KEY": "sim-at-key",
+        "VOICE_AT_PHONE_NUMBER": "+254700000000", "VOICE_AT_BASE_URL": f"{base}/at-voice",
+        "VOICE_CALLBACK_SECRET": "sim-voice-secret",
+        "TRANSCRIPTION_PROVIDER": "http", "TRANSCRIPTION_HTTP_URL": f"{base}/transcribe", "TRANSCRIPTION_HTTP_KEY": "sim-tx",
     }
 
 
@@ -55,7 +59,9 @@ def create_app() -> FastAPI:
                   mail={"google": [], "microsoft": []}, sent={"google": [], "microsoft": []}, hid=1000,
                   history_floor=0, delta_gone=False, page_size=2,
                   # M43.S01.T003/T004 calendars: {"google"|"microsoft": {event_id: event}}, change counter
-                  cal={"google": {}, "microsoft": {}}, cal_ver=0, cal_token_gone=False)
+                  cal={"google": {}, "microsoft": {}}, cal_ver=0, cal_token_gone=False,
+                  # M43.S01.T008/T009 voice calls placed and transcription behaviour
+                  calls=[], tx_fail=0, tx_seen=0)
     reset()
 
     def fault(kind: str) -> Optional[JSONResponse]:
@@ -82,6 +88,8 @@ def create_app() -> FastAPI:
         for k in ("history_floor", "delta_gone", "page_size"):
             if k in body:
                 st[k] = body[k]
+        if "tx_fail" in body:
+            st["tx_fail"] = body["tx_fail"]
         if "cal_token_gone" in body:
             st["cal_token_gone"] = body["cal_token_gone"]
         for e in body.get("calendar") or []:     # {"provider", "id", "start", "end", "cancelled"?, "free"?}
@@ -425,6 +433,36 @@ def create_app() -> FastAPI:
         st["cal_ver"] += 1
         st["cal"]["microsoft"][eid].update(cancelled=True, ver=st["cal_ver"])
         return Response(status_code=204)
+
+    # -- Africa's Talking Voice: POST /call (form) with apiKey header --
+    @app.post("/at-voice/call")
+    async def at_call(request: Request):
+        if request.headers.get("apiKey") != "sim-at-key":
+            return JSONResponse({"entries": [], "errorMessage": "Invalid apiKey"}, 401)
+        form = dict(await request.form())
+        if not str(form.get("to", "")).startswith("+"):
+            return {"entries": [{"phoneNumber": form.get("to"), "status": "InvalidPhoneNumber"}], "errorMessage": "None"}
+        sid = f"ATVId_sim{len(st['calls']) + 1}"
+        st["calls"].append({**form, "sessionId": sid})
+        return {"entries": [{"phoneNumber": form["to"], "status": "Queued", "sessionId": sid}], "errorMessage": "None"}
+
+    # -- recording download + transcription endpoint (generic contract in transcription_service) --
+    @app.get("/recordings/{name}")
+    async def recording(name: str):
+        return Response(b"RIFF-synthetic-audio-" + name.encode(), media_type="audio/wav")
+
+    @app.post("/transcribe")
+    async def transcribe(request: Request, authorization: Optional[str] = Header(None)):
+        if authorization != "Bearer sim-tx":
+            return JSONResponse({"error": "unauthorized"}, 401)
+        st["tx_seen"] += 1
+        if st["tx_fail"] > 0:
+            st["tx_fail"] -= 1
+            return JSONResponse({"error": "busy"}, 503)
+        return {"language": "en", "segments": [
+            {"start": 0.0, "end": 3.2, "speaker": "A", "text": "Hello, this is POVU sales."},
+            {"start": 3.4, "end": 7.9, "speaker": "B", "text": "The price is too high for our shop."},
+            {"start": 8.1, "end": 12.0, "speaker": "A", "text": "I will send you a quote by Friday."}]}
 
     app.state.sim = st
     return app

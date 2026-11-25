@@ -54,6 +54,13 @@ PROVIDERS: dict[str, dict[str, Any]] = {
         ("from_email", "SMTP_FROM_EMAIL", "From address", False),
         ("enabled", "CRM_OUTBOUND_EMAIL_ENABLED", "Send e-mail (true/false)", False),
     ]},
+    "voice": {"label": "Voice calls (Africa's Talking Voice)", "fields": [
+        ("provider", "VOICE_PROVIDER", "Provider: africastalking", False),
+        ("username", "VOICE_AT_USERNAME", "Username", False),
+        ("api_key", "VOICE_AT_API_KEY", "API key", True),
+        ("phone_number", "VOICE_AT_PHONE_NUMBER", "Voice number (+254…)", False),
+        ("callback_secret", "VOICE_CALLBACK_SECRET", "Callback secret token", True),
+    ]},
     # M43.S00.T004: delegated OAuth apps (mail + calendar). Client registration with Google / Microsoft is a future
     # activation step (M47.S02.T002); until then these stay empty and the connectors report NOT_CONFIGURED.
     "google": {"label": "Google OAuth app (Gmail, Google Calendar)", "fields": [
@@ -66,7 +73,7 @@ PROVIDERS: dict[str, dict[str, Any]] = {
         ("tenant", "MICROSOFT_OAUTH_TENANT", "Tenant (common, organizations or a tenant ID)", False),
     ]},
 }
-REQUIRED = {"google": ("client_id", "client_secret"), "microsoft": ("client_id", "client_secret"), "mpesa": ("shortcode", "consumer_key", "consumer_secret", "passkey"), "sms": ("provider", "account", "api_key"),
+REQUIRED = {"voice": ("provider", "username", "api_key", "phone_number", "callback_secret"), "google": ("client_id", "client_secret"), "microsoft": ("client_id", "client_secret"), "mpesa": ("shortcode", "consumer_key", "consumer_secret", "passkey"), "sms": ("provider", "account", "api_key"),
             "whatsapp": ("phone_number_id", "access_token"), "email": ("host", "from_email")}
 
 

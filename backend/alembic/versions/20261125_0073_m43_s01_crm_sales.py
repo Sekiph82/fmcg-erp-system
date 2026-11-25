@@ -137,8 +137,63 @@ def upgrade() -> None:
         )""")
     op.execute("CREATE INDEX IF NOT EXISTS ix_sales_quota_snapshots_quota ON sales_quota_snapshots (quota_id, taken_at)")
 
+    # T008/T009: provider voice, IVR, power dialer, transcription
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS voice_agent_profiles (
+            user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+            phone_number VARCHAR(50) NOT NULL,
+            available BOOLEAN NOT NULL DEFAULT true
+        )""")
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS voice_ivr_menus (
+            id UUID PRIMARY KEY,
+            name VARCHAR(150) NOT NULL,
+            phone_number VARCHAR(50) NOT NULL UNIQUE,
+            greeting_text TEXT NOT NULL,
+            options JSONB NOT NULL DEFAULT '[]'::jsonb,
+            record_calls BOOLEAN NOT NULL DEFAULT false,
+            consent_text TEXT,
+            is_active BOOLEAN NOT NULL DEFAULT true,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+            CONSTRAINT ck_ivr_record_consent CHECK (NOT record_calls OR consent_text IS NOT NULL)
+        )""")
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS voice_dialer_sessions (
+            id UUID PRIMARY KEY,
+            agent_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            name VARCHAR(150) NOT NULL,
+            status VARCHAR(10) NOT NULL DEFAULT 'ACTIVE',
+            items JSONB NOT NULL DEFAULT '[]'::jsonb,
+            current_index INTEGER,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        )""")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_voice_dialer_agent ON voice_dialer_sessions (agent_id)")
+    for col, ddl in (("provider", "VARCHAR(30)"), ("provider_session_id", "VARCHAR(100)"), ("status", "VARCHAR(15)"),
+                     ("ivr_menu_id", "UUID REFERENCES voice_ivr_menus(id) ON DELETE SET NULL"), ("ivr_step", "VARCHAR(20)"),
+                     ("dialer_session_id", "UUID REFERENCES voice_dialer_sessions(id) ON DELETE SET NULL"),
+                     ("cost_amount", "VARCHAR(20)"), ("cost_currency", "VARCHAR(10)"),
+                     ("transcript_segments", "JSONB"), ("transcript_language", "VARCHAR(10)"),
+                     ("transcription_status", "VARCHAR(15)"), ("transcription_error", "VARCHAR(300)"),
+                     ("transcription_attempts", "INTEGER NOT NULL DEFAULT 0")):
+        op.execute(f"ALTER TABLE call_logs ADD COLUMN IF NOT EXISTS {col} {ddl}")
+    op.execute("CREATE UNIQUE INDEX IF NOT EXISTS uq_call_logs_provider_session ON call_logs (provider_session_id) "
+               "WHERE provider_session_id IS NOT NULL")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_call_logs_transcription ON call_logs (transcription_status) "
+               "WHERE transcription_status = 'PENDING'")
+
 
 def downgrade() -> None:
+    op.execute("DROP INDEX IF EXISTS ix_call_logs_transcription")
+    op.execute("DROP INDEX IF EXISTS uq_call_logs_provider_session")
+    for col in ("transcription_attempts", "transcription_error", "transcription_status", "transcript_language",
+                "transcript_segments", "cost_currency", "cost_amount", "dialer_session_id", "ivr_step", "ivr_menu_id",
+                "status", "provider_session_id", "provider"):
+        op.execute(f"ALTER TABLE call_logs DROP COLUMN IF EXISTS {col}")
+    op.execute("DROP TABLE IF EXISTS voice_dialer_sessions")
+    op.execute("DROP TABLE IF EXISTS voice_ivr_menus")
+    op.execute("DROP TABLE IF EXISTS voice_agent_profiles")
     op.execute("DROP TABLE IF EXISTS sales_quota_snapshots")
     op.execute("DROP TABLE IF EXISTS sales_quotas")
     op.execute("ALTER TABLE crm_records DROP COLUMN IF EXISTS forecast_category")
