@@ -538,6 +538,7 @@ ENDPOINT_ROUTE_DEFINITIONS: tuple[EndpointRouteDefinition, ...] = (
     EndpointRouteDefinition(key="web_analytics_public", route_prefix="/public/web", import_path="app.api.v1.endpoints.web_analytics_public", tags=('marketing',)),
     EndpointRouteDefinition(key="web_analytics", route_prefix="/web-analytics", import_path="app.api.v1.endpoints.web_analytics", tags=('marketing',)),
     EndpointRouteDefinition(key="audiences", route_prefix="/audiences", import_path="app.api.v1.endpoints.audiences", tags=('marketing',)),
+    EndpointRouteDefinition(key="ads", route_prefix="/ads", import_path="app.api.v1.endpoints.ads", tags=('marketing',)),
     EndpointRouteDefinition(key="booking_pages", route_prefix="/booking-pages", import_path="app.api.v1.endpoints.booking_pages", tags=('meetings',)),
     EndpointRouteDefinition(key="booking_public", route_prefix="/public/book", import_path="app.api.v1.endpoints.booking_public", tags=('meetings',)),
     EndpointRouteDefinition(key="oauth_connections", route_prefix="/integrations/oauth", import_path="app.api.v1.endpoints.oauth_connections", tags=('integrations',)),

@@ -128,6 +128,23 @@ class Settings(BaseSettings):
     # M44.S01.T009 first-party web analytics: events kept this many days, then purged
     WEB_ANALYTICS_RETENTION_DAYS: int = 395
     AUDIENCE_EXPORT_ENABLED: bool = False   # M44.S01.T010: hashed customer-list export off by default
+    # M44.S01.T002–T005 ad platforms: blank token = NOT_CONFIGURED. Live campaign publishing is never enabled by config.
+    ADS_MAX_DAILY_BUDGET: float = 50.0      # guardrail per draft, account currency
+    META_ADS_API_URL: str = "https://graph.facebook.com"
+    META_ADS_API_VERSION: str = "v21.0"
+    META_ADS_ACCESS_TOKEN: str = ""
+    GOOGLE_ADS_API_URL: str = "https://googleads.googleapis.com"
+    GOOGLE_ADS_API_VERSION: str = "v18"
+    GOOGLE_ADS_DEVELOPER_TOKEN: str = ""
+    GOOGLE_ADS_ACCESS_TOKEN: str = ""
+    GOOGLE_ADS_LOGIN_CUSTOMER_ID: str = ""
+    LINKEDIN_ADS_API_URL: str = "https://api.linkedin.com"
+    LINKEDIN_ADS_VERSION: str = "202410"     # YYYYMM, sent as LinkedIn-Version
+    LINKEDIN_ADS_ACCESS_TOKEN: str = ""
+    LINKEDIN_ADS_ACCESS_TIER: str = "development"   # development | standard
+    TIKTOK_ADS_API_URL: str = "https://business-api.tiktok.com"
+    TIKTOK_ADS_ACCESS_TOKEN: str = ""
+    TIKTOK_ADS_APP_SECRET: str = ""
     # M42 business cards: shared POVU brand content (cover video, logo, videos, gallery, catalogue). Owner decision
     # 2026-11-24: the GitHub Pages card repo is the source; point this at a self-hosted copy later if wanted.
     CARD_ASSETS_BASE_URL: str = "https://sekiph82.github.io/SekipHayit"

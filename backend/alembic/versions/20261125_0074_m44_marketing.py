@@ -84,8 +84,33 @@ def upgrade() -> None:
             customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
             email VARCHAR(254) NOT NULL, added_at TIMESTAMPTZ NOT NULL, PRIMARY KEY (audience_id, customer_id))""")
 
+    # T002–T005: ad platforms (reporting, drafts; no live writes)
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS ads_accounts (
+            id UUID PRIMARY KEY, provider VARCHAR(10) NOT NULL, external_id VARCHAR(40) NOT NULL, name VARCHAR(200) NOT NULL,
+            currency VARCHAR(3) NOT NULL, time_zone VARCHAR(64), status VARCHAR(15) NOT NULL DEFAULT 'ACTIVE',
+            last_sync_at TIMESTAMPTZ, last_error VARCHAR(500), created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+            CONSTRAINT uq_ads_account_provider_ext UNIQUE (provider, external_id))""")
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS ads_campaign_days (
+            id UUID PRIMARY KEY, account_id UUID NOT NULL REFERENCES ads_accounts(id) ON DELETE CASCADE,
+            campaign_id VARCHAR(40) NOT NULL, campaign_name VARCHAR(300) NOT NULL, day DATE NOT NULL,
+            impressions BIGINT NOT NULL DEFAULT 0, clicks BIGINT NOT NULL DEFAULT 0, spend NUMERIC(16,4) NOT NULL DEFAULT 0,
+            conversions NUMERIC(14,2) NOT NULL DEFAULT 0,
+            CONSTRAINT uq_ads_campaign_day UNIQUE (account_id, campaign_id, day))""")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_ads_campaign_days_account_id ON ads_campaign_days (account_id)")
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS ads_drafts (
+            id UUID PRIMARY KEY, account_id UUID NOT NULL REFERENCES ads_accounts(id) ON DELETE CASCADE,
+            idempotency_key VARCHAR(64) NOT NULL UNIQUE, name VARCHAR(200) NOT NULL, objective VARCHAR(40) NOT NULL,
+            daily_budget NUMERIC(14,2) NOT NULL, start_date DATE, end_date DATE, status VARCHAR(10) NOT NULL DEFAULT 'DRAFT',
+            requested_by VARCHAR(100), approved_by VARCHAR(100), validation JSON, created_by VARCHAR(100) NOT NULL,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now())""")
+
 
 def downgrade() -> None:
+    for t in ("ads_drafts", "ads_campaign_days", "ads_accounts"):
+        op.execute(f"DROP TABLE IF EXISTS {t}")
     for t in ("mkt_audience_members", "mkt_audiences"):
         op.execute(f"DROP TABLE IF EXISTS {t}")
     for t in ("web_consents", "web_identities", "web_events"):

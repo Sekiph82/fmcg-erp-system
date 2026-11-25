@@ -3,7 +3,7 @@ import uuid
 import enum
 from sqlalchemy import Index, func, text  # noqa: E402
 from sqlalchemy import (
-    Column, String, Integer, Numeric, Boolean, Text, Date, DateTime,
+    Column, String, Integer, BigInteger, Numeric, Boolean, Text, Date, DateTime,
     ForeignKey, Enum, JSON, UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import UUID
@@ -1278,3 +1278,58 @@ class MarketingAudienceMember(Base):
     customer_id = Column(UUID(as_uuid=True), ForeignKey("customers.id", ondelete="CASCADE"), primary_key=True)
     email       = Column(String(254), nullable=False)
     added_at    = Column(DateTime(timezone=True), nullable=False)
+
+
+
+class AdAccount(Base):
+    """M44.S01.T002–T005 an ad account on Meta / Google / LinkedIn / TikTok (reporting; no live writes)."""
+    __tablename__ = "ads_accounts"
+    __table_args__ = (UniqueConstraint("provider", "external_id", name="uq_ads_account_provider_ext"),)
+
+    id             = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    provider       = Column(String(10), nullable=False)       # meta | google | linkedin | tiktok
+    external_id    = Column(String(40), nullable=False)
+    name           = Column(String(200), nullable=False)
+    currency       = Column(String(3), nullable=False)
+    time_zone      = Column(String(64), nullable=True)
+    status         = Column(String(15), nullable=False, default="ACTIVE")   # ACTIVE | AUTH_FAILED | NO_ACCESS
+    last_sync_at   = Column(DateTime(timezone=True), nullable=True)
+    last_error     = Column(String(500), nullable=True)
+    created_at     = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+
+class AdCampaignDay(Base):
+    """Daily campaign metrics from a platform report; re-syncing a day replaces it (idempotent)."""
+    __tablename__ = "ads_campaign_days"
+    __table_args__ = (UniqueConstraint("account_id", "campaign_id", "day", name="uq_ads_campaign_day"),)
+
+    id            = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    account_id    = Column(UUID(as_uuid=True), ForeignKey("ads_accounts.id", ondelete="CASCADE"), nullable=False, index=True)
+    campaign_id   = Column(String(40), nullable=False)
+    campaign_name = Column(String(300), nullable=False)
+    day           = Column(Date, nullable=False)
+    impressions   = Column(BigInteger, nullable=False, default=0)
+    clicks        = Column(BigInteger, nullable=False, default=0)
+    spend         = Column(Numeric(16, 4), nullable=False, default=0)    # account currency
+    conversions   = Column(Numeric(14, 2), nullable=False, default=0)
+
+
+class AdDraft(Base):
+    """A campaign draft prepared in the ERP: guardrail-checked, approved by a second editor, validated (validate-only
+    on platforms that offer it). Publishing is refused until the owner activates ad accounts."""
+    __tablename__ = "ads_drafts"
+
+    id              = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    account_id      = Column(UUID(as_uuid=True), ForeignKey("ads_accounts.id", ondelete="CASCADE"), nullable=False)
+    idempotency_key = Column(String(64), nullable=False, unique=True)
+    name            = Column(String(200), nullable=False)
+    objective       = Column(String(40), nullable=False)
+    daily_budget    = Column(Numeric(14, 2), nullable=False)       # account currency
+    start_date      = Column(Date, nullable=True)
+    end_date        = Column(Date, nullable=True)
+    status          = Column(String(10), nullable=False, default="DRAFT")   # DRAFT|PENDING|APPROVED|REJECTED
+    requested_by    = Column(String(100), nullable=True)
+    approved_by     = Column(String(100), nullable=True)
+    validation      = Column(JSON, nullable=True)
+    created_by      = Column(String(100), nullable=False)
+    created_at      = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
