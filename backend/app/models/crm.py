@@ -173,6 +173,7 @@ class CRMPipelineStage(Base, TimestampMixin):
     active_flag           = Column(Boolean, default=True)
     color_code            = Column(String(20))
     notes                 = Column(Text)
+    required_fields       = Column(JSON, nullable=True)   # M43.S01.T016: fields needed to ENTER this stage
     pipeline_id           = Column(UUID(as_uuid=True), ForeignKey("crm_pipelines.id", ondelete="RESTRICT"), nullable=True, index=True)
 
     records = relationship("CRMRecord", back_populates="stage", foreign_keys="CRMRecord.stage_id")
@@ -1018,3 +1019,53 @@ class CRMLifecycleHistory(Base):
     reason        = Column(String(300), nullable=True)
     changed_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     changed_at    = Column(DateTime(timezone=True), nullable=False)
+
+
+# ── M43.S01.T016 teams, tags, saved views ─────────────────────────────────────
+
+class CRMTeam(Base, TimestampMixin):
+    __tablename__ = "crm_teams"
+
+    id              = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    code            = Column(String(100), nullable=False, unique=True)    # = sales_team_id stored on records/orders
+    name            = Column(String(150), nullable=False)
+    parent_id       = Column(UUID(as_uuid=True), ForeignKey("crm_teams.id", ondelete="SET NULL"), nullable=True)
+    manager_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    company_id      = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="SET NULL"), nullable=True)
+    active_flag     = Column(Boolean, nullable=False, default=True)
+
+
+class CRMTeamMember(Base):
+    __tablename__ = "crm_team_members"
+
+    team_id = Column(UUID(as_uuid=True), ForeignKey("crm_teams.id", ondelete="CASCADE"), primary_key=True)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    role    = Column(String(10), nullable=False, default="member")    # member | manager
+
+
+class CRMTag(Base):
+    __tablename__ = "crm_tags"
+
+    id    = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name  = Column(String(60), nullable=False, unique=True)
+    color = Column(String(20), nullable=True)
+
+
+class CRMRecordTag(Base):
+    __tablename__ = "crm_record_tags"
+
+    crm_record_id = Column(UUID(as_uuid=True), ForeignKey("crm_records.id", ondelete="CASCADE"), primary_key=True)
+    tag_id        = Column(UUID(as_uuid=True), ForeignKey("crm_tags.id", ondelete="CASCADE"), primary_key=True)
+
+
+class CRMSavedView(Base, TimestampMixin):
+    __tablename__ = "crm_saved_views"
+
+    id            = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name          = Column(String(120), nullable=False)
+    owner_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    team_id       = Column(UUID(as_uuid=True), ForeignKey("crm_teams.id", ondelete="CASCADE"), nullable=True)
+    view_type     = Column(String(10), nullable=False, default="list")   # list | board | calendar
+    filters       = Column(JSON, nullable=False, default=dict)
+    columns       = Column(JSON, nullable=False, default=list)
+    calendar_field = Column(String(30), nullable=True)                    # expected_close_date | next_action_date

@@ -357,8 +357,70 @@ def upgrade() -> None:
         INSERT INTO crm_lifecycle_history (id, contact_id, from_stage, to_stage, source, changed_at)
         SELECT gen_random_uuid(), id, NULL, lifecycle_stage, 'migration', now() FROM crm_contacts WHERE lifecycle_stage IS NOT NULL""")
 
+    # T016: teams (from every existing sales_team_id value), tags, required fields per stage, saved views
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS crm_teams (
+            id UUID PRIMARY KEY,
+            code VARCHAR(100) NOT NULL UNIQUE,
+            name VARCHAR(150) NOT NULL,
+            parent_id UUID REFERENCES crm_teams(id) ON DELETE SET NULL,
+            manager_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+            company_id UUID REFERENCES companies(id) ON DELETE SET NULL,
+            active_flag BOOLEAN NOT NULL DEFAULT true,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+            CONSTRAINT ck_team_not_own_parent CHECK (parent_id IS NULL OR parent_id <> id)
+        )""")
+    op.execute("""
+        INSERT INTO crm_teams (id, code, name, created_at, updated_at)
+        SELECT gen_random_uuid(), v, v, now(), now() FROM (
+            SELECT DISTINCT trim(sales_team_id) AS v FROM crm_records WHERE NULLIF(trim(sales_team_id), '') IS NOT NULL
+            UNION SELECT DISTINCT trim(sales_team_id) FROM sales_orders WHERE NULLIF(trim(sales_team_id), '') IS NOT NULL
+        ) x
+        ON CONFLICT (code) DO NOTHING""")
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS crm_team_members (
+            team_id UUID NOT NULL REFERENCES crm_teams(id) ON DELETE CASCADE,
+            user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            role VARCHAR(10) NOT NULL DEFAULT 'member' CHECK (role IN ('member', 'manager')),
+            PRIMARY KEY (team_id, user_id)
+        )""")
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS crm_tags (
+            id UUID PRIMARY KEY,
+            name VARCHAR(60) NOT NULL UNIQUE,
+            color VARCHAR(20)
+        )""")
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS crm_record_tags (
+            crm_record_id UUID NOT NULL REFERENCES crm_records(id) ON DELETE CASCADE,
+            tag_id UUID NOT NULL REFERENCES crm_tags(id) ON DELETE CASCADE,
+            PRIMARY KEY (crm_record_id, tag_id)
+        )""")
+    op.execute("ALTER TABLE crm_pipeline_stages ADD COLUMN IF NOT EXISTS required_fields JSON")
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS crm_saved_views (
+            id UUID PRIMARY KEY,
+            name VARCHAR(120) NOT NULL,
+            owner_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            team_id UUID REFERENCES crm_teams(id) ON DELETE CASCADE,
+            view_type VARCHAR(10) NOT NULL DEFAULT 'list' CHECK (view_type IN ('list', 'board', 'calendar')),
+            filters JSON NOT NULL DEFAULT '{}',
+            columns JSON NOT NULL DEFAULT '[]',
+            calendar_field VARCHAR(30),
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        )""")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_crm_saved_views_owner ON crm_saved_views (owner_user_id)")
+
 
 def downgrade() -> None:
+    op.execute("DROP TABLE IF EXISTS crm_saved_views")
+    op.execute("ALTER TABLE crm_pipeline_stages DROP COLUMN IF EXISTS required_fields")
+    op.execute("DROP TABLE IF EXISTS crm_record_tags")
+    op.execute("DROP TABLE IF EXISTS crm_tags")
+    op.execute("DROP TABLE IF EXISTS crm_team_members")
+    op.execute("DROP TABLE IF EXISTS crm_teams")
     op.execute("ALTER TABLE crm_account_contacts DROP COLUMN IF EXISTS contact_id")
     op.execute("DROP TABLE IF EXISTS crm_lifecycle_history")
     op.execute("DROP TABLE IF EXISTS crm_contact_associations")

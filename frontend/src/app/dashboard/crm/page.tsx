@@ -164,6 +164,7 @@ const CRMEngagementPage  = dynamic(() => import("@/app/dashboard/crm/engagement/
 const CRMQuotasPage      = dynamic(() => import("@/app/dashboard/crm/quotas/page"),      { ssr: false });
 const CRMPlaybooksPage   = dynamic(() => import("@/app/dashboard/crm/playbooks/page"),   { ssr: false });
 const CRMContactsPage    = dynamic(() => import("@/app/dashboard/crm/contacts/page"),    { ssr: false });
+const CRMViewsPage       = dynamic(() => import("@/app/dashboard/crm/views/page"),       { ssr: false });
 const CRMInboxPage       = dynamic(() => import("@/app/dashboard/crm/inbox/page"),       { ssr: false });
 const CRMLandingPages = dynamic(() => import("@/app/dashboard/crm/landing/page"), { ssr: false });
 const CRMInsights = dynamic(() => import("@/app/dashboard/crm/insights/page"), { ssr: false });
@@ -189,6 +190,7 @@ export default function CRMPage() {
     { key: "playbooks",   label: "Playbooks",   permission: "crm.view", content: <CRMPlaybooksPage /> },
     { key: "territory",   label: "Territory",   permission: "crm.view", content: <CRMTerritoryPage /> },
     { key: "stages",      label: "Stages",      permission: "crm.view", content: <CRMStagesPage /> },
+    { key: "views",       label: "Teams & views", permission: "crm.view", content: <CRMViewsPage /> },
     { key: "win-loss",    label: "Win / Loss",  permission: "crm.view", content: <CRMWinLossPage /> },
     { key: "funnel",      label: "Funnel",      permission: "crm.view", content: <CRMFunnelPage /> },
     { key: "attribution", label: "Attribution", permission: "crm.view_all", content: <CRMAttributionPage /> },

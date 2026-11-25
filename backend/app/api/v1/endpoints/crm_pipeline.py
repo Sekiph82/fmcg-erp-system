@@ -77,13 +77,22 @@ async def list_stages(active_only: bool = False, pipeline_id: Optional[str] = No
     return await svc.get_stages(db, active_only=active_only, pipeline_id=pipeline_id)
 
 
+def _check_required(fields) -> None:
+    from app.services.crm_team_service import REQUIRABLE
+    bad = [f for f in (fields or []) if f not in REQUIRABLE]
+    if bad:
+        raise HTTPException(422, f"Fields that cannot be required: {', '.join(bad)}")
+
+
 @router.post("/stages", response_model=CRMStageRead, status_code=201)
 async def create_stage(data: CRMStageCreate, db: AsyncSession = Depends(get_db), _=Depends(require_any_permission(CRM_CONFIG))):
+    _check_required(data.required_fields)
     return await svc.create_stage(db, data)
 
 
 @router.patch("/stages/{stage_id}", response_model=CRMStageRead)
 async def update_stage(stage_id: str, data: CRMStageUpdate, db: AsyncSession = Depends(get_db), _=Depends(require_any_permission(CRM_CONFIG))):
+    _check_required(data.required_fields)
     result = await svc.update_stage(db, stage_id, data)
     if not result:
         raise HTTPException(404, "Stage not found")

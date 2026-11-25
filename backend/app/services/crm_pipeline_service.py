@@ -146,6 +146,7 @@ async def get_records(
     temperature: Optional[str] = None,
     skip: int = 0,
     limit: int = 100,
+    extra: Optional[dict] = None,
 ):
     q = select(CRMRecord).options(selectinload(CRMRecord.stage))
     if record_type:
@@ -158,6 +159,15 @@ async def get_records(
         q = q.where(CRMRecord.stage_id == stage_id)
     if temperature:
         q = q.where(CRMRecord.temperature == temperature)
+    for key, value in (extra or {}).items():          # M43.S01.T011/T016 saved-view filters (whitelisted)
+        if value in (None, ""):
+            continue
+        if key == "tag":
+            from app.models.crm import CRMRecordTag, CRMTag
+            q = q.where(CRMRecord.id.in_(select(CRMRecordTag.crm_record_id).join(CRMTag, CRMTag.id == CRMRecordTag.tag_id)
+                                         .where(CRMTag.name == value)))
+        elif key in ("pipeline_id", "sales_team_id", "forecast_category"):
+            q = q.where(getattr(CRMRecord, key) == value)
     q = q.order_by(CRMRecord.created_at.desc()).offset(skip).limit(limit)
     result = await db.execute(q)
     return result.scalars().all()
@@ -196,6 +206,8 @@ async def update_record(db: AsyncSession, record_id: str, data: CRMRecordUpdate)
     if "stage_id" in updates:
         from app.services.crm_stage_gate import check_stage_exit
         await check_stage_exit(db, record, updates["stage_id"])
+        from app.services.crm_team_service import check_stage_entry
+        await check_stage_entry(db, record, updates["stage_id"], updates)
         new_stage = await db.get(CRMPipelineStage, updates["stage_id"])
         updates["pipeline_id"] = new_stage.pipeline_id if new_stage else record.pipeline_id
     if "stage_id" in updates and not updates.get("probability_override") and not record.probability_override:
@@ -242,6 +254,8 @@ async def convert_to_opportunity(db: AsyncSession, record_id: str, data: CRMConv
     if data.stage_id:
         from app.services.crm_stage_gate import check_stage_exit
         await check_stage_exit(db, record, data.stage_id)
+        from app.services.crm_team_service import check_stage_entry
+        await check_stage_entry(db, record, data.stage_id, data.model_dump(exclude_none=True))
         record.stage_id = data.stage_id
         await sync_pipeline(db, record)
     if data.notes:

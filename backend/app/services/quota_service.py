@@ -40,14 +40,15 @@ def category(rec: CRMRecord) -> str:
     return "COMMIT" if p >= 90 else "BEST_CASE" if p >= 50 else "PIPELINE"
 
 
-def _order_scope(q: SalesQuota):
+def _order_scope(q: SalesQuota, teams: Optional[list] = None):
     return {"REP": cast(SalesOrder.created_by_id, String) == q.scope_ref,
-            "TEAM": SalesOrder.sales_team_id == q.scope_ref, "TERRITORY": SalesOrder.sales_region_id == q.scope_ref,
+            "TEAM": SalesOrder.sales_team_id.in_(teams or [q.scope_ref]), "TERRITORY": SalesOrder.sales_region_id == q.scope_ref,
             "COMPANY": cast(SalesOrder.company_id, String) == q.scope_ref}[q.scope_type]
 
 
-def _deal_scope(q: SalesQuota):
-    return {"REP": CRMRecord.assigned_rep_id == str(q.scope_ref), "TEAM": CRMRecord.sales_team_id == q.scope_ref,
+def _deal_scope(q: SalesQuota, teams: Optional[list] = None):
+    return {"REP": CRMRecord.assigned_rep_id == str(q.scope_ref),
+            "TEAM": CRMRecord.sales_team_id.in_(teams or [q.scope_ref]),
             "TERRITORY": CRMRecord.sales_region_id == q.scope_ref,
             "COMPANY": cast(CRMRecord.company_id, String) == q.scope_ref}[q.scope_type]
 
@@ -55,7 +56,11 @@ def _deal_scope(q: SalesQuota):
 async def attainment(db: AsyncSession, q: SalesQuota, assumptions: Optional[dict] = None) -> dict:
     a = {**DEFAULT_ASSUMPTIONS, **{k: float(v) for k, v in (assumptions or {}).items() if k in DEFAULT_ASSUMPTIONS}}
     net = SOLine.ordered_quantity * SOLine.unit_price * (1 - SOLine.discount_pct)
-    base = and_(_order_scope(q), SalesOrder.status.in_(CONFIRMED),
+    teams = None
+    if q.scope_type == "TEAM":   # M43.S01.T016: a team quota rolls up its sub-teams
+        from app.services.crm_team_service import descendant_codes
+        teams = await descendant_codes(db, q.scope_ref)
+    base = and_(_order_scope(q, teams), SalesOrder.status.in_(CONFIRMED),
                 SalesOrder.order_date >= q.period_start, SalesOrder.order_date <= q.period_end)
     rows = dict((await db.execute(select(SalesOrder.currency, func.coalesce(func.sum(net), 0))
                                   .join(SOLine, SOLine.so_id == SalesOrder.id).where(base)
@@ -63,7 +68,7 @@ async def attainment(db: AsyncSession, q: SalesQuota, assumptions: Optional[dict
     actual = Decimal(str(rows.pop(q.currency, 0) or 0))
     excluded_orders = {cur: float(v) for cur, v in rows.items()}
     deals = (await db.execute(select(CRMRecord).where(
-        _deal_scope(q), CRMRecord.status == CRMStatus.OPEN, CRMRecord.expected_close_date >= q.period_start,
+        _deal_scope(q, teams), CRMRecord.status == CRMStatus.OPEN, CRMRecord.expected_close_date >= q.period_start,
         CRMRecord.expected_close_date <= q.period_end))).scalars().all()
     cats = {c: Decimal("0") for c in CATEGORIES}
     weighted, excluded_deals = Decimal("0"), 0
