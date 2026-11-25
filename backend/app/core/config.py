@@ -153,6 +153,8 @@ class Settings(BaseSettings):
     LINKEDIN_SOCIAL_ACCESS_TOKEN: str = ""       # w_organization_social
     TIKTOK_SOCIAL_ACCESS_TOKEN: str = ""         # Content Posting API (video.publish)
     TIKTOK_SOCIAL_API_URL: str = "https://open.tiktokapis.com"
+    # M44.S01.T013 Slack incoming webhook for deal / ticket / approval notices (blank = not configured)
+    SLACK_WEBHOOK_URL: str = ""
     # M42 business cards: shared POVU brand content (cover video, logo, videos, gallery, catalogue). Owner decision
     # 2026-11-24: the GitHub Pages card repo is the source; point this at a self-hosted copy later if wanted.
     CARD_ASSETS_BASE_URL: str = "https://sekiph82.github.io/SekipHayit"

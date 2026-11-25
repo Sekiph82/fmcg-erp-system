@@ -107,11 +107,22 @@ def register_handlers(app: FastAPI) -> None:
                     "path": request.url.path,
                 },
             )
+        if (_constraint_name(exc, "sqlstate") or _constraint_name(exc, "pgcode")) == "23503":
+            # foreign_key_violation: an id in the request points at a record that does not exist (M44.S01.T014)
+            log.info("Rejected a reference to a missing record on %s (%s)", request.url.path, constraint)
+            return JSONResponse(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                content={
+                    "error": "validation_error",
+                    "detail": "A referenced record does not exist. Check the selected ids.",
+                    "path": request.url.path,
+                },
+            )
         return await unhandled_exception_handler(request, exc)
 
 
-def _constraint_name(exc: BaseException) -> str | None:
-    """Find the database constraint through SQLAlchemy and driver wrappers."""
+def _constraint_name(exc: BaseException, attr: str = "constraint_name") -> str | None:
+    """Find the database constraint (or another driver attribute, e.g. sqlstate) through SQLAlchemy and driver wrappers."""
     pending: list[BaseException] = [exc]
     seen: set[int] = set()
     while pending:
@@ -119,7 +130,7 @@ def _constraint_name(exc: BaseException) -> str | None:
         if id(current) in seen:
             continue
         seen.add(id(current))
-        name = getattr(current, "constraint_name", None)
+        name = getattr(current, attr, None)
         if name:
             return str(name)
         for attribute in ("orig", "__cause__", "__context__"):

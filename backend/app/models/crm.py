@@ -1400,3 +1400,59 @@ class SocialItem(Base):
     status      = Column(String(9), nullable=False, default="NEW")   # NEW | ASSIGNED | REPLIED | HIDDEN | DONE | DELETED
     assigned_to = Column(String(100), nullable=True)
     reply_draft = Column(Text, nullable=True)
+
+
+# ── M44.S01.T013 messaging channels ──────────────────────────────────────────────
+
+class CRMChannelMessage(Base):
+    """One message of a Messenger / Instagram DM / custom-channel thread. Threads show in the unified inbox as
+    channel + "<account>:<thread>"; external_id dedupes webhook replays and our own echoes."""
+    __tablename__ = "crm_channel_messages"
+    __table_args__ = (UniqueConstraint("channel", "external_id", name="uq_crm_channel_message_ext"),)
+
+    id          = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    channel     = Column(String(10), nullable=False)          # MESSENGER | INSTAGRAM | CUSTOM
+    account_id  = Column(String(64), nullable=False)          # page id / Instagram account id / custom channel key
+    thread_id   = Column(String(120), nullable=False)         # PSID / IGSID / the custom channel's thread id
+    external_id = Column(String(120), nullable=True)
+    direction   = Column(String(3), nullable=False)           # IN | OUT
+    sender      = Column(String(200), nullable=True)
+    body        = Column(Text, nullable=False)
+    status      = Column(String(9), nullable=False, default="RECEIVED")   # RECEIVED | SENT | QUEUED | DELIVERED | FAILED
+    error       = Column(String(500), nullable=True)
+    agent_id    = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at  = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+    __mapper_args__ = {"eager_defaults": True}
+
+
+Index("ix_crm_channel_messages_thread", CRMChannelMessage.channel, CRMChannelMessage.account_id, CRMChannelMessage.thread_id)
+
+
+class CustomChannel(Base):
+    """A channel the company connects itself (e.g. a partner app) through the custom channels API; the token is
+    shown once and stored as SHA-256."""
+    __tablename__ = "crm_custom_channels"
+
+    id          = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    key         = Column(String(40), nullable=False, unique=True)
+    name        = Column(String(120), nullable=False)
+    token_hash  = Column(String(64), nullable=False)
+    active      = Column(Boolean, nullable=False, default=True)
+    created_by  = Column(String(100), nullable=False)
+    created_at  = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+
+class SlackDelivery(Base):
+    """Each deal / ticket / approval notice goes to Slack once (unique kind + ref); failures retry a few times."""
+    __tablename__ = "crm_slack_deliveries"
+    __table_args__ = (UniqueConstraint("kind", "ref", name="uq_crm_slack_delivery"),)
+
+    id         = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    kind       = Column(String(10), nullable=False)    # DEAL | TICKET | APPROVAL
+    ref        = Column(String(200), nullable=False)
+    text       = Column(String(1000), nullable=False)
+    status     = Column(String(6), nullable=False, default="QUEUED")   # QUEUED | SENT | FAILED
+    attempts   = Column(Integer, nullable=False, default=0)
+    error      = Column(String(300), nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())

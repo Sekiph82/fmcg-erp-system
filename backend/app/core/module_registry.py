@@ -540,6 +540,8 @@ ENDPOINT_ROUTE_DEFINITIONS: tuple[EndpointRouteDefinition, ...] = (
     EndpointRouteDefinition(key="audiences", route_prefix="/audiences", import_path="app.api.v1.endpoints.audiences", tags=('marketing',)),
     EndpointRouteDefinition(key="ads", route_prefix="/ads", import_path="app.api.v1.endpoints.ads", tags=('marketing',)),
     EndpointRouteDefinition(key="social", route_prefix="/social", import_path="app.api.v1.endpoints.social", tags=('marketing',)),
+    EndpointRouteDefinition(key="crm_channels", route_prefix="/crm-channels", import_path="app.api.v1.endpoints.crm_channels", tags=('crm',)),
+    EndpointRouteDefinition(key="crm_channels_public", route_prefix="/public/channels", import_path="app.api.v1.endpoints.messaging_public", tags=('crm',)),
     EndpointRouteDefinition(key="social_webhook_public", route_prefix="/public/social/meta", import_path="app.api.v1.endpoints.social_webhook_public", tags=('marketing',)),
     EndpointRouteDefinition(key="booking_pages", route_prefix="/booking-pages", import_path="app.api.v1.endpoints.booking_pages", tags=('meetings',)),
     EndpointRouteDefinition(key="booking_public", route_prefix="/public/book", import_path="app.api.v1.endpoints.booking_public", tags=('meetings',)),
@@ -692,7 +694,9 @@ PUBLIC_ROUTES: frozenset[tuple[str, str]] = frozenset({
     ("/public/web/identify", "POST"),                    # visitor ↔ e-mail only with marketing consent
     ("/public/web/forget", "POST"),                      # visitor's own erase request
     ("/public/social/meta", "GET"),                      # Meta webhook verify (hub.verify_token) (M44.S01.T008)
-    ("/public/social/meta", "POST"),                     # X-Hub-Signature-256 with META_APP_SECRET; fail closed          # mail relay events: Mailgun HMAC / SendGrid ECDSA / generic HMAC (M44.S01.T011)
+    ("/public/social/meta", "POST"),                     # X-Hub-Signature-256 with META_APP_SECRET; fail closed; also Messenger/IG DMs (T013)
+    ("/public/channels/{key}/messages", "POST"),         # custom channels API: Bearer channel token (M44.S01.T013)
+    ("/public/channels/{key}/outbox", "GET"),
     ("/calls/provider/callback", "POST"),                # voice provider callbacks: secret token in the URL (M43.S01.T008)
     ("/public/t/o/{token}.gif", "GET"),                  # e-mail open pixel, HMAC token (M43.S01.T006)
     ("/public/t/c/{token}", "GET"),                      # click → only links stored with that message

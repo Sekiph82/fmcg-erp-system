@@ -1370,7 +1370,7 @@ class InboxPatch(BaseModel):
 
 @router.get("/inbox")
 async def inbox(view: Literal["all", "mine", "unassigned", "unread"] = "all",
-                channel: Optional[Literal["EMAIL", "WHATSAPP", "TICKET", "CHAT"]] = None,
+                channel: Optional[Literal["EMAIL", "WHATSAPP", "TICKET", "CHAT", "MESSENGER", "INSTAGRAM", "CUSTOM"]] = None,
                 status: Optional[Literal["OPEN", "PENDING", "CLOSED"]] = None,
                 limit: int = Query(100, ge=1, le=300),
                 db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):

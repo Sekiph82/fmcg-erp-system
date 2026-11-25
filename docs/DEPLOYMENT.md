@@ -185,6 +185,28 @@ alembic downgrade <revision_id>
 alembic history
 ```
 
+**Destructive downgrades: take a backup first.** Some downgrades drop tables and columns that hold business
+data; there is no way back except a restore.
+
+- `20261125_0073_m43_s01_crm_sales` (M43) drops all CRM sales data added in M43. This includes:
+  - teams, tags, saved views, contacts, pipelines and deal plans;
+  - playbooks, splits, handoffs, routing and stage-approval rules;
+  - quotas, booking pages and bookings;
+  - voice dialer sessions, IVR menus and call-log provider/transcript columns;
+  - e-mail tracking events.
+- `20261125_0074_m44_marketing` (M44) drops:
+  - e-mail designs, web analytics events, consents and identities;
+  - audiences, ad accounts, ad reporting and drafts;
+  - social channels, posts and listening items;
+  - messaging channel messages, custom channels and Slack deliveries;
+  - the A/B and approval columns on campaigns.
+
+Before `alembic downgrade` past either revision:
+1. Take a backup (see Backup and Restore below).
+2. Confirm that losing that data is intended.
+3. Run it in a maintenance window. A code rollback without the downgrade is usually enough, because the new
+   tables are simply unused by older code.
+
 ---
 
 ## Backup and Restore

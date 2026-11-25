@@ -256,6 +256,8 @@ async def add_process_time_header(request: Request, call_next):
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
 register_handlers(app)
+from app.core.log_redaction import install as _install_log_redaction  # noqa: E402
+_install_log_redaction()   # voice callback ?token= never reaches the access log (M44.S01.T014)
 
 
 _db_health_cache: dict = {"status": "unknown", "checked_at": 0.0}

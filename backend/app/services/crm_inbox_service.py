@@ -29,7 +29,7 @@ from app.models.sales import Customer
 from app.models.whatsapp import WAMessageDirection, WhatsAppMessage
 
 DEFAULT_REPLY_HOURS = 24  # reply due for an unanswered e-mail / WhatsApp message
-CHANNELS = ("EMAIL", "WHATSAPP", "TICKET", "CHAT")
+CHANNELS = ("EMAIL", "WHATSAPP", "TICKET", "CHAT", "MESSENGER", "INSTAGRAM", "CUSTOM")
 STATUSES = ("OPEN", "PENDING", "CLOSED")
 SYNC_LOCK = 3600_1003  # pg advisory lock key for sync()
 _CLOSED_TICKET = (TicketStatus.RESOLVED, TicketStatus.CLOSED)
@@ -147,6 +147,20 @@ async def sync(db: AsyncSession) -> int:
                          sla_due_at=None if closed else _sla(cin, cout, 1),  # visitors wait: 1 hour reply target
                          status="CLOSED" if closed else "OPEN", assignee_id=c.assignee_id, closed_at=c.closed_at))
 
+    # Messenger / Instagram DMs and custom channels (M44.S01.T013): one conversation per (account, thread).
+    from app.models.crm import CRMChannelMessage
+    cin_ = CRMChannelMessage.direction == "IN"
+    q = (select(CRMChannelMessage.channel, CRMChannelMessage.account_id, CRMChannelMessage.thread_id,
+                func.max(case((cin_, CRMChannelMessage.sender))),
+                func.max(case((cin_, CRMChannelMessage.created_at))), func.max(case((~cin_, CRMChannelMessage.created_at))))
+         .group_by(CRMChannelMessage.channel, CRMChannelMessage.account_id, CRMChannelMessage.thread_id))
+    labels = {"MESSENGER": "Messenger", "INSTAGRAM": "Instagram DM", "CUSTOM": "Channel"}
+    for ch, acct, tid, who, li, lo in (await db.execute(q)).all():
+        rows.append(dict(channel=ch, source_ref=f"{acct}:{tid}", subject=f"{labels[ch]}: {who or tid}"[:500],
+                         contact=(who or tid)[:255], customer_id=None, mailbox_owner_id=None,
+                         last_inbound_at=li, last_outbound_at=lo, last_message_at=max(x for x in (li, lo) if x),
+                         sla_due_at=_sla(li, lo, DEFAULT_REPLY_HOURS), status="OPEN", assignee_id=None, closed_at=None))
+
     # Thread/message links have no foreign key: keep a customer only if it exists (a stale or bogus link
     # must neither break the upsert for everyone nor drop the company filter to "visible to all").
     companies = await _customer_company(db, {r["customer_id"] for r in rows})
@@ -177,7 +191,7 @@ def visible_clause(user: Any):
         return true()
     channel = or_(
         and_(CRMConversation.channel == "EMAIL", CRMConversation.mailbox_owner_id == user.id),
-        and_(CRMConversation.channel.in_(("WHATSAPP", "CHAT")), true() if _any(user, "crm.view", "crm.view_all") else false()),
+        and_(CRMConversation.channel.in_(("WHATSAPP", "CHAT", "MESSENGER", "INSTAGRAM", "CUSTOM")), true() if _any(user, "crm.view", "crm.view_all") else false()),
         and_(CRMConversation.channel == "TICKET", true() if _any(user, "quality.view", "quality.view_all") else false()),
     )
     clause = or_(CRMConversation.assignee_id == user.id, channel)
@@ -200,6 +214,8 @@ def _link(c: CRMConversation) -> str:
         return f"/dashboard/crm/chats/{c.source_ref}"
     if c.channel == "TICKET":
         return "/dashboard/helpdesk"
+    if c.channel in ("MESSENGER", "INSTAGRAM", "CUSTOM"):
+        return f"/dashboard/crm/messages/{c.id}"
     if c.channel == "WHATSAPP":
         return "/dashboard/whatsapp"
     return "/dashboard/communication"

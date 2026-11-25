@@ -9,7 +9,7 @@ function errorText(e: unknown) {
   return typeof detail === "string" ? detail : "Request failed.";
 }
 
-const CHANNEL_LABEL: Record<string, string> = { EMAIL: "E-mail", WHATSAPP: "WhatsApp", TICKET: "Ticket", CHAT: "Website chat" };
+const CHANNEL_LABEL: Record<string, string> = { EMAIL: "E-mail", WHATSAPP: "WhatsApp", TICKET: "Ticket", CHAT: "Website chat", MESSENGER: "Messenger", INSTAGRAM: "Instagram DM", CUSTOM: "Custom channel" };
 const VIEWS = [["all", "All open"], ["mine", "Mine"], ["unassigned", "Unassigned"], ["unread", "Unread"]] as const;
 
 export default function CRMInboxPage() {

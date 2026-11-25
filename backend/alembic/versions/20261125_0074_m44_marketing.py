@@ -133,9 +133,29 @@ def upgrade() -> None:
             sentiment VARCHAR(8), topics JSON NOT NULL, evidence JSON NOT NULL, status VARCHAR(9) NOT NULL DEFAULT 'NEW',
             assigned_to VARCHAR(100), reply_draft TEXT,
             CONSTRAINT uq_social_item_network_ext UNIQUE (network, external_id))""")
+    # M44.S01.T013 messaging channels, custom channels API, Slack notices
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS crm_channel_messages (
+            id UUID PRIMARY KEY, channel VARCHAR(10) NOT NULL, account_id VARCHAR(64) NOT NULL,
+            thread_id VARCHAR(120) NOT NULL, external_id VARCHAR(120), direction VARCHAR(3) NOT NULL, sender VARCHAR(200),
+            body TEXT NOT NULL, status VARCHAR(9) NOT NULL DEFAULT 'RECEIVED', error VARCHAR(500),
+            agent_id UUID REFERENCES users(id) ON DELETE SET NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+            CONSTRAINT uq_crm_channel_message_ext UNIQUE (channel, external_id))""")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_crm_channel_messages_thread ON crm_channel_messages (channel, account_id, thread_id)")
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS crm_custom_channels (
+            id UUID PRIMARY KEY, key VARCHAR(40) NOT NULL UNIQUE, name VARCHAR(120) NOT NULL, token_hash VARCHAR(64) NOT NULL,
+            active BOOLEAN NOT NULL DEFAULT true, created_by VARCHAR(100) NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now())""")
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS crm_slack_deliveries (
+            id UUID PRIMARY KEY, kind VARCHAR(10) NOT NULL, ref VARCHAR(200) NOT NULL, text VARCHAR(1000) NOT NULL,
+            status VARCHAR(6) NOT NULL DEFAULT 'QUEUED', attempts INTEGER NOT NULL DEFAULT 0, error VARCHAR(300),
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now(), CONSTRAINT uq_crm_slack_delivery UNIQUE (kind, ref))""")
 
 
 def downgrade() -> None:
+    for t in ("crm_slack_deliveries", "crm_custom_channels", "crm_channel_messages"):
+        op.execute(f"DROP TABLE IF EXISTS {t}")
     for t in ("social_items", "social_posts", "social_channels"):
         op.execute(f"DROP TABLE IF EXISTS {t}")
     for t in ("ads_drafts", "ads_campaign_days", "ads_accounts"):

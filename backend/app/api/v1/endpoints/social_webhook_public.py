@@ -1,4 +1,4 @@
-"""Signed Meta webhooks for social listening (M44.S01.T008). Prefix /public/social/meta.
+"""Signed Meta webhooks for social listening (M44.S01.T008) and Messenger / Instagram DMs (T013). Prefix /public/social/meta.
 Fail closed: without META_APP_SECRET / META_WEBHOOK_VERIFY_TOKEN nothing is accepted."""
 from __future__ import annotations
 
@@ -35,6 +35,8 @@ async def receive(request: Request, db: AsyncSession = Depends(get_db)):
         payload = json.loads(raw)
     except ValueError:
         raise HTTPException(400, "Invalid JSON") from None
+    from app.services import messaging_service as ms
     res = await ss.ingest_meta(db, payload)
+    res["messages"] = (await ms.ingest_meta(db, payload))["stored"]   # Messenger / Instagram DMs (M44.S01.T013)
     await db.commit()
     return res

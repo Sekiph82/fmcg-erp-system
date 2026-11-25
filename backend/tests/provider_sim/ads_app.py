@@ -267,6 +267,30 @@ def create_ads_app() -> FastAPI:
         st["calls"].append({"provider": "tiktok", "json": body})
         return {"data": {"publish_id": "v_pub_url~1"}, "error": {"code": "ok", "message": ""}}
 
+    # ── M44.S01.T013 Send API (Messenger / Instagram via the page) and a Slack incoming-webhook stub ─────
+    @app.post("/meta/{ver}/{node}/messages")
+    async def send_message(ver: str, node: str, request: Request, authorization: Optional[str] = Header(None)):
+        err = page_gate(authorization)
+        if err:
+            return err
+        body = await request.json()
+        if body.get("messaging_type") != "RESPONSE" or not (body.get("recipient") or {}).get("id"):
+            return meta_err(100, 400, "Invalid parameter")
+        if len((body.get("message") or {}).get("text", "")) > 2000:
+            return meta_err(100, 400, "Message too long")
+        st["calls"].append({"provider": "messenger", "node": node, "json": body})
+        return {"recipient_id": body["recipient"]["id"], "message_id": f"m_sim_{len(st['calls'])}"}
+
+    @app.post("/slack/hook")
+    async def slack_hook(request: Request):
+        if fault("slack") == "down":
+            return Response("service_unavailable", status_code=503)
+        body = await request.json()
+        if not body.get("text"):
+            return Response("no_text", status_code=400)
+        st["calls"].append({"provider": "slack", "json": body})
+        return Response("ok", media_type="text/plain")
+
     return app
 
 

@@ -290,6 +290,9 @@ async def run_crm_automation(interval: float = 15.0) -> None:
             from app.services.social_service import publish_due   # M44.S01.T006 approved, due social posts
             async with AsyncSessionLocal() as db:
                 await publish_due(db)
+            from app.services.messaging_service import slack_tick   # M44.S01.T013 Slack notices
+            async with AsyncSessionLocal() as db:
+                await slack_tick(db)
         except asyncio.CancelledError:
             raise
         except Exception:

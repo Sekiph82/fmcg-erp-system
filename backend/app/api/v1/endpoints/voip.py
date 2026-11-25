@@ -448,6 +448,14 @@ async def _my_session(db, session_id, user) -> DialerSession:
 
 @router.post("/dialer", status_code=201)
 async def create_dialer(body: DialerIn, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    from app.models.crm import CRMRecord
+    from app.models.sales import Customer
+    # unknown ids would fail every later "next call" (calls reference them): refuse up front (M44.S01.T014)
+    for model, ids in ((CRMRecord, {i.crm_record_id for i in body.items if i.crm_record_id}),
+                       (Customer, {i.customer_id for i in body.items if i.customer_id})):
+        found = set((await db.execute(select(model.id).where(model.id.in_(ids)))).scalars()) if ids else set()
+        if ids - found:
+            raise HTTPException(422, f"Unknown {'CRM record' if model is CRMRecord else 'customer'} id: {sorted(map(str, ids - found))[0]}")
     seen, items = set(), []
     for it in body.items:
         phone = "".join(ch for ch in it.phone if ch.isdigit() or ch == "+")

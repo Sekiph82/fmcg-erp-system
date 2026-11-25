@@ -167,6 +167,7 @@ const CRMContactsPage    = dynamic(() => import("@/app/dashboard/crm/contacts/pa
 const CRMViewsPage       = dynamic(() => import("@/app/dashboard/crm/views/page"),       { ssr: false });
 const CRMWorkspacePage   = dynamic(() => import("@/app/dashboard/crm/workspace/page"),   { ssr: false });
 const CRMRoutingPage     = dynamic(() => import("@/app/dashboard/crm/routing/page"),     { ssr: false });
+const MsgChannelsPage    = dynamic(() => import("@/app/dashboard/crm/messaging-channels/page"), { ssr: false });
 const SocialPage         = dynamic(() => import("@/app/dashboard/crm/social/page"), { ssr: false });
 const AdsPage            = dynamic(() => import("@/app/dashboard/crm/ads/page"), { ssr: false });
 const AudiencesPage      = dynamic(() => import("@/app/dashboard/crm/audiences/page"), { ssr: false });
@@ -220,6 +221,7 @@ export default function CRMPage() {
     { key: "audiences", label: "Audiences", permission: "marketing.view", content: <AudiencesPage /> },
     { key: "ads", label: "Ads", permission: "marketing.view", content: <AdsPage /> },
     { key: "social", label: "Social", permission: "marketing.view", content: <SocialPage /> },
+    { key: "channels", label: "Messaging channels", permission: "crm.view", content: <MsgChannelsPage /> },
     { key: "loyalty",     label: "Loyalty",     permission: "crm.view", content: <LoyaltyPage /> },
     { key: "nps",         label: "NPS",         permission: "crm.view", content: <NPSPage /> },
     { key: "surveys",     label: "Surveys",     permission: "crm.view", content: <SurveysPage /> },
