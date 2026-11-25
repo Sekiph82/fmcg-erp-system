@@ -61,6 +61,9 @@ def validate(doc: dict) -> tuple[dict, list[str]]:
         if t not in BLOCK_TYPES or (depth and t in ("columns", "footer")):
             raise DesignError(f"Unknown or misplaced block: {t!r}")
         b: dict = {"type": t}
+        aud = block.get("audience") or {}
+        if aud:   # M44.S01.T012 smart content: show only to these lifecycle stages / customer channels
+            b["audience"] = {k: [str(x)[:20] for x in (aud.get(k) or [])][:10] for k in ("lifecycle", "channel") if aud.get(k)}
         if t in ("heading", "text", "footer"):
             b["text"] = str(block.get("text") or "")[:5000]
             if t == "heading":
@@ -150,7 +153,7 @@ def render_html(doc: dict, values: Optional[dict] = None, preheader: str = "") -
             return f'<p style="margin:24px 0 0;font-size:12px;line-height:1.5;color:#6B7280">{_inline(b["text"], values)}</p>'
         return ""
 
-    body = "".join(one(b) for b in doc["blocks"])
+    body = "".join(one(b) for b in doc["blocks"] if shows(b, values))
     pre = f'<div style="display:none;max-height:0;overflow:hidden">{html.escape(preheader)}</div>' if preheader else ""
     return ('<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
             '<style>@media (max-width:620px){.wrap{width:100%!important}.col{display:block!important;width:100%!important;'
@@ -181,5 +184,15 @@ def render_text(doc: dict, values: Optional[dict] = None) -> str:
             for x in b["left"] + b["right"]:
                 one(x)
     for b in doc["blocks"]:
-        one(b)
+        if shows(b, values):
+            one(b)
     return "\n\n".join(x for x in lines if x)
+
+
+def shows(block: dict, values: dict) -> bool:
+    """Smart content: a block with an audience shows only when the recipient matches (unknown → hidden)."""
+    aud = block.get("audience") or {}
+    for key in ("lifecycle", "channel"):
+        if aud.get(key) and str(values.get(key) or "").upper() not in {x.upper() for x in aud[key]}:
+            return False
+    return True

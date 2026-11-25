@@ -7,6 +7,7 @@ type Block = { type: string; [k: string]: unknown };
 interface Doc { theme: { brand_color: string; text_color: string; background: string; font: string }; blocks: Block[] }
 interface Design { id: string; family_id: string; version: number; name: string; preheader: string | null; document: Doc; status: string; warnings: string[] }
 
+const LIFECYCLE = ["SUBSCRIBER", "LEAD", "MQL", "SQL", "OPPORTUNITY", "CUSTOMER", "EVANGELIST"];  // smart content (M44.S01.T012)
 const NEW: Record<string, Block> = {
   heading: { type: "heading", text: "Hello {first_name|there}", level: 1 },
   text: { type: "text", text: "Write your message. **Bold** works." },
@@ -80,6 +81,11 @@ export default function EmailDesignerPage() {
             {(FIELDS[b.type] ?? []).map((k) => (k === "text" ?
               <textarea key={k} aria-label={k} className={input} rows={2} disabled={frozen} value={String(b[k] ?? "")} onChange={(e) => set(i, k, e.target.value)} /> :
               <input key={k} aria-label={k} className={input} placeholder={k} disabled={frozen} value={String(b[k] ?? "")} onChange={(e) => set(i, k, k === "height" ? +e.target.value : e.target.value)} />))}
+            {b.type !== "footer" && <label className="flex items-center gap-2 text-xs text-gray-600">Show only to
+              <select aria-label="Show block only to lifecycle stage" className="border rounded px-1 py-0.5" disabled={frozen}
+                value={((b.audience as { lifecycle?: string[] } | undefined)?.lifecycle ?? [])[0] ?? ""}
+                onChange={(e) => set(i, "audience", e.target.value ? { lifecycle: [e.target.value] } : undefined)}>
+                <option value="">everyone</option>{LIFECYCLE.map((s) => <option key={s} value={s}>{s.toLowerCase()}</option>)}</select></label>}
           </div>))}
         {!frozen && <select aria-label="Add block" className="border rounded px-2 py-1 text-xs" value="" onChange={(e) => { if (e.target.value) setDoc({ ...doc, blocks: [...doc.blocks, { ...NEW[e.target.value] }] }); }}>
           <option value="">+ Add block…</option>{Object.keys(NEW).map((t) => <option key={t}>{t}</option>)}</select>}

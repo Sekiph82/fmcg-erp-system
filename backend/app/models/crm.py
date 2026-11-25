@@ -539,6 +539,7 @@ class CRMOutboundMessage(Base):
     track_engagement    = Column(Boolean, nullable=False, default=False, server_default="false")  # M43.S01.T006 opt-in
     tracked_links       = Column(JSON, nullable=True)       # the only allowed click-redirect targets of this message
     body_html           = Column(Text, nullable=True)       # M44.S01.T001 designed e-mail (text part stays in body_text)
+    ab_variant          = Column(String(1), nullable=True)      # M44.S01.T012 A | B
 
 
 class CRMEmailEvent(Base):
@@ -613,6 +614,16 @@ class CRMEmailCampaign(Base, TimestampMixin):
     marketing_campaign_id = Column(UUID(as_uuid=True), ForeignKey("mkt_campaigns.id", ondelete="SET NULL"), nullable=True)
     track_engagement      = Column(Boolean, nullable=False, default=False, server_default="false")  # M43.S01.T006
     design_id             = Column(UUID(as_uuid=True), ForeignKey("mkt_email_designs.id", ondelete="RESTRICT"), nullable=True)  # M44.S01.T001
+    # M44.S01.T012 A/B test, send-time optimisation, approval
+    ab_split_pct          = Column(Integer, nullable=False, default=0, server_default="0")    # % of recipients getting B
+    variant_b_subject     = Column(String(300), nullable=True)
+    variant_b_body        = Column(Text, nullable=True)
+    variant_b_design_id   = Column(UUID(as_uuid=True), ForeignKey("mkt_email_designs.id", ondelete="RESTRICT"), nullable=True)
+    send_time_optimize    = Column(Boolean, nullable=False, default=False, server_default="false")
+    approval_status       = Column(String(10), nullable=False, default="NONE", server_default="NONE")  # NONE|PENDING|APPROVED|REJECTED
+    approval_requested_by = Column(String(100), nullable=True)
+    approved_by           = Column(String(100), nullable=True)
+    approved_at           = Column(DateTime(timezone=True), nullable=True)
     status                = Column(String(10), nullable=False, default="DRAFT")   # DRAFT|SCHEDULED|QUEUED|CANCELLED
     scheduled_at          = Column(DateTime(timezone=True), nullable=True)
     queued_at             = Column(DateTime(timezone=True), nullable=True)

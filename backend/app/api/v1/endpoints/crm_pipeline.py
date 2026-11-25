@@ -1209,6 +1209,11 @@ class EmailCampaignIn(BaseModel):
     marketing_campaign_id: Optional[str] = None
     track_engagement: bool = False
     design_id: Optional[str] = None      # M44.S01.T001 published e-mail design
+    ab_split_pct: int = Field(0, ge=0, le=50)            # M44.S01.T012: share of recipients getting variant B
+    variant_b_subject: Optional[str] = Field(None, max_length=300, pattern=r"^[^\r\n]+$")
+    variant_b_body: Optional[str] = Field(None, max_length=50000)
+    variant_b_design_id: Optional[str] = None
+    send_time_optimize: bool = False
 
 
 async def _published_design(db, design_id):
@@ -1228,7 +1233,9 @@ async def _campaign_out(db, c) -> dict:
             "company_id": str(c.company_id) if c.company_id else None, "status": c.status,
             "scheduled_at": c.scheduled_at.isoformat() if c.scheduled_at else None,
             "queued_at": c.queued_at.isoformat() if c.queued_at else None, "audience_size": c.audience_size,
-            "track_engagement": bool(c.track_engagement),
+            "track_engagement": bool(c.track_engagement), "ab_split_pct": c.ab_split_pct,
+            "send_time_optimize": bool(c.send_time_optimize), "approval_status": c.approval_status,
+            "design_id": str(c.design_id) if c.design_id else None,
             "stats": await campaigns.stats(db, c)}
 
 
@@ -1261,7 +1268,10 @@ async def create_email_campaign(body: EmailCampaignIn, db: AsyncSession = Depend
                          company_id=_uuid(body.company_id),
                          marketing_campaign_id=_uuid(body.marketing_campaign_id) if body.marketing_campaign_id else None,
                          status="DRAFT", created_by=current_user.username, track_engagement=body.track_engagement,
-                         design_id=await _published_design(db, body.design_id))
+                         design_id=await _published_design(db, body.design_id), ab_split_pct=body.ab_split_pct,
+                         variant_b_subject=body.variant_b_subject, variant_b_body=body.variant_b_body,
+                         variant_b_design_id=await _published_design(db, body.variant_b_design_id),
+                         send_time_optimize=body.send_time_optimize)
     db.add(c)
     await db.commit()
     return await _campaign_out(db, c)
@@ -1318,6 +1328,9 @@ async def schedule_email_campaign(campaign_id: str, at: Optional[str] = None, db
         raise HTTPException(404, "Campaign not found")
     if c.status not in ("DRAFT", "FAILED"):
         raise HTTPException(409, "Only draft or failed campaigns can be scheduled.")
+    from app.core.config import settings as _settings
+    if _settings.MARKETING_EMAIL_APPROVAL_REQUIRED and c.approval_status != "APPROVED":   # M44.S01.T012
+        raise HTTPException(409, "This campaign needs approval by a second editor before it is scheduled.")
     if (await campaigns.audience_preview(db, c))["addresses"] == 0:
         raise HTTPException(422, "The segment has no customers with an e-mail address for this company.")
     c.status, c.scheduled_at = "SCHEDULED", when
@@ -1631,3 +1644,43 @@ async def update_pipeline(pipeline_id: str, body: PipelineIn, db: AsyncSession =
     p.company_id = _uuid(body.company_id) if body.company_id else None
     await db.commit()
     return _pipe_out(p)
+
+
+
+# ── M44.S01.T012 campaign approval and A/B result ─────────────────────────────
+
+@router.post("/email-campaigns/{campaign_id}/approval/{action}")
+async def campaign_approval(campaign_id: str, action: str, db: AsyncSession = Depends(get_db),
+                            current_user=Depends(get_current_user)):
+    from datetime import datetime as _dt, timezone as _tz
+    from app.models.crm import CRMEmailCampaign
+    if not (current_user.is_superuser or has_any_permission(current_user, ("marketing.edit", "crm.edit_all"))):
+        raise HTTPException(403, "Marketing editors only.")
+    c = await db.get(CRMEmailCampaign, _uuid(campaign_id))
+    if c is None:
+        raise HTTPException(404, "Campaign not found")
+    if action == "request":
+        if c.status != "DRAFT":
+            raise HTTPException(409, "Only a draft can be sent for approval.")
+        c.approval_status, c.approval_requested_by = "PENDING", current_user.username
+    elif action in ("approve", "reject"):
+        if c.approval_status != "PENDING":
+            raise HTTPException(409, "Nothing waiting for approval.")
+        if c.approval_requested_by == current_user.username:
+            raise HTTPException(403, "A second editor must approve.")
+        c.approval_status = "APPROVED" if action == "approve" else "REJECTED"
+        c.approved_by, c.approved_at = current_user.username, _dt.now(_tz.utc)
+    else:
+        raise HTTPException(404, "Unknown action")
+    await db.commit()
+    return await _campaign_out(db, c)
+
+
+@router.get("/email-campaigns/{campaign_id}/ab-result", dependencies=[Depends(require_any_permission(CRM_BROAD_VIEW))])
+async def campaign_ab_result(campaign_id: str, db: AsyncSession = Depends(get_db)):
+    from app.models.crm import CRMEmailCampaign
+    from app.services import crm_campaign_service as campaigns
+    c = await db.get(CRMEmailCampaign, _uuid(campaign_id))
+    if c is None:
+        raise HTTPException(404, "Campaign not found")
+    return await campaigns.ab_result(db, c)

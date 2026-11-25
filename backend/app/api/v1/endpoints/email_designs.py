@@ -118,6 +118,32 @@ async def preview(body: DesignIn):
                         headers={"Content-Security-Policy": "default-src 'none'; img-src https: data:; style-src 'unsafe-inline'"})
 
 
+class SingleSendIn(BaseModel):
+    to_email: str = Field(min_length=3, max_length=254, pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+    subject: str = Field(min_length=1, max_length=300, pattern=r"^[^\r\n]+$")
+    values: dict[str, str] = Field(default_factory=dict)
+    track_engagement: bool = False
+
+
+@router.post("/{design_id}/send")
+async def single_send(design_id: uuid.UUID, body: SingleSendIn, db: AsyncSession = Depends(get_db),
+                      current_user=Depends(get_current_user)):
+    """M44.S01.T012 single-send API: one published design to one contact, as marketing mail — marketing consent,
+    suppression and the frequency cap apply exactly as for campaigns."""
+    _need_write(current_user)
+    from app.services import crm_outbound_service as outbound
+    d = await db.get(EmailDesign, design_id)
+    if d is None or d.status != "PUBLISHED":
+        raise HTTPException(422, "Only a published design can be sent.")
+    vals = {k: str(v)[:200] for k, v in body.values.items() if k in ("contact_name", "company_name", "first_name", "lifecycle", "channel")}
+    msg = await outbound.queue(db, to_email=body.to_email, subject=body.subject, body=eds.render_text(d.document, vals),
+                               body_html=eds.render_html(d.document, vals, d.preheader or ""), purpose="CAMPAIGN",
+                               dedupe_key=f"single:{d.id}:{uuid.uuid4()}", created_by=current_user.username,
+                               track=body.track_engagement)
+    await db.commit()
+    return {"id": str(msg.id), "status": msg.status, "reason": msg.status_reason}
+
+
 @router.post("/{design_id}/test-send")
 async def test_send(design_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
     """Queue the design to the signed-in user's own address through the normal outbox (consent rules apply)."""

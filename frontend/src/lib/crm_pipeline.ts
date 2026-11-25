@@ -456,7 +456,9 @@ export const crmApi = {
   getEmailCampaigns: () => r(ax.get<EmailCampaign[]>(`/crm/email-campaigns`)),
   getCampaignCompanies: () => r(ax.get<{ id: string; name: string }[]>(`/crm/email-campaigns/companies`)),
   getCampaignSegments: () => r(ax.get<{ id: string; name: string; members: number }[]>(`/crm/email-campaigns/segments`)),
-  createEmailCampaign: (data: { name: string; subject: string; body: string; segment_id: string; company_id: string; track_engagement?: boolean; design_id?: string }) => r(ax.post<EmailCampaign>(`/crm/email-campaigns`, data)),
+  createEmailCampaign: (data: { name: string; subject: string; body: string; segment_id: string; company_id: string; track_engagement?: boolean; design_id?: string; ab_split_pct?: number; variant_b_subject?: string; send_time_optimize?: boolean }) => r(ax.post<EmailCampaign>(`/crm/email-campaigns`, data)),
+  campaignApproval: (id: string, action: "request" | "approve" | "reject") => r(ax.post<EmailCampaign>(`/crm/email-campaigns/${id}/approval/${action}`)),
+  campaignAbResult: (id: string) => r(ax.get<{ verdict: string; p_value: number | null; rule: string; arms: Record<string, { sent: number; clicked: number; rate: number | null }> }>(`/crm/email-campaigns/${id}/ab-result`)),
   previewEmailCampaign: (id: string) => r(ax.get<{ customers: number; addresses: number; with_consent: number }>(`/crm/email-campaigns/${id}/preview`)),
   scheduleEmailCampaign: (id: string, at?: string) => r(ax.post<EmailCampaign>(`/crm/email-campaigns/${id}/schedule`, null, { params: { at } })),
   cancelEmailCampaign: (id: string) => r(ax.post<EmailCampaign>(`/crm/email-campaigns/${id}/cancel`)),
@@ -465,6 +467,7 @@ export const crmApi = {
 export interface EmailCampaign {
   id: string; name: string; subject: string; body: string; segment_id: string; company_id: string | null; status: string;
   scheduled_at: string | null; queued_at: string | null; audience_size: number | null;
+  ab_split_pct: number; send_time_optimize: boolean; approval_status: string;
   stats: { by_status: Record<string, number>; converted_customers: number; attribution: string };
 }
 

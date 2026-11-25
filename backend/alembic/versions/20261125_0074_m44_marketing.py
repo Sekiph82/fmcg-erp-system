@@ -44,8 +44,22 @@ def upgrade() -> None:
         )""")
     op.execute("CREATE INDEX IF NOT EXISTS ix_mail_feedback_email ON mail_feedback_events (email)")
 
+    # T012: A/B, send-time optimisation, approval
+    for col, ddl in (("ab_split_pct", "INTEGER NOT NULL DEFAULT 0 CHECK (ab_split_pct BETWEEN 0 AND 50)"),
+                     ("variant_b_subject", "VARCHAR(300)"), ("variant_b_body", "TEXT"),
+                     ("variant_b_design_id", "UUID REFERENCES mkt_email_designs(id) ON DELETE RESTRICT"),
+                     ("send_time_optimize", "BOOLEAN NOT NULL DEFAULT false"),
+                     ("approval_status", "VARCHAR(10) NOT NULL DEFAULT 'NONE'"), ("approval_requested_by", "VARCHAR(100)"),
+                     ("approved_by", "VARCHAR(100)"), ("approved_at", "TIMESTAMPTZ")):
+        op.execute(f"ALTER TABLE crm_email_campaigns ADD COLUMN IF NOT EXISTS {col} {ddl}")
+    op.execute("ALTER TABLE crm_outbound_messages ADD COLUMN IF NOT EXISTS ab_variant VARCHAR(1)")
+
 
 def downgrade() -> None:
+    op.execute("ALTER TABLE crm_outbound_messages DROP COLUMN IF EXISTS ab_variant")
+    for col in ("approved_at", "approved_by", "approval_requested_by", "approval_status", "send_time_optimize",
+                "variant_b_design_id", "variant_b_body", "variant_b_subject", "ab_split_pct"):
+        op.execute(f"ALTER TABLE crm_email_campaigns DROP COLUMN IF EXISTS {col}")
     op.execute("DROP TABLE IF EXISTS mail_feedback_events")
     op.execute("ALTER TABLE crm_outbound_messages DROP COLUMN IF EXISTS body_html")
     op.execute("ALTER TABLE crm_email_campaigns DROP COLUMN IF EXISTS design_id")

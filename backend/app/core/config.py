@@ -123,7 +123,8 @@ class Settings(BaseSettings):
     # M44.S01.T011 signed mail-event webhooks (blank = not configured: events refused)
     MAIL_EVENTS_MAILGUN_SIGNING_KEY: str = ""
     MAIL_EVENTS_SENDGRID_PUBLIC_KEY: str = ""        # base64 DER (as shown in the SendGrid settings)
-    MAIL_EVENTS_GENERIC_SECRET: str = ""          # M43.S01.T013 per-contact cap for CRM mail; 0 = off             # comma list; blank = any http(s) link written in the e-mail
+    MAIL_EVENTS_GENERIC_SECRET: str = ""
+    MARKETING_EMAIL_APPROVAL_REQUIRED: bool = False   # M44.S01.T012: campaigns need a second editor's approval          # M43.S01.T013 per-contact cap for CRM mail; 0 = off             # comma list; blank = any http(s) link written in the e-mail
     # M42 business cards: shared POVU brand content (cover video, logo, videos, gallery, catalogue). Owner decision
     # 2026-11-24: the GitHub Pages card repo is the source; point this at a self-hosted copy later if wanted.
     CARD_ASSETS_BASE_URL: str = "https://sekiph82.github.io/SekipHayit"

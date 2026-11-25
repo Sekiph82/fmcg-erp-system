@@ -88,28 +88,93 @@ async def expand_due(db: AsyncSession, now: Optional[datetime] = None) -> int:
             await db.commit()
 
 
+def variant_for(campaign: CRMEmailCampaign, email: str) -> str:
+    """Deterministic A/B split (same recipient, same variant on every retry)."""
+    if not campaign.ab_split_pct:
+        return "A"
+    import hashlib
+    h = int(hashlib.sha256(f"{campaign.id}:{email}".encode()).hexdigest()[:8], 16) % 100
+    return "B" if h < campaign.ab_split_pct else "A"
+
+
+async def _send_after(db: AsyncSession, campaign: CRMEmailCampaign, email: str, now: datetime) -> Optional[datetime]:
+    """Send-time optimisation: the recipient's usual opening hour within the next 24 h (first-party evidence only)."""
+    if not campaign.send_time_optimize:
+        return None
+    from zoneinfo import ZoneInfo
+    from app.services.crm_workspace_service import send_time
+    hint = await send_time(db, email)
+    if hint["suggested_hour"] is None:
+        return None
+    tz = ZoneInfo(hint["time_zone"])
+    local = now.astimezone(tz)
+    at = local.replace(hour=hint["suggested_hour"], minute=0, second=0, microsecond=0)
+    if at <= local:
+        at = at + timedelta(days=1)
+    return at.astimezone(timezone.utc)
+
+
 async def _expand_one(db: AsyncSession, campaign: CRMEmailCampaign, now: datetime) -> int:
+    from app.models.crm import CRMContact, EmailDesign
+    from app.services import email_design_service as eds
     seen = set()
     for customer in (await db.execute(_audience(campaign))).scalars().all():
         email = outbound.norm(customer.email)
         if email in seen:
             continue
         seen.add(email)
-        text, html_body = render(campaign.body, customer), None
-        if campaign.design_id:                        # M44.S01.T001 designed e-mail
-            from app.models.crm import EmailDesign
-            from app.services import email_design_service as eds
-            d = await db.get(EmailDesign, campaign.design_id)
-            vals = {"company_name": customer.name, "contact_name": getattr(customer, "contact_person", None) or customer.name}
+        variant = variant_for(campaign, email)                # M44.S01.T012 A/B
+        subject = campaign.variant_b_subject if variant == "B" and campaign.variant_b_subject else campaign.subject
+        body = campaign.variant_b_body if variant == "B" and campaign.variant_b_body else campaign.body
+        design_id = campaign.variant_b_design_id if variant == "B" and campaign.variant_b_design_id else campaign.design_id
+        text, html_body = render(body, customer), None
+        if design_id:                                         # M44.S01.T001 designed e-mail
+            d = await db.get(EmailDesign, design_id)
+            contact = (await db.execute(select(CRMContact).where(CRMContact.email == email))).scalars().first()
+            vals = {"company_name": customer.name, "contact_name": getattr(customer, "contact_person", None) or customer.name,
+                    "lifecycle": contact.lifecycle_stage if contact else None,
+                    "channel": getattr(getattr(customer, "channel", None), "value", getattr(customer, "channel", None))}
             vals["first_name"] = (vals["contact_name"] or "").split(" ")[0]
             text, html_body = eds.render_text(d.document, vals), eds.render_html(d.document, vals, d.preheader or "")
-        await outbound.queue(db, to_email=email, subject=render(campaign.subject, customer),
-                             body=text, body_html=html_body, purpose="CAMPAIGN",
-                             dedupe_key=f"camp:{campaign.id}:{email}", customer_id=customer.id,
-                             created_by=f"campaign:{campaign.name}"[:100],
-                             track=bool(campaign.track_engagement))
+        msg = await outbound.queue(db, to_email=email, subject=render(subject, customer),
+                                   body=text, body_html=html_body, purpose="CAMPAIGN",
+                                   dedupe_key=f"camp:{campaign.id}:{email}", customer_id=customer.id,
+                                   created_by=f"campaign:{campaign.name}"[:100],
+                                   track=bool(campaign.track_engagement),
+                                   send_after=await _send_after(db, campaign, email, now))
+        msg.ab_variant = variant if campaign.ab_split_pct else None
     campaign.status, campaign.queued_at, campaign.audience_size = "QUEUED", now, len(seen)
     return len(seen)
+
+
+async def ab_result(db: AsyncSession, campaign: CRMEmailCampaign, min_per_arm: int = 100) -> dict:
+    """Human click rate per variant; a winner only when both arms are large enough and a two-proportion z-test
+    gives p < 0.05. Otherwise 'no winner' — never a declared winner from noise."""
+    import math
+    from app.models.crm import CRMEmailEvent, CRMOutboundMessage
+    arms = {}
+    for v in ("A", "B"):
+        sent = (await db.execute(select(func.count()).select_from(CRMOutboundMessage).where(
+            CRMOutboundMessage.dedupe_key.like(f"camp:{campaign.id}:%"), CRMOutboundMessage.ab_variant == v,
+            CRMOutboundMessage.status == "SENT"))).scalar_one()
+        clicked = (await db.execute(select(func.count(func.distinct(CRMEmailEvent.message_id))).join(
+            CRMOutboundMessage, CRMOutboundMessage.id == CRMEmailEvent.message_id).where(
+            CRMOutboundMessage.dedupe_key.like(f"camp:{campaign.id}:%"), CRMOutboundMessage.ab_variant == v,
+            CRMEmailEvent.kind == "CLICK", CRMEmailEvent.is_machine.is_(False)))).scalar_one()
+        arms[v] = {"sent": sent, "clicked": clicked, "rate": round(clicked / sent, 4) if sent else None}
+    a, b = arms["A"], arms["B"]
+    result = {"arms": arms, "winner": None, "p_value": None, "rule": f"two-proportion z-test, p<0.05, ≥{min_per_arm} per arm"}
+    if a["sent"] >= min_per_arm and b["sent"] >= min_per_arm:
+        p = (a["clicked"] + b["clicked"]) / (a["sent"] + b["sent"])
+        se = math.sqrt(p * (1 - p) * (1 / a["sent"] + 1 / b["sent"])) if 0 < p < 1 else 0
+        if se:
+            z = (b["rate"] - a["rate"]) / se
+            pv = math.erfc(abs(z) / math.sqrt(2))
+            result["p_value"] = round(pv, 4)
+            if pv < 0.05:
+                result["winner"] = "B" if z > 0 else "A"
+    result["verdict"] = result["winner"] or "no winner (not enough evidence)"
+    return result
 
 
 async def stats(db: AsyncSession, campaign: CRMEmailCampaign) -> dict:

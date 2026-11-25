@@ -14,7 +14,7 @@ function errorText(e: unknown) {
   return "Request failed.";
 }
 
-const EMPTY = { name: "", subject: "", body: "", segment_id: "", company_id: "", track_engagement: false, design_id: "" };
+const EMPTY = { name: "", subject: "", body: "", segment_id: "", company_id: "", track_engagement: false, design_id: "", ab_split_pct: 0, variant_b_subject: "", send_time_optimize: false };
 
 export default function CRMEmailCampaignsPage() {
   const [items, setItems] = useState<EmailCampaign[]>([]);
@@ -63,7 +63,7 @@ export default function CRMEmailCampaignsPage() {
       {info && !error && <p role="status" className="rounded-lg p-3 text-sm bg-emerald-50 border border-emerald-200 text-emerald-800">{info}</p>}
 
       {canAuthor && <form aria-label="New campaign" className="bg-white rounded-xl border shadow-sm p-4 grid md:grid-cols-2 gap-2"
-        onSubmit={(e) => { e.preventDefault(); act(() => crmApi.createEmailCampaign({ ...draft, design_id: draft.design_id || undefined }), "Draft campaign created."); setDraft({ ...EMPTY, company_id: draft.company_id }); }}>
+        onSubmit={(e) => { e.preventDefault(); act(() => crmApi.createEmailCampaign({ ...draft, design_id: draft.design_id || undefined, variant_b_subject: draft.variant_b_subject || undefined }), "Draft campaign created."); setDraft({ ...EMPTY, company_id: draft.company_id }); }}>
         <h2 className="font-semibold text-gray-800 md:col-span-2">New campaign</h2>
         <div className="md:col-span-2 flex flex-wrap gap-2 items-center">
           <select aria-label="Start from template" value="" className={input}
@@ -94,6 +94,14 @@ export default function CRMEmailCampaignsPage() {
         <select aria-label="E-mail design" className={`${input} md:col-span-2`} value={draft.design_id} onChange={(e) => setDraft({ ...draft, design_id: e.target.value })}>
           <option value="">Plain text e-mail (no design)</option>{designs.map((d) => <option key={d.id} value={d.id}>{d.name} v{d.version}</option>)}</select>
         <div className="md:col-span-2"><label className="flex items-center gap-2 text-xs text-gray-600"><input type="checkbox" checked={draft.track_engagement} onChange={(e) => setDraft({ ...draft, track_engagement: e.target.checked })} /> Track opens and clicks (only if tracking is switched on for the company; recipients can opt out; opens are an indicator, not proof of reading)</label></div>
+        <fieldset className="md:col-span-2 border rounded-lg p-2 grid md:grid-cols-3 gap-2 items-center">
+          <legend className="text-xs text-gray-600 px-1">A/B test (optional)</legend>
+          <label className="text-xs text-gray-600">Share getting variant B (0–50%)
+            <input aria-label="Variant B share" type="number" min={0} max={50} value={draft.ab_split_pct} onChange={(e) => setDraft({ ...draft, ab_split_pct: Math.max(0, Math.min(50, +e.target.value || 0)) })} className={`${input} w-20 ml-2`} /></label>
+          <input aria-label="Variant B subject" placeholder="Variant B subject" disabled={!draft.ab_split_pct} value={draft.variant_b_subject} onChange={(e) => setDraft({ ...draft, variant_b_subject: e.target.value })} className={`${input} md:col-span-2`} />
+          <p className="text-xs text-gray-500 md:col-span-3">A winner is shown only with at least 100 sent per variant and a significant click difference (p&lt;0.05); otherwise “no winner”.</p>
+        </fieldset>
+        <div className="md:col-span-2"><label className="flex items-center gap-2 text-xs text-gray-600"><input type="checkbox" checked={draft.send_time_optimize} onChange={(e) => setDraft({ ...draft, send_time_optimize: e.target.checked })} /> Send at each person&apos;s usual opening hour (only where we have at least 3 recorded opens; others get it at the scheduled time)</label></div>
         <button type="submit" className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg md:col-start-2">Save draft</button>
       </form>}
 
@@ -109,13 +117,17 @@ export default function CRMEmailCampaignsPage() {
                 <tr key={c.id} className="border-t align-top">
                   <td className="py-1.5">{c.name}<div className="text-xs text-gray-500">{c.subject}</div></td>
                   <td>{segName(c.segment_id)}</td>
-                  <td>{c.status}{c.scheduled_at && c.status === "SCHEDULED" ? ` · ${new Date(c.scheduled_at).toLocaleString()}` : ""}</td>
+                  <td>{c.status}{c.approval_status !== "NONE" && <div className="text-xs text-gray-500">Approval: {c.approval_status.toLowerCase()}</div>}{c.scheduled_at && c.status === "SCHEDULED" ? ` · ${new Date(c.scheduled_at).toLocaleString()}` : ""}</td>
                   <td className="text-xs">{c.audience_size != null ? `${c.audience_size} addresses` : p ? `${p.addresses} addresses, ${p.with_consent} with consent` :
                     <button className="underline" onClick={async () => setPreview({ ...preview, [c.id]: await crmApi.previewEmailCampaign(c.id) })}>Preview audience</button>}</td>
                   <td className="text-xs">{Object.keys(st).length ? Object.entries(st).map(([k, v]) => `${k} ${v}`).join(" · ") : "—"}
                     {c.queued_at && <div>Converted: {c.stats.converted_customers}</div>}</td>
                   <td className="text-right space-x-2 whitespace-nowrap">
                     {(c.status === "DRAFT" || c.status === "FAILED") && <button className="text-xs underline" onClick={() => act(() => crmApi.scheduleEmailCampaign(c.id), "Campaign scheduled; the worker queues it within a minute.")}>Send now</button>}
+                    {canAuthor && c.status === "DRAFT" && c.approval_status !== "PENDING" && c.approval_status !== "APPROVED" && <button className="text-xs underline" onClick={() => act(() => crmApi.campaignApproval(c.id, "request"), "Sent for approval; another editor must approve it.")}>Request approval</button>}
+                    {canAuthor && c.approval_status === "PENDING" && <><button className="text-xs underline" onClick={() => act(() => crmApi.campaignApproval(c.id, "approve"), "Campaign approved.")}>Approve</button>
+                      <button className="text-xs underline" onClick={() => act(() => crmApi.campaignApproval(c.id, "reject"), "Campaign rejected.")}>Reject</button></>}
+                    {c.ab_split_pct > 0 && c.queued_at && <button className="text-xs underline" onClick={async () => { setError(null); try { const r = await crmApi.campaignAbResult(c.id); setInfo(`A/B: ${r.verdict}. A ${r.arms.A.clicked}/${r.arms.A.sent}, B ${r.arms.B.clicked}/${r.arms.B.sent}${r.p_value != null ? `, p=${r.p_value}` : ""}.`); } catch (e) { setError(errorText(e)); } }}>A/B result</button>}
                     {c.status !== "CANCELLED" && <button className="text-xs underline" onClick={() => act(() => crmApi.cancelEmailCampaign(c.id), "Campaign cancelled.")}>Cancel</button>}
                   </td>
                 </tr>
