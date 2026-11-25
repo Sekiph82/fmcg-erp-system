@@ -111,4 +111,4 @@ async def page_book(slug: str, body: BookIn, request: Request, db: AsyncSession 
         await db.rollback()
         raise HTTPException(422, str(e)) from None
     await db.commit()
-    return {"status": "booked", "manage_token": token}
+    return {"status": "booked", "manage_token": token, "invitation": getattr(b, "invite_status", "NO_MAILBOX")}

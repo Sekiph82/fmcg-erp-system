@@ -21,6 +21,7 @@ export default function BookingPage() {
   const [picked, setPicked] = useState<Slot | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [manage, setManage] = useState<string | null>(null);
+  const [invited, setInvited] = useState(false);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -54,7 +55,7 @@ export default function BookingPage() {
         consent: data.get("consent") === "on", website: data.get("website") || null }),
     }).catch(() => null);
     setBusy(false);
-    if (r && r.status === 201) { setManage((await r.json()).manage_token); setState("booked"); return; }
+    if (r && r.status === 201) { const j = await r.json(); setManage(j.manage_token); setInvited(j.invitation === "SENT"); setState("booked"); return; }
     const detail = r ? await r.json().then((j) => j.detail).catch(() => null) : null;
     setError(typeof detail === "string" ? detail : "Please check the fields and try again.");
   }
@@ -67,7 +68,7 @@ export default function BookingPage() {
       <main className="p-6 max-w-lg mx-auto space-y-3">
         <h1 className="text-xl font-semibold">You are booked</h1>
         <p className="text-sm text-gray-700">{page.title} — {picked && new Date(picked.start_utc).toLocaleString([], { timeZone: tz, dateStyle: "full", timeStyle: "short" })} ({tz}).</p>
-        <p className="text-sm text-gray-700">A calendar invitation is on its way to your e-mail. Keep this link to reschedule or cancel:</p>
+        <p className="text-sm text-gray-700">{invited ? "A calendar invitation is on its way to your e-mail." : "Your booking is saved; the team will confirm by e-mail."} Keep this link to reschedule or cancel:</p>
         <a className="text-indigo-600 underline break-all text-sm" href={url}>{url}</a>
       </main>
     );

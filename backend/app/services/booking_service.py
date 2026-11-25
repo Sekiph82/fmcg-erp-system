@@ -145,22 +145,25 @@ async def book(db: AsyncSession, page: BookingPage, *, start_utc: datetime, name
                 created_at=clock.utcnow())
     db.add(b)
     await db.flush()
-    await _after_change(db, m)
+    b.invite_status = await _after_change(db, m)        # transient, reported to the visitor honestly
     return b, token
 
 
-async def _after_change(db: AsyncSession, m: MeetingRecord, cancelled: bool = False) -> None:
+async def _after_change(db: AsyncSession, m: MeetingRecord, cancelled: bool = False) -> str:
+    """Push to the host's calendar and e-mail the invitation; returns SENT / NO_MAILBOX / FAILED (never guessed)."""
     from app.models.user import User
     from app.services.calendar_sync_service import push_safely
     from app.services.email_mailbox_service import MailboxError
 
     await push_safely(db, m)
     host = await db.get(User, m.host_id) if m.host_id else None
-    if host is not None:
-        try:
-            await mtg.send_invite(db, m, host, cancelled, None)
-        except MailboxError as e:      # booking stands; host sees the meeting without an e-mailed invite
-            log.info("booking invite not sent for meeting %s: %s", m.id, e)
+    if host is None:
+        return "NO_MAILBOX"
+    try:
+        return await mtg.send_invite(db, m, host, cancelled, None)
+    except MailboxError as e:      # booking stands; host sees the meeting without an e-mailed invite
+        log.info("booking invite not sent for meeting %s: %s", m.id, e)
+        return "FAILED"
 
 
 async def by_token(db: AsyncSession, token: str) -> tuple[Booking, MeetingRecord, BookingPage]:
