@@ -541,6 +541,7 @@ ENDPOINT_ROUTE_DEFINITIONS: tuple[EndpointRouteDefinition, ...] = (
     EndpointRouteDefinition(key="mcp_server", route_prefix="/public/mcp", import_path="app.api.v1.endpoints.mcp_server", tags=('ai',)),
     EndpointRouteDefinition(key="crm_addin", route_prefix="/public/crm-addin", import_path="app.api.v1.endpoints.crm_addin", tags=('crm',)),
     EndpointRouteDefinition(key="ai_agents", route_prefix="/ai-agents", import_path="app.api.v1.endpoints.ai_agents", tags=('ai',)),
+    EndpointRouteDefinition(key="customer_data", route_prefix="/customer-data", import_path="app.api.v1.endpoints.customer_data", tags=('crm',)),
     EndpointRouteDefinition(key="customer_intel", route_prefix="/customer-intel", import_path="app.api.v1.endpoints.customer_intel", tags=('crm',)),
     EndpointRouteDefinition(key="marketing_assets", route_prefix="/marketing-assets", import_path="app.api.v1.endpoints.marketing_assets", tags=('marketing',)),
     EndpointRouteDefinition(key="marketing_assets_public", route_prefix="/public/assets", import_path="app.api.v1.endpoints.marketing_assets_public", tags=('marketing',)),

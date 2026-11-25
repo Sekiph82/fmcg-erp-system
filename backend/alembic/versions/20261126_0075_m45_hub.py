@@ -16,6 +16,7 @@ depends_on = None
 TABLES = [
     "ci_settings", "ci_models", "ci_alerts", "ci_health_snapshots",
     "personal_access_tokens", "ai_action_requests", "ai_agents", "ai_agent_versions", "ai_agent_jobs",
+    "cd_sources", "cd_prospects", "cd_facts", "cd_verified_fields", "cd_prospect_runs", "cd_merges",
 ]
 
 COLUMNS = [

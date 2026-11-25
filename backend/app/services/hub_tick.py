@@ -19,6 +19,8 @@ async def _daily_customer_intel(db) -> None:
         return
     if (await db.execute(select(CIHealthSnapshot.id).where(CIHealthSnapshot.day == today).limit(1))).first() is None:
         await ci.run_daily(db)
+        from app.services.customer_data_service import purge_expired   # T002/T003 source retention
+        await purge_expired(db)
         await db.commit()
     _last_daily = today
 

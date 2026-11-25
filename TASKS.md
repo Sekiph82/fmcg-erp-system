@@ -2196,21 +2196,46 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
 Dependency: previous major milestone gate and synchronization PASS. Reuse shared harness, native models and adapter registry.
 
 ## M45.S01 — Implementation tasks
-- [ ] M45.S01.T001 — AI prospecting agent (original recommendation 22/40)
+- [v] M45.S01.T001 — AI prospecting agent (original recommendation 22/40)
   - **Scope:** Extend M16/M30/copilot; configurable target criteria, ranked suggested prospects, evidence/source citations, outreach draft and human approval before sending; no auto-contact and no real external scraping.
   - **Acceptance at milestone gate:** Synthetic prospect corpus and deterministic provider responses; relevance, uncertainty, permissions, approval and disabled-provider behavior.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable. Do not rebuild already working functionality; record evidence and bounded delta.
   - **Claude checkpoint:** update TASKS.md/Project Status immediately after this task, [v] pending milestone gate, tests NOT RUN; automatically continue next dependency-ready task. Never [x] before milestone PASS.
-- [ ] M45.S01.T002 — AI customer and company research (original recommendation 23/40)
+  Implemented 2026-11-26 [v] (tests NOT RUN as gate), together with T002/T003 (CRM → "Prospecting & data"):
+  - Prospect corpus: authorized local imports (CSV/JSON, licence note and retention date required) plus open CRM leads.
+  - Search: configurable criteria (city, region, channel, segment, size bands, keywords) give a ranked list.
+  - Each result shows:
+    - evidence citing the source row and column;
+    - a known-data confidence;
+    - which fields are unknown.
+  - Existing customers are excluded.
+  - Outreach: the draft is built only from evidence. "Propose first e-mail" creates an AI request for a second person to approve, and the outbox applies suppression. Nothing is contacted automatically.
+  - No scraping. The external provider adapter shows NOT_CONFIGURED.
+  - Tests: tests/test_m45_s01_t001_t003_customer_data.py.
+- [v] M45.S01.T002 — AI customer and company research (original recommendation 23/40)
   - **Scope:** Research adapter for authorized public/business data sources, configurable search/enrichment provider and local imports, provenance, freshness, citations, conflict handling and bounded retrieval; unknown data remains unknown.
   - **Acceptance at milestone gate:** Local source corpus/contract replay; verify traceability and no fabricated company facts, unauthorized network or personal data exposure.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable. Do not rebuild already working functionality; record evidence and bounded delta.
   - **Claude checkpoint:** update TASKS.md/Project Status immediately after this task, [v] pending milestone gate, tests NOT RUN; automatically continue next dependency-ready task. Never [x] before milestone PASS.
-- [ ] M45.S01.T003 — Customer data enrichment (original recommendation 24/40)
+  Implemented 2026-11-26 [v]:
+  - "Research" on a customer collects facts from authorized sources. Matching is by normalized name, phone or KRA PIN.
+  - Facts are stored as proposals (cd_facts), each with source, row/column citation, age and confidence. A strong key match gives higher confidence.
+  - Each field shows unknown, conflict (sources disagree) or its candidates. Nothing is filled from guesses.
+  - Retention: expired sources and their rows/proposals are purged daily.
+  - The external research/search provider stays NOT_CONFIGURED until a licensed account exists (M47).
+- [v] M45.S01.T003 — Customer data enrichment (original recommendation 24/40)
   - **Scope:** Configurable field mapping, deterministic normalization/dedup, external enrichment interface and documented provider adapters where public, evidence and field-level confidence/approval; never overwrite verified values silently. Extended by the 2026-11-25 parity matrix: business-card scan to contact (local OCR, user confirms every field).
   - **Acceptance at milestone gate:** Synthetic records, conflicting values, consent and retention; local provider contracts; future licensed datasets/account needed for actual enrichment.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable. Do not rebuild already working functionality; record evidence and bounded delta.
   - **Claude checkpoint:** update TASKS.md/Project Status immediately after this task, [v] pending milestone gate, tests NOT RUN; automatically continue next dependency-ready task. Never [x] before milestone PASS.
+  Implemented 2026-11-26 [v]:
+  - Import: field mapping, then deterministic normalization (Kenyan phones to +254, e-mail, KRA PIN, legal-suffix-free names). Duplicates within the import are skipped. Each row reports its errors.
+  - A proposal is applied only by crm.edit_all, and every change is audited with old value, new value and citation.
+  - A verified field is never overwritten.
+  - A different existing value needs an explicit overwrite.
+  - Business card: card text (from the phone's text recognition or typed) is parsed into fields with confidence. The user edits them and must confirm before a contact is created.
+  - No local OCR engine is installed: the screen says ocr_engine NOT_CONFIGURED.
+  - Licensed enrichment datasets: future (M47).
 - [v] M45.S01.T004 — Buyer intent and lead signals (original recommendation 25/40)
   - **Scope:** First-party site/form/email/quote/order intent events, configurable scoring/decay and alerts; optional external intent feed adapter, no third-party dataset invented.
   - **Acceptance at milestone gate:** Synthetic event stream with recency, consent, explainable score and scoped alerts; optional external feed activation deferred.
