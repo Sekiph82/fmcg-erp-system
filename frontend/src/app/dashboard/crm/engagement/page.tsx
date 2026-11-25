@@ -2,6 +2,7 @@
 // M43.S01.T006 e-mail engagement and sales activity: per sender and per message, machine events excluded.
 import { useEffect, useState } from "react";
 import { apiClient } from "@/lib/api";
+import { DeliverabilityPanel } from "@/components/DeliverabilityPanel";
 
 interface Sender { sender: string; sent: number; tracked: number; opened: number; clicked: number; machine_only: number;
   open_rate: number | null; click_rate: number | null }
@@ -27,6 +28,7 @@ export default function CRMEngagementPage() {
           {[7, 30, 90, 365].map((d) => <option key={d} value={d}>Last {d} days</option>)}
         </select>
       </div>
+      <DeliverabilityPanel />
       {error && <p className="text-sm text-red-600">Could not load engagement data.</p>}
       {!data && !error && <p className="text-sm text-gray-500">Loading…</p>}
       {data && (
