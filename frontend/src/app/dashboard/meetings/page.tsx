@@ -1,4 +1,7 @@
 "use client";
+
+import { ConnectedAccounts } from "@/components/ConnectedAccounts";
+import { BookingPagesPanel } from "@/components/BookingPagesPanel";
 import { EntityPicker } from "@/components/EntityPicker";
 import { useCallback, useEffect, useState } from "react";
 import { apiClient } from "@/lib/api";
@@ -71,6 +74,25 @@ const INVITE_TEXT: Record<string, string> = {
   NO_ATTENDEES: "Saved.",
   NOT_REQUESTED: "Saved.",
 };
+
+function CalendarConflicts() {
+  // M43.S01.T003/T004: calendar edits the two-way sync did not apply (ERP version kept)
+  const [rows, setRows] = useState<{ meeting_id: string; title: string; scheduled_at: string; conflict: string }[]>([]);
+  useEffect(() => {
+    apiClient.get("/api/v1/meetings/calendar-conflicts").then((r) => setRows(r.data)).catch(() => setRows([]));
+  }, []);
+  if (!rows.length) return null;
+  return (
+    <div className="border border-amber-200 bg-amber-50 rounded-lg p-3 text-xs space-y-1">
+      <div className="font-semibold text-amber-900">Calendar sync needs your attention</div>
+      {rows.map((r) => (
+        <div key={r.meeting_id} className="text-amber-900">
+          {r.title} ({new Date(r.scheduled_at).toLocaleString()}): {r.conflict}
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export default function MeetingsPage() {
   const [meetings, setMeetings] = useState<Meeting[]>([]);
@@ -152,6 +174,9 @@ export default function MeetingsPage() {
 
   return (
     <div className="p-6 space-y-5">
+      <ConnectedAccounts purposes={["calendar"]} />
+      <CalendarConflicts />
+      <BookingPagesPanel />
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-xl font-bold text-gray-900">Video Meetings</h1>

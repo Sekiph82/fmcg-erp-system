@@ -40,8 +40,11 @@ class EmailAccount(Base, TimestampMixin):
     secret_enc      = Column(Text, nullable=True)               # password, Fernet-encrypted; wiped on disconnect
     imap_uidvalidity = Column(BigInteger, nullable=True)
     imap_last_uid   = Column(BigInteger, nullable=True)         # highest INBOX UID already imported
+    # M43.S01.T001/T002: mailbox connected through delegated OAuth (Gmail API / Microsoft Graph) instead of IMAP/SMTP
+    oauth_connection_id = Column(UUID(as_uuid=True), ForeignKey("oauth_connections.id", ondelete="SET NULL"), nullable=True)
 
     created_by = relationship("User", foreign_keys=[created_by_id])
+    oauth_connection = relationship("OAuthConnection", lazy="joined")
     threads    = relationship("EmailThread", back_populates="account", cascade="all, delete-orphan")
 
 

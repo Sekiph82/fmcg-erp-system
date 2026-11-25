@@ -45,6 +45,7 @@ def _read(acc: EmailAccount) -> EmailAccountRead:
     from app.services.email_mailbox_service import is_connected
     row = EmailAccountRead.model_validate(acc)
     row.connected = is_connected(acc)
+    row.connected_via = "oauth" if acc.oauth_connection_id else ("password" if acc.secret_enc else None)
     return row
 
 

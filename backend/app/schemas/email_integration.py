@@ -51,6 +51,7 @@ class EmailAccountRead(BaseModel):
     smtp_port:     Optional[int] = None
     username:      Optional[str] = None
     connected:     bool = False
+    connected_via: Optional[str] = None   # "oauth" (Gmail API / Graph) or "password" (IMAP/SMTP)
 
 
 class EmailMessageRead(BaseModel):

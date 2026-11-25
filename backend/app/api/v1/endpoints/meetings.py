@@ -188,7 +188,8 @@ async def list_meetings(
 @router.post("/", status_code=201)
 async def create_meeting(body: MeetingIn, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
     """Book a meeting. 409 if it overlaps another scheduled meeting of yours. platform=jitsi creates a
-    working link; Google Meet / Teams / Zoom need the link pasted (their OAuth is not connected)."""
+    working link; with a connected Google / Outlook calendar a Meet / Teams link is created there (M43.S01.T003/T004),
+    otherwise Google Meet / Teams / Zoom links are pasted."""
     from app.models.sales import Customer
 
     start = _utc(body.start, body.time_zone)
@@ -206,9 +207,12 @@ async def create_meeting(body: MeetingIn, db: AsyncSession = Depends(get_db), cu
                       time_zone=svc.zone(body.time_zone).key, sequence=0)
     db.add(m)
     await db.flush()
+    from app.services.calendar_sync_service import push_safely
+    calendar = await push_safely(db, m)          # may fill a Google Meet / Teams link before the invite goes out
     invites = await _invite(db, m) if body.send_invites else "NOT_REQUESTED"
     await db.commit()
-    return {"id": str(m.id), "meeting_url": m.meeting_url, "scheduled_at": _iso(m.scheduled_at), "invites": invites}
+    return {"id": str(m.id), "meeting_url": m.meeting_url, "scheduled_at": _iso(m.scheduled_at), "invites": invites,
+            "calendar": calendar}
 
 
 # fixed paths before /{meeting_id}
@@ -219,6 +223,18 @@ async def rotate_calendar_feed(db: AsyncSession = Depends(get_db), current_user=
     token = await svc.rotate_feed(db, current_user.id)
     await db.commit()
     return {"url": f"{settings.PUBLIC_API_URL.rstrip('/')}/api/v1/public/calendar/{token}.ics"}
+
+
+@router.get("/calendar-conflicts")
+async def calendar_conflicts(db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    """M43.S01.T003/T004: two-way sync conflicts on your meetings (calendar edit not applied); newest first."""
+    from app.models.meetings import CalendarEventLink
+    rows = (await db.execute(select(CalendarEventLink, MeetingRecord).join(
+        MeetingRecord, MeetingRecord.id == CalendarEventLink.meeting_id).where(
+        MeetingRecord.host_id == current_user.id, CalendarEventLink.conflict.is_not(None))
+        .order_by(CalendarEventLink.updated_at.desc()).limit(50))).all()
+    return [{"meeting_id": str(m.id), "title": m.title, "scheduled_at": _iso(m.scheduled_at), "conflict": l.conflict}
+            for l, m in rows]
 
 
 @router.delete("/calendar-feed", status_code=204)
@@ -264,15 +280,17 @@ async def update_meeting(meeting_id: uuid.UUID, body: MeetingPatch, db: AsyncSes
     m.scheduled_at, m.duration_minutes = start, minutes
     if body.time_zone:
         m.time_zone = svc.zone(body.time_zone).key
-    invites = "NOT_REQUESTED"
+    from app.services.calendar_sync_service import push_safely
+    invites, calendar = "NOT_REQUESTED", "UNCHANGED"
     if changed:
         m.sequence = (m.sequence or 0) + 1
         if body.send_invites and m.status == "SCHEDULED":
             invites = await _invite(db, m)
             if removed:  # people taken off the meeting get a cancellation for the same event
                 await _invite(db, m, cancelled=True, recipients=removed)
+        calendar = await push_safely(db, m)
     await db.commit()
-    return {"id": str(m.id), "sequence": m.sequence, "invites": invites}
+    return {"id": str(m.id), "sequence": m.sequence, "invites": invites, "calendar": calendar}
 
 
 @router.delete("/{meeting_id}")
@@ -286,8 +304,10 @@ async def cancel_meeting(meeting_id: uuid.UUID, send_invites: bool = True, db: A
         return {"ok": True, "invites": "ALREADY_CANCELLED"}
     m.status, m.sequence = "CANCELLED", (m.sequence or 0) + 1
     invites = await _invite(db, m, cancelled=True) if send_invites else "NOT_REQUESTED"
+    from app.services.calendar_sync_service import push_safely
+    calendar = await push_safely(db, m)
     await db.commit()
-    return {"ok": True, "invites": invites}
+    return {"ok": True, "invites": invites, "calendar": calendar}
 
 
 @router.get("/availability")

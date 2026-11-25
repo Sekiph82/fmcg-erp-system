@@ -1,7 +1,8 @@
 """M36.S01.T001 two-way e-mail over IMAP (in) and SMTP (out).
 
 Works with any mailbox that allows IMAP/SMTP login; Gmail and Microsoft 365 with an app password.
-(OAuth sign-in for Gmail / Microsoft Graph needs the company's own OAuth app: live provider gate [!].)
+M43.S01.T001/T002: a mailbox may instead be connected with Google / Microsoft OAuth (Gmail API, Graph); see
+mail_api_adapters. The rest of the pipeline (parse, store, threading, dedupe) is shared.
 
 - Credentials: the password is stored Fernet-encrypted (key derived from SECRET_KEY, its own salt) and
   wiped on disconnect. It is never returned by the API.
@@ -82,6 +83,9 @@ def decrypt(token: Optional[str]) -> str:
 
 
 def is_connected(acc: EmailAccount) -> bool:
+    if acc.oauth_connection_id:   # M43.S01.T001/T002: Gmail API / Microsoft Graph over delegated OAuth
+        conn = acc.oauth_connection
+        return bool(acc.is_active and conn is not None and conn.status == "CONNECTED")
     return bool(acc.secret_enc and acc.imap_host and acc.smtp_host and acc.is_active)
 
 
@@ -394,6 +398,9 @@ async def sync_account(db: AsyncSession, acc: EmailAccount) -> dict:
     """Import new mail for one connected mailbox. Caller commits."""
     from sqlalchemy import text
 
+    if acc.oauth_connection_id:
+        return await _sync_api_account(db, acc)
+
     password = decrypt(acc.secret_enc)
     args = (acc.imap_host, acc.imap_port, acc.username, password, acc.imap_uidvalidity, acc.imap_last_uid)
     await db.commit()  # no transaction or DB lock is held during the network I/O
@@ -423,6 +430,35 @@ async def sync_account(db: AsyncSession, acc: EmailAccount) -> dict:
     return {"imported": imported, "skipped": skipped, "failed": failed}
 
 
+async def _sync_api_account(db: AsyncSession, acc: EmailAccount) -> dict:
+    """Gmail API / Graph import: raw MIME through the same parse/store; the cursor advances only after storing."""
+    from sqlalchemy import text
+
+    from app.services import mail_api_adapters as api
+    from app.services import oauth_service as oauth
+
+    conn = acc.oauth_connection
+    try:
+        raws, cursor = await api.fetch(db, conn)
+    except (oauth.OAuthError, api.MailApiError) as e:
+        acc.sync_error = str(e)[:1000]
+        raise MailboxError(str(e)) from None
+    await db.execute(text("SELECT pg_advisory_xact_lock(:k)"), {"k": _lock_key(acc.id)})
+    imported = skipped = failed = 0
+    for raw in raws:
+        try:
+            async with db.begin_nested():
+                stored = await store(db, acc, parse(raw))
+        except Exception:
+            log.warning("mailbox %s: an API message could not be imported", acc.id, exc_info=True)
+            failed, stored = failed + 1, None
+        else:
+            imported, skipped = (imported + 1, skipped) if stored else (imported, skipped + 1)
+    conn.sync_cursor, conn.last_sync_at, conn.last_error = cursor, datetime.now(timezone.utc), None
+    acc.last_sync_at, acc.sync_error = conn.last_sync_at, None
+    return {"imported": imported, "skipped": skipped, "failed": failed}
+
+
 # ── send ──────────────────────────────────────────────────────────────────────
 
 async def send(db: AsyncSession, acc: EmailAccount, *, to: list[str], cc: list[str], subject: str, body: str,
@@ -430,7 +466,7 @@ async def send(db: AsyncSession, acc: EmailAccount, *, to: list[str], cc: list[s
                calendar: Optional[tuple[str, str]] = None) -> EmailThread:
     """Deliver through the mailbox's SMTP server, then store the message. Nothing is stored when delivery fails."""
     if not is_connected(acc):
-        raise MailboxError("Connect this mailbox (IMAP/SMTP) before sending; nothing was sent.")
+        raise MailboxError("Connect this mailbox (Google, Microsoft or IMAP/SMTP) before sending; nothing was sent.")
     mime = MimeMessage()
     try:  # the e-mail policy refuses CR/LF in headers (no header injection); report it as bad input
         mime["From"] = f"{acc.display_name} <{acc.email_address}>" if acc.display_name else acc.email_address
@@ -454,7 +490,15 @@ async def send(db: AsyncSession, acc: EmailAccount, *, to: list[str], cc: list[s
         method, ics = calendar
         mime.add_attachment(ics.encode(), maintype="text", subtype="calendar", filename="invite.ics",
                             params={"method": method, "charset": "UTF-8"})
-    await asyncio.to_thread(smtp_send, acc.smtp_host, acc.smtp_port, acc.username, decrypt(acc.secret_enc), mime)
+    if acc.oauth_connection_id:
+        from app.services import mail_api_adapters as api
+        from app.services import oauth_service as oauth
+        try:
+            await api.send_raw(db, acc.oauth_connection, mime.as_bytes())
+        except (oauth.OAuthError, api.MailApiError) as e:
+            raise MailboxError(str(e)) from None
+    else:
+        await asyncio.to_thread(smtp_send, acc.smtp_host, acc.smtp_port, acc.username, decrypt(acc.secret_enc), mime)
 
     now = datetime.now(timezone.utc)
     if thread is None:
@@ -475,9 +519,14 @@ async def send(db: AsyncSession, acc: EmailAccount, *, to: list[str], cc: list[s
 # ── background ────────────────────────────────────────────────────────────────
 
 async def sync_all(db: AsyncSession) -> dict:
-    accounts = (await db.execute(select(EmailAccount).where(
-        EmailAccount.is_active.is_(True), EmailAccount.sync_enabled.is_(True), EmailAccount.secret_enc.is_not(None),
-        EmailAccount.imap_host.is_not(None)))).scalars().all()
+    from sqlalchemy import and_, or_
+
+    from app.models.oauth_connection import OAuthConnection
+    accounts = (await db.execute(select(EmailAccount).outerjoin(
+        OAuthConnection, OAuthConnection.id == EmailAccount.oauth_connection_id).where(
+        EmailAccount.is_active.is_(True), EmailAccount.sync_enabled.is_(True),
+        or_(and_(EmailAccount.secret_enc.is_not(None), EmailAccount.imap_host.is_not(None)),
+            OAuthConnection.status == "CONNECTED")))).scalars().all()
     result = {"accounts": len(accounts), "imported": 0, "failed": 0}
     for acc in accounts:
         try:

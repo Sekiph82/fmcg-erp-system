@@ -73,15 +73,32 @@ async def lock_host(db: AsyncSession, host_id: UUID) -> None:
     await db.execute(text("SELECT pg_advisory_xact_lock(:k)"), {"k": key})
 
 
+def _busy_blocks(host_id: UUID, lo: datetime, hi: datetime):
+    """M43.S01.T003/T004: busy time imported from the host's connected Google / Outlook calendar."""
+    from app.models.meetings import CalendarBusyBlock
+    from app.models.oauth_connection import OAuthConnection
+    return select(CalendarBusyBlock).join(OAuthConnection, OAuthConnection.id == CalendarBusyBlock.connection_id).where(
+        OAuthConnection.user_id == host_id, OAuthConnection.status == "CONNECTED",
+        CalendarBusyBlock.starts_at < hi, CalendarBusyBlock.ends_at > lo)
+
+
 async def overlapping(db: AsyncSession, host_id: UUID, start: datetime, minutes: int,
-                      exclude: Optional[UUID] = None) -> Optional[MeetingRecord]:
+                      exclude: Optional[UUID] = None, ignore_calendar: bool = False) -> Optional[MeetingRecord]:
     end = start + timedelta(minutes=minutes)
     q = select(MeetingRecord).where(
         MeetingRecord.host_id == host_id, MeetingRecord.status == "SCHEDULED",
         MeetingRecord.scheduled_at < end, _end(MeetingRecord.scheduled_at, MeetingRecord.duration_minutes) > start)
     if exclude:
         q = q.where(MeetingRecord.id != exclude)
-    return (await db.execute(q.limit(1))).scalar_one_or_none()
+    hit = (await db.execute(q.limit(1))).scalar_one_or_none()
+    if hit is not None or ignore_calendar:
+        return hit
+    block = (await db.execute(_busy_blocks(host_id, start, end).limit(1))).scalar_one_or_none()
+    if block is None:
+        return None
+    # transient (never added to the session): busy time in the host's own calendar, without its private title
+    return MeetingRecord(id=block.id, title="Busy in your calendar", scheduled_at=block.starts_at,
+                         duration_minutes=int((block.ends_at - block.starts_at).total_seconds() // 60))
 
 
 async def free_slots(db: AsyncSession, host_id: UUID, day: date, tz_name: str, minutes: int,
@@ -94,6 +111,8 @@ async def free_slots(db: AsyncSession, host_id: UUID, day: date, tz_name: str, m
     busy = (await db.execute(select(MeetingRecord.scheduled_at, MeetingRecord.duration_minutes).where(
         MeetingRecord.host_id == host_id, MeetingRecord.status == "SCHEDULED",
         MeetingRecord.scheduled_at < hi, _end(MeetingRecord.scheduled_at, MeetingRecord.duration_minutes) > lo))).all()
+    busy += [(b.starts_at, int((b.ends_at - b.starts_at).total_seconds() // 60))
+             for b in (await db.execute(_busy_blocks(host_id, lo, hi))).scalars()]
     out, t = [], lo
     while t + timedelta(minutes=minutes) <= hi:
         t_end = t + timedelta(minutes=minutes)

@@ -136,6 +136,8 @@ class Settings(BaseSettings):
     MICROSOFT_OAUTH_TENANT: str = "common"
     MICROSOFT_LOGIN_BASE_URL: str = "https://login.microsoftonline.com"
     MICROSOFT_GRAPH_BASE_URL: str = "https://graph.microsoft.com/v1.0"
+    GOOGLE_GMAIL_API_URL: str = "https://gmail.googleapis.com/gmail/v1"
+    GOOGLE_CALENDAR_API_URL: str = "https://www.googleapis.com/calendar/v3"
 
     # ── SMS OTP delivery (Twilio or compatible) ────────────────────────────────
     SMS_PROVIDER: str = ""          # "twilio" or ""

@@ -59,14 +59,20 @@ async def start(provider: str, purpose: str, db: AsyncSession = Depends(get_db),
 @router.get("/callback")
 async def callback(state: str = Query("", max_length=128), code: Optional[str] = Query(None, max_length=4096),
                    error: Optional[str] = Query(None, max_length=100), db: AsyncSession = Depends(get_db)):
-    target = settings.PUBLIC_APP_URL.rstrip("/") + "/dashboard/integrations"
+    # mail connections return to the mailbox screen, calendar connections to meetings (both show ConnectedAccounts)
+    pages = {"mail": "/dashboard/email", "calendar": "/dashboard/meetings"}
+    target = settings.PUBLIC_APP_URL.rstrip("/") + "/dashboard/email"
     try:
         conn = await oauth.complete(db, state=state, code=code, error=error)
+        if conn.purpose == "mail":
+            from app.services.mail_api_adapters import ensure_mail_account
+            await ensure_mail_account(db, conn)
         await db.commit()
-        q = {"tab": "connected-accounts", "oauth": "connected", "provider": conn.provider, "purpose": conn.purpose}
+        target = settings.PUBLIC_APP_URL.rstrip("/") + pages.get(conn.purpose, "/dashboard/email")
+        q = {"oauth": "connected", "provider": conn.provider, "purpose": conn.purpose}
     except oauth.OAuthError as e:
         await db.commit()          # the consumed state stays consumed (no replay)
-        q = {"tab": "connected-accounts", "oauth": "error", "reason": e.code}
+        q = {"oauth": "error", "reason": e.code}
     return RedirectResponse(f"{target}?{urlencode(q)}", status_code=303)
 
 

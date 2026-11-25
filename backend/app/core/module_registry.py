@@ -523,6 +523,8 @@ ENDPOINT_ROUTE_DEFINITIONS: tuple[EndpointRouteDefinition, ...] = (
     EndpointRouteDefinition(key="documents_public", route_prefix="/public/documents", import_path="app.api.v1.endpoints.documents_public", tags=('quotes',)),
     EndpointRouteDefinition(key="business_cards", route_prefix="/hr", import_path="app.api.v1.endpoints.business_cards", tags=('hr',)),
     EndpointRouteDefinition(key="business_cards_public", route_prefix="/public/cards", import_path="app.api.v1.endpoints.business_cards_public", tags=('hr',)),
+    EndpointRouteDefinition(key="booking_pages", route_prefix="/booking-pages", import_path="app.api.v1.endpoints.booking_pages", tags=('meetings',)),
+    EndpointRouteDefinition(key="booking_public", route_prefix="/public/book", import_path="app.api.v1.endpoints.booking_public", tags=('meetings',)),
     EndpointRouteDefinition(key="oauth_connections", route_prefix="/integrations/oauth", import_path="app.api.v1.endpoints.oauth_connections", tags=('integrations',)),
     EndpointRouteDefinition(key="crm_landing", route_prefix="/landing", import_path="app.api.v1.endpoints.crm_landing", tags=('crm',)),
     EndpointRouteDefinition(key="crm_landing_public", route_prefix="/public/lp", import_path="app.api.v1.endpoints.crm_landing_public", tags=('crm',)),
@@ -663,7 +665,13 @@ PUBLIC_ROUTES: frozenset[tuple[str, str]] = frozenset({
     ("/public/lp/{slug}/convert", "POST"),                # lead form submission through the lead-capture rules
     ("/public/nps/{token}", "GET"),                       # one-time survey link: token is the credential (M40.S01.T001)
     ("/public/nps/{token}", "POST"),
-    ("/integrations/oauth/callback", "GET"),             # provider redirect: single-use state bound to the user (M43.S00.T004)
+    ("/integrations/oauth/callback", "GET"),
+    ("/public/book/{slug}", "GET"),                      # booking page (M43.S01.T005): no host details exposed
+    ("/public/book/{slug}/slots", "GET"),
+    ("/public/book/{slug}", "POST"),                     # honeypot + per-IP-hash and per-page limits; host locks
+    ("/public/book/manage/{token}", "GET"),              # visitor's one-time manage token (stored as SHA-256)
+    ("/public/book/manage/{token}/cancel", "POST"),
+    ("/public/book/manage/{token}/reschedule", "POST"),             # provider redirect: single-use state bound to the user (M43.S00.T004)
     ("/public/chat/sessions", "POST"),                    # website chat: honeypot + per-IP-hash limits (M36.S03.T005)
     ("/public/chat/sessions/{session_id}/messages", "POST"),   # X-Chat-Token header proves the visitor's chat
     ("/public/chat/sessions/{session_id}/messages", "GET"),

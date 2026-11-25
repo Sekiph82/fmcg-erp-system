@@ -8,6 +8,7 @@ import {
 } from "@/lib/email";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { ConnectedAccounts } from "@/components/ConnectedAccounts";
 
 const MODULE_LABEL: Record<string, string> = {
   procurement: "Purchase",
@@ -93,6 +94,8 @@ export default function EmailPage() {
   const unreadCount = threads.filter((t) => !t.is_read).length;
 
   return (
+    <div className="space-y-3">
+    <ConnectedAccounts purposes={["mail"]} />
     <div className="h-[calc(100vh-120px)] flex rounded-xl border bg-white overflow-hidden">
       {/* Left: Accounts + Thread list */}
       {/* phones: one pane at a time (list, or the open thread / compose) */}
@@ -355,6 +358,7 @@ export default function EmailPage() {
           onSave={() => { qc.invalidateQueries({ queryKey: ["email-accounts"] }); setShowAddAccount(false); }}
         />
       )}
+    </div>
     </div>
   );
 }
