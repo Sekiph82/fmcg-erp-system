@@ -186,7 +186,8 @@ export default function SecurityPage() {
         <p className="text-sm text-gray-500 mt-1">Manage two-factor authentication for your account.</p>
         {user?.is_superuser && <div className="flex gap-4"><a className="text-sm text-indigo-600 underline" href="/dashboard/security/support-access">Support access &amp; notification defaults</a>
           <a className="text-sm text-indigo-600 underline" href="/dashboard/security/sso">Single sign-on</a>
-          <a className="text-sm text-indigo-600 underline" href="/dashboard/security/config-sandbox">Configuration sandbox</a></div>}
+          <a className="text-sm text-indigo-600 underline" href="/dashboard/security/config-sandbox">Configuration sandbox</a>
+          <a className="text-sm text-indigo-600 underline" href="/dashboard/security/warehouse-exports">Warehouse exports</a></div>}
       </div>
 
       {/* Current status */}

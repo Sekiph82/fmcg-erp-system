@@ -2477,11 +2477,27 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
   - **Acceptance at milestone gate:** Synthetic tickets routed by skill; SLA timers with business hours and breaches; survey sent once, answered once; reports; permissions.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable.
   - **Claude checkpoint:** [v] pending milestone gate, tests NOT RUN until gate; never [x] before milestone PASS.
-- [ ] M45.S01.T020 — Data warehouse export connectors (additional gap, Source: HubSpot parity matrix 2026-11-25 (coordination/milestones/M43/HUBSPOT_PARITY_MATRIX_2026-11-25.md).)
+- [v] M45.S01.T020 — Data warehouse export connectors (additional gap, Source: HubSpot parity matrix 2026-11-25 (coordination/milestones/M43/HUBSPOT_PARITY_MATRIX_2026-11-25.md).)
   - **Scope:** Incremental, schema-documented export of CRM/ERP datasets to Parquet/CSV object storage (local MinIO/S3-compatible) and a PostgreSQL warehouse target; documented adapters for Snowflake/BigQuery left NOT_CONFIGURED until activation; row-level permission and field masking honoured.
   - **Acceptance at milestone gate:** Local S3-compatible bucket and a second PostgreSQL receive incremental loads; deletes and schema changes; masked fields; resume after failure.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable.
   - **Claude checkpoint:** [v] pending milestone gate, tests NOT RUN until gate; never [x] before milestone PASS.
+  Implemented 2026-11-26 [v] (tests NOT RUN as gate):
+  - Incremental, schema-documented export of customers, sales orders, invoices, products and CRM records.
+  - Targets:
+    - a local folder;
+    - any S3-compatible store (boto3, path-style; MinIO-ready);
+    - a PostgreSQL warehouse, by upsert into its own schema.
+  - Snowflake and BigQuery adapters are NOT_CONFIGURED until M47.
+  - Formats: CSV and JSON Lines. Parquet is NOT_AVAILABLE (pyarrow not installed).
+  - Watermark (updated_at, id), advanced per written batch, so a failed run resumes without gaps or duplicates.
+  - Deletes are detected against the previous id set: a _deletes file, plus warehouse delete.
+  - Each file has a manifest with columns. A new dataset column is added to the warehouse table and reported as a schema change.
+  - Privacy: allow-listed columns only. Fields classified sensitive (T017) are always masked.
+  - Egress: off blocks; local allows only local hosts. Secrets are Fernet-encrypted.
+  - Schedules run from the M45 job runner.
+  - UI: Security → Warehouse exports.
+  - Tests: tests/test_m45_s01_t020_warehouse_export.py, run against a local S3-compatible simulator (tests/provider_sim/s3_app.py) and a second disposable PostgreSQL. The MinIO image could not be pulled here without a registry download.
 - [v] M45.S01.T021 — Customer payment links (additional gap, Source: HubSpot parity matrix 2026-11-25 (coordination/milestones/M43/HUBSPOT_PARITY_MATRIX_2026-11-25.md).)
   - **Scope:** Shareable signed payment link for an invoice or order balance; customer page shows amount and pays by M-Pesa STK push (existing Daraja code) or a card-provider adapter left NOT_CONFIGURED; expiry, single settlement, receipt and ledger posting through existing collections.
   - **Acceptance at milestone gate:** Daraja simulator callback settles once; expired/forged links refused; partial payment; no LIVE_PAID without a real provider.

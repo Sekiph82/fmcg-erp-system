@@ -20,6 +20,7 @@ TABLES = [
     "co_types", "co_records", "co_associations",
     "auth_impersonations", "nc_notification_policies", "auth_sso_configs", "auth_sso_states",
     "pay_links", "pay_link_attempts", "doc_share_links", "doc_share_events",
+    "dw_targets", "dw_jobs", "dw_runs",
 ]
 
 COLUMNS = [

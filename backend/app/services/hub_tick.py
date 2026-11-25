@@ -32,7 +32,12 @@ async def _agents(db) -> None:
     await agent_service.tick(db)
 
 
-JOBS = [_daily_customer_intel, _agents]
+async def _warehouse_exports(db) -> None:
+    from app.services import warehouse_export_service
+    await warehouse_export_service.tick(db)
+
+
+JOBS = [_daily_customer_intel, _agents, _warehouse_exports]
 
 
 async def tick() -> None:

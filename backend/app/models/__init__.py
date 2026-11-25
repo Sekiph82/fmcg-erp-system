@@ -644,7 +644,7 @@ from app.models import (  # noqa: F401,E402
     brand_assets, consumer_complaints, containers, copacking, dynamic_pricing, email_integration, iot,
     knowledge_base, loyalty, market_intelligence, meetings, messaging, mobile, npd, nps, oauth_connection, receipt_ocr,
     regulatory_certs, surveys, voip, whatsapp, workflow,
-    customer_intel, ai_hub, customer_data, custom_objects, identity, payments_hub,  # M45
+    customer_intel, ai_hub, customer_data, custom_objects, identity, payments_hub, warehouse_export,  # M45
 )
 
 __all__ = [

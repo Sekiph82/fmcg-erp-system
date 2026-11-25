@@ -552,6 +552,7 @@ ENDPOINT_ROUTE_DEFINITIONS: tuple[EndpointRouteDefinition, ...] = (
     EndpointRouteDefinition(key="sales_docs", route_prefix="/sales-docs", import_path="app.api.v1.endpoints.sales_docs", tags=('sales',)),
     EndpointRouteDefinition(key="sales_docs_public", route_prefix="/public/docs", import_path="app.api.v1.endpoints.sales_docs_public", tags=('sales',)),
     EndpointRouteDefinition(key="config_bundles", route_prefix="/config-bundles", import_path="app.api.v1.endpoints.config_bundles", tags=('admin',)),
+    EndpointRouteDefinition(key="warehouse_exports", route_prefix="/warehouse-exports", import_path="app.api.v1.endpoints.warehouse_exports", tags=('reports',)),
     EndpointRouteDefinition(key="customer_intel", route_prefix="/customer-intel", import_path="app.api.v1.endpoints.customer_intel", tags=('crm',)),
     EndpointRouteDefinition(key="marketing_assets", route_prefix="/marketing-assets", import_path="app.api.v1.endpoints.marketing_assets", tags=('marketing',)),
     EndpointRouteDefinition(key="marketing_assets_public", route_prefix="/public/assets", import_path="app.api.v1.endpoints.marketing_assets_public", tags=('marketing',)),
