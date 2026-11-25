@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
+import { apiClient } from "@/lib/api";
 import { crmApi, type EmailCampaign } from "@/lib/crm_pipeline";
 import { getActiveCompanyId } from "@/lib/company";
 import { emailApi, type EmailTemplate } from "@/lib/email";
@@ -13,7 +14,7 @@ function errorText(e: unknown) {
   return "Request failed.";
 }
 
-const EMPTY = { name: "", subject: "", body: "", segment_id: "", company_id: "", track_engagement: false };
+const EMPTY = { name: "", subject: "", body: "", segment_id: "", company_id: "", track_engagement: false, design_id: "" };
 
 export default function CRMEmailCampaignsPage() {
   const [items, setItems] = useState<EmailCampaign[]>([]);
@@ -26,6 +27,8 @@ export default function CRMEmailCampaignsPage() {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
+  const [designs, setDesigns] = useState<{ id: string; name: string; version: number; status: string }[]>([]);
+  useEffect(() => { apiClient.get("/api/v1/email-designs").then((r) => setDesigns(r.data.filter((d: { status: string }) => d.status === "PUBLISHED"))).catch(() => setDesigns([])); }, []);
   const loadTemplates = useCallback(() => emailApi.listTemplates("crm_campaign").then(setTemplates).catch(() => setTemplates([])), []);
 
   const load = useCallback(async () => {
@@ -60,7 +63,7 @@ export default function CRMEmailCampaignsPage() {
       {info && !error && <p role="status" className="rounded-lg p-3 text-sm bg-emerald-50 border border-emerald-200 text-emerald-800">{info}</p>}
 
       {canAuthor && <form aria-label="New campaign" className="bg-white rounded-xl border shadow-sm p-4 grid md:grid-cols-2 gap-2"
-        onSubmit={(e) => { e.preventDefault(); act(() => crmApi.createEmailCampaign(draft), "Draft campaign created."); setDraft({ ...EMPTY, company_id: draft.company_id }); }}>
+        onSubmit={(e) => { e.preventDefault(); act(() => crmApi.createEmailCampaign({ ...draft, design_id: draft.design_id || undefined }), "Draft campaign created."); setDraft({ ...EMPTY, company_id: draft.company_id }); }}>
         <h2 className="font-semibold text-gray-800 md:col-span-2">New campaign</h2>
         <div className="md:col-span-2 flex flex-wrap gap-2 items-center">
           <select aria-label="Start from template" value="" className={input}
@@ -88,6 +91,8 @@ export default function CRMEmailCampaignsPage() {
         </select>
         <input aria-label="Campaign subject" required placeholder="Subject — {company_name} allowed" value={draft.subject} onChange={(e) => setDraft({ ...draft, subject: e.target.value })} className={`${input} md:col-span-2`} />
         <textarea aria-label="Campaign body" required rows={4} placeholder="Message — {contact_name} {company_name}" value={draft.body} onChange={(e) => setDraft({ ...draft, body: e.target.value })} className={`${input} md:col-span-2`} />
+        <select aria-label="E-mail design" className={`${input} md:col-span-2`} value={draft.design_id} onChange={(e) => setDraft({ ...draft, design_id: e.target.value })}>
+          <option value="">Plain text e-mail (no design)</option>{designs.map((d) => <option key={d.id} value={d.id}>{d.name} v{d.version}</option>)}</select>
         <div className="md:col-span-2"><label className="flex items-center gap-2 text-xs text-gray-600"><input type="checkbox" checked={draft.track_engagement} onChange={(e) => setDraft({ ...draft, track_engagement: e.target.checked })} /> Track opens and clicks (only if tracking is switched on for the company; recipients can opt out; opens are an indicator, not proof of reading)</label></div>
         <button type="submit" className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg md:col-start-2">Save draft</button>
       </form>}

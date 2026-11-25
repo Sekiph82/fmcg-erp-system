@@ -538,6 +538,7 @@ class CRMOutboundMessage(Base):
     sent_at             = Column(DateTime(timezone=True), nullable=True)
     track_engagement    = Column(Boolean, nullable=False, default=False, server_default="false")  # M43.S01.T006 opt-in
     tracked_links       = Column(JSON, nullable=True)       # the only allowed click-redirect targets of this message
+    body_html           = Column(Text, nullable=True)       # M44.S01.T001 designed e-mail (text part stays in body_text)
 
 
 class CRMEmailEvent(Base):
@@ -611,6 +612,7 @@ class CRMEmailCampaign(Base, TimestampMixin):
     company_id            = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="SET NULL"), nullable=True)
     marketing_campaign_id = Column(UUID(as_uuid=True), ForeignKey("mkt_campaigns.id", ondelete="SET NULL"), nullable=True)
     track_engagement      = Column(Boolean, nullable=False, default=False, server_default="false")  # M43.S01.T006
+    design_id             = Column(UUID(as_uuid=True), ForeignKey("mkt_email_designs.id", ondelete="RESTRICT"), nullable=True)  # M44.S01.T001
     status                = Column(String(10), nullable=False, default="DRAFT")   # DRAFT|SCHEDULED|QUEUED|CANCELLED
     scheduled_at          = Column(DateTime(timezone=True), nullable=True)
     queued_at             = Column(DateTime(timezone=True), nullable=True)
@@ -1168,3 +1170,18 @@ class CRMHandoff(Base):
     status        = Column(String(12), nullable=False, default="OPEN")     # OPEN | ACKNOWLEDGED
     acknowledged_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at    = Column(DateTime(timezone=True), nullable=False)
+
+
+# ── M44.S01.T001 visual e-mail designs ────────────────────────────────────────
+
+class EmailDesign(Base, TimestampMixin):
+    __tablename__ = "mkt_email_designs"
+
+    id            = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    family_id     = Column(UUID(as_uuid=True), nullable=False, index=True, default=uuid.uuid4)
+    version       = Column(Integer, nullable=False, default=1)
+    name          = Column(String(150), nullable=False)
+    preheader     = Column(String(200), nullable=True)
+    document      = Column(JSON, nullable=False)                    # {"theme": {...}, "blocks": [...]}
+    status        = Column(String(10), nullable=False, default="DRAFT")   # DRAFT | PUBLISHED | RETIRED
+    created_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)

@@ -1208,6 +1208,17 @@ class EmailCampaignIn(BaseModel):
     company_id: str                       # required: a campaign only ever reaches one company's customers
     marketing_campaign_id: Optional[str] = None
     track_engagement: bool = False
+    design_id: Optional[str] = None      # M44.S01.T001 published e-mail design
+
+
+async def _published_design(db, design_id):
+    if not design_id:
+        return None
+    from app.models.crm import EmailDesign
+    d = await db.get(EmailDesign, _uuid(design_id))
+    if d is None or d.status != "PUBLISHED":
+        raise HTTPException(422, "Choose a published e-mail design.")
+    return d.id
 
 
 async def _campaign_out(db, c) -> dict:
@@ -1249,7 +1260,8 @@ async def create_email_campaign(body: EmailCampaignIn, db: AsyncSession = Depend
     c = CRMEmailCampaign(name=body.name, subject=body.subject, body=body.body, segment_id=_uuid(body.segment_id),
                          company_id=_uuid(body.company_id),
                          marketing_campaign_id=_uuid(body.marketing_campaign_id) if body.marketing_campaign_id else None,
-                         status="DRAFT", created_by=current_user.username, track_engagement=body.track_engagement)
+                         status="DRAFT", created_by=current_user.username, track_engagement=body.track_engagement,
+                         design_id=await _published_design(db, body.design_id))
     db.add(c)
     await db.commit()
     return await _campaign_out(db, c)

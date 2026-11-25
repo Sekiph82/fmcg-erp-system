@@ -95,8 +95,16 @@ async def _expand_one(db: AsyncSession, campaign: CRMEmailCampaign, now: datetim
         if email in seen:
             continue
         seen.add(email)
+        text, html_body = render(campaign.body, customer), None
+        if campaign.design_id:                        # M44.S01.T001 designed e-mail
+            from app.models.crm import EmailDesign
+            from app.services import email_design_service as eds
+            d = await db.get(EmailDesign, campaign.design_id)
+            vals = {"company_name": customer.name, "contact_name": getattr(customer, "contact_person", None) or customer.name}
+            vals["first_name"] = (vals["contact_name"] or "").split(" ")[0]
+            text, html_body = eds.render_text(d.document, vals), eds.render_html(d.document, vals, d.preheader or "")
         await outbound.queue(db, to_email=email, subject=render(campaign.subject, customer),
-                             body=render(campaign.body, customer), purpose="CAMPAIGN",
+                             body=text, body_html=html_body, purpose="CAMPAIGN",
                              dedupe_key=f"camp:{campaign.id}:{email}", customer_id=customer.id,
                              created_by=f"campaign:{campaign.name}"[:100],
                              track=bool(campaign.track_engagement))

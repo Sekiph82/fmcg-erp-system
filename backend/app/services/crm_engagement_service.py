@@ -94,6 +94,37 @@ def render_html(msg: CRMOutboundMessage, text_body: str) -> tuple[str, list[str]
     return f"<!doctype html><html><body>{body}{pixel}</body></html>", links
 
 
+HREF_RE = re.compile(r'href="(https?://[^"]+)"')
+
+
+def with_unsubscribe(msg: CRMOutboundMessage, body_html: str) -> str:
+    """Designed mail always carries the same signed unsubscribe link as the text part (never for INVOICE)."""
+    if msg.purpose == "INVOICE":
+        return body_html
+    from app.services.crm_outbound_service import unsubscribe_token
+    page = f"{settings.PUBLIC_APP_URL.rstrip('/')}/unsubscribe?t={unsubscribe_token(msg.to_email)}"
+    line = (f'<p style="font-size:12px;color:#6B7280;text-align:center;margin:12px 0">'
+            f'<a href="{html.escape(page)}" style="color:#6B7280">Unsubscribe</a></p>')
+    return body_html.replace("</body>", line + "</body>", 1) if "</body>" in body_html else body_html + line
+
+
+def track_html(msg: CRMOutboundMessage, body_html: str) -> tuple[str, list[str]]:
+    """Rewrite href links of a designed mail to signed redirects (unsubscribe untouched) and add the pixel."""
+    links: list[str] = []
+    base = settings.PUBLIC_API_URL.rstrip("/") + "/api/v1/public/t"
+
+    def sub(m: re.Match) -> str:
+        url = html.unescape(m.group(1))
+        if "/unsubscribe" in url or not _allowed(url):
+            return m.group(0)
+        links.append(url)
+        return f'href="{base}/c/{token(msg.id, len(links))}"'
+    out = HREF_RE.sub(sub, body_html)
+    pixel = f'<img src="{base}/o/{token(msg.id, 0)}.gif" width="1" height="1" alt="" style="display:none">'
+    out = out.replace("</body>", pixel + "</body>", 1) if "</body>" in out else out + pixel
+    return out, links
+
+
 def is_machine(msg: CRMOutboundMessage, user_agent: str, now: datetime) -> bool:
     if MACHINE_UA.search(user_agent or ""):
         return True
