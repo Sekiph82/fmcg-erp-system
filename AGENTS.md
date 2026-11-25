@@ -1,3 +1,7 @@
+## Owner POVU logo directive (2026-11-25)
+
+Before any POVU branding work, read root TASKS.md `ERP-POVU-VAULT-*` and `Sekiph82/POVU-Brand-Vault` AGENTS.md/manifest. Owner's latest transparent POVU logo + exact ICO package supersede older assets only after local file SHA verification and safe private release. Audit `frontend/public/povu-logo.jpg`, favicon, PWA icons and ERP/Shop UI; do not touch unrelated brand. Vault currently PUBLIC, so no proprietary master uploads until confirmed PRIVATE. Preserve existing implementation agent and release instructions.
+
 > **2026-11-10 owner override:** Claude is the sole active autonomous task runner, tracker writer and implementation coordinator. Read `coordination/CLAUDE_AUTONOMOUS_EXECUTION_POLICY.md` first. Conflicting older Codex/ChatGPT/H!veAI actor restrictions below are historical and superseded. Root TASKS.md remains canonical.
 
 # Repository task authority
