@@ -20,6 +20,7 @@ export default function CRMSequencesPage() {
   const [leads, setLeads] = useState<CRMRecord[]>([]);
   const [recordId, setRecordId] = useState("");
   const [name, setName] = useState("");
+  const [track, setTrack] = useState(false);
   const [steps, setSteps] = useState<SequenceStep[]>([NEW_STEP(1)]);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
@@ -73,7 +74,7 @@ export default function CRMSequencesPage() {
       </div>
 
       <form aria-label="New sequence" className="bg-white rounded-xl border shadow-sm p-4 space-y-2"
-        onSubmit={(e) => { e.preventDefault(); act(() => crmApi.createSequence({ name, steps }), "Sequence created."); setName(""); setSteps([NEW_STEP(1)]); }}>
+        onSubmit={(e) => { e.preventDefault(); act(() => crmApi.createSequence({ name, steps, track_engagement: track }), "Sequence created."); setName(""); setTrack(false); setSteps([NEW_STEP(1)]); }}>
         <h2 className="font-semibold text-gray-800">New sequence</h2>
         <input aria-label="Sequence name" required placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} className={`${input} w-full`} />
         {steps.map((st, i) => (
@@ -89,6 +90,7 @@ export default function CRMSequencesPage() {
               onChange={(e) => setSteps(steps.map((x, j) => (j === i ? { ...x, body: e.target.value } : x)))} className={`${input} md:col-span-6`} />
           </div>
         ))}
+        <label className="flex items-center gap-2 text-xs text-gray-600"><input type="checkbox" checked={track} onChange={(e) => setTrack(e.target.checked)} /> Track opens and clicks (only if tracking is switched on for the company; recipients can opt out; opens are an indicator, not proof of reading)</label>
         <div className="flex gap-2">
           <button type="button" className="px-3 py-1.5 text-sm border rounded-lg" onClick={() => setSteps([...steps, NEW_STEP(steps.length + 1)])}>Add step</button>
           <button type="submit" className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg">Create sequence</button>

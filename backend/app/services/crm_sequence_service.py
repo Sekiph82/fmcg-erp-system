@@ -95,7 +95,8 @@ async def _advance_one(db: AsyncSession, e: CRMSequenceEnrollment, now: datetime
         return "completed"
     msg = await outbound.queue(db, to_email=e.email, subject=render(step.subject, record), body=render(step.body, record),
                                purpose="SEQUENCE", dedupe_key=f"seq:{e.id}:{step.step_no}",
-                               crm_record_id=record.id, created_by=f"sequence:{sequence.name}"[:100])
+                               crm_record_id=record.id, created_by=f"sequence:{sequence.name}"[:100],
+                               track=bool(sequence.track_engagement))
     if msg.status == "SUPPRESSED":
         _stop(e, msg.status_reason or "suppressed", now)
         return "stopped"

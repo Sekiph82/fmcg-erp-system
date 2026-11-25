@@ -48,14 +48,21 @@ def _send_smtp(to_email: str, otp: str) -> None:
 
 
 
-def send_email(to_email: str, subject: str, body: str, headers: dict | None = None) -> str:
-    """Send one plain-text e-mail over the configured SMTP server (blocking; call in a thread).
+def send_email(to_email: str, subject: str, body: str, headers: dict | None = None, html: str | None = None) -> str:
+    """Send one plain-text e-mail (plus an optional HTML alternative, M43.S01.T006 tracked mail) over the
+    configured SMTP server (blocking; call in a thread).
     Returns the Message-ID. Raises on any SMTP failure, so callers never mark unsent mail as sent."""
     from email.utils import make_msgid
 
     if any(c in (subject or "") + (to_email or "") for c in "\r\n"):
         raise ValueError("line breaks are not allowed in subject or recipient")
-    msg = MIMEText(body, "plain", "utf-8")
+    if html:
+        from email.mime.multipart import MIMEMultipart
+        msg = MIMEMultipart("alternative")
+        msg.attach(MIMEText(body, "plain", "utf-8"))
+        msg.attach(MIMEText(html, "html", "utf-8"))
+    else:
+        msg = MIMEText(body, "plain", "utf-8")
     msg["Subject"] = subject
     msg["From"] = settings.SMTP_FROM_EMAIL
     msg["To"] = to_email

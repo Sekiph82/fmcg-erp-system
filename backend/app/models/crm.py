@@ -213,6 +213,7 @@ class CRMRecord(Base, TimestampMixin):
     created_by            = Column(String(50))
     updated_by            = Column(String(50))
     notes                 = Column(Text)
+    forecast_category     = Column(String(10), nullable=True)   # M43.S01.T007 override: PIPELINE|BEST_CASE|COMMIT|OMITTED
 
     stage         = relationship("CRMPipelineStage", back_populates="records", foreign_keys=[stage_id])
     territory     = relationship("CRMTerritory", back_populates="records", foreign_keys=[territory_id])
@@ -491,6 +492,7 @@ class CRMContactConsent(Base):
     source         = Column(String(100), nullable=True)    # form:<slug> | unsubscribe-link | manual:<user> ...
     consent_text   = Column(Text, nullable=True)
     updated_at     = Column(DateTime(timezone=True), nullable=False)
+    tracking_opt_out = Column(Boolean, nullable=False, default=False, server_default="false")  # M43.S01.T006
 
 
 class CRMOutboundMessage(Base):
@@ -513,6 +515,23 @@ class CRMOutboundMessage(Base):
     created_by          = Column(String(100), nullable=True)
     created_at          = Column(DateTime(timezone=True), nullable=False)
     sent_at             = Column(DateTime(timezone=True), nullable=True)
+    track_engagement    = Column(Boolean, nullable=False, default=False, server_default="false")  # M43.S01.T006 opt-in
+    tracked_links       = Column(JSON, nullable=True)       # the only allowed click-redirect targets of this message
+
+
+class CRMEmailEvent(Base):
+    """M43.S01.T006 open/click events of tracked CRM e-mail; is_machine = proxy, scanner or too fast after send."""
+    __tablename__ = "crm_email_events"
+
+    id          = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    message_id  = Column(UUID(as_uuid=True), ForeignKey("crm_outbound_messages.id", ondelete="CASCADE"), nullable=False, index=True)
+    kind        = Column(String(5), nullable=False)          # OPEN | CLICK
+    link_index  = Column(Integer, nullable=False, default=0)
+    url         = Column(String(2000), nullable=True)
+    occurred_at = Column(DateTime(timezone=True), nullable=False)
+    is_machine  = Column(Boolean, nullable=False, default=False)
+    ua_class    = Column(String(10), nullable=True)          # client | proxy | machine
+    ip_hash     = Column(String(64), nullable=True)
 
 
 # ── M36.S01.T002 sales sequences ──────────────────────────────────────────────
@@ -523,6 +542,7 @@ class CRMSequence(Base, TimestampMixin):
     id          = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name        = Column(String(150), nullable=False, unique=True)
     active_flag = Column(Boolean, nullable=False, default=True)
+    track_engagement = Column(Boolean, nullable=False, default=False, server_default="false")  # M43.S01.T006
     notes       = Column(Text, nullable=True)
 
 
@@ -569,6 +589,7 @@ class CRMEmailCampaign(Base, TimestampMixin):
     segment_id            = Column(UUID(as_uuid=True), ForeignKey("mkt_customer_segments.id", ondelete="RESTRICT"), nullable=False)
     company_id            = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="SET NULL"), nullable=True)
     marketing_campaign_id = Column(UUID(as_uuid=True), ForeignKey("mkt_campaigns.id", ondelete="SET NULL"), nullable=True)
+    track_engagement      = Column(Boolean, nullable=False, default=False, server_default="false")  # M43.S01.T006
     status                = Column(String(10), nullable=False, default="DRAFT")   # DRAFT|SCHEDULED|QUEUED|CANCELLED
     scheduled_at          = Column(DateTime(timezone=True), nullable=True)
     queued_at             = Column(DateTime(timezone=True), nullable=True)
@@ -858,3 +879,38 @@ class CRMWorkflowRun(Base):
     log           = Column(JSON, nullable=False, default=list)
     created_at    = Column(DateTime(timezone=True), nullable=False)
     finished_at   = Column(DateTime(timezone=True), nullable=True)
+
+
+# ── M43.S01.T007 sales quotas and forecast snapshots ─────────────────────────
+
+class SalesQuota(Base, TimestampMixin):
+    __tablename__ = "sales_quotas"
+    __table_args__ = (UniqueConstraint("scope_type", "scope_ref", "period_start", "period_end", "currency",
+                                       name="uq_sales_quota_scope_period_currency"),)
+
+    id            = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    scope_type    = Column(String(10), nullable=False)       # REP | TEAM | TERRITORY | COMPANY
+    scope_ref     = Column(String(100), nullable=False)      # user id | sales_team_id | sales_region_id | company id
+    scope_label   = Column(String(200), nullable=True)
+    period_type   = Column(String(10), nullable=False)       # MONTH | QUARTER | YEAR | CUSTOM
+    period_start  = Column(Date, nullable=False)
+    period_end    = Column(Date, nullable=False)
+    currency      = Column(String(10), nullable=False)
+    target_amount = Column(Numeric(18, 2), nullable=False)
+    company_id    = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="SET NULL"), nullable=True)
+    notes         = Column(Text, nullable=True)
+    created_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
+
+class SalesQuotaSnapshot(Base):
+    __tablename__ = "sales_quota_snapshots"
+
+    id               = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    quota_id         = Column(UUID(as_uuid=True), ForeignKey("sales_quotas.id", ondelete="CASCADE"), nullable=False, index=True)
+    taken_at         = Column(DateTime(timezone=True), nullable=False)
+    actual_amount    = Column(Numeric(18, 2), nullable=False)
+    commit_amount    = Column(Numeric(18, 2), nullable=False)
+    best_case_amount = Column(Numeric(18, 2), nullable=False)
+    pipeline_amount  = Column(Numeric(18, 2), nullable=False)
+    projected_amount = Column(Numeric(18, 2), nullable=False)
+    assumptions      = Column(JSON, nullable=False)

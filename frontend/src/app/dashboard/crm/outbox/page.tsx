@@ -20,7 +20,7 @@ export default function CRMOutboxPage() {
   const [messages, setMessages] = useState<OutboxMessage[]>([]);
   const [enabled, setEnabled] = useState<boolean | null>(null);
   const [consents, setConsents] = useState<ConsentRow[]>([]);
-  const [mail, setMail] = useState({ to_email: "", subject: "", body: "" });
+  const [mail, setMail] = useState({ to_email: "", subject: "", body: "", track_engagement: false });
   const [block, setBlock] = useState({ email: "", status: "UNSUBSCRIBED" });
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
@@ -58,11 +58,12 @@ export default function CRMOutboxPage() {
       {info && !error && <p className="rounded-lg p-3 text-sm bg-emerald-50 border border-emerald-200 text-emerald-800">{info}</p>}
 
       <form aria-label="Compose e-mail" className="bg-white rounded-xl border shadow-sm p-4 grid md:grid-cols-3 gap-2"
-        onSubmit={(e) => { e.preventDefault(); act(() => crmApi.queueEmail(mail), "E-mail queued."); setMail({ to_email: "", subject: "", body: "" }); }}>
+        onSubmit={(e) => { e.preventDefault(); act(() => crmApi.queueEmail(mail), "E-mail queued."); setMail({ to_email: "", subject: "", body: "", track_engagement: false }); }}>
         <h2 className="font-semibold text-gray-800 md:col-span-3">Compose one-to-one e-mail</h2>
         <input aria-label="To" required type="email" placeholder="to@example.com" value={mail.to_email} onChange={(e) => setMail({ ...mail, to_email: e.target.value })} className={input} />
         <input aria-label="Subject" required placeholder="Subject" value={mail.subject} onChange={(e) => setMail({ ...mail, subject: e.target.value })} className={`${input} md:col-span-2`} />
         <textarea aria-label="Message" required rows={3} placeholder="Message" value={mail.body} onChange={(e) => setMail({ ...mail, body: e.target.value })} className={`${input} md:col-span-3`} />
+        <label className="flex items-center gap-2 text-xs text-gray-600 md:col-span-3"><input type="checkbox" checked={mail.track_engagement} onChange={(e) => setMail({ ...mail, track_engagement: e.target.checked })} /> Track opens and clicks (opt-in; indicator only)</label>
         <button type="submit" className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg md:col-start-3">Queue e-mail</button>
       </form>
 

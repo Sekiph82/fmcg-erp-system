@@ -96,7 +96,8 @@ async def _blocked_reason(db: AsyncSession, email: str, purpose: str) -> Optiona
 
 async def queue(db: AsyncSession, *, to_email: str, subject: str, body: str, purpose: str, dedupe_key: str,
                 crm_record_id: Optional[UUID] = None, customer_id: Optional[UUID] = None,
-                created_by: Optional[str] = None, send_after: Optional[datetime] = None) -> CRMOutboundMessage:
+                created_by: Optional[str] = None, send_after: Optional[datetime] = None,
+                track: bool = False) -> CRMOutboundMessage:
     """Queue (or return the already queued) message for this dedupe key. Caller commits."""
     if purpose not in PURPOSES:
         raise ValueError(f"purpose must be one of {PURPOSES}")
@@ -114,6 +115,7 @@ async def queue(db: AsyncSession, *, to_email: str, subject: str, body: str, pur
         body_text=body, crm_record_id=crm_record_id, customer_id=customer_id,
         status="SUPPRESSED" if reason else "QUEUED", status_reason=reason, attempts=0,
         next_attempt_at=send_after or now, created_by=created_by, created_at=now,
+        track_engagement=bool(track) and purpose != "INVOICE",
     ).on_conflict_do_nothing(index_elements=["dedupe_key"]))
     return (await db.execute(select(CRMOutboundMessage).where(CRMOutboundMessage.dedupe_key == key))).scalar_one()
 
@@ -164,8 +166,15 @@ async def deliver_due(db: AsyncSession, now: Optional[datetime] = None) -> dict:
         msg.next_attempt_at = datetime.now(timezone.utc)  # stale-SENDING clock starts when this send starts
         await db.commit()
         body, headers = _with_footer(msg)
+        html = None
+        from app.services import crm_engagement_service as engagement
+        if await engagement.may_track(db, msg):      # M43.S01.T006 opt-in tracking
+            html, msg.tracked_links = engagement.render_html(msg, body)
+            await db.commit()
         try:
-            msg.provider_message_id = await asyncio.to_thread(send_email, msg.to_email, msg.subject, body, headers)
+            # html only when tracked: existing callers/fakes keep the 4-argument call
+            msg.provider_message_id = await asyncio.to_thread(send_email, msg.to_email, msg.subject, body, headers,
+                                                              **({"html": html} if html else {}))
             msg.status, msg.sent_at, msg.status_reason = "SENT", datetime.now(timezone.utc), None
             counts["sent"] += 1
         except Exception as exc:

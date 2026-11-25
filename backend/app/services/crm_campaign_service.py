@@ -98,7 +98,8 @@ async def _expand_one(db: AsyncSession, campaign: CRMEmailCampaign, now: datetim
         await outbound.queue(db, to_email=email, subject=render(campaign.subject, customer),
                              body=render(campaign.body, customer), purpose="CAMPAIGN",
                              dedupe_key=f"camp:{campaign.id}:{email}", customer_id=customer.id,
-                             created_by=f"campaign:{campaign.name}"[:100])
+                             created_by=f"campaign:{campaign.name}"[:100],
+                             track=bool(campaign.track_engagement))
     campaign.status, campaign.queued_at, campaign.audience_size = "QUEUED", now, len(seen)
     return len(seen)
 

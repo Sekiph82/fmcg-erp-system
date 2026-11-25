@@ -920,6 +920,7 @@ class OutboxIn(BaseModel):
     subject: str = Field(min_length=1, max_length=300, pattern=r"^[^\r\n]+$")
     body: str = Field(min_length=1, max_length=20000)
     crm_record_id: Optional[str] = None
+    track_engagement: bool = False       # M43.S01.T006 opt-in open/click tracking
 
 
 MANUAL_DAILY_CAP = 100
@@ -983,7 +984,8 @@ async def queue_email(body: OutboxIn, db: AsyncSession = Depends(get_db),
     if sent_today >= MANUAL_DAILY_CAP:
         raise HTTPException(429, "Daily e-mail limit reached.")
     msg = await outbound.queue(db, to_email=body.to_email, subject=body.subject, body=body.body, purpose="MANUAL",
-                               dedupe_key=f"manual:{_u.uuid4()}", crm_record_id=record_id, created_by=current_user.username)
+                               dedupe_key=f"manual:{_u.uuid4()}", crm_record_id=record_id, created_by=current_user.username,
+                               track=body.track_engagement)
     await db.commit()
     return _msg_out(msg)
 
@@ -1063,10 +1065,12 @@ class SequenceIn(BaseModel):
     name: str = Field(min_length=1, max_length=150)
     notes: Optional[str] = Field(None, max_length=2000)
     steps: List[SequenceStepIn] = Field(min_length=1, max_length=50)
+    track_engagement: bool = False
 
 
 def _seq_out(seq, steps, counts) -> dict:
     return {"id": str(seq.id), "name": seq.name, "active_flag": seq.active_flag, "notes": seq.notes,
+            "track_engagement": bool(seq.track_engagement),
             "steps": [{"step_no": s.step_no, "delay_days": s.delay_days, "subject": s.subject, "body": s.body} for s in steps],
             "enrollments": counts}
 
@@ -1095,7 +1099,7 @@ async def create_sequence(body: SequenceIn, db: AsyncSession = Depends(get_db)):
         raise HTTPException(409, "A sequence with this name exists.")
     from sqlalchemy.exc import IntegrityError as _IntegrityError
 
-    seq = CRMSequence(name=body.name, notes=body.notes)
+    seq = CRMSequence(name=body.name, notes=body.notes, track_engagement=body.track_engagement)
     db.add(seq)
     try:
         await db.flush()
@@ -1186,6 +1190,7 @@ class EmailCampaignIn(BaseModel):
     segment_id: str
     company_id: str                       # required: a campaign only ever reaches one company's customers
     marketing_campaign_id: Optional[str] = None
+    track_engagement: bool = False
 
 
 async def _campaign_out(db, c) -> dict:
@@ -1195,6 +1200,7 @@ async def _campaign_out(db, c) -> dict:
             "company_id": str(c.company_id) if c.company_id else None, "status": c.status,
             "scheduled_at": c.scheduled_at.isoformat() if c.scheduled_at else None,
             "queued_at": c.queued_at.isoformat() if c.queued_at else None, "audience_size": c.audience_size,
+            "track_engagement": bool(c.track_engagement),
             "stats": await campaigns.stats(db, c)}
 
 
@@ -1226,7 +1232,7 @@ async def create_email_campaign(body: EmailCampaignIn, db: AsyncSession = Depend
     c = CRMEmailCampaign(name=body.name, subject=body.subject, body=body.body, segment_id=_uuid(body.segment_id),
                          company_id=_uuid(body.company_id),
                          marketing_campaign_id=_uuid(body.marketing_campaign_id) if body.marketing_campaign_id else None,
-                         status="DRAFT", created_by=current_user.username)
+                         status="DRAFT", created_by=current_user.username, track_engagement=body.track_engagement)
     db.add(c)
     await db.commit()
     return await _campaign_out(db, c)

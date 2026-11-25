@@ -82,8 +82,71 @@ def upgrade() -> None:
         )""")
     op.execute("CREATE INDEX IF NOT EXISTS ix_bookings_page_created ON booking_page_bookings (page_id, created_at)")
 
+    # T006: opt-in e-mail engagement tracking
+    op.execute("ALTER TABLE crm_contact_consents ADD COLUMN IF NOT EXISTS tracking_opt_out BOOLEAN NOT NULL DEFAULT false")
+    op.execute("ALTER TABLE crm_outbound_messages ADD COLUMN IF NOT EXISTS track_engagement BOOLEAN NOT NULL DEFAULT false")
+    op.execute("ALTER TABLE crm_outbound_messages ADD COLUMN IF NOT EXISTS tracked_links JSON")
+    op.execute("ALTER TABLE crm_sequences ADD COLUMN IF NOT EXISTS track_engagement BOOLEAN NOT NULL DEFAULT false")
+    op.execute("ALTER TABLE crm_email_campaigns ADD COLUMN IF NOT EXISTS track_engagement BOOLEAN NOT NULL DEFAULT false")
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS crm_email_events (
+            id UUID PRIMARY KEY,
+            message_id UUID NOT NULL REFERENCES crm_outbound_messages(id) ON DELETE CASCADE,
+            kind VARCHAR(5) NOT NULL CHECK (kind IN ('OPEN', 'CLICK')),
+            link_index INTEGER NOT NULL DEFAULT 0,
+            url VARCHAR(2000),
+            occurred_at TIMESTAMPTZ NOT NULL,
+            is_machine BOOLEAN NOT NULL DEFAULT false,
+            ua_class VARCHAR(10),
+            ip_hash VARCHAR(64)
+        )""")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_crm_email_events_message ON crm_email_events (message_id, kind, occurred_at)")
+
+    # T007: quotas, forecast category, snapshots
+    op.execute("ALTER TABLE crm_records ADD COLUMN IF NOT EXISTS forecast_category VARCHAR(10) "
+               "CHECK (forecast_category IN ('PIPELINE', 'BEST_CASE', 'COMMIT', 'OMITTED'))")
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS sales_quotas (
+            id UUID PRIMARY KEY,
+            scope_type VARCHAR(10) NOT NULL CHECK (scope_type IN ('REP', 'TEAM', 'TERRITORY', 'COMPANY')),
+            scope_ref VARCHAR(100) NOT NULL,
+            scope_label VARCHAR(200),
+            period_type VARCHAR(10) NOT NULL,
+            period_start DATE NOT NULL,
+            period_end DATE NOT NULL CHECK (period_end >= period_start),
+            currency VARCHAR(10) NOT NULL,
+            target_amount NUMERIC(18, 2) NOT NULL CHECK (target_amount > 0),
+            company_id UUID REFERENCES companies(id) ON DELETE SET NULL,
+            notes TEXT,
+            created_by_id UUID REFERENCES users(id) ON DELETE SET NULL,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+            CONSTRAINT uq_sales_quota_scope_period_currency UNIQUE (scope_type, scope_ref, period_start, period_end, currency)
+        )""")
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS sales_quota_snapshots (
+            id UUID PRIMARY KEY,
+            quota_id UUID NOT NULL REFERENCES sales_quotas(id) ON DELETE CASCADE,
+            taken_at TIMESTAMPTZ NOT NULL,
+            actual_amount NUMERIC(18, 2) NOT NULL,
+            commit_amount NUMERIC(18, 2) NOT NULL,
+            best_case_amount NUMERIC(18, 2) NOT NULL,
+            pipeline_amount NUMERIC(18, 2) NOT NULL,
+            projected_amount NUMERIC(18, 2) NOT NULL,
+            assumptions JSON NOT NULL
+        )""")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_sales_quota_snapshots_quota ON sales_quota_snapshots (quota_id, taken_at)")
+
 
 def downgrade() -> None:
+    op.execute("DROP TABLE IF EXISTS sales_quota_snapshots")
+    op.execute("DROP TABLE IF EXISTS sales_quotas")
+    op.execute("ALTER TABLE crm_records DROP COLUMN IF EXISTS forecast_category")
+    op.execute("DROP TABLE IF EXISTS crm_email_events")
+    for t in ("crm_email_campaigns", "crm_sequences", "crm_outbound_messages"):
+        op.execute(f"ALTER TABLE {t} DROP COLUMN IF EXISTS track_engagement")
+    op.execute("ALTER TABLE crm_outbound_messages DROP COLUMN IF EXISTS tracked_links")
+    op.execute("ALTER TABLE crm_contact_consents DROP COLUMN IF EXISTS tracking_opt_out")
     op.execute("DROP TABLE IF EXISTS booking_page_bookings")
     op.execute("DROP TABLE IF EXISTS booking_pages")
     op.execute("DROP TABLE IF EXISTS calendar_busy_blocks")

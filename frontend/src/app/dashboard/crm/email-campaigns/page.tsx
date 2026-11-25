@@ -13,7 +13,7 @@ function errorText(e: unknown) {
   return "Request failed.";
 }
 
-const EMPTY = { name: "", subject: "", body: "", segment_id: "", company_id: "" };
+const EMPTY = { name: "", subject: "", body: "", segment_id: "", company_id: "", track_engagement: false };
 
 export default function CRMEmailCampaignsPage() {
   const [items, setItems] = useState<EmailCampaign[]>([]);
@@ -88,6 +88,7 @@ export default function CRMEmailCampaignsPage() {
         </select>
         <input aria-label="Campaign subject" required placeholder="Subject — {company_name} allowed" value={draft.subject} onChange={(e) => setDraft({ ...draft, subject: e.target.value })} className={`${input} md:col-span-2`} />
         <textarea aria-label="Campaign body" required rows={4} placeholder="Message — {contact_name} {company_name}" value={draft.body} onChange={(e) => setDraft({ ...draft, body: e.target.value })} className={`${input} md:col-span-2`} />
+        <div className="md:col-span-2"><label className="flex items-center gap-2 text-xs text-gray-600"><input type="checkbox" checked={draft.track_engagement} onChange={(e) => setDraft({ ...draft, track_engagement: e.target.checked })} /> Track opens and clicks (only if tracking is switched on for the company; recipients can opt out; opens are an indicator, not proof of reading)</label></div>
         <button type="submit" className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg md:col-start-2">Save draft</button>
       </form>}
 
