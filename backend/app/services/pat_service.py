@@ -95,7 +95,8 @@ def audit(db: AsyncSession, user, event: str, target_type: str, target_id: Optio
 
 # ── approval queue ───────────────────────────────────────────────────────────
 
-ACTIONS = {"create_task": "Create a follow-up task on a CRM record"}
+ACTIONS = {"create_task": "Create a follow-up task on a CRM record (or the customer's newest deal)",
+           "send_email": "Queue an e-mail through the CRM outbox (suppression and consent rules apply)"}
 
 
 async def propose(db: AsyncSession, *, source: str, source_ref: Optional[str], user, action: str, arguments: dict,
@@ -131,13 +132,27 @@ async def decide(db: AsyncSession, req: AIActionRequest, approver, approve: bool
 async def _execute(db: AsyncSession, req: AIActionRequest, approver) -> dict:
     if req.action == "create_task":
         from app.models.crm import CRMActivity, CRMRecord
-        rec = await db.get(CRMRecord, uuid.UUID(str(req.arguments.get("crm_record_id"))))
+        if req.arguments.get("crm_record_id"):
+            rec = await db.get(CRMRecord, uuid.UUID(str(req.arguments["crm_record_id"])))
+        else:   # agents work per customer: use the customer's newest deal
+            rec = (await db.execute(select(CRMRecord).where(CRMRecord.assigned_customer_id == uuid.UUID(str(req.arguments.get("customer_id"))))
+                                    .order_by(CRMRecord.created_at.desc()))).scalars().first()
         if rec is None:
             raise ValueError("CRM record not found.")
         a = CRMActivity(crm_record_id=rec.id, **_activity_fields(req.arguments, approver))
         db.add(a)
         await db.flush()
         return {"activity_id": str(a.id)}
+    if req.action == "send_email":
+        from app.services import crm_outbound_service as outbound
+        a = req.arguments
+        if not a.get("to_email"):
+            raise ValueError("No e-mail address.")
+        m = await outbound.queue(db, to_email=str(a["to_email"]), subject=str(a.get("subject") or "")[:300],
+                                 body=str(a.get("body") or ""), purpose="MANUAL", dedupe_key=f"ai:{req.id}",
+                                 customer_id=uuid.UUID(str(a["customer_id"])) if a.get("customer_id") else None,
+                                 created_by=f"ai:{approver.username}"[:100])
+        return {"outbound_id": str(m.id), "status": m.status}
     raise ValueError("Unsupported action.")
 
 

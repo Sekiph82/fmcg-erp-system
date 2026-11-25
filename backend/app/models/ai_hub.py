@@ -43,3 +43,58 @@ class AIActionRequest(Base):
     decided_at   = Column(DateTime(timezone=True), nullable=True)
     result       = Column(JSON, nullable=True)
     created_at   = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+
+class AIAgent(Base):
+    """An agent built in the visual builder (T008) and run by the scheduler (T009)."""
+    __tablename__ = "ai_agents"
+
+    id              = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name            = Column(String(120), nullable=False)
+    template        = Column(String(30), nullable=True)
+    status          = Column(String(10), nullable=False, default="DRAFT")    # DRAFT | ACTIVE | PAUSED
+    stopped         = Column(Boolean, nullable=False, default=False)          # per-agent emergency stop
+    current_version = Column(Integer, nullable=True)                          # published version that runs
+    run_as_id       = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    schedule        = Column(JSON, nullable=True)        # {"every_minutes": 60} | {"daily_at": "07:30", "time_zone": "Africa/Nairobi"}
+    budgets         = Column(JSON, nullable=False)       # {"max_runs_per_day", "max_tokens_per_run", "max_cost_per_day"}
+    next_run_at     = Column(DateTime(timezone=True), nullable=True, index=True)
+    last_run_at     = Column(DateTime(timezone=True), nullable=True)
+    created_by      = Column(String(100), nullable=True)
+    created_at      = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+
+class AIAgentVersion(Base):
+    __tablename__ = "ai_agent_versions"
+    __table_args__ = (UniqueConstraint("agent_id", "version", name="uq_ai_agent_version"),)
+
+    id          = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    agent_id    = Column(UUID(as_uuid=True), ForeignKey("ai_agents.id", ondelete="CASCADE"), nullable=False, index=True)
+    version     = Column(Integer, nullable=False)
+    definition  = Column(JSON, nullable=False)           # trigger, tools allow-list, knowledge, steps
+    status      = Column(String(10), nullable=False, default="DRAFT")   # DRAFT | PENDING | PUBLISHED | REJECTED
+    created_by  = Column(String(100), nullable=True)
+    approved_by = Column(String(100), nullable=True)
+    created_at  = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+
+class AIAgentJob(Base):
+    """One durable run of an agent: claimed with SKIP LOCKED, retried with back-off, idempotent per key."""
+    __tablename__ = "ai_agent_jobs"
+
+    id              = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    agent_id        = Column(UUID(as_uuid=True), ForeignKey("ai_agents.id", ondelete="CASCADE"), nullable=False, index=True)
+    version         = Column(Integer, nullable=False)
+    trigger         = Column(String(10), nullable=False)          # MANUAL | SCHEDULE | EVENT | SIMULATE
+    idempotency_key = Column(String(150), nullable=False, unique=True)
+    status          = Column(String(10), nullable=False, default="QUEUED", index=True)  # QUEUED | RUNNING | DONE | FAILED | BLOCKED | CANCELLED
+    attempts        = Column(Integer, nullable=False, default=0)
+    next_attempt_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    requested_by    = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    input           = Column(JSON, nullable=True)
+    trace           = Column(JSON, nullable=True)                 # per-step inputs/outputs (masked)
+    tokens          = Column(Integer, nullable=False, default=0)
+    cost            = Column(Numeric(12, 6), nullable=False, default=0)
+    error           = Column(String(500), nullable=True)
+    created_at      = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    finished_at     = Column(DateTime(timezone=True), nullable=True)

@@ -2252,16 +2252,40 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
   - **Acceptance at milestone gate:** Local KB + mock model, prompt-injection, account isolation, citations, escalation, no provider fallback and human approval tests.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable. Do not rebuild already working functionality; record evidence and bounded delta.
   - **Claude checkpoint:** update TASKS.md/Project Status immediately after this task, [v] pending milestone gate, tests NOT RUN; automatically continue next dependency-ready task. Never [x] before milestone PASS.
-- [ ] M45.S01.T008 — Visual AI agent builder (original recommendation 29/40)
+- [v] M45.S01.T008 — Visual AI agent builder (original recommendation 29/40)
   - **Scope:** Reuse workflow and AI governance: agents with triggers, allowed tools, prompts, knowledge, versions, simulation, approval, scoped read/write capabilities and template gallery. Extended by matrix v2: template gallery includes revenue (overdue chase on dunning), closing (buyer Q&A on approved quote content), customer-health and knowledge-base agents.
   - **Acceptance at milestone gate:** Build and simulate real local agent in UI, validate cycles/tool allowlist, version rollback, prompt injection and unauthorized action denial.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable. Do not rebuild already working functionality; record evidence and bounded delta.
   - **Claude checkpoint:** update TASKS.md/Project Status immediately after this task, [v] pending milestone gate, tests NOT RUN; automatically continue next dependency-ready task. Never [x] before milestone PASS.
-- [ ] M45.S01.T009 — Agent scheduler, cost and governance (original recommendation 30/40)
+  Implemented 2026-11-26 [v] (tests NOT RUN as gate):
+  - Builder: AI → Agents. Agents use versioned definitions (trigger, tool allow-list, knowledge, steps with for-each and templating).
+  - Validation rejects:
+    - cycles;
+    - unknown or unlisted tools;
+    - unconnected steps;
+    - forward references.
+  - Simulation writes nothing.
+  - Publishing needs approval by a second person (ai.approve). Rollback to an earlier published version is supported.
+  - The agent runs as its owner, so read tools check that owner's permissions.
+  - Write tools (create_task, send_email) only create AI requests. A different person approves them, and send_email goes through the outbox with its suppression rules.
+  - If tool output contains a prompt-injection pattern, the run is flagged and later writes are blocked.
+  - Template gallery: overdue-invoice chaser (dunning), quote Q&A (approved quote content only), customer-health watcher and knowledge-base answerer.
+  - Tests: tests/test_m45_s01_t008_t009_agents.py.
+- [v] M45.S01.T009 — Agent scheduler, cost and governance (original recommendation 30/40)
   - **Scope:** Durable jobs, schedules, limits per agent/user/company, token/cost estimates from configurable rates, retry/idempotency, approvals, kill switch, audit and deterministic fallback; no default real AI calls.
   - **Acceptance at milestone gate:** Fake model/local provider exercises budgets, time zones, concurrent runs, retries, emergency stop and human approval. Real model tests optional and explicitly authorized only.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable. Do not rebuild already working functionality; record evidence and bounded delta.
   - **Claude checkpoint:** update TASKS.md/Project Status immediately after this task, [v] pending milestone gate, tests NOT RUN; automatically continue next dependency-ready task. Never [x] before milestone PASS.
+  Implemented 2026-11-26 [v]:
+  - Durable jobs (ai_agent_jobs):
+    - claimed with SKIP LOCKED, one running job per agent;
+    - idempotent per key (each schedule slot is enqueued once);
+    - retried with exponential back-off, up to 3 attempts.
+  - Schedules: every N minutes, or daily at HH:MM in an IANA time zone.
+  - Budgets: per agent (runs/day, tokens/run, cost/day), per company (cost/day) and per user (manual runs/day). Token and cost estimates use configurable rates.
+  - Emergency stop: global and per agent.
+  - Every job is audited and mirrored into ai_agent_runs, so it appears on the AI governance dashboard.
+  - No default real AI call: LLM steps render deterministic templates unless use_provider is switched on and a provider key exists. That is optional, explicitly authorized and deferred to M47.
 - [ ] M45.S01.T010 — Advanced customer deduplication and merge (original recommendation 31/40)
   - **Scope:** Detect candidate duplicates across contacts/companies; canonical survivor, merge preview, preserve references/orders/invoices/activity/consent, stricter suppression wins, audit/rollback strategy and RBAC. Extended by matrix v2: fuzzy matching (names, phones, KRA PIN, addresses), customer merge (merge_master today excludes customers) and bulk duplicate review.
   - **Acceptance at milestone gate:** Synthetic duplicate records with transactions and permissions, no orphan/duplicate order, consent preservation and concurrency.

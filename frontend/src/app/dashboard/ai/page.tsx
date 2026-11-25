@@ -241,6 +241,7 @@ const AICompliancePage     = dynamic(() => import("@/app/dashboard/ai/compliance
 const AIGovernancePage     = dynamic(() => import("@/app/dashboard/ai/governance/page"),     { ssr: false });
 const AINLCommandPage      = dynamic(() => import("@/app/dashboard/ai/nl-command/page"),     { ssr: false });
 const AILogsPage           = dynamic(() => import("@/app/dashboard/ai/logs/page"),           { ssr: false });
+const AIAgentsPage         = dynamic(() => import("@/app/dashboard/ai/agents/page"),         { ssr: false });
 
 export default function AIPage() {
   const tabs = [
@@ -251,6 +252,7 @@ export default function AIPage() {
     { key: "recommendations",label: "Recommendations", permission: "ai.view", content: <AIRecommendationsPage /> },
     { key: "scenarios",      label: "Scenarios",       permission: "ai.view", content: <AIScenariosPage /> },
     { key: "compliance",     label: "Compliance",      permission: "ai.view", content: <AICompliancePage /> },
+    { key: "agents",         label: "Agents",          permission: "ai.view", content: <AIAgentsPage /> },
     { key: "governance",     label: "Governance",      permission: "ai.view", content: <AIGovernancePage /> },
     { key: "nl-command",     label: "NL Command",      permission: "ai.view", content: <AINLCommandPage /> },
     { key: "logs",           label: "Logs",            permission: "ai.view", content: <AILogsPage /> },

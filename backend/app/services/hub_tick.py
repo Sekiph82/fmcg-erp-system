@@ -23,7 +23,12 @@ async def _daily_customer_intel(db) -> None:
     _last_daily = today
 
 
-JOBS = [_daily_customer_intel]
+async def _agents(db) -> None:
+    from app.services import agent_service
+    await agent_service.tick(db)
+
+
+JOBS = [_daily_customer_intel, _agents]
 
 
 async def tick() -> None:
