@@ -2066,7 +2066,8 @@ Reference entry points (refresh and record date/version during audit): https://w
   - Independent review: separate reviewer agent, ACCEPT_WITH_FIXES, 15 findings (2 high, 7 medium). All fixed with tests except three low items deferred to M44.S01.T014. Re-run after the fixes is green.
   - Gate fixes found by the tests: OAuth forced refresh, playbook v2 publish, required revenue 0.
   - Not covered here: the full DB-gated regression of older milestones (M36–M42) and live providers (see M47).
-- [ ] M43.S02.T002 — On gate PASS, mark accepted software tasks [x], document unresolved activation-only prerequisites, commit and push evidence/ledger; fetch and verify Desktop HEAD equals origin/main, record synchronization and clean status; update next milestone/action in TASKS.md. If sync fails do not claim milestone closed; retry safely. Continue autonomously.
+- [x] M43.S02.T002 — On gate PASS, mark accepted software tasks [x], document unresolved activation-only prerequisites, commit and push evidence/ledger; fetch and verify Desktop HEAD equals origin/main, record synchronization and clean status; update next milestone/action in TASKS.md. If sync fails do not claim milestone closed; retry safely. Continue autonomously.
+  Done 2026-11-25 [x]: the gate commit was pushed to origin/main; after fetch, Desktop HEAD equals origin/main (523e6ed, the gate-pass commit). The working tree is clean apart from owner-untracked files (.hiveai/, two M25 logs). The gate container and walkthrough servers were removed and temporary next-dev edits reverted.
 
 # M44 — Advanced Marketing Hub — accountless
 
