@@ -18,11 +18,12 @@ pass=0; fail=0
 for f in ${FILES:-tests/test_m45_*.py}; do
   db="g_$(basename "$f" .py | tr -c 'a-z0-9_' '_' | cut -c1-50)"
   docker exec m45-gate-pg psql -U postgres -q -c "DROP DATABASE IF EXISTS $db" -c "CREATE DATABASE $db TEMPLATE m45_tmpl" >/dev/null
-  out=$(DATABASE_URL="postgresql+asyncpg://postgres@$PG/$db" M43_S01_DB=1 M43_S00_T004_DB=1 M44_DB=1 M45_DB=1 \
+  docker exec m45-gate-pg psql -U postgres -q -c "DROP DATABASE IF EXISTS ${db}_b" -c "CREATE DATABASE ${db}_b TEMPLATE m45_tmpl" >/dev/null
+  out=$(M45_DB2_URL="postgresql+asyncpg://postgres@$PG/${db}_b" DATABASE_URL="postgresql+asyncpg://postgres@$PG/$db" M43_S01_DB=1 M43_S00_T004_DB=1 M44_DB=1 M45_DB=1 \
         timeout 600 python -m pytest -q --no-header -p no:cacheprovider "$f" 2>&1 | tail -25)
   line=$(echo "$out" | tail -1)
   echo "== $f :: $line"
   if echo "$line" | grep -qE "failed|error"; then fail=$((fail+1)); echo "$out"; else pass=$((pass+1)); fi
-  docker exec m45-gate-pg psql -U postgres -q -c "DROP DATABASE IF EXISTS $db" >/dev/null
+  docker exec m45-gate-pg psql -U postgres -q -c "DROP DATABASE IF EXISTS $db" -c "DROP DATABASE IF EXISTS ${db}_b" >/dev/null
 done
 echo "FILES PASS=$pass FAIL=$fail"

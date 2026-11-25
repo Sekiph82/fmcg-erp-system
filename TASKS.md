@@ -2446,11 +2446,32 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
   - Search/GraphQL: the GraphQL Customer type exposes no sensitive field (test).
   - Bounded delta: the generic report builder and other modules' ad-hoc exports do not run per-user masking. Classified fields are not among the report-builder customer columns.
   - Tests: tests/test_m45_s01_t017_sensitive.py (real login sessions for two personas).
-- [ ] M45.S01.T018 — Configuration sandbox (additional gap, Source: HubSpot parity matrix 2026-11-25 (coordination/milestones/M43/HUBSPOT_PARITY_MATRIX_2026-11-25.md).)
+- [v] M45.S01.T018 — Configuration sandbox (additional gap, Source: HubSpot parity matrix 2026-11-25 (coordination/milestones/M43/HUBSPOT_PARITY_MATRIX_2026-11-25.md).)
   - **Scope:** Export/import of configuration (pipelines, forms, workflows, sequences, custom objects/fields, templates) as a versioned bundle with diff preview and dry run, so changes are tested on a staging copy before production. No customer data in bundles.
   - **Acceptance at milestone gate:** Bundle round-trip between two disposable databases; diff and dry run; conflicting IDs handled; no personal data inside.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable.
   - **Claude checkpoint:** [v] pending milestone gate, tests NOT RUN until gate; never [x] before milestone PASS.
+  Implemented 2026-11-26 [v] (tests NOT RUN as gate):
+  - Versioned configuration bundle: format version, schema revision and SHA-256.
+  - Contents:
+    - pipelines and stages;
+    - custom fields and options;
+    - custom object types;
+    - e-mail templates;
+    - sequences and steps;
+    - lead forms;
+    - score and routing rules;
+    - workflows with their published graph.
+  - Rows travel by natural keys, never ids, and references are re-resolved in the target. Conflicting ids are therefore impossible.
+  - Personal and environment-specific columns are dropped (users, territories, companies, routing members/state). No customer, contact or transaction table is in a bundle (test).
+  - Import:
+    - a dry-run diff writes nothing (create / update with changed fields / unchanged / skip / error);
+    - overwrite or keep-existing mode;
+    - one-transaction apply;
+    - workflows arrive as DRAFT versions to be published again.
+  - Refused: tampered bundles (checksum) and other schema revisions.
+  - UI: Security → Configuration sandbox.
+  - Round trip between two disposable databases: tests/test_m45_s01_t018_config_bundle.py. The gate runner creates the second DB.
 - [ ] M45.S01.T019 — Service routing, conditional SLAs and CSAT/CES (additional gap, Source: HubSpot parity matrix 2026-11-25 (coordination/milestones/M43/HUBSPOT_PARITY_MATRIX_2026-11-25.md).)
   - **Scope:** Agent skills and availability; skill-based and round-robin ticket routing; SLA policies by priority, channel and customer tier with business hours and pause states; CSAT/CES surveys after ticket close (portal and e-mail), results on dashboard. Extended by matrix v2: ticket CSAT already exists in the portal; add CES and post-chat survey, automatic assignment, capacity limits and agent presence, macros, reply recommendations, help desk spaces and custom views, QA and customer-experience scores, handoff summaries.
   - **Acceptance at milestone gate:** Synthetic tickets routed by skill; SLA timers with business hours and breaches; survey sent once, answered once; reports; permissions.
