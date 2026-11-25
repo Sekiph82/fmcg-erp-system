@@ -88,22 +88,6 @@ async def by_token(db: AsyncSession, session_id, token: str, lock: bool = False)
     return sess
 
 
-async def _kb_answer(db: AsyncSession, text: str) -> Optional[str]:
-    from app.models.knowledge_base import KBArticle
-    from app.api.v1.endpoints.kb_public import _public
-
-    words = [w for w in re.findall(r"[A-Za-z]{4,}", text.lower()) if w not in {"what", "when", "where", "which", "with", "have", "your", "this", "that", "from", "please", "about"}][:4]
-    if not words:
-        return None
-    conds = [or_(KBArticle.title.ilike(f"%{w}%"), KBArticle.summary.ilike(f"%{w}%")) for w in words]
-    rows = (await db.execute(select(KBArticle.slug, KBArticle.title, KBArticle.summary).where(*_public(), or_(*conds))
-                             .order_by(KBArticle.is_featured.desc(), KBArticle.title).limit(3))).all()
-    if not rows:
-        return None
-    lines = [f"• {t}: /kb/{slug}" + (f" — {s}" if s else "") for slug, t, s in rows]
-    return "These help articles may answer it:\n" + "\n".join(lines) + "\nType 'person' if you still need our team."
-
-
 async def visitor_says(db: AsyncSession, sess: CRMChatSession, body: str, *, email: Optional[str] = None,
                        consent: bool = False) -> list[CRMChatMessage]:
     if sess.status == "CLOSED":
@@ -122,12 +106,14 @@ async def visitor_says(db: AsyncSession, sess: CRMChatSession, body: str, *, ema
     if email and consent and not sess.consent_given:
         sess.visitor_email, sess.consent_given = email.lower(), True
         await _ensure_lead(db, sess)
-    if sess.status == "BOT":
-        answer = None if HANDOFF_WORDS.search(body) else await _kb_answer(db, body)
-        if answer is None:
+    if sess.status == "BOT":   # M45.S01.T007 grounded service agent (help articles + own orders/tickets), else a person
+        from app.services import service_agent
+        reply = await service_agent.respond(db, sess, body, HANDOFF_WORDS)
+        answer = reply.text
+        if reply.handoff:
             sess.status = "WAITING"
-            answer = ("Thank you, a member of our team will reply here shortly (working hours, Nairobi time)."
-                      + ("" if sess.consent_given else " Leave your e-mail if you would like a reply by e-mail too."))
+            if not sess.consent_given:
+                answer += " Leave your e-mail if you would like a reply by e-mail too."
         out.append(CRMChatMessage(session_id=sess.id, sender="BOT", body=answer, created_at=now + timedelta(milliseconds=1)))
     sess.last_message_at = now
     db.add_all(out)

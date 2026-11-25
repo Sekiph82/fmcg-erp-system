@@ -2247,11 +2247,22 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
   - Snapshots: daily (ci_health_snapshots) for the trend, from the M45 job runner.
   - Low health: an alert with playbook steps to the owner.
   - Workspace: lists only the customers a rep owns; crm.view_all sees all.
-- [ ] M45.S01.T007 — AI customer service agent (original recommendation 28/40)
+- [v] M45.S01.T007 — AI customer service agent (original recommendation 28/40)
   - **Scope:** Extend public KB bot with retrieval grounded in approved articles, safe order/ticket status after authorization, multilingual responses, escalation and refusal, citations, audit and consent. No autonomous refunds/orders/financial actions.
   - **Acceptance at milestone gate:** Local KB + mock model, prompt-injection, account isolation, citations, escalation, no provider fallback and human approval tests.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable. Do not rebuild already working functionality; record evidence and bounded delta.
   - **Claude checkpoint:** update TASKS.md/Project Status immediately after this task, [v] pending milestone gate, tests NOT RUN; automatically continue next dependency-ready task. Never [x] before milestone PASS.
+  Implemented 2026-11-26 [v] (tests NOT RUN as gate):
+  - The website chat bot is now a grounded service agent (app/services/service_agent.py), used by crm_chat_service.
+  - Help answers: only from approved, public help articles, ranked by app/services/kb_retrieval.py, with numbered citations. Internal or draft articles never appear.
+  - Order and ticket status: only for a signed-in portal customer, and only for their own records. Anonymous visitors are asked to sign in; another account's numbers are "not found".
+  - Refused: refunds, cancellations, payments and price changes (handed to a person), and prompt-injection attempts.
+  - Languages: English and Swahili.
+  - Nothing grounded → hand-off to a person; there is no generative-model fallback.
+  - Bot replies are stored with the chat (audit). Consent behaviour is unchanged.
+  - Tests:
+    - tests/test_m45_s01_t007_service_agent.py
+    - the M36 live-chat regression test, rerun: PASS
 - [v] M45.S01.T008 — Visual AI agent builder (original recommendation 29/40)
   - **Scope:** Reuse workflow and AI governance: agents with triggers, allowed tools, prompts, knowledge, versions, simulation, approval, scoped read/write capabilities and template gallery. Extended by matrix v2: template gallery includes revenue (overdue chase on dunning), closing (buyer Q&A on approved quote content), customer-health and knowledge-base agents.
   - **Acceptance at milestone gate:** Build and simulate real local agent in UI, validate cycles/tool allowlist, version rollback, prompt injection and unauthorized action denial.

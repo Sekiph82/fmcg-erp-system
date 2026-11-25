@@ -99,7 +99,7 @@ async def tool_customer_health(db, user, args) -> list[dict]:
 
 async def tool_kb_search(db, user, args) -> list[dict]:
     from app.services import kb_retrieval
-    return [{"slug": h.slug, "title": h.title, "summary": h.summary, "citation": f"/help/{h.slug}"}
+    return [{"slug": h.slug, "title": h.title, "summary": h.summary, "citation": f"/kb/{h.slug}"}
             for h in await kb_retrieval.search(db, str(args.get("query") or ""))]
 
 
