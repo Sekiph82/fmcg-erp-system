@@ -258,8 +258,111 @@ def upgrade() -> None:
     op.execute("UPDATE crm_records SET pipeline_id = (SELECT id FROM crm_pipelines WHERE is_default) WHERE pipeline_id IS NULL")
     op.execute("CREATE INDEX IF NOT EXISTS ix_crm_records_pipeline ON crm_records (pipeline_id)")
 
+    # T015: standalone contacts, associations, lifecycle; backfilled from CRM records and account contacts
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS crm_contacts (
+            id UUID PRIMARY KEY,
+            full_name VARCHAR(200) NOT NULL,
+            email VARCHAR(254),
+            phone VARCHAR(50),
+            job_title VARCHAR(150),
+            lifecycle_stage VARCHAR(12) CHECK (lifecycle_stage IN
+                ('SUBSCRIBER', 'LEAD', 'MQL', 'SQL', 'OPPORTUNITY', 'CUSTOMER', 'EVANGELIST', 'OTHER')),
+            lifecycle_changed_at TIMESTAMPTZ,
+            owner_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+            company_id UUID REFERENCES companies(id) ON DELETE SET NULL,
+            source VARCHAR(60),
+            notes TEXT,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        )""")
+    op.execute("CREATE UNIQUE INDEX IF NOT EXISTS uq_crm_contacts_email ON crm_contacts (lower(email)) WHERE email IS NOT NULL")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_crm_contacts_company ON crm_contacts (company_id)")
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS crm_contact_associations (
+            id UUID PRIMARY KEY,
+            contact_id UUID NOT NULL REFERENCES crm_contacts(id) ON DELETE CASCADE,
+            object_type VARCHAR(20) NOT NULL CHECK (object_type IN ('customer', 'crm_record', 'ticket', 'quotation', 'sales_order')),
+            object_id UUID NOT NULL,
+            label VARCHAR(20) NOT NULL DEFAULT 'primary',
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+            CONSTRAINT uq_contact_assoc UNIQUE (contact_id, object_type, object_id, label)
+        )""")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_contact_assoc_object ON crm_contact_associations (object_type, object_id)")
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS crm_lifecycle_history (
+            id UUID PRIMARY KEY,
+            contact_id UUID NOT NULL REFERENCES crm_contacts(id) ON DELETE CASCADE,
+            from_stage VARCHAR(12),
+            to_stage VARCHAR(12) NOT NULL,
+            source VARCHAR(60) NOT NULL,
+            reason VARCHAR(300),
+            changed_by_id UUID REFERENCES users(id) ON DELETE SET NULL,
+            changed_at TIMESTAMPTZ NOT NULL
+        )""")
+    op.execute("ALTER TABLE crm_account_contacts ADD COLUMN IF NOT EXISTS contact_id UUID REFERENCES crm_contacts(id) ON DELETE SET NULL")
+    # backfill 1: one contact per distinct e-mail across CRM records and account contacts (newest name wins)
+    op.execute("""
+        INSERT INTO crm_contacts (id, full_name, email, phone, job_title, company_id, source, created_at, updated_at)
+        SELECT gen_random_uuid(), name, email, phone, title, company_id, src, now(), now() FROM (
+            SELECT DISTINCT ON (lower(email)) name, lower(email) AS email, phone, title, company_id, src FROM (
+                SELECT COALESCE(NULLIF(trim(contact_person_name), ''), contact_email) AS name, contact_email AS email,
+                       contact_phone AS phone, NULL::varchar AS title, company_id, 'migration:crm_record' AS src, created_at AS ts
+                  FROM crm_records WHERE NULLIF(trim(contact_email), '') IS NOT NULL
+                UNION ALL
+                SELECT full_name, email, phone, title, NULL::uuid, 'migration:account_contact', now()
+                  FROM crm_account_contacts WHERE NULLIF(trim(email), '') IS NOT NULL
+            ) src ORDER BY lower(email), ts DESC
+        ) d
+        ON CONFLICT DO NOTHING""")
+    # backfill 2: records with a contact name but no e-mail get their own contact (cannot be safely merged)
+    op.execute("""
+        INSERT INTO crm_contacts (id, full_name, phone, company_id, source, created_at, updated_at)
+        SELECT r.id, trim(r.contact_person_name), r.contact_phone, r.company_id, 'migration:crm_record:no_email', now(), now()
+          FROM crm_records r
+         WHERE NULLIF(trim(r.contact_email), '') IS NULL AND NULLIF(trim(r.contact_person_name), '') IS NOT NULL
+        ON CONFLICT DO NOTHING""")
+    op.execute("""
+        INSERT INTO crm_contact_associations (id, contact_id, object_type, object_id, label, created_at)
+        SELECT gen_random_uuid(), COALESCE(c.id, r.id), 'crm_record', r.id, 'primary', now()
+          FROM crm_records r LEFT JOIN crm_contacts c ON lower(c.email) = lower(NULLIF(trim(r.contact_email), ''))
+         WHERE COALESCE(c.id, (SELECT id FROM crm_contacts WHERE id = r.id)) IS NOT NULL
+        ON CONFLICT DO NOTHING""")
+    op.execute("""
+        INSERT INTO crm_contact_associations (id, contact_id, object_type, object_id, label, created_at)
+        SELECT gen_random_uuid(), a.contact_id, 'customer', r.assigned_customer_id, 'primary', now()
+          FROM crm_contact_associations a JOIN crm_records r ON a.object_type = 'crm_record' AND a.object_id = r.id
+         WHERE r.assigned_customer_id IS NOT NULL
+        ON CONFLICT DO NOTHING""")
+    op.execute("""UPDATE crm_account_contacts ac SET contact_id = c.id FROM crm_contacts c
+                  WHERE ac.contact_id IS NULL AND lower(c.email) = lower(NULLIF(trim(ac.email), ''))""")
+    op.execute("""
+        INSERT INTO crm_contact_associations (id, contact_id, object_type, object_id, label, created_at)
+        SELECT gen_random_uuid(), contact_id, 'customer', customer_id,
+               CASE lower(committee_role) WHEN 'decision_maker' THEN 'decision_maker' WHEN 'buyer' THEN 'buyer'
+                    WHEN 'influencer' THEN 'influencer' WHEN 'champion' THEN 'champion' WHEN 'user' THEN 'user'
+                    WHEN 'blocker' THEN 'blocker' ELSE 'other' END, now()
+          FROM crm_account_contacts WHERE contact_id IS NOT NULL
+        ON CONFLICT DO NOTHING""")
+    # lifecycle from the most advanced linked record (won → customer, opportunity, qualified → sql, else lead)
+    op.execute("""
+        UPDATE crm_contacts c SET lifecycle_stage = s.stage, lifecycle_changed_at = now() FROM (
+            SELECT a.contact_id, (ARRAY['LEAD','SQL','OPPORTUNITY','CUSTOMER'])[max(
+                CASE WHEN r.status = 'WON' THEN 4 WHEN r.record_type = 'OPPORTUNITY' THEN 3
+                     WHEN r.qualified_flag THEN 2 ELSE 1 END)] AS stage
+              FROM crm_contact_associations a JOIN crm_records r ON a.object_type = 'crm_record' AND a.object_id = r.id
+             GROUP BY a.contact_id) s
+         WHERE c.id = s.contact_id AND c.lifecycle_stage IS NULL""")
+    op.execute("""
+        INSERT INTO crm_lifecycle_history (id, contact_id, from_stage, to_stage, source, changed_at)
+        SELECT gen_random_uuid(), id, NULL, lifecycle_stage, 'migration', now() FROM crm_contacts WHERE lifecycle_stage IS NOT NULL""")
+
 
 def downgrade() -> None:
+    op.execute("ALTER TABLE crm_account_contacts DROP COLUMN IF EXISTS contact_id")
+    op.execute("DROP TABLE IF EXISTS crm_lifecycle_history")
+    op.execute("DROP TABLE IF EXISTS crm_contact_associations")
+    op.execute("DROP TABLE IF EXISTS crm_contacts")
     op.execute("ALTER TABLE crm_records DROP COLUMN IF EXISTS pipeline_id")
     op.execute("ALTER TABLE crm_pipeline_stages DROP COLUMN IF EXISTS pipeline_id")
     op.execute("DROP TABLE IF EXISTS crm_pipelines")

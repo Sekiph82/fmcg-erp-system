@@ -180,6 +180,9 @@ async def create_record(db: AsyncSession, data: CRMRecordCreate) -> CRMRecord:
     record = CRMRecord(**payload)
     await sync_pipeline(db, record)  # M43.S01.T011
     db.add(record)
+    await db.flush()
+    from app.services.crm_contact_service import sync_record as _sync_contact
+    await _sync_contact(db, record, "created")
     await db.commit()
     await db.refresh(record)
     return record
@@ -217,6 +220,8 @@ async def qualify_record(db: AsyncSession, record_id: str, data: CRMQualifyReque
     record.qualified_date = date.today()
     if data.notes:
         record.notes = (record.notes or "") + f"\n[Qualification] {data.notes}"
+    from app.services.crm_contact_service import sync_record as _sync_contact
+    await _sync_contact(db, record, "qualified")
     await db.commit()
     await db.refresh(record)
     return record
@@ -241,6 +246,8 @@ async def convert_to_opportunity(db: AsyncSession, record_id: str, data: CRMConv
         await sync_pipeline(db, record)
     if data.notes:
         record.notes = (record.notes or "") + f"\n[Converted to Opportunity] {data.notes}"
+    from app.services.crm_contact_service import sync_record as _sync_contact
+    await _sync_contact(db, record, "converted")
     await db.commit()
     await db.refresh(record)
     return record
@@ -267,6 +274,8 @@ async def close_won(db: AsyncSession, record_id: str, data: CRMCloseWonRequest) 
         recorded_by=data.recorded_by,
     )
     db.add(wl)
+    from app.services.crm_contact_service import sync_record as _sync_contact
+    await _sync_contact(db, record, "won")
     await db.commit()
     await db.refresh(record)
     return record

@@ -163,6 +163,7 @@ const CRMOutboxPage      = dynamic(() => import("@/app/dashboard/crm/outbox/page
 const CRMEngagementPage  = dynamic(() => import("@/app/dashboard/crm/engagement/page"),  { ssr: false });
 const CRMQuotasPage      = dynamic(() => import("@/app/dashboard/crm/quotas/page"),      { ssr: false });
 const CRMPlaybooksPage   = dynamic(() => import("@/app/dashboard/crm/playbooks/page"),   { ssr: false });
+const CRMContactsPage    = dynamic(() => import("@/app/dashboard/crm/contacts/page"),    { ssr: false });
 const CRMInboxPage       = dynamic(() => import("@/app/dashboard/crm/inbox/page"),       { ssr: false });
 const CRMLandingPages = dynamic(() => import("@/app/dashboard/crm/landing/page"), { ssr: false });
 const CRMInsights = dynamic(() => import("@/app/dashboard/crm/insights/page"), { ssr: false });
@@ -179,6 +180,7 @@ export default function CRMPage() {
   const tabs = [
     { key: "overview",    label: "Overview",    permission: "crm.view", content: <CRMDashboardTab /> },
     { key: "pipeline",    label: "Pipeline",    permission: "crm.view", content: <CRMPipelinePage /> },
+    { key: "contacts",    label: "Contacts",    permission: "crm.view", content: <CRMContactsPage /> },
     { key: "leads",       label: "Leads",       permission: "crm.view", content: <CRMLeadsPage /> },
     { key: "opportunities",label:"Opportunities",permission: "crm.view", content: <CRMOppsPage /> },
     { key: "activities",  label: "Activities",  permission: "crm.view", content: <CRMActivitiesPage /> },

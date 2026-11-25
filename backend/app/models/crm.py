@@ -783,6 +783,7 @@ class CRMAccountContact(Base, TimestampMixin):
     email          = Column(String(254), nullable=True)
     phone          = Column(String(50), nullable=True)
     committee_role = Column(String(20), nullable=False, default="INFLUENCER")
+    contact_id     = Column(UUID(as_uuid=True), ForeignKey("crm_contacts.id", ondelete="SET NULL"), nullable=True)  # M43.S01.T015
     notes          = Column(String(500), nullable=True)
 
 
@@ -974,3 +975,46 @@ class CRMDealPlan(Base, TimestampMixin):
     steps            = Column(JSON, nullable=False, default=list)    # [{id, title, owner us|customer, due_date, done}]
     shared           = Column(Boolean, nullable=False, default=False)
     share_token_hash = Column(String(64), nullable=True, unique=True)
+
+
+# ── M43.S01.T015 standalone contacts, associations, lifecycle ─────────────────
+
+class CRMContact(Base, TimestampMixin):
+    __tablename__ = "crm_contacts"
+
+    id                   = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    full_name            = Column(String(200), nullable=False)
+    email                = Column(String(254), nullable=True)       # stored lower-case; partial unique index
+    phone                = Column(String(50), nullable=True)
+    job_title            = Column(String(150), nullable=True)
+    lifecycle_stage      = Column(String(12), nullable=True)
+    lifecycle_changed_at = Column(DateTime(timezone=True), nullable=True)
+    owner_user_id        = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    company_id           = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="SET NULL"), nullable=True, index=True)
+    source               = Column(String(60), nullable=True)
+    notes                = Column(Text, nullable=True)
+
+
+class CRMContactAssociation(Base):
+    __tablename__ = "crm_contact_associations"
+    __table_args__ = (UniqueConstraint("contact_id", "object_type", "object_id", "label", name="uq_contact_assoc"),)
+
+    id          = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    contact_id  = Column(UUID(as_uuid=True), ForeignKey("crm_contacts.id", ondelete="CASCADE"), nullable=False, index=True)
+    object_type = Column(String(20), nullable=False)    # customer | crm_record | ticket | quotation | sales_order
+    object_id   = Column(UUID(as_uuid=True), nullable=False)
+    label       = Column(String(20), nullable=False, default="primary")
+    created_at  = Column(DateTime(timezone=True), nullable=False)
+
+
+class CRMLifecycleHistory(Base):
+    __tablename__ = "crm_lifecycle_history"
+
+    id            = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    contact_id    = Column(UUID(as_uuid=True), ForeignKey("crm_contacts.id", ondelete="CASCADE"), nullable=False, index=True)
+    from_stage    = Column(String(12), nullable=True)
+    to_stage      = Column(String(12), nullable=False)
+    source        = Column(String(60), nullable=False)
+    reason        = Column(String(300), nullable=True)
+    changed_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    changed_at    = Column(DateTime(timezone=True), nullable=False)
