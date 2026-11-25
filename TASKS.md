@@ -2322,11 +2322,24 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
   - Emergency stop: global and per agent.
   - Every job is audited and mirrored into ai_agent_runs, so it appears on the AI governance dashboard.
   - No default real AI call: LLM steps render deterministic templates unless use_provider is switched on and a provider key exists. That is optional, explicitly authorized and deferred to M47.
-- [ ] M45.S01.T010 — Advanced customer deduplication and merge (original recommendation 31/40)
+- [v] M45.S01.T010 — Advanced customer deduplication and merge (original recommendation 31/40)
   - **Scope:** Detect candidate duplicates across contacts/companies; canonical survivor, merge preview, preserve references/orders/invoices/activity/consent, stricter suppression wins, audit/rollback strategy and RBAC. Extended by matrix v2: fuzzy matching (names, phones, KRA PIN, addresses), customer merge (merge_master today excludes customers) and bulk duplicate review.
   - **Acceptance at milestone gate:** Synthetic duplicate records with transactions and permissions, no orphan/duplicate order, consent preservation and concurrency.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable. Do not rebuild already working functionality; record evidence and bounded delta.
   - **Claude checkpoint:** update TASKS.md/Project Status immediately after this task, [v] pending milestone gate, tests NOT RUN; automatically continue next dependency-ready task. Never [x] before milestone PASS.
+  Implemented 2026-11-26 [v] (tests NOT RUN as gate):
+  - Fuzzy candidates for customers and contacts: name similarity (legal suffixes removed), phone (+254), KRA PIN, e-mail and address, with blocking. Dismissed pairs are not shown again.
+  - Bulk review screen: CRM → Duplicates, with a merge preview (rows to move, fields to fill, consent result).
+  - Customer merge, which merge_master did not cover before:
+    - Both rows are locked in a fixed order.
+    - Every reference is moved, using all foreign keys in the schema (53 tables, including orders, invoices, quotes, tickets, payments, NPS and loyalty) plus polymorphic contact associations. Nothing is copied, so there are no orphan or duplicate orders.
+    - Duplicate link rows (e.g. the same group membership) are removed and logged.
+    - Empty fields are filled, and the stricter e-mail suppression wins.
+    - The merged customer is deactivated and kept.
+  - Contact merge: the same steps; the merged contact is deleted after a snapshot.
+  - Audit and undo: the merge log keeps the snapshot, the moved rows and the changes, and Undo restores them.
+  - Concurrency: of two parallel merges of one pair, one succeeds and the other is refused.
+  - Tests: tests/test_m45_s01_t010_dedupe_merge.py.
 - [ ] M45.S01.T011 — No-code data sync and transformation (original recommendation 32/40)
   - **Scope:** Visual field mapping, typed transformations, validation, dry-run diffs, conflict rules, incremental sync and connector SDK/catalog; import/export CSV/JSON, secrets separation and versioning. Audit custom objects, associations and data-quality capabilities; fill uncovered gaps. Extended by matrix v2: data quality overview and health trends, formatting recommendations, scheduled and webhook-triggered workflows.
   - **Acceptance at milestone gate:** Local two-way fixture sources test transformation/retry/replay, invalid mapping, scope, deletes and rollback; no arbitrary code execution.

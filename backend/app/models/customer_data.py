@@ -100,3 +100,16 @@ class MergeLog(Base):
     merged_at   = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
     undone_by   = Column(String(100), nullable=True)
     undone_at   = Column(DateTime(timezone=True), nullable=True)
+
+
+class DuplicateDismissal(Base):
+    """A candidate pair a person marked "not a duplicate"; it is not suggested again."""
+    __tablename__ = "cd_dup_dismissals"
+    __table_args__ = (UniqueConstraint("entity", "a_id", "b_id", name="uq_cd_dup_dismissal"),)
+
+    id           = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    entity       = Column(String(10), nullable=False)
+    a_id         = Column(UUID(as_uuid=True), nullable=False)       # smaller id first
+    b_id         = Column(UUID(as_uuid=True), nullable=False)
+    dismissed_by = Column(String(100), nullable=False)
+    dismissed_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
