@@ -27,3 +27,8 @@ Use existing `coordination/sessions/<TASK_ID>/` or `coordination/milestones/<MIL
 
 ## GitHub permissions
 Claude must authenticate using the owner's authorized GitHub integration with repository Contents read/write permission; workflows/Actions permissions only if CI management is needed. Never store tokens in Git. Do not disable branch protections or grant administrator permissions automatically. Verify actual permissions before writing and report missing grants for owner action.
+
+## 2026-11-25 owner override (supersedes the execution loop above where they conflict)
+- Root `TASKS.md` "Binding autonomous execution protocol — 2026-11-25" is the binding cadence: implement, write test cases, and do not run routine per-task tests. Run one consolidated acceptance gate (backend, disposable PostgreSQL, provider contracts, frontend type/lint/build, real local browser on desktop and phone, security, independent reviewer) per major milestone. Mark rows `[x]` only after that gate passes, then push `main` and verify Desktop HEAD == origin/main.
+- Owner preference (2026-11-25): work milestone by milestone. Implement a whole sprint or milestone block, then update TASKS.md for every row in that block before moving on.
+- Pre-factory, accountless: missing accounts, domains, devices or business records are M47 `[D] NOT_DUE` commissioning rows, never blockers. Use synthetic data, local OAuth/Mailpit/provider simulators and fail-closed adapters. Never fabricate live status.
