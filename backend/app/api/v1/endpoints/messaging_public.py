@@ -1,7 +1,8 @@
 """Custom channels API (M44.S01.T013). Prefix /public/channels. Authorization: Bearer <channel token>.
 
 POST /{key}/messages  {thread_id, message_id, sender?, text}  → stored once per message_id, threaded in the inbox
-GET  /{key}/outbox                                            → our replies, each handed over once
+GET  /{key}/outbox                                            → our queued replies, repeated until acked
+POST /{key}/outbox/ack {ids}                                  → mark those replies delivered
 """
 from __future__ import annotations
 
@@ -48,3 +49,15 @@ async def outbox(key: str, authorization: str = Header(""), db: AsyncSession = D
     items = await ms.outbox(db, ch)
     await db.commit()
     return {"items": items}
+
+
+class AckIn(BaseModel):
+    ids: list[str] = Field(..., min_length=1, max_length=100)
+
+
+@router.post("/{key}/outbox/ack")
+async def outbox_ack(key: str, body: AckIn, authorization: str = Header(""), db: AsyncSession = Depends(get_db)):
+    ch = await _channel(key, authorization, db)
+    n = await ms.outbox_ack(db, ch, body.ids)
+    await db.commit()
+    return {"acked": n}

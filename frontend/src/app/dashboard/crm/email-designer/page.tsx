@@ -39,8 +39,9 @@ export default function EmailDesignerPage() {
   const [width, setWidth] = useState(600);
   const [warn, setWarn] = useState<string[]>([]);
   const [msg, setMsg] = useState<string | null>(null);
+  const [assets, setAssets] = useState<{ id: string; title: string; url: string }[]>([]);  // M45.S01.T024 asset library
   const load = useCallback(() => { apiClient.get("/api/v1/email-designs").then((r) => setList(r.data)).catch(() => setList([])); }, []);
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load(); apiClient.get("/api/v1/marketing-assets").then((r) => setAssets(r.data)).catch(() => setAssets([])); }, [load]);
   useEffect(() => {
     const t = setTimeout(() => {
       apiClient.post("/api/v1/email-designs/preview", { name, preheader: pre, document: doc }, { responseType: "text" })
@@ -86,11 +87,18 @@ export default function EmailDesignerPage() {
             {(FIELDS[b.type] ?? []).map((k) => (k === "text" ?
               <textarea key={k} aria-label={k} className={input} rows={2} disabled={frozen} value={String(b[k] ?? "")} onChange={(e) => set(i, k, e.target.value)} /> :
               <input key={k} aria-label={k} className={input} placeholder={k} disabled={frozen} value={String(b[k] ?? "")} onChange={(e) => set(i, k, k === "height" ? +e.target.value : e.target.value)} />))}
+            {b.type === "image" && !frozen && assets.length > 0 && <select aria-label="Pick image from asset library" className={input} value=""
+              onChange={(e) => { const a = assets.find((x) => x.id === e.target.value); if (a) setDoc({ ...doc, blocks: doc.blocks.map((x, j) => (j === i ? { ...x, url: a.url, alt: x.alt || a.title } : x)) }); }}>
+              <option value="">Pick from asset library…</option>{assets.map((a) => <option key={a.id} value={a.id}>{a.title}</option>)}</select>}
             {b.type !== "footer" && <label className="flex items-center gap-2 text-xs text-gray-600">Show only to
               <select aria-label="Show block only to lifecycle stage" className="border rounded px-1 py-0.5" disabled={frozen}
                 value={((b.audience as { lifecycle?: string[] } | undefined)?.lifecycle ?? [])[0] ?? ""}
-                onChange={(e) => set(i, "audience", e.target.value ? { lifecycle: [e.target.value] } : undefined)}>
-                <option value="">everyone</option>{LIFECYCLE.map((s) => <option key={s} value={s}>{s.toLowerCase()}</option>)}</select></label>}
+                onChange={(e) => set(i, "audience", { ...((b.audience as object) ?? {}), lifecycle: e.target.value ? [e.target.value] : undefined })}>
+                <option value="">everyone</option>{LIFECYCLE.map((s) => <option key={s} value={s}>{s.toLowerCase()}</option>)}</select>
+              <select aria-label="Show block only to language" className="border rounded px-1 py-0.5" disabled={frozen}
+                value={((b.audience as { language?: string[] } | undefined)?.language ?? [])[0] ?? ""}
+                onChange={(e) => set(i, "audience", { ...((b.audience as object) ?? {}), language: e.target.value ? [e.target.value] : undefined })}>
+                <option value="">any language</option><option value="en">English</option><option value="sw">Swahili</option></select></label>}
           </div>))}
         {!frozen && <select aria-label="Add block" className="border rounded px-2 py-1 text-xs" value="" onChange={(e) => { if (e.target.value) setDoc({ ...doc, blocks: [...doc.blocks, { ...NEW[e.target.value] }] }); }}>
           <option value="">+ Add block…</option>{Object.keys(NEW).map((t) => <option key={t}>{t}</option>)}</select>}

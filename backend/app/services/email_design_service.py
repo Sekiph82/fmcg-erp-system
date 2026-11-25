@@ -63,7 +63,7 @@ def validate(doc: dict) -> tuple[dict, list[str]]:
         b: dict = {"type": t}
         aud = block.get("audience") or {}
         if aud:   # M44.S01.T012 smart content: show only to these lifecycle stages / customer channels
-            b["audience"] = {k: [str(x)[:20] for x in (aud.get(k) or [])][:10] for k in ("lifecycle", "channel") if aud.get(k)}
+            b["audience"] = {k: [str(x)[:20] for x in (aud.get(k) or [])][:10] for k in ("lifecycle", "channel", "language") if aud.get(k)}
         if t in ("heading", "text", "footer"):
             b["text"] = str(block.get("text") or "")[:5000]
             if t == "heading":
@@ -192,7 +192,7 @@ def render_text(doc: dict, values: Optional[dict] = None) -> str:
 def shows(block: dict, values: dict) -> bool:
     """Smart content: a block with an audience shows only when the recipient matches (unknown → hidden)."""
     aud = block.get("audience") or {}
-    for key in ("lifecycle", "channel"):
+    for key in ("lifecycle", "channel", "language"):
         if aud.get(key) and str(values.get(key) or "").upper() not in {x.upper() for x in aud[key]}:
             return False
     return True

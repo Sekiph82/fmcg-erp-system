@@ -9,6 +9,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.access_control import has_any_permission, require_any_permission
@@ -149,7 +150,11 @@ async def create_post(body: PostIn, db: AsyncSession = Depends(get_db), current_
                    created_by=current_user.username, history=[])
     ss.log(p, "CREATED")
     db.add(p)
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError:                    # a parallel request with the same key won the race
+        await db.rollback()
+        return await _out(db, (await db.execute(select(SocialPost).where(SocialPost.idempotency_key == body.idempotency_key))).scalar_one())
     return await _out(db, p)
 
 
@@ -184,7 +189,7 @@ async def post_action(pid: uuid.UUID, action: str, db: AsyncSession = Depends(ge
     if action == "request":
         if p.status != "DRAFT":
             raise HTTPException(409, "Only a draft can be sent for approval.")
-        p.status = "PENDING"
+        p.status, p.approved_by = "PENDING", None
         ss.log(p, "APPROVAL_REQUESTED", current_user.username)
     elif action in ("approve", "reject"):
         if p.status != "PENDING":

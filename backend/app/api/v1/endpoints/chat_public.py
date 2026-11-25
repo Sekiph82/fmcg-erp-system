@@ -35,16 +35,27 @@ def _fail(e: chat.ChatRefused):
     raise HTTPException(e.status, str(e))
 
 
+async def _portal_user(request: Request, db: AsyncSession):
+    """The signed-in portal user if the portal cookie is valid; anonymous otherwise (M45.S01.T024)."""
+    from app.core.external_auth import get_portal_user
+    try:
+        return await get_portal_user(request, db)
+    except HTTPException:
+        return None
+
+
 @router.post("/sessions", status_code=201)
 async def start_chat(body: StartIn, request: Request, db: AsyncSession = Depends(get_db)):
+    portal_user = await _portal_user(request, db)
     try:
         sess, token = await chat.start(db, ip=request.client.host if request.client else None, name=body.name,
                                        email=str(body.email) if body.email else None, consent=body.consent,
-                                       page_url=body.page_url, honeypot=body.website)
+                                       page_url=body.page_url, honeypot=body.website, portal_user=portal_user)
     except chat.ChatRefused as e:
         _fail(e)
     await db.commit()
-    return {"session_id": str(sess.id), "token": token, "messages": await chat.messages(db, sess)}
+    return {"session_id": str(sess.id), "token": token, "identified": portal_user is not None,
+            "messages": await chat.messages(db, sess)}
 
 
 @router.post("/sessions/{session_id}/messages", status_code=201)

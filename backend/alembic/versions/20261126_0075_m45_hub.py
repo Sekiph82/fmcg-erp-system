@@ -1,0 +1,45 @@
+"""M45 AI Agent & Customer Data Hub.
+
+New tables are created from their ORM definitions (checkfirst), the same way the squashed baseline creates tables, so
+the migration and the models cannot drift apart. Column additions to existing tables are explicit SQL.
+Downgrade drops the M45 tables and columns: data in them is lost (see docs/DEPLOYMENT.md).
+"""
+
+from alembic import op
+
+revision = "20261126_0075"
+down_revision = "20261125_0074"
+branch_labels = None
+depends_on = None
+
+# Order matters for foreign keys: parents first (downgrade drops in reverse).
+TABLES = [
+    "ci_settings", "ci_models", "ci_alerts", "ci_health_snapshots",
+]
+
+COLUMNS = [
+    ("crm_contacts", "language", "VARCHAR(8)"),
+    ("crm_chat_sessions", "portal_account_id", "UUID REFERENCES portal_accounts(id) ON DELETE SET NULL"),
+]
+
+
+def _tables():
+    import app.models  # noqa: F401  (registers every model on Base.metadata)
+    from app.db.base import Base
+    return [Base.metadata.tables[n] for n in TABLES]
+
+
+def upgrade() -> None:
+    bind = op.get_bind()
+    for table, col, ddl in COLUMNS:
+        op.execute(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {col} {ddl}")
+    for t in _tables():
+        t.create(bind=bind, checkfirst=True)
+
+
+def downgrade() -> None:
+    bind = op.get_bind()
+    for t in reversed(_tables()):
+        t.drop(bind=bind, checkfirst=True)
+    for table, col, _ in reversed(COLUMNS):
+        op.execute(f"ALTER TABLE {table} DROP COLUMN IF EXISTS {col}")

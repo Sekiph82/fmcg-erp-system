@@ -20,7 +20,7 @@ export default function CRMContactsPage() {
   const [q, setQ] = useState("");
   const [rows, setRows] = useState<Contact[]>([]);
   const [open, setOpen] = useState<Detail | null>(null);
-  const [form, setForm] = useState({ full_name: "", email: "", phone: "", job_title: "" });
+  const [form, setForm] = useState({ full_name: "", email: "", phone: "", job_title: "", language: "" });
   const [msg, setMsg] = useState<string | null>(null);
   const [assoc, setAssoc] = useState({ object_type: "customer", object_id: "", label: "primary" });
   const load = useCallback(() => {
@@ -38,13 +38,15 @@ export default function CRMContactsPage() {
         </div>
         <form className="grid grid-cols-2 gap-1 text-xs border rounded p-2 bg-white" onSubmit={async (e) => {
           e.preventDefault();
-          try { const r = await apiClient.post("/api/v1/crm-contacts", { ...form, email: form.email || null }); setForm({ full_name: "", email: "", phone: "", job_title: "" }); load(); show(r.data.id); setMsg(null); }
+          try { const r = await apiClient.post("/api/v1/crm-contacts", { ...form, email: form.email || null, language: form.language || null }); setForm({ full_name: "", email: "", phone: "", job_title: "", language: "" }); load(); show(r.data.id); setMsg(null); }
           catch (x) { setMsg(err(x, "Could not add the contact.")); }
         }}>
           <input required className="border rounded px-2 py-1" placeholder="Full name" value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} />
           <input type="email" className="border rounded px-2 py-1" placeholder="E-mail" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
           <input className="border rounded px-2 py-1" placeholder="Phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
           <input className="border rounded px-2 py-1" placeholder="Job title" value={form.job_title} onChange={(e) => setForm({ ...form, job_title: e.target.value })} />
+          <select aria-label="Language" className="border rounded px-2 py-1" value={form.language} onChange={(e) => setForm({ ...form, language: e.target.value })}>
+            <option value="">Language…</option><option value="en">English</option><option value="sw">Swahili</option></select>
           <button className="col-span-2 bg-indigo-600 text-white rounded py-1">Add contact</button>
         </form>
         {msg && <p role="alert" className="text-xs text-red-600">{msg}</p>}

@@ -46,7 +46,7 @@ def _digest(token: str) -> str:
 
 
 async def start(db: AsyncSession, *, ip: Optional[str], name: Optional[str], email: Optional[str], consent: bool,
-                page_url: Optional[str], honeypot: Optional[str]) -> tuple[CRMChatSession, str]:
+                page_url: Optional[str], honeypot: Optional[str], portal_user=None) -> tuple[CRMChatSession, str]:
     from app.services.crm_lead_capture_service import ip_hash
 
     if honeypot:
@@ -63,8 +63,11 @@ async def start(db: AsyncSession, *, ip: Optional[str], name: Optional[str], ema
             raise ChatRefused(429, "Too many chats from your connection; please try again later.")
     token = secrets.token_urlsafe(32)
     now = _now()
+    if portal_user is not None:   # signed-in portal visitor: identity from the portal session, not from typed fields
+        name, email = portal_user.full_name, portal_user.email      # consent stays what the visitor ticked
     sess = CRMChatSession(token_hash=_digest(token), visitor_name=(name or None), visitor_email=(email or "").lower() or None,
                           consent_given=bool(consent and email), status="BOT", ip_hash=hashed, page_url=page_url,
+                          portal_account_id=portal_user.portal_account_id if portal_user is not None else None,
                           created_at=now, last_message_at=now)
     db.add(sess)
     await db.flush()

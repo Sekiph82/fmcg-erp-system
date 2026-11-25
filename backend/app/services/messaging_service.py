@@ -135,13 +135,21 @@ async def channel_for_token(db: AsyncSession, key: str, token: str) -> Optional[
 
 
 async def outbox(db: AsyncSession, ch: CustomChannel, limit: int = 100) -> list[dict]:
-    """Our queued replies for this channel; handed over once (marked DELIVERED)."""
+    """Our queued replies for this channel. Redelivered on every poll until the client acks them (M45.S01.T024)."""
     rows = list((await db.execute(select(CRMChannelMessage).where(
         CRMChannelMessage.channel == "CUSTOM", CRMChannelMessage.account_id == ch.key, CRMChannelMessage.status == "QUEUED")
-        .order_by(CRMChannelMessage.created_at).limit(limit).with_for_update(skip_locked=True))).scalars())
+        .order_by(CRMChannelMessage.created_at).limit(limit))).scalars())
+    return [{"id": m.external_id, "thread_id": m.thread_id, "text": m.body, "created_at": m.created_at.isoformat()} for m in rows]
+
+
+async def outbox_ack(db: AsyncSession, ch: CustomChannel, ids: list[str]) -> int:
+    """Mark the acked replies DELIVERED; unknown ids or other channels' ids are ignored."""
+    rows = list((await db.execute(select(CRMChannelMessage).where(
+        CRMChannelMessage.channel == "CUSTOM", CRMChannelMessage.account_id == ch.key,
+        CRMChannelMessage.status == "QUEUED", CRMChannelMessage.external_id.in_(ids)))).scalars())
     for m in rows:
         m.status = "DELIVERED"
-    return [{"id": m.external_id, "thread_id": m.thread_id, "text": m.body, "created_at": m.created_at.isoformat()} for m in rows]
+    return len(rows)
 
 
 # ── Slack notices ─────────────────────────────────────────────────────────

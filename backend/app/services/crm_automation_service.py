@@ -293,6 +293,8 @@ async def run_crm_automation(interval: float = 15.0) -> None:
             from app.services.messaging_service import slack_tick   # M44.S01.T013 Slack notices
             async with AsyncSessionLocal() as db:
                 await slack_tick(db)
+            from app.services.hub_tick import tick as hub_tick     # M45 jobs (intelligence, agents, SLAs, exports)
+            await hub_tick()
         except asyncio.CancelledError:
             raise
         except Exception:

@@ -46,7 +46,7 @@ async def _get(db, contact_id, u) -> CRMContact:
 
 def _out(c: CRMContact) -> dict:
     return {"id": str(c.id), "full_name": c.full_name, "email": c.email, "phone": c.phone, "job_title": c.job_title,
-            "lifecycle_stage": c.lifecycle_stage, "owner_user_id": str(c.owner_user_id) if c.owner_user_id else None,
+            "lifecycle_stage": c.lifecycle_stage, "language": c.language, "owner_user_id": str(c.owner_user_id) if c.owner_user_id else None,
             "company_id": str(c.company_id) if c.company_id else None, "source": c.source, "notes": c.notes}
 
 
@@ -57,6 +57,7 @@ class ContactIn(BaseModel):
     job_title: Optional[str] = Field(None, max_length=150)
     company_id: Optional[uuid.UUID] = None
     notes: Optional[str] = Field(None, max_length=5000)
+    language: Optional[str] = Field(None, pattern=r"^[a-z]{2}(-[A-Z]{2})?$")
 
 
 @router.get("")
@@ -77,7 +78,7 @@ async def create_contact(body: ContactIn, db: AsyncSession = Depends(get_db), cu
     if body.email and (dup := await cs.find_by_email(db, str(body.email))) is not None:
         raise HTTPException(409, {"message": "A contact with this e-mail exists.", "existing_id": str(dup.id)})
     c = CRMContact(full_name=body.full_name.strip(), email=cs.norm_email(str(body.email) if body.email else None),
-                   phone=body.phone, job_title=body.job_title, company_id=body.company_id, notes=body.notes,
+                   phone=body.phone, job_title=body.job_title, company_id=body.company_id, notes=body.notes, language=body.language,
                    owner_user_id=current_user.id, source="manual")
     db.add(c)
     await db.flush()
@@ -107,8 +108,8 @@ async def update_contact(contact_id: uuid.UUID, body: ContactIn, db: AsyncSessio
     email = cs.norm_email(str(body.email) if body.email else None)
     if email and email != c.email and (dup := await cs.find_by_email(db, email)) is not None:
         raise HTTPException(409, {"message": "Another contact has this e-mail; merge them instead.", "existing_id": str(dup.id)})
-    c.full_name, c.email, c.phone, c.job_title, c.company_id, c.notes = (
-        body.full_name.strip(), email, body.phone, body.job_title, body.company_id, body.notes)
+    c.full_name, c.email, c.phone, c.job_title, c.company_id, c.notes, c.language = (
+        body.full_name.strip(), email, body.phone, body.job_title, body.company_id, body.notes, body.language)
     await db.commit()
     return _out(c)
 

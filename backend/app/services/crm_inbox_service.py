@@ -141,7 +141,7 @@ async def sync(db: AsyncSession) -> int:
     for c in (await db.execute(select(CRMChatSession).where(CRMChatSession.status != "BOT"))).scalars():
         cin, cout = chat_times.get(c.id, (None, None))
         closed = c.status == "CLOSED"
-        rows.append(dict(channel="CHAT", source_ref=str(c.id), subject=f"Website chat: {c.visitor_name or c.visitor_email or 'visitor'}"[:500],
+        rows.append(dict(channel="CHAT", source_ref=str(c.id), subject=f"Website chat{' (signed-in portal customer)' if c.portal_account_id else ''}: {c.visitor_name or c.visitor_email or 'visitor'}"[:500],
                          contact=(c.visitor_email or c.visitor_name), customer_id=None, mailbox_owner_id=None,
                          last_inbound_at=cin, last_outbound_at=cout, last_message_at=c.last_message_at,
                          sla_due_at=None if closed else _sla(cin, cout, 1),  # visitors wait: 1 hour reply target

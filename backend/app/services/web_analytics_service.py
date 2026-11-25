@@ -170,3 +170,17 @@ async def journey(db: AsyncSession, email: str) -> dict:
             "first_touch": ({"source": ft.utm_source or ft.referrer_host or "direct", "medium": ft.utm_medium,
                              "campaign": ft.utm_campaign, "at": ft.occurred_at.isoformat()} if ft else None),
             "events": [{"at": e.occurred_at.isoformat(), "kind": e.kind, "name": e.name, "path": e.path} for e in evs]}
+
+
+async def deal_journey(db: AsyncSession, record_id: uuid.UUID) -> dict:
+    """Deal-level web journey (M45.S01.T024): the merged journeys of the contacts associated with the deal."""
+    from app.models.crm import CRMContact, CRMContactAssociation
+    emails = sorted({e for e in (await db.execute(select(CRMContact.email).join(
+        CRMContactAssociation, CRMContactAssociation.contact_id == CRMContact.id).where(
+        CRMContactAssociation.object_type == "crm_record", CRMContactAssociation.object_id == record_id,
+        CRMContact.email.is_not(None)))).scalars()})
+    per = [await journey(db, e) for e in emails]
+    events = sorted(({**ev, "email": j["email"]} for j in per for ev in j["events"]), key=lambda x: x["at"])
+    firsts = [j["first_touch"] for j in per if j["first_touch"]]
+    return {"record_id": str(record_id), "contacts": len(emails), "linked": sum(1 for j in per if j["linked"]),
+            "first_touch": min(firsts, key=lambda f: f["at"]) if firsts else None, "events": events[:500]}

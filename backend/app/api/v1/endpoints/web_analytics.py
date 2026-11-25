@@ -1,6 +1,8 @@
 """Website analytics reports for staff (M44.S01.T009). Prefix /api/v1/web-analytics."""
 from __future__ import annotations
 
+import uuid
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -29,6 +31,11 @@ async def funnel(steps: str = Query(..., max_length=1000), days: int = Query(30,
 @router.get("/journey")
 async def journey(email: str = Query(..., min_length=3, max_length=254), db: AsyncSession = Depends(get_db)):
     return await wa.journey(db, email)
+
+
+@router.get("/deal-journey/{record_id}")
+async def deal_journey(record_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    return await wa.deal_journey(db, record_id)
 
 
 @router.post("/purge-expired")

@@ -2211,21 +2211,42 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
   - **Acceptance at milestone gate:** Synthetic records, conflicting values, consent and retention; local provider contracts; future licensed datasets/account needed for actual enrichment.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable. Do not rebuild already working functionality; record evidence and bounded delta.
   - **Claude checkpoint:** update TASKS.md/Project Status immediately after this task, [v] pending milestone gate, tests NOT RUN; automatically continue next dependency-ready task. Never [x] before milestone PASS.
-- [ ] M45.S01.T004 — Buyer intent and lead signals (original recommendation 25/40)
+- [v] M45.S01.T004 — Buyer intent and lead signals (original recommendation 25/40)
   - **Scope:** First-party site/form/email/quote/order intent events, configurable scoring/decay and alerts; optional external intent feed adapter, no third-party dataset invented.
   - **Acceptance at milestone gate:** Synthetic event stream with recency, consent, explainable score and scoped alerts; optional external feed activation deferred.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable. Do not rebuild already working functionality; record evidence and bounded delta.
   - **Claude checkpoint:** update TASKS.md/Project Status immediately after this task, [v] pending milestone gate, tests NOT RUN; automatically continue next dependency-ready task. Never [x] before milestone PASS.
-- [ ] M45.S01.T005 — Churn and retention prediction (original recommendation 26/40)
+  Implemented 2026-11-26 [v] together with T005/T006 (customer intelligence; tests NOT RUN as gate):
+  - Intent is computed from first-party signals: consented website visits (pricing pages and forms weigh more), e-mail clicks, quote views and new orders.
+  - Scoring: configurable weights and half-life decay; every point is explained.
+  - Alerts: once per cool-down per customer, to the customer owner (rep on the newest CRM record).
+  - The external intent feed shows NOT_CONFIGURED.
+  - Code: app/services/customer_intel_service.py, /api/v1/customer-intel, CRM tab "Customer success".
+  - Tests: tests/test_m45_s01_t004_t006_customer_intel.py.
+- [v] M45.S01.T005 — Churn and retention prediction (original recommendation 26/40)
   - **Scope:** Define churn for FMCG segments, rules and local statistical model with time-aware train/validation, explainable factors, confidence and cold-start behavior; no model claiming accuracy on real data.
   - **Acceptance at milestone gate:** Synthetic labeled cohorts, leakage checks, backtest, calibration and no fabricated business accuracy; real historical data calibration future.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable. Do not rebuild already working functionality; record evidence and bounded delta.
   - **Claude checkpoint:** update TASKS.md/Project Status immediately after this task, [v] pending milestone gate, tests NOT RUN; automatically continue next dependency-ready task. Never [x] before milestone PASS.
-- [ ] M45.S01.T006 — Customer health score and success workspace (original recommendation 27/40)
+  Implemented 2026-11-26 [v]:
+  - Churn definition: no order within horizon_days (default 90) for a customer with at least min_orders orders.
+  - Features use only data before the cut-off; a test proves this leakage check.
+  - Model: numpy logistic regression trained on time-ordered monthly snapshots. The newest quarter of cut-offs is used for validation.
+  - Reported metrics: AUC, Brier score, calibration bins and a recency-rule baseline. The metrics are explicitly labelled as describing the data in this database (synthetic before go-live).
+  - Cold start: "insufficient history". Without a model, the rule fallback is shown with low confidence.
+  - Each prediction shows its top 3 explanatory factors.
+  - Not done here: calibration on real history (needs production data).
+- [v] M45.S01.T006 — Customer health score and success workspace (original recommendation 27/40)
   - **Scope:** Configurable score from orders, overdue invoices, tickets, NPS, engagement and repeat purchase; alerts/playbooks, trend, missing-data treatment and ownership.
   - **Acceptance at milestone gate:** Synthetic accounts, no data/no score labeling, source reconciliation and permissions; integrated ERP signals beyond CRM.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable. Do not rebuild already working functionality; record evidence and bounded delta.
   - **Claude checkpoint:** update TASKS.md/Project Status immediately after this task, [v] pending milestone gate, tests NOT RUN; automatically continue next dependency-ready task. Never [x] before milestone PASS.
+  Implemented 2026-11-26 [v]:
+  - Health score: configurable weights over ordering rhythm, overdue invoices (ERP), tickets, NPS, e-mail engagement and repeat purchase.
+  - Missing data: a component with no data is named and left out. Below half the weight covered, the result is "not enough data".
+  - Snapshots: daily (ci_health_snapshots) for the trend, from the M45 job runner.
+  - Low health: an alert with playbook steps to the owner.
+  - Workspace: lists only the customers a rep owns; crm.view_all sees all.
 - [ ] M45.S01.T007 — AI customer service agent (original recommendation 28/40)
   - **Scope:** Extend public KB bot with retrieval grounded in approved articles, safe order/ticket status after authorization, multilingual responses, escalation and refusal, citations, audit and consent. No autonomous refunds/orders/financial actions.
   - **Acceptance at milestone gate:** Local KB + mock model, prompt-injection, account isolation, citations, escalation, no provider fallback and human approval tests.
@@ -2314,7 +2335,7 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable.
   - **Claude checkpoint:** [v] pending milestone gate, tests NOT RUN until gate; never [x] before milestone PASS.
 
-- [ ] M45.S01.T024 — M44 carry-overs (from the M44 build and gate review, 2026-11-26)
+- [v] M45.S01.T024 — M44 carry-overs (from the M44 build and gate review, 2026-11-26)
   - **Scope:**
     - Content and analytics:
       - an asset library (DAM) for e-mail and social media;
@@ -2331,6 +2352,13 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
     - parallel creates with one key return one row;
     - paging stops at the cap.
   - **Claude checkpoint:** [v] pending milestone gate, tests NOT RUN until gate; never [x] before milestone PASS.
+  Implemented 2026-11-26 [v] (tests NOT RUN as gate; dev runs on disposable PG only):
+  - Robustness: the custom-channel outbox now redelivers until acked (POST /public/channels/{key}/outbox/ack). Parallel creates with one idempotency key return the existing ads draft or social post (IntegrityError → existing row). Re-request clears approved_by. Meta paging stops at MAX_PAGES=50.
+  - Locale blocks: new crm_contacts.language field (contact form); designer block audience "language"; campaigns pass the contact language.
+  - Portal chat identity: a signed-in portal user starting website chat is identified from the portal session (crm_chat_sessions.portal_account_id). Typed name/e-mail are ignored, consent stays what the visitor ticked, and the inbox subject marks it.
+  - Deal journey: GET /web-analytics/deal-journey/{record_id} merges the consented journeys of the deal's contacts; shown as "Website journey" on the deal page.
+  - DAM: approved, scan-clean MARKETING_CREATIVE images from document management (versions/approval/scan reused), listed at /marketing-assets and served from an HMAC-signed public URL (/public/assets/{id}/{sig}). The e-mail designer image block has "Pick from asset library".
+  - Tests: tests/test_m45_s01_t024_carryovers.py and the extended test_m44_s01_t013_messaging.py.
 
 ## M45.S02 — Major milestone acceptance and synchronization
 - [ ] M45.S02.T001 — Run consolidated milestone acceptance once all implementation work is ready: backend/DB/provider-contract/frontend/build/real browser desktop+mobile/synthetic E2E/security/independent review; include relevant prior features, fix and rerun failures, record exact code SHA, commands, results, screenshots and reviewer. No live-provider requirement. Reconcile applicable older [v] rows only if evidence/gate covers them. Update TASKS.md; do not mark [x] on failure.

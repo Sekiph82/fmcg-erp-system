@@ -537,6 +537,9 @@ ENDPOINT_ROUTE_DEFINITIONS: tuple[EndpointRouteDefinition, ...] = (
     EndpointRouteDefinition(key="deliverability", route_prefix="/deliverability", import_path="app.api.v1.endpoints.deliverability", tags=('marketing',)),
     EndpointRouteDefinition(key="web_analytics_public", route_prefix="/public/web", import_path="app.api.v1.endpoints.web_analytics_public", tags=('marketing',)),
     EndpointRouteDefinition(key="web_analytics", route_prefix="/web-analytics", import_path="app.api.v1.endpoints.web_analytics", tags=('marketing',)),
+    EndpointRouteDefinition(key="customer_intel", route_prefix="/customer-intel", import_path="app.api.v1.endpoints.customer_intel", tags=('crm',)),
+    EndpointRouteDefinition(key="marketing_assets", route_prefix="/marketing-assets", import_path="app.api.v1.endpoints.marketing_assets", tags=('marketing',)),
+    EndpointRouteDefinition(key="marketing_assets_public", route_prefix="/public/assets", import_path="app.api.v1.endpoints.marketing_assets_public", tags=('marketing',)),
     EndpointRouteDefinition(key="audiences", route_prefix="/audiences", import_path="app.api.v1.endpoints.audiences", tags=('marketing',)),
     EndpointRouteDefinition(key="ads", route_prefix="/ads", import_path="app.api.v1.endpoints.ads", tags=('marketing',)),
     EndpointRouteDefinition(key="social", route_prefix="/social", import_path="app.api.v1.endpoints.social", tags=('marketing',)),
@@ -693,10 +696,12 @@ PUBLIC_ROUTES: frozenset[tuple[str, str]] = frozenset({
     ("/public/web/collect", "POST"),                     # first-party events: stored only with analytics consent
     ("/public/web/identify", "POST"),                    # visitor ↔ e-mail only with marketing consent
     ("/public/web/forget", "POST"),                      # visitor's own erase request
+    ("/public/assets/{doc_id}/{sig}", "GET"),             # DAM image for e-mail/social: HMAC-signed URL, approved+clean only (M45.S01.T024)
     ("/public/social/meta", "GET"),                      # Meta webhook verify (hub.verify_token) (M44.S01.T008)
     ("/public/social/meta", "POST"),                     # X-Hub-Signature-256 with META_APP_SECRET; fail closed; also Messenger/IG DMs (T013)
     ("/public/channels/{key}/messages", "POST"),         # custom channels API: Bearer channel token (M44.S01.T013)
     ("/public/channels/{key}/outbox", "GET"),
+    ("/public/channels/{key}/outbox/ack", "POST"),
     ("/calls/provider/callback", "POST"),                # voice provider callbacks: secret token in the URL (M43.S01.T008)
     ("/public/t/o/{token}.gif", "GET"),                  # e-mail open pixel, HMAC token (M43.S01.T006)
     ("/public/t/c/{token}", "GET"),                      # click → only links stored with that message

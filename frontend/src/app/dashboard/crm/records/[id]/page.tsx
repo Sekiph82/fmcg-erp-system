@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { apiClient } from "@/lib/api";
 import {
   crmApi, CRMRecord, CRMStage, CRMActivity,
   fmtCurrency, STATUS_LABELS, STATUS_COLORS, TEMPERATURE_LABELS, TEMPERATURE_COLORS,
@@ -215,6 +216,7 @@ export default function RecordDetailPage() {
               </div>
             </div>
           )}
+          <DealJourney id={id} />
         </div>
       )}
 
@@ -456,6 +458,22 @@ export default function RecordDetailPage() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// M45.S01.T024 deal-level web journey: website visits of the deal's contacts (only consented, identified visitors).
+type JourneyEvent = { at: string; kind: string; name: string | null; path: string | null; email: string };
+function DealJourney({ id }: { id: string }) {
+  const [j, setJ] = useState<{ contacts: number; linked: number; first_touch: { source: string; campaign: string | null; at: string } | null; events: JourneyEvent[] } | null>(null);
+  useEffect(() => { apiClient.get(`/api/v1/web-analytics/deal-journey/${id}`).then((r) => setJ(r.data)).catch(() => setJ(null)); }, [id]);
+  if (!j) return null;  // no marketing/CRM-admin right → section hidden
+  return (
+    <div className="md:col-span-2 bg-white rounded-xl border shadow-sm p-4">
+      <h2 className="font-semibold text-gray-800 mb-2">Website journey</h2>
+      {j.linked === 0 ? <p className="text-xs text-gray-500">No website visits linked to this deal&apos;s {j.contacts} contact(s). Visits are linked only after marketing consent.</p> : <>
+        {j.first_touch && <p className="text-xs">First touch: <b>{j.first_touch.source}</b>{j.first_touch.campaign ? ` / ${j.first_touch.campaign}` : ""} on {new Date(j.first_touch.at).toLocaleString()}</p>}
+        <ul className="text-xs max-h-60 overflow-auto">{j.events.map((ev, i) => <li key={i}>{new Date(ev.at).toLocaleString()} · {ev.email} · {ev.kind}{ev.name ? `:${ev.name}` : ""} · {ev.path}</li>)}</ul></>}
     </div>
   );
 }

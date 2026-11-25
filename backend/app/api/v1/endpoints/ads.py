@@ -10,6 +10,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.access_control import has_any_permission, require_any_permission
@@ -145,7 +146,11 @@ async def create_draft(body: DraftIn, db: AsyncSession = Depends(get_db), curren
         _fail(e)
     d = AdDraft(**body.model_dump(), created_by=current_user.username)
     db.add(d)
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError:                    # a parallel request with the same key won the race
+        await db.rollback()
+        return _draft((await db.execute(select(AdDraft).where(AdDraft.idempotency_key == body.idempotency_key))).scalar_one())
     return _draft(d)
 
 
@@ -158,7 +163,7 @@ async def draft_action(did: uuid.UUID, action: str, db: AsyncSession = Depends(g
     if action == "request":
         if d.status not in ("DRAFT", "REJECTED"):
             raise HTTPException(409, "Already sent for approval.")
-        d.status, d.requested_by = "PENDING", current_user.username
+        d.status, d.requested_by, d.approved_by = "PENDING", current_user.username, None
     elif action in ("approve", "reject"):
         if d.status != "PENDING":
             raise HTTPException(409, "Nothing waiting for approval.")

@@ -33,6 +33,9 @@ def minor_units(amount: Decimal, currency: str) -> int:
     return int(amount) if currency.upper() in ZERO_DECIMAL else int((amount * 100).to_integral_value())
 
 
+MAX_PAGES = 50  # Meta paging cap per sync (M45.S01.T024)
+
+
 @dataclass
 class ReportRow:
     campaign_id: str
@@ -111,7 +114,9 @@ class MetaAds(Adapter):
         out, url = [], self._url("me/adaccounts")
         params = {"fields": "account_id,name,currency,timezone_name", "limit": 50}
         async with provider_client() as c:
-            while url:
+            for _ in range(MAX_PAGES):          # ponytail: hard cap so a looping 'next' cannot run forever
+                if not url:
+                    break
                 body = self._check(await c.get(url, params=params, headers=self._h()))
                 out += [{"external_id": a["account_id"], "name": a.get("name"), "currency": a.get("currency"),
                          "time_zone": a.get("timezone_name")} for a in body.get("data", [])]
@@ -129,7 +134,9 @@ class MetaAds(Adapter):
                   "fields": "campaign_id,campaign_name,impressions,clicks,spend,actions,date_start",
                   "time_range": json.dumps({"since": since.isoformat(), "until": until.isoformat()})}
         async with provider_client() as c:
-            while url:
+            for _ in range(MAX_PAGES):          # ponytail: hard cap so a looping 'next' cannot run forever
+                if not url:
+                    break
                 body = self._check(await c.get(url, params=params, headers=self._h()))
                 for d in body.get("data", []):
                     conv = sum((_dec(a.get("value")) for a in d.get("actions") or []

@@ -199,7 +199,11 @@ async def test_custom_channel_and_slack(sim):
             assert (await ep.reply(str(conv.id), ep.ReplyIn(text="Confirmed, delivery Friday"), db, admin))["status"] == "QUEUED"
         items = (await c.get(f"{url}/outbox", headers=auth)).json()["items"]
         assert [(i["thread_id"], i["text"]) for i in items] == [("t1", "Confirmed, delivery Friday")]
-        assert (await c.get(f"{url}/outbox", headers=auth)).json()["items"] == []        # handed over once
+        again = (await c.get(f"{url}/outbox", headers=auth)).json()["items"]           # lost response: redelivered until acked
+        assert [i["id"] for i in again] == [i["id"] for i in items]
+        ack = await c.post(f"{url}/outbox/ack", headers=auth, json={"ids": [items[0]["id"], "unknown"]})
+        assert ack.json() == {"acked": 1}
+        assert (await c.get(f"{url}/outbox", headers=auth)).json()["items"] == []        # acked → not repeated
         async with AsyncSessionLocal() as db:
             rot = await ep.custom_action(ch["id"], "rotate", db, admin)
         assert (await c.get(f"{url}/outbox", headers=auth)).status_code == 401           # old token stops

@@ -133,6 +133,7 @@ async def _expand_one(db: AsyncSession, campaign: CRMEmailCampaign, now: datetim
             contact = (await db.execute(select(CRMContact).where(CRMContact.email == email))).scalars().first()
             vals = {"company_name": customer.name, "contact_name": getattr(customer, "contact_person", None) or customer.name,
                     "lifecycle": contact.lifecycle_stage if contact else None,
+                    "language": (contact.language or "").split("-")[0] or None if contact else None,
                     "channel": getattr(getattr(customer, "channel", None), "value", getattr(customer, "channel", None))}
             vals["first_name"] = (vals["contact_name"] or "").split(" ")[0]
             text, html_body = eds.render_text(d.document, vals), eds.render_html(d.document, vals, d.preheader or "")
