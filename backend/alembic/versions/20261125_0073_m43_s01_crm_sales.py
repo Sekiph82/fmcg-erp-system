@@ -183,8 +183,60 @@ def upgrade() -> None:
     op.execute("CREATE INDEX IF NOT EXISTS ix_call_logs_transcription ON call_logs (transcription_status) "
                "WHERE transcription_status = 'PENDING'")
 
+    # T010: playbooks, runs and deal plans
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS crm_playbooks (
+            id UUID PRIMARY KEY,
+            family_id UUID NOT NULL,
+            version INTEGER NOT NULL DEFAULT 1,
+            name VARCHAR(150) NOT NULL,
+            purpose VARCHAR(15) NOT NULL CHECK (purpose IN ('CALL', 'VISIT', 'QUALIFICATION', 'STAGE')),
+            stage_id UUID REFERENCES crm_pipeline_stages(id) ON DELETE SET NULL,
+            guidance TEXT,
+            questions JSON NOT NULL DEFAULT '[]',
+            blocks_stage_exit BOOLEAN NOT NULL DEFAULT false,
+            status VARCHAR(16) NOT NULL DEFAULT 'DRAFT'
+                CHECK (status IN ('DRAFT', 'PENDING_APPROVAL', 'PUBLISHED', 'RETIRED')),
+            created_by_id UUID REFERENCES users(id) ON DELETE SET NULL,
+            approved_by_id UUID REFERENCES users(id) ON DELETE SET NULL,
+            approved_at TIMESTAMPTZ,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+            CONSTRAINT uq_playbook_family_version UNIQUE (family_id, version)
+        )""")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_crm_playbooks_family ON crm_playbooks (family_id)")
+    op.execute("CREATE UNIQUE INDEX IF NOT EXISTS uq_playbook_one_published ON crm_playbooks (family_id) "
+               "WHERE status = 'PUBLISHED'")
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS crm_playbook_runs (
+            id UUID PRIMARY KEY,
+            playbook_id UUID NOT NULL REFERENCES crm_playbooks(id) ON DELETE RESTRICT,
+            crm_record_id UUID NOT NULL REFERENCES crm_records(id) ON DELETE CASCADE,
+            user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+            answers JSON NOT NULL DEFAULT '{}',
+            completed BOOLEAN NOT NULL DEFAULT false,
+            completed_at TIMESTAMPTZ,
+            created_at TIMESTAMPTZ NOT NULL
+        )""")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_playbook_runs_record ON crm_playbook_runs (crm_record_id)")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_playbook_runs_playbook ON crm_playbook_runs (playbook_id)")
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS crm_deal_plans (
+            id UUID PRIMARY KEY,
+            crm_record_id UUID NOT NULL UNIQUE REFERENCES crm_records(id) ON DELETE CASCADE,
+            title VARCHAR(200) NOT NULL,
+            steps JSON NOT NULL DEFAULT '[]',
+            shared BOOLEAN NOT NULL DEFAULT false,
+            share_token_hash VARCHAR(64) UNIQUE,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        )""")
+
 
 def downgrade() -> None:
+    op.execute("DROP TABLE IF EXISTS crm_deal_plans")
+    op.execute("DROP TABLE IF EXISTS crm_playbook_runs")
+    op.execute("DROP TABLE IF EXISTS crm_playbooks")
     op.execute("DROP INDEX IF EXISTS ix_call_logs_transcription")
     op.execute("DROP INDEX IF EXISTS uq_call_logs_provider_session")
     for col in ("transcription_attempts", "transcription_error", "transcription_status", "transcript_language",

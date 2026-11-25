@@ -162,6 +162,7 @@ const CRMAutomationPage  = dynamic(() => import("@/app/dashboard/crm/automation/
 const CRMOutboxPage      = dynamic(() => import("@/app/dashboard/crm/outbox/page"),      { ssr: false });
 const CRMEngagementPage  = dynamic(() => import("@/app/dashboard/crm/engagement/page"),  { ssr: false });
 const CRMQuotasPage      = dynamic(() => import("@/app/dashboard/crm/quotas/page"),      { ssr: false });
+const CRMPlaybooksPage   = dynamic(() => import("@/app/dashboard/crm/playbooks/page"),   { ssr: false });
 const CRMInboxPage       = dynamic(() => import("@/app/dashboard/crm/inbox/page"),       { ssr: false });
 const CRMLandingPages = dynamic(() => import("@/app/dashboard/crm/landing/page"), { ssr: false });
 const CRMInsights = dynamic(() => import("@/app/dashboard/crm/insights/page"), { ssr: false });
@@ -183,6 +184,7 @@ export default function CRMPage() {
     { key: "activities",  label: "Activities",  permission: "crm.view", content: <CRMActivitiesPage /> },
     { key: "forecast",    label: "Forecast",    permission: "crm.view", content: <CRMForecastPage /> },
     { key: "quotas",      label: "Quotas",      permission: "crm.view", content: <CRMQuotasPage /> },
+    { key: "playbooks",   label: "Playbooks",   permission: "crm.view", content: <CRMPlaybooksPage /> },
     { key: "territory",   label: "Territory",   permission: "crm.view", content: <CRMTerritoryPage /> },
     { key: "stages",      label: "Stages",      permission: "crm.view", content: <CRMStagesPage /> },
     { key: "win-loss",    label: "Win / Loss",  permission: "crm.view", content: <CRMWinLossPage /> },

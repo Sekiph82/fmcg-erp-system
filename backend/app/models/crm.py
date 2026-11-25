@@ -914,3 +914,48 @@ class SalesQuotaSnapshot(Base):
     pipeline_amount  = Column(Numeric(18, 2), nullable=False)
     projected_amount = Column(Numeric(18, 2), nullable=False)
     assumptions      = Column(JSON, nullable=False)
+
+
+# ── M43.S01.T010 playbooks and deal plans ─────────────────────────────────────
+
+class CRMPlaybook(Base, TimestampMixin):
+    __tablename__ = "crm_playbooks"
+
+    id                = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    family_id         = Column(UUID(as_uuid=True), nullable=False, index=True, default=uuid.uuid4)  # versions share it
+    version           = Column(Integer, nullable=False, default=1)
+    name              = Column(String(150), nullable=False)
+    purpose           = Column(String(15), nullable=False)     # CALL | VISIT | QUALIFICATION | STAGE
+    stage_id          = Column(UUID(as_uuid=True), ForeignKey("crm_pipeline_stages.id", ondelete="SET NULL"), nullable=True)
+    guidance          = Column(Text, nullable=True)
+    questions         = Column(JSON, nullable=False, default=list)
+    blocks_stage_exit = Column(Boolean, nullable=False, default=False)
+    status            = Column(String(16), nullable=False, default="DRAFT")   # DRAFT|PENDING_APPROVAL|PUBLISHED|RETIRED
+    created_by_id     = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    approved_by_id    = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    approved_at       = Column(DateTime(timezone=True), nullable=True)
+
+
+class CRMPlaybookRun(Base):
+    __tablename__ = "crm_playbook_runs"
+
+    id            = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    playbook_id   = Column(UUID(as_uuid=True), ForeignKey("crm_playbooks.id", ondelete="RESTRICT"), nullable=False, index=True)
+    crm_record_id = Column(UUID(as_uuid=True), ForeignKey("crm_records.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id       = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    answers       = Column(JSON, nullable=False, default=dict)
+    completed     = Column(Boolean, nullable=False, default=False)
+    completed_at  = Column(DateTime(timezone=True), nullable=True)
+    created_at    = Column(DateTime(timezone=True), nullable=False)
+
+
+class CRMDealPlan(Base, TimestampMixin):
+    """Mutual action plan for one deal; optionally shared with the customer contact."""
+    __tablename__ = "crm_deal_plans"
+
+    id               = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    crm_record_id    = Column(UUID(as_uuid=True), ForeignKey("crm_records.id", ondelete="CASCADE"), nullable=False, unique=True)
+    title            = Column(String(200), nullable=False)
+    steps            = Column(JSON, nullable=False, default=list)    # [{id, title, owner us|customer, due_date, done}]
+    shared           = Column(Boolean, nullable=False, default=False)
+    share_token_hash = Column(String(64), nullable=True, unique=True)

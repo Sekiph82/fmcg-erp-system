@@ -174,6 +174,9 @@ async def update_record(db: AsyncSession, record_id: str, data: CRMRecordUpdate)
     if not record:
         return None
     updates = data.model_dump(exclude_none=True)
+    if "stage_id" in updates:
+        from app.services.crm_stage_gate import check_stage_exit
+        await check_stage_exit(db, record, updates["stage_id"])
     if "stage_id" in updates and not updates.get("probability_override") and not record.probability_override:
         st = await db.get(CRMPipelineStage, updates["stage_id"])
         if st:
@@ -214,6 +217,8 @@ async def convert_to_opportunity(db: AsyncSession, record_id: str, data: CRMConv
     if data.expected_close_date:
         record.expected_close_date = data.expected_close_date
     if data.stage_id:
+        from app.services.crm_stage_gate import check_stage_exit
+        await check_stage_exit(db, record, data.stage_id)
         record.stage_id = data.stage_id
     if data.notes:
         record.notes = (record.notes or "") + f"\n[Converted to Opportunity] {data.notes}"
@@ -226,6 +231,8 @@ async def close_won(db: AsyncSession, record_id: str, data: CRMCloseWonRequest) 
     record = await _load_record(db, record_id)
     if not record:
         return None
+    from app.services.crm_stage_gate import check_stage_exit
+    await check_stage_exit(db, record, closing=True)
     record.status = CRMStatus.WON
     if data.linked_order_id:
         record.linked_order_id = data.linked_order_id
