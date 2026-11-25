@@ -372,8 +372,8 @@ def upgrade() -> None:
             CONSTRAINT ck_team_not_own_parent CHECK (parent_id IS NULL OR parent_id <> id)
         )""")
     op.execute("""
-        INSERT INTO crm_teams (id, code, name, created_at, updated_at)
-        SELECT gen_random_uuid(), v, v, now(), now() FROM (
+        INSERT INTO crm_teams (id, code, name, active_flag, created_at, updated_at)
+        SELECT gen_random_uuid(), v, v, true, now(), now() FROM (
             SELECT DISTINCT trim(sales_team_id) AS v FROM crm_records WHERE NULLIF(trim(sales_team_id), '') IS NOT NULL
             UNION SELECT DISTINCT trim(sales_team_id) FROM sales_orders WHERE NULLIF(trim(sales_team_id), '') IS NOT NULL
         ) x
