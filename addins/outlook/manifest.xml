@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- M45.S01.T012 Outlook add-in (XML manifest, MailApp). Replace https://erp.povu.example with the ERP's public
+     HTTPS origin and generate a new <Id> before sideloading; see addins/README.md. -->
+<OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
+           xmlns:mailappor="http://schemas.microsoft.com/office/mailappversionoverrides/1.0"
+           xsi:type="MailApp">
+  <Id>6f1c2a4e-9b7d-4c35-8e21-5a0d3f4b7c19</Id>
+  <Version>1.0.0.0</Version>
+  <ProviderName>POVU</ProviderName>
+  <DefaultLocale>en-US</DefaultLocale>
+  <DisplayName DefaultValue="POVU CRM"/>
+  <Description DefaultValue="See the sender's CRM contact and deals, log e-mails, add notes and tasks."/>
+  <IconUrl DefaultValue="https://erp.povu.example/icons/icon-192.png"/>
+  <HighResolutionIconUrl DefaultValue="https://erp.povu.example/icons/icon-512.png"/>
+  <SupportUrl DefaultValue="https://erp.povu.example/dashboard/help"/>
+  <AppDomains><AppDomain>https://erp.povu.example</AppDomain></AppDomains>
+  <Hosts><Host Name="Mailbox"/></Hosts>
+  <Requirements><Sets><Set Name="Mailbox" MinVersion="1.5"/></Sets></Requirements>
+  <FormSettings>
+    <Form xsi:type="ItemRead">
+      <DesktopSettings>
+        <SourceLocation DefaultValue="https://erp.povu.example/addin/sidebar.html?host=outlook"/>
+        <RequestedHeight>450</RequestedHeight>
+      </DesktopSettings>
+    </Form>
+  </FormSettings>
+  <Permissions>ReadWriteItem</Permissions>
+  <Rule xsi:type="RuleCollection" Mode="Or">
+    <Rule xsi:type="ItemIs" ItemType="Message" FormType="Read"/>
+  </Rule>
+  <DisableEntityHighlighting>false</DisableEntityHighlighting>
+  <VersionOverrides xmlns="http://schemas.microsoft.com/office/mailappversionoverrides" xsi:type="VersionOverridesV1_0">
+    <Hosts>
+      <Host xsi:type="MailHost">
+        <DesktopFormFactor>
+          <ExtensionPoint xsi:type="MessageReadCommandSurface">
+            <OfficeTab id="TabDefault">
+              <Group id="povuGroup">
+                <Label resid="groupLabel"/>
+                <Control xsi:type="Button" id="povuOpen">
+                  <Label resid="buttonLabel"/>
+                  <Supertip><Title resid="buttonLabel"/><Description resid="buttonTip"/></Supertip>
+                  <Icon><bt:Image size="16" resid="icon"/><bt:Image size="32" resid="icon"/><bt:Image size="80" resid="icon"/></Icon>
+                  <Action xsi:type="ShowTaskpane"><SourceLocation resid="paneUrl"/></Action>
+                </Control>
+              </Group>
+            </OfficeTab>
+          </ExtensionPoint>
+        </DesktopFormFactor>
+      </Host>
+    </Hosts>
+    <Resources>
+      <bt:Images><bt:Image id="icon" DefaultValue="https://erp.povu.example/icons/icon-192.png"/></bt:Images>
+      <bt:Urls><bt:Url id="paneUrl" DefaultValue="https://erp.povu.example/addin/sidebar.html?host=outlook"/></bt:Urls>
+      <bt:ShortStrings>
+        <bt:String id="groupLabel" DefaultValue="POVU"/>
+        <bt:String id="buttonLabel" DefaultValue="POVU CRM"/>
+      </bt:ShortStrings>
+      <bt:LongStrings><bt:String id="buttonTip" DefaultValue="Open the CRM sidebar for this e-mail."/></bt:LongStrings>
+    </Resources>
+  </VersionOverrides>
+</OfficeApp>

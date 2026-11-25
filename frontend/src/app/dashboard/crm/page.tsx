@@ -169,6 +169,7 @@ const CRMWorkspacePage   = dynamic(() => import("@/app/dashboard/crm/workspace/p
 const CRMRoutingPage     = dynamic(() => import("@/app/dashboard/crm/routing/page"),     { ssr: false });
 const MsgChannelsPage    = dynamic(() => import("@/app/dashboard/crm/messaging-channels/page"), { ssr: false });
 const SuccessPage        = dynamic(() => import("@/app/dashboard/crm/success/page"), { ssr: false });
+const AIAccessPage       = dynamic(() => import("@/app/dashboard/crm/ai-access/page"), { ssr: false });
 const SocialPage         = dynamic(() => import("@/app/dashboard/crm/social/page"), { ssr: false });
 const AdsPage            = dynamic(() => import("@/app/dashboard/crm/ads/page"), { ssr: false });
 const AudiencesPage      = dynamic(() => import("@/app/dashboard/crm/audiences/page"), { ssr: false });
@@ -224,6 +225,7 @@ export default function CRMPage() {
     { key: "social", label: "Social", permission: "marketing.view", content: <SocialPage /> },
     { key: "channels", label: "Messaging channels", permission: "crm.view", content: <MsgChannelsPage /> },
     { key: "success", label: "Customer success", permission: "crm.view", content: <SuccessPage /> },
+    { key: "ai-access", label: "Add-ins & AI access", permission: "crm.view", content: <AIAccessPage /> },
     { key: "loyalty",     label: "Loyalty",     permission: "crm.view", content: <LoyaltyPage /> },
     { key: "nps",         label: "NPS",         permission: "crm.view", content: <NPSPage /> },
     { key: "surveys",     label: "Surveys",     permission: "crm.view", content: <SurveysPage /> },

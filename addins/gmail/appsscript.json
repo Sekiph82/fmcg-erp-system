@@ -1,0 +1,16 @@
+{
+  "timeZone": "Africa/Nairobi",
+  "exceptionLogging": "STACKDRIVER",
+  "runtimeVersion": "V8",
+  "oauthScopes": [
+    "https://www.googleapis.com/auth/gmail.addons.execute",
+    "https://www.googleapis.com/auth/gmail.addons.current.message.readonly",
+    "https://www.googleapis.com/auth/script.external_request",
+    "https://www.googleapis.com/auth/script.storage"
+  ],
+  "urlFetchWhitelist": ["https://erp.povu.example/"],
+  "addOns": {
+    "common": { "name": "POVU CRM", "logoUrl": "https://erp.povu.example/icons/icon-192.png", "useLocaleFromApp": true },
+    "gmail": { "contextualTriggers": [{ "unconditional": {}, "onTriggerFunction": "onGmailMessage" }] }
+  }
+}

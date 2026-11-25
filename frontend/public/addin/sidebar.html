@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>POVU CRM</title>
+<!-- Office.js is loaded only inside Outlook; outside it the page runs in the local harness (?email=...&api=...). -->
+<script>
+  if (/[?&]host=outlook/.test(location.search)) document.write('<script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"><\/script>');
+</script>
+<style>
+  :root { --fg:#111827; --muted:#6b7280; --bg:#ffffff; --line:#e5e7eb; --accent:#1d4ed8; }
+  @media (prefers-color-scheme: dark) { :root { --fg:#f3f4f6; --muted:#9ca3af; --bg:#111827; --line:#374151; --accent:#60a5fa; } }
+  body { font: 13px/1.4 system-ui, sans-serif; color: var(--fg); background: var(--bg); margin: 0; padding: 12px; }
+  h1 { font-size: 15px; margin: 0 0 8px; } h2 { font-size: 13px; margin: 12px 0 4px; }
+  input, textarea, select, button { font: inherit; width: 100%; box-sizing: border-box; margin: 2px 0 6px; padding: 5px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); color: var(--fg); }
+  button { background: var(--accent); color: #fff; border: 0; cursor: pointer; } .muted { color: var(--muted); }
+  ul { padding-left: 16px; margin: 4px 0; } .err { color: #dc2626; }
+</style>
+</head>
+<body>
+<h1>POVU CRM</h1>
+<div id="setup" hidden>
+  <p class="muted">Paste a personal access token with the <b>crm.addin</b> scope (ERP → My profile → Access tokens).</p>
+  <input id="token" type="password" aria-label="Access token" autocomplete="off">
+  <button id="save">Save token</button>
+</div>
+<div id="main" hidden>
+  <p id="who" class="muted"></p>
+  <div id="contact"></div>
+  <div id="actions" hidden>
+    <h2>Deal</h2><select id="deal" aria-label="Deal"></select>
+    <button id="log">Log this e-mail</button>
+    <textarea id="text" rows="3" aria-label="Note or task" placeholder="Note or follow-up task"></textarea>
+    <button id="note">Add note</button><button id="task">Add task</button>
+  </div>
+  <h2>Templates</h2><select id="tpl" aria-label="Template"><option value="">Insert a template…</option></select>
+  <p id="msg" role="status"></p>
+  <button id="forget" style="background:transparent;color:var(--muted)">Forget token</button>
+</div>
+<script src="sidebar.js"></script>
+</body>
+</html>

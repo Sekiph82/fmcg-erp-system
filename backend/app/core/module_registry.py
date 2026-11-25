@@ -537,6 +537,9 @@ ENDPOINT_ROUTE_DEFINITIONS: tuple[EndpointRouteDefinition, ...] = (
     EndpointRouteDefinition(key="deliverability", route_prefix="/deliverability", import_path="app.api.v1.endpoints.deliverability", tags=('marketing',)),
     EndpointRouteDefinition(key="web_analytics_public", route_prefix="/public/web", import_path="app.api.v1.endpoints.web_analytics_public", tags=('marketing',)),
     EndpointRouteDefinition(key="web_analytics", route_prefix="/web-analytics", import_path="app.api.v1.endpoints.web_analytics", tags=('marketing',)),
+    EndpointRouteDefinition(key="access_tokens", route_prefix="/access-tokens", import_path="app.api.v1.endpoints.access_tokens", tags=('ai',)),
+    EndpointRouteDefinition(key="mcp_server", route_prefix="/public/mcp", import_path="app.api.v1.endpoints.mcp_server", tags=('ai',)),
+    EndpointRouteDefinition(key="crm_addin", route_prefix="/public/crm-addin", import_path="app.api.v1.endpoints.crm_addin", tags=('crm',)),
     EndpointRouteDefinition(key="customer_intel", route_prefix="/customer-intel", import_path="app.api.v1.endpoints.customer_intel", tags=('crm',)),
     EndpointRouteDefinition(key="marketing_assets", route_prefix="/marketing-assets", import_path="app.api.v1.endpoints.marketing_assets", tags=('marketing',)),
     EndpointRouteDefinition(key="marketing_assets_public", route_prefix="/public/assets", import_path="app.api.v1.endpoints.marketing_assets_public", tags=('marketing',)),
@@ -697,6 +700,13 @@ PUBLIC_ROUTES: frozenset[tuple[str, str]] = frozenset({
     ("/public/web/identify", "POST"),                    # visitor ↔ e-mail only with marketing consent
     ("/public/web/forget", "POST"),                      # visitor's own erase request
     ("/public/assets/{doc_id}/{sig}", "GET"),             # DAM image for e-mail/social: HMAC-signed URL, approved+clean only (M45.S01.T024)
+    ("/public/mcp", "POST"),                               # MCP server: Bearer personal access token with mcp.* scope (M45.S01.T022)
+    ("/public/mcp", "GET"),
+    ("/public/crm-addin/lookup", "GET"),                   # Outlook/Gmail add-in: Bearer token with crm.addin scope (M45.S01.T012)
+    ("/public/crm-addin/log-email", "POST"),
+    ("/public/crm-addin/note", "POST"),
+    ("/public/crm-addin/task", "POST"),
+    ("/public/crm-addin/templates", "GET"),
     ("/public/social/meta", "GET"),                      # Meta webhook verify (hub.verify_token) (M44.S01.T008)
     ("/public/social/meta", "POST"),                     # X-Hub-Signature-256 with META_APP_SECRET; fail closed; also Messenger/IG DMs (T013)
     ("/public/channels/{key}/messages", "POST"),         # custom channels API: Bearer channel token (M44.S01.T013)

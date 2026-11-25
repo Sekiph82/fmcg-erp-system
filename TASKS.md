@@ -2272,11 +2272,20 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
   - **Acceptance at milestone gate:** Local two-way fixture sources test transformation/retry/replay, invalid mapping, scope, deletes and rollback; no arbitrary code execution.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable. Do not rebuild already working functionality; record evidence and bounded delta.
   - **Claude checkpoint:** update TASKS.md/Project Status immediately after this task, [v] pending milestone gate, tests NOT RUN; automatically continue next dependency-ready task. Never [x] before milestone PASS.
-- [ ] M45.S01.T012 — Gmail and Outlook CRM add-ins (original recommendation 33/40)
+- [v] M45.S01.T012 — Gmail and Outlook CRM add-ins (original recommendation 33/40)
   - **Scope:** Develop installable source/manifests and shared authenticated CRM sidebar for contact lookup, log email, note/task, templates and links. Follow official supported add-on/add-in frameworks; local harness exercises actual shared API. Store publication/admin consent not required now.
   - **Acceptance at milestone gate:** Validate manifest/build locally and test sidebar using simulated host context; unsupported host-only runtime clearly deferred; real Google/Microsoft host acceptance/publishing later.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable. Do not rebuild already working functionality; record evidence and bounded delta.
   - **Claude checkpoint:** update TASKS.md/Project Status immediately after this task, [v] pending milestone gate, tests NOT RUN; automatically continue next dependency-ready task. Never [x] before milestone PASS.
+  Implemented 2026-11-26 [v] (tests NOT RUN as gate):
+  - Add-ins:
+    - Outlook XML manifest: addins/outlook/manifest.xml.
+    - Gmail Apps Script CardService add-on: addins/gmail.
+    - Shared sidebar: frontend/public/addin/sidebar.html.
+  - Shared API /api/v1/public/crm-addin: lookup, log-email (once per Message-ID), note, task and templates. It authenticates with a personal access token (scope crm.addin) and applies the user's own CRM visibility.
+  - Tokens are created in CRM → "Add-ins & AI access". They are shown once and can be revoked; their use is audited.
+  - Local harness: the sidebar page takes host context from the query string. A test validates both manifests and exercises the API.
+  - Deferred to M47: real Outlook/Gmail host runtime, sideload/Marketplace publishing and admin consent (addins/README.md).
 - [ ] M45.S01.T013 — General sales document library (original recommendation 34/40)
   - **Scope:** Extend quote links to authorized catalogues, proposals and sales docs; versioned storage, permissions, share/expiry/revocation, privacy-aware view tracking, download audit and malware scanner integration.
   - **Acceptance at milestone gate:** Local document store and scanner fixtures, browser views, version hash, revoked/expired access, no cross-account leaks.
@@ -2323,11 +2332,20 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
   - **Acceptance at milestone gate:** Daraja simulator callback settles once; expired/forged links refused; partial payment; no LIVE_PAID without a real provider.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable.
   - **Claude checkpoint:** [v] pending milestone gate, tests NOT RUN until gate; never [x] before milestone PASS.
-- [ ] M45.S01.T022 — MCP server for ERP/CRM tools (additional gap, Source: HubSpot parity matrix 2026-11-25 (coordination/milestones/M43/HUBSPOT_PARITY_MATRIX_2026-11-25.md).)
+- [v] M45.S01.T022 — MCP server for ERP/CRM tools (additional gap, Source: HubSpot parity matrix 2026-11-25 (coordination/milestones/M43/HUBSPOT_PARITY_MATRIX_2026-11-25.md).)
   - **Scope:** Model Context Protocol server exposing read tools (customer, order, stock, invoice status) and approval-gated write tools to authorized AI clients with per-token scopes, rate limits and audit; reuse API permissions.
   - **Acceptance at milestone gate:** Local MCP client lists tools, read calls respect RBAC and company, write calls create approval requests only, revoked token refused.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable.
   - **Claude checkpoint:** [v] pending milestone gate, tests NOT RUN until gate; never [x] before milestone PASS.
+  Implemented 2026-11-26 [v]:
+  - MCP server: POST /api/v1/public/mcp. It speaks JSON-RPC 2.0 over Streamable HTTP and supports initialize, ping, tools/list and tools/call.
+  - Auth: Bearer personal access token. mcp.read is needed to connect; mcp.write adds the write tool.
+  - Read tools: search_customers, order_status, stock_level and invoice_status. They respect the user's permissions and company/branch scope.
+  - Write tool: propose_follow_up_task only creates an AI request. A different person approves it before anything is written.
+  - Every call and refusal is written to the audit log.
+  - Rate limit per token per minute (in-process).
+  - Revoked or expired tokens get 401.
+  - Tests: tests/test_m45_s01_t012_t022_tokens_addin_mcp.py.
 
 - [ ] M45.S01.T023 — Audited impersonation and admin notification management (additional gap, Source: HubSpot parity matrix v2 2026-11-25 (coordination/milestones/M43/HUBSPOT_PARITY_MATRIX_2026-11-25.md).)
   - **Scope:** 'Log in as another user' for support: superuser or a dedicated right, mandatory reason, time-boxed session, persistent banner, no password or 2FA bypass for the target's secrets, cannot impersonate a superuser, every action attributed to both people in the audit log, and the target user is notified. Admin notification management: company-wide defaults and mandatory notifications.
