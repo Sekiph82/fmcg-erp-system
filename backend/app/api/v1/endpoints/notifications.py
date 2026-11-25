@@ -44,7 +44,10 @@ async def list_notifications(
 @router.post("/", response_model=NotificationOut, status_code=201,
              dependencies=[Depends(require_permission("notifications", "send"))])
 async def create_notification(data: NotificationCreate, db: AsyncSession = Depends(get_db)):
-    return await svc.create_notification(db, data)
+    n = await svc.create_notification(db, data)
+    if n is None:   # M45.S01.T023: the user switched this type off and it is not mandatory
+        raise HTTPException(409, "Not sent: the recipient has turned this notification off.")
+    return n
 
 
 # ── The signed-in user's own notifications (header bell) — every login, no module permission ─────────────────────

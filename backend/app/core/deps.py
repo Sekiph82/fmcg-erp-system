@@ -77,6 +77,10 @@ async def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Authenticator-app 2FA enrollment is required. Sign in again to continue setup.",
         )
+    imp = request.cookies.get("erp_imp")
+    if imp:   # M45.S01.T023 audited support session: act as the target user
+        from app.services.impersonation_service import resolve
+        return await resolve(db, request, user, imp)
     return user
 
 

@@ -2449,11 +2449,24 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
   - Revoked or expired tokens get 401.
   - Tests: tests/test_m45_s01_t012_t022_tokens_addin_mcp.py.
 
-- [ ] M45.S01.T023 — Audited impersonation and admin notification management (additional gap, Source: HubSpot parity matrix v2 2026-11-25 (coordination/milestones/M43/HUBSPOT_PARITY_MATRIX_2026-11-25.md).)
+- [v] M45.S01.T023 — Audited impersonation and admin notification management (additional gap, Source: HubSpot parity matrix v2 2026-11-25 (coordination/milestones/M43/HUBSPOT_PARITY_MATRIX_2026-11-25.md).)
   - **Scope:** 'Log in as another user' for support: superuser or a dedicated right, mandatory reason, time-boxed session, persistent banner, no password or 2FA bypass for the target's secrets, cannot impersonate a superuser, every action attributed to both people in the audit log, and the target user is notified. Admin notification management: company-wide defaults and mandatory notifications.
   - **Acceptance at milestone gate:** Impersonation is refused without the right or reason; the session expires; the audit log shows both actors; escalation to a superuser is refused; the banner is always visible; notification defaults apply.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable.
   - **Claude checkpoint:** [v] pending milestone gate, tests NOT RUN until gate; never [x] before milestone PASS.
+  Implemented 2026-11-26 [v] (tests NOT RUN as gate):
+  - Impersonation: Security → Support access.
+    - Who and when: a superuser or the new users.impersonate right, with a written reason (10+ characters), for 1–60 minutes.
+    - Refused: superuser targets, oneself, inactive users and nesting.
+    - Mechanism: a separate signed cookie switches identity only while the session row is open, unexpired and owned by the same support person. An expired session is closed and ignored.
+    - While impersonating, the target's password, 2FA, access tokens and logout-all are refused.
+    - Every audit-log row written during the session carries impersonated_by, impersonator_id and impersonation_id, so both people are recorded.
+    - The target gets an in-app notification.
+    - A persistent red banner with "End session" shows in every dashboard page.
+  - Notification management:
+    - company defaults per type and channel, plus mandatory notifications (nc_notification_policies);
+    - the effective rule (mandatory > user preference/mute > company default) is applied when notifications are created, bulk-sent or sent to permission holders.
+  - Tests: tests/test_m45_s01_t023_impersonation.py (real login sessions).
 
 - [v] M45.S01.T024 — M44 carry-overs (from the M44 build and gate review, 2026-11-26)
   - **Scope:**

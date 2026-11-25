@@ -29,7 +29,10 @@ def _render(template: str, variables: Dict[str, str]) -> str:
 
 # ── Notifications ─────────────────────────────────────────────────────────────
 
-async def create_notification(db: AsyncSession, data: NotificationCreate) -> Notification:
+async def create_notification(db: AsyncSession, data: NotificationCreate) -> Optional[Notification]:
+    from app.services.notification_policy_service import should_notify   # M45.S01.T023 defaults / mandatory
+    if not await should_notify(db, data.user_id, data.notification_type, data.channel or NotificationChannel.IN_APP):
+        return None
     notif = Notification(**data.model_dump())
     if not data.scheduled_for:
         notif.status = NotificationStatus.SENT
@@ -44,7 +47,10 @@ async def send_bulk(db: AsyncSession, data: BulkNotificationCreate) -> List[Noti
     created = []
     payload = data.model_dump()
     user_ids = payload.pop("user_ids")
+    from app.services.notification_policy_service import should_notify
     for uid in user_ids:
+        if not await should_notify(db, uid, payload.get("notification_type"), payload.get("channel") or NotificationChannel.IN_APP):
+            continue
         notif = Notification(user_id=uid, **payload)
         notif.status = NotificationStatus.SENT
         notif.sent_at = datetime.utcnow()
@@ -586,7 +592,10 @@ async def notify_permission_holders(db: AsyncSession, permission: str, title: st
         .where(User.is_active.is_(True), Role.is_active.is_(True), Permission.is_active.is_(True),
                Permission.code.in_((permission, f"{permission}_all"))))).all()
     now = datetime.utcnow()
+    from app.services.notification_policy_service import should_notify
     for uid, name in rows:
+        if not await should_notify(db, str(uid), notification_type, NotificationChannel.IN_APP):
+            continue
         db.add(Notification(user_id=str(uid), user_name=name, title=title[:255], message=message,
                             notification_type=notification_type, priority=NotificationPriority.HIGH,
                             channel=NotificationChannel.IN_APP, reference_type=reference_type, reference_id=reference_id,
