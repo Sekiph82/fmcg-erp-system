@@ -642,7 +642,7 @@ from app.models.material_flow import (
 # Base.metadata so the squashed baseline and dev bootstrap create their tables.
 from app.models import (  # noqa: F401,E402
     brand_assets, consumer_complaints, containers, copacking, dynamic_pricing, email_integration, iot,
-    knowledge_base, loyalty, market_intelligence, meetings, messaging, mobile, npd, nps, receipt_ocr,
+    knowledge_base, loyalty, market_intelligence, meetings, messaging, mobile, npd, nps, oauth_connection, receipt_ocr,
     regulatory_certs, surveys, voip, whatsapp, workflow,
 )
 

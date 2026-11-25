@@ -54,8 +54,19 @@ PROVIDERS: dict[str, dict[str, Any]] = {
         ("from_email", "SMTP_FROM_EMAIL", "From address", False),
         ("enabled", "CRM_OUTBOUND_EMAIL_ENABLED", "Send e-mail (true/false)", False),
     ]},
+    # M43.S00.T004: delegated OAuth apps (mail + calendar). Client registration with Google / Microsoft is a future
+    # activation step (M47.S02.T002); until then these stay empty and the connectors report NOT_CONFIGURED.
+    "google": {"label": "Google OAuth app (Gmail, Google Calendar)", "fields": [
+        ("client_id", "GOOGLE_OAUTH_CLIENT_ID", "OAuth client ID", False),
+        ("client_secret", "GOOGLE_OAUTH_CLIENT_SECRET", "OAuth client secret", True),
+    ]},
+    "microsoft": {"label": "Microsoft Entra app (Outlook mail, Outlook Calendar)", "fields": [
+        ("client_id", "MICROSOFT_OAUTH_CLIENT_ID", "Application (client) ID", False),
+        ("client_secret", "MICROSOFT_OAUTH_CLIENT_SECRET", "Client secret", True),
+        ("tenant", "MICROSOFT_OAUTH_TENANT", "Tenant (common, organizations or a tenant ID)", False),
+    ]},
 }
-REQUIRED = {"mpesa": ("shortcode", "consumer_key", "consumer_secret", "passkey"), "sms": ("provider", "account", "api_key"),
+REQUIRED = {"google": ("client_id", "client_secret"), "microsoft": ("client_id", "client_secret"), "mpesa": ("shortcode", "consumer_key", "consumer_secret", "passkey"), "sms": ("provider", "account", "api_key"),
             "whatsapp": ("phone_number_id", "access_token"), "email": ("host", "from_email")}
 
 

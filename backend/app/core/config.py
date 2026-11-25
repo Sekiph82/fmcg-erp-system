@@ -121,6 +121,22 @@ class Settings(BaseSettings):
     CARD_ASSETS_BASE_URL: str = "https://sekiph82.github.io/SekipHayit"
     PUBLIC_API_URL: str = "http://localhost:8000"  # used for one-click List-Unsubscribe-Post
 
+    # ── Provider egress + delegated OAuth (M43.S00.T004) ─────────────────────
+    # PROVIDER_EGRESS: live | local | off; blank = live in production, local (simulators only) elsewhere.
+    PROVIDER_EGRESS: str = ""
+    OAUTH_REDIRECT_BASE_URL: str = ""          # blank = PUBLIC_API_URL; callback is /api/v1/integrations/oauth/callback
+    GOOGLE_OAUTH_CLIENT_ID: str = ""
+    GOOGLE_OAUTH_CLIENT_SECRET: str = ""
+    GOOGLE_OAUTH_AUTH_URL: str = "https://accounts.google.com/o/oauth2/v2/auth"
+    GOOGLE_OAUTH_TOKEN_URL: str = "https://oauth2.googleapis.com/token"
+    GOOGLE_OAUTH_REVOKE_URL: str = "https://oauth2.googleapis.com/revoke"
+    GOOGLE_OAUTH_USERINFO_URL: str = "https://openidconnect.googleapis.com/v1/userinfo"
+    MICROSOFT_OAUTH_CLIENT_ID: str = ""
+    MICROSOFT_OAUTH_CLIENT_SECRET: str = ""
+    MICROSOFT_OAUTH_TENANT: str = "common"
+    MICROSOFT_LOGIN_BASE_URL: str = "https://login.microsoftonline.com"
+    MICROSOFT_GRAPH_BASE_URL: str = "https://graph.microsoft.com/v1.0"
+
     # ── SMS OTP delivery (Twilio or compatible) ────────────────────────────────
     SMS_PROVIDER: str = ""          # "twilio" or ""
     SMS_ACCOUNT_SID: str = ""       # Twilio Account SID
