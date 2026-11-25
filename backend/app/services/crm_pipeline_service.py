@@ -189,6 +189,8 @@ async def create_record(db: AsyncSession, data: CRMRecordCreate) -> CRMRecord:
             payload["probability_pct"] = st.default_probability
     record = CRMRecord(**payload)
     await sync_pipeline(db, record)  # M43.S01.T011
+    from app.services.crm_routing_service import route   # M43.S01.T014 lead rotation
+    await route(db, record)
     db.add(record)
     await db.flush()
     from app.services.crm_contact_service import sync_record as _sync_contact
@@ -198,7 +200,7 @@ async def create_record(db: AsyncSession, data: CRMRecordCreate) -> CRMRecord:
     return record
 
 
-async def update_record(db: AsyncSession, record_id: str, data: CRMRecordUpdate) -> Optional[CRMRecord]:
+async def update_record(db: AsyncSession, record_id: str, data: CRMRecordUpdate, actor_id=None) -> Optional[CRMRecord]:
     record = await _load_record(db, record_id)
     if not record:
         return None
@@ -208,6 +210,9 @@ async def update_record(db: AsyncSession, record_id: str, data: CRMRecordUpdate)
         await check_stage_exit(db, record, updates["stage_id"])
         from app.services.crm_team_service import check_stage_entry
         await check_stage_entry(db, record, updates["stage_id"], updates)
+        if str(updates["stage_id"]) != str(record.stage_id):
+            from app.services.crm_routing_service import check_stage_approval   # M43.S01.T014
+            await check_stage_approval(db, record, updates["stage_id"], actor_id)
         new_stage = await db.get(CRMPipelineStage, updates["stage_id"])
         updates["pipeline_id"] = new_stage.pipeline_id if new_stage else record.pipeline_id
     if "stage_id" in updates and not updates.get("probability_override") and not record.probability_override:
@@ -288,6 +293,8 @@ async def close_won(db: AsyncSession, record_id: str, data: CRMCloseWonRequest) 
         recorded_by=data.recorded_by,
     )
     db.add(wl)
+    from app.services.crm_routing_service import handoff   # M43.S01.T014 won → service/finance briefing
+    await handoff(db, record)
     from app.services.crm_contact_service import sync_record as _sync_contact
     await _sync_contact(db, record, "won")
     await db.commit()

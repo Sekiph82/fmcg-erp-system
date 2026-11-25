@@ -210,7 +210,7 @@ async def update_record(
     if not existing:
         raise HTTPException(404, "Record not found")
     ensure_commercial_action_allowed(current_user, existing, "edit", "crm")
-    rec = await svc.update_record(db, record_id, data)
+    rec = await svc.update_record(db, record_id, data, actor_id=current_user.id)
     if not rec:
         raise HTTPException(404, "Record not found")
     return _record_read(rec, current_user)

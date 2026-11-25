@@ -166,6 +166,7 @@ const CRMPlaybooksPage   = dynamic(() => import("@/app/dashboard/crm/playbooks/p
 const CRMContactsPage    = dynamic(() => import("@/app/dashboard/crm/contacts/page"),    { ssr: false });
 const CRMViewsPage       = dynamic(() => import("@/app/dashboard/crm/views/page"),       { ssr: false });
 const CRMWorkspacePage   = dynamic(() => import("@/app/dashboard/crm/workspace/page"),   { ssr: false });
+const CRMRoutingPage     = dynamic(() => import("@/app/dashboard/crm/routing/page"),     { ssr: false });
 const CRMInboxPage       = dynamic(() => import("@/app/dashboard/crm/inbox/page"),       { ssr: false });
 const CRMLandingPages = dynamic(() => import("@/app/dashboard/crm/landing/page"), { ssr: false });
 const CRMInsights = dynamic(() => import("@/app/dashboard/crm/insights/page"), { ssr: false });
@@ -203,6 +204,7 @@ export default function CRMPage() {
     { key: "scoring",     label: "Lead Scoring", permission: "crm.view", content: <CRMScoringPage /> },
     { key: "lead-forms",  label: "Lead Forms",  permission: "crm.view", content: <CRMLeadFormsPage /> },
     { key: "automation",  label: "Automation",  permission: "crm.view", content: <CRMAutomationPage /> },
+    { key: "routing",     label: "Routing & approvals", permission: "crm.view", content: <CRMRoutingPage /> },
     { key: "inbox",       label: "Inbox",       permission: "crm.view", content: <CRMInboxPage /> },
     { key: "outbox",      label: "E-mail",      permission: "crm.view", content: <CRMOutboxPage /> },
     { key: "engagement",  label: "Engagement",  permission: "crm.view", content: <CRMEngagementPage /> },

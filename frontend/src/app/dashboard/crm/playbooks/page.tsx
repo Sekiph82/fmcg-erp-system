@@ -75,6 +75,7 @@ export default function CRMPlaybooksPage() {
           {recordId && <DealScore recordId={recordId} />}
           {recordId && <Guide recordId={recordId} onMsg={setMsg} />}
           {recordId && <DealPlan recordId={recordId} onMsg={setMsg} />}
+          {recordId && <Splits recordId={recordId} onMsg={setMsg} />}
         </section>
       </div>
     </div>
@@ -184,6 +185,29 @@ function DealScore({ recordId }: { recordId: string }) {
       {d.buying_group.missing.length > 0 && <p className="text-amber-700">Buying group: add {d.buying_group.missing.join(", ")} (link contacts with these roles).</p>}
       {d.buying_group.blockers > 0 && <p className="text-red-600">{d.buying_group.blockers} known blocker(s) on this deal.</p>}
       <p className="text-gray-400">{d.method}</p>
+    </div>
+  );
+}
+
+// M43.S01.T014: deal splits (shares must total 100%)
+function Splits({ recordId, onMsg }: { recordId: string; onMsg: (m: string) => void }) {
+  const [rows, setRows] = useState<{ user_id: string; share_pct: number }[]>([]);
+  const [pick, setPick] = useState("");
+  useEffect(() => { apiClient.get(`/api/v1/crm-routing/records/${recordId}/splits`).then((r) => setRows(r.data)).catch(() => setRows([])); }, [recordId]);
+  const total = rows.reduce((a, r) => a + (+r.share_pct || 0), 0);
+  return (
+    <div className="border rounded p-2 bg-white text-xs space-y-1">
+      <div className="font-semibold">Deal split (credit sharing)</div>
+      {rows.map((r, i) => (
+        <div key={r.user_id} className="flex gap-2 items-center"><span className="flex-1">{r.user_id.slice(0, 8)}…</span>
+          <input type="number" min={1} max={100} className="border rounded w-16 px-1" value={r.share_pct} onChange={(e) => setRows(rows.map((x, j) => j === i ? { ...x, share_pct: +e.target.value } : x))} />%
+          <button className="text-red-600" onClick={() => setRows(rows.filter((_, j) => j !== i))}>×</button></div>))}
+      <EntityPicker kind="user" value={pick} onChange={(id) => { if (id && !rows.some((r) => r.user_id === id)) setRows([...rows, { user_id: id, share_pct: 0 }]); setPick(""); }} placeholder="Add a person…" />
+      <div className={total === 100 || rows.length === 0 ? "text-gray-500" : "text-red-600"}>Total {total}%</div>
+      <button className="border rounded px-2 py-0.5" onClick={async () => {
+        try { await apiClient.put(`/api/v1/crm-routing/records/${recordId}/splits`, rows); onMsg("Split saved."); }
+        catch (e) { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; onMsg(typeof d === "string" ? d : "Shares must total 100%."); }
+      }}>Save split</button>
     </div>
   );
 }

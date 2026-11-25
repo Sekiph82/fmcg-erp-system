@@ -453,8 +453,71 @@ def upgrade() -> None:
         )""")
     op.execute("CREATE UNIQUE INDEX IF NOT EXISTS uq_signature_default ON crm_email_signatures (user_id) WHERE is_default")
 
+    # T014: routing rules, stage approvals, deal splits, handoffs
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS crm_routing_rules (
+            id UUID PRIMARY KEY,
+            name VARCHAR(120) NOT NULL,
+            priority INTEGER NOT NULL DEFAULT 100,
+            active BOOLEAN NOT NULL DEFAULT true,
+            conditions JSON NOT NULL DEFAULT '{}',
+            method VARCHAR(12) NOT NULL DEFAULT 'ROUND_ROBIN' CHECK (method IN ('ROUND_ROBIN', 'WEIGHTED', 'FIXED')),
+            user_ids JSON NOT NULL DEFAULT '[]',
+            weights JSON,
+            state JSON,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        )""")
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS crm_stage_approval_rules (
+            id UUID PRIMARY KEY,
+            name VARCHAR(120) NOT NULL,
+            stage_id UUID NOT NULL REFERENCES crm_pipeline_stages(id) ON DELETE CASCADE,
+            min_expected_revenue NUMERIC(18, 2),
+            active BOOLEAN NOT NULL DEFAULT true,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        )""")
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS crm_stage_approval_requests (
+            id UUID PRIMARY KEY,
+            crm_record_id UUID NOT NULL REFERENCES crm_records(id) ON DELETE CASCADE,
+            stage_id UUID NOT NULL REFERENCES crm_pipeline_stages(id) ON DELETE CASCADE,
+            rule_id UUID REFERENCES crm_stage_approval_rules(id) ON DELETE SET NULL,
+            requested_by_id UUID REFERENCES users(id) ON DELETE SET NULL,
+            status VARCHAR(10) NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED')),
+            reason VARCHAR(300),
+            decided_by_id UUID REFERENCES users(id) ON DELETE SET NULL,
+            requested_at TIMESTAMPTZ NOT NULL,
+            decided_at TIMESTAMPTZ,
+            CONSTRAINT ck_no_self_approval CHECK (decided_by_id IS NULL OR decided_by_id <> requested_by_id)
+        )""")
+    op.execute("CREATE UNIQUE INDEX IF NOT EXISTS uq_stage_approval_pending ON crm_stage_approval_requests "
+               "(crm_record_id, stage_id) WHERE status = 'PENDING'")
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS crm_deal_splits (
+            crm_record_id UUID NOT NULL REFERENCES crm_records(id) ON DELETE CASCADE,
+            user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            share_pct NUMERIC(5, 2) NOT NULL CHECK (share_pct > 0 AND share_pct <= 100),
+            PRIMARY KEY (crm_record_id, user_id)
+        )""")
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS crm_handoffs (
+            id UUID PRIMARY KEY,
+            crm_record_id UUID NOT NULL UNIQUE REFERENCES crm_records(id) ON DELETE CASCADE,
+            brief JSON NOT NULL,
+            status VARCHAR(12) NOT NULL DEFAULT 'OPEN',
+            acknowledged_by_id UUID REFERENCES users(id) ON DELETE SET NULL,
+            created_at TIMESTAMPTZ NOT NULL
+        )""")
+
 
 def downgrade() -> None:
+    op.execute("DROP TABLE IF EXISTS crm_handoffs")
+    op.execute("DROP TABLE IF EXISTS crm_deal_splits")
+    op.execute("DROP TABLE IF EXISTS crm_stage_approval_requests")
+    op.execute("DROP TABLE IF EXISTS crm_stage_approval_rules")
+    op.execute("DROP TABLE IF EXISTS crm_routing_rules")
     op.execute("DROP TABLE IF EXISTS crm_email_signatures")
     op.execute("DROP TABLE IF EXISTS crm_snippets")
     op.execute("DROP INDEX IF EXISTS uq_crm_activity_recurrence")

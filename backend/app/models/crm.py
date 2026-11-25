@@ -1107,3 +1107,63 @@ class CRMEmailSignature(Base, TimestampMixin):
     name       = Column(String(80), nullable=False)
     body       = Column(Text, nullable=False)
     is_default = Column(Boolean, nullable=False, default=False)
+
+
+# ── M43.S01.T014 routing, stage approvals, splits, handoffs ───────────────────
+
+class CRMRoutingRule(Base, TimestampMixin):
+    __tablename__ = "crm_routing_rules"
+
+    id         = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name       = Column(String(120), nullable=False)
+    priority   = Column(Integer, nullable=False, default=100)
+    active     = Column(Boolean, nullable=False, default=True)
+    conditions = Column(JSON, nullable=False, default=dict)
+    method     = Column(String(12), nullable=False, default="ROUND_ROBIN")   # ROUND_ROBIN | WEIGHTED | FIXED
+    user_ids   = Column(JSON, nullable=False, default=list)
+    weights    = Column(JSON, nullable=True)
+    state      = Column(JSON, nullable=True)
+
+
+class CRMStageApprovalRule(Base, TimestampMixin):
+    __tablename__ = "crm_stage_approval_rules"
+
+    id                   = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name                 = Column(String(120), nullable=False)
+    stage_id             = Column(UUID(as_uuid=True), ForeignKey("crm_pipeline_stages.id", ondelete="CASCADE"), nullable=False)
+    min_expected_revenue = Column(Numeric(18, 2), nullable=True)
+    active               = Column(Boolean, nullable=False, default=True)
+
+
+class CRMStageApprovalRequest(Base):
+    __tablename__ = "crm_stage_approval_requests"
+
+    id              = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    crm_record_id   = Column(UUID(as_uuid=True), ForeignKey("crm_records.id", ondelete="CASCADE"), nullable=False, index=True)
+    stage_id        = Column(UUID(as_uuid=True), ForeignKey("crm_pipeline_stages.id", ondelete="CASCADE"), nullable=False)
+    rule_id         = Column(UUID(as_uuid=True), ForeignKey("crm_stage_approval_rules.id", ondelete="SET NULL"), nullable=True)
+    requested_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    status          = Column(String(10), nullable=False, default="PENDING")   # PENDING | APPROVED | REJECTED
+    reason          = Column(String(300), nullable=True)
+    decided_by_id   = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    requested_at    = Column(DateTime(timezone=True), nullable=False)
+    decided_at      = Column(DateTime(timezone=True), nullable=True)
+
+
+class CRMDealSplit(Base):
+    __tablename__ = "crm_deal_splits"
+
+    crm_record_id = Column(UUID(as_uuid=True), ForeignKey("crm_records.id", ondelete="CASCADE"), primary_key=True)
+    user_id       = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    share_pct     = Column(Numeric(5, 2), nullable=False)
+
+
+class CRMHandoff(Base):
+    __tablename__ = "crm_handoffs"
+
+    id            = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    crm_record_id = Column(UUID(as_uuid=True), ForeignKey("crm_records.id", ondelete="CASCADE"), nullable=False, unique=True)
+    brief         = Column(JSON, nullable=False)
+    status        = Column(String(12), nullable=False, default="OPEN")     # OPEN | ACKNOWLEDGED
+    acknowledged_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at    = Column(DateTime(timezone=True), nullable=False)
