@@ -1212,3 +1212,69 @@ class MailFeedbackEvent(Base):
     outbound_id = Column(UUID(as_uuid=True), ForeignKey("crm_outbound_messages.id", ondelete="SET NULL"), nullable=True)
     applied     = Column(Boolean, nullable=False, default=False)
     received_at = Column(DateTime(timezone=True), nullable=False)
+
+
+class WebEvent(Base):
+    """M44.S01.T009 first-party website event, collected only with analytics consent. The browser's random visitor id
+    is stored only as a keyed hash; no IP, no full referrer URL, no query string except UTM fields."""
+    __tablename__ = "web_events"
+    __table_args__ = (UniqueConstraint("visitor_hash", "event_id", name="uq_web_event_visitor_event"),
+                      Index("ix_web_events_time", "occurred_at"), Index("ix_web_events_visitor", "visitor_hash", "occurred_at"))
+
+    id            = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    visitor_hash  = Column(String(64), nullable=False)
+    session_id    = Column(String(64), nullable=False)     # keyed hash of the browser session id
+    event_id      = Column(String(64), nullable=False)     # client id: the same event sent twice counts once
+    kind          = Column(String(10), nullable=False)     # PAGE | FORM | CTA | CUSTOM
+    name          = Column(String(100), nullable=True)
+    path          = Column(String(300), nullable=False)
+    referrer_host = Column(String(200), nullable=True)
+    utm_source    = Column(String(100), nullable=True)
+    utm_medium    = Column(String(100), nullable=True)
+    utm_campaign  = Column(String(100), nullable=True)
+    occurred_at   = Column(DateTime(timezone=True), nullable=False)
+
+
+class WebIdentity(Base):
+    """Visitor ↔ e-mail link, created only when the visitor gave marketing consent and told us the address."""
+    __tablename__ = "web_identities"
+
+    visitor_hash = Column(String(64), primary_key=True)
+    email        = Column(String(254), nullable=False, index=True)
+    linked_at    = Column(DateTime(timezone=True), nullable=False)
+
+
+class WebConsent(Base):
+    """Cookie-banner decisions per visitor (append-only audit of what the visitor chose and when)."""
+    __tablename__ = "web_consents"
+
+    id           = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    visitor_hash = Column(String(64), nullable=False, index=True)
+    analytics    = Column(Boolean, nullable=False)
+    marketing    = Column(Boolean, nullable=False)
+    decided_at   = Column(DateTime(timezone=True), nullable=False)
+
+
+class MarketingAudience(Base):
+    """M44.S01.T010 rule-based dynamic audience. Membership is recomputed from the rules; only addresses with
+    marketing consent become members when require_consent is set (the default)."""
+    __tablename__ = "mkt_audiences"
+
+    id               = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name             = Column(String(150), nullable=False, unique=True)
+    rules            = Column(JSON, nullable=False)          # {"all": [...conditions], "exclude": [...conditions]}
+    require_consent  = Column(Boolean, nullable=False, default=True)
+    member_count     = Column(Integer, nullable=False, default=0)
+    blocked_count    = Column(Integer, nullable=False, default=0)   # matched but no consent / no e-mail
+    computed_at      = Column(DateTime(timezone=True), nullable=True)
+    created_by_id    = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at       = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+
+class MarketingAudienceMember(Base):
+    __tablename__ = "mkt_audience_members"
+
+    audience_id = Column(UUID(as_uuid=True), ForeignKey("mkt_audiences.id", ondelete="CASCADE"), primary_key=True)
+    customer_id = Column(UUID(as_uuid=True), ForeignKey("customers.id", ondelete="CASCADE"), primary_key=True)
+    email       = Column(String(254), nullable=False)
+    added_at    = Column(DateTime(timezone=True), nullable=False)

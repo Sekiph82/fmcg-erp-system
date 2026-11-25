@@ -189,17 +189,19 @@ async def purge_old(db: AsyncSession, days: int = RETENTION_DAYS) -> int:
 
 
 async def run_purge(interval: float = 24 * 3600) -> None:
-    """Lifespan task, once a day: expired chats and expired call recordings (retention)."""
+    """Lifespan task, once a day: expired chats, call recordings and website events (retention)."""
     import asyncio
     import logging
 
     from app.db.session import AsyncSessionLocal
 
     from app.api.v1.endpoints.voip import purge_expired_recordings
+    from app.services.web_analytics_service import purge_expired as purge_web_events
 
     while True:
         # each purge in its own transaction: one failing never blocks the other
-        for name, job in (("chat", purge_old), ("call recording", purge_expired_recordings)):
+        for name, job in (("chat", purge_old), ("call recording", purge_expired_recordings),
+                          ("web analytics", purge_web_events)):
             try:
                 async with AsyncSessionLocal() as db:
                     await job(db)

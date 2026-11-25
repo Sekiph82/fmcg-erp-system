@@ -535,6 +535,9 @@ ENDPOINT_ROUTE_DEFINITIONS: tuple[EndpointRouteDefinition, ...] = (
     EndpointRouteDefinition(key="email_designs", route_prefix="/email-designs", import_path="app.api.v1.endpoints.email_designs", tags=('marketing',)),
     EndpointRouteDefinition(key="mail_events_public", route_prefix="/public/mail-events", import_path="app.api.v1.endpoints.mail_events_public", tags=('marketing',)),
     EndpointRouteDefinition(key="deliverability", route_prefix="/deliverability", import_path="app.api.v1.endpoints.deliverability", tags=('marketing',)),
+    EndpointRouteDefinition(key="web_analytics_public", route_prefix="/public/web", import_path="app.api.v1.endpoints.web_analytics_public", tags=('marketing',)),
+    EndpointRouteDefinition(key="web_analytics", route_prefix="/web-analytics", import_path="app.api.v1.endpoints.web_analytics", tags=('marketing',)),
+    EndpointRouteDefinition(key="audiences", route_prefix="/audiences", import_path="app.api.v1.endpoints.audiences", tags=('marketing',)),
     EndpointRouteDefinition(key="booking_pages", route_prefix="/booking-pages", import_path="app.api.v1.endpoints.booking_pages", tags=('meetings',)),
     EndpointRouteDefinition(key="booking_public", route_prefix="/public/book", import_path="app.api.v1.endpoints.booking_public", tags=('meetings',)),
     EndpointRouteDefinition(key="oauth_connections", route_prefix="/integrations/oauth", import_path="app.api.v1.endpoints.oauth_connections", tags=('integrations',)),
@@ -680,7 +683,11 @@ PUBLIC_ROUTES: frozenset[tuple[str, str]] = frozenset({
     ("/integrations/oauth/callback", "GET"),
     ("/public/deal-plans/{token}", "GET"),               # shared mutual action plan (M43.S01.T010), revocable token
     ("/public/deal-plans/{token}/steps", "POST"),        # the customer ticks only customer-owned steps
-    ("/public/mail-events/{provider}", "POST"),          # mail relay events: Mailgun HMAC / SendGrid ECDSA / generic HMAC (M44.S01.T011)
+    ("/public/mail-events/{provider}", "POST"),
+    ("/public/web/consent", "POST"),                     # cookie-banner decision (M44.S01.T009); per-connection limit
+    ("/public/web/collect", "POST"),                     # first-party events: stored only with analytics consent
+    ("/public/web/identify", "POST"),                    # visitor ↔ e-mail only with marketing consent
+    ("/public/web/forget", "POST"),                      # visitor's own erase request          # mail relay events: Mailgun HMAC / SendGrid ECDSA / generic HMAC (M44.S01.T011)
     ("/calls/provider/callback", "POST"),                # voice provider callbacks: secret token in the URL (M43.S01.T008)
     ("/public/t/o/{token}.gif", "GET"),                  # e-mail open pixel, HMAC token (M43.S01.T006)
     ("/public/t/c/{token}", "GET"),                      # click → only links stored with that message
