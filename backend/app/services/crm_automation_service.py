@@ -287,6 +287,9 @@ async def run_crm_automation(interval: float = 15.0) -> None:
                 await expand_due(db)
             async with AsyncSessionLocal() as db:
                 await deliver_due(db)
+            from app.services.social_service import publish_due   # M44.S01.T006 approved, due social posts
+            async with AsyncSessionLocal() as db:
+                await publish_due(db)
         except asyncio.CancelledError:
             raise
         except Exception:

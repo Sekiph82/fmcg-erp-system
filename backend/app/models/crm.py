@@ -1333,3 +1333,70 @@ class AdDraft(Base):
     validation      = Column(JSON, nullable=True)
     created_by      = Column(String(100), nullable=False)
     created_at      = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+
+
+class SocialChannel(Base):
+    """M44.S01.T006–T008 a social account the company owns (page, profile, organisation)."""
+    __tablename__ = "social_channels"
+    __table_args__ = (UniqueConstraint("network", "external_id", name="uq_social_channel_network_ext"),)
+
+    id             = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    network        = Column(String(12), nullable=False)    # facebook | instagram | linkedin | tiktok | x | youtube
+    external_id    = Column(String(64), nullable=False)
+    name           = Column(String(200), nullable=False)
+    time_zone      = Column(String(64), nullable=False, default="Africa/Nairobi")
+    listen_enabled = Column(Boolean, nullable=False, default=False)   # opt-in: only then comments/mentions are stored
+    created_at     = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+
+class SocialPost(Base):
+    """A scheduled post: versioned (an edit after approval needs a new approval), published by the adapter when the
+    channel and publishing are enabled, otherwise exported for manual posting. history = publishing log."""
+    __tablename__ = "social_posts"
+
+    id               = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    channel_id       = Column(UUID(as_uuid=True), ForeignKey("social_channels.id", ondelete="CASCADE"), nullable=False, index=True)
+    idempotency_key  = Column(String(64), nullable=False, unique=True)
+    text             = Column(Text, nullable=False)
+    media            = Column(JSON, nullable=False, default=list)     # [{"url", "kind": image|video, ...}]
+    link             = Column(String(500), nullable=True)
+    campaign_tag     = Column(String(100), nullable=True, index=True)
+    owner_id         = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    scheduled_at     = Column(DateTime(timezone=True), nullable=True, index=True)
+    time_zone        = Column(String(64), nullable=False, default="Africa/Nairobi")
+    status           = Column(String(12), nullable=False, default="DRAFT")
+    # DRAFT | PENDING | APPROVED | PUBLISHING | PUBLISHED | FAILED | CANCELLED | EXPORTED
+    version          = Column(Integer, nullable=False, default=1)
+    approved_version = Column(Integer, nullable=True)
+    approved_by      = Column(String(100), nullable=True)
+    external_post_id = Column(String(120), nullable=True)
+    error            = Column(String(500), nullable=True)
+    published_at     = Column(DateTime(timezone=True), nullable=True)
+    history          = Column(JSON, nullable=False, default=list)
+    created_by       = Column(String(100), nullable=False)
+    created_at       = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+
+class SocialItem(Base):
+    """An inbound comment / mention / message from an opted-in channel (webhook) or a manual import."""
+    __tablename__ = "social_items"
+    __table_args__ = (UniqueConstraint("network", "external_id", name="uq_social_item_network_ext"),)
+
+    id          = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    channel_id  = Column(UUID(as_uuid=True), ForeignKey("social_channels.id", ondelete="SET NULL"), nullable=True)
+    network     = Column(String(12), nullable=False)
+    kind        = Column(String(8), nullable=False)        # COMMENT | MENTION | MESSAGE
+    external_id = Column(String(120), nullable=False)
+    parent_id   = Column(String(120), nullable=True)       # post the comment belongs to
+    author      = Column(String(200), nullable=True)
+    text        = Column(Text, nullable=True)              # blanked when the author deletes it
+    url         = Column(String(500), nullable=True)
+    occurred_at = Column(DateTime(timezone=True), nullable=False)
+    source      = Column(String(8), nullable=False)        # WEBHOOK | IMPORT
+    sentiment   = Column(String(8), nullable=True)         # POSITIVE | NEGATIVE | NEUTRAL
+    topics      = Column(JSON, nullable=False, default=list)
+    evidence    = Column(JSON, nullable=False, default=dict)   # words that led to the tags
+    status      = Column(String(9), nullable=False, default="NEW")   # NEW | ASSIGNED | REPLIED | HIDDEN | DONE | DELETED
+    assigned_to = Column(String(100), nullable=True)
+    reply_draft = Column(Text, nullable=True)

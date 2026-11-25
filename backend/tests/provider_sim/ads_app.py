@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import Optional
 
 from fastapi import FastAPI, Header, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 
 TOKENS = {"meta": "sim-meta-token", "google": "sim-google-ads-token", "linkedin": "sim-li-token", "tiktok": "sim-tt-token"}
 DEV_TOKEN, LI_VERSION = "sim-dev-token", "202410"
@@ -193,4 +193,89 @@ def create_ads_app() -> FastAPI:
         return {"code": 0, "message": "OK", "request_id": "sim",
                 "data": {"list": rows.get(page, []), "page_info": {"page": page, "page_size": 1, "total_number": 2, "total_page": 2}}}
 
+    # ── M44.S01.T006 organic posting (Facebook Page, Instagram, LinkedIn posts, TikTok Content Posting) ─────
+    def page_gate(authorization):
+        f = fault("social")
+        if authorization != f"Bearer {SOCIAL_TOKENS['meta']}" or f == "auth":
+            return meta_err(190, 401, "Error validating access token")
+        if f == "perm":
+            return meta_err(200, 403, "(#200) Requires pages_manage_posts permission")
+        return None
+
+    @app.post("/meta/{ver}/{node}/feed")
+    async def page_feed(ver: str, node: str, request: Request, authorization: Optional[str] = Header(None)):
+        err = page_gate(authorization)
+        if err:
+            return err
+        form = dict(await request.form())
+        st["calls"].append({"provider": "facebook", "form": form})
+        return {"id": f"{node}_{len(st['calls'])}"}
+
+    @app.post("/meta/{ver}/{node}/photos")
+    async def page_photo(ver: str, node: str, request: Request, authorization: Optional[str] = Header(None)):
+        err = page_gate(authorization)
+        if err:
+            return err
+        form = dict(await request.form())
+        if not str(form.get("url", "")).startswith("https://"):
+            return meta_err(100, 400, "Invalid image URL")
+        st["calls"].append({"provider": "facebook-photo", "form": form})
+        return {"id": "ph1", "post_id": f"{node}_ph1"}
+
+    @app.post("/meta/{ver}/{node}/media")
+    async def ig_media(ver: str, node: str, request: Request, authorization: Optional[str] = Header(None)):
+        err = page_gate(authorization)
+        if err:
+            return err
+        form = dict(await request.form())
+        if len(form.get("caption", "")) > 2200:
+            return meta_err(100, 400, "Caption too long")
+        st["calls"].append({"provider": "instagram-container", "form": form})
+        return {"id": "container-1"}
+
+    @app.post("/meta/{ver}/{node}/media_publish")
+    async def ig_publish(ver: str, node: str, request: Request, authorization: Optional[str] = Header(None)):
+        err = page_gate(authorization)
+        if err:
+            return err
+        form = dict(await request.form())
+        if form.get("creation_id") != "container-1":
+            return meta_err(100, 400, "Unknown creation_id")
+        st["calls"].append({"provider": "instagram", "form": form})
+        return {"id": "ig-media-1"}
+
+    @app.post("/linkedin/rest/posts")
+    async def li_post(request: Request, authorization: Optional[str] = Header(None), linkedin_version: Optional[str] = Header(None)):
+        if authorization != f"Bearer {SOCIAL_TOKENS['linkedin']}":
+            return JSONResponse({"status": 401, "message": "Invalid access token"}, 401)
+        if linkedin_version != LI_VERSION:
+            return JSONResponse({"status": 426, "message": "Requested version is not active"}, 426)
+        body = await request.json()
+        if not body.get("author", "").startswith("urn:li:organization:") or len(body.get("commentary", "")) > 3000:
+            return JSONResponse({"status": 422, "message": "Invalid post"}, 422)
+        st["calls"].append({"provider": "linkedin", "json": body})
+        return Response(status_code=201, headers={"x-restli-id": "urn:li:share:9001"})
+
+    @app.post("/tiktok-social/v2/post/publish/video/init/")
+    async def tt_post(request: Request, authorization: Optional[str] = Header(None)):
+        if authorization != f"Bearer {SOCIAL_TOKENS['tiktok']}":
+            return JSONResponse({"data": {}, "error": {"code": "access_token_invalid", "message": "The access token is invalid"}}, 401)
+        body = await request.json()
+        if body["post_info"].get("privacy_level") != "SELF_ONLY":
+            return JSONResponse({"data": {}, "error": {"code": "unaudited_client_can_only_post_to_private_accounts",
+                                                      "message": "Unaudited clients can only post privately"}}, 403)
+        st["calls"].append({"provider": "tiktok", "json": body})
+        return {"data": {"publish_id": "v_pub_url~1"}, "error": {"code": "ok", "message": ""}}
+
     return app
+
+
+SOCIAL_TOKENS = {"meta": "sim-page-token", "linkedin": "sim-li-social", "tiktok": "sim-tt-social"}
+
+
+def social_sim_settings(base: str) -> dict:
+    base = base.rstrip("/")
+    return {"META_ADS_API_URL": f"{base}/meta", "META_PAGE_ACCESS_TOKEN": SOCIAL_TOKENS["meta"],
+            "LINKEDIN_ADS_API_URL": f"{base}/linkedin", "LINKEDIN_ADS_VERSION": LI_VERSION,
+            "LINKEDIN_SOCIAL_ACCESS_TOKEN": SOCIAL_TOKENS["linkedin"], "TIKTOK_SOCIAL_API_URL": f"{base}/tiktok-social",
+            "TIKTOK_SOCIAL_ACCESS_TOKEN": SOCIAL_TOKENS["tiktok"], "SOCIAL_PUBLISHING_ENABLED": True}

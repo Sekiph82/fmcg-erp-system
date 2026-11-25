@@ -145,6 +145,14 @@ class Settings(BaseSettings):
     TIKTOK_ADS_API_URL: str = "https://business-api.tiktok.com"
     TIKTOK_ADS_ACCESS_TOKEN: str = ""
     TIKTOK_ADS_APP_SECRET: str = ""
+    # M44.S01.T006–T008 social: publishing stays off until the owner enables it; tokens per network (blank = manual export)
+    SOCIAL_PUBLISHING_ENABLED: bool = False
+    META_PAGE_ACCESS_TOKEN: str = ""             # Facebook Page + Instagram professional account (Graph API)
+    META_APP_SECRET: str = ""                    # signs Meta webhooks (X-Hub-Signature-256)
+    META_WEBHOOK_VERIFY_TOKEN: str = ""
+    LINKEDIN_SOCIAL_ACCESS_TOKEN: str = ""       # w_organization_social
+    TIKTOK_SOCIAL_ACCESS_TOKEN: str = ""         # Content Posting API (video.publish)
+    TIKTOK_SOCIAL_API_URL: str = "https://open.tiktokapis.com"
     # M42 business cards: shared POVU brand content (cover video, logo, videos, gallery, catalogue). Owner decision
     # 2026-11-24: the GitHub Pages card repo is the source; point this at a self-hosted copy later if wanted.
     CARD_ASSETS_BASE_URL: str = "https://sekiph82.github.io/SekipHayit"

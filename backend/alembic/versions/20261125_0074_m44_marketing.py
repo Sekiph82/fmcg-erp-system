@@ -107,8 +107,37 @@ def upgrade() -> None:
             requested_by VARCHAR(100), approved_by VARCHAR(100), validation JSON, created_by VARCHAR(100) NOT NULL,
             created_at TIMESTAMPTZ NOT NULL DEFAULT now())""")
 
+    # T006–T008: social publishing, calendar, listening
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS social_channels (
+            id UUID PRIMARY KEY, network VARCHAR(12) NOT NULL, external_id VARCHAR(64) NOT NULL, name VARCHAR(200) NOT NULL,
+            time_zone VARCHAR(64) NOT NULL DEFAULT 'Africa/Nairobi', listen_enabled BOOLEAN NOT NULL DEFAULT false,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+            CONSTRAINT uq_social_channel_network_ext UNIQUE (network, external_id))""")
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS social_posts (
+            id UUID PRIMARY KEY, channel_id UUID NOT NULL REFERENCES social_channels(id) ON DELETE CASCADE,
+            idempotency_key VARCHAR(64) NOT NULL UNIQUE, text TEXT NOT NULL, media JSON NOT NULL, link VARCHAR(500),
+            campaign_tag VARCHAR(100), owner_id UUID REFERENCES users(id) ON DELETE SET NULL, scheduled_at TIMESTAMPTZ,
+            time_zone VARCHAR(64) NOT NULL DEFAULT 'Africa/Nairobi', status VARCHAR(12) NOT NULL DEFAULT 'DRAFT',
+            version INTEGER NOT NULL DEFAULT 1, approved_version INTEGER, approved_by VARCHAR(100),
+            external_post_id VARCHAR(120), error VARCHAR(500), published_at TIMESTAMPTZ, history JSON NOT NULL,
+            created_by VARCHAR(100) NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now())""")
+    for col in ("channel_id", "scheduled_at", "campaign_tag"):
+        op.execute(f"CREATE INDEX IF NOT EXISTS ix_social_posts_{col} ON social_posts ({col})")
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS social_items (
+            id UUID PRIMARY KEY, channel_id UUID REFERENCES social_channels(id) ON DELETE SET NULL,
+            network VARCHAR(12) NOT NULL, kind VARCHAR(8) NOT NULL, external_id VARCHAR(120) NOT NULL, parent_id VARCHAR(120),
+            author VARCHAR(200), text TEXT, url VARCHAR(500), occurred_at TIMESTAMPTZ NOT NULL, source VARCHAR(8) NOT NULL,
+            sentiment VARCHAR(8), topics JSON NOT NULL, evidence JSON NOT NULL, status VARCHAR(9) NOT NULL DEFAULT 'NEW',
+            assigned_to VARCHAR(100), reply_draft TEXT,
+            CONSTRAINT uq_social_item_network_ext UNIQUE (network, external_id))""")
+
 
 def downgrade() -> None:
+    for t in ("social_items", "social_posts", "social_channels"):
+        op.execute(f"DROP TABLE IF EXISTS {t}")
     for t in ("ads_drafts", "ads_campaign_days", "ads_accounts"):
         op.execute(f"DROP TABLE IF EXISTS {t}")
     for t in ("mkt_audience_members", "mkt_audiences"):
