@@ -1,0 +1,11 @@
+NOTICE:  database "g_test_m44_s01_t006_t008_social_" does not exist, skipping
+== tests/test_m44_s01_t006_t008_social.py :: 6 passed in 4.58s
+NOTICE:  database "g_test_m44_s01_t011_deliverability_db_" does not exist, skipping
+== tests/test_m44_s01_t011_deliverability_db.py :: 4 passed in 4.14s
+NOTICE:  database "g_test_m44_s01_t012_governance_db_" does not exist, skipping
+== tests/test_m44_s01_t012_governance_db.py :: 4 passed in 4.95s
+NOTICE:  database "g_test_m44_s01_t014_residuals_" does not exist, skipping
+== tests/test_m44_s01_t014_residuals.py :: 2 passed, 77 warnings in 15.84s
+NOTICE:  database "g_test_m43_s01_t016_teams_views_db_" does not exist, skipping
+== tests/test_m43_s01_t016_teams_views_db.py :: 2 passed in 4.35s
+FILES PASS=5 FAIL=0

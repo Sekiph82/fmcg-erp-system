@@ -184,6 +184,12 @@ async def test_custom_channel_and_slack(sim):
         auth = {"Authorization": f"Bearer {token}"}
         assert (await c.post(f"{url}/messages", json=msg, headers=auth)).json() == {"stored": True, "duplicate": False}
         assert (await c.post(f"{url}/messages", json=msg, headers=auth)).json()["duplicate"]
+        # the same message id from another channel is its own message (review fix: dedupe is per channel)
+        async with AsyncSessionLocal() as db:
+            other = await ep.create_custom(ep.CustomIn(key=f"other-{tag}", name="POVU other app"), db, admin)
+        r = await c.post(f"/api/v1/public/channels/{other['key']}/messages", json=msg,
+                         headers={"Authorization": f"Bearer {other['token']}"})
+        assert r.json() == {"stored": True, "duplicate": False}
         async with AsyncSessionLocal() as db:
             await inbox.sync(db)
             await db.commit()

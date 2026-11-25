@@ -22,7 +22,12 @@ const BLANK: Doc = { theme: { brand_color: "#1D4ED8", text_color: "#111827", bac
   blocks: [NEW.heading, NEW.text, NEW.button, NEW.footer] };
 const FIELDS: Record<string, string[]> = { heading: ["text"], text: ["text"], image: ["url", "alt", "href"], button: ["label", "href"],
   product: ["name", "size", "price", "image_url"], spacer: ["height"], footer: ["text"], divider: [] };
-const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : "Check the design."; };
+const err = (e: unknown) => {
+  let data = (e as { response?: { data?: unknown } }).response?.data;
+  if (typeof data === "string") { try { data = JSON.parse(data); } catch { /* not JSON */ } }  // preview uses responseType text
+  const d = (data as { detail?: unknown } | undefined)?.detail;
+  return typeof d === "string" ? d : "Check the design.";
+};
 
 export default function EmailDesignerPage() {
   const [list, setList] = useState<Design[]>([]);

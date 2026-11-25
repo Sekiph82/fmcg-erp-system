@@ -19,7 +19,7 @@ router = APIRouter()
 async def verify(request: Request):
     p = request.query_params
     token = settings.META_WEBHOOK_VERIFY_TOKEN
-    if not token or p.get("hub.mode") != "subscribe" or not hmac.compare_digest(p.get("hub.verify_token", ""), token):
+    if not token or p.get("hub.mode") != "subscribe" or not hmac.compare_digest(p.get("hub.verify_token", "").encode(), token.encode()):
         raise HTTPException(403, "Verification failed")
     return Response(p.get("hub.challenge", ""), media_type="text/plain")
 

@@ -62,6 +62,13 @@ async def test_collect_consent_bots_dedupe_identity_funnel_forget():
         assert [x["visitors"] for x in steps][-1] >= 1
         j = await wa.journey(db, email)
         assert j["linked"] and j["first_touch"]["source"] == "newsletter"
+        # withdrawing marketing consent unlinks the e-mail (review fix); consenting again and identifying relinks it
+        await wa.record_consent(db, v, analytics=True, marketing=False)
+        await db.flush()
+        assert not (await wa.journey(db, email))["linked"]
+        await wa.record_consent(db, v, analytics=True, marketing=True)
+        await db.flush()
+        assert await wa.identify(db, v, email)
         stored = (await db.execute(select(WebEvent.path).where(WebEvent.visitor_hash == wa.hashed("v", v)))).scalars().all()
         assert all("?" not in p for p in stored)
         # retention: age one event past the window

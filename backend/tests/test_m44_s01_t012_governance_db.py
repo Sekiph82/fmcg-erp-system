@@ -58,17 +58,21 @@ async def _arm(db, camp, variant, n, clicks):
     await db.flush()
 
 
+async def _segment(db):
+    from app.models.marketing import CustomerSegment, SegmentType
+    seg = CustomerSegment(id=uuid.uuid4(), segment_name=f"POVU retail {uuid.uuid4().hex[:6]}", segment_type=SegmentType.RETAIL)
+    db.add(seg)
+    await db.flush()
+    return seg
+
+
 @DB
 @pytest.mark.asyncio
 async def test_ab_winner_needs_evidence_and_approval_gate():
-    from sqlalchemy import select
     from app.db.session import AsyncSessionLocal
     from app.models.crm import CRMEmailCampaign
-    from app.models.marketing import CustomerSegment
     async with AsyncSessionLocal() as db:
-        seg = (await db.execute(select(CustomerSegment).limit(1))).scalars().first()
-        if seg is None:
-            pytest.skip("template DB has no customer segment")
+        seg = await _segment(db)
         clear = CRMEmailCampaign(id=uuid.uuid4(), name="ab-clear", subject="s", body="b", segment_id=seg.id, ab_split_pct=50)
         noise = CRMEmailCampaign(id=uuid.uuid4(), name="ab-noise", subject="s", body="b", segment_id=seg.id, ab_split_pct=50)
         small = CRMEmailCampaign(id=uuid.uuid4(), name="ab-small", subject="s", body="b", segment_id=seg.id, ab_split_pct=50)
@@ -88,19 +92,15 @@ async def test_ab_winner_needs_evidence_and_approval_gate():
 @pytest.mark.asyncio
 async def test_approval_gate(monkeypatch):
     from fastapi import HTTPException
-    from sqlalchemy import select
     from app.api.v1.endpoints import crm_pipeline as ep
     from app.core.config import settings
     from app.db.session import AsyncSessionLocal
     from app.models.crm import CRMEmailCampaign
-    from app.models.marketing import CustomerSegment
     monkeypatch.setattr(settings, "MARKETING_EMAIL_APPROVAL_REQUIRED", True)
     alice = SimpleNamespace(username="alice", is_superuser=True)
     bob = SimpleNamespace(username="bob", is_superuser=True)
     async with AsyncSessionLocal() as db:
-        seg = (await db.execute(select(CustomerSegment).limit(1))).scalars().first()
-        if seg is None:
-            pytest.skip("template DB has no customer segment")
+        seg = await _segment(db)
         c = CRMEmailCampaign(id=uuid.uuid4(), name="appr", subject="s", body="b", segment_id=seg.id)
         db.add(c)
         await db.commit()

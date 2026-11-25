@@ -15,7 +15,7 @@ export default function ChannelThreadPage() {
   const [t, setT] = useState<Thread | null>(null);
   const [text, setText] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const load = useCallback(() => apiClient.get<Thread>(`/crm-channels/conversations/${id}`).then((r) => setT(r.data))
+  const load = useCallback(() => apiClient.get<Thread>(`/api/v1/crm-channels/conversations/${id}`).then((r) => setT(r.data))
     .catch(() => setError("Conversation not found or not visible to you.")), [id]);
   useEffect(() => { load(); const i = setInterval(load, 10000); return () => clearInterval(i); }, [load]);
 
@@ -24,7 +24,7 @@ export default function ChannelThreadPage() {
     if (!text.trim()) return;
     setError(null);
     try {
-      await apiClient.post(`/crm-channels/conversations/${id}/reply`, { text: text.trim() });
+      await apiClient.post(`/api/v1/crm-channels/conversations/${id}/reply`, { text: text.trim() });
       setText("");
       await load();
     } catch (err) {

@@ -114,7 +114,7 @@ def register_handlers(app: FastAPI) -> None:
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 content={
                     "error": "validation_error",
-                    "detail": "A referenced record does not exist. Check the selected ids.",
+                    "detail": "A referenced record does not exist, or the record is still used by other records.",
                     "path": request.url.path,
                 },
             )

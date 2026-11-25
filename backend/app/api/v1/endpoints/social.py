@@ -209,8 +209,10 @@ async def post_action(pid: uuid.UUID, action: str, db: AsyncSession = Depends(ge
         ss.log(p, "RETRY", current_user.username)
     elif action == "export":
         ch = await db.get(SocialChannel, p.channel_id)
-        if p.approved_version != p.version:
-            raise HTTPException(409, "Approve the current version before exporting it.")
+        if p.approved_version != p.version or p.status not in ("APPROVED", "FAILED", "EXPORTED"):
+            raise HTTPException(409, "Only an approved post (or one that failed to publish) can be exported.")
+        if p.status == "FAILED" and p.error and "may have posted" in p.error:
+            raise HTTPException(409, "The network may already have this post; check the channel before exporting it.")
         p.status = "EXPORTED"
         ss.log(p, "EXPORTED", current_user.username)
         await db.commit()

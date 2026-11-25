@@ -1260,7 +1260,7 @@ async def create_email_campaign(body: EmailCampaignIn, db: AsyncSession = Depend
         raise HTTPException(422, "segment_id is not an active segment")
     if await db.get(Company, _uuid(body.company_id)) is None:
         raise HTTPException(422, "company_id does not exist")
-    unknown = campaigns.unknown_placeholders(body.subject + body.body)
+    unknown = campaigns.unknown_placeholders(body.subject + body.body + (body.variant_b_subject or "") + (body.variant_b_body or ""))
     if unknown:
         raise HTTPException(422, "Unknown placeholder(s): " + ", ".join("{%s}" % u for u in sorted(unknown))
                             + "; use {contact_name} or {company_name}")

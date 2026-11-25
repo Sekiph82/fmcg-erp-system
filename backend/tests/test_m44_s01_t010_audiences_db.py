@@ -67,6 +67,11 @@ async def test_consent_blocking_recompute_and_export_gates():
         assert a.member_count == 2
         csv = await aus.hashed_export(db, a)
         assert yes.email not in csv and aus.sha256_email(yes.email) in csv
+        # unsubscribed after the last recompute: left out of the export at once (review fix)
+        await outbound.record_consent(db, no.email, "UNSUBSCRIBED", "test")
+        await db.flush()
+        csv = await aus.hashed_export(db, a)
+        assert aus.sha256_email(no.email) not in csv and aus.sha256_email(yes.email) in csv
         editor = SimpleNamespace(is_superuser=True, id=None)
         with pytest.raises(HTTPException) as e:
             await ep.export(a.id, db, editor)

@@ -1,0 +1,19 @@
+NOTICE:  database "g_test_m44_s01_t001_email_designer_" does not exist, skipping
+== tests/test_m44_s01_t001_email_designer.py :: 8 passed in 3.85s
+NOTICE:  database "g_test_m44_s01_t002_t005_ads_" does not exist, skipping
+== tests/test_m44_s01_t002_t005_ads.py :: 6 passed in 4.69s
+NOTICE:  database "g_test_m44_s01_t006_t008_social_" does not exist, skipping
+== tests/test_m44_s01_t006_t008_social.py :: 6 passed in 4.65s
+NOTICE:  database "g_test_m44_s01_t009_web_analytics_db_" does not exist, skipping
+== tests/test_m44_s01_t009_web_analytics_db.py :: 2 passed in 4.10s
+NOTICE:  database "g_test_m44_s01_t010_audiences_db_" does not exist, skipping
+== tests/test_m44_s01_t010_audiences_db.py :: 2 passed in 4.40s
+NOTICE:  database "g_test_m44_s01_t011_deliverability_db_" does not exist, skipping
+== tests/test_m44_s01_t011_deliverability_db.py :: 4 passed in 4.16s
+NOTICE:  database "g_test_m44_s01_t012_governance_db_" does not exist, skipping
+== tests/test_m44_s01_t012_governance_db.py :: 4 passed in 5.03s
+NOTICE:  database "g_test_m44_s01_t013_messaging_" does not exist, skipping
+== tests/test_m44_s01_t013_messaging.py :: 4 passed, 75 warnings in 16.56s
+NOTICE:  database "g_test_m44_s01_t014_residuals_" does not exist, skipping
+== tests/test_m44_s01_t014_residuals.py :: 2 passed, 77 warnings in 16.14s
+FILES PASS=9 FAIL=0

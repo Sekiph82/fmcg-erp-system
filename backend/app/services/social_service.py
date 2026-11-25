@@ -170,13 +170,17 @@ async def publish(db: AsyncSession, post: SocialPost) -> SocialPost:
 
 async def publish_due(db: AsyncSession, now: Optional[datetime] = None) -> int:
     now = now or datetime.now(timezone.utc)
-    rows = (await db.execute(select(SocialPost).where(SocialPost.status == "APPROVED", SocialPost.scheduled_at <= now,
-                                                      SocialPost.approved_version == SocialPost.version)
-                             .with_for_update(skip_locked=True).limit(20))).scalars().all()
-    for p in rows:
+    done = 0
+    for _ in range(20):   # one post per transaction: the row lock is held until its own commit (M44 review)
+        p = (await db.execute(select(SocialPost).where(SocialPost.status == "APPROVED", SocialPost.scheduled_at <= now,
+                                                       SocialPost.approved_version == SocialPost.version)
+                              .order_by(SocialPost.scheduled_at).with_for_update(skip_locked=True).limit(1))).scalars().first()
+        if p is None:
+            break
         await publish(db, p)
         await db.commit()
-    return len(rows)
+        done += 1
+    return done
 
 
 async def conflicts(db: AsyncSession, post: SocialPost) -> list[str]:
@@ -219,6 +223,8 @@ def verify_meta(raw: bytes, header: str) -> None:
 
 async def _store(db: AsyncSession, ch: Optional[SocialChannel], network: str, kind: str, ext: str, *, parent=None,
                  author=None, text=None, url=None, at: Optional[datetime] = None, source="WEBHOOK") -> bool:
+    if not ext:   # without an id the item cannot be deduplicated (M44 review)
+        return False
     s, t, ev = tag(text or "")
     res = await db.execute(insert(SocialItem).values(
         channel_id=ch.id if ch else None, network=network, kind=kind, external_id=str(ext)[:120],

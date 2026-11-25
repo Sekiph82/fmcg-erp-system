@@ -54,6 +54,8 @@ def verify_mailgun(payload: dict) -> list[dict]:
     key = settings.MAIL_EVENTS_MAILGUN_SIGNING_KEY
     if not key:
         raise FeedbackError("Mailgun events are not configured.", 503)
+    if not isinstance(payload, dict) or not isinstance(payload.get("signature") or {}, dict):
+        raise FeedbackError("Bad payload.", 400)
     sig = payload.get("signature") or {}
     _fresh(str(sig.get("timestamp", "")))
     expect = hmac.new(key.encode(), f"{sig.get('timestamp', '')}{sig.get('token', '')}".encode(), hashlib.sha256).hexdigest()

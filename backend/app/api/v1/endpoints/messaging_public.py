@@ -27,7 +27,7 @@ async def _channel(key: str, authorization: str, db: AsyncSession):
 
 class InboundIn(BaseModel):
     thread_id: str = Field(..., min_length=1, max_length=120)
-    message_id: str = Field(..., min_length=1, max_length=100)
+    message_id: str = Field(..., min_length=1, max_length=70)
     sender: str | None = Field(None, max_length=200)
     text: str = Field(..., min_length=1, max_length=4000)
 
@@ -36,7 +36,7 @@ class InboundIn(BaseModel):
 async def inbound(key: str, body: InboundIn, authorization: str = Header(""), db: AsyncSession = Depends(get_db)):
     ch = await _channel(key, authorization, db)
     stored = await ms._add(db, channel="CUSTOM", account_id=ch.key, thread_id=body.thread_id,
-                           external_id=f"in-{body.message_id}", direction="IN", sender=body.sender,
+                           external_id=f"in-{ch.key}:{body.message_id}", direction="IN", sender=body.sender,
                            body=body.text, status="RECEIVED", created_at=datetime.now(timezone.utc))
     await db.commit()
     return {"stored": stored, "duplicate": not stored}

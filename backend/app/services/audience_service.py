@@ -145,8 +145,12 @@ def sha256_email(email: str) -> str:
 
 
 async def hashed_export(db: AsyncSession, aud: MarketingAudience) -> str:
-    rows = (await db.execute(select(MarketingAudienceMember.email).where(MarketingAudienceMember.audience_id == aud.id))).scalars()
-    return "email_sha256\n" + "".join(sha256_email(e) + "\n" for e in sorted(set(rows)))
+    """Members as SHA-256 e-mails. Consent is checked again now: whoever unsubscribed after the last recompute is
+    left out (M44 review)."""
+    rows = set((await db.execute(select(MarketingAudienceMember.email).where(MarketingAudienceMember.audience_id == aud.id))).scalars())
+    if aud.require_consent:
+        rows &= await _consented(db)
+    return "email_sha256\n" + "".join(sha256_email(e) + "\n" for e in sorted(rows))
 
 
 async def similar(db: AsyncSession, aud: MarketingAudience, limit: int = 25) -> dict:

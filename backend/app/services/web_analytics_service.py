@@ -47,8 +47,10 @@ def referrer_host(ref: Optional[str]) -> Optional[str]:
 
 
 async def record_consent(db: AsyncSession, visitor: str, analytics: bool, marketing: bool) -> None:
-    db.add(WebConsent(visitor_hash=hashed("v", visitor), analytics=analytics, marketing=marketing,
-                      decided_at=datetime.now(timezone.utc)))
+    vh = hashed("v", visitor)
+    db.add(WebConsent(visitor_hash=vh, analytics=analytics, marketing=marketing, decided_at=datetime.now(timezone.utc)))
+    if not marketing:   # withdrawing marketing consent unlinks the visitor from their e-mail (M44 review)
+        await db.execute(delete(WebIdentity).where(WebIdentity.visitor_hash == vh))
 
 
 async def _latest_consent(db: AsyncSession, vh: str) -> Optional[WebConsent]:
@@ -106,7 +108,12 @@ async def forget(db: AsyncSession, visitor: str) -> int:
 
 async def purge_expired(db: AsyncSession, now: Optional[datetime] = None) -> int:
     cutoff = (now or datetime.now(timezone.utc)) - timedelta(days=settings.WEB_ANALYTICS_RETENTION_DAYS)
-    return (await db.execute(delete(WebEvent).where(WebEvent.occurred_at < cutoff))).rowcount or 0
+    n = (await db.execute(delete(WebEvent).where(WebEvent.occurred_at < cutoff))).rowcount or 0
+    # identities and consent records of visitors with no event left in the retention window go too (M44 review)
+    stale = select(WebEvent.visitor_hash).where(WebEvent.occurred_at >= cutoff)
+    await db.execute(delete(WebIdentity).where(WebIdentity.visitor_hash.not_in(stale)))
+    await db.execute(delete(WebConsent).where(WebConsent.decided_at < cutoff, WebConsent.visitor_hash.not_in(stale)))
+    return n
 
 
 async def _events(db: AsyncSession, since: datetime, limit: int = 200_000) -> list[WebEvent]:

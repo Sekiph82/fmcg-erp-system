@@ -14,8 +14,8 @@ export default function MessagingChannelsPage() {
   const [token, setToken] = useState<{ key: string; token: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const load = useCallback(async () => {
-    apiClient.get("/crm-channels/status").then((r) => setSt(r.data)).catch(() => undefined);
-    apiClient.get<Custom[]>("/crm-channels/custom-channels").then((r) => setList(r.data)).catch(() => setList(null));
+    apiClient.get("/api/v1/crm-channels/status").then((r) => setSt(r.data)).catch(() => undefined);
+    apiClient.get<Custom[]>("/api/v1/crm-channels/custom-channels").then((r) => setList(r.data)).catch(() => setList(null));
   }, []);
   useEffect(() => { load(); }, [load]);
 
@@ -44,7 +44,7 @@ export default function MessagingChannelsPage() {
         )}
         {list === null ? <p className="text-gray-500">Only CRM administrators manage custom channels.</p> : (
           <>
-            <form className="flex flex-wrap gap-2" onSubmit={(e) => { e.preventDefault(); act(() => apiClient.post("/crm-channels/custom-channels", { key, name })).then(() => { setKey(""); setName(""); }); }}>
+            <form className="flex flex-wrap gap-2" onSubmit={(e) => { e.preventDefault(); act(() => apiClient.post("/api/v1/crm-channels/custom-channels", { key, name })).then(() => { setKey(""); setName(""); }); }}>
               <input aria-label="Channel key" required value={key} onChange={(e) => setKey(e.target.value.toLowerCase())} placeholder="key, e.g. partner-app" className="border rounded px-2 py-1 flex-1 min-w-[10rem]" />
               <input aria-label="Channel name" required value={name} onChange={(e) => setName(e.target.value)} placeholder="name" className="border rounded px-2 py-1 flex-1 min-w-[10rem]" />
               <button className="px-3 py-1 rounded bg-indigo-600 text-white">Add channel</button>
@@ -55,8 +55,8 @@ export default function MessagingChannelsPage() {
                   <span className="font-medium">{c.name}</span><code className="text-xs">{c.key}</code>
                   {!c.active && <span className="text-xs text-gray-500">disabled</span>}
                   <span className="ml-auto flex gap-2 text-xs">
-                    <button className="underline" onClick={() => act(() => apiClient.post(`/crm-channels/custom-channels/${c.id}/rotate`))}>New token</button>
-                    <button className="underline" onClick={() => act(() => apiClient.post(`/crm-channels/custom-channels/${c.id}/${c.active ? "disable" : "enable"}`))}>{c.active ? "Disable" : "Enable"}</button>
+                    <button className="underline" onClick={() => act(() => apiClient.post(`/api/v1/crm-channels/custom-channels/${c.id}/rotate`))}>New token</button>
+                    <button className="underline" onClick={() => act(() => apiClient.post(`/api/v1/crm-channels/custom-channels/${c.id}/${c.active ? "disable" : "enable"}`))}>{c.active ? "Disable" : "Enable"}</button>
                   </span>
                 </li>
               ))}

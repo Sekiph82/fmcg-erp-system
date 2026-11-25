@@ -159,10 +159,12 @@ async def _collect(db: AsyncSession, since: datetime) -> list[tuple[str, str, st
         # subject left out: it may carry customer details; the ticket number is enough to open it
         out.append(("TICKET", str(t.id), f":ticket: New ticket {t.ticket_no} (priority {getattr(t.priority, 'value', t.priority)})"))
     naive = since.replace(tzinfo=None)   # notifications store naive UTC
-    for ref, title in (await db.execute(select(Notification.reference_id, func.min(Notification.title)).where(
+    for rtype, ref in (await db.execute(select(Notification.reference_type, Notification.reference_id).where(
             Notification.reference_type.like("approval:%"), Notification.created_at >= naive)
-            .group_by(Notification.reference_id).limit(100))).all():
-        out.append(("APPROVAL", str(ref)[:200], ":hourglass: " + title.replace("Waiting for your approval", "Waiting for approval")))
+            .distinct().limit(100))).all():
+        # titles can carry customer or amount text: only the kind of item goes to Slack (M44 review)
+        kind = rtype.split(":", 1)[1].replace("_", " ")
+        out.append(("APPROVAL", str(ref)[:200], f":hourglass: A {kind} is waiting for approval. Open My Approvals in the ERP."))
     return out
 
 

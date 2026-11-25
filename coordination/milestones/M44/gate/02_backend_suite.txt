@@ -1,0 +1,467 @@
+........................................................................ [  3%]
+..........................................s............................. [  6%]
+s...s................................................................... [  9%]
+........................................................................ [ 12%]
+........................................................................ [ 16%]
+........................................................................ [ 19%]
+........................................................................ [ 22%]
+............................sssssssssssssss...sss...s................... [ 25%]
+....s.........s.ssssssssssssssssssssssssssssss.....ssssssssssssssssssss. [ 28%]
+.................sss.ssss............ss.....ss.sssssssssss.ssssssssss... [ 32%]
+...................................................................s.... [ 35%]
+.........s..sssssssssssssss.s......................s........s.....s..... [ 38%]
+..sss....................sssssssssssssssssssssssssssssssss.............. [ 41%]
+..........................................s...........ssssssssssssssssss [ 44%]
+sssssssssssssssssssssssssssss..................................s...s.... [ 48%]
+...s.sssssssssssssss.sssssss..ssssss.................................... [ 51%]
+......................sssssss...........ss............s......s......s... [ 54%]
+..ss.......ssss.....................................ss.................. [ 57%]
+........................................................................ [ 60%]
+..........................................sss.s.s.s.................sss. [ 64%]
+.....ss..s.........................................ss.............s..... [ 67%]
+.......s................................................................ [ 70%]
+.ss..s...s..s..s..s..s.s..............s....ssssss..................sssss [ 73%]
+ssssssssssssssss.s.ss................................................... [ 77%]
+...........................................................ss........... [ 80%]
+............................s.....ssssssssssssssssssssssssssssss.sssssss [ 83%]
+sssssss..sssssss.ssssssssssss.ssssssssssssssssssss.........ssssss.ssssss [ 86%]
+sssssssss...sssssssss..ssss.s...ssssss.............s....ss.s.s...s..ss.. [ 89%]
+ss.s.................................................................... [ 93%]
+........................................................................ [ 96%]
+........................................................................ [ 99%]
+....s......                                                              [100%]
+============================== warnings summary ===============================
+app\schemas\report_builder.py:28
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\report_builder.py:28: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ReportFieldOut(BaseModel):
+
+app\schemas\report_builder.py:54
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\report_builder.py:54: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ReportFilterOut(BaseModel):
+
+app\schemas\report_builder.py:75
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\report_builder.py:75: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class CalcFieldOut(BaseModel):
+
+app\schemas\report_builder.py:96
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\report_builder.py:96: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ScheduleOut(BaseModel):
+
+app\schemas\report_builder.py:137
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\report_builder.py:137: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ReportOut(BaseModel):
+
+app\schemas\report_builder.py:195
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\report_builder.py:195: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class WidgetOut(BaseModel):
+
+app\schemas\report_builder.py:223
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\report_builder.py:223: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class DashboardOut(BaseModel):
+
+app\schemas\report_builder.py:240
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\report_builder.py:240: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class RBAIRecOut(BaseModel):
+
+app\schemas\report_builder.py:261
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\report_builder.py:261: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ScheduleRunLogRead(BaseModel):
+
+app\schemas\machine_operator.py:63
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\machine_operator.py:63: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class MachineOut(MachineCreate):
+
+app\schemas\machine_operator.py:87
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\machine_operator.py:87: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class OperatorProfileOut(OperatorProfileCreate):
+
+app\schemas\machine_operator.py:112
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\machine_operator.py:112: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class TeamOut(TeamCreate):
+
+app\schemas\machine_operator.py:120
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\machine_operator.py:120: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class TeamMemberOut(BaseModel):
+
+app\schemas\machine_operator.py:147
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\machine_operator.py:147: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class SkillCertOut(SkillCertCreate):
+
+app\schemas\machine_operator.py:177
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\machine_operator.py:177: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class MachineSkillRequirementOut(BaseModel):
+
+app\schemas\machine_operator.py:225
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\machine_operator.py:225: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class AssignmentOut(AssignmentCreate):
+
+app\schemas\machine_operator.py:237
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\machine_operator.py:237: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class AssignmentHistoryOut(BaseModel):
+
+app\schemas\machine_operator.py:265
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\machine_operator.py:265: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class RuntimeLogOut(RuntimeLogCreate):
+
+app\schemas\machine_operator.py:308
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\machine_operator.py:308: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class LaborTimeOut(LaborTimeCreate):
+
+app\schemas\machine_operator.py:322
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\machine_operator.py:322: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class PerformanceSnapshotOut(BaseModel):
+
+app\schemas\machine_operator.py:553
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\machine_operator.py:553: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class DowntimeIntelOut(DowntimeIntelCreate):
+
+app\schemas\machine_operator.py:576
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\machine_operator.py:576: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class SupervisorReviewOut(SupervisorReviewCreate):
+
+app\schemas\machine_operator.py:587
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\machine_operator.py:587: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class MOAIRecOut(BaseModel):
+
+app\schemas\material_flow.py:31
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:31: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class FlowStageOut(FlowStageCreate):
+
+app\schemas\material_flow.py:68
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:68: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class FlowLineOut(FlowLineCreate):
+
+app\schemas\material_flow.py:95
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:95: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class FlowTransactionOut(BaseModel):
+
+app\schemas\material_flow.py:224
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:224: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ReservationLineOut(ReservationLineCreate):
+
+app\schemas\material_flow.py:247
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:247: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ReservationOut(BaseModel):
+
+app\schemas\material_flow.py:301
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:301: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ConsumptionOut(BaseModel):
+
+app\schemas\material_flow.py:351
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:351: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class PreparedLotOut(PreparedLotCreate):
+
+app\schemas\material_flow.py:391
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:391: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class TankOut(BaseModel):
+
+app\schemas\material_flow.py:421
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:421: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ReconciliationLineOut(BaseModel):
+
+app\schemas\material_flow.py:443
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:443: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ReconciliationOut(BaseModel):
+
+app\schemas\material_flow.py:474
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\material_flow.py:474: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class MFAIRecOut(BaseModel):
+
+app\schemas\qms.py:23
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\qms.py:23: PydanticDeprecatedSince20: Using extra keyword arguments on `Field` is deprecated and will be removed. Use `json_schema_extra` instead. (Extra keys: 'strip_whitespace'). Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    instrument_id: str = Field(min_length=1, max_length=50, strip_whitespace=True)
+
+app\schemas\qms.py:24
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\qms.py:24: PydanticDeprecatedSince20: Using extra keyword arguments on `Field` is deprecated and will be removed. Use `json_schema_extra` instead. (Extra keys: 'strip_whitespace'). Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    instrument_name: str = Field(min_length=1, max_length=200, strip_whitespace=True)
+
+app\schemas\qms.py:25
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\qms.py:25: PydanticDeprecatedSince20: Using extra keyword arguments on `Field` is deprecated and will be removed. Use `json_schema_extra` instead. (Extra keys: 'strip_whitespace'). Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    instrument_type: str = Field(min_length=1, max_length=100, strip_whitespace=True)
+
+app\schemas\qms.py:54
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\qms.py:54: PydanticDeprecatedSince20: Using extra keyword arguments on `Field` is deprecated and will be removed. Use `json_schema_extra` instead. (Extra keys: 'strip_whitespace'). Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    instrument_name: Optional[str] = Field(default=None, min_length=1, max_length=200, strip_whitespace=True)
+
+app\schemas\qms.py:55
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\qms.py:55: PydanticDeprecatedSince20: Using extra keyword arguments on `Field` is deprecated and will be removed. Use `json_schema_extra` instead. (Extra keys: 'strip_whitespace'). Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    instrument_type: Optional[str] = Field(default=None, min_length=1, max_length=100, strip_whitespace=True)
+
+app\schemas\qms.py:126
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\qms.py:126: PydanticDeprecatedSince20: Using extra keyword arguments on `Field` is deprecated and will be removed. Use `json_schema_extra` instead. (Extra keys: 'strip_whitespace'). Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    calibration_authority: str = Field(min_length=1, max_length=200, strip_whitespace=True)
+
+app\schemas\qms.py:127
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\qms.py:127: PydanticDeprecatedSince20: Using extra keyword arguments on `Field` is deprecated and will be removed. Use `json_schema_extra` instead. (Extra keys: 'strip_whitespace'). Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    certificate_ref: str = Field(min_length=1, max_length=200, strip_whitespace=True)
+
+app\api\v1\endpoints\allergen.py:133
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\api\v1\endpoints\allergen.py:133: FastAPIDeprecationWarning: `regex` has been deprecated, please use `pattern` instead
+    entity_type: str = Query("material", regex="^(material|product)$"),
+
+app\api\v1\endpoints\allergen.py:402
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\api\v1\endpoints\allergen.py:402: FastAPIDeprecationWarning: `regex` has been deprecated, please use `pattern` instead
+    review_type: str = Query(..., regex="^(label|qc)$"),
+
+app\schemas\appraisals.py:38
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\appraisals.py:38: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class AppraisalPeriodOut(BaseModel):
+
+app\schemas\appraisals.py:69
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\appraisals.py:69: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class AppraisalTemplateOut(BaseModel):
+
+app\schemas\appraisals.py:107
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\appraisals.py:107: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class KPILineOut(BaseModel):
+
+app\schemas\appraisals.py:142
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\appraisals.py:142: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class CompetencyLineOut(BaseModel):
+
+app\schemas\appraisals.py:176
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\appraisals.py:176: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class DevelopmentPlanOut(BaseModel):
+
+app\schemas\appraisals.py:234
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\appraisals.py:234: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class AppraisalRecordOut(BaseModel):
+
+app\schemas\appraisals.py:285
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\appraisals.py:285: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class APAIRecOut(BaseModel):
+
+app\schemas\training.py:32
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\training.py:32: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class SkillOut(BaseModel):
+
+app\schemas\training.py:65
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\training.py:65: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class EmployeeSkillOut(BaseModel):
+
+app\schemas\training.py:112
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\training.py:112: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class TrainingProgramOut(BaseModel):
+
+app\schemas\training.py:154
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\training.py:154: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class SessionOut(BaseModel):
+
+app\schemas\training.py:192
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\training.py:192: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class AssignmentOut(BaseModel):
+
+app\schemas\training.py:236
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\training.py:236: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class CertificationOut(BaseModel):
+
+app\schemas\training.py:270
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\training.py:270: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class FeedbackOut(BaseModel):
+
+app\schemas\training.py:307
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\training.py:307: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class TRAIRecOut(BaseModel):
+
+app\schemas\timesheets.py:45
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\timesheets.py:45: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class TimesheetLineOut(BaseModel):
+
+app\schemas\timesheets.py:68
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\timesheets.py:68: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ApprovalLogOut(BaseModel):
+
+app\schemas\timesheets.py:130
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\timesheets.py:130: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class TimesheetOut(BaseModel):
+
+app\schemas\timesheets.py:183
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\timesheets.py:183: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class TSAIRecOut(BaseModel):
+
+app\schemas\kanban.py:34
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\kanban.py:34: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ColumnOut(BaseModel):
+
+app\schemas\kanban.py:58
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\kanban.py:58: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class CommentOut(BaseModel):
+
+app\schemas\kanban.py:72
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\kanban.py:72: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ActivityOut(BaseModel):
+
+app\schemas\kanban.py:121
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\kanban.py:121: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class CardOut(BaseModel):
+
+app\schemas\kanban.py:166
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\kanban.py:166: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class BoardOut(BaseModel):
+
+app\schemas\kanban.py:200
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\kanban.py:200: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class KBAIRecOut(BaseModel):
+
+app\schemas\notifications.py:51
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\notifications.py:51: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class NotificationOut(BaseModel):
+
+app\schemas\notifications.py:86
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\notifications.py:86: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class PreferenceOut(BaseModel):
+
+app\schemas\notifications.py:112
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\notifications.py:112: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class TemplateOut(BaseModel):
+
+app\schemas\notifications.py:144
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\notifications.py:144: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ScheduleOut(BaseModel):
+
+app\schemas\notifications.py:180
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\notifications.py:180: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class NCNotifAIRecOut(BaseModel):
+
+app\schemas\esign.py:13
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\esign.py:13: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class SignatureRecordRead(BaseModel):
+
+app\schemas\esign.py:58
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\esign.py:58: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class SignatureRequestRead(BaseModel):
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\fastapi\testclient.py:1
+  C:\Users\sekip\AppData\Local\Programs\Python\Python312\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+tests/test_gap010_crm_sales_commercial_access.py::test_gap010_quote_convert_requires_status_permission_and_scope
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\tests\test_gap010_crm_sales_commercial_access.py:193: StarletteDeprecationWarning: 'HTTP_422_UNPROCESSABLE_ENTITY' is deprecated. Use 'HTTP_422_UNPROCESSABLE_CONTENT' instead.
+    ensure_commercial_action_allowed(sales_manager, draft_quote, "convert")
+
+tests/test_gap011_hrms_payroll_access.py::test_gap011_payroll_status_locks_and_admin_bypass
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\tests\test_gap011_hrms_payroll_access.py:159: StarletteDeprecationWarning: 'HTTP_422_UNPROCESSABLE_ENTITY' is deprecated. Use 'HTTP_422_UNPROCESSABLE_CONTENT' instead.
+    ensure_hr_action_allowed(payroll_approver, draft_run, "approve", module="payroll")
+
+tests/test_gap016_api_docs_metadata.py::test_openapi_has_title
+  C:\Users\sekip\AppData\Local\Programs\Python\Python312\Lib\site-packages\fastapi\openapi\utils.py:252: UserWarning: Duplicate Operation ID receive_inbound_webhook_api_v1_webhooks_inbound__endpoint_path__put for function receive_inbound_webhook at C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\api\v1\endpoints\webhooks.py
+    warnings.warn(message, stacklevel=1)
+
+tests/test_load_simulation.py::TestPerformanceBenchmarks::test_blocklist_lookup_fast
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\tests\test_load_simulation.py:292: RuntimeWarning: coroutine 'is_blocked' was never awaited
+    is_blocked("some-non-existent-token-xyz")
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_m20_auth_transaction_boundary.py::test_auth_isolated_from_endpoint_commit_and_explicit_transaction
+tests/test_m20_auth_transaction_boundary.py::test_auth_isolated_from_endpoint_commit_and_explicit_transaction
+  C:\Users\sekip\AppData\Local\Programs\Python\Python312\Lib\site-packages\httpx\_client.py:1768: DeprecationWarning: Setting per-request cookies=<...> is being deprecated, because the expected behaviour on cookie persistence is ambiguous. Set cookies directly on the client instance instead.
+    return await self.request(
+
+tests/test_m28_traceability_verification.py::test_recall_scope_from_raw_lot
+tests/test_m28_traceability_verification.py::test_recall_scope_recalculation_replaces_lines
+tests/test_m28_traceability_verification.py::test_containment_blocks_stock_and_places_holds
+tests/test_m28_traceability_verification.py::test_customer_containment_list
+tests/test_m28_traceability_verification.py::test_recall_status_change_is_logged
+tests/test_m28_traceability_verification.py::test_recovery_pct_counts_returned_and_destroyed
+tests/test_m28_traceability_verification.py::test_close_recall_records_time_to_contain_and_effectiveness
+tests/test_m28_traceability_verification.py::test_regulatory_report_summarises_scope
+tests/test_m28_traceability_verification.py::test_mock_recall_end_to_end
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\tests\test_m28_traceability_verification.py:289: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    initiation_datetime=datetime.utcnow() - timedelta(hours=3))
+
+tests/test_m28_traceability_verification.py::test_recall_scope_from_raw_lot
+tests/test_m28_traceability_verification.py::test_recall_scope_recalculation_replaces_lines
+tests/test_m28_traceability_verification.py::test_recall_scope_recalculation_replaces_lines
+tests/test_m28_traceability_verification.py::test_containment_blocks_stock_and_places_holds
+tests/test_m28_traceability_verification.py::test_customer_containment_list
+tests/test_m28_traceability_verification.py::test_regulatory_report_summarises_scope
+tests/test_m28_traceability_verification.py::test_mock_recall_end_to_end
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\services\recall_service.py:171: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    start_time = datetime.utcnow()
+
+tests/test_m28_traceability_verification.py::test_recall_scope_from_raw_lot
+tests/test_m28_traceability_verification.py::test_recall_scope_recalculation_replaces_lines
+tests/test_m28_traceability_verification.py::test_recall_scope_recalculation_replaces_lines
+tests/test_m28_traceability_verification.py::test_containment_blocks_stock_and_places_holds
+tests/test_m28_traceability_verification.py::test_customer_containment_list
+tests/test_m28_traceability_verification.py::test_regulatory_report_summarises_scope
+tests/test_m28_traceability_verification.py::test_mock_recall_end_to_end
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\services\recall_service.py:232: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    recall.scope_calculated_at = datetime.utcnow()
+
+tests/test_m28_traceability_verification.py::test_recall_scope_from_raw_lot
+tests/test_m28_traceability_verification.py::test_recall_scope_recalculation_replaces_lines
+tests/test_m28_traceability_verification.py::test_recall_scope_recalculation_replaces_lines
+tests/test_m28_traceability_verification.py::test_containment_blocks_stock_and_places_holds
+tests/test_m28_traceability_verification.py::test_customer_containment_list
+tests/test_m28_traceability_verification.py::test_regulatory_report_summarises_scope
+tests/test_m28_traceability_verification.py::test_mock_recall_end_to_end
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\services\recall_service.py:237: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    trace_secs = (datetime.utcnow() - start_time).total_seconds()
+
+tests/test_m28_traceability_verification.py::test_containment_blocks_stock_and_places_holds
+tests/test_m28_traceability_verification.py::test_containment_blocks_stock_and_places_holds
+tests/test_m28_traceability_verification.py::test_mock_recall_end_to_end
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\services\recall_service.py:266: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    now = datetime.utcnow()
+
+tests/test_m28_traceability_verification.py::test_recall_status_change_is_logged
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\services\recall_service.py:127: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    now = datetime.utcnow()
+
+tests/test_m28_traceability_verification.py::test_close_recall_records_time_to_contain_and_effectiveness
+tests/test_m28_traceability_verification.py::test_mock_recall_end_to_end
+tests/test_m35_qa_enterprise_api.py::test_complaint_capa_is_created_once_and_recall_close_waits_for_it
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\services\recall_service.py:497: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    now = datetime.utcnow()
+
+tests/test_m28_traceability_verification.py::test_mock_recall_end_to_end
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\services\recall_service.py:395: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    ci.notification_sent_at = datetime.utcnow()
+
+tests/test_m31_s03_t001_dispatcher.py::test_application_lifespan_starts_and_cancels_dispatcher
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\services\approval_inbox_service.py:237: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    since, sent = datetime.utcnow() - timedelta(days=days), 0
+
+tests/test_m35_qa_enterprise_api.py::test_complaint_capa_is_created_once_and_recall_close_waits_for_it
+tests/test_m35_qa_enterprise_api.py::test_complaint_capa_is_created_once_and_recall_close_waits_for_it
+  C:\Users\sekip\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\sql\schema.py:3624: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    return util.wrap_callable(lambda ctx: fn(), fn)  # type: ignore
+
+tests/test_m35_qa_enterprise_api.py::test_complaint_capa_is_created_once_and_recall_close_waits_for_it
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\tests\test_m35_qa_enterprise_api.py:404: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    initiation_datetime=datetime.utcnow()))
+
+tests/test_task017_2_idempotency.py::test_first_call_creates_journal_and_marks_batch_posted
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\services\utility_integration_service.py:114: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+    db.add(journal_entry)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_task017_2_idempotency.py::test_first_call_creates_journal_and_marks_batch_posted
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\services\utility_integration_service.py:134: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+    db.add(debit_line)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_task017_2_idempotency.py::test_first_call_creates_journal_and_marks_batch_posted
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\services\utility_integration_service.py:135: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+    db.add(credit_line)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_task017_2_idempotency.py::test_first_call_creates_journal_and_marks_batch_posted
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\services\utility_integration_service.py:142: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+    db.add(bill)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_task017_2_idempotency.py::test_first_call_creates_journal_and_marks_batch_posted
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\services\utility_integration_service.py:144: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+    db.add(batch)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+1786 passed, 457 skipped, 129 warnings in 82.44s (0:01:22)
