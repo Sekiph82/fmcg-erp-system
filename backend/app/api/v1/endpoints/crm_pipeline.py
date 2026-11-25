@@ -73,8 +73,8 @@ def _territory_read(territory: CRMTerritory, user) -> CRMTerritoryRead:
 # ── Stages ────────────────────────────────────────────────────────────────────
 
 @router.get("/stages", response_model=List[CRMStageRead])
-async def list_stages(active_only: bool = False, db: AsyncSession = Depends(get_db)):
-    return await svc.get_stages(db, active_only=active_only)
+async def list_stages(active_only: bool = False, pipeline_id: Optional[str] = None, db: AsyncSession = Depends(get_db)):
+    return await svc.get_stages(db, active_only=active_only, pipeline_id=pipeline_id)
 
 
 @router.post("/stages", response_model=CRMStageRead, status_code=201)
@@ -390,8 +390,8 @@ async def get_dashboard(db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/forecast", dependencies=[Depends(require_any_permission(CRM_BROAD_VIEW))])
-async def get_forecast(months_ahead: int = 6, db: AsyncSession = Depends(get_db)):
-    return await svc.get_forecast(db, months_ahead=months_ahead)
+async def get_forecast(months_ahead: int = 6, pipeline_id: Optional[str] = None, db: AsyncSession = Depends(get_db)):
+    return await svc.get_forecast(db, months_ahead=months_ahead, pipeline_id=pipeline_id)
 
 
 @router.get("/reports/pipeline", dependencies=[Depends(require_any_permission(CRM_BROAD_VIEW))])
@@ -641,14 +641,14 @@ async def get_forecast_snapshot(snapshot_id: str, db: AsyncSession = Depends(get
 @router.get("/reports/funnel", dependencies=[Depends(require_any_permission(CRM_BROAD_VIEW))])
 async def funnel_report(date_from: Optional[date] = None, date_to: Optional[date] = None,
                         assigned_rep_id: Optional[str] = None, territory_id: Optional[str] = None,
-                        db: AsyncSession = Depends(get_db)):
+                        pipeline_id: Optional[str] = None, db: AsyncSession = Depends(get_db)):
     """Stage conversion, aging of open records, rep performance and loss reasons for records created in range."""
     if date_from and date_to and date_from > date_to:
         raise HTTPException(422, "date_from must not be after date_to")
     try:
-        return await intel.funnel(db, date_from, date_to, assigned_rep_id, territory_id)
+        return await intel.funnel(db, date_from, date_to, assigned_rep_id, territory_id, pipeline_id)
     except ValueError:
-        raise HTTPException(422, "territory_id must be a UUID")
+        raise HTTPException(422, "territory_id and pipeline_id must be UUIDs")
 
 
 # ── M36.S03.T002 unified customer timeline ─────────────────────────────────────
@@ -1542,3 +1542,63 @@ async def chat_close(chat_id: str, db: AsyncSession = Depends(get_db),
         sess.status, sess.closed_at = "CLOSED", _dt.now(_tz.utc)
     await db.commit()
     return {"status": sess.status}
+
+
+
+# ── M43.S01.T011 multiple pipelines ───────────────────────────────────────────
+
+class PipelineIn(BaseModel):
+    name: str = Field(min_length=1, max_length=120)
+    record_type: Optional[str] = Field(None, pattern="^(LEAD|OPPORTUNITY)$")
+    company_id: Optional[str] = None
+    is_default: bool = False
+    active_flag: bool = True
+    sequence_no: int = Field(0, ge=0, le=1000)
+
+
+def _pipe_out(p) -> dict:
+    return {"id": str(p.id), "name": p.name, "record_type": p.record_type,
+            "company_id": str(p.company_id) if p.company_id else None, "is_default": p.is_default,
+            "active_flag": p.active_flag, "sequence_no": p.sequence_no}
+
+
+@router.get("/pipelines", dependencies=[Depends(require_any_permission(CRM_VIEW_PERMISSIONS))])
+async def list_pipelines(db: AsyncSession = Depends(get_db)):
+    from app.models.crm import CRMPipeline
+    rows = (await db.execute(select(CRMPipeline).order_by(CRMPipeline.sequence_no, CRMPipeline.name))).scalars()
+    return [_pipe_out(p) for p in rows]
+
+
+@router.post("/pipelines", status_code=201, dependencies=[Depends(require_any_permission(CRM_CONFIG))])
+async def create_pipeline(body: PipelineIn, db: AsyncSession = Depends(get_db)):
+    from sqlalchemy import update as _update
+
+    from app.models.crm import CRMPipeline
+    if (await db.execute(select(CRMPipeline.id).where(CRMPipeline.name == body.name))).first():
+        raise HTTPException(409, "A pipeline with this name exists.")
+    if body.is_default:
+        await db.execute(_update(CRMPipeline).values(is_default=False))
+    p = CRMPipeline(name=body.name, record_type=body.record_type, company_id=_uuid(body.company_id) if body.company_id else None,
+                    is_default=body.is_default, active_flag=body.active_flag, sequence_no=body.sequence_no)
+    db.add(p)
+    await db.commit()
+    return _pipe_out(p)
+
+
+@router.put("/pipelines/{pipeline_id}", dependencies=[Depends(require_any_permission(CRM_CONFIG))])
+async def update_pipeline(pipeline_id: str, body: PipelineIn, db: AsyncSession = Depends(get_db)):
+    from sqlalchemy import update as _update
+
+    from app.models.crm import CRMPipeline
+    p = await db.get(CRMPipeline, _uuid(pipeline_id))
+    if p is None:
+        raise HTTPException(404, "Pipeline not found")
+    if p.is_default and not body.is_default:
+        raise HTTPException(422, "Make another pipeline the default instead.")
+    if body.is_default and not p.is_default:
+        await db.execute(_update(CRMPipeline).values(is_default=False))
+    p.name, p.record_type, p.is_default, p.active_flag, p.sequence_no = (
+        body.name, body.record_type, body.is_default, body.active_flag, body.sequence_no)
+    p.company_id = _uuid(body.company_id) if body.company_id else None
+    await db.commit()
+    return _pipe_out(p)

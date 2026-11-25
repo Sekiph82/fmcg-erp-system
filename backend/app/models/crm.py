@@ -148,6 +148,19 @@ class CRMTerritory(Base, TimestampMixin):
     records = relationship("CRMRecord", back_populates="territory", foreign_keys="CRMRecord.territory_id")
 
 
+class CRMPipeline(Base, TimestampMixin):
+    """M43.S01.T011: a named pipeline (e.g. distributor onboarding, key-account deals) owning its own stages."""
+    __tablename__ = "crm_pipelines"
+
+    id          = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name        = Column(String(120), nullable=False, unique=True)
+    record_type = Column(String(20), nullable=True)          # LEAD | OPPORTUNITY | None = any
+    company_id  = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="SET NULL"), nullable=True)
+    is_default  = Column(Boolean, nullable=False, default=False)
+    active_flag = Column(Boolean, nullable=False, default=True)
+    sequence_no = Column(Integer, nullable=False, default=0)
+
+
 class CRMPipelineStage(Base, TimestampMixin):
     __tablename__ = "crm_pipeline_stages"
 
@@ -160,6 +173,7 @@ class CRMPipelineStage(Base, TimestampMixin):
     active_flag           = Column(Boolean, default=True)
     color_code            = Column(String(20))
     notes                 = Column(Text)
+    pipeline_id           = Column(UUID(as_uuid=True), ForeignKey("crm_pipelines.id", ondelete="RESTRICT"), nullable=True, index=True)
 
     records = relationship("CRMRecord", back_populates="stage", foreign_keys="CRMRecord.stage_id")
 
@@ -213,6 +227,7 @@ class CRMRecord(Base, TimestampMixin):
     created_by            = Column(String(50))
     updated_by            = Column(String(50))
     notes                 = Column(Text)
+    pipeline_id           = Column(UUID(as_uuid=True), ForeignKey("crm_pipelines.id", ondelete="SET NULL"), nullable=True, index=True)  # M43.S01.T011, follows the stage
     forecast_category     = Column(String(10), nullable=True)   # M43.S01.T007 override: PIPELINE|BEST_CASE|COMMIT|OMITTED
 
     stage         = relationship("CRMPipelineStage", back_populates="records", foreign_keys=[stage_id])

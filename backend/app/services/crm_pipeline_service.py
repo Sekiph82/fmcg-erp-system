@@ -30,16 +30,31 @@ from app.schemas.crm import (
 
 # ── Stages ────────────────────────────────────────────────────────────────────
 
-async def get_stages(db: AsyncSession, active_only: bool = False):
+async def default_pipeline_id(db: AsyncSession):
+    from app.models.crm import CRMPipeline
+    return (await db.execute(select(CRMPipeline.id).where(CRMPipeline.is_default.is_(True)).limit(1))).scalar_one_or_none()
+
+
+async def sync_pipeline(db: AsyncSession, record: CRMRecord) -> None:
+    """M43.S01.T011: a record's pipeline always follows its stage."""
+    if record.stage_id:
+        st = await db.get(CRMPipelineStage, record.stage_id)
+        record.pipeline_id = st.pipeline_id if st else record.pipeline_id
+
+
+async def get_stages(db: AsyncSession, active_only: bool = False, pipeline_id: Optional[str] = None):
     q = select(CRMPipelineStage).order_by(CRMPipelineStage.sequence_no)
     if active_only:
         q = q.where(CRMPipelineStage.active_flag.is_(True))
+    if pipeline_id:
+        q = q.where(CRMPipelineStage.pipeline_id == pipeline_id)
     result = await db.execute(q)
     return result.scalars().all()
 
 
 async def create_stage(db: AsyncSession, data: CRMStageCreate) -> CRMPipelineStage:
     stage = CRMPipelineStage(**data.model_dump())
+    stage.pipeline_id = stage.pipeline_id or await default_pipeline_id(db)
     db.add(stage)
     await db.commit()
     await db.refresh(stage)
@@ -163,6 +178,7 @@ async def create_record(db: AsyncSession, data: CRMRecordCreate) -> CRMRecord:
         if st:
             payload["probability_pct"] = st.default_probability
     record = CRMRecord(**payload)
+    await sync_pipeline(db, record)  # M43.S01.T011
     db.add(record)
     await db.commit()
     await db.refresh(record)
@@ -177,6 +193,8 @@ async def update_record(db: AsyncSession, record_id: str, data: CRMRecordUpdate)
     if "stage_id" in updates:
         from app.services.crm_stage_gate import check_stage_exit
         await check_stage_exit(db, record, updates["stage_id"])
+        new_stage = await db.get(CRMPipelineStage, updates["stage_id"])
+        updates["pipeline_id"] = new_stage.pipeline_id if new_stage else record.pipeline_id
     if "stage_id" in updates and not updates.get("probability_override") and not record.probability_override:
         st = await db.get(CRMPipelineStage, updates["stage_id"])
         if st:
@@ -220,6 +238,7 @@ async def convert_to_opportunity(db: AsyncSession, record_id: str, data: CRMConv
         from app.services.crm_stage_gate import check_stage_exit
         await check_stage_exit(db, record, data.stage_id)
         record.stage_id = data.stage_id
+        await sync_pipeline(db, record)
     if data.notes:
         record.notes = (record.notes or "") + f"\n[Converted to Opportunity] {data.notes}"
     await db.commit()
@@ -494,11 +513,12 @@ async def get_dashboard(db: AsyncSession) -> dict:
 
 # ── Forecast ──────────────────────────────────────────────────────────────────
 
-async def get_forecast(db: AsyncSession, months_ahead: int = 6) -> List[dict]:
-    rows = (await db.execute(
-        select(CRMRecord.expected_close_date, CRMRecord.expected_revenue, CRMRecord.probability_pct)
-        .where(and_(CRMRecord.status == CRMStatus.OPEN, CRMRecord.expected_close_date.isnot(None)))
-    )).all()
+async def get_forecast(db: AsyncSession, months_ahead: int = 6, pipeline_id: Optional[str] = None) -> List[dict]:
+    q = (select(CRMRecord.expected_close_date, CRMRecord.expected_revenue, CRMRecord.probability_pct)
+         .where(and_(CRMRecord.status == CRMStatus.OPEN, CRMRecord.expected_close_date.isnot(None))))
+    if pipeline_id:
+        q = q.where(CRMRecord.pipeline_id == pipeline_id)
+    rows = (await db.execute(q)).all()
 
     buckets: dict = defaultdict(lambda: {"expected": Decimal("0"), "weighted": Decimal("0"), "count": 0})
     for r in rows:

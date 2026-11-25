@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 TRIGGERS = ("created", "stage_changed", "won", "lost", "status_changed")
 ACTIONS = ("create_task", "assign_owner", "set_field", "notify", "enroll_in_sequence")
 CONDITION_FIELDS = ("to_stage_code", "record_type", "source_type", "temperature", "assigned_rep_id",
-                    "industry_segment", "expected_revenue")
+                    "industry_segment", "expected_revenue", "pipeline_id")   # pipeline_id: M43.S01.T011
 SETTABLE = {"temperature": [t.value for t in CRMTemperature], "next_action_days": None, "probability_pct": None}
 MAX_ATTEMPTS = 5
 LOOKBACK = timedelta(days=7)

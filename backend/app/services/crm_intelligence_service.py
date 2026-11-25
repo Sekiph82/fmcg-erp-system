@@ -286,7 +286,8 @@ def snapshot_out(s: CRMForecastSnapshot, with_rows: bool = False) -> dict:
 # ── Funnel analytics ─────────────────────────────────────────────────────────
 
 async def funnel(db: AsyncSession, date_from: Optional[date] = None, date_to: Optional[date] = None,
-                 assigned_rep_id: Optional[str] = None, territory_id: Optional[str] = None) -> dict:
+                 assigned_rep_id: Optional[str] = None, territory_id: Optional[str] = None,
+                 pipeline_id: Optional[str] = None) -> dict:
     """Records created in [date_from, date_to]: how far they got, how long open ones sit, who wins them."""
     q = select(CRMRecord).options(selectinload(CRMRecord.win_loss))
     if date_from:
@@ -298,9 +299,12 @@ async def funnel(db: AsyncSession, date_from: Optional[date] = None, date_to: Op
         q = q.where(CRMRecord.assigned_rep_id == assigned_rep_id)
     if territory_id:
         q = q.where(CRMRecord.territory_id == uuid.UUID(territory_id))
+    sq = select(CRMPipelineStage).where(CRMPipelineStage.active_flag.is_(True))
+    if pipeline_id:   # M43.S01.T011: one pipeline's records through its own stages
+        q = q.where(CRMRecord.pipeline_id == uuid.UUID(pipeline_id))
+        sq = sq.where(CRMPipelineStage.pipeline_id == uuid.UUID(pipeline_id))
     records = list((await db.execute(q)).scalars().all())
-    stages = list((await db.execute(select(CRMPipelineStage).where(
-        CRMPipelineStage.active_flag.is_(True)).order_by(CRMPipelineStage.sequence_no))).scalars().all())
+    stages = list((await db.execute(sq.order_by(CRMPipelineStage.sequence_no))).scalars().all())
     seq = {s.id: s.sequence_no for s in stages if _enum(s.stage_type) in ("LEAD", "OPPORTUNITY")}
     history: dict = defaultdict(list)
     if records:

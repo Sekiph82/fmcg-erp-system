@@ -232,8 +232,37 @@ def upgrade() -> None:
             updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
         )""")
 
+    # T011: multiple pipelines; every existing stage and record moves into one default pipeline (no data loss)
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS crm_pipelines (
+            id UUID PRIMARY KEY,
+            name VARCHAR(120) NOT NULL UNIQUE,
+            record_type VARCHAR(20),
+            company_id UUID REFERENCES companies(id) ON DELETE SET NULL,
+            is_default BOOLEAN NOT NULL DEFAULT false,
+            active_flag BOOLEAN NOT NULL DEFAULT true,
+            sequence_no INTEGER NOT NULL DEFAULT 0,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        )""")
+    op.execute("CREATE UNIQUE INDEX IF NOT EXISTS uq_crm_pipelines_one_default ON crm_pipelines (is_default) WHERE is_default")
+    op.execute("""INSERT INTO crm_pipelines (id, name, is_default, active_flag, sequence_no)
+                  SELECT gen_random_uuid(), 'Sales pipeline', true, true, 0
+                  WHERE NOT EXISTS (SELECT 1 FROM crm_pipelines WHERE is_default)""")
+    op.execute("ALTER TABLE crm_pipeline_stages ADD COLUMN IF NOT EXISTS pipeline_id UUID REFERENCES crm_pipelines(id) ON DELETE RESTRICT")
+    op.execute("UPDATE crm_pipeline_stages SET pipeline_id = (SELECT id FROM crm_pipelines WHERE is_default) WHERE pipeline_id IS NULL")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_crm_pipeline_stages_pipeline ON crm_pipeline_stages (pipeline_id)")
+    op.execute("ALTER TABLE crm_records ADD COLUMN IF NOT EXISTS pipeline_id UUID REFERENCES crm_pipelines(id) ON DELETE SET NULL")
+    op.execute("""UPDATE crm_records r SET pipeline_id = s.pipeline_id FROM crm_pipeline_stages s
+                  WHERE r.stage_id = s.id AND r.pipeline_id IS NULL""")
+    op.execute("UPDATE crm_records SET pipeline_id = (SELECT id FROM crm_pipelines WHERE is_default) WHERE pipeline_id IS NULL")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_crm_records_pipeline ON crm_records (pipeline_id)")
+
 
 def downgrade() -> None:
+    op.execute("ALTER TABLE crm_records DROP COLUMN IF EXISTS pipeline_id")
+    op.execute("ALTER TABLE crm_pipeline_stages DROP COLUMN IF EXISTS pipeline_id")
+    op.execute("DROP TABLE IF EXISTS crm_pipelines")
     op.execute("DROP TABLE IF EXISTS crm_deal_plans")
     op.execute("DROP TABLE IF EXISTS crm_playbook_runs")
     op.execute("DROP TABLE IF EXISTS crm_playbooks")

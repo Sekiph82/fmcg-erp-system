@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { PipelineSelect } from "@/components/PipelineSelect";
 import Link from "next/link";
 import { crmApi, CRMRecord, CRMStage, fmtCurrency, TEMPERATURE_COLORS, STATUS_COLORS } from "@/lib/crm_pipeline";
 
@@ -8,21 +9,24 @@ export default function PipelineBoardPage() {
   const [records, setRecords] = useState<CRMRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [movingId, setMovingId] = useState<string | null>(null);
+  const [pipelineId, setPipelineId] = useState("");
+  const [gateMsg, setGateMsg] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
     try {
       const [stgs, recs] = await Promise.all([
-        crmApi.getStages(true),
+        crmApi.getStages(true, pipelineId),
         crmApi.getAllRecords({ status: "OPEN", limit: 500 }),
       ]);
       setStages(stgs);
-      setRecords(recs);
+      const ids = new Set(stgs.map((x) => x.id));
+      setRecords(recs.filter((x) => !x.stage_id || ids.has(x.stage_id)));
     } catch (e) { console.error(e); }
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { if (pipelineId) load(); }, [pipelineId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleDrop = async (e: React.DragEvent, targetStageId: string) => {
     e.preventDefault();
@@ -33,8 +37,12 @@ export default function PipelineBoardPage() {
     setMovingId(recordId);
     try {
       await crmApi.updateRecord(recordId, { stage_id: targetStageId });
+      setGateMsg(null);
       await load();
-    } catch (err) { console.error(err); }
+    } catch (err) {   // e.g. 409 stage gate: an unfinished playbook or approval (M43.S01.T010/T014/T016)
+      const d = (err as { response?: { data?: { detail?: { message?: string } | string } } }).response?.data?.detail;
+      setGateMsg(typeof d === "string" ? d : d?.message ?? "The deal could not be moved.");
+    }
     setMovingId(null);
   };
 
@@ -48,6 +56,8 @@ export default function PipelineBoardPage() {
 
   return (
     <div className="p-6 space-y-4">
+      <PipelineSelect value={pipelineId} onChange={setPipelineId} />
+      {gateMsg && <p role="alert" className="text-sm text-amber-800 bg-amber-50 rounded px-2 py-1">{gateMsg}</p>}
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-gray-900">Pipeline Board</h1>
         <div className="flex gap-2">

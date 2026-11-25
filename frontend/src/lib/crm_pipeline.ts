@@ -22,6 +22,7 @@ export type CRMAIRecStatus  = "PENDING" | "ACKNOWLEDGED" | "ACTIONED" | "DISMISS
 
 export interface CRMStage {
   id: string;
+  pipeline_id?: string | null;
   stage_code: string;
   stage_name: string;
   stage_type: CRMStageType;
@@ -342,7 +343,7 @@ export function fmtCurrency(val?: number | null, currency = "KES"): string {
 
 export const crmApi = {
   // Stages
-  getStages: (activeOnly = false) => r(ax.get<CRMStage[]>(`/crm/stages`, { params: { active_only: activeOnly } })),
+  getStages: (activeOnly = false, pipelineId?: string) => r(ax.get<CRMStage[]>(`/crm/stages`, { params: { active_only: activeOnly, pipeline_id: pipelineId || undefined } })),
   createStage: (data: Partial<CRMStage>) => r(ax.post<CRMStage>(`/crm/stages`, data)),
   updateStage: (id: string, data: Partial<CRMStage>) => r(ax.patch<CRMStage>(`/crm/stages/${id}`, data)),
   seedDefaultStages: () => r(ax.post<CRMStage[]>(`/crm/stages/seed-defaults`)),

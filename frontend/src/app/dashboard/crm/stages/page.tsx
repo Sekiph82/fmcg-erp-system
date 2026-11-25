@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { PipelineSelect } from "@/components/PipelineSelect";
 import { crmApi, CRMStage, STAGE_TYPE_LABELS, CRMStageType } from "@/lib/crm_pipeline";
 
 export default function StageConfigPage() {
@@ -12,13 +13,14 @@ export default function StageConfigPage() {
     default_probability: 0, sequence_no: 10, color_code: "#6B7280", active_flag: true,
   });
   const [saving, setSaving] = useState(false);
+  const [pipelineId, setPipelineId] = useState("");
 
   const load = () => {
     setLoading(true);
-    crmApi.getStages().then(setStages).catch(console.error).finally(() => setLoading(false));
+    crmApi.getStages(false, pipelineId).then(setStages).catch(console.error).finally(() => setLoading(false));
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { if (pipelineId) load(); }, [pipelineId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSeed = async () => {
     setSeeding(true);
@@ -28,7 +30,7 @@ export default function StageConfigPage() {
 
   const handleCreate = async () => {
     setSaving(true);
-    try { await crmApi.createStage(form as Partial<CRMStage>); setShowCreate(false); load(); }
+    try { await crmApi.createStage({ ...form, pipeline_id: pipelineId } as Partial<CRMStage>); setShowCreate(false); load(); }
     catch (e) { console.error(e); }
     setSaving(false);
   };
@@ -40,6 +42,7 @@ export default function StageConfigPage() {
 
   return (
     <div className="p-6 space-y-4">
+      <PipelineSelect value={pipelineId} onChange={setPipelineId} allowCreate />
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-gray-900">Pipeline Stage Configuration</h1>
         <div className="flex gap-2">

@@ -24,6 +24,7 @@ class CRMStageCreate(BaseModel):
     active_flag: bool = True
     color_code: Optional[str] = None
     notes: Optional[str] = None
+    pipeline_id: Optional[uuid.UUID] = None   # M43.S01.T011; None = default pipeline
 
 
 class CRMStageRead(CRMStageCreate):
