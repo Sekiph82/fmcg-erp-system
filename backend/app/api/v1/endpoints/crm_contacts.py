@@ -44,10 +44,14 @@ async def _get(db, contact_id, u) -> CRMContact:
     return c
 
 
-def _out(c: CRMContact) -> dict:
-    return {"id": str(c.id), "full_name": c.full_name, "email": c.email, "phone": c.phone, "job_title": c.job_title,
+def _out(c: CRMContact, user=None, pol=None) -> dict:
+    out = {"id": str(c.id), "full_name": c.full_name, "email": c.email, "phone": c.phone, "job_title": c.job_title,
             "lifecycle_stage": c.lifecycle_stage, "language": c.language, "owner_user_id": str(c.owner_user_id) if c.owner_user_id else None,
             "company_id": str(c.company_id) if c.company_id else None, "source": c.source, "notes": c.notes}
+    if user is not None and pol is not None:   # M45.S01.T017 sensitive fields
+        from app.services import sensitive_service as sens
+        sens.apply(out, "contact", pol, user)
+    return out
 
 
 class ContactIn(BaseModel):
@@ -70,7 +74,9 @@ async def list_contacts(q: Optional[str] = Query(None, max_length=100), lifecycl
         stmt = stmt.where(or_(CRMContact.full_name.ilike(like), CRMContact.email.ilike(like), CRMContact.phone.ilike(like)))
     if lifecycle:
         stmt = stmt.where(CRMContact.lifecycle_stage == lifecycle)
-    return [_out(c) for c in (await db.execute(stmt.order_by(CRMContact.full_name).limit(limit))).scalars()]
+    from app.services import sensitive_service as sens
+    pol = await sens.policy(db)
+    return [_out(c, current_user, pol) for c in (await db.execute(stmt.order_by(CRMContact.full_name).limit(limit))).scalars()]
 
 
 @router.post("", status_code=201, dependencies=[Depends(require_any_permission(EDIT))])
@@ -94,7 +100,8 @@ async def get_contact(contact_id: uuid.UUID, db: AsyncSession = Depends(get_db),
                               .order_by(CRMContactAssociation.object_type))).scalars().all()
     hist = (await db.execute(select(CRMLifecycleHistory).where(CRMLifecycleHistory.contact_id == c.id)
                              .order_by(CRMLifecycleHistory.changed_at.desc()))).scalars().all()
-    return {**_out(c),
+    from app.services import sensitive_service as sens
+    return {**_out(c, current_user, await sens.policy(db)),
             "associations": [{"id": str(a.id), "object_type": a.object_type, "object_id": str(a.object_id), "label": a.label}
                              for a in assoc],
             "lifecycle_history": [{"from": h.from_stage, "to": h.to_stage, "source": h.source, "reason": h.reason,
@@ -105,6 +112,8 @@ async def get_contact(contact_id: uuid.UUID, db: AsyncSession = Depends(get_db),
 async def update_contact(contact_id: uuid.UUID, body: ContactIn, db: AsyncSession = Depends(get_db),
                          current_user=Depends(get_current_user)):
     c = await _get(db, contact_id, current_user)
+    if body.phone and body.phone.startswith("•••"):   # M45.S01.T017 masked value: keep the stored one
+        body.phone = c.phone
     email = cs.norm_email(str(body.email) if body.email else None)
     if email and email != c.email and (dup := await cs.find_by_email(db, email)) is not None:
         raise HTTPException(409, {"message": "Another contact has this e-mail; merge them instead.", "existing_id": str(dup.id)})
@@ -180,4 +189,6 @@ async def contacts_of(object_type: str, object_id: uuid.UUID, db: AsyncSession =
         await _scoped_record(db, object_id, current_user, "view")
     elif not _all(current_user):
         raise HTTPException(403, "Company-wide CRM view needed.")
-    return [{**_out(c), "label": label} for c, label in await cs.contacts_for(db, object_type, object_id)]
+    from app.services import sensitive_service as sens
+    pol = await sens.policy(db)
+    return [{**_out(c, current_user, pol), "label": label} for c, label in await cs.contacts_for(db, object_type, object_id)]

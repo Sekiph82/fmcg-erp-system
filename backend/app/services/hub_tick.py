@@ -21,6 +21,8 @@ async def _daily_customer_intel(db) -> None:
         await ci.run_daily(db)
         from app.services.customer_data_service import purge_expired   # T002/T003 source retention
         await purge_expired(db)
+        from app.services.sensitive_service import apply_retention   # T017 retention hook
+        await apply_retention(db)
         await db.commit()
     _last_daily = today
 

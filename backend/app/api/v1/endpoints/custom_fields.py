@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional, List
+from app.core.deps import get_current_user
 from app.db.session import get_db
 from app.schemas.custom_fields import (
     CustomFieldOut, CustomFieldCreate, CustomFieldUpdate,
@@ -124,8 +125,15 @@ async def remove_option(option_id: str, db: AsyncSession = Depends(get_db)):
 # ── Values ────────────────────────────────────────────────────────────────────
 
 @router.get("/values/{entity_type}/{entity_id}", response_model=List[FieldValueOut])
-async def get_values(entity_type: str, entity_id: str, db: AsyncSession = Depends(get_db)):
-    return await custom_fields_service.get_values(db, entity_type, entity_id)
+async def get_values(entity_type: str, entity_id: str, db: AsyncSession = Depends(get_db),
+                     current_user=Depends(get_current_user)):
+    from app.services import sensitive_service as sens
+    rows = await custom_fields_service.get_values(db, entity_type, entity_id)
+    if not sens.can_view(current_user):   # M45.S01.T017: cf_definitions.sensitive_flag is enforced
+        for r in rows:
+            if r.sensitive_flag:
+                r.value, r.display_value = sens.mask(r.value if isinstance(r.value, str) else None), sens.mask(r.display_value)
+    return rows
 
 
 @router.post("/values/{entity_type}/{entity_id}", response_model=List[FieldValueOut])

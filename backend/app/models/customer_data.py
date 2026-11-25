@@ -113,3 +113,18 @@ class DuplicateDismissal(Base):
     b_id         = Column(UUID(as_uuid=True), nullable=False)
     dismissed_by = Column(String(100), nullable=False)
     dismissed_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+
+class SensitiveField(Base):
+    """A field classified as sensitive (T017): masked for users without data.view_sensitive; reveals are audited.
+    Custom fields use cf_definitions.sensitive_flag instead."""
+    __tablename__ = "cd_sensitive_fields"
+    __table_args__ = (UniqueConstraint("entity", "field", name="uq_cd_sensitive_field"),)
+
+    id             = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    entity         = Column(String(20), nullable=False)          # customer | contact
+    field          = Column(String(40), nullable=False)
+    enabled        = Column(Boolean, nullable=False, default=True)
+    retention_days = Column(Integer, nullable=True)              # clear the value this long after the record became inactive
+    updated_by     = Column(String(100), nullable=True)
+    updated_at     = Column(DateTime(timezone=True), nullable=False, server_default=func.now())

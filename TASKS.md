@@ -2394,11 +2394,26 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
   - **Acceptance at milestone gate:** Local IdP: login, state/nonce/PKCE replay refusal, unknown user refused, disabled user refused, enforced SSO blocks password login, break-glass works; audit.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable.
   - **Claude checkpoint:** [v] pending milestone gate, tests NOT RUN until gate; never [x] before milestone PASS.
-- [ ] M45.S01.T017 — Sensitive-data field classification (additional gap, Source: HubSpot parity matrix 2026-11-25 (coordination/milestones/M43/HUBSPOT_PARITY_MATRIX_2026-11-25.md).)
+- [v] M45.S01.T017 — Sensitive-data field classification (additional gap, Source: HubSpot parity matrix 2026-11-25 (coordination/milestones/M43/HUBSPOT_PARITY_MATRIX_2026-11-25.md).)
   - **Scope:** Mark fields (built-in and custom) as sensitive; masking in lists/exports/API for users without the sensitive-data right; access audit; retention policy hook. Revised by matrix v2: cf_definitions.sensitive_flag exists but is not enforced — enforce it and add field-level permissions.
   - **Acceptance at milestone gate:** Masked values for a non-privileged persona in UI, API and CSV export; audit entries on reveal; no leak through search or GraphQL.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable.
   - **Claude checkpoint:** [v] pending milestone gate, tests NOT RUN until gate; never [x] before milestone PASS.
+  Implemented 2026-11-26 [v] (tests NOT RUN as gate):
+  - Classification table cd_sensitive_fields, managed in CRM → Sensitive data:
+    - customer: KRA PIN (on by default), phone, e-mail, addresses, credit limit, GPS;
+    - contact: phone, e-mail;
+    - optional retention days.
+  - Masking applies to users without the new permission data.view_sensitive. It is enforced:
+    - in the customer API (list, get, create, update), with masked_fields reported;
+    - in the CRM contacts API;
+    - in custom-field values, where cf_definitions.sensitive_flag is now enforced.
+  - A masked value sent back by a form never overwrites the real one.
+  - Reveal: a single-value reveal endpoint. Refused and successful reveals are both audited.
+  - Retention hook (daily): clears a classified value on customers inactive longer than the period.
+  - Search/GraphQL: the GraphQL Customer type exposes no sensitive field (test).
+  - Bounded delta: the generic report builder and other modules' ad-hoc exports do not run per-user masking. Classified fields are not among the report-builder customer columns.
+  - Tests: tests/test_m45_s01_t017_sensitive.py (real login sessions for two personas).
 - [ ] M45.S01.T018 — Configuration sandbox (additional gap, Source: HubSpot parity matrix 2026-11-25 (coordination/milestones/M43/HUBSPOT_PARITY_MATRIX_2026-11-25.md).)
   - **Scope:** Export/import of configuration (pipelines, forms, workflows, sequences, custom objects/fields, templates) as a versioned bundle with diff preview and dry run, so changes are tested on a staging copy before production. No customer data in bundles.
   - **Acceptance at milestone gate:** Bundle round-trip between two disposable databases; diff and dry run; conflicting IDs handled; no personal data inside.

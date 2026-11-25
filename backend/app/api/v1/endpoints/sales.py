@@ -128,10 +128,13 @@ def _require_so_action(user, so: SalesOrder, action: str = "edit") -> None:
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
-def _build_customer_read(customer: Customer, user=None) -> CustomerRead:
+def _build_customer_read(customer: Customer, user=None, pol=None) -> CustomerRead:
     row = CustomerRead.model_validate(customer)
     if user is not None:
         row.access = build_commercial_access_hint(user, customer, "sales")
+        if pol is not None:   # M45.S01.T017 sensitive fields
+            from app.services import sensitive_service as sens
+            sens.apply(row, "customer", pol, user)
     return row
 
 
@@ -264,7 +267,9 @@ async def list_customers(
     customers = await crud.list_customers(db, active_only=active_only)
     if not _has_broad_sales_view(current_user):
         customers = [customer for customer in customers if _can_view_customer(current_user, customer)]
-    return [_build_customer_read(customer, current_user) for customer in customers]
+    from app.services import sensitive_service as sens
+    pol = await sens.policy(db)
+    return [_build_customer_read(customer, current_user, pol) for customer in customers]
 
 
 @router.post("/customers/", response_model=CustomerRead, status_code=201)
@@ -278,7 +283,8 @@ async def create_customer(
     c = await crud.create_customer(db, body.model_dump())
     await db.commit()
     await db.refresh(c)
-    return _build_customer_read(c, current_user)
+    from app.services import sensitive_service as sens
+    return _build_customer_read(c, current_user, await sens.policy(db))
 
 
 @router.get("/customers/{customer_id}", response_model=CustomerRead)
@@ -291,7 +297,8 @@ async def get_customer(
     if not c:
         raise HTTPException(404, "Customer not found")
     _require_customer_view(current_user, c)
-    return _build_customer_read(c, current_user)
+    from app.services import sensitive_service as sens
+    return _build_customer_read(c, current_user, await sens.policy(db))
 
 
 @router.patch("/customers/{customer_id}", response_model=CustomerRead)
@@ -306,13 +313,16 @@ async def update_customer(
         raise HTTPException(404, "Customer not found")
     ensure_commercial_action_allowed(current_user, c, "edit", "sales")
     updates = body.model_dump(exclude_unset=True)
+    # M45.S01.T017: a masked value sent back by a form never overwrites the real one
+    updates = {k: v for k, v in updates.items() if not (isinstance(v, str) and v.startswith("•••"))}
     if "region" in updates and updates["region"] != c.region:
         _require_customer_action(current_user, Customer(region=updates["region"]), "edit")
     for k, v in updates.items():
         setattr(c, k, v)
     await db.commit()
     await db.refresh(c)
-    return _build_customer_read(c, current_user)
+    from app.services import sensitive_service as sens
+    return _build_customer_read(c, current_user, await sens.policy(db))
 
 
 # ── Sales Orders ──────────────────────────────────────────────────────────────

@@ -173,6 +173,7 @@ const AIAccessPage       = dynamic(() => import("@/app/dashboard/crm/ai-access/p
 const DataHubPage        = dynamic(() => import("@/app/dashboard/crm/data-hub/page"), { ssr: false });
 const DuplicatesPage     = dynamic(() => import("@/app/dashboard/crm/duplicates/page"), { ssr: false });
 const ObjectsPage        = dynamic(() => import("@/app/dashboard/crm/objects/page"), { ssr: false });
+const SensitivePage      = dynamic(() => import("@/app/dashboard/crm/sensitive/page"), { ssr: false });
 const SocialPage         = dynamic(() => import("@/app/dashboard/crm/social/page"), { ssr: false });
 const AdsPage            = dynamic(() => import("@/app/dashboard/crm/ads/page"), { ssr: false });
 const AudiencesPage      = dynamic(() => import("@/app/dashboard/crm/audiences/page"), { ssr: false });
@@ -231,6 +232,7 @@ export default function CRMPage() {
     { key: "data-hub", label: "Prospecting & data", permission: "crm.view", content: <DataHubPage /> },
     { key: "duplicates", label: "Duplicates", permission: "crm.view_all", content: <DuplicatesPage /> },
     { key: "objects", label: "Custom objects", permission: "crm.view", content: <ObjectsPage /> },
+    { key: "sensitive", label: "Sensitive data", permission: "roles.manage", content: <SensitivePage /> },
     { key: "ai-access", label: "Add-ins & AI access", permission: "crm.view", content: <AIAccessPage /> },
     { key: "loyalty",     label: "Loyalty",     permission: "crm.view", content: <LoyaltyPage /> },
     { key: "nps",         label: "NPS",         permission: "crm.view", content: <NPSPage /> },

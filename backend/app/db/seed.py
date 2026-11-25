@@ -608,6 +608,9 @@ SCOPE_AWARE_PERMISSIONS = [
     ("company", "export", "Export Company",        "Export company summary and user access reports",             False),
     ("company", "manage", "Manage Company Access", "Grant/revoke user access and set company defaults",          False),
     ("auditor", "export", "Export Audit Reports", "Export auditor-approved reports", False),
+    # M45.S01.T017 / T023
+    ("data", "view_sensitive", "View Sensitive Data", "See fields classified as sensitive unmasked (each reveal is audited)", False),
+    ("users", "impersonate", "Log In As Another User", "Time-boxed, audited support sessions as another (non-superuser) user", False),
     ("shop_floor", "view_own_scope", "View Scoped Shop Floor", "View assigned shop-floor execution scope", True),
     ("production_execution", "update_own_line", "Update Own Production Line", "Update execution records on assigned line", False),
 ]

@@ -114,6 +114,7 @@ class CustomerRead(BaseModel):
     sales_team_id: Optional[str] = None
     customer_group_id: Optional[str] = None
     access: Optional[CommercialAccessHint] = None
+    masked_fields: Optional[list[str]] = None   # M45.S01.T017: classified fields hidden for this user
     created_at: datetime
 
 

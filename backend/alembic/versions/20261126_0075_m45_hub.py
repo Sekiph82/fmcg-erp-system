@@ -16,7 +16,7 @@ depends_on = None
 TABLES = [
     "ci_settings", "ci_models", "ci_alerts", "ci_health_snapshots",
     "personal_access_tokens", "ai_action_requests", "ai_agents", "ai_agent_versions", "ai_agent_jobs",
-    "cd_sources", "cd_prospects", "cd_facts", "cd_verified_fields", "cd_prospect_runs", "cd_merges", "cd_dup_dismissals",
+    "cd_sources", "cd_prospects", "cd_facts", "cd_verified_fields", "cd_prospect_runs", "cd_merges", "cd_dup_dismissals", "cd_sensitive_fields",
     "co_types", "co_records", "co_associations",
 ]
 
