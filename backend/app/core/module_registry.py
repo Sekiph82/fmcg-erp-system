@@ -549,6 +549,8 @@ ENDPOINT_ROUTE_DEFINITIONS: tuple[EndpointRouteDefinition, ...] = (
     EndpointRouteDefinition(key="sso", route_prefix="/sso", import_path="app.api.v1.endpoints.sso", tags=('auth',)),
     EndpointRouteDefinition(key="payment_links", route_prefix="/payment-links", import_path="app.api.v1.endpoints.payment_links", tags=('sales',)),
     EndpointRouteDefinition(key="payment_links_public", route_prefix="/public/pay", import_path="app.api.v1.endpoints.payment_links_public", tags=('sales',)),
+    EndpointRouteDefinition(key="sales_docs", route_prefix="/sales-docs", import_path="app.api.v1.endpoints.sales_docs", tags=('sales',)),
+    EndpointRouteDefinition(key="sales_docs_public", route_prefix="/public/docs", import_path="app.api.v1.endpoints.sales_docs_public", tags=('sales',)),
     EndpointRouteDefinition(key="customer_intel", route_prefix="/customer-intel", import_path="app.api.v1.endpoints.customer_intel", tags=('crm',)),
     EndpointRouteDefinition(key="marketing_assets", route_prefix="/marketing-assets", import_path="app.api.v1.endpoints.marketing_assets", tags=('marketing',)),
     EndpointRouteDefinition(key="marketing_assets_public", route_prefix="/public/assets", import_path="app.api.v1.endpoints.marketing_assets_public", tags=('marketing',)),
@@ -717,6 +719,9 @@ PUBLIC_ROUTES: frozenset[tuple[str, str]] = frozenset({
     ("/public/pay/{token}", "GET"),                        # payment link page (M45.S01.T021): 256-bit token, expiry, revocation
     ("/public/pay/{token}/mpesa", "POST"),                 # STK push; settlement only from the Daraja callback
     ("/public/pay/{token}/card", "GET"),                   # card provider NOT_CONFIGURED
+    ("/public/docs/{token}", "GET"),                       # shared sales document (M45.S01.T013): token, expiry, revocation
+    ("/public/docs/{token}/view", "POST"),
+    ("/public/docs/{token}/file", "GET"),                  # only APPROVED + malware-scan CLEAN files
     ("/public/crm-addin/lookup", "GET"),                   # Outlook/Gmail add-in: Bearer token with crm.addin scope (M45.S01.T012)
     ("/public/crm-addin/log-email", "POST"),
     ("/public/crm-addin/note", "POST"),

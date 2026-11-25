@@ -19,7 +19,7 @@ TABLES = [
     "cd_sources", "cd_prospects", "cd_facts", "cd_verified_fields", "cd_prospect_runs", "cd_merges", "cd_dup_dismissals", "cd_sensitive_fields",
     "co_types", "co_records", "co_associations",
     "auth_impersonations", "nc_notification_policies", "auth_sso_configs", "auth_sso_states",
-    "pay_links", "pay_link_attempts",
+    "pay_links", "pay_link_attempts", "doc_share_links", "doc_share_events",
 ]
 
 COLUMNS = [
@@ -36,6 +36,7 @@ def _tables():
 
 def upgrade() -> None:
     bind = op.get_bind()
+    op.execute("ALTER TYPE documentcategory ADD VALUE IF NOT EXISTS 'SALES_DOCUMENT'")   # T013 (kept on downgrade: PG cannot drop enum values)
     for table, col, ddl in COLUMNS:
         op.execute(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {col} {ddl}")
     for t in _tables():

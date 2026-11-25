@@ -18,6 +18,7 @@ export type DocumentCategory =
   | "BRAND_SPEND_INVOICE"
   | "TRADE_SPEND_APPROVAL"
   | "MARKETING_CREATIVE"
+  | "SALES_DOCUMENT"
   | "OTHER";
 
 export type DocumentStatus = "DRAFT" | "APPROVED" | "OBSOLETE" | "ARCHIVED";
@@ -40,6 +41,7 @@ export const CATEGORY_LABELS: Record<DocumentCategory, string> = {
   BRAND_SPEND_INVOICE: "Brand Spend Invoice",
   TRADE_SPEND_APPROVAL: "Trade Spend Approval",
   MARKETING_CREATIVE: "Marketing Creative",
+  SALES_DOCUMENT: "Sales document",
   OTHER: "Other",
 };
 

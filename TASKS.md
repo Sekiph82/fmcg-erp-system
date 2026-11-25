@@ -2359,11 +2359,22 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
   - Tokens are created in CRM → "Add-ins & AI access". They are shown once and can be revoked; their use is audited.
   - Local harness: the sidebar page takes host context from the query string. A test validates both manifests and exercises the API.
   - Deferred to M47: real Outlook/Gmail host runtime, sideload/Marketplace publishing and admin consent (addins/README.md).
-- [ ] M45.S01.T013 — General sales document library (original recommendation 34/40)
+- [v] M45.S01.T013 — General sales document library (original recommendation 34/40)
   - **Scope:** Extend quote links to authorized catalogues, proposals and sales docs; versioned storage, permissions, share/expiry/revocation, privacy-aware view tracking, download audit and malware scanner integration.
   - **Acceptance at milestone gate:** Local document store and scanner fixtures, browser views, version hash, revoked/expired access, no cross-account leaks.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable. Do not rebuild already working functionality; record evidence and bounded delta.
   - **Claude checkpoint:** update TASKS.md/Project Status immediately after this task, [v] pending milestone gate, tests NOT RUN; automatically continue next dependency-ready task. Never [x] before milestone PASS.
+  Implemented 2026-11-26 [v] (tests NOT RUN as gate):
+  - New document category SALES_DOCUMENT for catalogues, proposals and price sheets. It reuses document management (versioned storage, approval, ClamAV scan). Library: CRM → Sales documents.
+  - Share links: 256-bit token shown once, 1–90 days, label/customer, revocation. A link either pins one version or always serves the newest approved one.
+  - Only approved documents of shareable confidentiality can be shared.
+  - Public page /docs/{token} shows title, version, size and the SHA-256 of the exact version served.
+  - Tracking:
+    - a view is recorded by the page after render, with a 30-minute de-dupe and a keyed viewer hash (no IP stored);
+    - each download is recorded with the version.
+  - Files that are not malware-scan CLEAN are never served (423).
+  - Revoked or expired links → 410; unknown links → 404.
+  - Tests: tests/test_m45_s01_t013_sales_docs.py.
 - [ ] M45.S01.T014 — Advanced CPQ and contract lifecycle (original recommendation 35/40)
   - **Scope:** Extend native quotations/discount approvals with configurable bundles, pricing rules, volume tiers, currency/tax, contract templates, version negotiation, renewal/expiry, signatory verification, provider-agnostic signature adapter (documented provider where feasible), downstream order/credit/stock/finance. Audit subscription billing and payment links; add uncovered software capabilities. Extended by matrix v2: apply existing promotion BUNDLE/MIX_AND_MATCH/TIERED schemes to quotes; quote templates, password protection, price books, multi-step approvals, quote reporting; recurring billing with retries and billing portal on top of subscription order templates; credit-memo verification.
   - **Acceptance at milestone gate:** Synthetic quote-to-contract-to-order/invoice/renewal flow; correct approvals/totals, signature evidence, no bypass, local provider contracts; third-party e-sign/payment activation deferred.

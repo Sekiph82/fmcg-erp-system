@@ -34,6 +34,7 @@ class DocumentCategory(str, enum.Enum):
     BRAND_SPEND_INVOICE = "BRAND_SPEND_INVOICE"      # agency/media invoices
     TRADE_SPEND_APPROVAL = "TRADE_SPEND_APPROVAL"    # retailer/distributor support approvals
     MARKETING_CREATIVE = "MARKETING_CREATIVE"        # artwork, copy, video links
+    SALES_DOCUMENT = "SALES_DOCUMENT"                # catalogues, proposals, price sheets shared with customers (M45.S01.T013)
     OTHER = "OTHER"
 
 

@@ -38,3 +38,30 @@ class PaymentLinkAttempt(Base):
     collection_id = Column(UUID(as_uuid=True), ForeignKey("cash_collections.id", ondelete="SET NULL"), nullable=True)
     created_at    = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
     settled_at    = Column(DateTime(timezone=True), nullable=True)
+
+
+class DocShareLink(Base):
+    """M45.S01.T013 a sales document shared by link: latest approved version of its lineage, or one pinned version."""
+    __tablename__ = "doc_share_links"
+
+    id             = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    token_hash     = Column(String(64), nullable=False, unique=True)
+    document_id    = Column(UUID(as_uuid=True), ForeignKey("documents.id", ondelete="CASCADE"), nullable=False, index=True)
+    pin_version    = Column(Boolean, nullable=False, default=False)
+    label          = Column(String(150), nullable=True)
+    customer_id    = Column(UUID(as_uuid=True), ForeignKey("customers.id", ondelete="SET NULL"), nullable=True)
+    expires_at     = Column(DateTime(timezone=True), nullable=False)
+    revoked_at     = Column(DateTime(timezone=True), nullable=True)
+    created_by_id  = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at     = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+
+class DocShareEvent(Base):
+    __tablename__ = "doc_share_events"
+
+    id          = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    link_id     = Column(UUID(as_uuid=True), ForeignKey("doc_share_links.id", ondelete="CASCADE"), nullable=False, index=True)
+    kind        = Column(String(10), nullable=False)          # VIEW | DOWNLOAD
+    viewer_hash = Column(String(64), nullable=False)          # keyed hash; no IP or user agent stored
+    document_id = Column(UUID(as_uuid=True), nullable=False)  # the exact version served
+    at          = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
