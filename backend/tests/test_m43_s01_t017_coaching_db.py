@@ -39,3 +39,11 @@ async def test_clip_visibility_and_withdrawal(monkeypatch):
         await db.commit()
         n = (await db.execute(select(func.count()).select_from(CoachingClip).where(CoachingClip.call_id == mine.id))).scalar_one()
         assert n == 0
+
+
+@pytest.fixture(autouse=True)
+async def _dispose_engine():
+    """Each test runs in its own event loop: drop pooled connections afterwards (same pattern as other DB tests)."""
+    yield
+    from app.db.session import engine
+    await engine.dispose()

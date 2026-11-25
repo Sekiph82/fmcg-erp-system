@@ -67,3 +67,11 @@ async def test_one_contact_two_customers_and_duplicate_refusal():
         labels = sorted(l for _, l in await cs.contacts_for(db, "customer", custs[1].id) if _.id == c.id)
         assert labels == ["decision_maker"]
         assert (await cs.find_by_email(db, c.email.upper())).id == c.id
+
+
+@pytest.fixture(autouse=True)
+async def _dispose_engine():
+    """Each test runs in its own event loop: drop pooled connections afterwards (same pattern as other DB tests)."""
+    yield
+    from app.db.session import engine
+    await engine.dispose()

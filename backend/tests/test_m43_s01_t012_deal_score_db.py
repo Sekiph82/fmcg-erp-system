@@ -47,3 +47,11 @@ async def test_score_missing_data_and_buying_group():
         b = await ds.score_with_trend(db, rec)
         assert len(b["trend"]) == len(a["trend"]) == 1
         await db.rollback()
+
+
+@pytest.fixture(autouse=True)
+async def _dispose_engine():
+    """Each test runs in its own event loop: drop pooled connections afterwards (same pattern as other DB tests)."""
+    yield
+    from app.db.session import engine
+    await engine.dispose()

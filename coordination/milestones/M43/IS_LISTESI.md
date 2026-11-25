@@ -5,10 +5,10 @@ Son güncelleme: 2026-11-25. Her adım bitince güncellenir.
 | # | İş | Durum |
 |---|---|---|
 | 1 | M43.S01.T017 koçluk çalma listeleri | ✅ bitti (a64f06a) |
-| 2 | M43 kabul: veritabanı yükseltmesi ve veri taşıma kontrolü | ⏳ devam ediyor |
-| 3 | M43 kabul: backend testleri + 18 M43 test dosyası | ⬜ |
-| 4 | M43 kabul: tsc, eslint, production build | ⬜ |
-| 5 | M43 kabul: tarayıcıda masaüstü + telefon gezintisi | ⬜ |
+| 2 | M43 kabul: veritabanı yükseltmesi ve veri taşıma kontrolü | ✅ geçti (1 hata bulundu ve düzeltildi, 9fe6fa4) |
+| 3 | M43 kabul: backend testleri + M43 DB testleri | ✅ backend 1757 geçti; M43 DB 15/15 dosya, 58 test geçti (2 gerçek hata bulundu, düzeltildi) |
+| 4 | M43 kabul: tsc, eslint, production build | ✅ tsc 0 hata, eslint 0 hata (1 hata düzeltildi), build başarılı |
+| 5 | M43 kabul: tarayıcıda masaüstü + telefon gezintisi | ⏳ sırada |
 | 6 | M43 kabul: bağımsız güvenlik/kod incelemesi | ⬜ |
 | 7 | Hataları düzelt, ilgili testleri yeniden çalıştır | ⬜ |
 | 8 | M43 satırlarını [x] yap, GitHub'a gönder, eşitliği doğrula | ⬜ |

@@ -59,3 +59,11 @@ async def test_repeat_once_cap_and_send_time(monkeypatch):
         s = await ws.deal_summary(db, rec)
         assert "POVU Synthetic Outlet" in s["summary"] and s["facts_only"]
         await db.rollback()
+
+
+@pytest.fixture(autouse=True)
+async def _dispose_engine():
+    """Each test runs in its own event loop: drop pooled connections afterwards (same pattern as other DB tests)."""
+    yield
+    from app.db.session import engine
+    await engine.dispose()

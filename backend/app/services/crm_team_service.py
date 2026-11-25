@@ -52,7 +52,12 @@ async def check_no_cycle(db: AsyncSession, team_id, parent_id) -> None:
         hops += 1
 
 
-def _empty(v) -> bool:
+def _empty(v, field: str = "") -> bool:
+    if field in ("expected_revenue", "expected_margin"):      # a 0 amount is the column default, i.e. not filled
+        try:
+            return v is None or float(v) == 0
+        except (TypeError, ValueError):
+            return True
     return v is None or (isinstance(v, str) and not v.strip())
 
 
@@ -61,7 +66,7 @@ async def check_stage_entry(db: AsyncSession, rec: CRMRecord, new_stage_id, pend
         return
     st = await db.get(CRMPipelineStage, new_stage_id)
     missing = [f for f in (st.required_fields or []) if f in REQUIRABLE
-               and _empty((pending or {}).get(f, getattr(rec, f, None)))] if st else []
+               and _empty((pending or {}).get(f, getattr(rec, f, None)), f)] if st else []
     if missing:
         raise HTTPException(409, {"code": "required_fields", "message": f"Fill {', '.join(missing)} before moving to "
                                   f"'{st.stage_name}'.", "fields": missing})

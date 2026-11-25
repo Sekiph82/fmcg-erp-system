@@ -31,7 +31,7 @@ async def setup(monkeypatch):
     from app.models.user import User
     monkeypatch.setattr(clock, "utcnow", lambda: NOW)
     async with AsyncSessionLocal() as db:
-        hosts = [User(id=uuid.uuid4(), email=f"host{i}-{uuid.uuid4().hex[:6]}@povu-demo.test", hashed_password="x",
+        hosts = [User(id=uuid.uuid4(), email=f"host{i}-{uuid.uuid4().hex[:6]}@povu-demo.test", username=f"syn-{uuid.uuid4().hex[:12]}", hashed_password="x",
                       full_name=f"Synthetic Host {i}", is_active=True) for i in range(2)]
         db.add_all(hosts)
         page = BookingPage(id=uuid.uuid4(), slug=f"povu-demo-{uuid.uuid4().hex[:6]}", title="POVU distributor intro",
@@ -52,7 +52,7 @@ async def client():
 
 
 def _visitor(i, start):
-    return {"start_utc": start, "name": f"Synthetic Visitor {i}", "email": f"visitor{i}@povu-demo.test", "consent": True}
+    return {"start_utc": start, "name": f"Synthetic Visitor {i}", "email": f"povu-visitor{i}@example.com", "consent": True}
 
 
 async def test_slots_and_anonymity(setup, client):
@@ -105,3 +105,11 @@ async def test_manage_reschedule_cancel_and_reminder(setup, client, monkeypatch)
     from app.models.meetings import Booking
     assert (await db.execute(select(func.count()).select_from(Booking).where(Booking.reminder_sent_at.is_not(None)))).scalar_one() == 0
     assert (await client.post(f"/api/v1/public/book/manage/{token}/cancel")).json()["status"] == "CANCELLED"
+
+
+@pytest.fixture(autouse=True)
+async def _dispose_engine():
+    """Each test runs in its own event loop: drop pooled connections afterwards (same pattern as other DB tests)."""
+    yield
+    from app.db.session import engine
+    await engine.dispose()

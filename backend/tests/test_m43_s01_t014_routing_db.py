@@ -49,16 +49,16 @@ async def test_approval_gate_and_handoff():
     from app.schemas.crm import CRMCloseWonRequest, CRMRecordUpdate
     from app.services import crm_pipeline_service as svc
     async with AsyncSessionLocal() as db:
-        rep = User(id=uuid.uuid4(), email=f"r-{uuid.uuid4().hex[:6]}@povu-demo.test", hashed_password="x", full_name="Rep", is_active=True)
-        mgr = User(id=uuid.uuid4(), email=f"m-{uuid.uuid4().hex[:6]}@povu-demo.test", hashed_password="x", full_name="Mgr", is_active=True)
+        rep = User(id=uuid.uuid4(), email=f"r-{uuid.uuid4().hex[:6]}@povu-demo.test", username=f"syn-{uuid.uuid4().hex[:12]}", hashed_password="x", full_name="Rep", is_active=True)
+        mgr = User(id=uuid.uuid4(), email=f"m-{uuid.uuid4().hex[:6]}@povu-demo.test", username=f"syn-{uuid.uuid4().hex[:12]}", hashed_password="x", full_name="Mgr", is_active=True)
         st = CRMPipelineStage(id=uuid.uuid4(), stage_code=f"NEG-{uuid.uuid4().hex[:6]}", stage_name="Negotiation",
                               stage_type=CRMStageType.OPPORTUNITY, sequence_no=7)
         db.add_all([rep, mgr, st])
-        rec = CRMRecord(id=uuid.uuid4(), record_type=CRMRecordType.OPPORTUNITY, company_name="POVU Synthetic Outlet",
-                        expected_revenue=900000)
-        db.add(rec)
         db.add(CRMStageApprovalRule(name="Large deal", stage_id=st.id, min_expected_revenue=500000))
         await db.commit()
+        from app.schemas.crm import CRMRecordCreate
+        rec = await svc.create_record(db, CRMRecordCreate(record_type=CRMRecordType.OPPORTUNITY,
+                                                          company_name="POVU Synthetic Outlet", expected_revenue=900000))
         with pytest.raises(HTTPException) as e:
             await svc.update_record(db, str(rec.id), CRMRecordUpdate(stage_id=st.id), actor_id=rep.id)
         assert e.value.detail["code"] == "approval_required"
@@ -74,3 +74,11 @@ async def test_approval_gate_and_handoff():
         await db.commit()
         n = (await db.execute(select(func.count()).select_from(CRMHandoff).where(CRMHandoff.crm_record_id == rec.id))).scalar_one()
         assert n == 1
+
+
+@pytest.fixture(autouse=True)
+async def _dispose_engine():
+    """Each test runs in its own event loop: drop pooled connections afterwards (same pattern as other DB tests)."""
+    yield
+    from app.db.session import engine
+    await engine.dispose()

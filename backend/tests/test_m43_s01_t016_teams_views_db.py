@@ -54,7 +54,16 @@ async def test_required_fields_and_tags():
         assert rec.stage_id == st.id
         tag = CRMTag(id=uuid.uuid4(), name=f"modern-trade-{uuid.uuid4().hex[:4]}")
         db.add(tag)
+        await db.flush()
         db.add(CRMRecordTag(crm_record_id=rec.id, tag_id=tag.id))
         await db.commit()
         got = await svc.get_records(db, extra={"tag": tag.name})
         assert [r.id for r in got] == [rec.id]
+
+
+@pytest.fixture(autouse=True)
+async def _dispose_engine():
+    """Each test runs in its own event loop: drop pooled connections afterwards (same pattern as other DB tests)."""
+    yield
+    from app.db.session import engine
+    await engine.dispose()

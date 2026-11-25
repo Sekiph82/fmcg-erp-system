@@ -56,9 +56,10 @@ async def test_approval_versions_and_stage_gate():
     from app.models.user import User
     from app.services.crm_stage_gate import check_stage_exit
     async with AsyncSessionLocal() as db:
-        author = User(id=uuid.uuid4(), email=f"a-{uuid.uuid4().hex[:6]}@povu-demo.test", hashed_password="x", full_name="A", is_active=True)
-        approver = User(id=uuid.uuid4(), email=f"b-{uuid.uuid4().hex[:6]}@povu-demo.test", hashed_password="x", full_name="B", is_active=True)
+        author = User(id=uuid.uuid4(), email=f"a-{uuid.uuid4().hex[:6]}@povu-demo.test", username=f"syn-{uuid.uuid4().hex[:12]}", hashed_password="x", full_name="A", is_active=True)
+        approver = User(id=uuid.uuid4(), email=f"b-{uuid.uuid4().hex[:6]}@povu-demo.test", username=f"syn-{uuid.uuid4().hex[:12]}", hashed_password="x", full_name="B", is_active=True)
         db.add_all([author, approver])
+        await db.flush()
         stages = (await db.execute(select(CRMPipelineStage).order_by(CRMPipelineStage.sequence_no).limit(2))).scalars().all()
         rec = CRMRecord(id=uuid.uuid4(), record_type=CRMRecordType.OPPORTUNITY, company_name="POVU Synthetic Outlet",
                         stage_id=stages[0].id)
@@ -74,6 +75,7 @@ async def test_approval_versions_and_stage_gate():
         p2 = await pbs.new_version(db, p1, author.id)
         p2.status = "PENDING_APPROVAL"
         await pbs.publish(db, p2, approver)
+        await db.flush()                              # endpoints commit here; sessions run without autoflush
         assert (p1.status, p2.status) == ("RETIRED", "PUBLISHED")
         with pytest.raises(HTTPException) as e:
             await check_stage_exit(db, rec, stages[1].id)
@@ -96,6 +98,7 @@ async def test_shared_plan_customer_ticks_only_own_steps():
     async with AsyncSessionLocal() as db:
         rec = CRMRecord(id=uuid.uuid4(), record_type=CRMRecordType.OPPORTUNITY, company_name="POVU Synthetic Outlet")
         db.add(rec)
+        await db.flush()
         token, h = pbs.share_token()
         plan = CRMDealPlan(crm_record_id=rec.id, title="Path to first order", shared=True, share_token_hash=h,
                            steps=pbs.clean_steps([{"id": "s1", "title": "Send price list", "owner": "us"},
@@ -110,3 +113,11 @@ async def test_shared_plan_customer_ticks_only_own_steps():
             plan.shared, plan.share_token_hash = False, None
             await db.commit()
             assert (await c.get(f"/api/v1/public/deal-plans/{token}")).status_code == 404
+
+
+@pytest.fixture(autouse=True)
+async def _dispose_engine():
+    """Each test runs in its own event loop: drop pooled connections afterwards (same pattern as other DB tests)."""
+    yield
+    from app.db.session import engine
+    await engine.dispose()

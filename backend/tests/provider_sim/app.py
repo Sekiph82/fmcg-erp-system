@@ -442,7 +442,7 @@ def create_app() -> FastAPI:
         form = dict(await request.form())
         if not str(form.get("to", "")).startswith("+"):
             return {"entries": [{"phoneNumber": form.get("to"), "status": "InvalidPhoneNumber"}], "errorMessage": "None"}
-        sid = f"ATVId_sim{len(st['calls']) + 1}"
+        sid = f"ATVId_sim{secrets.token_hex(6)}"
         st["calls"].append({**form, "sessionId": sid})
         return {"entries": [{"phoneNumber": form["to"], "status": "Queued", "sessionId": sid}], "errorMessage": "None"}
 

@@ -26,7 +26,7 @@ async def world():
     from app.models.sales import Customer, SalesOrder, SOLine, SOStatus
     from app.models.user import User
     async with AsyncSessionLocal() as db:
-        rep = User(id=uuid.uuid4(), email=f"rep-{uuid.uuid4().hex[:6]}@povu-demo.test", hashed_password="x",
+        rep = User(id=uuid.uuid4(), email=f"rep-{uuid.uuid4().hex[:6]}@povu-demo.test", username=f"syn-{uuid.uuid4().hex[:12]}", hashed_password="x",
                    full_name="Synthetic Rep", is_active=True)
         db.add(rep)
         cust = (await db.execute(select(Customer).limit(1))).scalar_one()
@@ -69,3 +69,11 @@ async def test_attainment_currency_and_categories(world):
     s = await quotas.snapshot(db, q, {"best_case": 0.25})
     await db.commit()
     assert s.assumptions["best_case"] == 0.25 and float(s.actual_amount) == 10000.0
+
+
+@pytest.fixture(autouse=True)
+async def _dispose_engine():
+    """Each test runs in its own event loop: drop pooled connections afterwards (same pattern as other DB tests)."""
+    yield
+    from app.db.session import engine
+    await engine.dispose()

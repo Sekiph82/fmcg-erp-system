@@ -93,3 +93,11 @@ async def test_record_redirect_dedupe_optout_and_analytics(db, monkeypatch):
     await db.commit()
     out = await eng.analytics(db, since=datetime.now(timezone.utc) - timedelta(days=1), created_by=m.created_by)
     assert next(x for x in out["messages"] if x["id"] == str(m.id))["clicks"] == 1           # not recorded
+
+
+@pytest.fixture(autouse=True)
+async def _dispose_engine():
+    """Each test runs in its own event loop: drop pooled connections afterwards (same pattern as other DB tests)."""
+    yield
+    from app.db.session import engine
+    await engine.dispose()

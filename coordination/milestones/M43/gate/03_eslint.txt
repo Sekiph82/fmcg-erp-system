@@ -1,0 +1,3 @@
+  16:22  error  Error: Expected the first argument to be an inline function expression
+✖ 68 problems (1 error, 67 warnings)
+  0 errors and 1 warning potentially fixable with the `--fix` option.

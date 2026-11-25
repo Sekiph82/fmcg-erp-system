@@ -120,6 +120,7 @@ async def start(db: AsyncSession, user_id, provider: str, purpose: str) -> str:
     challenge = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode()).digest()).rstrip(b"=").decode()
     db.add(OAuthState(state=state, user_id=user_id, provider=provider, purpose=purpose,
                       code_verifier_enc=_enc(verifier), created_at=now))
+    await db.flush()          # visible to complete() in the same transaction as well as after commit
     ep = _endpoints(provider)
     params = {"client_id": ep["client_id"], "response_type": "code", "redirect_uri": redirect_uri(),
               "scope": " ".join(SCOPES[(provider, purpose)]), "state": state,
@@ -224,6 +225,7 @@ async def access_token(db: AsyncSession, conn: OAuthConnection) -> str:
         raise OAuthReauthRequired("This account is not connected.")
     if conn.expires_at and conn.expires_at - REFRESH_MARGIN > clock.utcnow():
         return _dec(conn.access_token_enc)
+    await db.flush()          # sessions run without autoflush: persist a forced expiry before re-reading the row
     locked = (await db.execute(select(OAuthConnection).where(OAuthConnection.id == conn.id)
                                .with_for_update().execution_options(populate_existing=True))).scalar_one()
     if locked.expires_at and locked.expires_at - REFRESH_MARGIN > clock.utcnow():   # another worker refreshed

@@ -73,7 +73,7 @@ async def db_user():
     from app.db.session import AsyncSessionLocal
     from app.models.user import User
     async with AsyncSessionLocal() as db:
-        u = User(id=uuid.uuid4(), email=f"rep-{uuid.uuid4().hex[:8]}@povu-demo.test", hashed_password="x",
+        u = User(id=uuid.uuid4(), email=f"rep-{uuid.uuid4().hex[:8]}@povu-demo.test", username=f"syn-{uuid.uuid4().hex[:12]}", hashed_password="x",
                  full_name="Synthetic Rep", is_active=True)
         db.add(u)
         await db.commit()
@@ -82,8 +82,9 @@ async def db_user():
 
 async def _count(db, acc):
     from app.models.email_integration import EmailMessage, EmailThread
+    aid = acc if isinstance(acc, uuid.UUID) else acc.id
     return (await db.execute(select(func.count()).select_from(EmailMessage).join(EmailThread)
-                             .where(EmailThread.account_id == acc.id))).scalar_one()
+                             .where(EmailThread.account_id == aid))).scalar_one()
 
 
 @pytest.mark.parametrize("provider,expire", [("google", {"history_floor": 10**9}), ("microsoft", {"delta_gone": True})])
@@ -131,7 +132,7 @@ async def test_throttle_leaves_cursor_and_data_unchanged(sim, db_user):
     db, user = db_user
     conn, acc = await _connect(db, user, "google")
     await mbx.sync_account(db, acc); await db.commit()
-    before = dict(conn.sync_cursor)
+    before, aid = dict(conn.sync_cursor), acc.id
     await _ctl({"deliver": [{"provider": "google", "raw_b64": _mail("<c1@povu-demo.test>", "Later")}],
                 "faults": {"token": [429]}})
     conn.expires_at = None   # force the token endpoint → 429
@@ -139,4 +140,12 @@ async def test_throttle_leaves_cursor_and_data_unchanged(sim, db_user):
         await mbx.sync_account(db, acc)
     await db.rollback()
     await db.refresh(conn)
-    assert conn.sync_cursor == before and await _count(db, acc) == 0
+    assert conn.sync_cursor == before and await _count(db, aid) == 0
+
+
+@pytest.fixture(autouse=True)
+async def _dispose_engine():
+    """Each test runs in its own event loop: drop pooled connections afterwards (same pattern as other DB tests)."""
+    yield
+    from app.db.session import engine
+    await engine.dispose()

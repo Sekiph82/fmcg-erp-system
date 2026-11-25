@@ -85,7 +85,7 @@ async def db_user():
     from app.db.session import AsyncSessionLocal
     from app.models.user import User
     async with AsyncSessionLocal() as db:
-        u = User(id=uuid.uuid4(), email=f"rep-{uuid.uuid4().hex[:8]}@povu-demo.test", hashed_password="x",
+        u = User(id=uuid.uuid4(), email=f"rep-{uuid.uuid4().hex[:8]}@povu-demo.test", username=f"syn-{uuid.uuid4().hex[:12]}", hashed_password="x",
                  full_name="Synthetic Rep", is_active=True)
         db.add(u)
         await db.commit()
@@ -189,3 +189,11 @@ async def test_not_configured_never_starts(db_user, monkeypatch):
     with pytest.raises(oauth.OAuthError) as e:
         await oauth.start(db, user.id, "google", "mail")
     assert e.value.code == "not_configured" and e.value.status_code == 409
+
+
+@pytest.fixture(autouse=True)
+async def _dispose_engine():
+    """Each test runs in its own event loop: drop pooled connections afterwards (same pattern as other DB tests)."""
+    yield
+    from app.db.session import engine
+    await engine.dispose()

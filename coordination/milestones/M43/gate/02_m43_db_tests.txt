@@ -1,0 +1,31 @@
+NOTICE:  database "m43_test_m43_s00_t004_harness_" does not exist, skipping
+== tests/test_m43_s00_t004_harness.py :: 15 passed in 4.54s
+NOTICE:  database "m43_test_m43_s01_t001_t002_oauth_mail_db_" does not exist, skipping
+== tests/test_m43_s01_t001_t002_oauth_mail_db.py :: 5 passed in 4.86s
+NOTICE:  database "m43_test_m43_s01_t003_t004_calendar_sync_db_" does not exist, skipping
+== tests/test_m43_s01_t003_t004_calendar_sync_db.py :: 6 passed in 4.87s
+NOTICE:  database "m43_test_m43_s01_t005_booking_db_" does not exist, skipping
+== tests/test_m43_s01_t005_booking_db.py :: 4 passed, 75 warnings in 17.30s
+NOTICE:  database "m43_test_m43_s01_t006_engagement_db_" does not exist, skipping
+== tests/test_m43_s01_t006_engagement_db.py :: 4 passed in 4.20s
+NOTICE:  database "m43_test_m43_s01_t007_quotas_db_" does not exist, skipping
+== tests/test_m43_s01_t007_quotas_db.py :: 1 passed in 4.14s
+NOTICE:  database "m43_test_m43_s01_t008_t009_voice_db_" does not exist, skipping
+== tests/test_m43_s01_t008_t009_voice_db.py :: 6 passed, 82 warnings in 17.09s
+NOTICE:  database "m43_test_m43_s01_t010_playbooks_db_" does not exist, skipping
+== tests/test_m43_s01_t010_playbooks_db.py :: 4 passed, 75 warnings in 16.29s
+NOTICE:  database "m43_test_m43_s01_t011_pipelines_db_" does not exist, skipping
+== tests/test_m43_s01_t011_pipelines_db.py :: 1 passed in 4.32s
+NOTICE:  database "m43_test_m43_s01_t012_deal_score_db_" does not exist, skipping
+== tests/test_m43_s01_t012_deal_score_db.py :: 1 passed in 4.17s
+NOTICE:  database "m43_test_m43_s01_t013_workspace_db_" does not exist, skipping
+== tests/test_m43_s01_t013_workspace_db.py :: 2 passed in 4.15s
+NOTICE:  database "m43_test_m43_s01_t014_routing_db_" does not exist, skipping
+== tests/test_m43_s01_t014_routing_db.py :: 3 passed in 4.35s
+NOTICE:  database "m43_test_m43_s01_t015_contacts_db_" does not exist, skipping
+== tests/test_m43_s01_t015_contacts_db.py :: 2 passed in 4.62s
+NOTICE:  database "m43_test_m43_s01_t016_teams_views_db_" does not exist, skipping
+== tests/test_m43_s01_t016_teams_views_db.py :: 2 passed in 4.40s
+NOTICE:  database "m43_test_m43_s01_t017_coaching_db_" does not exist, skipping
+== tests/test_m43_s01_t017_coaching_db.py :: 1 passed, 2 warnings in 5.24s
+FILES PASS=15 FAIL=0

@@ -42,7 +42,7 @@ async def db_user():
     from app.db.session import AsyncSessionLocal
     from app.models.user import User
     async with AsyncSessionLocal() as db:
-        u = User(id=uuid.uuid4(), email=f"host-{uuid.uuid4().hex[:8]}@povu-demo.test", hashed_password="x",
+        u = User(id=uuid.uuid4(), email=f"host-{uuid.uuid4().hex[:8]}@povu-demo.test", username=f"syn-{uuid.uuid4().hex[:12]}", hashed_password="x",
                  full_name="Synthetic Host", is_active=True)
         db.add(u)
         await db.commit()
@@ -152,3 +152,11 @@ async def test_disconnected_calendar_is_not_used(sim, db_user):
     m = _meeting(user, datetime(2026, 12, 5, 7, 0))
     db.add(m); await db.flush()
     assert await cal.push_safely(db, m) == "NO_CALENDAR"
+
+
+@pytest.fixture(autouse=True)
+async def _dispose_engine():
+    """Each test runs in its own event loop: drop pooled connections afterwards (same pattern as other DB tests)."""
+    yield
+    from app.db.session import engine
+    await engine.dispose()

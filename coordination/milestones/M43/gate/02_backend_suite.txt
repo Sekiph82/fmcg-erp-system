@@ -1,0 +1,30 @@
+    db.add(journal_entry)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_task017_2_idempotency.py::test_first_call_creates_journal_and_marks_batch_posted
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\services\utility_integration_service.py:134: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+    db.add(debit_line)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_task017_2_idempotency.py::test_first_call_creates_journal_and_marks_batch_posted
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\services\utility_integration_service.py:135: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+    db.add(credit_line)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_task017_2_idempotency.py::test_first_call_creates_journal_and_marks_batch_posted
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\services\utility_integration_service.py:142: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+    db.add(bill)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/test_task017_2_idempotency.py::test_first_call_creates_journal_and_marks_batch_posted
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\services\utility_integration_service.py:144: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+    db.add(batch)
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+1757 passed, 445 skipped, 129 warnings in 96.07s (0:01:36)

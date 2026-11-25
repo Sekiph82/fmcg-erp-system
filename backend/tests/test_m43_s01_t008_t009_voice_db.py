@@ -111,7 +111,7 @@ async def test_no_recording_without_consent(sim, db, api):
 async def test_inbound_ivr_routes_to_available_agent(sim, db, api):
     from app.models.user import User
     from app.models.voip import VoiceAgentProfile, VoiceIvrMenu
-    agent = User(id=uuid.uuid4(), email=f"agent-{uuid.uuid4().hex[:6]}@povu-demo.test", hashed_password="x",
+    agent = User(id=uuid.uuid4(), email=f"agent-{uuid.uuid4().hex[:6]}@povu-demo.test", username=f"syn-{uuid.uuid4().hex[:12]}", hashed_password="x",
                  full_name="Synthetic Agent", is_active=True)
     db.add(agent)
     await db.flush()
@@ -157,3 +157,11 @@ async def test_transcription_refused_without_consent(sim, db):
     await db.flush()
     with pytest.raises(tx.TranscriptionError):
         await tx.request(db, call)
+
+
+@pytest.fixture(autouse=True)
+async def _dispose_engine():
+    """Each test runs in its own event loop: drop pooled connections afterwards (same pattern as other DB tests)."""
+    yield
+    from app.db.session import engine
+    await engine.dispose()

@@ -1,0 +1,25 @@
+├ ƒ /forms/[slug]
+├ ƒ /kartvizit/[slug]
+├ ○ /kb
+├ ƒ /kb/[slug]
+├ ○ /login
+├ ƒ /lp/[slug]
+├ ○ /manifest.webmanifest
+├ ƒ /nps/[token]
+├ ƒ /plan/[token]
+├ ○ /portal
+├ ○ /portal/activate
+├ ○ /portal/login
+├ ○ /portal/signup
+├ ○ /supplier
+├ ○ /supplier/activate
+├ ○ /supplier/login
+├ ○ /unsubscribe
+└ ƒ /verify/[token]
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

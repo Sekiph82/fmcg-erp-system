@@ -13,7 +13,7 @@ const isoDay = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padSt
 
 export default function BookingPage() {
   const { slug } = useParams<{ slug: string }>();
-  const tz = useMemo(visitorTz, []);
+  const tz = useMemo(() => visitorTz(), []);
   const [page, setPage] = useState<Page | null>(null);
   const [state, setState] = useState<"loading" | "missing" | "ready" | "booked">("loading");
   const [day, setDay] = useState(isoDay(new Date()));

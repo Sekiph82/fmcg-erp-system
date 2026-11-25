@@ -112,6 +112,7 @@ async def publish(db: AsyncSession, pb: CRMPlaybook, approver) -> None:
     for old in (await db.execute(select(CRMPlaybook).where(CRMPlaybook.family_id == pb.family_id,
                                                            CRMPlaybook.status == "PUBLISHED"))).scalars():
         old.status = "RETIRED"
+    await db.flush()          # retire first: only one PUBLISHED version per family (partial unique index)
     pb.status, pb.approved_by_id, pb.approved_at = "PUBLISHED", approver.id, datetime.now(timezone.utc)
 
 

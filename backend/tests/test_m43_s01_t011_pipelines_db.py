@@ -46,3 +46,11 @@ async def test_two_pipelines_scope_forecast_and_funnel():
         f = await intel.funnel(db, pipeline_id=str(b.id))
         assert [row["stage_id"] for row in f["funnel"]] == [str(sb1.id)]
         auto.validate("stage_changed", "pipeline_id", "eq", "create_task", {"subject": "Call the new distributor"})
+
+
+@pytest.fixture(autouse=True)
+async def _dispose_engine():
+    """Each test runs in its own event loop: drop pooled connections afterwards (same pattern as other DB tests)."""
+    yield
+    from app.db.session import engine
+    await engine.dispose()
