@@ -118,7 +118,8 @@ class Settings(BaseSettings):
     PUBLIC_APP_URL: str = "http://localhost:3000"  # used in unsubscribe links
     # M43.S01.T006 e-mail engagement tracking: off unless enabled; then only for e-mails that opt in
     CRM_EMAIL_TRACKING_ENABLED: bool = False
-    CRM_TRACKING_LINK_DOMAINS: str = ""             # comma list; blank = any http(s) link written in the e-mail
+    CRM_TRACKING_LINK_DOMAINS: str = ""
+    CRM_CONTACT_EMAIL_CAP_PER_WEEK: int = 0          # M43.S01.T013 per-contact cap for CRM mail; 0 = off             # comma list; blank = any http(s) link written in the e-mail
     # M42 business cards: shared POVU brand content (cover video, logo, videos, gallery, catalogue). Owner decision
     # 2026-11-24: the GitHub Pages card repo is the source; point this at a self-hosted copy later if wanted.
     CARD_ASSETS_BASE_URL: str = "https://sekiph82.github.io/SekipHayit"

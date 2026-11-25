@@ -72,6 +72,7 @@ export default function CRMPlaybooksPage() {
         <section className="space-y-2">
           <h3 className="text-sm font-semibold">Run on a deal</h3>
           <EntityPicker kind="crm_record" value={recordId} onChange={setRecordId} placeholder="Choose a lead or deal…" />
+          {recordId && <DealScore recordId={recordId} />}
           {recordId && <Guide recordId={recordId} onMsg={setMsg} />}
           {recordId && <DealPlan recordId={recordId} onMsg={setMsg} />}
         </section>
@@ -162,6 +163,27 @@ function DealPlan({ recordId, onMsg }: { recordId: string; onMsg: (m: string) =>
         <button className="underline text-red-600" onClick={async () => { await apiClient.post(`/api/v1/crm-playbooks/records/${recordId}/plan/share`, null, { params: { on: false } }).catch(() => null); setLink(null); onMsg("Sharing stopped."); }}>Stop sharing</button>
       </div>
       {link && <p className="break-all">Send this to the customer: <a className="text-indigo-600 underline" href={link}>{link}</a></p>}
+    </div>
+  );
+}
+
+// M43.S01.T012: transparent deal score with factors, missing data, buying-group coverage and trend
+function DealScore({ recordId }: { recordId: string }) {
+  const [d, setD] = useState<{ score: number; method: string; missing: string[];
+    factors: { factor: string; value: number; weight: number; reason: string }[];
+    buying_group: { roles: string[]; coverage: number; missing: string[]; blockers: number };
+    trend: { at: string; score: number }[] } | null>(null);
+  useEffect(() => { apiClient.get(`/api/v1/crm-playbooks/records/${recordId}/score`).then((r) => setD(r.data)).catch(() => setD(null)); }, [recordId]);
+  if (!d) return null;
+  return (
+    <div className="border rounded p-2 bg-white text-xs space-y-1">
+      <div className="flex justify-between"><span className="font-semibold">Deal score {d.score}/100</span>
+        <span className="text-gray-500">{d.trend.length > 1 ? `was ${d.trend[d.trend.length - 2].score}` : ""}</span></div>
+      {d.factors.map((f) => <div key={f.factor} className="flex justify-between gap-2"><span>{f.reason}</span><span className="text-gray-500">{Math.round(f.value * 100)}% × {f.weight}</span></div>)}
+      {d.missing.length > 0 && <p className="text-gray-500">No data yet (left out): {d.missing.join(", ")}.</p>}
+      {d.buying_group.missing.length > 0 && <p className="text-amber-700">Buying group: add {d.buying_group.missing.join(", ")} (link contacts with these roles).</p>}
+      {d.buying_group.blockers > 0 && <p className="text-red-600">{d.buying_group.blockers} known blocker(s) on this deal.</p>}
+      <p className="text-gray-400">{d.method}</p>
     </div>
   );
 }

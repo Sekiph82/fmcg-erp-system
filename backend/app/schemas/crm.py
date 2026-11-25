@@ -2,7 +2,7 @@ from __future__ import annotations
 from datetime import date, datetime
 from decimal import Decimal
 from typing import Optional, List
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 import uuid
 
 from app.models.crm import (
@@ -79,6 +79,10 @@ class CRMActivityCreate(BaseModel):
     assigned_to: Optional[str] = None
     created_by: Optional[str] = None
     notes: Optional[str] = None
+    queue: Optional[str] = Field(None, max_length=60)                        # M43.S01.T013
+    recurrence_rule: Optional[str] = Field(None, pattern="^(DAILY|WEEKLY|MONTHLY)$")
+    recurrence_every: Optional[int] = Field(None, ge=1, le=52)
+    recurrence_until: Optional[date] = None
 
 
 class CRMActivityRead(BaseModel):

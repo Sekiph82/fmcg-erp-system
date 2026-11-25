@@ -413,8 +413,54 @@ def upgrade() -> None:
         )""")
     op.execute("CREATE INDEX IF NOT EXISTS ix_crm_saved_views_owner ON crm_saved_views (owner_user_id)")
 
+    # T012: deal score trend
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS crm_deal_score_history (
+            id UUID PRIMARY KEY,
+            crm_record_id UUID NOT NULL REFERENCES crm_records(id) ON DELETE CASCADE,
+            score INTEGER NOT NULL CHECK (score BETWEEN 0 AND 100),
+            factors JSON NOT NULL,
+            computed_at TIMESTAMPTZ NOT NULL
+        )""")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_deal_score_history ON crm_deal_score_history (crm_record_id, computed_at)")
+
+    # T013: task queues, repeating tasks, snippets, signatures
+    for col, ddl in (("queue", "VARCHAR(60)"), ("recurrence_rule", "VARCHAR(10)"), ("recurrence_every", "INTEGER"),
+                     ("recurrence_until", "DATE"), ("recurrence_parent_id", "UUID")):
+        op.execute(f"ALTER TABLE crm_activities ADD COLUMN IF NOT EXISTS {col} {ddl}")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_crm_activities_queue ON crm_activities (queue) WHERE queue IS NOT NULL")
+    op.execute("CREATE UNIQUE INDEX IF NOT EXISTS uq_crm_activity_recurrence ON crm_activities (recurrence_parent_id, due_datetime) "
+               "WHERE recurrence_parent_id IS NOT NULL")
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS crm_snippets (
+            id UUID PRIMARY KEY,
+            name VARCHAR(120) NOT NULL,
+            shortcut VARCHAR(30),
+            body TEXT NOT NULL,
+            owner_user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        )""")
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS crm_email_signatures (
+            id UUID PRIMARY KEY,
+            user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            name VARCHAR(80) NOT NULL,
+            body TEXT NOT NULL,
+            is_default BOOLEAN NOT NULL DEFAULT false,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        )""")
+    op.execute("CREATE UNIQUE INDEX IF NOT EXISTS uq_signature_default ON crm_email_signatures (user_id) WHERE is_default")
+
 
 def downgrade() -> None:
+    op.execute("DROP TABLE IF EXISTS crm_email_signatures")
+    op.execute("DROP TABLE IF EXISTS crm_snippets")
+    op.execute("DROP INDEX IF EXISTS uq_crm_activity_recurrence")
+    for col in ("recurrence_parent_id", "recurrence_until", "recurrence_every", "recurrence_rule", "queue"):
+        op.execute(f"ALTER TABLE crm_activities DROP COLUMN IF EXISTS {col}")
+    op.execute("DROP TABLE IF EXISTS crm_deal_score_history")
     op.execute("DROP TABLE IF EXISTS crm_saved_views")
     op.execute("ALTER TABLE crm_pipeline_stages DROP COLUMN IF EXISTS required_fields")
     op.execute("DROP TABLE IF EXISTS crm_record_tags")

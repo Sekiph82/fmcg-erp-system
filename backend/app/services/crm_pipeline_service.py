@@ -407,6 +407,8 @@ async def complete_activity(db: AsyncSession, activity_id: str, data: CRMActivit
         act.next_step = data.next_step
     if data.notes:
         act.notes = data.notes
+    from app.services.crm_workspace_service import spawn_next   # M43.S01.T013 repeating tasks
+    await spawn_next(db, act)
     await db.commit()
     await db.refresh(act)
     return act

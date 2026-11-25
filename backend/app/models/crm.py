@@ -276,6 +276,11 @@ class CRMActivity(Base, TimestampMixin):
     created_by          = Column(String(50))
     result_status       = Column(Enum(CRMActivityResult), default=CRMActivityResult.PLANNED)
     outcome_code        = Column(String(100))
+    queue                = Column(String(60), nullable=True, index=True)      # M43.S01.T013 task queue
+    recurrence_rule      = Column(String(10), nullable=True)                  # DAILY | WEEKLY | MONTHLY
+    recurrence_every     = Column(Integer, nullable=True)
+    recurrence_until     = Column(Date, nullable=True)
+    recurrence_parent_id = Column(UUID(as_uuid=True), nullable=True, index=True)
     next_step           = Column(Text)
     notes               = Column(Text)
 
@@ -1069,3 +1074,36 @@ class CRMSavedView(Base, TimestampMixin):
     filters       = Column(JSON, nullable=False, default=dict)
     columns       = Column(JSON, nullable=False, default=list)
     calendar_field = Column(String(30), nullable=True)                    # expected_close_date | next_action_date
+
+
+class CRMDealScoreHistory(Base):
+    """M43.S01.T012: daily deal score snapshot (trend)."""
+    __tablename__ = "crm_deal_score_history"
+
+    id            = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    crm_record_id = Column(UUID(as_uuid=True), ForeignKey("crm_records.id", ondelete="CASCADE"), nullable=False, index=True)
+    score         = Column(Integer, nullable=False)
+    factors       = Column(JSON, nullable=False)
+    computed_at   = Column(DateTime(timezone=True), nullable=False)
+
+
+# ── M43.S01.T013 snippets and signatures ──────────────────────────────────────
+
+class CRMSnippet(Base, TimestampMixin):
+    __tablename__ = "crm_snippets"
+
+    id            = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name          = Column(String(120), nullable=False)
+    shortcut      = Column(String(30), nullable=True)
+    body          = Column(Text, nullable=False)
+    owner_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=True)  # None = shared
+
+
+class CRMEmailSignature(Base, TimestampMixin):
+    __tablename__ = "crm_email_signatures"
+
+    id         = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id    = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    name       = Column(String(80), nullable=False)
+    body       = Column(Text, nullable=False)
+    is_default = Column(Boolean, nullable=False, default=False)

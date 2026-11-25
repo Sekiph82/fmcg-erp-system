@@ -237,3 +237,15 @@ async def share_plan(record_id: uuid.UUID, on: bool = True, db: AsyncSession = D
     plan.shared = on
     await db.commit()
     return _plan_out(plan, link)
+
+
+
+# ── M43.S01.T012 deal score and buying group ──────────────────────────────────
+
+@router.get("/records/{record_id}/score")
+async def deal_score(record_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    from app.services import crm_deal_score_service as ds
+    rec = await _record(db, record_id, current_user, "view")
+    result = await ds.score_with_trend(db, rec)
+    await db.commit()
+    return result

@@ -530,6 +530,7 @@ ENDPOINT_ROUTE_DEFINITIONS: tuple[EndpointRouteDefinition, ...] = (
     EndpointRouteDefinition(key="deal_plans_public", route_prefix="/public/deal-plans", import_path="app.api.v1.endpoints.deal_plans_public", tags=('crm',)),
     EndpointRouteDefinition(key="crm_contacts", route_prefix="/crm-contacts", import_path="app.api.v1.endpoints.crm_contacts", tags=('crm',)),
     EndpointRouteDefinition(key="crm_teams", route_prefix="/crm-teams", import_path="app.api.v1.endpoints.crm_teams", tags=('crm',)),
+    EndpointRouteDefinition(key="crm_workspace", route_prefix="/crm-workspace", import_path="app.api.v1.endpoints.crm_workspace", tags=('crm',)),
     EndpointRouteDefinition(key="booking_pages", route_prefix="/booking-pages", import_path="app.api.v1.endpoints.booking_pages", tags=('meetings',)),
     EndpointRouteDefinition(key="booking_public", route_prefix="/public/book", import_path="app.api.v1.endpoints.booking_public", tags=('meetings',)),
     EndpointRouteDefinition(key="oauth_connections", route_prefix="/integrations/oauth", import_path="app.api.v1.endpoints.oauth_connections", tags=('integrations',)),

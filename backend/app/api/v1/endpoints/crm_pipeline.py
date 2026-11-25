@@ -930,6 +930,7 @@ class OutboxIn(BaseModel):
     body: str = Field(min_length=1, max_length=20000)
     crm_record_id: Optional[str] = None
     track_engagement: bool = False       # M43.S01.T006 opt-in open/click tracking
+    signature_id: Optional[str] = None   # M43.S01.T013 one of the sender's signatures
 
 
 MANUAL_DAILY_CAP = 100
@@ -992,7 +993,14 @@ async def queue_email(body: OutboxIn, db: AsyncSession = Depends(get_db),
         CRMOutboundMessage.created_at >= _dt.now(_tz.utc) - _td(days=1)))).scalar()
     if sent_today >= MANUAL_DAILY_CAP:
         raise HTTPException(429, "Daily e-mail limit reached.")
-    msg = await outbound.queue(db, to_email=body.to_email, subject=body.subject, body=body.body, purpose="MANUAL",
+    text = body.body
+    if body.signature_id:
+        from app.models.crm import CRMEmailSignature
+        sig = await db.get(CRMEmailSignature, _uuid(body.signature_id))
+        if sig is None or sig.user_id != current_user.id:
+            raise HTTPException(422, "Unknown signature")
+        text = f"{text}\n\n{sig.body}"
+    msg = await outbound.queue(db, to_email=body.to_email, subject=body.subject, body=text, purpose="MANUAL",
                                dedupe_key=f"manual:{_u.uuid4()}", crm_record_id=record_id, created_by=current_user.username,
                                track=body.track_engagement)
     await db.commit()

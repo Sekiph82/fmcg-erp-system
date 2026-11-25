@@ -91,7 +91,8 @@ async def _blocked_reason(db: AsyncSession, email: str, purpose: str) -> Optiona
         return f"address is {consent.status.lower()}"
     if purpose in ("SEQUENCE", "CAMPAIGN") and (consent is None or consent.status != "SUBSCRIBED"):
         return "no marketing consent on record"
-    return None
+    from app.services.crm_workspace_service import frequency_blocked   # M43.S01.T013 per-contact cap
+    return await frequency_blocked(db, norm(email), purpose)
 
 
 async def queue(db: AsyncSession, *, to_email: str, subject: str, body: str, purpose: str, dedupe_key: str,

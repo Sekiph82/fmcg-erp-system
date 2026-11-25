@@ -165,6 +165,7 @@ const CRMQuotasPage      = dynamic(() => import("@/app/dashboard/crm/quotas/page
 const CRMPlaybooksPage   = dynamic(() => import("@/app/dashboard/crm/playbooks/page"),   { ssr: false });
 const CRMContactsPage    = dynamic(() => import("@/app/dashboard/crm/contacts/page"),    { ssr: false });
 const CRMViewsPage       = dynamic(() => import("@/app/dashboard/crm/views/page"),       { ssr: false });
+const CRMWorkspacePage   = dynamic(() => import("@/app/dashboard/crm/workspace/page"),   { ssr: false });
 const CRMInboxPage       = dynamic(() => import("@/app/dashboard/crm/inbox/page"),       { ssr: false });
 const CRMLandingPages = dynamic(() => import("@/app/dashboard/crm/landing/page"), { ssr: false });
 const CRMInsights = dynamic(() => import("@/app/dashboard/crm/insights/page"), { ssr: false });
@@ -180,6 +181,7 @@ const SurveysPage        = dynamic(() => import("@/app/dashboard/surveys/page"),
 export default function CRMPage() {
   const tabs = [
     { key: "overview",    label: "Overview",    permission: "crm.view", content: <CRMDashboardTab /> },
+    { key: "workspace",   label: "My work",     permission: "crm.view", content: <CRMWorkspacePage /> },
     { key: "pipeline",    label: "Pipeline",    permission: "crm.view", content: <CRMPipelinePage /> },
     { key: "contacts",    label: "Contacts",    permission: "crm.view", content: <CRMContactsPage /> },
     { key: "leads",       label: "Leads",       permission: "crm.view", content: <CRMLeadsPage /> },
