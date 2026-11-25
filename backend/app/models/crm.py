@@ -1185,3 +1185,19 @@ class EmailDesign(Base, TimestampMixin):
     document      = Column(JSON, nullable=False)                    # {"theme": {...}, "blocks": [...]}
     status        = Column(String(10), nullable=False, default="DRAFT")   # DRAFT | PUBLISHED | RETIRED
     created_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
+
+class MailFeedbackEvent(Base):
+    """M44.S01.T011 provider delivery/complaint event (verified), stored once per provider event id."""
+    __tablename__ = "mail_feedback_events"
+    __table_args__ = (UniqueConstraint("provider", "event_id", name="uq_mail_feedback_event"),)
+
+    id          = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    provider    = Column(String(20), nullable=False)
+    event_id    = Column(String(200), nullable=False)
+    kind        = Column(String(15), nullable=False)
+    email       = Column(String(254), nullable=True)
+    message_id  = Column(String(300), nullable=True)
+    outbound_id = Column(UUID(as_uuid=True), ForeignKey("crm_outbound_messages.id", ondelete="SET NULL"), nullable=True)
+    applied     = Column(Boolean, nullable=False, default=False)
+    received_at = Column(DateTime(timezone=True), nullable=False)

@@ -533,6 +533,8 @@ ENDPOINT_ROUTE_DEFINITIONS: tuple[EndpointRouteDefinition, ...] = (
     EndpointRouteDefinition(key="crm_workspace", route_prefix="/crm-workspace", import_path="app.api.v1.endpoints.crm_workspace", tags=('crm',)),
     EndpointRouteDefinition(key="crm_routing", route_prefix="/crm-routing", import_path="app.api.v1.endpoints.crm_routing", tags=('crm',)),
     EndpointRouteDefinition(key="email_designs", route_prefix="/email-designs", import_path="app.api.v1.endpoints.email_designs", tags=('marketing',)),
+    EndpointRouteDefinition(key="mail_events_public", route_prefix="/public/mail-events", import_path="app.api.v1.endpoints.mail_events_public", tags=('marketing',)),
+    EndpointRouteDefinition(key="deliverability", route_prefix="/deliverability", import_path="app.api.v1.endpoints.deliverability", tags=('marketing',)),
     EndpointRouteDefinition(key="booking_pages", route_prefix="/booking-pages", import_path="app.api.v1.endpoints.booking_pages", tags=('meetings',)),
     EndpointRouteDefinition(key="booking_public", route_prefix="/public/book", import_path="app.api.v1.endpoints.booking_public", tags=('meetings',)),
     EndpointRouteDefinition(key="oauth_connections", route_prefix="/integrations/oauth", import_path="app.api.v1.endpoints.oauth_connections", tags=('integrations',)),
@@ -678,6 +680,7 @@ PUBLIC_ROUTES: frozenset[tuple[str, str]] = frozenset({
     ("/integrations/oauth/callback", "GET"),
     ("/public/deal-plans/{token}", "GET"),               # shared mutual action plan (M43.S01.T010), revocable token
     ("/public/deal-plans/{token}/steps", "POST"),        # the customer ticks only customer-owned steps
+    ("/public/mail-events/{provider}", "POST"),          # mail relay events: Mailgun HMAC / SendGrid ECDSA / generic HMAC (M44.S01.T011)
     ("/calls/provider/callback", "POST"),                # voice provider callbacks: secret token in the URL (M43.S01.T008)
     ("/public/t/o/{token}.gif", "GET"),                  # e-mail open pixel, HMAC token (M43.S01.T006)
     ("/public/t/c/{token}", "GET"),                      # click → only links stored with that message
