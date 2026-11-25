@@ -184,7 +184,8 @@ export default function SecurityPage() {
           <PageHelpTooltip topic="admin-security" />
         </div>
         <p className="text-sm text-gray-500 mt-1">Manage two-factor authentication for your account.</p>
-        {user?.is_superuser && <a className="text-sm text-indigo-600 underline" href="/dashboard/security/support-access">Support access &amp; notification defaults</a>}
+        {user?.is_superuser && <div className="flex gap-4"><a className="text-sm text-indigo-600 underline" href="/dashboard/security/support-access">Support access &amp; notification defaults</a>
+          <a className="text-sm text-indigo-600 underline" href="/dashboard/security/sso">Single sign-on</a></div>}
       </div>
 
       {/* Current status */}

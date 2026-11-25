@@ -2389,11 +2389,32 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
   - Deleting a record removes its associations.
   - Bounded delta: the generic report builder has no per-user row-level context for JSONB sources, so custom-object reporting lives on the object screen and in the CSV export. Adding it as a report-builder catalog source is left to M46 (content/reporting).
   - Tests: tests/test_m45_s01_t015_custom_objects.py.
-- [ ] M45.S01.T016 — Staff single sign-on (OIDC, then SAML) (additional gap, Source: HubSpot parity matrix 2026-11-25 (coordination/milestones/M43/HUBSPOT_PARITY_MATRIX_2026-11-25.md).)
+- [v] M45.S01.T016 — Staff single sign-on (OIDC, then SAML) (additional gap, Source: HubSpot parity matrix 2026-11-25 (coordination/milestones/M43/HUBSPOT_PARITY_MATRIX_2026-11-25.md).)
   - **Scope:** Standards-based OIDC authorization-code + PKCE login for staff, IdP discovery, JIT user linking only to pre-provisioned accounts, role mapping, enforced-SSO switch per company, break-glass admin, logout. SAML 2.0 SP where a maintained library is available. Tested against a local OIDC test provider; no real IdP account.
   - **Acceptance at milestone gate:** Local IdP: login, state/nonce/PKCE replay refusal, unknown user refused, disabled user refused, enforced SSO blocks password login, break-glass works; audit.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable.
   - **Claude checkpoint:** [v] pending milestone gate, tests NOT RUN until gate; never [x] before milestone PASS.
+  Implemented 2026-11-26 [v] (tests NOT RUN as gate):
+  - OIDC sign-in uses the authorization code flow with PKCE S256 and discovery. All provider calls go through provider_http.
+  - State, nonce and PKCE verifier are stored per request. A state is single-use and expires after 10 minutes, so replays are refused.
+  - ID token checks:
+    - signature against the provider's JWKS;
+    - issuer, audience and expiry;
+    - nonce;
+    - verified e-mail.
+  - JIT linking only to pre-provisioned, active users. Unknown and disabled users are refused.
+  - Groups claim → mapped ERP roles (additive only).
+  - Enforced SSO: password login is blocked except for break-glass usernames, which must be named before enforcing.
+  - Logout: RP-initiated logout URL from end_session_endpoint.
+  - The client secret is Fernet-encrypted and never returned.
+  - Refusals and successes are audited with method=oidc.
+  - UI:
+    - login page: "Sign in with …" button, which shows sso_error;
+    - Security → Single sign-on (superuser).
+  - Local OIDC test provider: tests/provider_sim/oidc_app.py.
+  - SAML 2.0 is reported NOT_AVAILABLE: no maintained SAML library is installed (python3-saml/xmlsec). It can be added when one is available.
+  - Real IdP activation: M47.
+  - Tests: tests/test_m45_s01_t016_sso.py.
 - [v] M45.S01.T017 — Sensitive-data field classification (additional gap, Source: HubSpot parity matrix 2026-11-25 (coordination/milestones/M43/HUBSPOT_PARITY_MATRIX_2026-11-25.md).)
   - **Scope:** Mark fields (built-in and custom) as sensitive; masking in lists/exports/API for users without the sensitive-data right; access audit; retention policy hook. Revised by matrix v2: cf_definitions.sensitive_flag exists but is not enforced — enforce it and add field-level permissions.
   - **Acceptance at milestone gate:** Masked values for a non-privileged persona in UI, API and CSV export; audit entries on reveal; no leak through search or GraphQL.

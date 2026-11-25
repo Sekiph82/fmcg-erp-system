@@ -108,6 +108,14 @@ async def login(
         await db.commit()
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account is inactive")
 
+    from app.services import sso_service   # M45.S01.T016 enforced SSO: password only for break-glass accounts
+    if not await sso_service.password_allowed(db, user):
+        await audit_crud.log_event(db, event_type=AuditEvent.LOGIN_FAILED, actor_id=user.id, actor_email=user.email,
+                                   target_type="user", target_id=str(user.id), target_name=user.email,
+                                   details={"reason": "sso_enforced"}, ip_address=ip)
+        await db.commit()
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Use single sign-on to log in.")
+
     # Clear failure counter on successful credential validation
     clear_login_failures(form_data.username)
     if ip:

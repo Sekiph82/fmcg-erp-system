@@ -546,6 +546,7 @@ ENDPOINT_ROUTE_DEFINITIONS: tuple[EndpointRouteDefinition, ...] = (
     EndpointRouteDefinition(key="custom_objects", route_prefix="/custom-objects", import_path="app.api.v1.endpoints.custom_objects", tags=('crm',)),
     EndpointRouteDefinition(key="sensitive_data", route_prefix="/sensitive-data", import_path="app.api.v1.endpoints.sensitive_data", tags=('security',)),
     EndpointRouteDefinition(key="impersonation", route_prefix="/impersonation", import_path="app.api.v1.endpoints.impersonation", tags=('security',)),
+    EndpointRouteDefinition(key="sso", route_prefix="/sso", import_path="app.api.v1.endpoints.sso", tags=('auth',)),
     EndpointRouteDefinition(key="customer_intel", route_prefix="/customer-intel", import_path="app.api.v1.endpoints.customer_intel", tags=('crm',)),
     EndpointRouteDefinition(key="marketing_assets", route_prefix="/marketing-assets", import_path="app.api.v1.endpoints.marketing_assets", tags=('marketing',)),
     EndpointRouteDefinition(key="marketing_assets_public", route_prefix="/public/assets", import_path="app.api.v1.endpoints.marketing_assets_public", tags=('marketing',)),
@@ -708,6 +709,9 @@ PUBLIC_ROUTES: frozenset[tuple[str, str]] = frozenset({
     ("/public/assets/{doc_id}/{sig}", "GET"),             # DAM image for e-mail/social: HMAC-signed URL, approved+clean only (M45.S01.T024)
     ("/public/mcp", "POST"),                               # MCP server: Bearer personal access token with mcp.* scope (M45.S01.T022)
     ("/public/mcp", "GET"),
+    ("/sso/status", "GET"),                                # staff SSO (M45.S01.T016): discovery state only
+    ("/sso/start", "GET"),                                 # redirects to the IdP with state/nonce/PKCE
+    ("/sso/callback", "GET"),                              # IdP redirect back: state single-use, ID token verified
     ("/public/crm-addin/lookup", "GET"),                   # Outlook/Gmail add-in: Bearer token with crm.addin scope (M45.S01.T012)
     ("/public/crm-addin/log-email", "POST"),
     ("/public/crm-addin/note", "POST"),

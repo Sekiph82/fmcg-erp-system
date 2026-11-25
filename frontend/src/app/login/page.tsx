@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import axios from "axios";
 import { useAuth } from "@/context/AuthContext";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { API_ORIGIN, apiClient } from "@/lib/api";
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -13,6 +14,12 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [sso, setSso] = useState<{ oidc: string; name: string | null; enforced: boolean } | null>(null);
+  useEffect(() => {   // M45.S01.T016 staff single sign-on
+    apiClient.get("/api/v1/sso/status").then((r) => setSso(r.data)).catch(() => setSso(null));
+    const e = new URLSearchParams(window.location.search).get("sso_error");
+    if (e) setError(`Single sign-on failed: ${e}`);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,6 +30,8 @@ export default function LoginPage() {
     } catch (err) {
       if (axios.isAxiosError(err) && err.response && err.response.status >= 500) {
         setError("Server error — please try again in a moment.");
+      } else if (axios.isAxiosError(err) && err.response?.status === 403 && typeof err.response.data?.detail === "string") {
+        setError(err.response.data.detail);
       } else {
         setError("Invalid username or password.");
       }
@@ -84,6 +93,8 @@ export default function LoginPage() {
               Sign in
             </Button>
           </form>
+          {sso?.oidc === "ACTIVE" && <a href={`${API_ORIGIN}/api/v1/sso/start`} className="mt-3 block w-full text-center border rounded-md py-2 text-sm font-medium" data-testid="login-sso">
+            Sign in with {sso.name ?? "single sign-on"}{sso.enforced ? " (required)" : ""}</a>}
         </div>
       </div>
     </div>
