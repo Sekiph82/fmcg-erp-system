@@ -55,12 +55,27 @@ def check_egress(url: str) -> None:
         if not _is_local_host(parts.hostname or ""):
             raise EgressBlocked(f"Only local provider simulators are allowed here; refused {parts.hostname}.")
         return
-    if parts.scheme != "https" and not _is_local_host(parts.hostname or ""):
+    if parts.scheme != "https":
         raise EgressBlocked("Live provider calls must use https.")
+    _refuse_internal(parts.hostname or "")
+
+
+def _refuse_internal(host: str) -> None:
+    """Live mode only talks to public internet hosts: refuse names that resolve to internal addresses (SSRF)."""
+    import socket
+    try:
+        infos = socket.getaddrinfo(host, 443, proto=socket.IPPROTO_TCP)
+    except OSError:
+        raise EgressBlocked(f"Cannot resolve {host}.") from None
+    for info in infos:
+        ip = ipaddress.ip_address(info[4][0].split("%")[0])
+        if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved or ip.is_multicast or ip.is_unspecified:
+            raise EgressBlocked(f"{host} resolves to an internal address; refused.")
 
 
 async def _guard(request: httpx.Request) -> None:
-    check_egress(str(request.url))
+    import asyncio
+    await asyncio.to_thread(check_egress, str(request.url))   # DNS lookup off the event loop
 
 
 def set_test_transport(transport: Optional[httpx.AsyncBaseTransport]) -> None:

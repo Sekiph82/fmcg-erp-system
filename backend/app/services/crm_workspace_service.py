@@ -15,7 +15,7 @@ from collections import Counter
 from datetime import date, datetime, timedelta, timezone
 from typing import Optional
 
-from sqlalchemy import and_, func, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -65,8 +65,9 @@ async def frequency_blocked(db: AsyncSession, email: str, purpose: str) -> Optio
         return None
     n = (await db.execute(select(func.count()).select_from(CRMOutboundMessage).where(
         CRMOutboundMessage.to_email == email, CRMOutboundMessage.purpose != "INVOICE",
-        CRMOutboundMessage.status.in_(("SENT", "SENDING")),
-        CRMOutboundMessage.sent_at >= datetime.now(timezone.utc) - timedelta(days=7)))).scalar_one()
+        or_(and_(CRMOutboundMessage.status == "SENT",
+                 CRMOutboundMessage.sent_at >= datetime.now(timezone.utc) - timedelta(days=7)),
+            CRMOutboundMessage.status == "SENDING")))).scalar_one()
     return f"frequency cap: {n} e-mails in 7 days (limit {cap})" if n >= cap else None
 
 

@@ -11,9 +11,9 @@ from __future__ import annotations
 
 import uuid
 from typing import Optional
-from urllib.parse import urlencode
+from urllib.parse import parse_qs, urlencode, urlsplit
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -45,23 +45,39 @@ async def my_connections(db: AsyncSession = Depends(get_db), current_user: User 
     return [oauth.public_view(c) for c in rows]
 
 
+BIND_COOKIE = "oauth_state_bind"
+
+
+def _bind(state: str) -> str:
+    import hashlib
+    return hashlib.sha256(state.encode()).hexdigest()
+
+
 @router.post("/{provider}/{purpose}/start")
-async def start(provider: str, purpose: str, db: AsyncSession = Depends(get_db),
+async def start(provider: str, purpose: str, response: Response, db: AsyncSession = Depends(get_db),
                 current_user: User = Depends(get_current_user)):
     try:
         url = await oauth.start(db, current_user.id, provider, purpose)
     except oauth.OAuthError as e:
         raise _fail(e) from None
     await db.commit()
+    # review M43 #6: the callback must come back to the browser that started it (no attaching someone else's mailbox)
+    state = parse_qs(urlsplit(url).query)["state"][0]
+    response.set_cookie(BIND_COOKIE, _bind(state), max_age=600, httponly=True, samesite="lax",
+                        secure=settings.PUBLIC_API_URL.startswith("https"), path="/api/v1/integrations/oauth")
     return {"authorize_url": url}
 
 
 @router.get("/callback")
-async def callback(state: str = Query("", max_length=128), code: Optional[str] = Query(None, max_length=4096),
+async def callback(request: Request, state: str = Query("", max_length=128),
+                   code: Optional[str] = Query(None, max_length=4096),
                    error: Optional[str] = Query(None, max_length=100), db: AsyncSession = Depends(get_db)):
     # mail connections return to the mailbox screen, calendar connections to meetings (both show ConnectedAccounts)
     pages = {"mail": "/dashboard/email", "calendar": "/dashboard/meetings"}
     target = settings.PUBLIC_APP_URL.rstrip("/") + "/dashboard/email"
+    import hmac as _hmac
+    if not _hmac.compare_digest(request.cookies.get(BIND_COOKIE, ""), _bind(state or "-")):
+        return RedirectResponse(f"{target}?{urlencode({'oauth': 'error', 'reason': 'bad_state'})}", status_code=303)
     try:
         conn = await oauth.complete(db, state=state, code=code, error=error)
         if conn.purpose == "mail":

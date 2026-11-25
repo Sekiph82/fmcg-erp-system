@@ -103,9 +103,11 @@ async def check_stage_approval(db: AsyncSession, rec: CRMRecord, new_stage_id, r
     req = (await db.execute(select(CRMStageApprovalRequest).where(
         CRMStageApprovalRequest.crm_record_id == rec.id, CRMStageApprovalRequest.stage_id == new_stage_id)
         .order_by(CRMStageApprovalRequest.requested_at.desc()))).scalars().first()
-    if req is not None and req.status == "APPROVED":
+    if req is not None and req.status == "APPROVED" and (
+            req.approved_value is None or Decimal(str(rec.expected_revenue or 0)) <= req.approved_value):
+        req.status = "CONSUMED"          # one approval = one move (review M43 #4)
         return
-    if req is None or req.status == "REJECTED":
+    if req is None or req.status in ("REJECTED", "CONSUMED", "APPROVED"):
         db.add(CRMStageApprovalRequest(crm_record_id=rec.id, stage_id=new_stage_id, rule_id=rule.id,
                                        requested_by_id=requester_id, status="PENDING",
                                        requested_at=datetime.now(timezone.utc)))
@@ -121,7 +123,38 @@ async def decide(db: AsyncSession, req: CRMStageApprovalRequest, approver, appro
     if req.requested_by_id == approver.id:
         raise HTTPException(403, "You cannot approve your own request.")
     req.status = "APPROVED" if approve else "REJECTED"
+    if approve:
+        rec = await db.get(CRMRecord, req.crm_record_id)
+        req.approved_value = Decimal(str(rec.expected_revenue or 0)) if rec else None
     req.decided_by_id, req.decided_at, req.reason = approver.id, datetime.now(timezone.utc), (reason or None)
+
+
+async def check_value_change(db: AsyncSession, rec: CRMRecord, new_value, requester_id) -> None:
+    """A deal already in an approval-gated stage whose value rises above what was approved needs approval again."""
+    rule = (await db.execute(select(CRMStageApprovalRule).where(
+        CRMStageApprovalRule.stage_id == rec.stage_id, CRMStageApprovalRule.active.is_(True)))).scalars().first()
+    if rule is None:
+        return
+    new = Decimal(str(new_value or 0))
+    if rule.min_expected_revenue is not None and new < rule.min_expected_revenue:
+        return
+    last = (await db.execute(select(CRMStageApprovalRequest).where(
+        CRMStageApprovalRequest.crm_record_id == rec.id, CRMStageApprovalRequest.stage_id == rec.stage_id,
+        CRMStageApprovalRequest.status.in_(("APPROVED", "CONSUMED")))
+        .order_by(CRMStageApprovalRequest.requested_at.desc()))).scalars().first()
+    if last is not None and last.approved_value is not None and new <= last.approved_value:
+        return
+    pending = (await db.execute(select(CRMStageApprovalRequest).where(
+        CRMStageApprovalRequest.crm_record_id == rec.id, CRMStageApprovalRequest.stage_id == rec.stage_id,
+        CRMStageApprovalRequest.status == "PENDING"))).scalars().first()
+    if pending is None:
+        db.add(CRMStageApprovalRequest(crm_record_id=rec.id, stage_id=rec.stage_id, rule_id=rule.id,
+                                       requested_by_id=requester_id, status="PENDING",
+                                       requested_at=datetime.now(timezone.utc)))
+        await db.flush()
+        await db.commit()
+    raise HTTPException(409, {"code": "approval_required", "message": f"Raising the value of this deal needs approval "
+                              f"('{rule.name}'); a request is waiting for an approver."})
 
 
 def validate_splits(splits: list[tuple[str, Decimal]]) -> None:

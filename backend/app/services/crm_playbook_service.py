@@ -76,9 +76,17 @@ def check_answers(questions: list[dict], answers: dict, complete: bool) -> dict:
             raise PlaybookError(f"{q['key']}: yes or no")
         if q["type"] == "number":
             try:
-                v = float(Decimal(str(v)))
+                d = Decimal(str(v))
             except InvalidOperation:
                 raise PlaybookError(f"{q['key']}: a number") from None
+            if not d.is_finite() or abs(d) > Decimal("1e13"):
+                raise PlaybookError(f"{q['key']}: a normal number")
+            v = float(d)
+        if q.get("maps_to") and FIELD_MAP.get(q["maps_to"]) == "date":
+            try:
+                date.fromisoformat(str(v))
+            except ValueError:
+                raise PlaybookError(f"{q['key']}: a date (YYYY-MM-DD)") from None
         if q["type"] == "choice" and v not in q["choices"]:
             raise PlaybookError(f"{q['key']}: choose one of the options")
         clean[q["key"]] = v if not isinstance(v, str) else v[:2000]

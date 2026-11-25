@@ -305,14 +305,14 @@ def upgrade() -> None:
     op.execute("""
         INSERT INTO crm_contacts (id, full_name, email, phone, job_title, company_id, source, created_at, updated_at)
         SELECT gen_random_uuid(), name, email, phone, title, company_id, src, now(), now() FROM (
-            SELECT DISTINCT ON (lower(email)) name, lower(email) AS email, phone, title, company_id, src FROM (
+            SELECT DISTINCT ON (lower(trim(email))) name, left(lower(trim(email)), 254) AS email, phone, title, company_id, src FROM (
                 SELECT COALESCE(NULLIF(trim(contact_person_name), ''), contact_email) AS name, contact_email AS email,
                        contact_phone AS phone, NULL::varchar AS title, company_id, 'migration:crm_record' AS src, created_at AS ts
                   FROM crm_records WHERE NULLIF(trim(contact_email), '') IS NOT NULL
                 UNION ALL
                 SELECT full_name, email, phone, title, NULL::uuid, 'migration:account_contact', now()
                   FROM crm_account_contacts WHERE NULLIF(trim(email), '') IS NOT NULL
-            ) src ORDER BY lower(email), ts DESC
+            ) src ORDER BY lower(trim(email)), ts DESC
         ) d
         ON CONFLICT DO NOTHING""")
     # backfill 2: records with a contact name but no e-mail get their own contact (cannot be safely merged)
@@ -485,7 +485,8 @@ def upgrade() -> None:
             stage_id UUID NOT NULL REFERENCES crm_pipeline_stages(id) ON DELETE CASCADE,
             rule_id UUID REFERENCES crm_stage_approval_rules(id) ON DELETE SET NULL,
             requested_by_id UUID REFERENCES users(id) ON DELETE SET NULL,
-            status VARCHAR(10) NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED')),
+            status VARCHAR(10) NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED', 'CONSUMED')),
+            approved_value NUMERIC(18, 2),
             reason VARCHAR(300),
             decided_by_id UUID REFERENCES users(id) ON DELETE SET NULL,
             requested_at TIMESTAMPTZ NOT NULL,

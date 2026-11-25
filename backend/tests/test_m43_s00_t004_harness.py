@@ -197,3 +197,11 @@ async def _dispose_engine():
     yield
     from app.db.session import engine
     await engine.dispose()
+
+
+def test_live_mode_refuses_internal_addresses(monkeypatch):
+    """Review M43 #7: live egress never reaches loopback/private/link-local targets (SSRF)."""
+    monkeypatch.setattr(settings, "PROVIDER_EGRESS", "live")
+    for url in ("https://127.0.0.1/x", "https://10.1.2.3/x", "https://169.254.169.254/latest", "https://[::1]/x"):
+        with pytest.raises(provider_http.EgressBlocked):
+            provider_http.check_egress(url)

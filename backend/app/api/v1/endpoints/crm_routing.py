@@ -122,7 +122,7 @@ async def decide(request_id: uuid.UUID, body: DecisionIn, db: AsyncSession = Dep
 
 class SplitIn(BaseModel):
     user_id: uuid.UUID
-    share_pct: Decimal = Field(gt=0, le=100)
+    share_pct: Decimal = Field(gt=0, le=100, decimal_places=2)
 
 
 @router.get("/records/{record_id}/splits")
@@ -138,6 +138,8 @@ async def set_splits(record_id: uuid.UUID, body: list[SplitIn], db: AsyncSession
                      current_user=Depends(get_current_user)):
     from app.api.v1.endpoints.crm_pipeline import _scoped_record
     rec = await _scoped_record(db, record_id, current_user, "edit")
+    if rec.status == CRMStatus.WON and not (current_user.is_superuser or has_permission(current_user, "crm.edit_all")):
+        raise HTTPException(409, "The deal is won; only a CRM manager can change its split.")
     rt.validate_splits([(str(s.user_id), s.share_pct) for s in body])
     await db.execute(delete(CRMDealSplit).where(CRMDealSplit.crm_record_id == rec.id))
     db.add_all([CRMDealSplit(crm_record_id=rec.id, user_id=s.user_id, share_pct=s.share_pct) for s in body])
@@ -163,12 +165,16 @@ async def credit(record_id: uuid.UUID, body: CreditIn, db: AsyncSession = Depend
 
 
 @router.get("/handoffs")
-async def handoffs(status: Optional[str] = "OPEN", db: AsyncSession = Depends(get_db)):
-    q = select(CRMHandoff).order_by(CRMHandoff.created_at.desc()).limit(200)
+async def handoffs(status: Optional[str] = "OPEN", db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    from app.core.access_control import can_view_record
+    from app.models.crm import CRMRecord
+    q = select(CRMHandoff, CRMRecord).join(CRMRecord, CRMRecord.id == CRMHandoff.crm_record_id) \
+        .order_by(CRMHandoff.created_at.desc()).limit(500)
     if status:
         q = q.where(CRMHandoff.status == status)
     return [{"id": str(h.id), "record_id": str(h.crm_record_id), "brief": h.brief, "status": h.status,
-             "created_at": h.created_at.isoformat()} for h in (await db.execute(q)).scalars()]
+             "created_at": h.created_at.isoformat()} for h, rec in (await db.execute(q)).all()
+            if can_view_record(current_user, "crm", rec)][:200]   # review M43 #8: same scope as the deal
 
 
 @router.post("/handoffs/{handoff_id}/acknowledge")
@@ -176,6 +182,8 @@ async def acknowledge(handoff_id: uuid.UUID, db: AsyncSession = Depends(get_db),
     h = await db.get(CRMHandoff, handoff_id)
     if h is None:
         raise HTTPException(404, "Handoff not found")
+    from app.api.v1.endpoints.crm_pipeline import _scoped_record
+    await _scoped_record(db, h.crm_record_id, current_user, "view")
     h.status, h.acknowledged_by_id = "ACKNOWLEDGED", current_user.id
     await db.commit()
     return {"id": str(h.id), "status": h.status}

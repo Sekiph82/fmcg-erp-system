@@ -71,13 +71,17 @@ async def request(db: AsyncSession, call: CallLog) -> CallLog:
 
 
 async def _download(url: str) -> bytes:
+    """Streamed with a byte cap so a huge or endless body never fills memory (review M43 #7)."""
     async with provider_client(timeout=60) as c:
-        r = await c.get(url)
-    if r.status_code != 200:
-        raise TranscriptionError(f"Recording download failed ({r.status_code}).", 502)
-    if len(r.content) > MAX_AUDIO_BYTES:
-        raise TranscriptionError("Recording is too large to transcribe.", 422)
-    return r.content
+        async with c.stream("GET", url) as r:
+            if r.status_code != 200:
+                raise TranscriptionError(f"Recording download failed ({r.status_code}).", 502)
+            buf = bytearray()
+            async for chunk in r.aiter_bytes():
+                buf += chunk
+                if len(buf) > MAX_AUDIO_BYTES:
+                    raise TranscriptionError("Recording is too large to transcribe.", 422)
+    return bytes(buf)
 
 
 async def _http(audio: bytes) -> dict:

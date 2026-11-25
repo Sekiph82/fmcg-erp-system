@@ -117,6 +117,14 @@ async def update_quota(quota_id: uuid.UUID, body: QuotaIn, db: AsyncSession = De
         raise HTTPException(403, "Only company-wide CRM editors can change quotas.")
     q = await _get(db, quota_id, current_user)
     before = _out(q)
+    if body.currency != q.currency and (await db.execute(select(SalesQuotaSnapshot.id).where(
+            SalesQuotaSnapshot.quota_id == q.id).limit(1))).first():
+        raise HTTPException(409, "This quota has history in its currency; create a new quota instead.")
+    if (await db.execute(select(SalesQuota.id).where(
+            SalesQuota.id != q.id, SalesQuota.scope_type == body.scope_type, SalesQuota.scope_ref == body.scope_ref,
+            SalesQuota.period_start == body.period_start, SalesQuota.period_end == body.period_end,
+            SalesQuota.currency == body.currency))).first():
+        raise HTTPException(409, "This scope already has a quota for that period and currency.")
     for k, v in body.model_dump().items():
         setattr(q, k, v)
     db.add(AuditLog(actor_id=current_user.id, event_type="SALES_QUOTA_UPDATED", module="crm", target_type="sales_quota",
@@ -140,6 +148,8 @@ async def delete_quota(quota_id: uuid.UUID, db: AsyncSession = Depends(get_db),
 @router.post("/{quota_id}/snapshots", status_code=201)
 async def take_snapshot(quota_id: uuid.UUID, body: Assumptions, db: AsyncSession = Depends(get_db),
                         current_user: User = Depends(get_current_user)):
+    if not _editor(current_user):
+        raise HTTPException(403, "Only company-wide CRM editors record forecast snapshots.")
     q = await _get(db, quota_id, current_user)
     s = await quotas.snapshot(db, q, body.model_dump())
     await db.commit()

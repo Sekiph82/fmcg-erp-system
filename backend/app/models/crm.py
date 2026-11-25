@@ -1143,7 +1143,8 @@ class CRMStageApprovalRequest(Base):
     stage_id        = Column(UUID(as_uuid=True), ForeignKey("crm_pipeline_stages.id", ondelete="CASCADE"), nullable=False)
     rule_id         = Column(UUID(as_uuid=True), ForeignKey("crm_stage_approval_rules.id", ondelete="SET NULL"), nullable=True)
     requested_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
-    status          = Column(String(10), nullable=False, default="PENDING")   # PENDING | APPROVED | REJECTED
+    status          = Column(String(10), nullable=False, default="PENDING")   # PENDING | APPROVED | REJECTED | CONSUMED
+    approved_value  = Column(Numeric(18, 2), nullable=True)   # deal value the approval covered
     reason          = Column(String(300), nullable=True)
     decided_by_id   = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     requested_at    = Column(DateTime(timezone=True), nullable=False)

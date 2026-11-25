@@ -133,6 +133,8 @@ def _apply_recording(call: CallLog, url: Optional[str], consent: Optional[bool],
             call.recording_expires_at = datetime.now(timezone.utc) + timedelta(days=settings.CALL_RECORDING_RETENTION_DAYS)
     if consent is False:  # consent withdrawn: the recording and its transcript go
         call.recording_url, call.recording_expires_at, call.transcript = None, None, None
+        call.transcript_segments, call.transcript_language = None, None
+        call.transcription_status = "WITHDRAWN" if call.transcription_status else None
 
 
 # ── Call Logs ──────────────────────────────────────────────────
@@ -237,6 +239,9 @@ async def update_call_log(call_id: uuid.UUID, body: CallPatch, db: AsyncSession 
     if "follow_up_date" in data:
         call.follow_up_date = _naive(data["follow_up_date"])
     _apply_recording(call, data.get("recording_url"), data.get("recording_consent"), data.get("consent_note"))
+    if data.get("recording_consent") is False:   # review M43 #2: insights and coaching clips quoted from it go too
+        from app.services import transcription_service as _tx
+        await _tx.withdraw_consent(db, call)
     if data.get("ended_at"):
         call.ended_at = _naive(data["ended_at"])
         if call.started_at:
@@ -252,7 +257,12 @@ async def purge_expired_recordings(db: AsyncSession) -> int:
     res = await db.execute(update(CallLog).where(or_(
         CallLog.recording_expires_at < datetime.now(timezone.utc),
         (CallLog.recording_consent.is_(False)) & (CallLog.recording_url.isnot(None)),  # legacy, no consent on file
-    )).values(recording_url=None, transcript=None, recording_expires_at=None))
+    )).values(recording_url=None, transcript=None, recording_expires_at=None, transcript_segments=None,
+               transcript_language=None))
+    from app.models.crm import CRMConversationInsight   # review M43 #2: quotes do not outlive the transcript
+    await db.execute(CRMConversationInsight.__table__.delete().where(
+        CRMConversationInsight.source_type == "call",
+        CRMConversationInsight.source_id.in_(select(CallLog.id).where(CallLog.transcript.is_(None)))))
     from app.models.voip import CoachingClip   # M43.S01.T017: coaching clips never outlive the transcript
     await db.execute(CoachingClip.__table__.delete().where(CoachingClip.call_id.in_(
         select(CallLog.id).where(CallLog.transcript.is_(None)))))

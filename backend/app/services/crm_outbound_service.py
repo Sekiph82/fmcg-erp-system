@@ -162,6 +162,7 @@ async def deliver_due(db: AsyncSession, now: Optional[datetime] = None) -> dict:
             msg.status, msg.next_attempt_at = "SENDING", now
             msg.attempts += 1
             claimed.append(msg)
+            await db.flush()      # the next message's frequency-cap check must see this claim (review M43 #5)
     await db.commit()
     for msg in claimed:  # ponytail: one SMTP connection per message; reuse one if volumes grow
         msg.next_attempt_at = datetime.now(timezone.utc)  # stale-SENDING clock starts when this send starts

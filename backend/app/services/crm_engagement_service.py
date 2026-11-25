@@ -84,7 +84,11 @@ def render_html(msg: CRMOutboundMessage, text_body: str) -> tuple[str, list[str]
 
     escaped = html.escape(text_body)
     # escape first, then linkify on the escaped text (& in query strings becomes &amp; — unescape for storage)
-    body = URL_RE.sub(lambda m: sub(re.match(URL_RE, html.unescape(m.group(0)))), escaped)
+    def linkify(m: re.Match) -> str:
+        raw = html.unescape(m.group(0))
+        inner = re.match(URL_RE, raw)
+        return sub(inner) + html.escape(raw[inner.end():])   # keep text an unescaped quote/bracket cut off (review #12)
+    body = URL_RE.sub(linkify, escaped)
     body = body.replace("\n", "<br>\n")
     pixel = f'<img src="{base}/o/{token(msg.id, 0)}.gif" width="1" height="1" alt="" style="display:none">'
     return f"<!doctype html><html><body>{body}{pixel}</body></html>", links
@@ -131,7 +135,8 @@ async def opt_out(db: AsyncSession, email: str) -> None:
     from app.services.crm_outbound_service import norm
     c = (await db.execute(select(CRMContactConsent).where(CRMContactConsent.email == norm(email)))).scalar_one_or_none()
     if c is None:
-        c = CRMContactConsent(email=norm(email), status="SUBSCRIBED", source="tracking-opt-out",
+        # NO_CONSENT: records the tracking opt-out without granting marketing permission (review M43 #1)
+        c = CRMContactConsent(email=norm(email), status="NO_CONSENT", source="tracking-opt-out",
                               updated_at=datetime.now(timezone.utc))
         db.add(c)
     c.tracking_opt_out = True

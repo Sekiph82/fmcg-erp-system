@@ -59,7 +59,7 @@ def capabilities() -> dict:
 
 def callback_ok(token: str) -> bool:
     secret = settings.VOICE_CALLBACK_SECRET
-    return bool(secret) and hmac.compare_digest(token or "", secret)
+    return bool(secret) and hmac.compare_digest((token or "").encode(), secret.encode())
 
 
 def _digits(phone: str) -> str:

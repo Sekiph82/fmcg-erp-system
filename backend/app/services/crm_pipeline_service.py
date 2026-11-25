@@ -215,6 +215,9 @@ async def update_record(db: AsyncSession, record_id: str, data: CRMRecordUpdate,
             await check_stage_approval(db, record, updates["stage_id"], actor_id)
         new_stage = await db.get(CRMPipelineStage, updates["stage_id"])
         updates["pipeline_id"] = new_stage.pipeline_id if new_stage else record.pipeline_id
+    if "expected_revenue" in updates and "stage_id" not in updates and record.stage_id:
+        from app.services.crm_routing_service import check_value_change   # review M43 #4
+        await check_value_change(db, record, updates["expected_revenue"], actor_id)
     if "stage_id" in updates and not updates.get("probability_override") and not record.probability_override:
         st = await db.get(CRMPipelineStage, updates["stage_id"])
         if st:
@@ -261,6 +264,9 @@ async def convert_to_opportunity(db: AsyncSession, record_id: str, data: CRMConv
         await check_stage_exit(db, record, data.stage_id)
         from app.services.crm_team_service import check_stage_entry
         await check_stage_entry(db, record, data.stage_id, data.model_dump(exclude_none=True))
+        if str(data.stage_id) != str(record.stage_id):
+            from app.services.crm_routing_service import check_stage_approval   # review M43 #3
+            await check_stage_approval(db, record, data.stage_id, None)
         record.stage_id = data.stage_id
         await sync_pipeline(db, record)
     if data.notes:

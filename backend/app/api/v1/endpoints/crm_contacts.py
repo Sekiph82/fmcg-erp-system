@@ -126,6 +126,14 @@ async def add_association(contact_id: uuid.UUID, body: AssocIn, db: AsyncSession
     if body.object_type == "crm_record":
         from app.api.v1.endpoints.crm_pipeline import _scoped_record
         await _scoped_record(db, body.object_id, current_user, "edit")
+    else:   # review M43 #14: other objects need company-wide CRM rights and must exist
+        if not _all(current_user):
+            raise HTTPException(403, "Company-wide CRM rights are needed to link this record.")
+        from sqlalchemy import text as _text
+        table = {"customer": "customers", "ticket": "helpdesk_tickets", "quotation": "quotations",
+                 "sales_order": "sales_orders"}[body.object_type]
+        if (await db.execute(_text(f"SELECT 1 FROM {table} WHERE id = :i"), {"i": body.object_id})).first() is None:
+            raise HTTPException(404, f"{body.object_type} not found")
     try:
         a = await cs.associate(db, c.id, body.object_type, body.object_id, body.label)
     except cs.ContactError as e:

@@ -55,7 +55,14 @@ async def summary(record_id: uuid.UUID, db: AsyncSession = Depends(get_db), curr
 
 @router.get("/send-time")
 async def send_time(email: str = Query(..., max_length=254), tz: str = Query("Africa/Nairobi", max_length=64),
-                    db: AsyncSession = Depends(get_db)):
+                    db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    from sqlalchemy import func as _f
+    from app.models.crm import CRMOutboundMessage
+    mine = (await db.execute(select(_f.count()).select_from(CRMOutboundMessage).where(
+        CRMOutboundMessage.to_email == email.strip().lower(),
+        CRMOutboundMessage.created_by == current_user.username))).scalar_one()
+    if not (mine or current_user.is_superuser or has_permission(current_user, "crm.view_all")):
+        raise HTTPException(403, "Only for contacts you have e-mailed.")      # review M43 #14
     return await ws.send_time(db, email, tz)
 
 

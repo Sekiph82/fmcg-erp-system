@@ -26,6 +26,14 @@ def test_round_robin_and_weighted():
     assert picks.count("a") == 20 and picks.count("b") == 10
 
 
+def test_split_shares_limited_to_two_decimals():
+    """Review M43 #9: 33.333 would round on storage; the API refuses more than two decimals."""
+    from pydantic import ValidationError
+    from app.api.v1.endpoints.crm_routing import SplitIn
+    with pytest.raises(ValidationError):
+        SplitIn(user_id=uuid.uuid4(), share_pct=Decimal("33.333"))
+
+
 def test_split_validation():
     rt.validate_splits([("a", Decimal("60")), ("b", Decimal("40"))])
     for bad in ([("a", Decimal("60")), ("b", Decimal("30"))], [("a", Decimal("50")), ("a", Decimal("50"))],
@@ -69,6 +77,11 @@ async def test_approval_gate_and_handoff():
         await db.commit()
         moved = await svc.update_record(db, str(rec.id), CRMRecordUpdate(stage_id=st.id), actor_id=rep.id)
         assert moved.stage_id == st.id
+        await db.refresh(req)
+        assert req.status == "CONSUMED" and float(req.approved_value) == 900000      # review M43 #4
+        with pytest.raises(HTTPException) as e2:                                  # value raised above approval
+            await svc.update_record(db, str(rec.id), CRMRecordUpdate(expected_revenue=1500000), actor_id=rep.id)
+        assert e2.value.detail["code"] == "approval_required"
         await svc.close_won(db, str(rec.id), CRMCloseWonRequest())
         await rt.handoff(db, rec)
         await db.commit()

@@ -101,3 +101,16 @@ async def _dispose_engine():
     yield
     from app.db.session import engine
     await engine.dispose()
+
+
+@DB
+@pytest.mark.asyncio
+async def test_tracking_optout_never_grants_marketing_consent(db):
+    """Review M43 #1: stopping tracking for an unknown address must not make it SUBSCRIBED."""
+    from app.services import crm_outbound_service as outbound
+    email = f"noconsent-{uuid.uuid4().hex[:6]}@povu-demo.test"
+    await eng.opt_out(db, email)
+    await db.commit()
+    c = await outbound.consent_for(db, email)
+    assert c.status != "SUBSCRIBED" and c.tracking_opt_out
+    assert await outbound._blocked_reason(db, email, "CAMPAIGN") == "no marketing consent on record"

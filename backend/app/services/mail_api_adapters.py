@@ -37,12 +37,12 @@ class MailApiError(Exception):
 
 
 async def _call(db: AsyncSession, conn: OAuthConnection, method: str, url: str, **kw) -> httpx.Response:
+    extra = kw.pop("headers", {}) or {}
     for attempt in (1, 2):
         token = await oauth.access_token(db, conn)
         try:
             async with provider_client() as c:
-                resp = await c.request(method, url, headers={"Authorization": f"Bearer {token}",
-                                                              **kw.pop("headers", {})}, **kw)
+                resp = await c.request(method, url, headers={"Authorization": f"Bearer {token}", **extra}, **kw)
         except EgressBlocked as e:
             raise MailApiError(str(e)) from None
         except httpx.HTTPError:
