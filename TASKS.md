@@ -2189,7 +2189,7 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
   Done 2026-11-26 [x]:
   - M44.S01.T001–T014 are [x].
   - Activation-only prerequisites stay in M47: real Meta, Google Ads, LinkedIn and TikTok apps with their review and tokens, the Slack incoming webhook, the mail relay signing keys, SOCIAL_PUBLISHING_ENABLED and AUDIENCE_EXPORT_ENABLED.
-  - The synchronization result is recorded below this row after the push.
+  - Synchronization: the gate commit 997d2ba was pushed to origin/main. After fetch, Desktop HEAD equals origin/main (997d2ba). The working tree is clean apart from files the owner left untracked (.hiveai/ and two M25 logs). The gate container m44-gate-pg and the walkthrough servers were removed, and temporary next-dev edits were reverted.
 
 # M45 — AI Agent & Customer Data Hub — accountless
 
