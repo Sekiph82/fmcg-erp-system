@@ -115,3 +115,26 @@ class DialerSession(Base, TimestampMixin):
     status = Column(String(10), nullable=False, default="ACTIVE")    # ACTIVE | PAUSED | DONE
     items = Column(JSONB, nullable=False, default=list)              # [{"phone", "crm_record_id", "customer_id", "label", "state", "call_id"}]
     current_index = Column(Integer, nullable=True)
+
+
+class CoachingPlaylist(Base, TimestampMixin):
+    """M43.S01.T017: managers collect consented transcript segments for training."""
+    __tablename__ = "crm_coaching_playlists"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name = Column(String(150), nullable=False)
+    description = Column(Text, nullable=True)
+    created_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
+
+class CoachingClip(Base):
+    __tablename__ = "crm_coaching_clips"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    playlist_id = Column(UUID(as_uuid=True), ForeignKey("crm_coaching_playlists.id", ondelete="CASCADE"), nullable=False, index=True)
+    call_id = Column(UUID(as_uuid=True), ForeignKey("call_logs.id", ondelete="CASCADE"), nullable=False, index=True)
+    start_s = Column(Numeric(10, 2), nullable=False)
+    end_s = Column(Numeric(10, 2), nullable=False)
+    note = Column(String(500), nullable=True)
+    added_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=False)

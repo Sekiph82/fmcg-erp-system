@@ -167,3 +167,43 @@ export function CallTranscript({ callId }: { callId: string }) {
     </div>
   );
 }
+
+// M43.S01.T017 coaching playlists: managers clip consented transcript segments; agents see only their own calls' clips.
+export function CoachingPanel() {
+  const [lists, setLists] = useState<{ id: string; name: string; clips: { id: string; call_id: string; start_s: number; end_s: number; note: string | null;
+    segments: { start: number; speaker: string | null; text: string }[] }[] }[]>([]);
+  const [name, setName] = useState("");
+  const [clip, setClip] = useState({ playlist_id: "", call_id: "", start_s: 0, end_s: 30, note: "" });
+  const [msg, setMsg] = useState<string | null>(null);
+  const load = useCallback(() => { apiClient.get("/api/v1/calls/playlists").then((r) => setLists(r.data)).catch(() => setLists([])); }, []);
+  useEffect(() => { load(); }, [load]);
+  const run = async (fn: () => Promise<unknown>, ok: string) => { try { await fn(); setMsg(ok); load(); } catch (e) { setMsg(detail(e, "Managers only.")); } };
+  return (
+    <div className="border rounded-lg bg-white p-3 space-y-2 text-xs">
+      <div className="text-sm font-semibold">Coaching playlists</div>
+      {lists.length === 0 && <p className="text-gray-500">No coaching clips you can see.</p>}
+      {lists.map((p) => (
+        <details key={p.id} className="border rounded p-2"><summary className="cursor-pointer font-medium">{p.name} ({p.clips.length})</summary>
+          {p.clips.map((c) => (
+            <div key={c.id} className="border-t pt-1 mt-1">
+              <div className="text-gray-500">Call {c.call_id.slice(0, 8)} · {c.start_s}s–{c.end_s}s{c.note ? ` · ${c.note}` : ""}
+                <button className="ml-2 text-red-600" onClick={() => run(() => apiClient.delete(`/api/v1/calls/playlists/${p.id}/clips/${c.id}`), "Clip removed.")}>×</button></div>
+              {c.segments.map((s, i) => <p key={i}>{s.speaker && <b>{s.speaker}: </b>}{s.text}</p>)}
+            </div>))}
+        </details>))}
+      <form className="flex gap-1" onSubmit={(e) => { e.preventDefault(); run(() => apiClient.post("/api/v1/calls/playlists", { name }), "Playlist created."); setName(""); }}>
+        <input required className="border rounded px-2 py-1 flex-1" placeholder="New playlist (managers)" value={name} onChange={(e) => setName(e.target.value)} />
+        <button className="border rounded px-2">Create</button></form>
+      <form className="grid grid-cols-2 gap-1" onSubmit={(e) => { e.preventDefault();
+        run(() => apiClient.post(`/api/v1/calls/playlists/${clip.playlist_id}/clips`, { call_id: clip.call_id, start_s: clip.start_s, end_s: clip.end_s, note: clip.note || null }), "Clip added."); }}>
+        <select required className="border rounded px-1 col-span-2" value={clip.playlist_id} onChange={(e) => setClip({ ...clip, playlist_id: e.target.value })}>
+          <option value="">Playlist…</option>{lists.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select>
+        <input required className="border rounded px-1 col-span-2" placeholder="Call id (consented, transcribed)" value={clip.call_id} onChange={(e) => setClip({ ...clip, call_id: e.target.value })} />
+        <label>From (s)<input type="number" min={0} className="border rounded px-1 w-full" value={clip.start_s} onChange={(e) => setClip({ ...clip, start_s: +e.target.value })} /></label>
+        <label>To (s)<input type="number" min={1} className="border rounded px-1 w-full" value={clip.end_s} onChange={(e) => setClip({ ...clip, end_s: +e.target.value })} /></label>
+        <input className="border rounded px-1 col-span-2" placeholder="Coaching note" value={clip.note} onChange={(e) => setClip({ ...clip, note: e.target.value })} />
+        <button className="border rounded px-2 py-1 col-span-2">Add clip</button></form>
+      {msg && <p role="status">{msg}</p>}
+    </div>
+  );
+}

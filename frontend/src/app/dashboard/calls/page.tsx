@@ -2,7 +2,7 @@
 import { EntityPicker } from "@/components/EntityPicker";
 import { useCallback, useEffect, useState } from "react";
 import { apiClient } from "@/lib/api";
-import { VoicePanel, CallTranscript } from "@/components/VoicePanel";
+import { VoicePanel, CallTranscript, CoachingPanel } from "@/components/VoicePanel";
 import { voipApi, CallLog, CallStats, OUTCOME_COLORS, fmtDuration } from "@/lib/voip";
 
 const BLANK_FORM = {
@@ -88,6 +88,7 @@ export default function CallsPage() {
   return (
     <div className="p-4 sm:p-6 space-y-5">
       <VoicePanel />
+      <CoachingPanel />
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-xl font-bold text-gray-900">Call Center</h1>

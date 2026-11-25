@@ -130,6 +130,8 @@ async def withdraw_consent(db: AsyncSession, call: CallLog) -> None:
     call.transcription_status, call.transcription_error = "WITHDRAWN", None
     await db.execute(delete(CRMConversationInsight).where(CRMConversationInsight.source_type == "call",
                                                           CRMConversationInsight.source_id == call.id))
+    from app.models.voip import CoachingClip           # M43.S01.T017: clips quoting this call go too
+    await db.execute(delete(CoachingClip).where(CoachingClip.call_id == call.id))
 
 
 def recap(insight_findings: list[dict]) -> dict:

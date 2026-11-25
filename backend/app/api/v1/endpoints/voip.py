@@ -253,6 +253,9 @@ async def purge_expired_recordings(db: AsyncSession) -> int:
         CallLog.recording_expires_at < datetime.now(timezone.utc),
         (CallLog.recording_consent.is_(False)) & (CallLog.recording_url.isnot(None)),  # legacy, no consent on file
     )).values(recording_url=None, transcript=None, recording_expires_at=None))
+    from app.models.voip import CoachingClip   # M43.S01.T017: coaching clips never outlive the transcript
+    await db.execute(CoachingClip.__table__.delete().where(CoachingClip.call_id.in_(
+        select(CallLog.id).where(CallLog.transcript.is_(None)))))
     return res.rowcount or 0
 
 
@@ -537,3 +540,87 @@ async def call_transcript(call_id: uuid.UUID, db: AsyncSession = Depends(get_db)
             "segments": call.transcript_segments or ([{"start": None, "end": None, "speaker": None, "text": call.transcript}]
                                                      if call.transcript else []),
             "recap": transcription.recap(ins.findings) if ins else None}
+
+
+
+# ── M43.S01.T017 coaching playlists ───────────────────────────────────────────
+
+from app.models.voip import CoachingClip, CoachingPlaylist  # noqa: E402
+
+
+def _coach_manager(u) -> bool:
+    return getattr(u, "is_superuser", False) or has_any_permission(u, ("crm.view_all", "crm.edit_all"))
+
+
+class PlaylistIn(BaseModel):
+    name: str = Field(min_length=1, max_length=150)
+    description: Optional[str] = Field(None, max_length=2000)
+
+
+class ClipIn(BaseModel):
+    call_id: uuid.UUID
+    start_s: float = Field(ge=0)
+    end_s: float = Field(gt=0)
+    note: Optional[str] = Field(None, max_length=500)
+
+
+@router.get("/playlists")
+async def list_playlists(db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    """Managers see every clip; others see only clips from their own calls (and never another agent's)."""
+    out = []
+    for p in (await db.execute(select(CoachingPlaylist).order_by(CoachingPlaylist.name))).scalars():
+        q = select(CoachingClip, CallLog).join(CallLog, CallLog.id == CoachingClip.call_id).where(
+            CoachingClip.playlist_id == p.id, CallLog.recording_consent.is_(True), CallLog.transcript.is_not(None))
+        if not _coach_manager(current_user):
+            q = q.where(CallLog.agent_id == current_user.id)
+        clips = []
+        for c, call in (await db.execute(q.order_by(CoachingClip.created_at))).all():
+            segs = [s for s in (call.transcript_segments or [])
+                    if s.get("start") is not None and float(c.start_s) <= float(s["start"]) < float(c.end_s)]
+            clips.append({"id": str(c.id), "call_id": str(call.id), "start_s": float(c.start_s), "end_s": float(c.end_s),
+                          "note": c.note, "segments": segs})
+        if clips or _coach_manager(current_user):
+            out.append({"id": str(p.id), "name": p.name, "description": p.description, "clips": clips})
+    return out
+
+
+@router.post("/playlists", status_code=201)
+async def create_playlist(body: PlaylistIn, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    if not _coach_manager(current_user):
+        raise HTTPException(403, "Only managers build coaching playlists.")
+    p = CoachingPlaylist(name=body.name, description=body.description, created_by_id=current_user.id)
+    db.add(p)
+    await db.commit()
+    return {"id": str(p.id), "name": p.name}
+
+
+@router.post("/playlists/{playlist_id}/clips", status_code=201)
+async def add_clip(playlist_id: uuid.UUID, body: ClipIn, db: AsyncSession = Depends(get_db),
+                   current_user=Depends(get_current_user)):
+    if not _coach_manager(current_user):
+        raise HTTPException(403, "Only managers build coaching playlists.")
+    if await db.get(CoachingPlaylist, playlist_id) is None:
+        raise HTTPException(404, "Playlist not found")
+    call = await db.get(CallLog, body.call_id)
+    if call is None or not _recording_ok(call) or not call.transcript:
+        raise HTTPException(422, "Only a consented call with a transcript inside retention can be clipped.")
+    if body.end_s <= body.start_s:
+        raise HTTPException(422, "The clip must end after it starts.")
+    from datetime import datetime as _dt, timezone as _tz
+    c = CoachingClip(playlist_id=playlist_id, call_id=call.id, start_s=body.start_s, end_s=body.end_s, note=body.note,
+                     added_by_id=current_user.id, created_at=_dt.now(_tz.utc))
+    db.add(c)
+    await db.commit()
+    return {"id": str(c.id)}
+
+
+@router.delete("/playlists/{playlist_id}/clips/{clip_id}", status_code=204)
+async def remove_clip(playlist_id: uuid.UUID, clip_id: uuid.UUID, db: AsyncSession = Depends(get_db),
+                      current_user=Depends(get_current_user)):
+    if not _coach_manager(current_user):
+        raise HTTPException(403, "Only managers change coaching playlists.")
+    c = await db.get(CoachingClip, clip_id)
+    if c is None or c.playlist_id != playlist_id:
+        raise HTTPException(404, "Clip not found")
+    await db.delete(c)
+    await db.commit()

@@ -511,8 +511,34 @@ def upgrade() -> None:
             created_at TIMESTAMPTZ NOT NULL
         )""")
 
+    # T017: coaching playlists (clips of consented transcripts)
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS crm_coaching_playlists (
+            id UUID PRIMARY KEY,
+            name VARCHAR(150) NOT NULL,
+            description TEXT,
+            created_by_id UUID REFERENCES users(id) ON DELETE SET NULL,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        )""")
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS crm_coaching_clips (
+            id UUID PRIMARY KEY,
+            playlist_id UUID NOT NULL REFERENCES crm_coaching_playlists(id) ON DELETE CASCADE,
+            call_id UUID NOT NULL REFERENCES call_logs(id) ON DELETE CASCADE,
+            start_s NUMERIC(10, 2) NOT NULL,
+            end_s NUMERIC(10, 2) NOT NULL CHECK (end_s > start_s),
+            note VARCHAR(500),
+            added_by_id UUID REFERENCES users(id) ON DELETE SET NULL,
+            created_at TIMESTAMPTZ NOT NULL
+        )""")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_coaching_clips_playlist ON crm_coaching_clips (playlist_id)")
+    op.execute("CREATE INDEX IF NOT EXISTS ix_coaching_clips_call ON crm_coaching_clips (call_id)")
+
 
 def downgrade() -> None:
+    op.execute("DROP TABLE IF EXISTS crm_coaching_clips")
+    op.execute("DROP TABLE IF EXISTS crm_coaching_playlists")
     op.execute("DROP TABLE IF EXISTS crm_handoffs")
     op.execute("DROP TABLE IF EXISTS crm_deal_splits")
     op.execute("DROP TABLE IF EXISTS crm_stage_approval_requests")

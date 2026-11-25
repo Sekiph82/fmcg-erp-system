@@ -9,8 +9,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 ## Project Status
 
 - Current Milestone: M43 — Pre-factory baseline reconciliation and Advanced CRM & Sales
-- Current Sprint: M43.S01 — T001–T016 implemented [v] (pending the M43 gate); T017 added (coaching playlists)
-- Current Task: M43.S01.T017 coaching playlists, then the M43 gate (M43.S02.T001)
+- Current Sprint: M43.S01 — T001–T017 implemented [v] (pending the M43 gate)
+- Current Task: M43.S02.T001 — M43 consolidated acceptance gate
 - Current Task Status: M43.S01 implemented as one batch on 2026-11-25. All code is in migration 20261125_0073 and the new services/endpoints/screens listed per row. 16 DB-gated test files and a provider simulator are prepared. No tests were run, per the protocol; only a py_compile check of the new Python files. Frontend tsc, eslint, build and browser checks are still to be done at the gate.
 - Next Task/Action: M43.S01.T017, then the M43 consolidated gate: disposable PostgreSQL upgrade from 20261124_0071 (data-preservation checks for T011/T015/T016 backfills), backend suite plus 18 M43 test files, tsc/eslint/build, browser desktop and phone with synthetic personas, security review by an independent reviewer, then fixes, commit, push and sync.
 - Required Actor: CLAUDE (sole active autonomous task runner and tracker writer; per coordination/CLAUDE_AUTONOMOUS_EXECUTION_POLICY.md; the 2026-11-25 owner rules below supersede older cadence/gate instructions)
@@ -2028,7 +2028,8 @@ Reference entry points (refresh and record date/version during audit): https://w
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable.
   - **Claude checkpoint:** [v] pending milestone gate, tests NOT RUN until gate; never [x] before milestone PASS.
 
-- [ ] M43.S01.T017 — Coaching playlists (gap found while implementing T009; HubSpot 'Coaching playlists')
+- [v] M43.S01.T017 — Coaching playlists (gap found while implementing T009; HubSpot 'Coaching playlists')
+  Done 2026-11-25 [v] (pending M43 gate): crm_coaching_playlists / crm_coaching_clips (migration 20261125_0073); `/calls/playlists` (managers create playlists and clip consented, transcribed calls within retention by second ranges; non-managers see only clips of their own calls); clips deleted on consent withdrawal and when retention purges the transcript; CoachingPanel on the calls page. Tests prepared, NOT RUN: tests/test_m43_s01_t017_coaching_db.py.
   - **Scope:** Managers collect consented call transcript segments (timestamp ranges) into named playlists for training; access limited to managers and the listed team; removal when consent is withdrawn or retention ends.
   - **Acceptance at milestone gate:** Playlist built from synthetic transcripts; withdrawn consent removes the clip; non-managers cannot see other agents' clips.
   - **Claude checkpoint:** [v] pending milestone gate, tests NOT RUN until gate; never [x] before milestone PASS.
