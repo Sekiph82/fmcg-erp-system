@@ -19,6 +19,7 @@ TABLES = [
     "cd_sources", "cd_prospects", "cd_facts", "cd_verified_fields", "cd_prospect_runs", "cd_merges", "cd_dup_dismissals", "cd_sensitive_fields",
     "co_types", "co_records", "co_associations",
     "auth_impersonations", "nc_notification_policies", "auth_sso_configs", "auth_sso_states",
+    "pay_links", "pay_link_attempts",
 ]
 
 COLUMNS = [

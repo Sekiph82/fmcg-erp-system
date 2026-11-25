@@ -2450,11 +2450,24 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
   - **Acceptance at milestone gate:** Local S3-compatible bucket and a second PostgreSQL receive incremental loads; deletes and schema changes; masked fields; resume after failure.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable.
   - **Claude checkpoint:** [v] pending milestone gate, tests NOT RUN until gate; never [x] before milestone PASS.
-- [ ] M45.S01.T021 — Customer payment links (additional gap, Source: HubSpot parity matrix 2026-11-25 (coordination/milestones/M43/HUBSPOT_PARITY_MATRIX_2026-11-25.md).)
+- [v] M45.S01.T021 — Customer payment links (additional gap, Source: HubSpot parity matrix 2026-11-25 (coordination/milestones/M43/HUBSPOT_PARITY_MATRIX_2026-11-25.md).)
   - **Scope:** Shareable signed payment link for an invoice or order balance; customer page shows amount and pays by M-Pesa STK push (existing Daraja code) or a card-provider adapter left NOT_CONFIGURED; expiry, single settlement, receipt and ledger posting through existing collections.
   - **Acceptance at milestone gate:** Daraja simulator callback settles once; expired/forged links refused; partial payment; no LIVE_PAID without a real provider.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable.
   - **Claude checkpoint:** [v] pending milestone gate, tests NOT RUN until gate; never [x] before milestone PASS.
+  Implemented 2026-11-26 [v] (tests NOT RUN as gate):
+  - Payment link for an invoice balance, from the invoice screen → "Payment links":
+    - 256-bit token, stored as SHA-256 only; the URL is shown once;
+    - expiry and revocation;
+    - partial payments optional.
+  - Customer page /pay/{token} shows invoice, customer and open balance, with payment by M-Pesa STK push (existing Daraja service). Card payment is a NOT_CONFIGURED adapter.
+  - Refused: forged tokens (404), expired or revoked links (410), amounts over the balance, cents (M-Pesa whole shillings) and partial amounts when not allowed.
+  - Pending pushes reserve the balance.
+  - Settlement comes only from the Daraja callback, once per transaction; replays change nothing.
+    - A real payment becomes a PENDING M-Pesa cash collection with the receipt, which finance confirms into the ledger through the existing collections flow. When fully covered, the link becomes PAID.
+    - Without Daraja credentials the push is simulated and only reaches TEST_SETTLED/TEST_PAID, with no collection or ledger entry. There is never a paid state without a real provider.
+  - Receipts show on the customer page.
+  - Tests: tests/test_m45_s01_t021_payment_links.py (simulator-style callbacks).
 - [v] M45.S01.T022 — MCP server for ERP/CRM tools (additional gap, Source: HubSpot parity matrix 2026-11-25 (coordination/milestones/M43/HUBSPOT_PARITY_MATRIX_2026-11-25.md).)
   - **Scope:** Model Context Protocol server exposing read tools (customer, order, stock, invoice status) and approval-gated write tools to authorized AI clients with per-token scopes, rate limits and audit; reuse API permissions.
   - **Acceptance at milestone gate:** Local MCP client lists tools, read calls respect RBAC and company, write calls create approval requests only, revoked token refused.

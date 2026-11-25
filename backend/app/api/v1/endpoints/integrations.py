@@ -337,7 +337,9 @@ async def mpesa_callback(
     Idempotent: duplicate callbacks are safely ignored.
     """
     payload = await request.json()
-    await mpesa_svc.handle_callback(db, payload)
+    tx = await mpesa_svc.handle_callback(db, payload)
+    from app.services import payment_link_service   # M45.S01.T021: settles a payment-link attempt once
+    await payment_link_service.on_mpesa_callback(db, tx)
     await db.commit()
     # Daraja expects this exact response on success
     return {"ResultCode": 0, "ResultDesc": "Accepted"}

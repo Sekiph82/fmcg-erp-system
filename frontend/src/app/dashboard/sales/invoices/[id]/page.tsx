@@ -12,6 +12,7 @@ import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
 import { ToastContainer } from "@/components/ui/Toast";
 import { useToast } from "@/hooks/useToast";
+import { PaymentLinks } from "@/components/sales/PaymentLinks";
 
 const ETIMS_STATUS_BADGE: Record<ETimsStatus, "green" | "red" | "yellow" | "blue" | "gray"> = {
   ACCEPTED:      "green",
@@ -284,6 +285,8 @@ export default function InvoiceDetailPage() {
           </table>
         </div>
       </div>
+
+      <PaymentLinks invoiceId={invoice.id} open={canPay} />
 
       {/* Payments */}
       <div className="bg-white rounded-lg border">
