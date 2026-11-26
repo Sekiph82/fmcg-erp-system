@@ -174,6 +174,8 @@ async def inbox(db: AsyncSession, user) -> dict:
             continue
         model = _model(path)
         cond = _waiting(key, model, col, values)
+        if key == "studio_budget":           # N3: the requester never sees (or is notified of) their own request
+            cond = and_(cond, model.requested_by != user.username)
         if key in _NOT_OWN:
             cond = and_(cond, or_(model.created_by_id.is_(None), model.created_by_id != user.id),
                         or_(model.discount_changed_by_id.is_(None), model.discount_changed_by_id != user.id))
@@ -271,6 +273,8 @@ async def notify_new(db: AsyncSession, days: int = 7) -> int:
             ref = _ref(row)
             for u, access in people:
                 if key in _NOT_OWN and u.id in (getattr(row, "created_by_id", None), getattr(row, "discount_changed_by_id", None)):
+                    continue
+                if key == "studio_budget" and getattr(row, "requested_by", None) == u.username:
                     continue
                 if access == "all" or (access == "scoped" and _may_decide(u, perms, row)):
                     db.add(Notification(user_id=str(u.id), user_name=u.full_name or u.username,

@@ -383,6 +383,19 @@ async def delete_sync(db: AsyncSession, sync: AudienceSync, user) -> None:
     _audit(db, user, "audience_sync.deleted", sync.id, {"provider": sync.provider})
 
 
+async def lift_suppression(db: AsyncSession, email: str) -> int:
+    """N2: an authorised re-subscribe (proof recorded by a person) lifts the ad-audience suppression for that address.
+    The consent row itself records who/what re-subscribed. Caller commits."""
+    from sqlalchemy import delete
+    h = ads.hash_email((email or "").strip().lower())
+    if not h:
+        return 0
+    n = (await db.execute(delete(AudienceSuppression).where(AudienceSuppression.email_sha256 == h))).rowcount
+    if n:
+        log.info("audience suppression lifted after an authorised re-subscribe (%s…)", h[:12])
+    return n
+
+
 async def suppress_now(db: AsyncSession, email: str) -> Optional[str]:
     """Local, in-transaction half of a consent withdrawal: write the suppression and mark every platform member
     holding this address PENDING_REMOVE. No provider call, so it can sit inside any consent write (unsubscribe link,
@@ -395,16 +408,20 @@ async def suppress_now(db: AsyncSession, email: str) -> Optional[str]:
     held = (await db.execute(update(AudienceSyncMember).where(AudienceSyncMember.email_sha256 == h, AudienceSyncMember.state.in_(("IN_SYNC", "PENDING_ADD")))
                              .values(state="PENDING_REMOVE"))).rowcount
     await db.flush()
-    if held and not db.info.get("m49_drain"):      # no platform holds this person: nothing to drain
+    if held:                                       # no platform holds this person: nothing to drain
         db.info["m49_drain"] = True
-        event.listen(db.sync_session, "after_commit", _schedule_drain, once=True)
+        if not event.contains(db.sync_session, "after_commit", _schedule_drain):
+            # registered once per session and kept (a `once=True` listener cannot be re-added: same function)
+            event.listen(db.sync_session, "after_commit", _schedule_drain)
     return h
 
 
 _TASKS: set = set()
 
 
-def _schedule_drain(_session) -> None:
+def _schedule_drain(session) -> None:
+    if not session.info.pop("m49_drain", None):     # N1: drain only commits that withdrew someone, every time
+        return
     try:
         t = asyncio.get_running_loop().create_task(drain_removals())
     except RuntimeError:

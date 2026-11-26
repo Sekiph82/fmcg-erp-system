@@ -1,3 +1,0 @@
-eslint exit 0
-  "ok": true
-}

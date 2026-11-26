@@ -1,0 +1,8 @@
+tsc exit 0
+eslint(errors only) exit 0
+  "ok": true
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+build exit 0

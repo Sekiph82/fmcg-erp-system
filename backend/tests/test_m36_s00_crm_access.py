@@ -109,7 +109,9 @@ def test_company_wide_editor_can_configure(crm):
 # ── mailboxes ────────────────────────────────────────────────────────────────
 
 class _MailDB(_DB):
-    async def execute(self, _q):
+    async def execute(self, q):
+        if "shared_mailboxes" in str(q):     # M49 F6: is this account a shared mailbox? Not here.
+            return type("R", (), {"first": lambda self: None})()
         raise AssertionError("listing is not exercised here")
 
     async def commit(self):

@@ -271,6 +271,8 @@ async def run_crm_automation(interval: float = 15.0) -> None:
             async with AsyncSessionLocal() as db:
                 await designer.enqueue(db)
                 await designer.process(db)
+            from app.services.audience_sync_service import drain_removals   # M49 N1: retry pending ad-audience removals
+            await drain_removals()
         except asyncio.CancelledError:
             raise
         except Exception:

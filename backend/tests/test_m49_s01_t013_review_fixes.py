@@ -348,3 +348,48 @@ def test_f12_meta_adset_times_use_account_zone_or_explicit_utc():
     assert ny["start_time"].endswith("-0500") and ny["end_time"].endswith("-0400")
     utc = lc.edit_req("meta", "ADSET", "123", f, node, {"tz": None}).data
     assert utc["start_time"] == "2027-03-01T00:00:00Z" and utc["start_time"][:10] == "2027-03-01"
+
+
+# ── re-review N1-N3 ──────────────────────────────────────────────────────────
+
+@M49
+async def test_n1_every_withdrawal_in_one_session_is_drained(sim):
+    """Two withdrawals committed in the same session each reach the platform (the drain flag is per commit)."""
+    from app.services import crm_outbound_service as outbound
+    ca, cb, p0, sid, emails = await _synced("meta")
+    async with AsyncSessionLocal() as db:
+        await outbound.record_consent(db, emails[0], "UNSUBSCRIBED", "unsubscribe-link")
+        await db.commit()
+        await _drained()
+        await outbound.record_consent(db, emails[1], "UNSUBSCRIBED", "unsubscribe-link")
+        await db.commit()
+    await _drained()
+    m = await _members(sid)
+    assert m[ads.hash_email(emails[0])] == "REMOVED" and m[ads.hash_email(emails[1])] == "REMOVED"
+
+
+@M49
+async def test_n2_bounce_is_not_a_withdrawal_and_authorised_resubscribe_lifts(sim):
+    from app.models.m49_audiences import AudienceSuppression
+    from app.services import crm_outbound_service as outbound
+    ca, cb, p0, sid, emails = await _synced("meta")
+    async with AsyncSessionLocal() as db:
+        await outbound.record_consent(db, emails[2], "BOUNCED", "bounce report")
+        await db.commit()
+        assert await db.get(AudienceSuppression, ads.hash_email(emails[2])) is None
+        await outbound.record_consent(db, emails[3], "UNSUBSCRIBED", "unsubscribe-link")
+        await db.commit()
+        assert await db.get(AudienceSuppression, ads.hash_email(emails[3])) is not None
+        await outbound.record_consent(db, emails[3], "SUBSCRIBED", "signed form", may_lift_unsubscribe=True)
+        await db.commit()
+        db.expunge_all()
+        assert await db.get(AudienceSuppression, ads.hash_email(emails[3])) is None
+    await _drained()
+    assert (await _members(sid))[ads.hash_email(emails[2])] == "IN_SYNC"
+
+
+def test_n3_inbox_hides_own_studio_budget_request():
+    import inspect
+    from app.services import approval_inbox_service as ib
+    src = inspect.getsource(ib)
+    assert 'key == "studio_budget"' in src and "model.requested_by != user.username" in src

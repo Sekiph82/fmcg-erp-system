@@ -3495,6 +3495,11 @@ Dependency: prior major milestone accepted and synchronized; extend actual exist
     - F11: an unchanged over-cap budget may be re-saved.
     - F12: Meta ad-set times use the account time-zone offset (UTC Z fallback). Read-back still compares the date only.
   - Tests: test_m49_s01_t013_review_fixes (23 passed), t004 (14 passed), t011 (7), t012 (2), m45 dedupe (3), m48 t022 consent (7).
+  - Re-review of the fixes (same independent reviewer): F2–F12 CLOSED, F1 partly closed, and 3 new defects, all fixed:
+    - N1: the after-commit drain fired only once per session, because a `once=True` listener cannot be re-added. It is now a persistent per-session listener with a per-commit flag, and the CRM automation tick also retries pending removals.
+    - N2: a mail bounce is no longer an ad-audience withdrawal, and an authorised re-subscribe lifts the suppression.
+    - N3: requesters never see or get notified of their own studio budget request.
+  - Tests: test_m49_s01_t013 (26 passed). The legacy m36 mailbox access test fake was adapted to the shared-mailbox check (5 passed).
 - [v] M49.S01.T014 — Gate remediation: browser walkthrough defects (added by the M49 gate)
   - Implemented 2026-11-26 [v], pending the M49 gate. Defects A–E in coordination/milestones/M49/gate/05_browser_walkthrough.md:
     - A: Studio budget requests are now in My Approvals.

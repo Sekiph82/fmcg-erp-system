@@ -135,14 +135,20 @@ async def record_consent(db: AsyncSession, email: str, status: str, source: str,
     row = await consent_for(db, email)
     blocked = status == "PENDING" or (status == "SUBSCRIBED" and (
         row.status in ("BOUNCED", "COMPLAINED") or (row.status == "UNSUBSCRIBED" and not may_lift_unsubscribe)))
+    lifted = not inserted and not blocked and status == "SUBSCRIBED" and row.status == "UNSUBSCRIBED"
     if not inserted and not blocked:
         row.status, row.source, row.updated_at = status, source[:100], now
         if text:
             row.consent_text = text
     await db.flush()  # sessions run without autoflush: make the event visible to the next check
-    if row is not None and row.status in SUPPRESSING:   # M49 F1: withdrawal also reaches ad-platform audiences
+    # M49 F1/N2: an unsubscribe or complaint also reaches ad-platform audiences (a mail bounce is not a withdrawal);
+    # an authorised re-subscribe lifts that suppression again
+    if row is not None and row.status in ("UNSUBSCRIBED", "COMPLAINED"):
         from app.services.audience_sync_service import suppress_now
         await suppress_now(db, email)
+    elif lifted:
+        from app.services.audience_sync_service import lift_suppression
+        await lift_suppression(db, email)
     return row
 
 

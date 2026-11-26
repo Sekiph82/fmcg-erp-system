@@ -15,3 +15,20 @@ contact center and transcription, social formats and listening, ad lifecycle edi
 seed rows kept: customers=2
 new columns present: 11/11
 dropped mig49
+
+# Rerun on frozen candidate 5dde89d (after T013 F7 and downgrade_archive fix), 2026-11-26T17:14:21+03:00
+NOTICE:  database "mig49b" does not exist, skipping
+## empty -> head
+contact center and transcription, social formats and listening, ad lifecycle edits, audience synchronisation.
+20261129_0079
+## downgrade round 1
+20261128_0078
+archived tables now: 16
+20261129_0079
+## downgrade round 2
+20261128_0078
+archived tables now: 32
+20261129_0079
+optout rows kept across archives: 1
+reply archive present: 1
+dropped mig49b
