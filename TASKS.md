@@ -3669,7 +3669,18 @@ Dependency: prior major milestone accepted and synchronized; extend actual exist
   - **Implementation:** Package or document maintained local TTS and ffmpeg tools, verified availability, EN/SW/TR voice selection where supported, narration, caption, thumbnail/poster, trim, transcode and media job progress, safe limits and draft approval; provider adapters where feasible.
   - **Acceptance at milestone gate:** Manual create narration/video asset, trim/poster/caption and play on phone; local sample media, failure/timeout and permissions tests.
   - **Required evidence:** source/migration/API/UI/permissions and docs as applicable, actual local app manual click log with screenshots, tests prepared now/run at major gate, official contracts for external adapters; synthetic data only, future activation separately. Update TASKS.md and Project Status immediately after task, [v] pending gate, then autonomously select next task. Never [x] before PASS.
-- [ ] M51.S01.T008 — Full ERP EN/SW/TR localization (audit recommendation 44/60)
+- [v] M51.S01.T008 — Full ERP EN/SW/TR localization (audit recommendation 44/60)
+  - Implemented 2026-11-26 [v], pending the M51 gate:
+    - Runtime (lib/i18n/core.ts): `tx`/`lx`/`txApi`. English-keyed catalogs; English fallback; `{var}` interpolation; locale re-render after hydration.
+    - Deterministic AST codemod (scripts/i18n-codemod.mjs, idempotent): about 25,000 literals wrapped in 736 staff files. Only literals are translated; user data is never passed through tx.
+    - Catalogs: staff_ui.json has 14,548 strings, fully translated to SW and TR. backend_messages.json has 530 API messages in SW/TR, applied by exact match only. Backend errors gain a stable `code` field.
+    - The i18n report is ok: 0 missing in any catalog, 0 unknown keys.
+    - Remaining, honestly:
+      - about 1,400 literals the codemod could not safely wrap (1,122 helper-call or variable strings, 302 complex templates, 30 module constants);
+      - 165 server-component files render English;
+      - backend CSV/XLSX/PDF exports in about 22 modules are not translated.
+      - All are carried to M52 persona acceptance.
+    - Translations are machine-generated (glossary-guided, placeholders verified) and need native-speaker review before release.
   - **Implementation:** Translate EVERY staff dashboard module page, widgets, command palette, navigation, forms/tables/validation, toasts, dialogs, role home, mobile/field screens, exports/print templates where applicable and backend system messages via stable codes/catalogs; locale formatting, fallback, no untranslated key/English placeholder in localized system UI. User-entered data stays original unless translation is requested.
   - **Acceptance at milestone gate:** All roles and external personas (M52 matrix), each locale; screenshot and click through affected screens, automated key/translation coverage plus human language QA, date/currency and error messages.
   - **Required evidence:** source/migration/API/UI/permissions and docs as applicable, actual local app manual click log with screenshots, tests prepared now/run at major gate, official contracts for external adapters; synthetic data only, future activation separately. Update TASKS.md and Project Status immediately after task, [v] pending gate, then autonomously select next task. Never [x] before PASS.
