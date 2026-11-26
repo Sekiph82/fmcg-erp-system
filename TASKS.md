@@ -2678,7 +2678,7 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
     - Snowflake and BigQuery accounts;
     - a real S3 or MinIO bucket;
     - an OCR engine.
-  - The synchronization result is recorded below this row after the push.
+  - Synchronization: the gate commit 7e6171d was pushed to origin/main. After fetch, Desktop HEAD equals origin/main (7e6171d). The working tree is clean apart from files the owner left untracked (.hiveai/ and two M25 logs). The gate container m45-gate-pg and the walkthrough servers were removed, and temporary next-dev edits were reverted.
 
 # M46 — Content & Digital Experience Hub — accountless
 
