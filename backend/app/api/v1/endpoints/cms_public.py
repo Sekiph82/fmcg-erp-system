@@ -22,6 +22,26 @@ from app.services import cms_personalize as pz
 from app.services import cms_service as cms
 
 router = APIRouter()
+WRITE_LIMIT = 300            # public write calls (views, conversions, clicks) per client address per hour
+
+
+_hits: dict[str, list[float]] = {}
+
+
+async def _limit(request: Request) -> None:
+    """M47.S01.T006: bound the writes an anonymous client can cause, per client address per hour.
+    ponytail: per-process memory window; with several workers each enforces its own window — move to Redis if needed."""
+    import time
+    from app.services.crm_lead_capture_service import ip_hash
+    key = ip_hash(request.client.host if request.client else "unknown") or "unknown"
+    now = time.monotonic()
+    recent = [t for t in _hits.get(key, []) if t > now - 3600]
+    if len(recent) >= WRITE_LIMIT:
+        raise HTTPException(429, "Too many requests; please try again later.")
+    recent.append(now)
+    _hits[key] = recent
+    if len(_hits) > 50_000:                 # keep memory bounded
+        _hits.clear()
 
 
 async def _site(db: AsyncSession, key: str) -> CmsSite:
@@ -105,7 +125,7 @@ async def blog(key: str, locale: Optional[str] = None, category: Optional[str] =
 
 @router.get("/site/{key}/sitemap.xml")
 async def sitemap(key: str, db: AsyncSession = Depends(get_db)):
-    return Response(await cms.sitemap(db, await _site(db, key)), media_type="application/xml")
+    return Response(await cms.sitemap(db, await _site(db, key)), media_type="application/xml", headers={"Cache-Control": "public, max-age=300"})
 
 
 @router.get("/site/{key}/robots.txt")
@@ -121,7 +141,8 @@ class ConvertIn(BaseModel):
 
 
 @router.post("/site/{key}/convert", status_code=202)
-async def convert(key: str, b: ConvertIn, db: AsyncSession = Depends(get_db)):
+async def convert(key: str, b: ConvertIn, request: Request, db: AsyncSession = Depends(get_db)):
+    await _limit(request)
     s = await _site(db, key)
     p, _ = await cms.find_live(db, s, _clean(b.path), b.locale if b.locale in (s.locales or []) else s.default_locale)
     ok = bool(p) and await pz.convert(db, p, b.experiment, b.visitor)
@@ -130,7 +151,8 @@ async def convert(key: str, b: ConvertIn, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/site/{key}/cta/{cta_key}/click", status_code=202)
-async def cta_click(key: str, cta_key: str, db: AsyncSession = Depends(get_db)):
+async def cta_click(key: str, cta_key: str, request: Request, db: AsyncSession = Depends(get_db)):
+    await _limit(request)
     s = await _site(db, key)
     await db.execute(update(CmsCta).where(CmsCta.site_id == s.id, CmsCta.key == cta_key[:40]).values(clicks=CmsCta.clicks + 1))
     await db.commit()
@@ -179,6 +201,7 @@ class ViewIn(BaseModel):
 
 @router.post("/media/{media_id}/view", status_code=202)
 async def media_view(media_id: uuid.UUID, b: ViewIn, request: Request, db: AsyncSession = Depends(get_db)):
+    await _limit(request)
     m, user = await _media(db, media_id, request)
     new = await media.record_view(db, m, user, b.visitor, b.seconds)
     await db.commit()
@@ -198,5 +221,7 @@ async def podcast_feed(show: str, db: AsyncSession = Depends(get_db)):
     items = "".join(f"<item><title>{escape(e.title)}</title><guid isPermaLink=\"false\">{e.id}</guid>"
                     f"<pubDate>{e.created_at.strftime('%a, %d %b %Y %H:%M:%S +0000')}</pubDate>"
                     f"<enclosure url=\"{escape(api)}/api/v1/public/cms/media/{e.id}/file\" length=\"{e.size}\" type=\"{e.mime}\"/></item>" for e in eps)
-    return Response(f'<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>{escape(show)}</title>{items}</channel></rss>',
-                    media_type="application/rss+xml")
+    link = f"{escape(api)}/api/v1/public/cms/podcast/{escape(show)}.xml"
+    return Response(f'<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>{escape(show)}</title><link>{link}</link>'
+                    f'<description>{escape(show)} — POVU podcast</description><language>en</language>{items}</channel></rss>',
+                    media_type="application/rss+xml", headers={"Cache-Control": "public, max-age=300"})

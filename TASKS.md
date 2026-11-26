@@ -2858,7 +2858,7 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
 - [ ] M47.S01.T004 — Final feature-by-feature comparison report: each HubSpot capability with evidence, achieved local parity/advantage, remaining limitations due to vendor-only/private data or approvals, exact future activation prerequisites, and measurable native FMCG advantages. If a software gap remains, add tasks and close them before final acceptance. No fake market-size or live accuracy equivalence. Update TASKS.md immediately.
 - [ ] M47.S01.T005 — Consolidated final software milestone test gate: full backend, DB/migration, contracts, frontend build/type/lint, browser actual local app and screenshot walkthrough, critical end-to-end personas and independent security/code audit. Fix failures and rerun; no [x] before applicable PASS. Commit/push all accepted code/evidence/ledger and verify Desktop/main SHA match; update TASKS.md and report in Turkish.
 
-- [ ] M47.S01.T006 — M46 carry-overs (from the M46 gate review, 2026-11-26)
+- [v] M47.S01.T006 — M46 carry-overs (from the M46 gate review, 2026-11-26)
   - **Scope:**
     - Rate limits on the public media-view, experiment-convert and CTA-click writes.
     - Sitemap without N+1 queries, with a bound and cache headers.
@@ -2870,6 +2870,16 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
     - Non-blocking media writes, with the upload limit enforced before spooling.
   - **Acceptance at milestone gate:** each item has a test.
   - **Claude checkpoint:** [v] pending milestone gate, tests NOT RUN until gate; never [x] before milestone PASS.
+  Implemented 2026-11-26 [v] (tests NOT RUN as gate; pre-gate check 3/3 on the disposable DB):
+  - Public CMS writes (CTA clicks, experiment conversions, media views) are limited to 300 per client address per hour. This is a per-process window, marked as such in the code.
+  - Sitemap: live versions are loaded in one query; at most 5000 URLs; Cache-Control 5 min.
+  - Block expansion has a budget of 40 lookups per request.
+  - Experiment events are removed by the analytics retention purge.
+  - First experiment row is created race-safe (ON CONFLICT); counters are updated under a row lock.
+  - Approve/publish lock the page row, so a concurrent edit cannot be approved unseen.
+  - Podcast RSS has a channel link and description.
+  - Media writes run off the event loop. An oversized upload is refused from Content-Length before the body is read.
+  - Tests: tests/test_m47_s01_t006_carryovers.py.
 
 ## M47.S02 — Future activation register (NOT_DUE [D], not outstanding software defects)
 These rows describe commissioning only; they must never stop accountless coding, testing, software milestone DONE or autonomous task selection. Claude must refine from source/evidence during M43.S00.T005. Do not change to [!] merely because the factory does not exist. Reopen activation when owner confirms actual prerequisites exist. Each row requires a setup checklist, minimal scoped real smoke test, rollback/disable, audit and exact live evidence; no credentials in Git.

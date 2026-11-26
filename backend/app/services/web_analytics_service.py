@@ -115,6 +115,8 @@ async def purge_expired(db: AsyncSession, now: Optional[datetime] = None) -> int
     stale = select(WebEvent.visitor_hash).where(WebEvent.occurred_at >= cutoff)
     await db.execute(delete(WebIdentity).where(WebIdentity.visitor_hash.not_in(stale)))
     await db.execute(delete(WebConsent).where(WebConsent.decided_at < cutoff, WebConsent.visitor_hash.not_in(stale)))
+    from app.models.cms import CmsExperimentEvent   # M47.S01.T006: experiment attribution follows the same retention
+    await db.execute(delete(CmsExperimentEvent).where(CmsExperimentEvent.created_at < cutoff))
     return n
 
 

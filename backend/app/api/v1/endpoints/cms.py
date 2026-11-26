@@ -13,13 +13,14 @@ import re
 import uuid
 from typing import Optional
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.access_control import has_any_permission, require_any_permission
+from app.core.config import settings
 from app.core.deps import get_current_user, get_db
 from app.models.cms import (CmsAccessList, CmsCta, CmsExperiment, CmsKeyword, CmsMedia, CmsMediaView, CmsPage, CmsPageVersion,
                             CmsRedirect, CmsSite, CmsTable, CmsTableRow)
@@ -294,6 +295,7 @@ class Decision(BaseModel):
 async def _act(db, page_id, user, fn, perms):
     _need(user, perms)
     p = await _get(db, CmsPage, page_id)
+    await db.refresh(p, with_for_update=True)       # serialize with concurrent edits (review: approve-vs-edit)
     try:
         out = await fn(p)
     except cms.CmsError as e:
@@ -756,10 +758,16 @@ async def media_list(db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/media", status_code=201)
-async def upload_media(file: UploadFile = File(...), title: str = Form(..., max_length=200), podcast: Optional[str] = Form(None),
+async def upload_media(request: Request, file: UploadFile = File(...), title: str = Form(..., max_length=200), podcast: Optional[str] = Form(None),
                        access_list_id: Optional[str] = Form(None), public: bool = Form(False),
                        db: AsyncSession = Depends(get_db), user=Depends(get_current_user)):
     _need(user, APPROVE if (public or access_list_id) else EDIT)    # making media public or gated is an approver decision
+    try:
+        declared = int(request.headers.get("content-length") or 0)
+    except ValueError:
+        declared = 0
+    if declared > settings.MEDIA_MAX_UPLOAD_BYTES + 65536:            # refuse before reading an oversized body
+        raise HTTPException(413, f"Media over {settings.MEDIA_MAX_UPLOAD_BYTES // 1048576} MiB")
     try:
         acl = uuid.UUID(access_list_id) if access_list_id else None
     except ValueError:

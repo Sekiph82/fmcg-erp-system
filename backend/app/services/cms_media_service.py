@@ -10,6 +10,7 @@
 """
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import hmac
 import re
@@ -57,17 +58,21 @@ async def store(upload: UploadFile) -> tuple[str, str, int, str]:
     key = uuid.uuid4().hex
     path = root() / key
     h, size, head = hashlib.sha256(), 0, b""
-    with path.open("wb") as f:
+    f = await asyncio.to_thread(path.open, "wb")
+    try:
         while chunk := await upload.read(1024 * 1024):
             if not head:
                 head = chunk[:16]
             size += len(chunk)
             if size > settings.MEDIA_MAX_UPLOAD_BYTES:
-                f.close()
+                await asyncio.to_thread(f.close)
                 path.unlink(missing_ok=True)
                 raise HTTPException(413, f"Media over {settings.MEDIA_MAX_UPLOAD_BYTES // 1048576} MiB")
             h.update(chunk)
-            f.write(chunk)
+            await asyncio.to_thread(f.write, chunk)
+    finally:
+        if not f.closed:
+            await asyncio.to_thread(f.close)
     mime = sniff(head, ext)
     if mime is None or mime != EXT[ext] and not (ext == ".m4v" and mime == "video/mp4"):
         path.unlink(missing_ok=True)

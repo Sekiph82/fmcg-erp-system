@@ -37,6 +37,8 @@ SLUG = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 LINK = re.compile(r"\[([^\]]{1,120})\]\(([^)\s]{1,400})\)")
 TOKEN = re.compile(r"\{\{row\.([a-z0-9_]{1,40})\}\}")
 MAX_BLOCKS = 120
+SITEMAP_MAX = 5000           # URLs per sitemap (protocol limit is 50 000; we stay far below)
+EXPAND_BUDGET = 40           # embeds + tables + CTAs resolved per page request (bounds query fan-out)
 
 
 class CmsError(ValueError):
@@ -353,11 +355,22 @@ async def _members_table(db: AsyncSession, table_id) -> bool:
     return bool((await db.execute(select(CmsPage.id).where(CmsPage.table_id == table_id, CmsPage.access == "MEMBERS"))).first())
 
 
-async def expand(db: AsyncSession, site: CmsSite, blocks: list, depth: int = 0, public: bool = True) -> list:
-    """Resolve CTAs, embeds and table blocks into data the page can render without more calls."""
+async def expand(db: AsyncSession, site: CmsSite, blocks: list, depth: int = 0, public: bool = True, budget: Optional[list] = None) -> list:
+    """Resolve CTAs, embeds and table blocks into data the page can render without more calls. At most EXPAND_BUDGET
+    lookups per request; blocks beyond it render without the resolved data (CTAs/embeds dropped, tables empty)."""
+    budget = budget if budget is not None else [EXPAND_BUDGET]
     out = []
     for b in blocks:
         b = dict(b)
+        if b["type"] in ("cta", "hero", "embed", "table") and (b.get("cta_key") or b["type"] in ("embed", "table")):
+            budget[0] -= 1
+            if budget[0] < 0:
+                if b["type"] == "table":
+                    b["rows"], b["columns"] = [], b.get("columns") or []
+                    out.append(b)
+                elif b["type"] == "hero":
+                    out.append(b)
+                continue
         if b["type"] in ("cta", "hero") and b.get("cta_key"):
             c = (await db.execute(select(CmsCta).where(CmsCta.site_id == site.id, CmsCta.key == b["cta_key"]))).scalar_one_or_none()
             if c:
@@ -369,7 +382,7 @@ async def expand(db: AsyncSession, site: CmsSite, blocks: list, depth: int = 0, 
                 continue
             src = await db.get(CmsPage, uuid.UUID(b["page_id"]))
             v = await _live(db, src) if src and src.site_id == site.id and src.access == "PUBLIC" else None
-            b["blocks"] = await expand(db, site, (v.content or {}).get("blocks", []), depth + 1, public) if v else []
+            b["blocks"] = await expand(db, site, (v.content or {}).get("blocks", []), depth + 1, public, budget) if v else []
         elif b["type"] == "table":
             t = (await db.execute(select(CmsTable).where(CmsTable.site_id == site.id, CmsTable.key == b["table_key"]))).scalar_one_or_none()
             hidden = not t or not t.published or (public and await _members_table(db, t.id))
@@ -379,7 +392,7 @@ async def expand(db: AsyncSession, site: CmsSite, blocks: list, depth: int = 0, 
             b["rows"] = [{"slug": r.slug, **{c: (r.values or {}).get(c) for c in cols}} for r in rows]
             b["columns"] = cols
         elif b["type"] == "columns":
-            b["left"], b["right"] = await expand(db, site, b["left"], depth, public), await expand(db, site, b["right"], depth, public)
+            b["left"], b["right"] = await expand(db, site, b["left"], depth, public, budget), await expand(db, site, b["right"], depth, public, budget)
         out.append(b)
     return out
 
@@ -415,9 +428,12 @@ async def sitemap(db: AsyncSession, site: CmsSite) -> str:
     base = base_url(site)
     pages = (await db.execute(select(CmsPage).where(CmsPage.site_id == site.id, CmsPage.live_version_id.isnot(None),
                                                     CmsPage.access == "PUBLIC", CmsPage.kind != "DYNAMIC"))).scalars().all()
+    pages = pages[:SITEMAP_MAX]
+    versions = {v.id: v for v in (await db.execute(select(CmsPageVersion).where(
+        CmsPageVersion.id.in_([p.live_version_id for p in pages] or [None])))).scalars()}   # one query, not one per page
     groups: dict = {}
     for p in pages:
-        v = await _live(db, p)
+        v = versions.get(p.live_version_id)
         if v and not (v.content.get("seo") or {}).get("noindex"):
             groups.setdefault(p.translation_group, []).append((p, v))
     for p in (await db.execute(select(CmsPage).where(CmsPage.site_id == site.id, CmsPage.live_version_id.isnot(None), CmsPage.kind == "DYNAMIC",
@@ -425,7 +441,7 @@ async def sitemap(db: AsyncSession, site: CmsSite) -> str:
         t = await db.get(CmsTable, p.table_id) if p.table_id else None
         v = await _live(db, p)
         if t and t.published and v and not (v.content.get("seo") or {}).get("noindex"):
-            for r in (await db.execute(select(CmsTableRow).where(CmsTableRow.table_id == t.id))).scalars():
+            for r in (await db.execute(select(CmsTableRow).where(CmsTableRow.table_id == t.id).limit(SITEMAP_MAX))).scalars():
                 groups.setdefault(uuid.uuid4(), []).append((p, v, r))
     lines = ['<?xml version="1.0" encoding="UTF-8"?>',
              '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">']

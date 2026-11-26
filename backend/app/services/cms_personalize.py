@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import hashlib
 import random
+import uuid
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -140,10 +141,10 @@ def _beta_pick(variants: list[str], counts: dict) -> str:
 
 async def _experiment(db: AsyncSession, page: CmsPage, key: str, variants: list[str]) -> CmsExperiment:
     e = (await db.execute(select(CmsExperiment).where(CmsExperiment.page_id == page.id, CmsExperiment.key == key))).scalar_one_or_none()
-    if e is None:
-        e = CmsExperiment(page_id=page.id, key=key, mode="AB", variants=variants, counts={}, status="RUNNING")
-        db.add(e)
-        await db.flush()
+    if e is None:   # race-safe: two first visitors at once create one row
+        await db.execute(insert(CmsExperiment).values(id=uuid.uuid4(), page_id=page.id, key=key, mode="AB", variants=variants, counts={},
+                                                      status="RUNNING").on_conflict_do_nothing(constraint="uq_cms_experiment_key"))
+        e = (await db.execute(select(CmsExperiment).where(CmsExperiment.page_id == page.id, CmsExperiment.key == key))).scalar_one()
     elif sorted(e.variants) != sorted(variants):
         e.variants = variants
     return e
@@ -171,6 +172,7 @@ async def choose(db: AsyncSession, page: CmsPage, blocks: list, v: Visitor) -> t
             res = await db.execute(insert(CmsExperimentEvent).values(experiment_id=e.id, visitor_hash=v.vh, variant=picked[key], kind="VIEW")
                                    .on_conflict_do_nothing(constraint="uq_cms_exp_event"))
             if res.rowcount:
+                await db.refresh(e, with_for_update=True)          # counters: read-modify-write under a row lock
                 c = dict(e.counts or {})
                 c[picked[key]] = {**c.get(picked[key], {"n": 0, "c": 0}), "n": c.get(picked[key], {}).get("n", 0) + 1}
                 e.counts = c
@@ -193,6 +195,7 @@ async def convert(db: AsyncSession, page: CmsPage, key: str, raw_visitor: str) -
     res = await db.execute(insert(CmsExperimentEvent).values(experiment_id=e.id, visitor_hash=vh, variant=seen, kind="CONVERT")
                            .on_conflict_do_nothing(constraint="uq_cms_exp_event"))
     if res.rowcount:
+        await db.refresh(e, with_for_update=True)
         c = dict(e.counts or {})
         c[seen] = {**c.get(seen, {"n": 0, "c": 0}), "c": c.get(seen, {}).get("c", 0) + 1}
         e.counts = c
