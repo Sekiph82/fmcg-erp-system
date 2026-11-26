@@ -3520,7 +3520,8 @@ Dependency: prior major milestone accepted and synchronized; extend actual exist
     - Browser walkthrough: 9 screenshots; defects A–E fixed (T014).
     - Independent Opus review: 12 findings fixed (T013); re-review found N1–N3, all fixed.
     - No quality score claimed (M52).
-- [ ] M49.S02.T002 — After successful gate, mark evidence-backed tasks [x], update TASKS.md/Project Status, commit/push main, fetch and verify Desktop HEAD == origin/main, preserve owner changes, record evidence SHA and sync result. Automatically proceed to next milestone; do not stop for missing business accounts.
+- [x] M49.S02.T002 — After successful gate, mark evidence-backed tasks [x], update TASKS.md/Project Status, commit/push main, fetch and verify Desktop HEAD == origin/main, preserve owner changes, record evidence SHA and sync result. Automatically proceed to next milestone; do not stop for missing business accounts.
+  - Synchronized 2026-11-26: the gate commit b21f776 was pushed to origin/main; after fetch, Desktop HEAD == origin/main == b21f776. Owner files (.hiveai/, backend/M25_S01_T003_POSTGRES_V0{2,3}.log) are preserved untracked.
 
 # M50 — AI & Enterprise Data Intelligence
 
