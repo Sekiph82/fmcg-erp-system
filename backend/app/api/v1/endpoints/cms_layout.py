@@ -179,13 +179,25 @@ async def submit(cid: uuid.UUID, db: AsyncSession = Depends(get_db), user=Depend
     return await _act(db, cid, user, EDIT, go)
 
 
+async def _editors_since_approval(db: AsyncSession, c: CmsComponent) -> set:
+    """E-mails of everyone who created or edited this item since its last approval (from the audit trail)."""
+    from app.models.audit_log import AuditLog
+    tid = str(c.id)
+    last = (await db.execute(select(func.max(AuditLog.created_at)).where(
+        AuditLog.target_id == tid, AuditLog.event_type == "cms.component.approved"))).scalar()
+    q = select(AuditLog.actor_email).where(AuditLog.target_id == tid, AuditLog.event_type.in_(("cms.component.created", "cms.component.edited")))
+    if last is not None:
+        q = q.where(AuditLog.created_at > last)
+    return {e for e in (await db.execute(q)).scalars() if e}
+
+
 @router.post("/components/{cid}/approve")
 async def approve(cid: uuid.UUID, b: Decision, db: AsyncSession = Depends(get_db), user=Depends(get_current_user)):
     async def go(c):
         if c.status != "IN_REVIEW":
             raise cms.CmsError("Only an item in review can be approved or rejected")
-        if c.submitted_by == user.username:
-            raise cms.CmsError("A different person must review this item")
+        if user.username in (c.submitted_by, c.updated_by) or getattr(user, "email", None) in await _editors_since_approval(db, c):
+            raise cms.CmsError("A different person must review this item (not its submitter or anyone who edited it since the last approval)")
         c.status, c.approved_by = ("APPROVED", user.username) if b.ok else ("DRAFT", None)
         cms.audit(db, user, "cms.component.approved" if b.ok else "cms.component.rejected", "cms_component", c.id, {"note": b.note})
     return await _act(db, cid, user, APPROVE, go)

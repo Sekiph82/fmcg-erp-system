@@ -12,7 +12,10 @@ Search's answer-summary API was NOT verified against its documentation (dashboar
 not wired. With no provider, no consent or the mock AI provider the state is NOT_CONFIGURED and nothing is invented.
 
 Cost caps: max_calls_per_run on the prompt set, AEO_MAX_CALLS_PER_RUN (int, 100) and AEO_MONTHLY_CALL_CAP (int, 500)
-across all sets (counted from stored runs); the owner must tick consent_confirmed on the set.
+across all sets; the owner must tick consent_confirmed on the set. The monthly cap counts PROVIDER ATTEMPTS (retries included, failed
+ones too) and is reserved atomically before the run: under a month-wide advisory lock the worst case n_calls x MAX_ATTEMPTS is
+written as a committed RESERVED run row (so two concurrent runs cannot both pass the check), every attempt is counted as it is
+made, and when the run ends the row's calls is set to the attempts really made (the unused reservation is released).
 """
 from __future__ import annotations
 
@@ -23,7 +26,7 @@ from datetime import datetime, timezone
 from typing import Optional
 from urllib.parse import urlsplit
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -37,6 +40,8 @@ SYSTEM = {"en": "Answer the shopper's question helpfully. Name specific brands a
           "sw": "Jibu swali la mnunuzi kwa msaada. Taja chapa mahususi na tumia vyanzo kama URL kamili.",
           "tr": "Alıcının sorusunu yardımcı olacak şekilde yanıtla. Belirli markaları an ve kaynakları tam URL olarak ver."}
 
+MAX_ATTEMPTS = 3                                  # provider attempts per sample (generate_with_retry)
+_LOCK_KEY = 5105                                  # pg advisory lock serialising the monthly reservation
 _override: Optional[ai.BaseAIProvider] = None     # tests inject a ScriptedProvider; never set in production code
 
 
@@ -156,25 +161,46 @@ async def run(db: AsyncSession, s: M51AeoPromptSet, user: str) -> M51AeoRun:
     cap = min(s.max_calls_per_run, int(getattr(settings, "AEO_MAX_CALLS_PER_RUN", 100)))
     if n_calls > cap:
         raise AeoError(422, f"{n_calls} calls exceed the per-run cap of {cap}; reduce prompts or samples.")
-    if st["calls_this_month"] + n_calls > st["monthly_cap"]:
-        raise AeoError(422, "This run would exceed the monthly call cap.")
     prov, _ = _provider(s.provider)
-    rec = M51AeoRun(set_id=s.id, provider=s.provider or "override", source=st["source"], status="DONE", calls=0, created_by=user)
+    reserve = n_calls * MAX_ATTEMPTS
+    await db.execute(text("SELECT pg_advisory_xact_lock(:k)"), {"k": _LOCK_KEY})      # released by the commit below
+    if await month_calls(db) + reserve > st["monthly_cap"]:
+        await db.rollback()
+        raise AeoError(422, f"This run could use up to {reserve} provider attempts and would exceed the monthly call cap.")
+    rec = M51AeoRun(set_id=s.id, provider=s.provider or "override", source=st["source"], status="RESERVED", calls=reserve, created_by=user)
     db.add(rec)
     await db.flush()
+    await db.commit()                                    # the reservation is durable and visible to every other run from here on
+    rec_id = rec.id
+    attempts = 0
+
+    async def before_attempt():
+        nonlocal attempts
+        attempts += 1                                     # every attempt counts, successful or not
+
+    try:
+        return await _sample(db, s, rec, prov, before_attempt, lambda: attempts)
+    except BaseException:
+        await db.rollback()
+        await db.execute(update(M51AeoRun).where(M51AeoRun.id == rec_id).values(calls=attempts, status="FAILED", error="run aborted"))
+        await db.commit()
+        raise
+
+
+async def _sample(db: AsyncSession, s: M51AeoPromptSet, rec: M51AeoRun, prov, before_attempt, attempts) -> M51AeoRun:
     brand_n = comp_n = cite_n = 0
     comp_counts = {c: 0 for c in s.competitor_terms}
     per_prompt = {p: {"n": 0, "brand": 0} for p in s.prompts}
-    errors = 0
+    errors = ok = 0
     for p in s.prompts:
         for i in range(s.samples_per_prompt):
             try:
-                r = await ai.generate_with_retry(prov, p, system=SYSTEM[s.locale], max_attempts=3)
+                r = await ai.generate_with_retry(prov, p, system=SYSTEM[s.locale], max_attempts=MAX_ATTEMPTS, before_attempt=before_attempt)
             except Exception as e:  # noqa: BLE001  provider failure: counted and reported, never turned into a result
                 errors += 1
                 rec.error = f"{type(e).__name__}"[:200]
                 continue
-            rec.calls += 1
+            ok += 1
             rec.model, rec.model_version = r.model, r.model
             a = analyse(r.text, s.brand_terms, s.brand_domains, s.competitor_terms)
             db.add(M51AeoAnswer(run_id=rec.id, prompt=p, sample=i + 1, answer=r.text[:4000], brand=a["brand"],
@@ -185,7 +211,8 @@ async def run(db: AsyncSession, s: M51AeoPromptSet, user: str) -> M51AeoRun:
             per_prompt[p]["brand"] += a["brand"]
             for c in a["competitors"]:
                 comp_counts[c] += 1
-    n = rec.calls
+    n = ok
+    rec.calls = attempts()                               # actual attempts; the rest of the reservation is released
     rec.status = "FAILED" if n == 0 else ("PARTIAL" if errors else "DONE")
     rec.summary = {"locale": s.locale, "samples": n, "errors": errors,
                    "brand_mention": wilson(brand_n, n), "brand_citation": wilson(cite_n, n),
@@ -199,7 +226,7 @@ async def run(db: AsyncSession, s: M51AeoPromptSet, user: str) -> M51AeoRun:
 
 
 async def trend(db: AsyncSession, set_id) -> list[dict]:
-    runs = (await db.execute(select(M51AeoRun).where(M51AeoRun.set_id == set_id, M51AeoRun.status != "FAILED")
+    runs = (await db.execute(select(M51AeoRun).where(M51AeoRun.set_id == set_id, M51AeoRun.status.notin_(("FAILED", "RESERVED")))
                              .order_by(M51AeoRun.created_at))).scalars().all()
     return [{"run_id": str(r.id), "at": r.created_at.isoformat(), "source": r.source, "model": r.model,
              "model_version": r.model_version, **{k: (r.summary or {}).get(k) for k in ("samples", "brand_mention", "brand_citation", "low_sample")}}

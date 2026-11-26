@@ -3684,6 +3684,20 @@ Dependency: prior major milestone accepted and synchronized; extend actual exist
   - **Acceptance at milestone gate:** Manual large synthetic media upload/resume, playback/range, member access, failed upload cleanup, delete/revoke and local restore; no exposed private media.
   - **Required evidence:** source/migration/API/UI/permissions and docs as applicable, actual local app manual click log with screenshots, tests prepared now/run at major gate, official contracts for external adapters; synthetic data only, future activation separately. Update TASKS.md and Project Status immediately after task, [v] pending gate, then autonomously select next task. Never [x] before PASS.
 
+- [v] M51.S01.T011 — Gate remediation: independent-review findings S1–S4, I1, C1–C5 (added by the M51 gate)
+  - Implemented 2026-11-26 [v], pending the M51 gate:
+    - S1: lab vitals run for OWN origins only. Every Playwright request and redirect goes through the SSRF check, Chrome runs with resolver and proxy lockdown, and the browser or process is always killed.
+    - S2: revoking, deleting or restoring an object detaches its linked CMS media.
+    - S3: restore never resurrects DELETED or QUARANTINED objects; changed bytes go back to DRAFT.
+    - S4: CMS library approval refuses the submitter and every editor since the last approval.
+    - I1: the AEO monthly cap reserves the worst case under an advisory lock and counts every attempt.
+    - C1: multipart part merges and complete are row-locked; complete is idempotent.
+    - C2: an explicitly configured private S3 endpoint is allowed, still DNS-pinned. Plain http is allowed only to a host that resolves privately; this was tightened at the gate.
+    - C3: streamed restore and backup IO.
+    - C4: crawler errors are per page; robots 5xx means disallow-all; robots is re-checked on redirects.
+    - C5: ffmpeg is killed on probe timeout and gets an input protocol whitelist.
+  - Tests: test_m51_s01_t011_review_fixes (17 tests). Runner: 12/12.
+
 ## M51.S02 — Consolidated milestone gate and synchronization
 - [ ] M51.S02.T001 — Run milestone-only consolidated tests on frozen candidate SHA: full applicable backend, DB-gated integration and legacy regression, migration from empty and prior populated head, local provider contracts, frontend tsc/lint/build, security/roles/company isolation, real local ERP manual UI clicks and screenshots desktop/mobile for every affected persona and feature; evaluate applicable quality categories and original task mappings; add remediation tasks for any gap; independent reviewer on exact source; record commands, counts, skipped-test dispositions, screenshot paths, click logs, reviewer identity and verdict. Fix failures, rerun, [x] only after all applicable checks pass; no account activation needed.
 - [ ] M51.S02.T002 — After successful gate, mark evidence-backed tasks [x], update TASKS.md/Project Status, commit/push main, fetch and verify Desktop HEAD == origin/main, preserve owner changes, record evidence SHA and sync result. Automatically proceed to next milestone; do not stop for missing business accounts.

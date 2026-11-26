@@ -264,6 +264,9 @@ async def complete_upload(sid: uuid.UUID, db: AsyncSession = Depends(get_db), us
     except st.StorageError as e:
         await db.commit()                     # keep the DELETED/ABORTED state of a rejected upload
         raise HTTPException(e.status, str(e))
+    if getattr(o, "_m51_already_done", False):   # repeated/concurrent complete: same finished object, no second audit or job
+        await db.commit()
+        return _obj(o)
     cms.audit(db, user, "media.upload.completed", "m51_storage_object", o.id, {"status": o.status, "scan": o.scan_status, "size": o.size})
     await db.commit()
     for jid in [uuid.UUID(o.meta["poster_job"])] if (o.meta or {}).get("poster_job") else []:
@@ -326,9 +329,8 @@ async def revoke(oid: uuid.UUID, db: AsyncSession = Depends(get_db), user=Depend
     """Every URL issued so far stops working; new ones can be issued."""
     _need(user, APPROVE)
     o = await _get(db, M51StorageObject, oid, "Object")
-    o.access_version += 1
-    o.approval = "DRAFT"
-    cms.audit(db, user, "media.object.revoked", "m51_storage_object", o.id, {"access_version": o.access_version})
+    detached = await st.revoke_object(db, o)          # also unpublishes CMS media rows made from this object
+    cms.audit(db, user, "media.object.revoked", "m51_storage_object", o.id, {"access_version": o.access_version, "cms_media_detached": detached})
     await db.commit()
     return _obj(o)
 

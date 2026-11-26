@@ -90,10 +90,30 @@ async def tools_status() -> dict:
 
 # ── ffmpeg helpers ──────────────────────────────────────────────────────────
 
+def with_input_whitelist(args: list[str]) -> list[str]:
+    """Only the local file protocol may be read by an input (a crafted playlist/concat file inside an upload must not make ffmpeg
+    open http://, tcp:// or other files via subfile/data tricks): '-protocol_whitelist file' goes before every '-i'."""
+    out: list[str] = []
+    for a in args:
+        if a == "-i":
+            out += ["-protocol_whitelist", "file"]
+        out.append(a)
+    return out
+
+
 async def probe_duration(path: Path) -> float:
     exe = ffmpeg()
-    p = await asyncio.create_subprocess_exec(exe, "-hide_banner", "-nostdin", "-i", str(path), stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.PIPE)
-    _, err = await asyncio.wait_for(p.communicate(), 30)
+    p = await asyncio.create_subprocess_exec(exe, "-hide_banner", "-nostdin", *with_input_whitelist(["-i", str(path)]),
+                                             stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.PIPE)
+    try:
+        _, err = await asyncio.wait_for(p.communicate(), float(cfg("M51_MEDIA_PROBE_TIMEOUT", 30)))
+    except BaseException as e:          # timeout or cancellation: never leave ffmpeg running
+        if p.returncode is None:
+            p.kill()
+            await p.wait()
+        if isinstance(e, asyncio.TimeoutError):
+            raise MediaError("Reading the media timed out and was stopped", 504) from None
+        raise
     m = re.search(r"Duration: (\d+):(\d+):(\d+(?:\.\d+)?)", err.decode(errors="replace"))
     if not m:
         raise MediaError("Cannot read the media duration (not a playable media file)")
@@ -105,7 +125,7 @@ async def run_ffmpeg(job_id: str, args: list[str], total: float, on_progress) ->
     exe = ffmpeg()
     timeout = int(cfg("M51_MEDIA_JOB_TIMEOUT", 300))
     p = await asyncio.create_subprocess_exec(exe, "-hide_banner", "-loglevel", "error", "-nostdin", "-progress", "pipe:1", "-nostats",
-                                             *args[:-1], "-fs", str(int(cfg("M51_MEDIA_OUTPUT_MAX_BYTES", 1 << 30))), args[-1],   # -fs is an output option
+                                             *with_input_whitelist(args[:-1]), "-fs", str(int(cfg("M51_MEDIA_OUTPUT_MAX_BYTES", 1 << 30))), args[-1],   # -fs is an output option
                                              stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
     _procs[job_id] = p
     err_task = asyncio.create_task(p.stderr.read())

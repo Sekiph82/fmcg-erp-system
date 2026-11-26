@@ -94,6 +94,29 @@ async def _getaddrinfo(host: str, port: int) -> list[str]:
     return [i[4][0].split("%")[0] for i in infos]
 
 
+def _origin_key(url: str) -> tuple[str, str, int]:
+    p = urlsplit(str(url))
+    scheme = (p.scheme or "").lower()
+    return scheme, (p.hostname or "").lower(), p.port or (443 if scheme == "https" else 80)
+
+
+def _make_guard(allowed: tuple[str, str, int], plain_http_ok: bool):
+    """Guard for a client with ONE explicitly allowed private endpoint (a LAN/docker S3 store): requests to exactly that
+    scheme+host+port skip the public-only rule; every other URL still goes through check_egress unchanged."""
+    async def guard(request: httpx.Request) -> None:
+        if _origin_key(str(request.url)) == allowed:
+            if allowed[0] != "https" and not _is_local_host(allowed[1]):
+                if not plain_http_ok:
+                    raise EgressBlocked("The allowed private endpoint must use https (set the explicit allow-private flag for plain http).")
+                import ipaddress
+                ips = {ipaddress.ip_address(a) for a in await _resolver(allowed[1], allowed[2])}
+                if not ips or any(ip.is_global for ip in ips):     # plain http only to a genuinely private (LAN/docker) host
+                    raise EgressBlocked("Plain http is allowed only to a private (LAN/docker) storage host; use https.")
+            return
+        await _guard(request)
+    return guard
+
+
 _resolver = _getaddrinfo      # tests replace this through set_resolver()
 
 
@@ -107,8 +130,9 @@ class PinnedBackend(httpcore.AsyncNetworkBackend):
     """Resolve once, validate EVERY address, connect to a validated address. Because the TCP target is an IP that was
     checked, a hostname that answers differently the second time (DNS rebinding) cannot redirect the request inwards."""
 
-    def __init__(self, inner: Optional[httpcore.AsyncNetworkBackend] = None):
+    def __init__(self, inner: Optional[httpcore.AsyncNetworkBackend] = None, allow_host: Optional[str] = None):
         self._inner = inner or httpcore.AnyIOBackend()
+        self._allow_host = (allow_host or "").lower() or None     # the one host that may resolve to a private address
 
     async def connect_tcp(self, host, port, timeout=None, local_address=None, socket_options=None):
         try:
@@ -116,7 +140,7 @@ class PinnedBackend(httpcore.AsyncNetworkBackend):
         except OSError:
             raise EgressBlocked(f"Cannot resolve {host}.") from None
         addrs = [ipaddress.ip_address(i) for i in ips]
-        if not addrs or not all(_public(a) for a in addrs):
+        if not addrs or not (all(_public(a) for a in addrs) or (self._allow_host and str(host).lower() == self._allow_host)):
             raise EgressBlocked(f"{host} resolves to an internal address; refused.")
         last: Optional[Exception] = None
         for a in addrs:
@@ -142,12 +166,12 @@ def _is_ip(host: str) -> bool:
         return False
 
 
-def pinned_transport() -> httpx.AsyncHTTPTransport:
+def pinned_transport(allow_host: Optional[str] = None) -> httpx.AsyncHTTPTransport:
     t = httpx.AsyncHTTPTransport()
     pool = getattr(t, "_pool", None)
     if pool is None or not hasattr(pool, "_network_backend"):   # M50 re-review N2: fail closed if httpcore internals change
         raise RuntimeError("httpcore pool has no _network_backend: DNS pinning unavailable, refusing live egress")
-    pool._network_backend = PinnedBackend()      # httpx exposes no public hook for the network backend
+    pool._network_backend = PinnedBackend(allow_host=allow_host)      # httpx exposes no public hook for the network backend
     assert isinstance(pool._network_backend, PinnedBackend)
     return t
 
@@ -158,11 +182,17 @@ def set_test_transport(transport: Optional[httpx.AsyncBaseTransport]) -> None:
     _test_transport = transport
 
 
-def provider_client(timeout: float = 20.0, **kwargs) -> httpx.AsyncClient:
+def provider_client(timeout: float = 20.0, allow_endpoint: Optional[str] = None, allow_plain_http: bool = False,
+                    **kwargs) -> httpx.AsyncClient:
+    """allow_endpoint: the ONE configured URL (e.g. M51_S3_ENDPOINT) allowed to be a private/LAN host in live mode; it is matched on
+    scheme+host+port and still DNS-pinned. https is required for it unless the host is loopback or allow_plain_http is set. In local
+    mode the normal local-only rule applies and the argument has no effect. The generic rule for every other URL is untouched."""
+    live = egress_mode() == "live"
+    allowed = _origin_key(allow_endpoint) if (allow_endpoint and live) else None
     if _test_transport is not None:
         kwargs.setdefault("transport", _test_transport)
-    elif "transport" not in kwargs and egress_mode() == "live":
-        kwargs["transport"] = pinned_transport()
+    elif "transport" not in kwargs and live:
+        kwargs["transport"] = pinned_transport(allowed[1] if allowed else None)
     hooks = kwargs.pop("event_hooks", {}) or {}
-    hooks = {**hooks, "request": [_guard, *hooks.get("request", [])]}
+    hooks = {**hooks, "request": [_make_guard(allowed, allow_plain_http) if allowed else _guard, *hooks.get("request", [])]}
     return httpx.AsyncClient(timeout=timeout, follow_redirects=False, event_hooks=hooks, **kwargs)

@@ -9,10 +9,15 @@
   checks the file's magic bytes against its extension, scans with the existing ClamAV integration (fail closed) and only then
   marks the object READY. Quotas are checked at session start and again at completion.
 - Retention/cleanup removes expired sessions, never-completed uploads and objects past retention_until.
-- Backup copies READY objects to M51_STORAGE_BACKUP_PATH with a sha256 manifest; restore verifies every hash before writing back.
+- Backup copies READY objects to M51_STORAGE_BACKUP_PATH with a sha256 manifest; restore verifies every hash (streamed, never the
+  whole file in memory) before writing back. Restore only refills READY objects whose bytes are gone: DELETED and QUARANTINED
+  objects are never resurrected. A restored object keeps its approval only when its content is unchanged since the backup and it
+  was already APPROVED; otherwise it returns to DRAFT (re-approval) and any CMS media row built from it is detached.
+- Revoking, deleting or quarantining an object detaches the CMS media rows made from it (to-cms-media), so the CMS file routes
+  stop serving the bytes.
 Settings (getattr with defaults): M51_STORAGE_BACKEND local|s3, M51_S3_ENDPOINT/BUCKET/REGION/ACCESS_KEY/SECRET_KEY,
 M51_STORAGE_PART_BYTES, M51_STORAGE_MAX_BYTES, M51_STORAGE_QUOTA_BYTES, M51_SIGNED_URL_MAX_SECONDS, M51_UPLOAD_SESSION_HOURS,
-M51_REQUIRE_SCAN, M51_STORAGE_BACKUP_PATH, M51_AUTO_POSTER.
+M51_REQUIRE_SCAN, M51_STORAGE_BACKUP_PATH, M51_AUTO_POSTER, M51_S3_ALLOW_PRIVATE (bool, False).
 """
 from __future__ import annotations
 
@@ -32,7 +37,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import AsyncIterator, Optional
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -143,7 +148,8 @@ class S3Backend:
     def __init__(self):
         from app.services.m51_s3 import S3Client
         self.c = S3Client(cfg("M51_S3_ENDPOINT", ""), cfg("M51_S3_BUCKET", ""), cfg("M51_S3_ACCESS_KEY", ""),
-                          cfg("M51_S3_SECRET_KEY", ""), cfg("M51_S3_REGION", "us-east-1"), backoff=float(cfg("M51_S3_BACKOFF", 0.5)))
+                          cfg("M51_S3_SECRET_KEY", ""), cfg("M51_S3_REGION", "us-east-1"), backoff=float(cfg("M51_S3_BACKOFF", 0.5)),
+                          allow_private=bool(cfg("M51_S3_ALLOW_PRIVATE", False)))
 
     @staticmethod
     def k(key: str) -> str:
@@ -340,7 +346,10 @@ async def put_part(db: AsyncSession, sess: M51UploadSession, obj: M51StorageObje
     want = expected_part_size(sess, n)
     if len(data) != want:
         raise StorageError(f"Part {n} must be exactly {want} bytes (got {len(data)})")
-    etag = await get_backend(obj.backend).upload_part(obj.key, sess.backend_upload_id, n, data)
+    etag = await get_backend(obj.backend).upload_part(obj.key, sess.backend_upload_id, n, data)   # outside the lock: parts upload in parallel
+    await db.refresh(sess, with_for_update=True)     # serialise the read-modify-write of the parts JSON (parallel PUTs must not lose parts)
+    if sess.status != "OPEN":
+        raise StorageError("This upload session is closed or expired", 410)
     parts = dict(sess.parts or {})
     parts[str(n)] = {"size": len(data), "etag": etag, "sha256": hashlib.sha256(data).hexdigest()}
     sess.parts = parts                       # reassign: JSON column change tracking
@@ -365,7 +374,7 @@ async def materialize(obj: M51StorageObject):
         p = Path(d) / "obj"
         with p.open("wb") as f:
             async for chunk in be.iter_range(obj.key, 0, obj.size - 1):
-                f.write(chunk)
+                await asyncio.to_thread(f.write, chunk)
         yield p
     finally:
         shutil.rmtree(d, ignore_errors=True)
@@ -381,6 +390,13 @@ async def _sha_head(obj: M51StorageObject) -> tuple[str, bytes]:
 
 
 async def complete_upload(db: AsyncSession, sess: M51UploadSession, obj: M51StorageObject, user) -> M51StorageObject:
+    """Idempotent: the session row is locked first, so a concurrent or repeated call waits, then sees COMPLETED and returns the
+    finished object (obj._m51_already_done = True) instead of assembling twice. An aborted/expired session is 409."""
+    await db.refresh(sess, with_for_update=True)
+    if sess.status == "COMPLETED":
+        await db.refresh(obj)
+        obj._m51_already_done = True
+        return obj
     if sess.status != "OPEN":
         raise StorageError("This upload session is closed", 409)
     if sess.expires_at < datetime.now(timezone.utc):
@@ -443,12 +459,26 @@ async def abort_upload(db: AsyncSession, sess: M51UploadSession, obj: M51Storage
         obj.status, obj.deleted_at = "DELETED", datetime.now(timezone.utc)
 
 
+async def detach_cms(db: AsyncSession, obj: M51StorageObject) -> int:
+    """Remove the CMS media rows registered from this object (to-cms-media). The CMS file routes serve by storage_path alone and
+    know nothing of M51 approval/status, so revoke, delete and quarantine must unpublish them; re-approve and register again."""
+    from app.models.cms import CmsMedia
+    return (await db.execute(delete(CmsMedia).where(CmsMedia.storage_path == obj.key))).rowcount or 0
+
+
+async def revoke_object(db: AsyncSession, obj: M51StorageObject) -> int:
+    obj.access_version += 1
+    obj.approval, obj.approved_by = "DRAFT", None
+    return await detach_cms(db, obj)
+
+
 async def delete_object(db: AsyncSession, obj: M51StorageObject) -> None:
     try:
         await get_backend(obj.backend).delete(obj.key)
     finally:
         obj.status, obj.deleted_at = "DELETED", datetime.now(timezone.utc)
         obj.access_version += 1
+        await detach_cms(db, obj)
 
 
 async def cleanup(db: AsyncSession) -> dict:
@@ -486,10 +516,13 @@ async def backup(db: AsyncSession, user) -> M51StorageBackup:
     for o in (await db.execute(select(M51StorageObject).where(M51StorageObject.status == "READY"))).scalars():
         h = hashlib.sha256()
         try:
-            with (dest / o.key).open("wb") as f:
+            f = await asyncio.to_thread((dest / o.key).open, "wb")
+            try:
                 async for chunk in get_backend(o.backend).iter_range(o.key, 0, o.size - 1):
                     h.update(chunk)
-                    f.write(chunk)
+                    await asyncio.to_thread(f.write, chunk)
+            finally:
+                await asyncio.to_thread(f.close)
             if h.hexdigest() != o.sha256:
                 raise StorageError("checksum mismatch")
         except Exception as e:                   # one unreadable object must not hide the rest
@@ -503,40 +536,68 @@ async def backup(db: AsyncSession, user) -> M51StorageBackup:
     return b
 
 
+def _sha256_file(p: Path) -> str:
+    h = hashlib.sha256()
+    with p.open("rb") as f:
+        while chunk := f.read(CHUNK):
+            h.update(chunk)
+    return h.hexdigest()
+
+
 async def restore(db: AsyncSession, b: M51StorageBackup, user) -> dict:
-    """Put back every manifest object whose bytes are gone from the live backend; each file is hash-verified first."""
+    """Put back the bytes of READY objects that are gone from the live backend; each backup file is hash-verified first (streamed).
+    DELETED and QUARANTINED objects are skipped (a deletion/quarantine decision is never undone by a restore). Approval is kept only
+    when the object's content is unchanged since the backup and it was APPROVED; otherwise it goes back to DRAFT."""
     if b.status not in ("COMPLETED", "PARTIAL"):
         raise StorageError("Only a completed backup can be restored", 409)
     src = backup_root() / str(b.id)
-    restored, skipped, failed = [], 0, []
+    restored, skipped, failed, skipped_state = [], 0, [], []
     for m in b.manifest:
         obj = await db.get(M51StorageObject, uuid.UUID(m["id"]))
         if obj is None:
             failed.append({"id": m["id"], "reason": "object record is gone"})
             continue
+        if obj.status != "READY":
+            skipped_state.append({"id": m["id"], "status": obj.status})
+            continue
         be = get_backend(obj.backend)
-        if obj.status == "READY" and await be.size(obj.key) == m["size"]:
+        if await be.size(obj.key) == m["size"]:
             skipped += 1
             continue
         p = src / m["key"]
-        if not p.is_file() or hashlib.sha256(p.read_bytes()).hexdigest() != m["sha256"]:
+        if not p.is_file() or await asyncio.to_thread(_sha256_file, p) != m["sha256"]:
             failed.append({"id": m["id"], "reason": "backup copy missing or corrupt"})
             continue
         sess_uid = await be.create_multipart(obj.key, obj.mime)
         ps = max(be.min_part, int(cfg("M51_STORAGE_PART_BYTES", 8 << 20)))
-        parts, data, n = [], p.read_bytes(), 0
-        for off in range(0, len(data), ps):
-            n += 1
-            parts.append((n, await be.upload_part(obj.key, sess_uid, n, data[off:off + ps])))
-        await be.complete(obj.key, sess_uid, parts)
+        parts, n = [], 0
+        f = await asyncio.to_thread(p.open, "rb")
+        try:
+            while chunk := await asyncio.to_thread(f.read, ps):
+                n += 1
+                parts.append((n, await be.upload_part(obj.key, sess_uid, n, chunk)))
+            await be.complete(obj.key, sess_uid, parts)
+        except Exception as e:
+            try:
+                await be.abort(obj.key, sess_uid)
+            except Exception:
+                pass
+            failed.append({"id": m["id"], "reason": f"upload failed: {str(e)[:80]}"})
+            continue
+        finally:
+            await asyncio.to_thread(f.close)
         from app.services.document_storage_service import scan_document
         async with materialize(obj) as path:
             scan = await scan_document(path)
-        obj.scan_status, obj.status, obj.deleted_at = scan.status, "READY" if scan.status == "CLEAN" else "QUARANTINED", None
+        obj.scan_status, obj.status = scan.status, "READY" if scan.status == "CLEAN" else "QUARANTINED"
         obj.access_version += 1                     # URLs issued before the loss do not come back
+        if not (obj.sha256 == m["sha256"] and obj.approval == "APPROVED") or obj.status != "READY":
+            obj.sha256, obj.size = m["sha256"], m["size"]
+            obj.approval, obj.approved_by = "DRAFT", None   # changed since the backup (or quarantined): re-approval needed
+            await detach_cms(db, obj)
         restored.append(m["id"])
     b.restored_at = datetime.now(timezone.utc)
-    return {"restored": restored, "already_present": skipped, "failed": failed}
+    return {"restored": restored, "already_present": skipped, "failed": failed, "skipped_state": skipped_state}
 
 
 async def store_file(db: AsyncSession, path: Path, file_name: str, user, owner_type: str = "JOB_OUTPUT", owner_id: Optional[str] = None,

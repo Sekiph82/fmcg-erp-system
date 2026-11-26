@@ -125,11 +125,11 @@ async def test_caps_failures_and_rbac(monkeypatch):
         st = (await c.get(f"{P}/sets/{ok}/state")).json()
         assert st["state"] == "NOT_CONFIGURED" and "monthly call cap" in " ".join(st["reasons"])
         setv(monkeypatch, "AEO_MONTHLY_CALL_CAP", 100000)
-        # provider failure is counted, never turned into a result
+        # provider failure is counted (every attempt: 3 tries of the one sample), never turned into a result
         bad = ai.ScriptedProvider(script=[500] * 20)
         monkeypatch.setattr(aeo, "_override", bad)
         failed = (await c.post(f"{P}/sets/{ok}/run")).json()
-        assert failed["status"] == "FAILED" and failed["calls"] == 0 and failed["summary"]["brand_mention"]["rate"] is None
+        assert failed["status"] == "FAILED" and failed["calls"] == 3 and failed["summary"]["brand_mention"]["rate"] is None
         assert (await c.get(f"{P}/sets/{ok}/trend")).json() == []
         # a scripted provider (no network) with a fixed answer is measured exactly
         monkeypatch.setattr(aeo, "_override", ai.ScriptedProvider(reply=lambda p: "Use POVU AllClean https://povu-demo.test/x"))

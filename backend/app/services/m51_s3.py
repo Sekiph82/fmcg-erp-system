@@ -5,7 +5,9 @@ Contract: Amazon S3 REST API + SigV4 "Authenticating requests: using the Authori
 Operations: PutObject, GetObject (Range), HeadObject, DeleteObject, CreateMultipartUpload, UploadPart,
 CompleteMultipartUpload, AbortMultipartUpload, ListParts  https://docs.aws.amazon.com/AmazonS3/latest/API/API_Operations_Amazon_Simple_Storage_Service.html
 Every request goes through provider_http.provider_client(), so PROVIDER_EGRESS=local only reaches loopback/.test hosts
-(MinIO in a disposable container) and live mode pins DNS. Path-style addressing (endpoint/bucket/key) is used.
+(MinIO in a disposable container) and live mode pins DNS. A LAN/docker MinIO works in live mode through a dedicated allow-list of
+EXACTLY the configured M51_S3_ENDPOINT (scheme+host+port, still DNS-pinned): the generic public-only rule is not widened; https is
+required for it unless the host is loopback or M51_S3_ALLOW_PRIVATE=True. Path-style addressing (endpoint/bucket/key) is used.
 Errors: 4xx/5xx carry <Error><Code>; 5xx/429/SlowDown are retried with backoff, everything else raises S3Error.
 Why not boto3: it is synchronous, bypasses the egress guard and adds a heavy dependency; tests cross-check this
 signer byte-for-byte against botocore when botocore is installed.
@@ -59,11 +61,12 @@ def sign_headers(method: str, url: str, headers: dict, payload_hash: str, access
 
 class S3Client:
     def __init__(self, endpoint: str, bucket: str, access_key: str, secret_key: str, region: str = "us-east-1",
-                 retries: int = 3, backoff: float = 0.5):
+                 retries: int = 3, backoff: float = 0.5, allow_private: bool = False):
         if not (endpoint and bucket and access_key and secret_key):
             raise S3Error(0, "NotConfigured", "S3 endpoint, bucket and credentials are required")
         self.endpoint, self.bucket = endpoint.rstrip("/"), bucket
         self.ak, self.sk, self.region, self.retries, self.backoff = access_key, secret_key, region, retries, backoff
+        self.allow_private = allow_private      # M51_S3_ALLOW_PRIVATE: plain http to a private (LAN/docker) host is acceptable
 
     def _url(self, key: str = "", query: str = "") -> str:
         path = f"/{self.bucket}" + (f"/{_enc(key, '/-_.~')}" if key else "")
@@ -75,7 +78,8 @@ class S3Client:
             url = self._url(key, query)
             h = sign_headers(method, url, headers or {}, hashlib.sha256(body).hexdigest(), self.ak, self.sk, self.region)
             h.pop("host")                      # httpx sets Host itself (same value)
-            async with provider_client(timeout=60.0) as c:
+            # exactly the configured endpoint may be a private host in live mode (LAN MinIO); https unless loopback or allow_private
+            async with provider_client(timeout=60.0, allow_endpoint=self.endpoint, allow_plain_http=self.allow_private) as c:
                 r = await c.request(method, url, headers=h, content=body)
             if r.status_code in ok:
                 return r

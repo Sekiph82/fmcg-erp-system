@@ -27,6 +27,7 @@ import io
 import json
 import re
 import shutil
+import socket
 import uuid
 from collections import Counter
 from datetime import datetime, timezone
@@ -188,7 +189,9 @@ def validate_jsonld(nodes) -> list[str]:
 
 # ── fetching ─────────────────────────────────────────────────────────────────────────────────────
 
-async def _get(c: httpx.AsyncClient, url: str, base_origin: str, local: bool, max_bytes: int, hops: int = 5) -> dict:
+async def _get(c: httpx.AsyncClient, url: str, base_origin: str, local: bool, max_bytes: int, hops: int = 5, allow=None) -> dict:
+    """allow(url) -> bool (robots.txt) is re-checked for every redirect target BEFORE it is fetched. A redirect to a non-http(s) URL
+    raises CrawlError (the crawler records it as a page issue)."""
     chain, cur = [], url
     for _ in range(hops + 1):
         await check_url(cur, local=local)
@@ -200,6 +203,8 @@ async def _get(c: httpx.AsyncClient, url: str, base_origin: str, local: bool, ma
                     return {"status": r.status_code, "chain": chain, "final": cur, "loop": True, "text": ""}
                 if origin_of(nxt) != base_origin:
                     return {"status": r.status_code, "chain": chain, "final": nxt, "external": True, "text": ""}
+                if allow is not None and not allow(nxt):
+                    return {"status": r.status_code, "chain": chain, "final": nxt, "robots_blocked": True, "text": ""}
                 cur = nxt
                 continue
             ctype = r.headers.get("content-type", "").split(";")[0].strip().lower()
@@ -241,13 +246,23 @@ async def crawl(db: AsyncSession, origin: str, user: str, max_pages: Optional[in
     sitemap_locs: list[str] = []
     try:
         async with provider_client(timeout=float(getattr(settings, "M50_FETCH_TIMEOUT", 8))) as c:
-            rb = await _get(c, origin + "/robots.txt", origin, local, max_bytes)
+            try:
+                rb = await _get(c, origin + "/robots.txt", origin, local, max_bytes)
+            except (CrawlError, httpx.HTTPError):
+                rb = {"status": 599, "text": ""}                  # unreachable
             if rb["status"] == 200:
                 robots.parse(rb["text"].splitlines())
                 sitemap_locs = re.findall(r"(?im)^sitemap:\s*(\S+)", rb["text"])
+            elif 400 <= rb["status"] < 500:
+                robots.parse([])          # RFC 9309 2.3.1.3: unavailable (4xx) = everything allowed
+            else:                         # RFC 9309 2.3.1.4: 5xx / unreachable / unresolved redirect = assume complete disallow
+                robots.parse(["User-agent: *", "Disallow: /"])
+                issues.append((origin + "/robots.txt", "ROBOTS_UNREACHABLE", "WARN",
+                               f"robots.txt answered HTTP {rb['status']} (unreachable): treated as disallow-all, so nothing was crawled."))
+            if rb["status"] == 200 or 400 <= rb["status"] < 500:
+                sm_found, sm_urls = await _read_sitemaps(c, origin, local, max_bytes, sitemap_locs)
             else:
-                robots.parse([])          # no robots.txt = everything allowed
-            sm_found, sm_urls = await _read_sitemaps(c, origin, local, max_bytes, sitemap_locs)
+                sm_found, sm_urls = True, []        # robots.txt unreachable = disallow-all: nothing else is fetched, no sitemap verdict
             queue = [(origin + "/", 0)]
             seen = {origin + "/"}
             for u in sm_urls[:cap]:                      # sitemap URLs are legitimate crawl seeds of the same site
@@ -265,9 +280,13 @@ async def crawl(db: AsyncSession, origin: str, user: str, max_pages: Optional[in
                     issues.append((url, "ROBOTS_BLOCKED", "INFO", "Disallowed for crawlers by robots.txt; not fetched."))
                     continue
                 try:
-                    got = await _get(c, url, origin, local, max_bytes)
+                    got = await _get(c, url, origin, local, max_bytes, allow=lambda u: robots.can_fetch("POVUSeoBot", u))
                 except (FetchBlocked, EgressBlocked) as e:
                     pages[url] = {"status": None, "error": str(e)[:200]}
+                    continue
+                except CrawlError as e:                        # e.g. a redirect to ftp:// or javascript: : a finding, not an abort
+                    pages[url] = {"status": None, "error": str(e)[:200]}
+                    issues.append((url, "REDIRECT_INVALID", "WARN", "Redirects to a URL that is not http(s); not followed."))
                     continue
                 except httpx.HTTPError:
                     pages[url] = {"status": None, "error": "unreachable"}
@@ -276,6 +295,8 @@ async def crawl(db: AsyncSession, origin: str, user: str, max_pages: Optional[in
                 d = {"status": got["status"], "final_url": got["final"], "chain": got["chain"], "depth": depth}
                 if got.get("loop"):
                     issues.append((url, "REDIRECT_LOOP", "ERROR", "Redirects loop."))
+                if got.get("robots_blocked"):
+                    issues.append((url, "ROBOTS_BLOCKED", "INFO", f"Redirects to {got['final'][:150]} which robots.txt disallows; not fetched."))
                 if got.get("external"):
                     issues.append((url, "REDIRECT_EXTERNAL", "WARN", f"Redirects off-site to {got['final'][:150]} (not followed)."))
                 if len(got["chain"]) > 1:
@@ -452,36 +473,96 @@ def parse_lighthouse(report: dict) -> dict:
             "performance_score": (report.get("categories", {}).get("performance") or {}).get("score")}
 
 
+async def _public_ips(url: str, local: bool) -> list[str]:
+    """check_url, then the addresses the lab browser is pinned to (it must not re-resolve the name later)."""
+    await check_url(url, local=local)
+    host = urlsplit(url).hostname
+    try:
+        return sorted({i[4][0].split("%")[0] for i in await asyncio.get_running_loop().getaddrinfo(host, None, type=socket.SOCK_STREAM)})
+    except OSError:
+        raise FetchBlocked(f"Cannot resolve {host}.") from None
+
+
+def chrome_lockdown_flags(host: str, ips: list[str]) -> list[str]:
+    """Chrome flags that confine a lab browser to the ONE own host: the name is pinned to the addresses checked above (no
+    DNS rebinding), every other name does not resolve, and every other address (IP literals, loopback) goes to a dead proxy.
+    The host-resolver rule contains spaces, which Lighthouse's single --chrome-flags string cannot carry, so Lighthouse gets only
+    the space-free proxy flags (every non-own address -> dead proxy); Playwright passes the full list as separate arguments."""
+    ip = ips[0] if ips else "0.0.0.0"
+    return ["--headless", "--no-sandbox", f"--host-resolver-rules=MAP {host} {ip}, MAP * ~NOTFOUND",
+            "--proxy-server=http://127.0.0.1:9", f"--proxy-bypass-list=<-loopback>;{host}"]
+
+
+async def _lab_request_guard(route, local: bool, host: str) -> None:
+    """Playwright route handler: only requests to the own host (and inline data:/blob: URLs) that pass check_url proceed."""
+    u = route.request.url
+    try:
+        if urlsplit(u).scheme in ("data", "blob", "about"):
+            return await route.continue_()
+        if (urlsplit(u).hostname or "").lower() != host:
+            raise FetchBlocked("off-origin lab request")
+        await check_url(u, local=local)
+    except (FetchBlocked, EgressBlocked, ValueError):
+        return await route.abort("blockedbyclient")
+    await route.continue_()
+
+
 async def lab_vitals(db: AsyncSession, url: str) -> dict:
-    await allowed(db, url)
+    """Lab run in a local headless Chrome. OWN origins only (an AUTHORIZED_SOURCE is someone else's site: a browser would run its
+    scripts and fetch whatever they ask for). The browser is confined to the checked own host (see chrome_lockdown_flags for
+    Lighthouse; a page.route guard that re-runs check_url on every request and redirect for Playwright). The subprocess/browser is
+    always killed/closed, also on timeout. Residual: Lighthouse trusts Chrome's own flag handling, Playwright additionally filters
+    each request."""
+    await allowed(db, url, kinds=("OWN",))
     tool = lab_tool()
     base = {"kind": "LAB", "url": url, "measured_at": datetime.now(timezone.utc).isoformat(), "tool": tool}
     if tool is None:
         return {**base, "state": "UNAVAILABLE", "metrics": None,
                 "reason": "Neither Lighthouse nor Playwright is installed on this server; no numbers are shown."}
-    await check_url(url, local=egress_mode() == "local")
+    if egress_mode() == "off":
+        return {**base, "state": "BLOCKED", "metrics": None, "reason": "Provider traffic is switched off (PROVIDER_EGRESS=off)."}
+    local = egress_mode() == "local"
+    host = (urlsplit(url).hostname or "").lower()
+    try:
+        ips = await _public_ips(url, local)
+    except (FetchBlocked, EgressBlocked) as e:
+        return {**base, "state": "BLOCKED", "metrics": None, "reason": str(e)[:200]}
     timeout = int(getattr(settings, "SEO_LAB_TIMEOUT", 90))
+    proc = br = None
     try:
         if tool == "lighthouse":
             proc = await asyncio.create_subprocess_exec(
                 shutil.which("lighthouse"), url, "--output=json", "--quiet", "--only-categories=performance",
-                "--chrome-flags=--headless --no-sandbox", stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL)
+                "--chrome-flags=" + " ".join(f for f in chrome_lockdown_flags(host, ips) if " " not in f), stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL)
             out, _ = await asyncio.wait_for(proc.communicate(), timeout)
             return {**base, "state": "OK", "metrics": parse_lighthouse(json.loads(out))}
-        from playwright.async_api import async_playwright
-        async with async_playwright() as p:
-            br = await p.chromium.launch()
-            pg = await br.new_page()
-            await pg.add_init_script("""window.__v={lcp:0,cls:0};
-              new PerformanceObserver(l=>{for(const e of l.getEntries())window.__v.lcp=e.startTime}).observe({type:'largest-contentful-paint',buffered:true});
-              new PerformanceObserver(l=>{for(const e of l.getEntries())if(!e.hadRecentInput)window.__v.cls+=e.value}).observe({type:'layout-shift',buffered:true});""")
-            await pg.goto(url, wait_until="load", timeout=timeout * 1000)
-            await pg.wait_for_timeout(1000)
-            v = await pg.evaluate("window.__v")
-            await br.close()
+
+        async def run_playwright() -> dict:
+            nonlocal br
+            from playwright.async_api import async_playwright
+            async with async_playwright() as p:
+                br = await p.chromium.launch(args=chrome_lockdown_flags(host, ips)[2:])
+                pg = await br.new_page()
+                await pg.route("**", lambda route: _lab_request_guard(route, local, host))
+                await pg.add_init_script("""window.__v={lcp:0,cls:0};
+                  new PerformanceObserver(l=>{for(const e of l.getEntries())window.__v.lcp=e.startTime}).observe({type:'largest-contentful-paint',buffered:true});
+                  new PerformanceObserver(l=>{for(const e of l.getEntries())if(!e.hadRecentInput)window.__v.cls+=e.value}).observe({type:'layout-shift',buffered:true});""")
+                await pg.goto(url, wait_until="load", timeout=timeout * 1000)
+                await pg.wait_for_timeout(1000)
+                return await pg.evaluate("window.__v")
+        v = await asyncio.wait_for(run_playwright(), timeout + 10)
         return {**base, "state": "OK", "metrics": {"lcp_ms": v["lcp"], "cls": v["cls"]}}
     except (asyncio.TimeoutError, OSError, ValueError, Exception) as e:  # noqa: BLE001  tool failure is reported, not hidden
         return {**base, "state": "ERROR", "metrics": None, "reason": f"Lab run failed: {type(e).__name__}"}
+    finally:
+        if proc is not None and getattr(proc, "returncode", 0) is None:
+            proc.kill()
+            await proc.wait()
+        if br is not None:
+            try:
+                await br.close()
+            except Exception:  # noqa: BLE001  already gone
+                pass
 
 
 async def field_vitals(db: AsyncSession, url_or_origin: str, form_factor: Optional[str] = None, page: bool = False) -> dict:
