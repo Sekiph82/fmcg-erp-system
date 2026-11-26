@@ -70,10 +70,10 @@ async def request(db: AsyncSession, call: CallLog) -> CallLog:
     return call
 
 
-async def _download(url: str) -> bytes:
+async def _download(url: str, auth: Optional[tuple] = None) -> bytes:
     """Streamed with a byte cap so a huge or endless body never fills memory (review M43 #7)."""
     async with provider_client(timeout=60) as c:
-        async with c.stream("GET", url) as r:
+        async with c.stream("GET", url, auth=auth) as r:
             if r.status_code != 200:
                 raise TranscriptionError(f"Recording download failed ({r.status_code}).", 502)
             buf = bytearray()

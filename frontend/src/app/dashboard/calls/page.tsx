@@ -3,6 +3,8 @@ import { EntityPicker } from "@/components/EntityPicker";
 import { useCallback, useEffect, useState } from "react";
 import { apiClient } from "@/lib/api";
 import { VoicePanel, CallTranscript, CoachingPanel } from "@/components/VoicePanel";
+import { ContactCenterPanel } from "@/components/ContactCenterPanel";
+import { TranscriptReview } from "@/components/TranscriptReview";
 import { voipApi, CallLog, CallStats, OUTCOME_COLORS, fmtDuration } from "@/lib/voip";
 
 const BLANK_FORM = {
@@ -88,6 +90,7 @@ export default function CallsPage() {
   return (
     <div className="p-4 sm:p-6 space-y-5">
       <VoicePanel />
+      <ContactCenterPanel />
       <CoachingPanel />
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
@@ -203,7 +206,7 @@ export default function CallsPage() {
                       : <span className="text-gray-300">{c.recording_consent ? "—" : "No consent"}</span>}
                     {c.has_transcript && c.recording_consent && (
                       <button onClick={() => analyse(c)} className="ml-2 text-xs text-indigo-700 underline">Analyse</button>)}
-                    {c.recording_url && <details className="mt-1"><summary className="cursor-pointer text-indigo-700">Transcript</summary><CallTranscript callId={c.id} /></details>}
+                    {c.recording_url && <details className="mt-1"><summary className="cursor-pointer text-indigo-700">Transcript</summary><CallTranscript callId={c.id} /><TranscriptReview callId={c.id} hasConsentedRecording={!!c.recording_consent} /></details>}
                   </td>
                   <td className="px-4 py-3 text-xs text-gray-500 max-w-xs truncate">{c.notes ?? "—"}</td>
                 </tr>

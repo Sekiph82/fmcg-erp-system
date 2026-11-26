@@ -581,6 +581,12 @@ ENDPOINT_ROUTE_DEFINITIONS: tuple[EndpointRouteDefinition, ...] = (
     EndpointRouteDefinition(key="card_payments_public", route_prefix="/public/card-ipn", import_path="app.api.v1.endpoints.card_payments_public", tags=('sales',)),  # M48.S01.T010
     EndpointRouteDefinition(key="esign_connect_public", route_prefix="/public/esign", import_path="app.api.v1.endpoints.esign_connect_public", tags=('esign',)),  # M48.S01.T009
     EndpointRouteDefinition(key="crm_consent_confirm_public", route_prefix="/public/consent-confirm", import_path="app.api.v1.endpoints.crm_consent_confirm_public", tags=('crm',)),  # M48.S01.T022 double opt-in
+    EndpointRouteDefinition(key="meeting_series", route_prefix="/meeting-series", import_path="app.api.v1.endpoints.meeting_series", tags=('meetings',)),  # M49.S01.T001
+    EndpointRouteDefinition(key="calendar_subscriptions", route_prefix="/calendar-subscriptions", import_path="app.api.v1.endpoints.calendar_subscriptions", tags=('meetings',)),  # M49.S01.T002
+    EndpointRouteDefinition(key="calendar_hooks_public", route_prefix="/public/calendar-hooks", import_path="app.api.v1.endpoints.calendar_hooks_public", tags=('meetings',)),  # M49.S01.T002
+    EndpointRouteDefinition(key="shared_mailboxes", route_prefix="/shared-mailboxes", import_path="app.api.v1.endpoints.shared_mailboxes", tags=('email',)),  # M49.S01.T003
+    EndpointRouteDefinition(key="ads_lifecycle", route_prefix="/ads-lifecycle", import_path="app.api.v1.endpoints.ads_lifecycle", tags=('marketing',)),  # M49.S01.T006
+    EndpointRouteDefinition(key="audience_sync", route_prefix="/audience-sync", import_path="app.api.v1.endpoints.audience_sync", tags=('marketing',)),  # M49.S01.T011
     EndpointRouteDefinition(key="booking_pages", route_prefix="/booking-pages", import_path="app.api.v1.endpoints.booking_pages", tags=('meetings',)),
     EndpointRouteDefinition(key="booking_public", route_prefix="/public/book", import_path="app.api.v1.endpoints.booking_public", tags=('meetings',)),
     EndpointRouteDefinition(key="oauth_connections", route_prefix="/integrations/oauth", import_path="app.api.v1.endpoints.oauth_connections", tags=('integrations',)),
@@ -770,6 +776,10 @@ PUBLIC_ROUTES: frozenset[tuple[str, str]] = frozenset({
     ("/public/esign/adobe-sign", "POST"),
     ("/public/consent-confirm", "GET"),                    # M48.S01.T022: HMAC-signed expiring token; GET validates only
     ("/public/consent-confirm", "POST"),                   # POST confirms PENDING -> SUBSCRIBED
+    ("/public/calendar-hooks/google", "POST"),             # M49.S01.T002 channel-token digest + resource id + replay
+    ("/public/calendar-hooks/microsoft", "POST"),          # Graph validationToken handshake / clientState + replay
+    ("/public/calendar-hooks/microsoft/lifecycle", "POST"),
+    ("/calls/cc/twilio/webhook", "POST"),                  # M49.S01.T004 X-Twilio-Signature HMAC-SHA1, replay-keyed
     ("/public/docs/{token}", "GET"),                       # shared sales document (M45.S01.T013): token, expiry, revocation
     ("/public/docs/{token}/view", "POST"),
     ("/public/docs/{token}/file", "GET"),                  # only APPROVED + malware-scan CLEAN files

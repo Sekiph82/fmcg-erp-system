@@ -380,6 +380,7 @@ async def provider_callback(request: Request, token: str = Query("", max_length=
 class IvrOption(BaseModel):
     digit: str = Field(pattern=r"^[0-9]$")
     label: str = Field(min_length=1, max_length=60)
+    queue_id: Optional[uuid.UUID] = None       # M49.S01.T004: route this digit to a contact-center queue
     user_ids: list[uuid.UUID] = Field(default_factory=list)
     phone_numbers: list[str] = Field(default_factory=list)
 
@@ -417,7 +418,8 @@ async def save_ivr(body: IvrIn, db: AsyncSession = Depends(get_db), current_user
         or VoiceIvrMenu(phone_number=phone)
     m.name, m.greeting_text, m.record_calls, m.consent_text, m.is_active = (
         body.name, body.greeting_text, body.record_calls, body.consent_text, body.is_active)
-    m.options = [{**o.model_dump(), "user_ids": [str(u) for u in o.user_ids]} for o in body.options]
+    m.options = [{**o.model_dump(), "user_ids": [str(u) for u in o.user_ids],
+                  "queue_id": str(o.queue_id) if o.queue_id else None} for o in body.options]
     db.add(m)
     await db.commit()
     return _ivr_out(m)
@@ -642,3 +644,12 @@ async def remove_clip(playlist_id: uuid.UUID, clip_id: uuid.UUID, db: AsyncSessi
         raise HTTPException(404, "Clip not found")
     await db.delete(c)
     await db.commit()
+
+
+# ── M49.S01.T004/T005 contact center and transcription review (sub-routers) ───────────────────────────────────────
+
+from app.api.v1.endpoints.voice_cc import router as _cc_router  # noqa: E402
+from app.api.v1.endpoints.transcripts import router as _tr_router  # noqa: E402
+
+router.include_router(_cc_router, prefix="/cc")
+router.include_router(_tr_router, prefix="/transcripts")

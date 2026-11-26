@@ -9,6 +9,7 @@ import {
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { ConnectedAccounts } from "@/components/ConnectedAccounts";
+import { SharedMailboxPanel } from "@/components/email/SharedMailboxPanel";
 
 const MODULE_LABEL: Record<string, string> = {
   procurement: "Purchase",
@@ -96,6 +97,7 @@ export default function EmailPage() {
   return (
     <div className="space-y-3">
     <ConnectedAccounts purposes={["mail"]} />
+    <SharedMailboxPanel />
     <div className="h-[calc(100vh-120px)] flex rounded-xl border bg-white overflow-hidden">
       {/* Left: Accounts + Thread list */}
       {/* phones: one pane at a time (list, or the open thread / compose) */}

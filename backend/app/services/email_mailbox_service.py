@@ -233,6 +233,7 @@ class Parsed:
     sender_verified: bool = False   # receiving server reported DMARC/DKIM pass for the From domain
     bounces: list[tuple[str, str]] = field(default_factory=list)  # (failed recipient, status) from a DSN
     bounced_message_id: Optional[str] = None                     # Message-ID of the mail that bounced
+    ics_replies: list[str] = field(default_factory=list)         # M49: text/calendar METHOD:REPLY parts (invitation answers)
 
 
 def _dsn(msg) -> tuple[list[tuple[str, str]], Optional[str]]:
@@ -315,8 +316,17 @@ def parse(raw: bytes) -> Parsed:
     for part in msg.iter_attachments():
         payload = part.get_payload(decode=True) or b""
         atts.append({"name": part.get_filename() or "attachment", "type": part.get_content_type(), "size": len(payload)})
+    replies = []
+    for part in msg.walk():
+        if part.get_content_type() == "text/calendar":
+            try:
+                body = part.get_content()
+            except Exception:
+                continue
+            if isinstance(body, str) and "METHOD:REPLY" in body.upper():
+                replies.append(body[:20000])
     return Parsed(
-        message_id=mid, in_reply_to=(_ids(str(msg.get("In-Reply-To", ""))) or [None])[0],
+        ics_replies=replies, message_id=mid, in_reply_to=(_ids(str(msg.get("In-Reply-To", ""))) or [None])[0],
         references=_ids(str(msg.get("References", ""))),
         from_email=_clean(addr.lower())[:255], from_name=_clean(name or None),
         to=[a.lower() for _, a in getaddresses([str(v) for v in msg.get_all("To", [])]) if a],
@@ -380,6 +390,10 @@ async def store(db: AsyncSession, acc: EmailAccount, p: Parsed) -> Optional[Emai
             else:  # forged From headers are trivial; leave it to staff (the message stays in the thread)
                 log.info("unverified unsubscribe reply from %s not applied", p.from_email)
     await db.flush()
+    if p.ics_replies and not outbound:      # M49.S01.T001: an invitee's accept / decline of a recurring series
+        from app.services.calendar_series_service import apply_reply
+        for ics in p.ics_replies[:3]:
+            await apply_reply(db, ics, p.from_email)
     return msg
 
 
@@ -469,9 +483,11 @@ async def _sync_api_account(db: AsyncSession, acc: EmailAccount) -> dict:
 
 async def send(db: AsyncSession, acc: EmailAccount, *, to: list[str], cc: list[str], subject: str, body: str,
                thread: Optional[EmailThread], sent_by: Any, link: dict,
-               calendar: Optional[tuple[str, str]] = None) -> EmailThread:
-    """Deliver through the mailbox's SMTP server, then store the message. Nothing is stored when delivery fails."""
-    if not is_connected(acc):
+               calendar: Optional[tuple[str, str]] = None, send_fn: Any = None) -> EmailThread:
+    """Deliver through the mailbox's SMTP server, then store the message. Nothing is stored when delivery fails.
+    send_fn (M49.S01.T003): an async callable(mime_bytes) that delivers instead, used by shared / delegated mailboxes
+    whose provider call is made with the sending member's own token."""
+    if send_fn is None and not is_connected(acc):
         raise MailboxError("Connect this mailbox (Google, Microsoft or IMAP/SMTP) before sending; nothing was sent.")
     # same suppression as the CRM outbox: unsubscribed / bounced / complained addresses get no mail of any kind
     from app.models.crm import CRMContactConsent
@@ -506,7 +522,9 @@ async def send(db: AsyncSession, acc: EmailAccount, *, to: list[str], cc: list[s
         method, ics = calendar
         mime.add_attachment(ics.encode(), maintype="text", subtype="calendar", filename="invite.ics",
                             params={"method": method, "charset": "UTF-8"})
-    if acc.oauth_connection_id:
+    if send_fn is not None:
+        await send_fn(mime.as_bytes())
+    elif acc.oauth_connection_id:
         from app.services import mail_api_adapters as api
         from app.services import oauth_service as oauth
         try:
@@ -570,6 +588,8 @@ async def run_mailbox_sync(interval: float = 300.0) -> None:
         try:
             async with AsyncSessionLocal() as db:
                 await sync_all(db)
+                from app.services import shared_mailbox_service    # M49.S01.T003: own cursor per shared mailbox
+                await shared_mailbox_service.sync_all(db)
         except asyncio.CancelledError:
             raise
         except Exception:

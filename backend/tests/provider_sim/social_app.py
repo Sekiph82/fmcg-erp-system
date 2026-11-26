@@ -28,7 +28,9 @@ import httpx
 from fastapi import FastAPI, Header, Request
 from fastapi.responses import JSONResponse, Response
 
-TOKENS = {"meta": "sim-page-token", "linkedin": "sim-li-social", "tiktok": "sim-tt-social"}
+from tests.provider_sim import social_m49_app as m49
+
+TOKENS = {"meta": "sim-page-token", "linkedin": "sim-li-social", "tiktok": "sim-tt-social", "youtube": "sim-yt-social", "x": "sim-x-social"}
 LI_VERSION = "202611"
 TT_SECRET = "sim-tt-client-secret"
 VERIFIED_PREFIX = "https://cdn.povu-demo.test/videos/"
@@ -45,12 +47,21 @@ def social_sim_settings(base: str) -> dict:
             "TIKTOK_APP_AUDITED": False, "SOCIAL_STATUS_BACKOFF_SECONDS": 0.0}
 
 
-def apply_sim_settings(monkeypatch, base: str, **extra) -> None:
+def m49_sim_settings(base: str) -> dict:
+    """M49 networks (YouTube, X) and Meta upload hosts; opt-in so M44/M48 tests keep X and YouTube unconfigured (manual export)."""
+    base = base.rstrip("/")
+    return {"YOUTUBE_API_URL": f"{base}/yt", "YOUTUBE_SOCIAL_ACCESS_TOKEN": TOKENS["youtube"], "YOUTUBE_CHUNK_BYTES": 256 * 1024,
+            "YOUTUBE_UNVERIFIED_PRIVATE_ONLY": False, "X_API_URL": f"{base}/x", "X_SOCIAL_ACCESS_TOKEN": TOKENS["x"],
+            "META_APP_ID": "1234567890", "META_RUPLOAD_URL": f"{base}/meta-rupload", "META_VIDEO_API_URL": f"{base}/meta",
+            "SOCIAL_ITEM_RETENTION_DAYS": 365}
+
+
+def apply_sim_settings(monkeypatch, base: str, m49: bool = False, **extra) -> None:
     """Point the ERP at this simulator. New M48 settings are not Settings fields yet (read with getattr), so they are
     placed on the instance dict; monkeypatch removes them afterwards."""
     from app.core.config import settings
     monkeypatch.setattr(settings, "PROVIDER_EGRESS", "local")
-    for k, v in {**social_sim_settings(base), **extra}.items():
+    for k, v in {**social_sim_settings(base), **(m49_sim_settings(base) if m49 else {}), **extra}.items():
         if k in type(settings).model_fields:
             monkeypatch.setattr(settings, k, v)
         else:
@@ -75,6 +86,7 @@ def create_social_app() -> FastAPI:
         st.clear()
         st.update(faults={}, calls=[], tt={}, ig={}, processing_polls=2, next_outcome=None, audited=False,
                   privacy_options=["PUBLIC_TO_EVERYONE", "MUTUAL_FOLLOW_FRIENDS", "SELF_ONLY"], video_size=MB, n=0)
+        m49.reset(st)
     reset()
 
     def fault(k: str) -> Optional[str]:
@@ -89,7 +101,7 @@ def create_social_app() -> FastAPI:
         body = await request.json()
         for k, v in (body.get("faults") or {}).items():
             st["faults"].setdefault(k, []).extend(v)
-        for k in ("processing_polls", "next_outcome", "audited", "privacy_options", "video_size"):
+        for k in ("processing_polls", "next_outcome", "audited", "privacy_options", "video_size", *m49.CONTROL_KEYS):
             if k in body:
                 st[k] = body[k]
         return {"ok": True}
@@ -195,13 +207,15 @@ def create_social_app() -> FastAPI:
         base = {"uploaded_bytes": rec["uploaded"], "downloaded_bytes": 0}
         if rec["cancelled"]:
             return tt_ok({**base, "status": "FAILED", "fail_reason": "publish_cancelled"})
-        if rec["source"] == "FILE_UPLOAD" and rec["uploaded"] < rec["size"]:
+        if rec["source"] == "FILE_UPLOAD" and rec["uploaded"] < rec["size"] and not rec.get("inbox"):
             return tt_ok({**base, "status": "PROCESSING_UPLOAD"})
         if rec["polls"] > 0:
             rec["polls"] -= 1
             return tt_ok({**base, "status": "PROCESSING_DOWNLOAD" if rec["source"] == "PULL_FROM_URL" else "PROCESSING_UPLOAD"})
         if rec["outcome"]:
             return tt_ok({**base, **rec["outcome"]})
+        if rec.get("inbox"):
+            return tt_ok({**base, "status": "SEND_TO_USER_INBOX"})
         ids = [7300000000000000000 + int(re.sub(r"\D", "", rec_id(rec)) or 0)] if rec["privacy"] == "PUBLIC_TO_EVERYONE" else []
         return tt_ok({**base, "status": "PUBLISH_COMPLETE", "publicaly_available_post_id": ids})
 
@@ -244,10 +258,16 @@ def create_social_app() -> FastAPI:
         err, f = page_gate(authorization)
         if err:
             return err
-        st["calls"].append({"provider": "facebook", "form": dict(await request.form())})
+        form = dict(await request.form())
+        bad = m49.fb_feed_check(st, form)
+        if bad:
+            return meta_err(100, 400, bad)
+        st["calls"].append({"provider": "facebook", "form": form})
+        pid = f"{node}_{len(st['calls'])}"
+        m49.fb_register_post(st, pid, form)
         if f == "timeout":
             lose_answer()
-        return {"id": f"{node}_{len(st['calls'])}"}
+        return {"id": pid}
 
     @app.post("/meta/{ver}/{node}/photos")
     async def page_photo(ver: str, node: str, request: Request, authorization: Optional[str] = Header(None)):
@@ -258,7 +278,13 @@ def create_social_app() -> FastAPI:
         if not str(form.get("url", "")).startswith("https://"):
             return meta_err(100, 400, "Invalid image URL")
         st["calls"].append({"provider": "facebook-photo", "form": form})
-        return {"id": "ph1", "post_id": f"{node}_ph1"}
+        st["n"] += 1
+        phid = f"ph{st['n']}"
+        st["fb_photos"][phid] = form
+        if form.get("published") == "false" and not form.get("scheduled_publish_time"):
+            return {"id": phid}
+        m49.fb_register_post(st, f"{node}_{phid}", form)
+        return {"id": phid, "post_id": f"{node}_{phid}"}
 
     @app.post("/meta/{ver}/{node}/media")
     async def ig_media(ver: str, node: str, request: Request, authorization: Optional[str] = Header(None)):
@@ -266,35 +292,16 @@ def create_social_app() -> FastAPI:
         if err:
             return err
         form = dict(await request.form())
-        if len(form.get("caption", "")) > 2200 or not str(form.get("image_url", "")).startswith("https://"):
-            return meta_err(100, 400, "Invalid parameter")
+        bad = m49.ig_media_check(st, form)
+        if bad or len(form.get("caption", "")) > 2200:
+            return meta_err(100, 400, bad or "Invalid parameter")
         st["n"] += 1
         cid = f"1789{run:06d}{st['n']:04d}"
         st["ig"][cid] = {"polls": st["processing_polls"], "outcome": (st["next_outcome"] or {}).get("status_code"),
-                         "published": None}
+                         "published": None, "form": form, "child": form.get("is_carousel_item") == "true"}
         st["next_outcome"] = None
         st["calls"].append({"provider": "instagram-container", "form": form, "id": cid})
         return {"id": cid}
-
-    @app.get("/meta/{ver}/{cid}")
-    async def ig_container(ver: str, cid: str, fields: str = "", authorization: Optional[str] = Header(None)):
-        err, _ = page_gate(authorization, "ig_status")
-        if err:
-            return err
-        c = st["ig"].get(cid)
-        if c is None:
-            return meta_err(100, 400, "Unsupported get request")
-        if c["published"]:
-            code = "PUBLISHED"
-        elif c["polls"] > 0:
-            c["polls"] -= 1
-            code = "IN_PROGRESS"
-        else:
-            code = c["outcome"] or "FINISHED"
-        out = {"id": cid, "status_code": code}
-        if code == "ERROR":
-            out["status"] = "Error: 2207026 (simulated unsupported media)"
-        return out
 
     @app.post("/meta/{ver}/{node}/media_publish")
     async def ig_publish(ver: str, node: str, request: Request, authorization: Optional[str] = Header(None)):
@@ -307,25 +314,20 @@ def create_social_app() -> FastAPI:
             return meta_err(9007, 400, "Media ID is not available")
         if c["published"]:
             return meta_err(9007, 400, "The media has already been published")
+        if c["child"]:
+            return meta_err(9007, 400, "A carousel item cannot be published on its own")
+        if st["ig_used"] >= st["ig_quota"]:
+            return meta_err(9007, 400, "The daily publishing limit was reached")
+        st["ig_used"] += 1
         c["published"] = f"ig-media-{cid}"
         st["calls"].append({"provider": "instagram", "creation_id": cid})
         if f == "timeout":
             lose_answer()
         return {"id": c["published"]}
 
-    # ── LinkedIn Posts API ───────────────────────────────────────────────
-    @app.post("/linkedin/rest/posts")
-    async def li_post(request: Request, authorization: Optional[str] = Header(None),
-                      linkedin_version: Optional[str] = Header(None)):
-        if authorization != f"Bearer {TOKENS['linkedin']}":
-            return JSONResponse({"status": 401, "message": "Invalid access token"}, 401)
-        if linkedin_version != LI_VERSION:
-            return JSONResponse({"status": 426, "message": "Requested version is not active"}, 426)
-        body = await request.json()
-        if not body.get("author", "").startswith("urn:li:organization:") or len(body.get("commentary", "")) > 3000:
-            return JSONResponse({"status": 422, "message": "Invalid post"}, 422)
-        st["calls"].append({"provider": "linkedin", "json": body})
-        return Response(status_code=201, headers={"x-restli-id": f"urn:li:share:{9000 + len(st['calls'])}"})
+    # ── LinkedIn legacy text post (M48) is served by the M49 module together with Images / Videos / lifecycle ──
+    m49.register(app, st, ctx=dict(fault=fault, lose_answer=lose_answer, meta_err=meta_err, page_gate=page_gate, tt_err=tt_err,
+                                   tt_ok=tt_ok, tt_gate=tt_gate, run=run))
 
     app.state.sim = st
     return app

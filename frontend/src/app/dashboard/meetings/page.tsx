@@ -1,6 +1,8 @@
 "use client";
 
 import { ConnectedAccounts } from "@/components/ConnectedAccounts";
+import { CalendarSubscriptionsPanel } from "@/components/meetings/CalendarSubscriptionsPanel";
+import { RecurringSeriesPanel } from "@/components/meetings/RecurringSeriesPanel";
 import { BookingPagesPanel } from "@/components/BookingPagesPanel";
 import { EntityPicker } from "@/components/EntityPicker";
 import { useCallback, useEffect, useState } from "react";
@@ -177,6 +179,8 @@ export default function MeetingsPage() {
   return (
     <div className="p-6 space-y-5">
       <ConnectedAccounts purposes={["calendar"]} />
+      <CalendarSubscriptionsPanel />
+      <RecurringSeriesPanel />
       <CalendarConflicts />
       <BookingPagesPanel />
       <div className="flex items-center justify-between flex-wrap gap-3">

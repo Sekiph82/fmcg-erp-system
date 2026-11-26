@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import hmac
 import logging
+import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 from xml.sax.saxutils import escape, quoteattr
@@ -46,12 +47,16 @@ def provider() -> Optional[str]:
     p = (settings.VOICE_PROVIDER or "").strip().lower()
     if p == "africastalking" and settings.VOICE_AT_USERNAME and settings.VOICE_AT_API_KEY and settings.VOICE_AT_PHONE_NUMBER:
         return p
+    if p == "twilio":                                       # M49.S01.T004: second carrier (voice_carrier.py)
+        from app.services import voice_carrier
+        return p if voice_carrier.twilio_configured() else None
     return None
 
 
 def capabilities() -> dict:
+    from app.services import voice_carrier
     p = provider()
-    return {"provider": p, "configured": p is not None, "click_to_call": True, "server_dialing": p is not None,
+    return {"provider": p, "matrix": voice_carrier.matrix_out(p), "configured": p is not None, "click_to_call": True, "server_dialing": p is not None,
             "power_dialer": True, "ivr": p is not None, "recording": p is not None, "voicemail_drop": False,
             "voicemail_drop_reason": "The configured provider has no mid-call control API; leave a live voicemail.",
             "transcription": bool(settings.CALL_TRANSCRIPTION_ENABLED)}
@@ -70,6 +75,12 @@ async def place_call(db: AsyncSession, call: CallLog, agent_phone: str) -> CallL
     """Ask the provider to ring the agent; the customer is dialled from the answer callback. Caller commits."""
     if provider() is None:
         raise VoiceError("No voice provider is configured; use the phone's dialler.", 409)
+    if provider() == "twilio":
+        from app.services import contact_center_service as cc
+        try:
+            return await cc.place_twilio(call, agent_phone)
+        except cc.CCError as e:
+            raise VoiceError(str(e), 502 if e.status_code != 504 else 504) from None
     data = {"username": settings.VOICE_AT_USERNAME, "from": settings.VOICE_AT_PHONE_NUMBER, "to": _digits(agent_phone),
             "clientRequestId": call.call_ref}
     try:
@@ -134,6 +145,8 @@ async def handle_callback(db: AsyncSession, form: dict) -> str:
         if call.outcome in ("NO_ANSWER", "BUSY", "FAILED"):
             call.follow_up_required = True
         await _advance_dialer(db, call)
+        from app.services import contact_center_service as _cc      # M49: free the agent held for this call
+        await _cc.release_agent(db, call)
     # the recording may arrive in its own, later notification: keep it only with consent, https, within retention
     if form.get("recordingUrl") and call.recording_consent and form["recordingUrl"].startswith("https://")             and not call.recording_url:
         call.recording_url = form["recordingUrl"][:500]
@@ -168,6 +181,14 @@ async def _ivr_digits(db: AsyncSession, call: CallLog, form: dict) -> str:
     opt = next((o for o in (menu.options if menu else []) if str(o.get("digit")) == digit), None)
     if opt is None:
         return _xml(_say("That is not a valid choice. Goodbye."))
+    if opt.get("queue_id"):                                 # M49.S01.T004: ERP queue; no hold on this carrier (UNVERIFIED)
+        from app.models.m49_voice import VoiceQueue
+        from app.services import contact_center_service as cc
+        queue = await db.get(VoiceQueue, uuid.UUID(opt["queue_id"]))
+        d = await cc.decide(db, call, queue, can_hold=False, can_voicemail=False) if queue and queue.is_active else None
+        if d is None or d.kind != "DIAL":
+            return _xml(_say("Everyone in this team is busy. We will call you back."))
+        return _xml(_say(f"Connecting you to {opt.get('label', 'our team')}."), _dial(d.numbers, record=bool(menu.record_calls)))
     agents = (await db.execute(select(VoiceAgentProfile).where(
         VoiceAgentProfile.user_id.in_(opt.get("user_ids") or []), VoiceAgentProfile.available.is_(True)))).scalars().all()
     numbers = [a.phone_number for a in agents] + list(opt.get("phone_numbers") or [])

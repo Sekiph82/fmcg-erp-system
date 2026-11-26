@@ -191,7 +191,7 @@ def create_ads_app() -> FastAPI:
         f = fault("meta")
         if f == "lost":
             return meta_err(2, 503, "Service temporarily unavailable")
-        o.update({k: v for k, v in form.items() if k in ("status", "daily_budget", "name")})
+        o.update({k: v for k, v in form.items() if k in ("status", "daily_budget", "name", "start_time", "end_time")})
         if f == "unknown":
             return meta_err(2, 500, "An unexpected error has occurred. Please retry your request later.")
         return {"success": True}
@@ -209,6 +209,7 @@ def create_ads_app() -> FastAPI:
         out = {"id": oid, "name": o["name"], "status": o.get("status", "ACTIVE"), "effective_status": eff}
         if o.get("daily_budget"):
             out["daily_budget"] = str(o["daily_budget"])
+        out.update({k: o[k] for k in ("start_time", "end_time") if o.get(k)})     # M49 schedule read-back
         return {k: v for k, v in out.items() if k in fields.split(",") or k == "id"}
 
     # ── Google Ads ─────────────────────────────────────────────────────
@@ -360,6 +361,7 @@ def create_ads_app() -> FastAPI:
             v = {"resourceName": rn, "status": o.get("status", "ENABLED")}
             if "name" in o:
                 v["name"] = o["name"]
+            v.update({k: o[k] for k in ("startDateTime", "endDateTime") if o.get(k)})     # M49 schedule read-back
             if res == "campaign_budget":
                 v["amountMicros"] = str(o["amountMicros"])
             out.append({key: v})
@@ -633,7 +635,9 @@ def create_ads_app() -> FastAPI:
         f = fault("tiktok")
         if f == "lost":
             return tt(50002, "Service is busy, please retry")
-        o.update({k: b[k] for k in ("budget",) if k in b})
+        o.update({k: b[k] for k in ("budget", "campaign_name", "adgroup_name", "schedule_type", "schedule_start_time",
+                                    "schedule_end_time") if k in b})     # M49: names and ad group schedule
+        o["name"] = b.get("campaign_name") or b.get("adgroup_name") or o.get("name")
         if f == "unknown":
             return tt(50000, "System error")
         return tt(0, "OK", {f"{kind}_id": b.get(f"{kind}_id")})
@@ -656,6 +660,7 @@ def create_ads_app() -> FastAPI:
             row = {f"{kind}_id": k, "operation_status": o["operation_status"], ("ad_name" if kind == "ad" else f"{kind}_name"): o["name"]}
             if o.get("budget") is not None:
                 row["budget"] = o["budget"]
+            row.update({k: o[k] for k in ("schedule_start_time", "schedule_end_time") if o.get(k)})
             rows.append(row)
         size = max(1, min(page_size, 1000, st["tt_page_cap"]))
         total_page = max(1, -(-len(rows) // size))

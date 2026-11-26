@@ -43,7 +43,7 @@ BACKEND = REPO / "backend"
 TESTS = BACKEND / "tests"
 OUT_DIR = Path(__file__).resolve().parent / "db_results"
 
-CONTAINER = "m48-gate-pg"
+CONTAINER = os.environ.get("GATE_PG", "m49-gate-pg")
 HOST, PORT, USER = "127.0.0.1", 25432, "postgres"
 
 LEGACY_FLAG_RE = re.compile(r"[\"']([A-Z][A-Z0-9_]*_DISPOSABLE_TEST_DATABASE)(?:_NAME)?[\"']")

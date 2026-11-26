@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import base64
 from typing import Optional
+from urllib.parse import quote
 
 import httpx
 from sqlalchemy import select
@@ -67,12 +68,14 @@ def _b64url_decode(data: str) -> bytes:
 
 # ── Gmail ─────────────────────────────────────────────────────────────────────
 
-def _gmail() -> str:
-    return settings.GOOGLE_GMAIL_API_URL.rstrip("/") + "/users/me"
+def _gmail(mailbox: Optional[str] = None) -> str:
+    """users/me, or (M49.S01.T003, shared / delegated mailbox) users/{address}: Gmail only honours another user id
+    for a service account with domain-wide delegation; the provider decides, a refusal surfaces as MailApiError."""
+    return settings.GOOGLE_GMAIL_API_URL.rstrip("/") + "/users/" + (quote(mailbox, safe="@") if mailbox else "me")
 
 
-async def _gmail_raw(db, conn, msg_id: str) -> Optional[bytes]:
-    r = await _call(db, conn, "GET", f"{_gmail()}/messages/{msg_id}", params={"format": "raw"})
+async def _gmail_raw(db, conn, msg_id: str, mailbox: Optional[str] = None) -> Optional[bytes]:
+    r = await _call(db, conn, "GET", f"{_gmail(mailbox)}/messages/{msg_id}", params={"format": "raw"})
     if r.status_code == 404:          # deleted between listing and fetching
         return None
     if r.status_code != 200:
@@ -80,14 +83,16 @@ async def _gmail_raw(db, conn, msg_id: str) -> Optional[bytes]:
     return _b64url_decode(r.json()["raw"])
 
 
-async def gmail_fetch(db: AsyncSession, conn: OAuthConnection) -> tuple[list[bytes], dict]:
-    cursor = dict(conn.sync_cursor or {})
+async def gmail_fetch(db: AsyncSession, conn: OAuthConnection, mailbox: Optional[str] = None,
+                      cursor: Optional[dict] = None) -> tuple[list[bytes], dict]:
+    """mailbox / cursor: a shared mailbox is read with its own cursor, never the connection's personal one."""
+    cursor = dict(conn.sync_cursor or {} if cursor is None else cursor)
     ids: list[str] = []
     if cursor.get("history_id"):
         params = {"startHistoryId": cursor["history_id"], "historyTypes": "messageAdded"}
         new_history = cursor["history_id"]
         for _ in range(PAGE_LIMIT):
-            r = await _call(db, conn, "GET", f"{_gmail()}/history", params=params)
+            r = await _call(db, conn, "GET", f"{_gmail(mailbox)}/history", params=params)
             if r.status_code == 404:          # history too old: bounded resync, dedupe by Message-ID
                 cursor = {}
                 break
@@ -102,10 +107,10 @@ async def gmail_fetch(db: AsyncSession, conn: OAuthConnection) -> tuple[list[byt
                 break
             params["pageToken"] = body["nextPageToken"]
     if not cursor.get("history_id"):
-        prof = await _call(db, conn, "GET", f"{_gmail()}/profile")
+        prof = await _call(db, conn, "GET", f"{_gmail(mailbox)}/profile")
         if prof.status_code != 200:
             raise MailApiError(f"Gmail profile failed ({prof.status_code}).")
-        r = await _call(db, conn, "GET", f"{_gmail()}/messages", params={"maxResults": FULL_SYNC_LIMIT,
+        r = await _call(db, conn, "GET", f"{_gmail(mailbox)}/messages", params={"maxResults": FULL_SYNC_LIMIT,
                                                                          "labelIds": "INBOX"})
         if r.status_code != 200:
             raise MailApiError(f"Gmail list failed ({r.status_code}).")
@@ -113,7 +118,7 @@ async def gmail_fetch(db: AsyncSession, conn: OAuthConnection) -> tuple[list[byt
         cursor = {"history_id": prof.json()["historyId"]}
     raws = []
     for mid in dict.fromkeys(ids):                 # keep order, drop repeats
-        raw = await _gmail_raw(db, conn, mid)
+        raw = await _gmail_raw(db, conn, mid, mailbox)
         if raw:
             raws.append(raw)
     return raws, cursor
@@ -128,18 +133,21 @@ async def gmail_send(db: AsyncSession, conn: OAuthConnection, mime_bytes: bytes)
 
 # ── Microsoft Graph ───────────────────────────────────────────────────────────
 
-def _graph() -> str:
-    return settings.MICROSOFT_GRAPH_BASE_URL.rstrip("/") + "/me"
+def _graph(mailbox: Optional[str] = None) -> str:
+    """/me, or (M49.S01.T003) /users/{address} for a shared mailbox (Mail.Read.Shared + Exchange permission)."""
+    return settings.MICROSOFT_GRAPH_BASE_URL.rstrip("/") + ("/users/" + quote(mailbox, safe="@") if mailbox else "/me")
 
 
-async def graph_fetch(db: AsyncSession, conn: OAuthConnection) -> tuple[list[bytes], dict]:
-    cursor = dict(conn.sync_cursor or {})
-    url = cursor.get("delta_link") or f"{_graph()}/mailFolders/inbox/messages/delta?$select=id"
+async def graph_fetch(db: AsyncSession, conn: OAuthConnection, mailbox: Optional[str] = None,
+                      cursor: Optional[dict] = None) -> tuple[list[bytes], dict]:
+    cursor = dict(conn.sync_cursor or {} if cursor is None else cursor)
+    base_cursor = dict(cursor)
+    url = cursor.get("delta_link") or f"{_graph(mailbox)}/mailFolders/inbox/messages/delta?$select=id"
     ids: list[str] = []
     for _ in range(PAGE_LIMIT):
         r = await _call(db, conn, "GET", url, headers={"Prefer": "odata.maxpagesize=50"})
         if r.status_code == 410 or (r.status_code == 400 and "syncStateNotFound" in r.text):
-            cursor, url, ids = {}, f"{_graph()}/mailFolders/inbox/messages/delta?$select=id", []
+            cursor, url, ids = {}, f"{_graph(mailbox)}/mailFolders/inbox/messages/delta?$select=id", []
             continue
         if r.status_code != 200:
             raise MailApiError(f"Graph delta failed ({r.status_code}).")
@@ -152,10 +160,10 @@ async def graph_fetch(db: AsyncSession, conn: OAuthConnection) -> tuple[list[byt
         if not url:
             break
     else:
-        cursor = dict(conn.sync_cursor or {})       # page limit hit: keep old cursor, next run continues
+        cursor = base_cursor                        # page limit hit: keep old cursor, next run continues
     raws = []
     for mid in dict.fromkeys(ids[-FULL_SYNC_LIMIT:]):
-        r = await _call(db, conn, "GET", f"{_graph()}/messages/{mid}/$value")
+        r = await _call(db, conn, "GET", f"{_graph(mailbox)}/messages/{mid}/$value")
         if r.status_code == 404:
             continue
         if r.status_code != 200:

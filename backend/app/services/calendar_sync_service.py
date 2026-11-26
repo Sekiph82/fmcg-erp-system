@@ -231,7 +231,10 @@ def _norm_google(e: dict, conn) -> dict:
     cancelled = e.get("status") == "cancelled"
     out = {"id": e["id"], "cancelled": cancelled,
            "busy": not cancelled and e.get("transparency") != "transparent",
-           "erp_id": ((e.get("extendedProperties") or {}).get("private") or {}).get("povuMeetingId")}
+           "erp_id": ((e.get("extendedProperties") or {}).get("private") or {}).get("povuMeetingId"),
+           "series_ext": e.get("recurringEventId")}                 # M49.S01.T001: occurrence of a recurring event
+    if e.get("originalStartTime"):
+        out["orig_start"] = _parse_google_time(e["originalStartTime"], "Africa/Nairobi")
     if not cancelled and "start" in e:
         out["start"], out["end"] = _parse_google_time(e["start"], "Africa/Nairobi"), _parse_google_time(e["end"], "Africa/Nairobi")
     return out
@@ -266,7 +269,9 @@ async def _graph_pull(db, conn) -> tuple[list[dict], dict]:
 def _norm_graph(e: dict) -> dict:
     removed = "@removed" in e or e.get("isCancelled")
     out = {"id": e["id"], "cancelled": bool(removed), "busy": not removed and e.get("showAs") not in ("free", "unknown"),
-           "erp_id": None, "tx": e.get("transactionId")}
+           "erp_id": None, "tx": e.get("transactionId"), "series_ext": e.get("seriesMasterId")}
+    if e.get("originalStart"):
+        out["orig_start"] = _naive_utc(datetime.fromisoformat(e["originalStart"].replace("Z", "+00:00")))
     if not removed and "start" in e:
         out["start"], out["end"] = _parse_graph_time(e["start"]), _parse_graph_time(e["end"])
     return out
@@ -283,10 +288,18 @@ async def pull(db: AsyncSession, conn: OAuthConnection) -> dict:
         CRMTaskCalendarLink.connection_id == conn.id))).scalars())
     if cursor.get("full"):                         # full window: rebuild busy blocks from scratch
         await db.execute(delete(CalendarBusyBlock).where(CalendarBusyBlock.connection_id == conn.id))
+    from app.models.m49_calendar_mail import MeetingSeriesCalendarLink
+    from app.services import calendar_series_service as series_svc
+    series_links = {l.external_event_id: l.series_id for l in (await db.execute(select(MeetingSeriesCalendarLink).where(
+        MeetingSeriesCalendarLink.connection_id == conn.id))).scalars() if l.external_event_id}
     moved = cancelled = busy = conflicts = 0
     for e in events:
         if e["id"] in task_events:
             continue                               # our own task reminders are never busy time
+        if e.get("series_ext") in series_links:    # occurrence of one of our recurring series (M49.S01.T001)
+            res = await series_svc.apply_provider_instance(db, series_links[e["series_ext"]], e)
+            moved, cancelled, conflicts = moved + (res == "moved"), cancelled + (res == "cancelled"), conflicts + (res == "conflict")
+            continue
         link = links.get(e["id"])
         if link is None and e.get("tx", "") and str(e.get("tx")).startswith("povu-"):
             continue                               # our own create echoed back before the link id was stored
@@ -331,14 +344,18 @@ async def pull(db: AsyncSession, conn: OAuthConnection) -> dict:
 
 async def sync_connection(db: AsyncSession, conn: OAuthConnection) -> dict:
     """Push pending meeting changes, then pull provider changes. Caller commits."""
-    pending = (await db.execute(select(MeetingRecord).where(
+    from app.models.m49_calendar_mail import MeetingSeriesOccurrence
+    pending = (await db.execute(select(MeetingRecord).where(     # series occurrences travel inside their series (M49)
         MeetingRecord.host_id == conn.user_id, MeetingRecord.scheduled_at >= clock.utcnow().replace(tzinfo=None) - WINDOW_PAST,
-        MeetingRecord.status.in_(("SCHEDULED", "CANCELLED"))))).scalars().all()
+        MeetingRecord.status.in_(("SCHEDULED", "CANCELLED")),
+        MeetingRecord.id.notin_(select(MeetingSeriesOccurrence.meeting_id))))).scalars().all()
     pushed = 0
     for m in pending:
         async with db.begin_nested():
             await push_meeting(db, m, conn)
             pushed += 1
+    from app.services import calendar_series_service as series_svc
+    pushed += await series_svc.sync_series(db, conn)
     tasks = await sync_tasks(db, conn)
     result = await pull(db, conn)
     return {"pushed": pushed, "tasks": tasks, **result}
@@ -445,6 +462,13 @@ async def run_calendar_sync(interval: float = 300.0) -> None:
     while True:
         try:
             async with AsyncSessionLocal() as db:
+                from app.services import calendar_webhook_service as hooks
+                try:                                   # M49.S01.T002: renew expiring channels / subscriptions first
+                    await hooks.renew_due(db)
+                    await db.commit()
+                except Exception:
+                    await db.rollback()
+                    log.warning("calendar subscription renewal failed", exc_info=True)
                 conns = (await db.execute(select(OAuthConnection).where(
                     OAuthConnection.purpose == "calendar", OAuthConnection.status == "CONNECTED"))).scalars().all()
                 for conn in conns:

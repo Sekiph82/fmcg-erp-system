@@ -74,6 +74,7 @@ export default function AdCampaignBuilder() {
       <div className="flex flex-wrap items-center gap-2">
         <h2 className="text-lg font-semibold">Ad campaign builder</h2>
         <Link href="/dashboard/crm/ads" className="text-xs underline">Ads reporting</Link>
+        <Link href="/dashboard/marketing/ads/lifecycle" className="text-xs underline">All accounts: lifecycle, edits and reporting</Link>
       </div>
       <p className="text-xs text-gray-500">Campaigns are created on the platform paused (Meta/Google PAUSED, LinkedIn DRAFT, TikTok DISABLE) after a
         second person approves the exact version. Going live needs a separate resume approval. Changes run in SIMULATED mode unless provider

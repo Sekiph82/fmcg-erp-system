@@ -7,7 +7,7 @@ from typing import Literal, Optional
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.access_control import has_any_permission, require_any_permission
 from app.core.deps import get_current_user, get_db
 from app.models.crm import SocialChannel, SocialItem, SocialPost
+from app.services import social_formats as sf
 from app.services import social_service as ss
 
 READ = ("marketing.view", "marketing.edit", "social_media.view", "crm.view_all", "crm.edit_all")
@@ -49,11 +50,24 @@ class ChannelIn(BaseModel):
     name: str = Field(min_length=1, max_length=200)
     time_zone: str = Field("Africa/Nairobi", max_length=64)
     listen_enabled: bool = False
+    options: dict = Field(default_factory=dict)   # x_tier, ig_login (instagram|facebook), app_id, youtube_project_verified
+
+    @field_validator("options")
+    @classmethod
+    def _opts(cls, v: dict) -> dict:
+        bad = set(v) - CHANNEL_OPTS
+        if bad:
+            raise ValueError(f"Unknown channel option(s): {', '.join(sorted(bad))}")
+        return {k: (x if isinstance(x, bool) else str(x)[:64]) for k, x in v.items()}
+
+
+CHANNEL_OPTS = {"x_tier", "ig_login", "app_id", "youtube_project_verified"}
 
 
 def _ch(c: SocialChannel) -> dict:
     return {"id": str(c.id), "network": c.network, "external_id": c.external_id, "name": c.name, "time_zone": c.time_zone,
             "listen_enabled": c.listen_enabled, "publishing": ss.publish_route(c.network), "mode": ss.publish_mode(),
+            "options": {k: v for k, v in (c.options or {}).items() if k in CHANNEL_OPTS},
             **({"tiktok_audited": ss.tiktok_audited()} if c.network == "tiktok" else {})}
 
 
@@ -65,7 +79,7 @@ async def channels(db: AsyncSession = Depends(get_db)):
 @router.post("/channels", status_code=201)
 async def add_channel(body: ChannelIn, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
     _w(current_user)
-    c = SocialChannel(**{**body.model_dump(), "time_zone": _tz(body.time_zone)})
+    c = SocialChannel(**{**body.model_dump(), "time_zone": _tz(body.time_zone), "options": body.options or None})
     db.add(c)
     try:
         await db.commit()
@@ -88,7 +102,17 @@ async def set_listening(cid: uuid.UUID, enabled: bool, db: AsyncSession = Depend
 
 class Media(BaseModel):
     url: str = Field(max_length=1000)
-    kind: Literal["image", "video"]
+    kind: Literal["image", "video", "gif"]
+    alt_text: Optional[str] = Field(None, max_length=1000)
+    thumbnail_url: Optional[str] = Field(None, max_length=1000, pattern=r"^https://\S+$")
+    content_type: Optional[str] = Field(None, max_length=60)
+    size_bytes: Optional[int] = Field(None, ge=1)
+    duration_sec: Optional[float] = Field(None, ge=0)
+    width: Optional[int] = Field(None, ge=1)
+    height: Optional[int] = Field(None, ge=1)
+
+    def dump(self) -> dict:
+        return self.model_dump(exclude_none=True)
 
 
 class PostIn(BaseModel):
@@ -100,6 +124,32 @@ class PostIn(BaseModel):
     campaign_tag: Optional[str] = Field(None, max_length=100)
     scheduled_at: Optional[datetime] = None
     time_zone: str = Field("Africa/Nairobi", max_length=64)
+    format: Optional[str] = Field(None, max_length=24, pattern=r"^[a-z_]+$")
+    format_options: dict = Field(default_factory=dict)
+
+    @field_validator("format_options")
+    @classmethod
+    def _fopts(cls, v: dict) -> dict:
+        bad = set(v) - FORMAT_OPTS
+        if bad:
+            raise ValueError(f"Unknown format option(s): {', '.join(sorted(bad))}")
+        if len(str(v)) > 6000:
+            raise ValueError("Format options are too large.")
+        return v
+
+
+FORMAT_OPTS = {"native_schedule", "title", "description", "tags", "category_id", "privacy_status", "publish_at", "made_for_kids",
+               "thumbnail_url", "playlist_id", "share_to_feed", "cover_url", "thumb_offset_ms", "resumable", "article_title",
+               "article_description", "article_thumbnail_url", "video_title", "photo_cover_index", "auto_add_music",
+               "video_cover_timestamp_ms", "brand_content_toggle", "brand_organic_toggle", "is_aigc"}
+
+
+async def _check_format(db, body: PostIn) -> None:
+    ch = await db.get(SocialChannel, body.channel_id)
+    if ch is None:
+        raise HTTPException(404, "Channel not found")
+    if body.format and body.format not in sf.FORMATS[ch.network]:
+        raise HTTPException(422, f"{ch.network} has no {body.format!r} format. Available: {', '.join(sf.FORMATS[ch.network])}.")
 
 
 async def _out(db, p: SocialPost) -> dict:
@@ -116,7 +166,11 @@ async def _out(db, p: SocialPost) -> dict:
             "submitted_at": p.submitted_at.isoformat() if p.submitted_at else None,
             "next_poll_at": p.next_poll_at.isoformat() if p.next_poll_at else None,
             "created_by": p.created_by, "route": ss.publish_route(ch.network),
-            "problems": ss.problems(ch.network, p.text, p.media or [], p.link), "conflicts": await ss.conflicts(db, p)}
+            "format": p.format or sf.infer_format(ch.network, p.media or [], p.link), "format_options": p.format_options or {},
+            "flow_phase": (p.flow_state or {}).get("phase"),
+            "problems": ss.problems(ch.network, p.text, p.media or [], p.link, ss.effective_format(ch.network, p), p.format_options, p.scheduled_at, ch.options)
+            + (ss.tiktok_issues(p) if ch.network == "tiktok" and p.format in ("photo", "photo_inbox", "video_inbox") and p.publish_options else []),
+            "conflicts": await ss.conflicts(db, p)}
 
 
 def _when(body: PostIn) -> Optional[datetime]:
@@ -154,10 +208,10 @@ async def create_post(body: PostIn, db: AsyncSession = Depends(get_db), current_
     old = (await db.execute(select(SocialPost).where(SocialPost.idempotency_key == body.idempotency_key))).scalar_one_or_none()
     if old:
         return await _out(db, old)
-    if await db.get(SocialChannel, body.channel_id) is None:
-        raise HTTPException(404, "Channel not found")
-    p = SocialPost(channel_id=body.channel_id, idempotency_key=body.idempotency_key, text=body.text,
-                   media=[m.model_dump() for m in body.media], link=body.link, campaign_tag=body.campaign_tag,
+    await _check_format(db, body)
+    p = SocialPost(channel_id=body.channel_id, idempotency_key=body.idempotency_key, text=body.text, format=body.format,
+                   format_options=body.format_options or None,
+                   media=[m.dump() for m in body.media], link=body.link, campaign_tag=body.campaign_tag,
                    scheduled_at=_when(body), time_zone=_tz(body.time_zone), owner_id=current_user.id,
                    created_by=current_user.username, history=[])
     ss.log(p, "CREATED")
@@ -177,9 +231,10 @@ async def edit_post(pid: uuid.UUID, body: PostIn, db: AsyncSession = Depends(get
     p = await _post(db, pid)
     if p.status not in EDITABLE:
         raise HTTPException(409, f"A {p.status.lower()} post cannot be changed.")
-    content = (body.text, [m.model_dump() for m in body.media], body.link)
-    if content != (p.text, p.media, p.link) or body.channel_id != p.channel_id:
-        p.text, p.media, p.link, p.channel_id = *content, body.channel_id
+    await _check_format(db, body)
+    content = (body.text, [m.dump() for m in body.media], body.link, body.format, body.format_options or None)
+    if content != (p.text, p.media, p.link, p.format, p.format_options) or body.channel_id != p.channel_id:
+        p.text, p.media, p.link, p.format, p.format_options, p.channel_id = *content, body.channel_id
         p.version += 1
         p.status, p.approved_by = "DRAFT", None
         ss.log(p, "EDITED", "content changed: approval needed again")
@@ -307,9 +362,9 @@ async def post_action(pid: uuid.UUID, action: str, db: AsyncSession = Depends(ge
                                       "UNKNOWN": "The outcome is unknown; reconcile it (or check the channel) first."}
                                 .get(p.status, f"A {p.status.lower()} post cannot be cancelled."))
     elif action == "release":                      # a person checked the channel: the interrupted post is NOT there
-        if p.status != "UNKNOWN" or p.provider_ref or p.approved_version != p.version:
+        if p.status != "UNKNOWN" or (p.provider_ref and not p.provider_ref.startswith("lookup:")) or p.approved_version != p.version:
             raise HTTPException(409, "Only an unknown post without a provider reference can be released.")
-        p.status, p.error = "APPROVED", None
+        p.status, p.error, p.provider_ref, p.flow_state = "APPROVED", None, None, None
         ss.log(p, "VERIFIED_NOT_POSTED", current_user.username)
     elif action == "retry":
         if p.status != "FAILED" or p.approved_version != p.version or p.external_post_id:
@@ -342,13 +397,24 @@ async def post_action(pid: uuid.UUID, action: str, db: AsyncSession = Depends(ge
 def _item(i: SocialItem) -> dict:
     return {"id": str(i.id), "network": i.network, "kind": i.kind, "author": i.author, "text": i.text, "url": i.url,
             "occurred_at": i.occurred_at.isoformat(), "source": i.source, "sentiment": i.sentiment, "topics": i.topics,
-            "evidence": i.evidence, "status": i.status, "assigned_to": i.assigned_to, "reply_draft": i.reply_draft}
+            "evidence": i.evidence, "status": i.status, "assigned_to": i.assigned_to, "reply_draft": i.reply_draft,
+            "reply_status": i.reply_status, "reply_requested_by": i.reply_requested_by, "reply_approved_by": i.reply_approved_by,
+            "reply_external_id": i.reply_external_id, "reply_error": i.reply_error, "provider_state": i.provider_state,
+            "retention_until": i.retention_until.isoformat() if i.retention_until else None,
+            "ops": {op: {"available": a, "reason": n} for op, (a, n, _v) in sf.MODERATION.get(i.network, {}).items() if op != "read"}}
 
 
 @router.get("/inbox")
 async def inbox(status: Optional[str] = Query(None, max_length=9), sentiment: Optional[str] = Query(None, max_length=8),
-                db: AsyncSession = Depends(get_db)):
+                network: Optional[str] = Query(None, max_length=12), assigned_to: Optional[str] = Query(None, max_length=100),
+                kind: Optional[str] = Query(None, max_length=8), db: AsyncSession = Depends(get_db)):
     q = select(SocialItem).order_by(SocialItem.occurred_at.desc()).limit(300)
+    if network:
+        q = q.where(SocialItem.network == network)
+    if assigned_to:
+        q = q.where(SocialItem.assigned_to == assigned_to)
+    if kind:
+        q = q.where(SocialItem.kind == kind.upper())
     if status:
         q = q.where(SocialItem.status == status.upper())
     if sentiment:
@@ -370,7 +436,7 @@ async def import_items(body: ImportIn, db: AsyncSession = Depends(get_db), curre
 
 
 class ItemPatch(BaseModel):
-    status: Optional[Literal["NEW", "ASSIGNED", "REPLIED", "HIDDEN", "DONE"]] = None
+    status: Optional[Literal["NEW", "ASSIGNED", "REPLIED", "DONE"]] = None   # HIDDEN/DELETED only after the network confirms
     assigned_to: Optional[str] = Field(None, max_length=100)
     reply_draft: Optional[str] = Field(None, max_length=8000)
 
@@ -385,6 +451,10 @@ async def update_item(iid: uuid.UUID, body: ItemPatch, db: AsyncSession = Depend
         raise HTTPException(409, "The author deleted this item.")
     for k, v in body.model_dump(exclude_unset=True).items():
         setattr(i, k, v)
+    if "reply_draft" in body.model_fields_set and i.reply_status in ("APPROVED", "PENDING", "DRAFT", None):
+        i.reply_status, i.reply_approved_by = ("DRAFT" if i.reply_draft else None), None     # an edit voids any approval
+    if i.assigned_to and i.status == "NEW":
+        i.status = "ASSIGNED"
     await db.commit()
     return _item(i)
 
@@ -395,3 +465,7 @@ async def suggest(iid: uuid.UUID, db: AsyncSession = Depends(get_db)):
     if i is None:
         raise HTTPException(404, "Item not found")
     return {"reply_draft": ss.suggest_reply(i), "note": "A draft for you to edit. Replies are posted by a person on the network."}
+
+
+from app.api.v1.endpoints.social_m49 import router as _m49_router  # noqa: E402  (M49 T007-T010 routes)
+router.include_router(_m49_router)

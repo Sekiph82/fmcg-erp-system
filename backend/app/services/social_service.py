@@ -58,13 +58,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.core.provider_http import EgressBlocked, egress_mode, provider_client
 from app.models.crm import SocialChannel, SocialItem, SocialPost
+from app.models import m49_social as _m49_social  # noqa: F401  (maps the M49 side tables)
+from app.services import social_formats as sf
 
 NETWORKS = ("facebook", "instagram", "linkedin", "tiktok", "x", "youtube")
 LIMITS = {   # max text, media rule
     "facebook": (63206, "none_or_one_image"), "instagram": (2200, "one_image"), "linkedin": (3000, "none"),
     "tiktok": (2200, "one_video"), "x": (280, "any"), "youtube": (5000, "one_video"),
 }
-API_PUBLISHABLE = {"facebook", "instagram", "linkedin", "tiktok"}
+API_PUBLISHABLE = {"facebook", "instagram", "linkedin", "tiktok", "x", "youtube"}
 CONFLICT_MINUTES = 30
 IN_FLIGHT = ("SUBMITTED", "PROCESSING", "UNKNOWN")
 TT_PRIVACY = ("PUBLIC_TO_EVERYONE", "MUTUAL_FOLLOW_FRIENDS", "FOLLOWER_OF_CREATOR", "SELF_ONLY")
@@ -82,8 +84,19 @@ class SocialError(Exception):
 
 # ── validation ───────────────────────────────────────────────────────────
 
-def problems(network: str, text: str, media: list[dict], link: Optional[str]) -> list[str]:
+def effective_format(network: str, post: SocialPost) -> Optional[str]:
+    return post.format or sf.infer_format(network, post.media or [], post.link)
+
+
+def problems(network: str, text: str, media: list[dict], link: Optional[str], fmt: Optional[str] = None,
+             fopts: Optional[dict] = None, scheduled_at: Optional[datetime] = None, channel_opts: Optional[dict] = None) -> list[str]:
     """Constraint check against the network's documented limits. Empty list = postable by API."""
+    if fmt is None and network in ("x", "youtube"):
+        fmt = sf.infer_format(network, media, link)
+        if fmt is None:
+            return ["YouTube takes exactly one video." if network == "youtube" else "Choose a post format."]
+    if fmt:
+        return sf.validate(network, fmt, text, media, link, fopts, scheduled_at=scheduled_at, channel_opts=channel_opts)
     out = []
     max_len, rule = LIMITS[network]
     if len(text) > max_len:
@@ -112,7 +125,8 @@ def problems(network: str, text: str, media: list[dict], link: Optional[str]) ->
 def publish_route(network: str) -> str:
     """API when the network has a documented posting API we use and its token is set, else MANUAL."""
     token = {"facebook": settings.META_PAGE_ACCESS_TOKEN, "instagram": settings.META_PAGE_ACCESS_TOKEN,
-             "linkedin": settings.LINKEDIN_SOCIAL_ACCESS_TOKEN, "tiktok": settings.TIKTOK_SOCIAL_ACCESS_TOKEN}.get(network)
+             "linkedin": settings.LINKEDIN_SOCIAL_ACCESS_TOKEN, "tiktok": settings.TIKTOK_SOCIAL_ACCESS_TOKEN,
+             "youtube": sf.cfg("YOUTUBE_SOCIAL_ACCESS_TOKEN", ""), "x": sf.cfg("X_SOCIAL_ACCESS_TOKEN", "")}.get(network)
     return "API" if network in API_PUBLISHABLE and token and settings.SOCIAL_PUBLISHING_ENABLED else "MANUAL"
 
 
@@ -152,15 +166,21 @@ def chunk_plan(size: int) -> tuple[int, int]:
 
 def tiktok_issues(post: SocialPost) -> list[str]:
     o = post.publish_options or {}
+    fmt = post.format or "video"
+    inbox, photo = fmt.endswith("_inbox"), fmt.startswith("photo")
     out = []
     if not o.get("consent"):
-        out.append("TikTok needs the poster's explicit consent and a privacy choice (set TikTok options).")
+        out.append("TikTok needs the poster's explicit consent" + ("" if inbox else " and a privacy choice") + " (set TikTok options).")
+    elif inbox:
+        pass            # MEDIA_UPLOAD sends no post_info: the creator picks privacy in the TikTok app
     elif o.get("privacy_level") not in TT_PRIVACY:
         out.append("Choose a TikTok privacy level.")
     elif not tiktok_audited() and o["privacy_level"] != "SELF_ONLY":
         out.append("This TikTok app is not audited: only SELF_ONLY (private) posts are allowed.")
-    if o.get("source", "PULL_FROM_URL") == "PULL_FROM_URL" and post.media and not url_verified(post.media[0]["url"]):
-        out.append("The video URL is not under a TikTok-verified domain or URL prefix (use FILE_UPLOAD or verify it).")
+    if photo and o.get("source", "PULL_FROM_URL") != "PULL_FROM_URL":
+        out.append("TikTok photo posts support PULL_FROM_URL only.")
+    if (photo or o.get("source", "PULL_FROM_URL") == "PULL_FROM_URL") and any(not url_verified(m["url"]) for m in post.media or []):
+        out.append("The media URL is not under a TikTok-verified domain or URL prefix (use FILE_UPLOAD for video, or verify the domain).")
     return out
 
 
@@ -256,7 +276,9 @@ def _tt_post_info(post: SocialPost, info: dict) -> dict:
     return {"title": post.text, "privacy_level": o["privacy_level"],
             "disable_comment": bool(o.get("disable_comment")) or info["comment_disabled"],
             "disable_duet": bool(o.get("disable_duet")) or info["duet_disabled"],
-            "disable_stitch": bool(o.get("disable_stitch")) or info["stitch_disabled"]}
+            "disable_stitch": bool(o.get("disable_stitch")) or info["stitch_disabled"],
+            **{k: post.format_options[k] for k in ("video_cover_timestamp_ms", "brand_content_toggle", "brand_organic_toggle", "is_aigc")
+               if (post.format_options or {}).get(k) is not None}}
 
 
 async def _tt_upload(c: httpx.AsyncClient, url: str, blob: bytes, chunk: int, count: int) -> None:
@@ -309,7 +331,8 @@ def _submitted(post: SocialPost, ref: str, status: str) -> None:
 async def publish(db: AsyncSession, post: SocialPost) -> SocialPost:
     """Submit one approved post. The claim is committed before any provider call, so a crash can never post twice."""
     ch = await db.get(SocialChannel, post.channel_id)
-    issues = problems(ch.network, post.text, post.media or [], post.link)
+    fmt = effective_format(ch.network, post)
+    issues = problems(ch.network, post.text, post.media or [], post.link, fmt, post.format_options, post.scheduled_at, ch.options)
     if ch.network == "tiktok" and not issues:
         issues = tiktok_issues(post)
     if publish_route(ch.network) != "API" or issues:
@@ -319,11 +342,15 @@ async def publish(db: AsyncSession, post: SocialPost) -> SocialPost:
         return post
     post.status, post.claimed_at, post.publish_mode, post.poll_count = "SUBMITTING", _now(), publish_mode(), 0
     post.provider_ref = post.provider_status = post.fail_reason = post.error = post.submitted_at = None
+    post.format, post.flow_state = fmt or post.format, None
     log(post, "CLAIMED", f"idempotency key {post.idempotency_key} v{post.version} ({post.publish_mode})")
     await db.commit()
     try:
         async with provider_client() as c:
-            if ch.network in ("facebook", "linkedin"):
+            from app.services import social_flows as flows
+            if post.format and (ch.network != "tiktok" or post.format in ("photo", "photo_inbox", "video_inbox")):
+                await flows.submit(db, c, ch, post)
+            elif ch.network in ("facebook", "linkedin"):
                 _published(post, await _post_direct(c, ch, post), f"{ch.network} returned the created post")
             elif ch.network == "instagram":
                 b = _ok(await c.post(_graph(f"{ch.external_id}/media"), data={"image_url": post.media[0]["url"],
@@ -340,6 +367,8 @@ async def publish(db: AsyncSession, post: SocialPost) -> SocialPost:
         if post.provider_ref:                        # accepted by the provider; its status decides the outcome
             log(post, "UPLOAD_ERROR", str(e))
         elif e.retryable:
+            from app.services import social_flows as flows
+            flows.mark_lookup(post, ch.network)
             _unknown(post, f"{e} — the network may have accepted it; check the channel before retrying.")
         else:
             _failed(post, e.code, str(e))
@@ -347,6 +376,8 @@ async def publish(db: AsyncSession, post: SocialPost) -> SocialPost:
         if post.provider_ref:
             log(post, "UPLOAD_ERROR", type(e).__name__)
         else:
+            from app.services import social_flows as flows
+            flows.mark_lookup(post, ch.network)
             _unknown(post, f"No answer from {ch.network} ({type(e).__name__}); check the channel before retrying — it may have posted.")
     await db.commit()
     if post.status in IN_FLIGHT and post.provider_ref:
@@ -362,6 +393,9 @@ async def _submit_tiktok(db: AsyncSession, c: httpx.AsyncClient, post: SocialPos
         raise SocialError(f"tiktok: privacy {o.get('privacy_level')} is not offered for this creator "
                           f"({', '.join(info['privacy_level_options']) or 'none'})", "privacy_level_option_mismatch")
     url = post.media[0]["url"]
+    cap, dur = info.get("max_video_post_duration_sec"), post.media[0].get("duration_sec")
+    if cap and dur and dur > cap:
+        raise SocialError(f"tiktok: this creator may post videos up to {cap}s; the video lasts {dur}s", "duration_check_failed")
     if o.get("source") == "FILE_UPLOAD":
         r = await c.get(url)
         if r.status_code != 200:
@@ -386,12 +420,21 @@ async def refresh(db: AsyncSession, post: SocialPost, ch: Optional[SocialChannel
         return post
     post.poll_count = (post.poll_count or 0) + 1
     try:
-        if ch.network == "tiktok":
+        handled = False
+        if post.format and ch.network != "tiktok":
+            from app.services import social_flows as flows
+            handled = not await flows.advance(db, ch, post)
+        if handled:
+            pass
+        elif ch.network == "tiktok":
             d = await _read(lambda c: _tt(c, "/v2/post/publish/status/fetch/", {"publish_id": post.provider_ref}))
             s = post.provider_status = str(d.get("status") or "")[:40]
             if s == "PUBLISH_COMPLETE":
                 ids = d.get("publicaly_available_post_id") or []      # spelling as documented
                 _published(post, str(ids[0]) if ids else None, "TikTok status PUBLISH_COMPLETE")
+            elif s == "SEND_TO_USER_INBOX" and (post.format or "").endswith("_inbox"):
+                post.status, post.next_poll_at = "EXPORTED", None     # a draft in the creator's inbox: NOT published
+                log(post, "DELIVERED_TO_INBOX", "TikTok put it in the creator's inbox; the creator finishes publishing in the TikTok app")
             elif s == "FAILED" and d.get("fail_reason") == "publish_cancelled":
                 post.status, post.fail_reason, post.next_poll_at = "CANCELLED", "publish_cancelled", None
                 log(post, "CANCELLED", "TikTok confirmed the cancellation")
@@ -426,7 +469,7 @@ async def refresh(db: AsyncSession, post: SocialPost, ch: Optional[SocialChannel
             log(post, "PROVIDER_CALL_FAILED", str(e) or type(e).__name__)
     if post.status in IN_FLIGHT:
         limit = timedelta(minutes=int(getattr(settings, "SOCIAL_PUBLISH_TIMEOUT_MINUTES", 30)))
-        if post.status != "UNKNOWN" and post.submitted_at and _now() - post.submitted_at > limit:
+        if post.status != "UNKNOWN" and post.provider_status != "SCHEDULED" and post.submitted_at and _now() - post.submitted_at > limit:
             _unknown(post, f"Not final after {limit}; still reconciling with {ch.network}.")
         _schedule(post)
     return post
@@ -438,6 +481,12 @@ async def cancel_at_provider(db: AsyncSession, post: SocialPost) -> str:
     if ch.network == "instagram" and post.status in ("SUBMITTED", "PROCESSING"):
         post.status, post.next_poll_at = "CANCELLED", None    # never publish the container; it expires after 24 h
         log(post, "CANCELLED", "container will not be published")
+        return post.status
+    if ch.network == "facebook" and post.provider_status == "SCHEDULED" and post.provider_ref and (post.flow_state or {}).get("kind") == "fb_post":
+        async with provider_client() as c:       # DELETE /{post}: removes the scheduled (unpublished) post
+            _ok(await c.delete(_graph(post.provider_ref), headers=_meta_h()), "facebook")
+        post.status, post.next_poll_at = "CANCELLED", None
+        log(post, "CANCELLED", "the scheduled Facebook post was deleted")
         return post.status
     if ch.network != "tiktok" or post.status not in ("SUBMITTED", "PROCESSING") or not post.provider_ref:
         raise SocialError(f"A {post.status.lower()} {ch.network} post cannot be cancelled here.", "not_cancellable")
@@ -463,7 +512,19 @@ async def publish_due(db: AsyncSession, now: Optional[datetime] = None) -> int:
         await publish(db, p)
         await db.commit()
         done += 1
+    for p in (await db.execute(select(SocialPost).where(
+            SocialPost.status == "APPROVED", SocialPost.format.isnot(None), SocialPost.approved_version == SocialPost.version,
+            (SocialPost.scheduled_at.is_(None)) | (SocialPost.scheduled_at <= now + timedelta(days=30)))
+            .order_by(SocialPost.scheduled_at).with_for_update(skip_locked=True).limit(20))).scalars().all():
+        fo = p.format_options or {}
+        if (fo.get("native_schedule") and p.scheduled_at and p.scheduled_at > now) or (fo.get("publish_at") and p.format in ("video", "short")):
+            await publish(db, p)         # handed to the network's own scheduler (Facebook scheduled_publish_time / YouTube publishAt)
+            await db.commit()
+            done += 1
     await reconcile_due(db, now)
+    from app.services import social_listening
+    await social_listening.retention_sweep(db, now)
+    await social_listening.poll_due(db)
     return done
 
 
@@ -578,12 +639,16 @@ async def _store(db: AsyncSession, ch: Optional[SocialChannel], network: str, ki
                  author=None, text=None, url=None, at: Optional[datetime] = None, source="WEBHOOK") -> bool:
     if not ext:   # without an id the item cannot be deduplicated (M44 review)
         return False
+    from app.services import social_listening as sl
+    if await sl.is_opted_out(db, network, author):      # the author opted out: nothing is stored
+        return False
     s, t, ev = tag(text or "")
+    ev["source"] = {"network": network, "external_id": str(ext)[:120], "via": source, "channel": ch.external_id if ch else None}
     res = await db.execute(insert(SocialItem).values(
         channel_id=ch.id if ch else None, network=network, kind=kind, external_id=str(ext)[:120],
         parent_id=(str(parent)[:120] if parent else None), author=(author or "")[:200] or None, text=(text or "")[:5000] or None,
         url=url, occurred_at=at or datetime.now(timezone.utc), source=source, sentiment=s, topics=t, evidence=ev,
-        status="NEW").on_conflict_do_nothing(constraint="uq_social_item_network_ext"))
+        status="NEW", retention_until=datetime.now(timezone.utc) + timedelta(days=sl.retention_days())).on_conflict_do_nothing(constraint="uq_social_item_network_ext"))
     return bool(res.rowcount)
 
 

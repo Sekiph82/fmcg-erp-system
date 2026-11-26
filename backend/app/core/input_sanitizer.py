@@ -30,7 +30,7 @@ log = logging.getLogger(__name__)
 # Endpoints that serve raw binary/files — skip sanitization
 _SKIP_PATHS = {"/api/v1/bulk-import", "/api/v1/gs1", "/api/v1/documents",
                # signed webhooks: the signature covers the exact raw body, so it must reach the handler unchanged
-               "/api/v1/whatsapp/webhook", "/api/v1/public/social", "/api/v1/public/mail-events", "/api/v1/public/slack", "/api/v1/public/esign",
+               "/api/v1/whatsapp/webhook", "/api/v1/public/social", "/api/v1/public/mail-events", "/api/v1/public/slack", "/api/v1/public/esign", "/api/v1/public/calendar-hooks",
                "/api/v1/public/crm-workflow-hooks", "/api/v1/integrations/mpesa/callback",
                "/api/v1/moto-sales/mpesa/callback", "/api/v1/webhooks/inbound/"}
 

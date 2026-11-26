@@ -648,6 +648,7 @@ from app.models import (  # noqa: F401,E402
     cms,  # M46
     m47_datasets, m47_automation, m47_sales_depth, m47_platform,  # M47
     m48_ads, m48_payments, m48_esign, m48_crm_send_approval,  # M48
+    m49_calendar_mail, m49_voice, m49_social, m49_audiences,  # M49
 )
 
 __all__ = [

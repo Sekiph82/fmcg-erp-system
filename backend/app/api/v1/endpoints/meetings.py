@@ -162,6 +162,18 @@ async def _invite(db, m, cancelled=False, recipients=None) -> str:
         return f"FAILED: {e}"
 
 
+async def _refuse_series_occurrence(db: AsyncSession, meeting_id: uuid.UUID) -> None:
+    """M49.S01.T001: an occurrence of a recurring series is changed through /meeting-series (one invitation per
+    series change, one provider event), not as a stand-alone meeting."""
+    from app.models.m49_calendar_mail import MeetingSeriesOccurrence
+    hit = (await db.execute(select(MeetingSeriesOccurrence.series_id).where(
+        MeetingSeriesOccurrence.meeting_id == meeting_id))).scalar_one_or_none()
+    if hit is not None:
+        raise HTTPException(409, {"detail": "This meeting is part of a recurring series; change or cancel it with "
+                                            "the series (this occurrence, this and following, or all).",
+                                  "series_id": str(hit)})
+
+
 @router.get("/", response_model=list)
 async def list_meetings(
     status: Optional[str] = None,
@@ -251,6 +263,8 @@ async def update_meeting(meeting_id: uuid.UUID, body: MeetingPatch, db: AsyncSes
         raise HTTPException(403, "Only the host can change this meeting.")
     if m.status == "CANCELLED":
         raise HTTPException(409, "The meeting is cancelled.")
+    if body.model_fields_set & {"title", "meeting_url", "start", "time_zone", "duration_minutes", "agenda", "attendees"}             or body.status == "SCHEDULED":
+        await _refuse_series_occurrence(db, m.id)
     await svc.lock_host(db, m.host_id)
     await db.refresh(m)
     if body.expected_sequence is not None and body.expected_sequence != (m.sequence or 0):
@@ -302,6 +316,7 @@ async def cancel_meeting(meeting_id: uuid.UUID, send_invites: bool = True, db: A
         raise HTTPException(403, "Only the host can cancel this meeting.")
     if m.status == "CANCELLED":
         return {"ok": True, "invites": "ALREADY_CANCELLED"}
+    await _refuse_series_occurrence(db, m.id)
     m.status, m.sequence = "CANCELLED", (m.sequence or 0) + 1
     invites = await _invite(db, m, cancelled=True) if send_invites else "NOT_REQUESTED"
     from app.services.calendar_sync_service import push_safely

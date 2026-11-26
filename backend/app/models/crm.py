@@ -1362,6 +1362,7 @@ class SocialChannel(Base):
     name           = Column(String(200), nullable=False)
     time_zone      = Column(String(64), nullable=False, default="Africa/Nairobi")
     listen_enabled = Column(Boolean, nullable=False, default=False)   # opt-in: only then comments/mentions are stored
+    options        = Column(JSON, nullable=True)    # M49: x_tier, ig_login, app_id, poll cursors, last_polled_at
     created_at     = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
 
@@ -1399,6 +1400,10 @@ class SocialPost(Base):
     submitted_at     = Column(DateTime(timezone=True), nullable=True)
     next_poll_at     = Column(DateTime(timezone=True), nullable=True)
     poll_count       = Column(Integer, nullable=False, default=0, server_default="0")
+    # M49.S01.T007-T009 rich formats: format key, per-format options, resumable multi-step flow checkpoint
+    format           = Column(String(24), nullable=True)
+    format_options   = Column(JSON, nullable=True)
+    flow_state       = Column(JSON, nullable=True)
     history          = Column(JSON, nullable=False, default=list)
     created_by       = Column(String(100), nullable=False)
     created_at       = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
@@ -1426,6 +1431,14 @@ class SocialItem(Base):
     status      = Column(String(9), nullable=False, default="NEW")   # NEW | ASSIGNED | REPLIED | HIDDEN | DONE | DELETED
     assigned_to = Column(String(100), nullable=True)
     reply_draft = Column(Text, nullable=True)
+    # M49.S01.T010 moderation: two-person approved reply, provider-side visibility, retention
+    reply_status       = Column(String(9), nullable=True)      # DRAFT | APPROVED | SENT | FAILED
+    reply_requested_by = Column(String(100), nullable=True)
+    reply_approved_by  = Column(String(100), nullable=True)
+    reply_external_id  = Column(String(120), nullable=True)
+    reply_error        = Column(String(500), nullable=True)
+    provider_state     = Column(String(9), nullable=True)      # HIDDEN | DELETED (confirmed by the provider)
+    retention_until    = Column(DateTime(timezone=True), nullable=True)
 
 
 # ── M44.S01.T013 messaging channels ──────────────────────────────────────────────

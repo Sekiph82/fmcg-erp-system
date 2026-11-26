@@ -35,9 +35,14 @@ CALLBACK_PATH = "/api/v1/integrations/oauth/callback"
 SCOPES = {
     ("google", "mail"): ["openid", "email", "https://www.googleapis.com/auth/gmail.readonly",
                          "https://www.googleapis.com/auth/gmail.send"],
-    ("google", "calendar"): ["openid", "email", "https://www.googleapis.com/auth/calendar.events"],
-    ("microsoft", "mail"): ["openid", "email", "offline_access", "User.Read", "Mail.ReadWrite", "Mail.Send"],
-    ("microsoft", "calendar"): ["openid", "email", "offline_access", "User.Read", "Calendars.ReadWrite"],
+    # M49: calendar.freebusy for freeBusy.query; Mail.*.Shared for shared / delegated mailboxes; Calendars.Read.Shared
+    # for getSchedule. None of them is in REQUIRED_GRANTS: an older connection keeps working, the new feature says so.
+    ("google", "calendar"): ["openid", "email", "https://www.googleapis.com/auth/calendar.events",
+                             "https://www.googleapis.com/auth/calendar.freebusy"],
+    ("microsoft", "mail"): ["openid", "email", "offline_access", "User.Read", "Mail.ReadWrite", "Mail.Send",
+                            "Mail.Read.Shared", "Mail.Send.Shared"],
+    ("microsoft", "calendar"): ["openid", "email", "offline_access", "User.Read", "Calendars.ReadWrite",
+                                "Calendars.Read.Shared"],
 }
 # Scopes the provider must actually grant (Google lets the user untick some; Microsoft returns short names).
 REQUIRED_GRANTS = {

@@ -36,6 +36,10 @@ async def receive(request: Request, db: AsyncSession = Depends(get_db)):
     except ValueError:
         raise HTTPException(400, "Invalid JSON") from None
     from app.services import messaging_service as ms
+    from app.services import social_listening as sl
+    if not await sl.first_delivery(db, "meta", raw):          # M49: the same signed body is processed once
+        await db.commit()
+        return {"result": "replay", "stored": 0, "ignored": 0, "messages": 0}
     res = await ss.ingest_meta(db, payload)
     res["messages"] = (await ms.ingest_meta(db, payload))["stored"]   # Messenger / Instagram DMs (M44.S01.T013)
     await db.commit()
