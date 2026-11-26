@@ -3411,7 +3411,8 @@ These rows describe commissioning only; they must never stop accountless coding,
     - Manual browser walkthrough: 38 screenshots; 4 defects found and fixed.
     - Four independent reviews: all findings fixed with regression tests.
     - No quality score claimed before M52.
-- [ ] M48.S02.T002 — After successful gate, mark evidence-backed tasks [x], update TASKS.md/Project Status, commit/push main, fetch and verify Desktop HEAD == origin/main, preserve owner changes, record evidence SHA and sync result. Automatically proceed to next milestone; do not stop for missing business accounts.
+- [x] M48.S02.T002 — After successful gate, mark evidence-backed tasks [x], update TASKS.md/Project Status, commit/push main, fetch and verify Desktop HEAD == origin/main, preserve owner changes, record evidence SHA and sync result. Automatically proceed to next milestone; do not stop for missing business accounts.
+  - Done 2026-11-26 [x]: M48 gate commit f1492cf pushed to origin/main; fetched; Desktop HEAD == origin/main == f1492cf. Untracked owner files preserved (.hiveai/, backend/M25_S01_T003_POSTGRES_V0{2,3}.log). Disposable gate containers and walk servers removed afterwards.
 
 # M49 — CRM, Advertising & Social Marketing Excellence
 
