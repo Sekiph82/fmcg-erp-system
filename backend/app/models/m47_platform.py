@@ -51,10 +51,20 @@ class SlackRoute(Base):
     id            = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     event_type    = Column(String(10), nullable=False, unique=True)     # DEAL | TICKET | APPROVAL | APPROVE
     channel_label = Column(String(80), nullable=False)
-    webhook_url   = Column(String(500), nullable=False)
+    webhook_url_stored = Column("webhook_url", Text, nullable=False)   # encrypted at rest (the URL is a secret)
     active        = Column(Boolean, nullable=False, default=True)
     created_by    = Column(String(100), nullable=True)
     created_at    = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+    @property
+    def webhook_url(self) -> str:
+        from app.services.webhook_service import _read_webhook_secret
+        return _read_webhook_secret(self.webhook_url_stored) or ""
+
+
+def seal_webhook(url: str) -> str:
+    from app.services.webhook_service import _store_webhook_secret
+    return _store_webhook_secret(url)
 
 
 class SlackUserLink(Base):

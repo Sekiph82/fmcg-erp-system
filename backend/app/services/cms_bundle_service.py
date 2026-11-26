@@ -90,6 +90,20 @@ async def plan(db: AsyncSession, items: dict, mode: str, site_keys: Optional[dic
         row = {**s, "key": k}
         try:
             row["theme"], row["nav"] = cms.validate_theme(s.get("theme") or {}), cms.validate_nav(s.get("nav") or [])
+            # M47 review: name / locales / default locale go through the CMS API's own validators
+            from pydantic import ValidationError
+            from app.api.v1.endpoints.cms import SiteIn, _apply_site
+            probe = CmsSite(key=k, name=ex.name if ex else k, locales=["en"], default_locale="en")
+            try:
+                _apply_site(probe, SiteIn(name=s.get("name"), locales=s.get("locales"), default_locale=s.get("default_locale")))
+            except ValidationError as ve:
+                raise cms.CmsError(f"Invalid site settings: {ve.errors()[0].get('msg')}") from None
+            if probe.default_locale not in probe.locales:
+                raise cms.CmsError("The default locale must be one of the site's locales")
+            row["name"], row["locales"], row["default_locale"] = probe.name, probe.locales, probe.default_locale
+            if ex is not None and ex.require_approval:   # an import never switches the approval step off
+                row["require_approval"] = True
+            row["require_approval"] = bool(row.get("require_approval", True))
         except cms.CmsError as e:
             steps.append({"table": "cms_sites", "key": k, "action": "error", "detail": str(e)})
             continue

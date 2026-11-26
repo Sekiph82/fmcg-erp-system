@@ -130,14 +130,14 @@ async def _ffmpeg(args: list[str]) -> bytes:
 
 
 async def poster_frame(m: CmsMedia, t: float) -> bytes:
-    return await _ffmpeg(["-ss", f"{t:.3f}", "-i", str(file_path(m)), "-frames:v", "1", "-f", "image2pipe", "-vcodec", "png", "pipe:1"])
+    return await _ffmpeg(["-ss", f"{t:.3f}", "-protocol_whitelist", "file", "-i", str(file_path(m)), "-frames:v", "1", "-f", "image2pipe", "-vcodec", "png", "pipe:1"])
 
 
 async def trim(m: CmsMedia, start: float, end: float) -> bytes:
     """Stream copy (no re-encode) of [start, end) into the same container; the original file is not touched."""
     fmt = FORMATS[m.mime]
     extra = ["-movflags", "frag_keyframe+empty_moov"] if fmt == "mp4" else []   # mp4 to a pipe needs a fragmented layout
-    return await _ffmpeg(["-ss", f"{start:.3f}", "-i", str(file_path(m)), "-t", f"{end - start:.3f}", "-c", "copy", *extra, "-f", fmt, "pipe:1"])
+    return await _ffmpeg(["-ss", f"{start:.3f}", "-protocol_whitelist", "file", "-i", str(file_path(m)), "-t", f"{end - start:.3f}", "-c", "copy", *extra, "-f", fmt, "pipe:1"])
 
 
 VTT_TIME = re.compile(r"^\d{2}:\d{2}(:\d{2})?\.\d{3} --> \d{2}:\d{2}(:\d{2})?\.\d{3}")

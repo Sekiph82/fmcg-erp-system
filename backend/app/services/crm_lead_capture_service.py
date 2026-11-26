@@ -46,7 +46,9 @@ class MissingField(Exception):
 
 
 # ── M47.S01.T010 form shortening ("skip if known") ──────────────────────────
-SKIPPABLE = ("company_name", "contact_person_name", "contact_email", "contact_phone")
+# Only non-identifying fields may be left out, and only for a VERIFIED web identity (M47 review): the e-mail and phone
+# are always typed by the visitor, so a typed-in stranger's address can never be filled, subscribed or probed.
+SKIPPABLE = ("company_name", "contact_person_name")
 
 
 async def skip_list(db: AsyncSession, form: CRMLeadForm) -> list[str]:
@@ -70,26 +72,22 @@ async def set_skip_list(db: AsyncSession, form: CRMLeadForm, fields: list[str]) 
 
 
 async def known_values(db: AsyncSession, visitor: Optional[str]) -> dict[str, str]:
-    """Values we already hold for a recognised visitor: a web identity (exists only with marketing consent) whose
-    latest consent still allows marketing, linked by e-mail to a CRM contact. Server-side only, never sent back."""
-    from app.models.crm import CRMContact, CRMContactAssociation, WebIdentity
+    """Non-identifying values we already hold for a visitor whose web identity is VERIFIED (and whose latest consent
+    still allows marketing), linked by e-mail to a CRM contact. Server-side only, never sent back."""
+    from app.models.crm import CRMContact, CRMContactAssociation
     from app.models.sales import Customer
     from app.services import web_analytics_service as wa
-    if not visitor:
+    email = await wa.verified_email(db, visitor)
+    if not email:
         return {}
-    vh = wa.hashed("v", visitor)
-    consent = await wa._latest_consent(db, vh)
-    ident = await db.get(WebIdentity, vh)
-    if consent is None or not consent.marketing or ident is None:
-        return {}
-    c = (await db.execute(select(CRMContact).where(func.lower(CRMContact.email) == ident.email.lower()))).scalars().first()
+    c = (await db.execute(select(CRMContact).where(func.lower(CRMContact.email) == email.lower()))).scalars().first()
     if c is None:
         return {}
     company = (await db.execute(select(Customer.name).join(CRMContactAssociation, CRMContactAssociation.object_id == Customer.id)
                                 .where(CRMContactAssociation.contact_id == c.id, CRMContactAssociation.object_type == "customer")
                                 .limit(1))).scalar()
-    vals = {"company_name": company, "contact_person_name": c.full_name, "contact_email": c.email, "contact_phone": c.phone}
-    return {k: v for k, v in vals.items() if v}
+    vals = {"company_name": company, "contact_person_name": c.full_name}
+    return {k: v for k, v in vals.items() if v and k in SKIPPABLE}
 
 
 async def omitted(db: AsyncSession, form: CRMLeadForm, visitor: Optional[str]) -> list[str]:
@@ -143,7 +141,7 @@ async def submit(db: AsyncSession, form: CRMLeadForm, body: LeadSubmission, ip: 
         skipped = await omitted(db, form, body.visitor)
         if skipped:
             known = await known_values(db, body.visitor)
-            body = body.model_copy(update={f: known[f] for f in skipped if not getattr(body, f)})
+            body = body.model_copy(update={f: known[f] for f in skipped if f in SKIPPABLE and not getattr(body, f)})
     if not (body.company_name or "").strip() and not _clean(body.website):
         raise MissingField("Company is required.")
     email = str(body.contact_email).lower() if body.contact_email else None

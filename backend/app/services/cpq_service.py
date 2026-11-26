@@ -196,6 +196,11 @@ async def _book_price(db: AsyncSession, product_id, qty: Decimal, unit: str, cus
     return price if price > 0 and r.get("currency", currency) == currency else None
 
 
+def _pct(fraction) -> Decimal:
+    """Sales-order lines hold tax as a fraction (0.16); quotation lines as a percentage (16)."""
+    return (Decimal(fraction or 0) * 100).quantize(Decimal("0.01"))
+
+
 async def propose_quote(db: AsyncSession, rec) -> dict:
     from app.models.master import Product
     from app.services import sales_ai_service as ai
@@ -206,7 +211,7 @@ async def propose_quote(db: AsyncSession, rec) -> dict:
         return {"engine": "rules", "lines": [], "note": "This customer has no orders yet, so there is nothing to re-order. Add lines by hand."}
     last_so = recent[0][0]
     base = {ln.product_id: {"product_id": ln.product_id, "qty": Decimal(ln.ordered_quantity), "unit": ln.unit,
-                            "tax_rate": Decimal(ln.tax_rate or 0), "source": f"re-order of {last_so.order_no}"}
+                            "tax_rate": _pct(ln.tax_rate), "source": f"re-order of {last_so.order_no}"}
             for so, ln in recent if so.id == last_so.id}
     known = {ln.product_id: ln for _, ln in recent}
     engine = "rules"
@@ -227,7 +232,7 @@ async def propose_quote(db: AsyncSession, rec) -> dict:
                     continue
                 if pid in known and Decimal("0") < qty <= Decimal("1000000"):
                     ln = known[pid]
-                    picked[pid] = {"product_id": pid, "qty": qty, "unit": ln.unit, "tax_rate": Decimal(ln.tax_rate or 0),
+                    picked[pid] = {"product_id": pid, "qty": qty, "unit": ln.unit, "tax_rate": _pct(ln.tax_rate),
                                    "source": f"AI from deal notes: {str(item.get('reason') or '')[:150]}"}
             if picked:
                 base, engine = picked, "ai"

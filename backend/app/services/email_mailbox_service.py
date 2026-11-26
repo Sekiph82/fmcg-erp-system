@@ -268,7 +268,13 @@ def _verified(msg, from_email: str) -> bool:
     """True when the receiving server's Authentication-Results says DMARC passed, or DKIM passed for the
     From domain. Without it the From header is unauthenticated and must not change anyone's consent."""
     domain = from_email.rpartition("@")[2].lower()
-    for header in msg.get_all("Authentication-Results", []) or []:
+    headers = [str(h) for h in (msg.get_all("Authentication-Results", []) or [])]
+    # M47 review: a sender can write its own Authentication-Results. Trust only the one our receiving server added:
+    # the header whose authserv-id is MAIL_AUTHSERV_ID when configured, otherwise only the topmost header.
+    from app.core.config import settings
+    own = (getattr(settings, "MAIL_AUTHSERV_ID", "") or "").strip().lower()
+    headers = [h for h in headers if h.split(";", 1)[0].strip().lower() == own][:1] if own else headers[:1]
+    for header in headers:
         for kind, rest in _AUTH.findall(str(header)):
             if kind.lower() == "dmarc":
                 return True

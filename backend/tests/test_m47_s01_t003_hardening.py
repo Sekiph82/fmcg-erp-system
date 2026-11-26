@@ -53,7 +53,7 @@ def test_chatter_module_scope():
     rep = SimpleNamespace(is_superuser=False, access_scopes=[],
                           roles=[SimpleNamespace(name="r", is_active=True, access_scopes=[],
                                                  permissions=[SimpleNamespace(code="crm.view", is_active=True)])])
-    assert _may(rep, "crm_record") and _may(rep, "free_note")
+    assert _may(rep, "crm_record") and _may(rep, "note") and not _may(rep, "free_note")   # M47 review: unknown types fail closed
     assert not _may(rep, "invoice") and not _may(rep, "employee")
 
 

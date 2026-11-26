@@ -335,17 +335,23 @@ async def _enqueue_scheduled(db: AsyncSession, ver, sch: dict, now: datetime) ->
     if sch["kind"] == "relative":
         target = occ.astimezone(ZoneInfo(str(sch.get("tz") or DEFAULT_TZ))).date() - timedelta(days=sch["offset_days"])
         q = q.where(getattr(CRMRecord, sch["property"]) == target)
-    made, m = 0, sch.get("match")
-    # ponytail: at most 500 records per occurrence; page through the rest if schedules must reach bigger pipelines
-    for record in (await db.execute(q.order_by(CRMRecord.id).limit(MAX_SCHEDULED_PER_OCCURRENCE))).scalars():
-        if m and not _condition(m, record, await _stage_code(db, record)):
-            continue
-        if sch["kind"] == "relative":
-            key = f"rel:{sch['property']}:{getattr(record, sch['property']).isoformat()}:{record.id}"
-        else:
-            key = f"sched:{occ:%Y%m%dT%H%M}:{record.id}"
-        made += 1 if await start_run(db, ver, record.id, key, now) else 0
-    return made
+    made, m, last = 0, sch.get("match"), None
+    # M47 review: page through every matching record (keyset by id) instead of silently stopping at the first batch;
+    # runs are keyed per occurrence + record, so a page that is processed twice enrols nobody twice.
+    while True:
+        page_q = q.where(CRMRecord.id > last) if last is not None else q
+        page = (await db.execute(page_q.order_by(CRMRecord.id).limit(MAX_SCHEDULED_PER_OCCURRENCE))).scalars().all()
+        for record in page:
+            if m and not _condition(m, record, await _stage_code(db, record)):
+                continue
+            if sch["kind"] == "relative":
+                key = f"rel:{sch['property']}:{getattr(record, sch['property']).isoformat()}:{record.id}"
+            else:
+                key = f"sched:{occ:%Y%m%dT%H%M}:{record.id}"
+            made += 1 if await start_run(db, ver, record.id, key, now) else 0
+        if len(page) < MAX_SCHEDULED_PER_OCCURRENCE:
+            return made
+        last = page[-1].id
 
 
 async def record_for_email(db: AsyncSession, email: str) -> Optional[uuid.UUID]:
@@ -359,20 +365,26 @@ async def record_for_email(db: AsyncSession, email: str) -> Optional[uuid.UUID]:
 
 
 async def _enqueue_web(db: AsyncSession, ver, name: str, since: datetime, now: datetime) -> int:
-    """Defined custom events of identified visitors (an identity exists only with marketing consent)."""
+    """Defined custom events of identified visitors (an identity exists only with marketing consent) whose e-mail is
+    verified: an unverified link is just a typed address and must not enrol somebody else's record (M47 review)."""
     from app.models.crm import WebEvent, WebIdentity
     from app.services.web_analytics_service import definitions
     if name not in await definitions(db):            # definition deactivated: the trigger pauses
         return 0
-    rows = (await db.execute(select(WebEvent.id, WebIdentity.email).join(
+    base = select(WebEvent.id, WebIdentity.email).join(
         WebIdentity, WebIdentity.visitor_hash == WebEvent.visitor_hash).where(
-        WebEvent.kind == "CUSTOM", WebEvent.name == name, WebEvent.occurred_at >= since).limit(2000))).all()
-    made = 0
-    for eid, email in rows:
-        rid = await record_for_email(db, email)
-        if rid:
-            made += 1 if await start_run(db, ver, rid, f"web:{eid}", now) else 0
-    return made
+        WebEvent.kind == "CUSTOM", WebEvent.name == name, WebEvent.occurred_at >= since,
+        WebIdentity.verified_at.is_not(None))
+    made, last = 0, None
+    while True:   # M47 review: page through all events (keyset by id) — nothing is dropped before the watermark moves
+        rows = (await db.execute((base.where(WebEvent.id > last) if last is not None else base).order_by(WebEvent.id).limit(2000))).all()
+        for eid, email in rows:
+            rid = await record_for_email(db, email)
+            if rid:
+                made += 1 if await start_run(db, ver, rid, f"web:{eid}", now) else 0
+        if len(rows) < 2000:
+            return made
+        last = rows[-1][0]
 
 
 # ── inbound webhook (M47.S01.T008) ──────────────────────────────────────────────
@@ -415,12 +427,20 @@ async def revoke_hook(db: AsyncSession, wf: CRMWorkflow, user) -> bool:
     return True
 
 
-async def hook_enrol(db: AsyncSession, workflow_id: uuid.UUID, token: str, event_id: str,
-                     record_id: Optional[uuid.UUID], email: Optional[str], now: Optional[datetime] = None) -> dict:
+async def hook_token_ok(db: AsyncSession, workflow_id: uuid.UUID, token: str):
+    """The workflow's hook when the bearer token matches its stored digest, else None."""
     from app.models.m47_automation import CRMWorkflowHook
-    now = now or datetime.now(timezone.utc)
     hook = await db.get(CRMWorkflowHook, workflow_id)
     if hook is None or not token or not hmac.compare_digest(_digest(token), hook.token_digest):
+        return None
+    return hook
+
+
+async def hook_enrol(db: AsyncSession, workflow_id: uuid.UUID, token: str, event_id: str,
+                     record_id: Optional[uuid.UUID], email: Optional[str], now: Optional[datetime] = None) -> dict:
+    now = now or datetime.now(timezone.utc)
+    hook = await hook_token_ok(db, workflow_id, token)
+    if hook is None:
         raise WorkflowError(401, "Invalid workflow or token.")
     wf = await db.get(CRMWorkflow, workflow_id)
     ver = await db.get(CRMWorkflowVersion, wf.published_version_id) if wf and wf.published_version_id else None

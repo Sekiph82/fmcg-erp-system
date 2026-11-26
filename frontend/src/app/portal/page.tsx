@@ -37,6 +37,15 @@ export default function PartnerPortal() {
   }, [router]);
 
   useEffect(() => { ps<PortalMe>("/me").then(setMe).catch(fail); }, [fail]);
+  // M47 review fix: a signed-in shop user verifies this browser's analytics id as their own (only with marketing consent;
+  // the server checks consent again). Only verified identities drive form shortening and web-event workflows.
+  useEffect(() => {
+    try {
+      const c = JSON.parse(localStorage.getItem("povu_consent_v1") || "null");
+      const visitor = localStorage.getItem("povu_vid");
+      if (c?.marketing && visitor) ps("/web-identity", { method: "POST", body: JSON.stringify({ visitor }), headers: { "Content-Type": "application/json" } }).catch(() => {});
+    } catch { /* storage blocked */ }
+  }, []);
 
   async function signOut() {
     await post("/auth/logout").catch(() => undefined);

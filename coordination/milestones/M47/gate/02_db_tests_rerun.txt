@@ -1,0 +1,56 @@
+== tests/test_m43_s00_t004_harness.py :: 16 passed in 4.89s
+== tests/test_m43_s01_t001_t002_oauth_mail_db.py :: 5 passed in 5.44s
+== tests/test_m43_s01_t003_t004_calendar_sync_db.py :: 6 passed in 5.63s
+== tests/test_m43_s01_t005_booking_db.py :: 4 passed, 75 warnings in 21.11s
+== tests/test_m43_s01_t006_engagement_db.py :: 5 passed in 4.96s
+== tests/test_m43_s01_t007_quotas_db.py :: 1 passed in 4.81s
+== tests/test_m43_s01_t008_t009_voice_db.py :: 6 passed, 82 warnings in 20.59s
+== tests/test_m43_s01_t010_playbooks_db.py :: 4 passed, 75 warnings in 17.57s
+== tests/test_m43_s01_t011_pipelines_db.py :: 1 passed in 4.66s
+== tests/test_m43_s01_t012_deal_score_db.py :: 1 passed in 4.83s
+== tests/test_m43_s01_t013_workspace_db.py :: 2 passed in 4.38s
+== tests/test_m43_s01_t014_routing_db.py :: 4 passed in 4.92s
+== tests/test_m43_s01_t015_contacts_db.py :: 2 passed in 4.69s
+== tests/test_m43_s01_t016_teams_views_db.py :: 2 passed in 4.43s
+== tests/test_m43_s01_t017_coaching_db.py :: 1 passed, 2 warnings in 4.38s
+== tests/test_m44_s01_t001_email_designer.py :: 8 passed in 4.18s
+== tests/test_m44_s01_t002_t005_ads.py :: 6 passed in 5.04s
+== tests/test_m44_s01_t006_t008_social.py :: 6 passed in 4.92s
+== tests/test_m44_s01_t009_web_analytics_db.py :: 2 passed in 4.24s
+== tests/test_m44_s01_t010_audiences_db.py :: 2 passed in 4.62s
+== tests/test_m44_s01_t011_deliverability_db.py :: 4 passed in 4.38s
+== tests/test_m44_s01_t012_governance_db.py :: 4 passed in 5.09s
+== tests/test_m44_s01_t013_messaging.py :: 4 passed, 75 warnings in 17.14s
+== tests/test_m44_s01_t014_residuals.py :: 2 passed, 77 warnings in 17.12s
+== tests/test_m45_s01_t001_t003_customer_data.py :: 3 passed in 4.58s
+== tests/test_m45_s01_t004_t006_customer_intel.py :: 5 passed in 5.38s
+== tests/test_m45_s01_t007_service_agent.py :: 2 passed in 4.37s
+== tests/test_m45_s01_t008_t009_agents.py :: 4 passed, 11 warnings in 5.31s
+== tests/test_m45_s01_t010_dedupe_merge.py :: 3 passed in 5.24s
+== tests/test_m45_s01_t011_data_sync.py :: 4 passed, 75 warnings in 16.45s
+== tests/test_m45_s01_t012_t022_tokens_addin_mcp.py :: 3 passed, 76 warnings in 17.59s
+== tests/test_m45_s01_t013_sales_docs.py :: 1 passed, 75 warnings in 17.07s
+== tests/test_m45_s01_t014_cpq.py :: 2 passed, 75 warnings in 17.12s
+== tests/test_m45_s01_t015_custom_objects.py :: 3 passed in 4.31s
+== tests/test_m45_s01_t016_sso.py :: 1 passed, 75 warnings in 17.68s
+== tests/test_m45_s01_t017_sensitive.py :: 2 passed, 79 warnings in 17.95s
+== tests/test_m45_s01_t018_config_bundle.py :: 1 passed, 4 warnings in 4.46s
+== tests/test_m45_s01_t019_service_desk.py :: 2 passed, 83 warnings in 17.85s
+== tests/test_m45_s01_t020_warehouse_export.py :: 2 passed, 2 warnings in 5.44s
+== tests/test_m45_s01_t021_payment_links.py :: 1 passed, 75 warnings in 16.43s
+== tests/test_m45_s01_t023_impersonation.py :: 2 passed, 80 warnings in 19.18s
+== tests/test_m45_s01_t024_carryovers.py :: 5 passed in 4.86s
+== tests/test_m46_s01_content_hub.py :: 7 passed, 82 warnings in 30.26s
+== tests/test_m46_s01_t008_carryovers.py :: 4 passed, 9 warnings in 4.82s
+== tests/test_m47_s01_t002_integrated_flow.py :: 5 passed, 102 warnings in 21.47s
+== tests/test_m47_s01_t003_audit_fixes.py :: 8 passed, 80 warnings in 23.22s
+== tests/test_m47_s01_t003_hardening.py :: 5 passed, 75 warnings in 17.77s
+== tests/test_m47_s01_t005_review_fixes.py :: 12 passed, 77 warnings in 21.61s
+== tests/test_m47_s01_t006_carryovers.py :: 3 passed, 76 warnings in 16.87s
+== tests/test_m47_s01_t007_content_hub_depth.py :: 8 passed, 76 warnings in 26.48s
+== tests/test_m47_s01_t008_automation_data.py :: 9 passed in 6.20s
+== tests/test_m47_s01_t009_sales_depth.py :: 8 passed, 81 warnings in 22.61s
+== tests/test_m47_s01_t010_platform_depth.py :: 11 passed, 79 warnings in 25.25s
+== tests/test_m47_s01_t011_datasets.py :: 3 passed, 76 warnings in 18.89s
+== tests/test_m47_s01_t011_event_tags.py :: 2 passed, 75 warnings in 16.05s
+FILES PASS=55 FAIL=0

@@ -26,7 +26,7 @@ from app.schemas.report_builder import (
 # column has another name or the value is derived (M47.S01.T003 fix: several sources named columns that do not exist).
 SQL_MAP: Dict[str, Dict[str, str]] = {
     "sales_orders": {"channel": "source::text",
-                     "total_amount": "(SELECT COALESCE(SUM(l.ordered_quantity * l.unit_price * (1 - COALESCE(l.discount_pct, 0) / 100)), 0) "
+                     "total_amount": "(SELECT COALESCE(SUM(l.ordered_quantity * l.unit_price * (1 - COALESCE(l.discount_pct, 0))), 0) "
                                      "FROM so_lines l WHERE l.so_id = sales_orders.id)"},
     "customers": {"customer_code": "code", "customer_name": "name",
                   "outstanding_balance": "(SELECT COALESCE(SUM(i.total_amount - COALESCE(i.paid_amount, 0)), 0) FROM invoices i "

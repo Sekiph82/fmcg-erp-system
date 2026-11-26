@@ -471,7 +471,7 @@ async def test_members_media_captions_timeline_kb(tmp_path, monkeypatch):
             await ca.post(f"/api/v1/cms/pages/{pid}/submit")
             await _publish(cb, pid)
         op = await anon.get(url, params={"path": "/open"})
-        assert op.status_code == 200 and op.json()["blocks"][0]["rows"] == [] and "42" not in op.text
+        assert op.status_code == 200 and op.json()["blocks"][0]["rows"] == [] and '"42"' not in op.text   # the quoted price value; ids may contain 42
         assert (await anon.get(url, params={"path": "/member-price/water"})).status_code == 401
         assert (await m_in.get(url, params={"path": "/member-price/water"})).json()["blocks"][0]["text"] == "42"
 

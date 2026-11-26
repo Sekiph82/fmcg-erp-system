@@ -40,16 +40,16 @@ class HookIn(BaseModel):
 async def enrol(workflow_id: uuid.UUID, request: Request, authorization: str = Header(""),
                 db: AsyncSession = Depends(get_db)):
     _count(_hits, f"ip:{_client(request)}", 60)
-    _count(_hits, f"wf:{workflow_id}", 120)
     token = authorization[7:].strip() if authorization.lower().startswith("bearer ") else ""
+    if await wfs.hook_token_ok(db, workflow_id, token) is None:
+        raise HTTPException(401, "Invalid workflow or token.")
+    _count(_hits, f"wf:{workflow_id}", 120)    # counted only for the real token: strangers cannot exhaust it (M47 review)
     raw = await request.body()
     if len(raw) > 8_000:
         raise HTTPException(413, "Too large")
     try:
         body = HookIn.model_validate(json.loads(raw or b"{}"))
     except (ValueError, ValidationError):
-        if not token:
-            raise HTTPException(401, "Invalid workflow or token.") from None
         raise HTTPException(422, "Send JSON {event_id, record_id | email}.") from None
     try:
         out = await wfs.hook_enrol(db, workflow_id, token, body.event_id, body.record_id, body.email)

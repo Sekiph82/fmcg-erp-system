@@ -1,0 +1,4 @@
+# test_m46_s01_content_hub.py after fixing the id-substring assertion: 3 consecutive runs on fresh DBs
+7 passed, 82 warnings in 30.30s
+7 passed, 82 warnings in 30.88s
+7 passed, 82 warnings in 30.80s

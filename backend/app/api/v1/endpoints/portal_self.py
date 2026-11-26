@@ -208,6 +208,21 @@ async def me(user: PortalUser = Depends(ext.get_portal_user), db: AsyncSession =
     return {**_me(user, customer), "linked": customer is not None and customer.is_active}
 
 
+class WebIdentityIn(BaseModel):
+    visitor: str = Field(min_length=16, max_length=64, pattern=r"^[A-Za-z0-9-]+$")
+
+
+@router.post("/web-identity")
+async def verify_web_identity(body: WebIdentityIn, user: PortalUser = Depends(ext.get_portal_user),
+                              db: AsyncSession = Depends(get_db)):
+    """M47 review: a signed-in portal user is verified for their OWN e-mail, so the website may recognise this browser
+    (form shortening, web-event workflows). Needs the visitor's marketing consent; never another address."""
+    from app.services import web_analytics_service as wa
+    linked = await wa.identify(db, body.visitor, user.email, verified=True)
+    await db.commit()
+    return {"linked": linked, "verified": linked}
+
+
 @router.post("/password")
 async def change_password(body: PasswordIn, response: Response, user: PortalUser = Depends(ext.get_portal_user),
                           db: AsyncSession = Depends(get_db)):

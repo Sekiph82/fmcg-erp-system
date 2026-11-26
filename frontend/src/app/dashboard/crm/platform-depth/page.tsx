@@ -6,7 +6,7 @@ import { apiClient } from "@/lib/api";
 
 type Form = { id: string; name: string; slug: string };
 type Route = { id: string; event_type: string; channel_label: string; active: boolean; webhook: string };
-const SKIPPABLE = ["company_name", "contact_person_name", "contact_email", "contact_phone"];
+const SKIPPABLE = ["company_name", "contact_person_name"];   // e-mail and phone are always typed (M47 review)
 const EVENTS = ["DEAL", "TICKET", "APPROVAL", "APPROVE"];
 const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : "Request failed."; };
 

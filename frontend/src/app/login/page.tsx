@@ -54,9 +54,9 @@ export default function LoginPage() {
           {/* POVU logo replacing the purple ERP square */}
           <div className="flex justify-center mb-3">
             <Image
-              src="/povu-logo.jpg"
+              src="/brand/povu-logo.png"
               alt="POVU"
-              width={128}
+              width={192}
               height={128}
               priority
             />

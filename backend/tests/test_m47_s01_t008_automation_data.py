@@ -337,6 +337,10 @@ async def test_event_definitions_collector_and_web_event_trigger():
         ev2 = {**ev, "event_id": uuid.uuid4().hex}
         await wa.collect(db, v, s, [ev2])
         await db.commit()
+        await wfs.enqueue(db, t0 + timedelta(seconds=3))
+        assert await _runs(db, ver) == []                       # M47 review: a typed, unverified e-mail never enrols
+        assert await wa.identify(db, v, email, verified=True)   # e.g. the signed-in portal user's own address
+        await db.commit()
         await wfs.enqueue(db, t0 + timedelta(seconds=5))
         await wfs.enqueue(db, t0 + timedelta(seconds=10))
         runs = await _runs(db, ver)

@@ -100,16 +100,19 @@ class ContactIn(BaseModel):
 async def list_contacts(q: Optional[str] = Query(None, max_length=100), lifecycle: Optional[str] = None,
                         limit: int = Query(100, ge=1, le=500), db: AsyncSession = Depends(get_db),
                         current_user=Depends(get_current_user)):
+    from app.services import sensitive_service as sens
     stmt = _visible(select(CRMContact), current_user)
+    pol, rules = await sens.policy(db), await _rules(db, current_user)
     if q:
         like = f"%{q.lower()}%"
-        stmt = stmt.where(or_(CRMContact.full_name.ilike(like), CRMContact.email.ilike(like), CRMContact.phone.ilike(like)))
+        # M47 review: never search on a field the caller cannot see (hidden or masked), or q becomes an oracle for it
+        unseen = {k for k, a in rules.items() if a == "HIDDEN"} | (set() if sens.can_view(current_user) else pol.get("contact", set()))
+        cols = [CRMContact.full_name] + [getattr(CRMContact, f) for f in ("email", "phone") if f not in unseen]
+        stmt = stmt.where(or_(*(col.ilike(like) for col in cols)))
     if lifecycle:
         stmt = stmt.where(CRMContact.lifecycle_stage == lifecycle)
-    from app.services import sensitive_service as sens
-    pol = await sens.policy(db)
     rows = list((await db.execute(stmt.order_by(CRMContact.full_name).limit(limit))).scalars())
-    props, rules = await _props(db, [c.id for c in rows]), await _rules(db, current_user)
+    props = await _props(db, [c.id for c in rows])
     return [_out(c, current_user, pol, rules, props[c.id]) for c in rows]
 
 

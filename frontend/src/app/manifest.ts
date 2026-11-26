@@ -14,9 +14,8 @@ export default function manifest(): MetadataRoute.Manifest {
     background_color: "#f9fafb",
     theme_color: "#4338ca",
     icons: [
-      { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
-      { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
-      { src: "/icons/icon-maskable-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+      { src: "/icons/povu-icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
+      { src: "/icons/povu-icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
     ],
     shortcuts: [
       { name: "Shop Floor Terminal", url: "/dashboard/shop-floor/terminal" },

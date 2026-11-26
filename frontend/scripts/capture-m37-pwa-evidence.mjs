@@ -23,7 +23,7 @@ const browser = await chromium.launch();
   const { installabilityErrors } = await cdp.send("Page.getInstallabilityErrors");
   report.prod.installability_errors = installabilityErrors;
   report.prod.cached_paths = await page.evaluate(async () =>
-    (await (await caches.open("povu-pwa-v1")).keys()).map((r) => new URL(r.url).pathname));
+    (await (await caches.open("povu-pwa-v2")).keys()).map((r) => new URL(r.url).pathname));
   await shot(page, "01-prod-login-phone");
   await ctx.setOffline(true);
   await page.goto(`${PROD}/dashboard/shop-floor/terminal`).catch(() => undefined);

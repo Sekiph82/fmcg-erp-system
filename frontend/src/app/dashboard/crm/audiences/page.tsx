@@ -64,7 +64,7 @@ export default function AudiencesPage() {
   return (
     <div className="p-4 space-y-4 text-sm">
       <h2 className="text-lg font-semibold">Audiences</h2>
-      <p className="text-xs text-gray-500">Rule-based lists recomputed from customer, CRM and order data. Only addresses with marketing consent become members; others are counted as blocked and never exported. Website conditions use only visits linked to a customer's e-mail with consent; intent_score is the customer-intelligence buying-intent score.</p>
+      <p className="text-xs text-gray-500">Rule-based lists recomputed from customer, CRM and order data. Only addresses with marketing consent become members; others are counted as blocked and never exported. Website conditions use only visits linked to a customer&apos;s e-mail with consent; intent_score is the customer-intelligence buying-intent score.</p>
       {msg && <p role="status" className="text-xs border rounded p-2 bg-gray-50">{msg}</p>}
       <form className="border rounded p-3 bg-white space-y-2" onSubmit={(e) => { e.preventDefault(); run(() => apiClient.post("/api/v1/audiences", body()), "Audience saved and computed."); }}>
         <input aria-label="Audience name" required placeholder="Audience name" className="border rounded px-2 py-1 w-full" value={name} onChange={(e) => setName(e.target.value)} />

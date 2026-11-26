@@ -26,6 +26,7 @@ TABLES = [
 COLUMNS = [
     ("cms_media", "page_id", "UUID REFERENCES cms_pages(id) ON DELETE SET NULL"),       # T007 narration audio ↔ page
     ("cms_media", "poster_path", "VARCHAR(40)"),                                        # T007 poster frame
+    ("web_identities", "verified_at", "TIMESTAMPTZ"),                                   # T005 review: only verified identities drive CRM data
 ]
 
 INDEXES = [

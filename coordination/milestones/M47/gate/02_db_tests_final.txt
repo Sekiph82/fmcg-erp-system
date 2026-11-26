@@ -1,0 +1,82 @@
+== tests/test_m43_s00_t004_harness.py :: 16 passed in 4.99s
+== tests/test_m43_s01_t001_t002_oauth_mail_db.py :: 5 passed in 5.18s
+== tests/test_m43_s01_t003_t004_calendar_sync_db.py :: 6 passed in 5.19s
+== tests/test_m43_s01_t005_booking_db.py :: 4 passed, 75 warnings in 17.80s
+== tests/test_m43_s01_t006_engagement_db.py :: 5 passed in 4.33s
+== tests/test_m43_s01_t007_quotas_db.py :: 1 passed in 4.33s
+== tests/test_m43_s01_t008_t009_voice_db.py :: 6 passed, 82 warnings in 17.93s
+== tests/test_m43_s01_t010_playbooks_db.py :: 4 passed, 75 warnings in 16.30s
+== tests/test_m43_s01_t011_pipelines_db.py :: 1 passed in 4.23s
+== tests/test_m43_s01_t012_deal_score_db.py :: 1 passed in 4.24s
+== tests/test_m43_s01_t013_workspace_db.py :: 2 passed in 4.23s
+== tests/test_m43_s01_t014_routing_db.py :: 4 passed in 4.69s
+== tests/test_m43_s01_t015_contacts_db.py :: 2 passed in 4.46s
+== tests/test_m43_s01_t016_teams_views_db.py :: 2 passed in 4.29s
+== tests/test_m43_s01_t017_coaching_db.py :: 1 passed, 2 warnings in 4.22s
+== tests/test_m44_s01_t001_email_designer.py :: 8 passed in 4.20s
+== tests/test_m44_s01_t002_t005_ads.py :: 6 passed in 4.98s
+== tests/test_m44_s01_t006_t008_social.py :: 6 passed in 5.08s
+== tests/test_m44_s01_t009_web_analytics_db.py :: 2 passed in 4.29s
+== tests/test_m44_s01_t010_audiences_db.py :: 2 passed in 4.69s
+== tests/test_m44_s01_t011_deliverability_db.py :: 4 passed in 4.33s
+== tests/test_m44_s01_t012_governance_db.py :: 4 passed in 5.07s
+== tests/test_m44_s01_t013_messaging.py :: 4 passed, 75 warnings in 16.84s
+== tests/test_m44_s01_t014_residuals.py :: 2 passed, 77 warnings in 16.91s
+== tests/test_m45_s01_t001_t003_customer_data.py :: 3 passed in 4.52s
+== tests/test_m45_s01_t004_t006_customer_intel.py :: 5 passed in 5.26s
+== tests/test_m45_s01_t007_service_agent.py :: 2 passed in 4.24s
+== tests/test_m45_s01_t008_t009_agents.py :: 4 passed, 11 warnings in 5.19s
+== tests/test_m45_s01_t010_dedupe_merge.py :: 3 passed in 5.11s
+== tests/test_m45_s01_t011_data_sync.py :: 4 passed, 75 warnings in 16.53s
+== tests/test_m45_s01_t012_t022_tokens_addin_mcp.py :: 3 passed, 76 warnings in 17.54s
+== tests/test_m45_s01_t013_sales_docs.py :: 1 passed, 75 warnings in 17.00s
+== tests/test_m45_s01_t014_cpq.py :: 2 passed, 75 warnings in 17.05s
+== tests/test_m45_s01_t015_custom_objects.py :: 3 passed in 4.30s
+== tests/test_m45_s01_t016_sso.py :: 1 passed, 75 warnings in 17.55s
+== tests/test_m45_s01_t017_sensitive.py :: 2 passed, 79 warnings in 18.05s
+== tests/test_m45_s01_t018_config_bundle.py :: 1 passed, 4 warnings in 4.43s
+== tests/test_m45_s01_t019_service_desk.py :: 2 passed, 83 warnings in 17.77s
+== tests/test_m45_s01_t020_warehouse_export.py :: 2 passed, 2 warnings in 5.33s
+== tests/test_m45_s01_t021_payment_links.py :: 1 passed, 75 warnings in 16.43s
+== tests/test_m45_s01_t023_impersonation.py :: 2 passed, 80 warnings in 19.16s
+== tests/test_m45_s01_t024_carryovers.py :: 5 passed in 4.77s
+== tests/test_m46_s01_content_hub.py :: 1 failed, 6 passed, 82 warnings in 30.81s
+
+tests/test_m46_s01_content_hub.py::test_cms_staging_approval_publish_rollback_seo
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\esign.py:13: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class SignatureRecordRead(BaseModel):
+
+tests/test_m46_s01_content_hub.py::test_cms_staging_approval_publish_rollback_seo
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\esign.py:58: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class SignatureRequestRead(BaseModel):
+
+tests/test_m46_s01_content_hub.py::test_personalization_consent_cache_and_bandit
+tests/test_m46_s01_content_hub.py::test_members_media_captions_timeline_kb
+tests/test_m46_s01_content_hub.py::test_members_media_captions_timeline_kb
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\api\v1\endpoints\portal_self.py:129: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    user.last_login_at = datetime.utcnow()
+
+tests/test_m46_s01_content_hub.py::test_personalization_consent_cache_and_bandit
+tests/test_m46_s01_content_hub.py::test_members_media_captions_timeline_kb
+tests/test_m46_s01_content_hub.py::test_members_media_captions_timeline_kb
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\services\portal_service.py:81: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    activity_datetime=datetime.utcnow(),
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_m46_s01_content_hub.py::test_members_media_captions_timeline_kb
+1 failed, 6 passed, 82 warnings in 30.81s
+== tests/test_m46_s01_t008_carryovers.py :: 4 passed, 9 warnings in 4.80s
+== tests/test_m47_s01_t002_integrated_flow.py :: 5 passed, 102 warnings in 21.41s
+== tests/test_m47_s01_t003_audit_fixes.py :: 8 passed, 80 warnings in 23.25s
+== tests/test_m47_s01_t003_hardening.py :: 5 passed, 75 warnings in 17.72s
+== tests/test_m47_s01_t005_followups.py :: 4 passed, 75 warnings in 16.13s
+== tests/test_m47_s01_t005_review_fixes.py :: 12 passed, 77 warnings in 21.35s
+== tests/test_m47_s01_t006_carryovers.py :: 3 passed, 76 warnings in 16.72s
+== tests/test_m47_s01_t007_content_hub_depth.py :: 8 passed, 76 warnings in 26.42s
+== tests/test_m47_s01_t008_automation_data.py :: 9 passed in 6.24s
+== tests/test_m47_s01_t009_sales_depth.py :: 8 passed, 81 warnings in 22.60s
+== tests/test_m47_s01_t010_platform_depth.py :: 11 passed, 79 warnings in 25.10s
+== tests/test_m47_s01_t011_datasets.py :: 3 passed, 76 warnings in 18.76s
+== tests/test_m47_s01_t011_event_tags.py :: 2 passed, 75 warnings in 15.98s
+FILES PASS=55 FAIL=1

@@ -85,6 +85,7 @@ class Settings(BaseSettings):
     SLACK_SIGNING_SECRET: str = ""                    # M47 Slack interactive approvals (NOT_CONFIGURED when empty)
     META_PIXEL_ID: str = ""                           # M47 Meta CAPI conversions
     GOOGLE_ADS_CONVERSION_ACTION: str = ""            # M47 customers/<id>/conversionActions/<id>
+    MAIL_AUTHSERV_ID: str = ""                        # M47: our mail server's Authentication-Results authserv-id
     METRICS_TOKEN: str = ""                           # M47: /metrics needs this bearer token when set; else loopback only
     MEDIA_MAX_UPLOAD_BYTES: int = 209_715_200        # 200 MiB
     DOCUMENT_CLAMAV_HOST: str = ""

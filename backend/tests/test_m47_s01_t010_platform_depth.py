@@ -208,17 +208,18 @@ async def test_form_shortening_and_smart_properties():
         db.add_all([form, c, cust])
         await db.flush()
         await cs.associate(db, c.id, "customer", cust.id)
-        await capture.set_skip_list(db, form, ["contact_person_name", "contact_email", "contact_phone"])
-        with pytest.raises(ValueError):
-            await capture.set_skip_list(db, form, ["message"])
+        await capture.set_skip_list(db, form, ["company_name", "contact_person_name"])
+        for bad in (["message"], ["contact_email"], ["contact_phone"]):   # M47 review: identifying fields are always typed
+            with pytest.raises(ValueError):
+                await capture.set_skip_list(db, form, bad)
         await wa.record_consent(db, vid, True, True)
         await db.flush()
-        assert await wa.identify(db, vid, email)
+        assert await wa.identify(db, vid, email, verified=True)   # M47 review: only a verified identity is recognised
         await db.commit()
         from types import SimpleNamespace
         req = SimpleNamespace(client=SimpleNamespace(host=f"10.9.{uuid.uuid4().int % 250}.{uuid.uuid4().int % 250}"))
         omit = (await known_fields(slug, KnownIn(visitor=vid), req, db))["omit"]
-        assert sorted(omit) == ["contact_email", "contact_person_name", "contact_phone"]
+        assert sorted(omit) == ["company_name", "contact_person_name"]
         assert (await known_fields(slug, KnownIn(visitor=stranger), req, db)) == {"omit": []}
         from fastapi import HTTPException
         from app.api.v1.endpoints import crm_lead_forms_public as lfp
@@ -229,14 +230,15 @@ async def test_form_shortening_and_smart_properties():
         assert e.value.status_code == 429
     import random
     async with _client(f"10.{random.randint(0, 255)}.{random.randint(0, 255)}.{random.randint(1, 254)}") as anon:
-        r = await anon.post(f"/api/v1/public/lead-forms/{slug}/submit", json={"company_name": "Duka Moja", "visitor": vid})
+        r = await anon.post(f"/api/v1/public/lead-forms/{slug}/submit", json={"visitor": vid})   # company + name filled for the verified visitor
         assert r.status_code == 202, r.text
         assert email not in r.text and "+254711000222" not in r.text            # nothing is echoed back
         r = await anon.post(f"/api/v1/public/lead-forms/{slug}/submit", json={"visitor": stranger, "contact_email": "x@example.com"})
         assert r.status_code == 422
     async with AsyncSessionLocal() as db:
         lead = (await db.execute(select(CRMRecord).where(CRMRecord.source_detail.like(f"form:{slug}%")))).scalars().one()
-        assert lead.contact_email == email and lead.contact_person_name == "Wanjiru POVU" and lead.contact_phone == "+254711000222"
+        assert lead.contact_person_name == "Wanjiru POVU" and lead.company_name == "Duka Moja"
+        assert lead.contact_email is None and lead.contact_phone is None     # identifying fields are never filled
         await wa.record_consent(db, vid, True, False)            # marketing consent withdrawn → no longer recognised
         await db.commit()
         assert await capture.omitted(db, await db.get(CRMLeadForm, form.id), vid) == []

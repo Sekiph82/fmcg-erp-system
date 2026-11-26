@@ -14,7 +14,12 @@ export const metadata: Metadata = {
   description: "POVU — Enterprise Resource Planning",
   applicationName: "POVU ERP",
   appleWebApp: { capable: true, title: "POVU", statusBarStyle: "default" },
-  icons: { icon: "/favicon.ico", apple: "/icons/apple-touch-icon.png" },
+  // POVU Brand Vault approved release (byte-identical owner icon package, verified by SHA-256)
+  icons: {
+    icon: [{ url: "/favicon.ico" }, { url: "/icons/povu-icon-32.png", sizes: "32x32", type: "image/png" },
+           { url: "/icons/povu-icon-16.png", sizes: "16x16", type: "image/png" }],
+    apple: [{ url: "/icons/povu-icon-180.png", sizes: "180x180", type: "image/png" }],
+  },
 };
 
 export const viewport: Viewport = {

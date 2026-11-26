@@ -8,11 +8,11 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 ## Project Status
 
-- Current Milestone: M46 — ACCEPTED 2026-11-26 (gate passed); next M47 — Parity-plus final integrated acceptance
-- Current Sprint: M46.S02 — gate passed, all M46 rows [x]; synchronization recorded in M46.S02.T002
-- Current Task: M47.S01 block (T001–T006)
-- Current Task Status: M46 accepted (coordination/milestones/M46/gate/GATE_REPORT.md). M47 not started.
-- Next Task/Action: M47.S01 (T001–T004, T006) as one batch, then the final gate M47.S01.T005.
+- Current Milestone: M47 — ACCEPTED 2026-11-26 (final software gate passed); all software milestones complete
+- Current Sprint: M47.S01 — final gate passed, all M47.S01 rows [x]
+- Current Task: none (software complete); M47.S02 activation rows are NOT_DUE [D]
+- Current Task Status: M47 accepted (coordination/milestones/M47/gate/GATE_REPORT.md). No open software task.
+- Next Task/Action: owner-triggered activation (M47.S02.T001–T010) when the real prerequisites exist.
 - Required Actor: CLAUDE (sole active autonomous task runner and tracker writer; per coordination/CLAUDE_AUTONOMOUS_EXECUTION_POLICY.md; the 2026-11-25 owner rules below supersede older cadence/gate instructions)
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -1733,7 +1733,8 @@ Decision: no public App Store / Google Play listing. Phase 1 = installable PWA o
   Reconciled 2026-11-25 (M43.S00.T005): NOT_DUE commissioning gate, not a software defect. It is traced to M47.S02.T007. The software side is either implemented (see the row's evidence) or tracked as an executable M43–M46 task.
 - [D] M37.S02.T002 — iOS MDM Web Clip for managed iPhones/iPads. Needs MDM.
   Reconciled 2026-11-25 (M43.S00.T005): NOT_DUE commissioning gate, not a software defect. It is traced to M47.S02.T007. The software side is either implemented (see the row's evidence) or tracked as an executable M43–M46 task.
-- [ ] M37.S02.T003 — (Phase 2 trigger only) Capacitor shell; Android private app via managed Google Play, iOS Custom App via Apple Business Manager. Needs D-U-N-S, Apple Developer Program (org), ABM, Play Console (org).
+- [D] M37.S02.T003 — (Phase 2 trigger only) Capacitor shell; Android private app via managed Google Play, iOS Custom App via Apple Business Manager. Needs D-U-N-S, Apple Developer Program (org), ABM, Play Console (org).
+  Reconciled 2026-11-26 (M47 close): NOT_DUE commissioning gate like its siblings M37.S02.T001/T002 — it needs organisation accounts (D-U-N-S, Apple Developer Program, ABM, Play Console) and is an explicit Phase-2 trigger; traced to M47.S02.T007. The installable PWA (M37) is the current software delivery.
 
 ## M37.S03 — Push notifications and device policy
 - [v] M37.S03.T001 — Replace `/api/v1/mobile/push/send` stub with Web Push (VAPID) for installed PWA (Android, iOS 16.4+); restrict send to authorised roles; store subscription in existing token table.
@@ -1881,9 +1882,9 @@ Brief and owner decisions: `coordination/milestones/M42/BRIEF.md`. Reference des
 
 ## POVU Brand Vault — owner-approved new logo and ICO rollout (2026-11-25)
 
-- [ ] **ERP-POVU-VAULT-001:** Use approved PUBLIC `Sekiph82/POVU-Brand-Vault` release, created from `C:\Users\sekip\Desktop\Character Reference Sheets\Character Refence Sheets`. Confirm canonical new POVU transparent logo and exact original ICO package. Never generate a lookalike or reuse stale approved logo accidentally; compare hashes. Sole source of truth: the owner-designated folder above, imported into the public Vault. Use only freshly calculated hashes of the files actually imported; no previous brand registry or historical digest matching. Replace every existing POVU logo/ICO usage in the application with this exact release and rebuild/test; preserve unrelated application branding.
-- [ ] **ERP-POVU-VAULT-002:** Audit and replace actual POVU identity assets in `frontend/public/povu-logo.jpg`, site favicon, Next.js `frontend/src/app/layout.tsx` icons and `frontend/public/povu-shop.webmanifest` referenced icons. Preserve source files and support rollback; make no unapproved branding changes outside POVU ERP/Shop. Implement transparent and raster outputs through lossless format-safe conversions only if needed for platform compatibility, while keeping original master byte-identical in Vault.
-- [ ] **ERP-POVU-VAULT-003:** Test Next.js favicon/PWA cache updates, all icon sizes (192/512/maskable/apple-touch as applicable), manifest references and browser/device visuals; preserve old assets until verified migration. The designated owner-authorized public Vault brand assets may be consumed by SHA; exclude other private files and product data.
+- [x] **ERP-POVU-VAULT-001:** Use approved PUBLIC `Sekiph82/POVU-Brand-Vault` release, created from `C:\Users\sekip\Desktop\Character Reference Sheets\Character Refence Sheets`. Confirm canonical new POVU transparent logo and exact original ICO package. Never generate a lookalike or reuse stale approved logo accidentally; compare hashes. Sole source of truth: the owner-designated folder above, imported into the public Vault. Use only freshly calculated hashes of the files actually imported; no previous brand registry or historical digest matching. Replace every existing POVU logo/ICO usage in the application with this exact release and rebuild/test; preserve unrelated application branding. — Done 2026-11-26 [x]: approved Vault release verified by fresh SHA-256 against the owner folder (logo d602bc99…, icon pack d013ad30…, all 15 extracted icons match); byte-identical copies wired into login logo, sidebar/header icon, favicon, apple-touch, ERP and Shop PWA manifests, service-worker cache v2; old assets kept for rollback; PWA unit tests 4/4, tsc clean, browser check. Evidence: coordination/brand-vault/VAULT_ROLLOUT_2026-11-26.md. Real-device home-screen install waits for the production domain (M47.S02.T009).
+- [x] **ERP-POVU-VAULT-002:** Audit and replace actual POVU identity assets in `frontend/public/povu-logo.jpg`, site favicon, Next.js `frontend/src/app/layout.tsx` icons and `frontend/public/povu-shop.webmanifest` referenced icons. Preserve source files and support rollback; make no unapproved branding changes outside POVU ERP/Shop. Implement transparent and raster outputs through lossless format-safe conversions only if needed for platform compatibility, while keeping original master byte-identical in Vault. — Done 2026-11-26 [x]: approved Vault release verified by fresh SHA-256 against the owner folder (logo d602bc99…, icon pack d013ad30…, all 15 extracted icons match); byte-identical copies wired into login logo, sidebar/header icon, favicon, apple-touch, ERP and Shop PWA manifests, service-worker cache v2; old assets kept for rollback; PWA unit tests 4/4, tsc clean, browser check. Evidence: coordination/brand-vault/VAULT_ROLLOUT_2026-11-26.md. Real-device home-screen install waits for the production domain (M47.S02.T009).
+- [x] **ERP-POVU-VAULT-003:** Test Next.js favicon/PWA cache updates, all icon sizes (192/512/maskable/apple-touch as applicable), manifest references and browser/device visuals; preserve old assets until verified migration. The designated owner-authorized public Vault brand assets may be consumed by SHA; exclude other private files and product data. — Done 2026-11-26 [x]: approved Vault release verified by fresh SHA-256 against the owner folder (logo d602bc99…, icon pack d013ad30…, all 15 extracted icons match); byte-identical copies wired into login logo, sidebar/header icon, favicon, apple-touch, ERP and Shop PWA manifests, service-worker cache v2; old assets kept for rollback; PWA unit tests 4/4, tsc clean, browser check. Evidence: coordination/brand-vault/VAULT_ROLLOUT_2026-11-26.md. Real-device home-screen install waits for the production domain (M47.S02.T009).
 
 
 # M43–M47 — HubSpot parity-plus software roadmap (owner directive 2026-11-25)
@@ -2852,7 +2853,7 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
 # M47 — Parity-plus final integrated acceptance and future commissioning register
 
 ## M47.S01 — Final verification and additional gap closure
-- [v] M47.S01.T001 — Re-audit dated HubSpot capability matrix against actual latest source and running local ERP; compare edition feature by feature, not names. Any uncovered software gap must become a new executable task (including gaps beyond original 40); implement and add acceptance coverage before final gate. No unverified parity claims. Update TASKS.md immediately, tests NOT RUN until gate.
+- [x] M47.S01.T001 — Re-audit dated HubSpot capability matrix against actual latest source and running local ERP; compare edition feature by feature, not names. Any uncovered software gap must become a new executable task (including gaps beyond original 40); implement and add acceptance coverage before final gate. No unverified parity claims. Update TASKS.md immediately, tests NOT RUN until gate.
   Done 2026-11-26 [v] (tests NOT RUN as gate):
   - The official HubSpot catalog was fetched again (HTTP 200, read in full: 483 hub rows, 11 agents, 9 AEO items). Against the 2026-11-25 snapshot there are 0 new, 0 removed and 0 renamed features (coordination/milestones/M47/HUBSPOT_CATALOG_DIFF_2026-11-26.md).
   - A separate read-only explorer agent re-checked every v2 matrix row against the code at 681ac61.
@@ -2863,7 +2864,7 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
     - Content sync stays MISSING (bundles contain no CMS content).
   - Remaining buildable gaps became tasks M47.S01.T007–T011.
   - Library-only items (SAML, Parquet, OCR) need owner consent to install and went to M47.S02.T010. No parity percentage is claimed.
-- [v] M47.S01.T002 — Prove parity-plus integrated design through synthetic FMCG scenarios: website lead/chat → score → routing/sequence → quote/discount/signature → order → MRP/production/QC/stock → pick/dispatch/POD → invoice/ledger/tahsilat; distributor/shop/field channels; complaint/lot/recall/NPS/loyalty; campaigns/attribution/AI recommendations. Test absent-provider operation and native data continuity. Prepare evidence plan, test only at gate; update TASKS.md immediately.
+- [x] M47.S01.T002 — Prove parity-plus integrated design through synthetic FMCG scenarios: website lead/chat → score → routing/sequence → quote/discount/signature → order → MRP/production/QC/stock → pick/dispatch/POD → invoice/ledger/tahsilat; distributor/shop/field channels; complaint/lot/recall/NPS/loyalty; campaigns/attribution/AI recommendations. Test absent-provider operation and native data continuity. Prepare evidence plan, test only at gate; update TASKS.md immediately.
   Done 2026-11-26 [v] (tests NOT RUN as gate; pre-gate check 5/5 twice on a fresh DB):
   - Integrated synthetic FMCG scenario (tests/test_m47_s01_t002_integrated_flow.py; PROVIDER_EGRESS=local, no keys), every step asserted:
     - lead and demand: website lead form (HTTP) → scored and routed → sequence → opportunity + rule-based prioritisation → customer created; purchase/GRN → production → QC and quarantine release → lot release → trace;
@@ -2884,7 +2885,7 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
     - staff steps call endpoints/services as real DB users (not through login);
     - the Daraja push is simulated;
     - production makes no GL entry without production posting rules.
-- [v] M47.S01.T003 — Verify all software surfaces, role permissions, privacy, consent, auditability, accessible desktop/mobile screens, multi-company/currency/locales, import/export/backup/recovery, operational limits, deployment configuration and no real business data/credentials in public repo. Record docs, screenshots and missing tasks; do not imply production readiness without actual acceptance. Update TASKS.md immediately.
+- [x] M47.S01.T003 — Verify all software surfaces, role permissions, privacy, consent, auditability, accessible desktop/mobile screens, multi-company/currency/locales, import/export/backup/recovery, operational limits, deployment configuration and no real business data/credentials in public repo. Record docs, screenshots and missing tasks; do not imply production readiness without actual acceptance. Update TASKS.md immediately.
   Done 2026-11-26 [v] (tests NOT RUN as gate; pre-gate checks 5/5 + 8/8):
   - Independent read-only surface audit: coordination/milestones/M47/T003/T003_AUDIT.md.
     - 3,611 routes enumerated. All 107 PUBLIC_ROUTES entries exist. The only other no-auth routes are /live, /ready, / and /metrics.
@@ -2914,7 +2915,7 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
     - real-looking demo names in old seed data;
     - 64 staff routes whose helper checks were not read by the auditor (re-check at the final gate).
   - Tests: tests/test_m47_s01_t003_hardening.py and tests/test_m47_s01_t003_audit_fixes.py.
-- [v] M47.S01.T004 — Final feature-by-feature comparison report: each HubSpot capability with evidence, achieved local parity/advantage, remaining limitations due to vendor-only/private data or approvals, exact future activation prerequisites, and measurable native FMCG advantages. If a software gap remains, add tasks and close them before final acceptance. No fake market-size or live accuracy equivalence. Update TASKS.md immediately.
+- [x] M47.S01.T004 — Final feature-by-feature comparison report: each HubSpot capability with evidence, achieved local parity/advantage, remaining limitations due to vendor-only/private data or approvals, exact future activation prerequisites, and measurable native FMCG advantages. If a software gap remains, add tasks and close them before final acceptance. No fake market-size or live accuracy equivalence. Update TASKS.md immediately.
   Done 2026-11-26 [v] (tests NOT RUN as gate):
   - Final comparison report: coordination/milestones/M47/FINAL_COMPARISON_REPORT.md.
   - Contents:
@@ -2926,9 +2927,21 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
     - exact activation prerequisites (M47.S02.T001–T010).
   - No percentage, market-size or live-accuracy claim.
   - Every software gap found in the v3 re-audit was closed by T007–T011, or recorded as an explicitly bounded delta in the report.
-- [ ] M47.S01.T005 — Consolidated final software milestone test gate: full backend, DB/migration, contracts, frontend build/type/lint, browser actual local app and screenshot walkthrough, critical end-to-end personas and independent security/code audit. Fix failures and rerun; no [x] before applicable PASS. Commit/push all accepted code/evidence/ledger and verify Desktop/main SHA match; update TASKS.md and report in Turkish.
+- [x] M47.S01.T005 — Consolidated final software milestone test gate: full backend, DB/migration, contracts, frontend build/type/lint, browser actual local app and screenshot walkthrough, critical end-to-end personas and independent security/code audit. Fix failures and rerun; no [x] before applicable PASS. Commit/push all accepted code/evidence/ledger and verify Desktop/main SHA match; update TASKS.md and report in Turkish.
+  Done 2026-11-26 [x] — evidence in coordination/milestones/M47/gate/ (GATE_REPORT.md):
+  - Migrations: empty → head 0077 (20/20 M47 tables); 0077 downgrade/upgrade round trip.
+  - DB-gated tests, every M43–M47 file on its own fresh DB:
+    - after the review fixes: 55/55 files pass;
+    - final run: 54/55; the one failure was a flaky id-substring assertion (no leak), fixed and then 3×7 passed.
+  - Full backend suite: 1841 passed, 0 failed.
+  - Frontend: tsc 0; eslint 0 errors; build OK; i18n missing-key report ok (EN/SW/TR, 24 files).
+  - Integrated FMCG scenario: lead → quote/approval/e-sign → SO → production/QC → dispatch/POD → invoice/GL → M-Pesa → AR 0, plus side channels.
+  - Browser on the real local app: staff shell in Swahili, report datasets, helpdesk pipelines, platform settings, all APIs 200.
+  - Independent review: ACCEPT_WITH_FIXES. Every finding (2 high, 5 medium, 9 low) fixed with regression tests; the e-mailed visitor-verification link is a recorded bounded delta.
+  - Surface audit (T003): 16 defects fixed.
+  - No live-provider requirement; activation stays in M47.S02 (NOT_DUE).
 
-- [v] M47.S01.T006 — M46 carry-overs (from the M46 gate review, 2026-11-26)
+- [x] M47.S01.T006 — M46 carry-overs (from the M46 gate review, 2026-11-26)
   - **Scope:**
     - Rate limits on the public media-view, experiment-convert and CTA-click writes.
     - Sitemap without N+1 queries, with a bound and cache headers.
@@ -2951,7 +2964,7 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
   - Media writes run off the event loop. An oversized upload is refused from Content-Length before the body is read.
   - Tests: tests/test_m47_s01_t006_carryovers.py.
 
-- [v] M47.S01.T007 — Content Hub depth (gap from the v3 re-audit, coordination/milestones/M47/HUBSPOT_PARITY_MATRIX_v3_2026-11-26.md)
+- [x] M47.S01.T007 — Content Hub depth (gap from the v3 re-audit, coordination/milestones/M47/HUBSPOT_PARITY_MATRIX_v3_2026-11-26.md)
   - **Scope:**
     - AI-drafted page translation, within the content-studio budget, always NEEDS_REVIEW, falling back to a copy.
     - Post narration through a TTS adapter (local engine if present, otherwise NOT_AVAILABLE) into cms_media audio linked to the post.
@@ -2969,7 +2982,7 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
   - CMS content in config bundles (cms_bundle_service): live public pages arrive as drafts; tables are never auto-published; media goes by reference.
   - Video poster and trim through ffmpeg (409 when it is absent). Trim makes a new staff-only copy.
   - Tests: tests/test_m47_s01_t007_content_hub_depth.py.
-- [v] M47.S01.T008 — Automation and data depth (gap from the v3 re-audit, coordination/milestones/M47/HUBSPOT_PARITY_MATRIX_v3_2026-11-26.md)
+- [x] M47.S01.T008 — Automation and data depth (gap from the v3 re-audit, coordination/milestones/M47/HUBSPOT_PARITY_MATRIX_v3_2026-11-26.md)
   - **Scope:**
     - CRM workflows get a scheduled trigger and an inbound webhook trigger (bearer token).
     - Custom web-event definitions, usable as a workflow trigger and an audience condition.
@@ -2987,7 +3000,7 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
   - Audience fields: visited_path, web_event and intent_score.
   - Product usage (portal logins, catalogue views, self-service reorders) is a health component and a churn feature. Catalogue views are now logged by the portal catalogue.
   - Tests: tests/test_m47_s01_t008_automation_data.py.
-- [v] M47.S01.T009 — Sales depth (gap from the v3 re-audit, coordination/milestones/M47/HUBSPOT_PARITY_MATRIX_v3_2026-11-26.md)
+- [x] M47.S01.T009 — Sales depth (gap from the v3 re-audit, coordination/milestones/M47/HUBSPOT_PARITY_MATRIX_v3_2026-11-26.md)
   - **Scope:**
     - CRM tasks pushed to linked calendars.
     - 1-to-1 video messages: recorded or uploaded video, a tracked expiring link, views on the timeline.
@@ -3007,7 +3020,7 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
   - Contract bulk import (CSV plus matched PDFs, dry run) feeding renewals.
   - Deal-win logistic model on closed deals (≥10 per class, holdout AUC/accuracy stored) beside the rule score; cold start shows "Not enough data".
   - Tests: tests/test_m47_s01_t009_sales_depth.py.
-- [v] M47.S01.T010 — Platform and service depth (gap from the v3 re-audit, coordination/milestones/M47/HUBSPOT_PARITY_MATRIX_v3_2026-11-26.md)
+- [x] M47.S01.T010 — Platform and service depth (gap from the v3 re-audit, coordination/milestones/M47/HUBSPOT_PARITY_MATRIX_v3_2026-11-26.md)
   - **Scope:**
     - Field-level permissions (hidden or read-only per role on CRM and custom properties, enforced in the APIs).
     - Form shortening for recognised consented visitors, plus rule-based smart properties.
@@ -3029,7 +3042,7 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
     - ad uploads never include unconsented people;
     - /known listed and rate-limited.
   - Tests: tests/test_m47_s01_t010_platform_depth.py.
-- [v] M47.S01.T011 — Usability depth (gap from the v3 re-audit, coordination/milestones/M47/HUBSPOT_PARITY_MATRIX_v3_2026-11-26.md)
+- [x] M47.S01.T011 — Usability depth (gap from the v3 re-audit, coordination/milestones/M47/HUBSPOT_PARITY_MATRIX_v3_2026-11-26.md)
   - **Scope:**
     - Drag-and-drop block ordering in the site and e-mail editors.
     - A point-and-click web event tagger.

@@ -28,6 +28,8 @@ from app.core.callback_security import verify_meta_signature
 from sqlalchemy import select, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.access_control import require_any_permission
+from app.core.config import settings
 from app.core.deps import get_current_user, get_db
 from app.models.user import User
 from app.models.whatsapp import (
@@ -118,6 +120,11 @@ STOP_ACK = {
     "tr": "Artık bizden WhatsApp mesajı almayacaksınız. Tekrar almak için BAŞLA yazın.",
 }
 SERVICE_WINDOW = timedelta(hours=24)   # Meta: replies are allowed for 24 h after the customer's last message
+SIM_PREFIX = "sim_"                    # external id of /simulate-inbound rows: never a real customer message
+# M47 review: consent and provider configuration need a specific right, not just the coarse module guard
+WA_MANAGE = ("crm.edit_all", "roles.edit")
+WA_CONSENT_READ = ("crm.view_all",) + WA_MANAGE
+WA_SIMULATE = ("roles.edit",)          # admin-level; also only outside production and on a demo-mode config
 
 
 def norm_phone(phone: str) -> str:
@@ -161,6 +168,8 @@ async def send_blocked_reason(db: AsyncSession, phone: str) -> Optional[str]:
         return None
     recent = (await db.execute(select(WhatsAppMessage.id).where(
         WhatsAppMessage.phone == p, WhatsAppMessage.direction == WAMessageDirection.INBOUND,
+        or_(WhatsAppMessage.external_msg_id.is_(None),
+            ~WhatsAppMessage.external_msg_id.startswith(SIM_PREFIX, autoescape=True)),   # simulated rows never open it
         WhatsAppMessage.created_at >= datetime.now(timezone.utc) - SERVICE_WINDOW).limit(1))).first()
     return None if recent else f"no WhatsApp opt-in is recorded for {p}"
 
@@ -201,14 +210,15 @@ class WAConsentIn(BaseModel):
 
 
 @router.get("/consents/{phone}")
-async def get_consent(phone: str, db: AsyncSession = Depends(get_db), _: User = Depends(get_current_user)):
+async def get_consent(phone: str, db: AsyncSession = Depends(get_db), _: User = Depends(require_any_permission(WA_CONSENT_READ))):
     c = await _consent(db, phone)
     return {"phone": norm_phone(phone), "status": c.status if c else "NONE", "source": c.source if c else None,
             "updated_at": c.updated_at.isoformat() if c else None, "blocked_reason": await send_blocked_reason(db, phone)}
 
 
 @router.post("/consents")
-async def record_consent(body: WAConsentIn, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+async def record_consent(body: WAConsentIn, db: AsyncSession = Depends(get_db),
+                         current_user: User = Depends(require_any_permission(WA_MANAGE))):
     """Staff record a customer's opt-in (with proof) or opt-out. A customer's STOP is never overridden by staff."""
     from app.models.audit_log import AuditLog
     p = norm_phone(body.phone)
@@ -246,7 +256,7 @@ async def list_configs(
 async def add_config(
     body: WAConfigCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_any_permission(WA_MANAGE)),
 ):
     config = WhatsAppConfig(**body.model_dump(), created_by_id=current_user.id)
     db.add(config)
@@ -260,7 +270,7 @@ async def update_config(
     config_id: uuid.UUID,
     body: WAConfigUpdate,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    _: User = Depends(require_any_permission(WA_MANAGE)),
 ):
     config = await db.get(WhatsAppConfig, config_id)
     if not config or not config.is_active:
@@ -505,10 +515,13 @@ async def list_messages(
 async def simulate_inbound(
     body: WASimulateInbound,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    _: User = Depends(require_any_permission(WA_SIMULATE)),
 ):
-    """Demo: create a fake inbound message from a customer/supplier."""
+    """Demo only: log a fake inbound message on a demo-mode config outside production. It is marked simulated
+    (external id ``sim_…``), never runs STOP/START keywords and never opens the 24 h service window."""
     config = await _get_config_or_404(db, body.config_id)
+    if settings.ENVIRONMENT == "production" or not config.is_demo_mode:
+        raise HTTPException(403, "Simulated inbound messages are only available on a demo-mode config outside production.")
     msg = WhatsAppMessage(
         config_id=config.id,
         direction=WAMessageDirection.INBOUND,
@@ -517,14 +530,13 @@ async def simulate_inbound(
         phone=body.phone,
         contact_name=body.contact_name,
         body=body.body,
-        external_msg_id=f"sim_{uuid.uuid4().hex[:12]}",
+        external_msg_id=f"{SIM_PREFIX}{uuid.uuid4().hex[:12]}",
         delivered_at=datetime.now(tz=timezone.utc),
         linked_module=body.linked_module,
         linked_object_id=body.linked_object_id,
         linked_object_ref=body.linked_object_ref,
     )
     db.add(msg)
-    await _handle_keywords(db, config, body.phone, body.body)
     await db.commit()
     await db.refresh(msg)
     return WAMessageRead.model_validate(msg)

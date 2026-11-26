@@ -311,7 +311,7 @@ async def metrics(request: Request):
     token = settings.METRICS_TOKEN
     given = request.headers.get("authorization", "").removeprefix("Bearer ").strip()
     local = (request.client.host if request.client else "") in ("127.0.0.1", "::1", "localhost")
-    if (token and not hmac.compare_digest(given, token)) or (not token and not local):
+    if (token and not hmac.compare_digest(given.encode(), token.encode())) or (not token and not local):
         return JSONResponse(status_code=404, content={"error": "not_found", "detail": "Not Found"})
     return metrics_snapshot()
 

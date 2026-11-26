@@ -109,11 +109,23 @@ async def test_whatsapp_opt_in_stop_and_encrypted_token(monkeypatch):
     from app.db.session import AsyncSessionLocal
     from app.models.whatsapp import WhatsAppConsent, WhatsAppMessage
     async with AsyncSessionLocal() as db:
-        rep = (await _user(db, CRM, "warep")).username
+        rep = (await _user(db, CRM + ("crm.edit_all",), "warep")).username   # M47 review: consent/config need edit_all
         await db.commit()
     n = uuid.uuid4().int % 10**6
     p1, p2, p3, p4 = (f"+2547{n:06d}{i}" for i in range(1, 5))
     biz = f"povu-biz-{uuid.uuid4().hex[:8]}"
+    monkeypatch.setattr(settings, "WHATSAPP_APP_SECRET", "t003-app-secret")
+
+    async def inbound(phone, body):   # M47 review: only a signed webhook message counts (simulate-inbound no longer does)
+        raw = json.dumps({"entry": [{"changes": [{"value": {"metadata": {"phone_number_id": biz}, "contacts": [],
+                          "messages": [{"from": phone.lstrip("+"), "id": f"wamid.{uuid.uuid4().hex}", "type": "text",
+                                        "text": {"body": body}}]}}]}]}).encode()
+        sig = "sha256=" + hmac.new(b"t003-app-secret", raw, hashlib.sha256).hexdigest()
+        async with _client() as pub:
+            r = await pub.post("/api/v1/whatsapp/webhook", content=raw,
+                               headers={"X-Hub-Signature-256": sig, "Content-Type": "application/json"})
+        assert r.status_code == 200, r.text
+        return r
     async with _client() as c:
         await _login(c, rep)
         r = await c.post("/api/v1/whatsapp/configs", json={"display_name": "POVU Sales", "api_token": "EAAG-povu-secret-5678",
@@ -136,9 +148,9 @@ async def test_whatsapp_opt_in_stop_and_encrypted_token(monkeypatch):
         assert (await send(p1)).status_code == 201
 
         # customer replies STOP (any case): opted out, acknowledged once even when it arrives twice
-        sim = lambda phone, body: c.post("/api/v1/whatsapp/simulate-inbound", json={"config_id": cfg["id"], "phone": phone, "body": body})
-        assert (await sim(p1, " stop ")).status_code == 201
-        assert (await sim(p1, "STOP")).status_code == 201
+        sim = inbound
+        await sim(p1, " stop ")
+        await sim(p1, "STOP")
         r = await send(p1)
         assert r.status_code == 422 and "opted out" in r.json()["detail"]
         r = await c.post("/api/v1/whatsapp/send/template", json={"config_id": cfg["id"], "phone": p1, "template_name": "order_confirmation"})

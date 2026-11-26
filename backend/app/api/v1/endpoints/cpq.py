@@ -224,7 +224,7 @@ class DraftLineIn(BaseModel):
     product_id: uuid.UUID
     qty: float = Field(gt=0, le=1_000_000)
     unit: str = Field("PCS", max_length=20)
-    tax_rate: float = Field(0, ge=0, le=1)
+    tax_rate: float = Field(0, ge=0, le=100)   # percentage, like quotation lines (16 = 16 %)
 
 
 class DraftSaveIn(BaseModel):

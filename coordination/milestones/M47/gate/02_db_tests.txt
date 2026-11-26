@@ -1,0 +1,155 @@
+== tests/test_m43_s00_t004_harness.py :: 16 passed in 4.95s
+== tests/test_m43_s01_t001_t002_oauth_mail_db.py :: 5 passed in 5.55s
+== tests/test_m43_s01_t003_t004_calendar_sync_db.py :: 6 passed in 5.86s
+== tests/test_m43_s01_t005_booking_db.py :: 4 passed, 75 warnings in 22.00s
+== tests/test_m43_s01_t006_engagement_db.py :: 5 passed in 5.26s
+== tests/test_m43_s01_t007_quotas_db.py :: 1 passed in 5.61s
+== tests/test_m43_s01_t008_t009_voice_db.py :: 6 passed, 82 warnings in 23.78s
+== tests/test_m43_s01_t010_playbooks_db.py :: 4 passed, 75 warnings in 21.33s
+== tests/test_m43_s01_t011_pipelines_db.py :: 1 passed in 7.40s
+== tests/test_m43_s01_t012_deal_score_db.py :: 1 passed in 6.71s
+== tests/test_m43_s01_t013_workspace_db.py :: 2 passed in 5.58s
+== tests/test_m43_s01_t014_routing_db.py :: 4 passed in 6.00s
+== tests/test_m43_s01_t015_contacts_db.py :: 2 passed in 5.56s
+== tests/test_m43_s01_t016_teams_views_db.py :: 2 passed in 5.32s
+== tests/test_m43_s01_t017_coaching_db.py :: 1 passed, 2 warnings in 6.48s
+== tests/test_m44_s01_t001_email_designer.py :: 8 passed in 4.80s
+== tests/test_m44_s01_t002_t005_ads.py :: 6 passed in 6.89s
+== tests/test_m44_s01_t006_t008_social.py :: 6 passed in 6.44s
+== tests/test_m44_s01_t009_web_analytics_db.py :: 2 passed in 5.41s
+== tests/test_m44_s01_t010_audiences_db.py :: 2 passed in 5.86s
+== tests/test_m44_s01_t011_deliverability_db.py :: 4 passed in 5.34s
+== tests/test_m44_s01_t012_governance_db.py :: 4 passed in 5.84s
+== tests/test_m44_s01_t013_messaging.py :: 4 passed, 75 warnings in 20.12s
+== tests/test_m44_s01_t014_residuals.py :: 2 passed, 77 warnings in 20.00s
+== tests/test_m45_s01_t001_t003_customer_data.py :: 3 passed in 5.07s
+== tests/test_m45_s01_t004_t006_customer_intel.py :: 5 passed in 5.93s
+== tests/test_m45_s01_t007_service_agent.py :: 2 passed in 4.93s
+== tests/test_m45_s01_t008_t009_agents.py :: 4 passed, 11 warnings in 5.78s
+== tests/test_m45_s01_t010_dedupe_merge.py :: 3 passed in 5.45s
+== tests/test_m45_s01_t011_data_sync.py :: 4 passed, 75 warnings in 17.76s
+== tests/test_m45_s01_t012_t022_tokens_addin_mcp.py :: 3 passed, 76 warnings in 18.25s
+== tests/test_m45_s01_t013_sales_docs.py :: 1 passed, 75 warnings in 17.40s
+== tests/test_m45_s01_t014_cpq.py :: 2 passed, 75 warnings in 17.51s
+== tests/test_m45_s01_t015_custom_objects.py :: 3 passed in 4.45s
+== tests/test_m45_s01_t016_sso.py :: 1 passed, 75 warnings in 18.62s
+== tests/test_m45_s01_t017_sensitive.py :: 2 passed, 79 warnings in 18.69s
+== tests/test_m45_s01_t018_config_bundle.py :: 1 passed, 4 warnings in 4.69s
+== tests/test_m45_s01_t019_service_desk.py :: 2 passed, 83 warnings in 18.67s
+== tests/test_m45_s01_t020_warehouse_export.py :: 2 passed, 2 warnings in 6.01s
+== tests/test_m45_s01_t021_payment_links.py :: 1 passed, 75 warnings in 17.40s
+== tests/test_m45_s01_t023_impersonation.py :: 2 passed, 80 warnings in 19.73s
+== tests/test_m45_s01_t024_carryovers.py :: 1 failed, 4 passed in 6.32s
+        if self._connection.is_closed():
+            self._transaction = None
+            self._started = False
+    
+        if not isinstance(error, AsyncAdapt_asyncpg_dbapi.Error):
+            exception_mapping = self.dbapi._asyncpg_error_translate
+    
+            for super_ in type(error).__mro__:
+                if super_ in exception_mapping:
+                    translated_error = exception_mapping[super_](
+                        "%s: %s" % (type(error), error)
+                    )
+                    translated_error.pgcode = translated_error.sqlstate = (
+                        getattr(error, "sqlstate", None)
+                    )
+>                   raise translated_error from error
+E                   sqlalchemy.exc.ProgrammingError: (sqlalchemy.dialects.postgresql.asyncpg.ProgrammingError) <class 'asyncpg.exceptions.UndefinedColumnError'>: column "verified_at" of relation "web_identities" does not exist
+E                   [SQL: INSERT INTO web_identities (visitor_hash, email, linked_at, verified_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::TIMESTAMP WITH TIME ZONE, $4::TIMESTAMP WITH TIME ZONE)]
+E                   [parameters: ('vh-7bbd8fa911e14712a6ecbc4589beddb1', 'd1-019e@povu-demo.test', datetime.datetime(2026, 11, 26, 3, 4, 49, 527866, tzinfo=datetime.timezone.utc), None)]
+E                   (Background on this error at: https://sqlalche.me/e/20/f405)
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:792: ProgrammingError
+=========================== short test summary info ===========================
+FAILED tests/test_m45_s01_t024_carryovers.py::test_portal_chat_identity_and_deal_journey
+1 failed, 4 passed in 6.32s
+== tests/test_m46_s01_content_hub.py :: 2 failed, 5 passed, 80 warnings in 29.51s
+    class NCNotifAIRecOut(BaseModel):
+
+tests/test_m46_s01_content_hub.py::test_cms_staging_approval_publish_rollback_seo
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\esign.py:13: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class SignatureRecordRead(BaseModel):
+
+tests/test_m46_s01_content_hub.py::test_cms_staging_approval_publish_rollback_seo
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\esign.py:58: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class SignatureRequestRead(BaseModel):
+
+tests/test_m46_s01_content_hub.py::test_members_media_captions_timeline_kb
+tests/test_m46_s01_content_hub.py::test_members_media_captions_timeline_kb
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\api\v1\endpoints\portal_self.py:129: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    user.last_login_at = datetime.utcnow()
+
+tests/test_m46_s01_content_hub.py::test_members_media_captions_timeline_kb
+tests/test_m46_s01_content_hub.py::test_members_media_captions_timeline_kb
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\services\portal_service.py:81: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    activity_datetime=datetime.utcnow(),
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_m46_s01_content_hub.py::test_personalization_consent_cache_and_bandit
+FAILED tests/test_m46_s01_content_hub.py::test_members_media_captions_timeline_kb
+2 failed, 5 passed, 80 warnings in 29.51s
+== tests/test_m46_s01_t008_carryovers.py :: 4 passed, 9 warnings in 5.04s
+== tests/test_m47_s01_t002_integrated_flow.py :: 5 passed, 102 warnings in 22.16s
+== tests/test_m47_s01_t003_audit_fixes.py :: 8 passed, 80 warnings in 23.81s
+== tests/test_m47_s01_t003_hardening.py :: 5 passed, 75 warnings in 18.88s
+== tests/test_m47_s01_t006_carryovers.py :: 3 passed, 76 warnings in 17.30s
+== tests/test_m47_s01_t007_content_hub_depth.py :: 8 passed, 76 warnings in 26.73s
+== tests/test_m47_s01_t008_automation_data.py :: 2 failed, 7 passed in 7.31s
+            self._transaction = None
+            self._started = False
+    
+        if not isinstance(error, AsyncAdapt_asyncpg_dbapi.Error):
+            exception_mapping = self.dbapi._asyncpg_error_translate
+    
+            for super_ in type(error).__mro__:
+                if super_ in exception_mapping:
+                    translated_error = exception_mapping[super_](
+                        "%s: %s" % (type(error), error)
+                    )
+                    translated_error.pgcode = translated_error.sqlstate = (
+                        getattr(error, "sqlstate", None)
+                    )
+>                   raise translated_error from error
+E                   sqlalchemy.exc.ProgrammingError: (sqlalchemy.dialects.postgresql.asyncpg.ProgrammingError) <class 'asyncpg.exceptions.UndefinedColumnError'>: column "verified_at" of relation "web_identities" does not exist
+E                   [SQL: INSERT INTO web_identities (visitor_hash, email, linked_at, verified_at) VALUES ($1::VARCHAR, $2::VARCHAR, $3::TIMESTAMP WITH TIME ZONE, $4::TIMESTAMP WITH TIME ZONE) ON CONFLICT (visitor_hash) DO UPDATE SET email = $5::VARCHAR, linked_at = $6::TIMESTAMP WITH TIME ZONE, verified_at = CASE WHEN (web_identities.email = $7::VARCHAR) THEN web_identities.verified_at END]
+E                   [parameters: ('19cebb217216edcd8aafb47d7fd8cc4127bd7f09aaed87d5ea3a1fc1523a286a', 'web-f2f0cc4f@povu-demo.test', datetime.datetime(2026, 11, 26, 3, 8, 15, 830726, tzinfo=datetime.timezone.utc), None, 'web-f2f0cc4f@povu-demo.test', datetime.datetime(2026, 11, 26, 3, 8, 15, 830726, tzinfo=datetime.timezone.utc), 'web-f2f0cc4f@povu-demo.test')]
+E                   (Background on this error at: https://sqlalche.me/e/20/f405)
+
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:792: ProgrammingError
+=========================== short test summary info ===========================
+FAILED tests/test_m47_s01_t008_automation_data.py::test_event_definitions_collector_and_web_event_trigger
+FAILED tests/test_m47_s01_t008_automation_data.py::test_web_behaviour_audiences
+2 failed, 7 passed in 7.31s
+== tests/test_m47_s01_t009_sales_depth.py :: 8 passed, 81 warnings in 22.72s
+== tests/test_m47_s01_t010_platform_depth.py :: 1 failed, 10 passed, 79 warnings in 26.16s
+
+tests/test_m47_s01_t010_platform_depth.py::test_field_permissions_read_and_write
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\notifications.py:112: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class TemplateOut(BaseModel):
+
+tests/test_m47_s01_t010_platform_depth.py::test_field_permissions_read_and_write
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\notifications.py:144: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ScheduleOut(BaseModel):
+
+tests/test_m47_s01_t010_platform_depth.py::test_field_permissions_read_and_write
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\notifications.py:180: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class NCNotifAIRecOut(BaseModel):
+
+tests/test_m47_s01_t010_platform_depth.py::test_field_permissions_read_and_write
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\esign.py:13: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class SignatureRecordRead(BaseModel):
+
+tests/test_m47_s01_t010_platform_depth.py::test_field_permissions_read_and_write
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\schemas\esign.py:58: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class SignatureRequestRead(BaseModel):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_m47_s01_t010_platform_depth.py::test_form_shortening_and_smart_properties
+1 failed, 10 passed, 79 warnings in 26.16s
+== tests/test_m47_s01_t011_datasets.py :: 3 passed, 76 warnings in 20.52s
+== tests/test_m47_s01_t011_event_tags.py :: 2 passed, 75 warnings in 17.02s
+FILES PASS=50 FAIL=4

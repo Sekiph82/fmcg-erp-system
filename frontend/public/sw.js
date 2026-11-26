@@ -2,7 +2,7 @@
  * Security rule: never cache API responses, authenticated HTML or any non-GET request.
  * Only same-origin, content-hashed build assets and icons are cached; navigations are
  * network-only with a static offline page. ERP writes are never queued offline. */
-const VERSION = "povu-pwa-v1";
+const VERSION = "povu-pwa-v2";   // v2: POVU Brand Vault icons (old caches are evicted on activate)
 const OFFLINE_URL = "/offline.html";
 
 self.addEventListener("install", (event) => {
@@ -50,7 +50,7 @@ self.addEventListener("push", (event) => {
   let data = {};
   try { data = event.data ? event.data.json() : {}; } catch (e) { data = { title: "POVU ERP", body: event.data ? event.data.text() : "" }; }
   event.waitUntil(self.registration.showNotification(data.title || "POVU ERP", {
-    body: data.body || "", tag: data.tag || undefined, icon: "/icons/icon-192.png", badge: "/icons/icon-192.png",
+    body: data.body || "", tag: data.tag || undefined, icon: "/icons/povu-icon-192.png", badge: "/icons/povu-icon-192.png",
     data: { url: data.url || "/dashboard" },
   }));
 });

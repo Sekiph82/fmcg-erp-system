@@ -1,0 +1,13 @@
+## empty -> head
+INFO  [alembic.runtime.migration] Running upgrade 20261126_0075 -> 20261127_0076, M46 Content & Digital Experience Hub.
+INFO  [alembic.runtime.migration] Running upgrade 20261127_0076 -> 20261127_0077, M47 depth tasks (T007–T011) and audit fixes.
+## version: 20261127_0077
+## M47 tables (expect 20): 20
+## cms_media new columns (expect 2): 2
+## M46 tables (expect 16): 16
+## downgrade -1
+INFO  [alembic.runtime.migration] Running downgrade 20261127_0077 -> 20261127_0076, M47 depth tasks (T007–T011) and audit fixes.
+## M47 tables after downgrade (expect 0): 0
+## upgrade head
+INFO  [alembic.runtime.migration] Running upgrade 20261127_0076 -> 20261127_0077, M47 depth tasks (T007–T011) and audit fixes.
+## M47 tables (expect 20): 20

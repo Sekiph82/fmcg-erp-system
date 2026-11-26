@@ -632,7 +632,7 @@ export function Sidebar({ mobileOpen, onMobileClose, onOpenSearch }: SidebarProp
             {/* POVU logo icon — circular crop in collapsed mode */}
             <div className="relative h-8 w-8 rounded-lg overflow-hidden shadow-lg group-hover:opacity-90 transition-opacity">
               <Image
-                src="/povu-logo.jpg"
+                src="/icons/povu-icon-192.png"
                 alt="POVU"
                 fill
                 sizes="32px"
@@ -646,7 +646,7 @@ export function Sidebar({ mobileOpen, onMobileClose, onOpenSearch }: SidebarProp
               {/* POVU logo — replaces the purple ERP square */}
               <div className="relative h-[28px] w-[28px] shrink-0 rounded-[7px] overflow-hidden shadow-md">
                 <Image
-                  src="/povu-logo.jpg"
+                  src="/icons/povu-icon-192.png"
                   alt="POVU"
                   fill
                   sizes="28px"

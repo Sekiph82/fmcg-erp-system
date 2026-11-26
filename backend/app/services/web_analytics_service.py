@@ -95,17 +95,33 @@ async def collect(db: AsyncSession, visitor: str, session: str, events: list[dic
     return {"stored": stored, "dropped": len(events) - stored, "dropped_properties": dropped_props}
 
 
-async def identify(db: AsyncSession, visitor: str, email: str) -> bool:
-    """Link the visitor to an e-mail only with marketing consent on record."""
+async def identify(db: AsyncSession, visitor: str, email: str, verified: bool = False) -> bool:
+    """Link the visitor to an e-mail only with marketing consent on record. A typed address is UNVERIFIED (anybody can
+    type anybody's address); ``verified`` is passed only by a flow that proved it (a signed-in portal user's own
+    e-mail). Re-identifying with the same address keeps an earlier verification; a different address drops it."""
     vh = hashed("v", visitor)
     consent = await _latest_consent(db, vh)
     if consent is None or not consent.marketing:
         return False
-    await db.execute(insert(WebIdentity).values(visitor_hash=vh, email=email.strip().lower()[:254],
-                                                linked_at=datetime.now(timezone.utc))
+    from sqlalchemy import case
+    e, now = email.strip().lower()[:254], datetime.now(timezone.utc)
+    keep = now if verified else case((WebIdentity.email == e, WebIdentity.verified_at), else_=None)
+    await db.execute(insert(WebIdentity).values(visitor_hash=vh, email=e, linked_at=now, verified_at=now if verified else None)
                      .on_conflict_do_update(index_elements=["visitor_hash"],
-                                            set_={"email": email.strip().lower()[:254], "linked_at": datetime.now(timezone.utc)}))
+                                            set_={"email": e, "linked_at": now, "verified_at": keep}))
     return True
+
+
+async def verified_email(db: AsyncSession, visitor: Optional[str]) -> Optional[str]:
+    """The visitor's linked e-mail when it is verified and marketing consent still stands, else None."""
+    if not visitor:
+        return None
+    vh = hashed("v", visitor)
+    consent = await _latest_consent(db, vh)
+    ident = await db.get(WebIdentity, vh, populate_existing=True)   # the upsert above bypasses the identity map
+    if consent is None or not consent.marketing or ident is None or ident.verified_at is None:
+        return None
+    return ident.email
 
 
 async def forget(db: AsyncSession, visitor: str) -> int:

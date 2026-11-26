@@ -2,6 +2,8 @@
 own video, stops at expiry or revocation, and every view is recorded (30-minute de-dupe)."""
 from __future__ import annotations
 
+from collections import defaultdict, deque
+
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
@@ -12,10 +14,18 @@ from app.services import cms_media_service as media
 from app.services import video_message_service as vms
 
 router = APIRouter()
+_hits: dict = defaultdict(deque)
+PER_MINUTE = 60   # M47 review: per client address, for page and view calls (file range requests are not counted)
+
+
+def _limit(request: Request) -> None:
+    from app.api.v1.endpoints.business_cards_public import _client, _count
+    _count(_hits, _client(request), PER_MINUTE)
 
 
 @router.get("/{token}")
-async def meta(token: str, db: AsyncSession = Depends(get_db)):
+async def meta(token: str, request: Request, db: AsyncSession = Depends(get_db)):
+    _limit(request)
     vm, m = await vms.resolve(db, token)
     return {"title": vm.title, "contact_name": vm.contact_name, "mime": m.mime, "expires_at": vm.expires_at.isoformat()}
 
@@ -26,6 +36,7 @@ class ViewIn(BaseModel):
 
 @router.post("/{token}/view")
 async def view(token: str, request: Request, body: ViewIn = ViewIn(), db: AsyncSession = Depends(get_db)):
+    _limit(request)
     vm, _ = await vms.resolve(db, token)
     recorded = await vms.record_view(db, vm, request, body.seconds)
     await db.commit()

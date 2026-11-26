@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional, List
 from app.db.session import get_db
+from app.core.access_control import require_any_permission
 from app.core.deps import get_current_user
 from app.schemas.chatter import (
     ActivityOut, ActivityCreate, ActivityPage,
@@ -20,13 +21,22 @@ MODULE_OF = {
     "supplier": "procurement", "rfq": "procurement", "production_order": "production", "batch": "production",
     "qc_inspection": "quality", "ticket": "quality", "complaint": "quality", "recall": "quality", "crm_record": "crm",
     "employee": "hr", "leave_request": "hr", "payroll": "payroll", "product": "products", "inventory": "inventory",
+    "expense_claim": "expenses", "expense": "expenses", "timesheet": "hr", "appraisal": "hr", "hr_document": "hr",
+    "document": "documents",
 }
+# M47 review: unmapped types fail closed. Generic notes stay open; any other unknown type needs a staff-admin right.
+OPEN_TYPES = {"", "note", "task", "general"}
+STAFF = ("users.view", "roles.view", "roles.edit")
+ADMIN = require_any_permission(STAFF)          # cross-record stats and the AI batch routes
 
 
 def _may(user, reference_type: Optional[str]) -> bool:
     from app.core.access_control import has_any_permission
-    module = MODULE_OF.get((reference_type or "").lower())
-    return module is None or getattr(user, "is_superuser", False) or has_any_permission(user, (f"{module}.view",))
+    rt = (reference_type or "").strip().lower()
+    if rt in OPEN_TYPES or getattr(user, "is_superuser", False):
+        return True
+    module = MODULE_OF.get(rt)
+    return has_any_permission(user, (f"{module}.view",) if module else STAFF)
 
 
 def _need(user, reference_type: Optional[str]) -> None:
@@ -79,7 +89,10 @@ async def get_activity(activity_id: str, db: AsyncSession = Depends(get_db), cur
 
 
 @router.post("/activities/{activity_id}/pin", response_model=ActivityOut)
-async def pin_activity(activity_id: str, db: AsyncSession = Depends(get_db)):
+async def pin_activity(activity_id: str, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    a = await chatter_service.get_activity(db, activity_id)
+    if a is None or not _may(current_user, getattr(a, "reference_type", None)):
+        raise HTTPException(404, "Activity not found")
     try:
         return await chatter_service.pin_activity(db, activity_id)
     except ValueError as e:
@@ -91,7 +104,7 @@ async def get_feed(limit: int = Query(50, ge=1, le=200), db: AsyncSession = Depe
     return _visible(await chatter_service.get_feed(db, limit), current_user)
 
 
-@router.get("/stats")
+@router.get("/stats", dependencies=[Depends(ADMIN)])
 async def get_stats(db: AsyncSession = Depends(get_db)):
     return await chatter_service.get_stats(db)
 
@@ -105,9 +118,13 @@ async def get_timeline(
     page: int = Query(1, ge=1),
     per_page: int = Query(30, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
 ):
     ref_list = [r.strip() for r in reference_types.split(",")] if reference_types else None
-    return await chatter_service.get_timeline(db, reference_types=ref_list, created_by=created_by, search=search, sla_overdue_only=sla_overdue_only, page=page, per_page=per_page)
+    out = await chatter_service.get_timeline(db, reference_types=ref_list, created_by=created_by, search=search, sla_overdue_only=sla_overdue_only, page=page, per_page=per_page)
+    out["items"] = _visible(out["items"], current_user)
+    out["module_breakdown"] = [m for m in out["module_breakdown"] if _may(current_user, m["module"])]
+    return out
 
 
 @router.get("/sla/breached", response_model=List[ActivityOut])
@@ -171,30 +188,30 @@ async def add_attachment(
 
 # ── AI ────────────────────────────────────────────────────────────────────────
 
-@router.get("/ai/recs", response_model=List[CTAIRecOut])
+@router.get("/ai/recs", response_model=List[CTAIRecOut], dependencies=[Depends(ADMIN)])
 async def list_ai_recs(db: AsyncSession = Depends(get_db)):
     return await chatter_service.list_ai_recs(db)
 
 
-@router.post("/ai/run/activity-summarizer")
+@router.post("/ai/run/activity-summarizer", dependencies=[Depends(ADMIN)])
 async def run_activity_summarizer(db: AsyncSession = Depends(get_db)):
     count = await chatter_service.run_activity_summarizer(db)
     return {"generated": count}
 
 
-@router.post("/ai/run/follow-up-assistant")
+@router.post("/ai/run/follow-up-assistant", dependencies=[Depends(ADMIN)])
 async def run_follow_up_assistant(db: AsyncSession = Depends(get_db)):
     count = await chatter_service.run_follow_up_assistant(db)
     return {"generated": count}
 
 
-@router.post("/ai/run/insight-extractor")
+@router.post("/ai/run/insight-extractor", dependencies=[Depends(ADMIN)])
 async def run_insight_extractor(db: AsyncSession = Depends(get_db)):
     count = await chatter_service.run_insight_extractor(db)
     return {"generated": count}
 
 
-@router.patch("/ai/recs/{rec_id}", response_model=CTAIRecOut)
+@router.patch("/ai/recs/{rec_id}", response_model=CTAIRecOut, dependencies=[Depends(ADMIN)])
 async def ack_ai_rec(rec_id: str, data: CTAIRecAck, db: AsyncSession = Depends(get_db)):
     try:
         return await chatter_service.ack_ai_rec(db, rec_id, data)

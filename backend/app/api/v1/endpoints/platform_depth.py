@@ -19,7 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.access_control import has_any_permission
 from app.core.deps import get_current_user, get_db
-from app.models.m47_platform import FieldPermissionRule, SlackRoute, SlackUserLink
+from app.models.m47_platform import FieldPermissionRule, SlackRoute, SlackUserLink, seal_webhook
 from app.services import pat_service as pats
 from app.services import sensitive_service as sens
 
@@ -160,10 +160,10 @@ async def put_route(body: RouteIn, db: AsyncSession = Depends(get_db), current_u
     _need(current_user, ("crm.edit_all",), "CRM administrators only.")
     if not ms.valid_webhook(body.webhook_url):
         raise HTTPException(422, "Use a Slack incoming-webhook URL (https://hooks.slack.com/services/...).")
-    await db.execute(insert(SlackRoute).values(id=uuid.uuid4(), event_type=body.event_type, channel_label=body.channel_label,
-                                               webhook_url=body.webhook_url, active=body.active, created_by=current_user.username)
+    await db.execute(insert(SlackRoute.__table__).values(id=uuid.uuid4(), event_type=body.event_type, channel_label=body.channel_label,
+                                               webhook_url=seal_webhook(body.webhook_url), active=body.active, created_by=current_user.username)
                      .on_conflict_do_update(index_elements=["event_type"], set_={
-                         "channel_label": body.channel_label, "webhook_url": body.webhook_url, "active": body.active}))
+                         "channel_label": body.channel_label, "webhook_url": seal_webhook(body.webhook_url), "active": body.active}))
     pats.audit(db, current_user, "SLACK_ROUTE_SET", "slack_route", body.event_type, {"channel": body.channel_label, "active": body.active})
     await db.commit()
     return {"ok": True}

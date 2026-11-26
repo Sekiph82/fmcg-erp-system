@@ -388,6 +388,7 @@ async def login_verify_2fa(
     session = await tfa_crud.get_2fa_session(db, session_id)
     if not session:
         raise HTTPException(status_code=401, detail="2FA session not found")
+    await db.refresh(session, with_for_update=True)   # M47 review: parallel guesses are serialized on the attempt counter
 
     if session.status != TwoFASessionStatus.PENDING:
         raise HTTPException(status_code=401, detail="2FA session already used or expired")
@@ -513,6 +514,8 @@ async def use_recovery_code(
     session_id = uuid.UUID(payload["sid"])
 
     session = await tfa_crud.get_2fa_session(db, session_id)
+    if session is not None:
+        await db.refresh(session, with_for_update=True)   # M47 review: parallel guesses are serialized on the attempt counter
     if not session or session.status != TwoFASessionStatus.PENDING:
         raise HTTPException(status_code=401, detail="Invalid 2FA session")
     if session.expires_at.replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):

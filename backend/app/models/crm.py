@@ -1245,6 +1245,7 @@ class WebIdentity(Base):
     visitor_hash = Column(String(64), primary_key=True)
     email        = Column(String(254), nullable=False, index=True)
     linked_at    = Column(DateTime(timezone=True), nullable=False)
+    verified_at  = Column(DateTime(timezone=True), nullable=True)   # set only when the visitor proved the address
 
 
 class WebConsent(Base):
