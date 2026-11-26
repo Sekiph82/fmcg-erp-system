@@ -26,6 +26,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 
 LEASE_SECONDS = 900
+HEARTBEAT_SECONDS = LEASE_SECONDS // 3
 
 
 def worker_id() -> str:
@@ -120,6 +121,17 @@ async def record_usage(rid: str, tokens: int, cost: Decimal, lease_s: int = LEAS
         await s.commit()
 
 
+async def heartbeat(rid: str, lease_s: int = LEASE_SECONDS, factory=None) -> bool:
+    """Renew the lease independently of model calls (a slow live call must not look like a crash). Only the worker that
+    owns the reservation may renew it; False = it no longer does (recovery settled it, or another worker holds it)."""
+    async with _factory(factory)() as s:
+        n = (await s.execute(text("""UPDATE ai_budget_reservations SET expires_at = :e
+                                     WHERE id = :id AND status = 'RESERVED' AND worker_id = :w"""),
+                            {"e": _now() + timedelta(seconds=lease_s), "id": rid, "w": worker_id()})).rowcount
+        await s.commit()
+    return bool(n)
+
+
 async def extend(rid: str, agent_id, user_id, caps: dict, extra_cost: Decimal, extra_tokens: int, factory=None) -> bool:
     """Ask for more than was reserved (the run turned out to need it). False = a cap would be passed; nothing is held."""
     extra_cost = Decimal(str(extra_cost)).quantize(Decimal("0.000001"))
@@ -146,6 +158,12 @@ async def settle(rid: str, status: str = "SETTLED", note: Optional[str] = None, 
             await s.rollback()
             return False
         agent_id, user_id, day, rc, rt, ac, at, _ = r
+        over = max(Decimal(ac) - Decimal(rc), Decimal(0))      # measured spend beyond the hold (provider ignored max tokens)
+        if over:                                              # the counter never passes the cap: charge the hold, log the rest
+            ac = rc
+            note = f"{note or ''} OVERAGE {over} not charged (exceeded the reserved worst case)".strip()
+            import logging
+            logging.getLogger(__name__).warning("AI budget overage %s on reservation %s", over, rid)
         for t, i in [("COMPANY", "all")] + ([("USER", user_id)] if user_id else []) + [("AGENT", agent_id)]:
             await s.execute(text("""UPDATE ai_budget_counters SET reserved_cost = reserved_cost - :rc, reserved_tokens = reserved_tokens - :rt,
                                     spent_cost = spent_cost + :ac, spent_tokens = spent_tokens + :at

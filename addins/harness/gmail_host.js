@@ -44,8 +44,10 @@ const Utilities = {
   DigestAlgorithm: { SHA_256: "sha256" },
   getUuid: () => crypto.randomUUID(),
   computeDigest: (alg, s) => Array.from(crypto.createHash(alg).update(String(s)).digest()).map((b) => (b > 127 ? b - 256 : b)),
+  sleep: () => {},
   base64EncodeWebSafe: (bytes) => Buffer.from(bytes.map((b) => (b < 0 ? b + 256 : b))).toString("base64").replace(/\+/g, "-").replace(/\//g, "_"),
 };
+const LockService = { getUserLock: () => ({ waitLock() {}, releaseLock() {} }) };
 const store = {};
 const PropertiesService = { getUserProperties: () => ({
   getProperty: (k) => (k in store ? store[k] : null), setProperty: (k, v) => { store[k] = String(v); }, deleteProperty: (k) => { delete store[k]; } }) };
@@ -64,7 +66,7 @@ const GmailApp = { setCurrentMessageAccessToken() {}, getMessageById(id) {
   return { getFrom: () => m.from, getSubject: () => m.subject, getPlainBody: () => m.body, getHeader: () => m.messageIdHeader,
     getThread: () => ({ getId: () => m.threadId }), createDraftReply: (body) => { const d = { body, to: m.from }; drafts.push(d); return d; } };
 } };
-const ctx = vm.createContext({ CardService, Utilities, PropertiesService, UrlFetchApp, GmailApp, Date, JSON, encodeURIComponent, Error, console });
+const ctx = vm.createContext({ CardService, LockService, Utilities, PropertiesService, UrlFetchApp, GmailApp, Date, JSON, encodeURIComponent, Error, console });
 vm.runInContext(fs.readFileSync(codePath, "utf8"), ctx, { filename: "Code.gs" });
 
 function getSync(url) {                          // loopback GET used only to stand in for the user pressing Allow on the consent page

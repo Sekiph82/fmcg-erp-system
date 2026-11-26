@@ -44,11 +44,14 @@ export default function AddinAuthorize() {
       {me === null && <p>Sign in to the ERP first (<a className="underline" href="/login" target="_blank" rel="noreferrer">open the login page</a>), then reload this window.</p>}
       {me && !code && <>
         <p>Allow the {host === "gmail" ? "Gmail add-on" : "Outlook add-in"} to act as <b>{me.full_name ?? me.username}</b> in the CRM? It can look up the sender, and log e-mails, notes and tasks on the deals you may already see. It cannot see anything else. You can revoke it any time under CRM → Add-in sign-ins.</p>
+        {host === "gmail" && <div role="alert" className="border border-amber-400 bg-amber-50 rounded p-2 text-xs space-y-1">
+          <p><b>Only continue if you just started this from your own Gmail add-on card.</b> Someone could send you this link to get access to your CRM.</p>
+          <p>Check code on this page: <b className="font-mono text-base" data-testid="addin-state">{state}</b>. The add-on card must show the same check code; if it does not, or you did not open this from the card, press Cancel.</p></div>}
         <label className="flex gap-2 items-center text-xs"><input type="checkbox" checked={write} onChange={(e) => setWrite(e.target.checked)} /> Also allow logging e-mails, notes and tasks (untick for look-up only)</label>
         <button className="bg-indigo-600 text-white rounded px-3 py-1" onClick={approve}>Allow</button>
         <button className="border rounded px-3 py-1 ml-2" onClick={() => { setMsg("Cancelled. You can close this window."); window.Office?.context?.ui?.messageParent?.(JSON.stringify({ type: "povu-addin-denied", state })); }}>Cancel</button>
       </>}
-      {code && <div className="space-y-2"><p>Type this code into the Gmail add-on within a minute. It works once and only with that add-on.</p>
+      {code && <div className="space-y-2"><p>Check code <b className="font-mono">{state}</b> must match your add-on card. Type this code into the Gmail add-on within a minute. It works once and only with that add-on.</p>
         <p className="font-mono text-base break-all select-all border rounded p-2" data-testid="addin-code">{code}</p></div>}
       {msg && <p role="status" className="text-xs">{msg}</p>}
     </main>

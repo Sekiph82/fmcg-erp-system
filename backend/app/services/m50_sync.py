@@ -414,8 +414,21 @@ def _d(v, what):
         raise ValueError(f"{what} {v!r} is not a date")
 
 
-async def stage(db: AsyncSession, sync, spec: dict, rows: list[dict], *, dry_run: bool, user: str, trigger: str, run) -> dict:
+SYSTEM_ACTORS = ("webhook", "scheduler")
+
+
+async def accountable(db: AsyncSession, sync, user: str) -> str:
+    """Who answers for a proposal: the person who ran it, or, for webhook/scheduler runs, the sync's owner (the last
+    mapping editor if one is recorded, else its creator) so automation can never launder the two-person rule."""
+    if user not in SYSTEM_ACTORS:
+        return user
+    return (await options(db, sync)).get("mapping_editor") or sync.created_by or user
+
+
+async def stage(db: AsyncSession, sync, spec: dict, rows: list[dict], *, dry_run: bool, user: str, trigger: str, run,
+                proposer: Optional[str] = None) -> dict:
     """Validate and stage inbound order rows (one row per line, grouped by the order number). → counts, diff, errors."""
+    user = proposer or await accountable(db, sync, user)
     from app.services.data_sync_service import _jsonable, map_row
     key_f, line_f = spec["key"], set(spec["line_fields"])
     groups: dict[str, dict] = {}
@@ -470,23 +483,35 @@ async def stage(db: AsyncSession, sync, spec: dict, rows: list[dict], *, dry_run
             if existing is None:
                 db.add(SyncProposal(sync_id=sync.id, run_id=run.id, target=sync.target, key=key, payload=payload,
                                     proposed_by=user[:100]))
-            elif existing.status != "APPLIED":
+            elif existing.status != "APPLIED":      # payload changed in place: payload_hash changes, so a stale approval is refused
                 existing.payload, existing.status, existing.run_id, existing.error = payload, "PENDING", run.id, None
                 existing.proposed_by, existing.decided_by, existing.decided_at = user[:100], None, None
     await db.flush()
     return {"counts": counts, "diff": diff, "errors": errors}
 
 
-async def decide(db: AsyncSession, p: SyncProposal, approver, approve: bool) -> SyncProposal:
-    """Approve (creates the DRAFT document through the domain) or reject. A person never approves their own proposal."""
+def payload_hash(p: SyncProposal) -> str:
+    import hashlib
+    import json
+    return hashlib.sha256(json.dumps(p.payload, sort_keys=True, default=str).encode()).hexdigest()
+
+
+async def decide(db: AsyncSession, p: SyncProposal, approver, approve: bool, payload_hash_seen: Optional[str] = None) -> SyncProposal:
+    """Approve (creates the DRAFT document through the domain) or reject. Nobody who proposed it, owns the sync or last
+    edited its mapping approves it, and an approval must quote the hash of the payload the reviewer actually saw."""
     from fastapi import HTTPException
     from app.core.access_control import has_any_permission
     from app.services.data_sync_service import TARGETS
     spec = TARGETS[p.target]
     if p.status != "PENDING":
         raise HTTPException(409, f"This proposal is already {p.status}.")
-    if p.proposed_by and p.proposed_by == approver.username:
-        raise HTTPException(403, "A different person must approve what you proposed.")
+    from app.models.data_sync import SyncDefinition
+    sync = await db.get(SyncDefinition, p.sync_id)
+    involved = {p.proposed_by, getattr(sync, "created_by", None), (await options(db, sync)).get("mapping_editor") if sync else None}
+    if approver.username in involved - {None, ""}:
+        raise HTTPException(403, "A different person must approve: you proposed, own or last edited the mapping of this sync.")
+    if approve and payload_hash_seen != payload_hash(p):
+        raise HTTPException(409, "The proposal changed after you opened it; reload it and review the new payload.")
     if not (approver.is_superuser or has_any_permission(approver, spec["perm"])):
         raise HTTPException(403, f"You may not create {p.target.replace('_', ' ')}.")
     p.decided_by, p.decided_at = approver.username, _now()

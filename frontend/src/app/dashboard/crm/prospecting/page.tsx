@@ -121,6 +121,7 @@ export default function ProspectingPage() {
         {run && (
           <div className="space-y-2">
             <p className="text-xs text-gray-600">Ranking: {run.llm_mode}{run.llm_model ? ` (${run.llm_model})` : ""}; web research: {run.search_state}. Steps: {run.steps.map((s) => String(s.step)).join(" > ")}</p>
+            {!run.candidates.length && <p className="text-xs text-amber-700">No candidates matched this profile in the CRM{run.search_state === "OK" ? " or the web research" : " (web research is off)"}. Widen the profile (city, channel, segment, keywords) or add prospects first.</p>}
             {run.candidates.map((c) => (
               <div key={c.id} className="border rounded p-2 space-y-1">
                 <div className="flex justify-between"><b>{c.company_name}</b><span>score {c.score.toFixed(2)} / confidence {c.confidence.toFixed(2)} ({c.kind}{c.crm_association === "EXISTING_LEAD" ? ", linked to CRM lead" : ""})</span></div>

@@ -26,7 +26,7 @@ TABLES = [
 EVIDENCE = ["m50_provider_settings", "m50_agent_runs", "m50_candidates", "m50_enrichment_proposals", "m50_intent_events",
             "sa_turns", "kb_gap_proposals", "ai_agent_gates", "ai_budget_counters", "ai_budget_reservations",
             "ai_usage_log", "ai_eval_runs", "ai_eval_case_results", "m50_sync_proposals", "m50_sync_conflicts",
-            "m50_ocr_card_drafts", "m50_addin_grants"]
+            "m50_ocr_card_drafts", "m50_addin_grants", "sa_actions"]
 
 
 def _tables():

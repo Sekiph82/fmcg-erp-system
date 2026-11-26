@@ -129,6 +129,7 @@ async def new_version(sid: uuid.UUID, body: MappingIn, db: AsyncSession = Depend
     s.mapping, s.version = body.mapping, s.version + 1
     s.conflict_rule = body.conflict_rule or s.conflict_rule
     s.delete_mode = body.delete_mode or s.delete_mode
+    await m50.set_options(db, s.id, {**await m50.options(db, s), "mapping_editor": current_user.username})
     pats.audit(db, current_user, "DATA_SYNC_MAPPING_CHANGED", "ds_sync", str(s.id), {"version": s.version})
     await db.commit()
     return _out(s)
@@ -192,7 +193,7 @@ async def replay(rid: uuid.UUID, db: AsyncSession = Depends(get_db), current_use
     _may_run(current_user, s)
     try:
         nr = await dss.run_in(db, s, r.input, dry_run=False, user=current_user.username, trigger="REPLAY", full_snapshot=False,
-                              actor=current_user)
+                              actor=current_user, proposer=await m50.accountable(db, s, r.run_by or ""))
     except dss.SyncError as e:
         raise HTTPException(e.status, str(e))
     pats.audit(db, current_user, "DATA_SYNC_REPLAYED", "ds_run", str(rid), {"counts": nr.counts})
@@ -241,7 +242,7 @@ async def plan(targets: str = "", current_user=Depends(get_current_user)):
 
 def _prop(p) -> dict:
     return {"id": str(p.id), "sync_id": str(p.sync_id), "target": p.target, "key": p.key, "status": p.status, "payload": p.payload,
-            "proposed_by": p.proposed_by, "decided_by": p.decided_by, "applied_ref": p.applied_ref, "error": p.error,
+            "payload_hash": m50.payload_hash(p), "proposed_by": p.proposed_by, "decided_by": p.decided_by, "applied_ref": p.applied_ref, "error": p.error,
             "created_at": p.created_at.isoformat() if p.created_at else None}
 
 
@@ -260,11 +261,15 @@ async def proposals(status: Optional[str] = None, db: AsyncSession = Depends(get
         current_user, (*dss.TARGETS[p.target]["perm"], *dss.TARGETS[p.target].get("view_perm", ())))]
 
 
-async def _decide(pid: uuid.UUID, approve: bool, db, user):
+class ApproveIn(BaseModel):
+    payload_hash: str = Field(..., min_length=64, max_length=64)
+
+
+async def _decide(pid: uuid.UUID, approve: bool, db, user, seen: Optional[str] = None):
     p = await db.get(SyncProposal, pid, with_for_update=True)
     if p is None:
         raise HTTPException(404, "Proposal not found")
-    await m50.decide(db, p, user, approve)
+    await m50.decide(db, p, user, approve, seen)
     pats.audit(db, user, "DATA_SYNC_PROPOSAL_" + ("APPROVED" if approve else "REJECTED"), "ds_proposal", str(pid),
                {"target": p.target, "key": p.key, "status": p.status, "applied_ref": p.applied_ref})
     await db.commit()
@@ -272,8 +277,8 @@ async def _decide(pid: uuid.UUID, approve: bool, db, user):
 
 
 @router.post("/proposals/{pid}/approve")
-async def approve_proposal(pid: uuid.UUID, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
-    return await _decide(pid, True, db, current_user)
+async def approve_proposal(pid: uuid.UUID, body: ApproveIn, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    return await _decide(pid, True, db, current_user, body.payload_hash)
 
 
 @router.post("/proposals/{pid}/reject")

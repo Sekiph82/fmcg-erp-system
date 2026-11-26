@@ -291,6 +291,18 @@ async def pending_action(db: AsyncSession, sess):
 async def _escalate_safety(db, sess, cust, text, lang) -> tuple[Reply, dict]:
     from app.models.consumer_complaints import ComplaintChannel, ComplaintSeverity, ComplaintStatus, ConsumerComplaint
     from app.models.inventory import Lot
+    from app.models.crm import CRMChatSession
+    from app.models.m50_service_agent import ServiceAgentTurn
+    # One safety escalation per chat session and at most SAFETY_PER_IP_HOUR per connection (ip hash): an anonymous visitor
+    # must not be able to flood the quality team. The visitor still gets the stop-use message; the first report stands.
+    done = (await db.execute(select(ServiceAgentTurn.complaint_id).where(
+        ServiceAgentTurn.session_id == sess.id, ServiceAgentTurn.complaint_id.is_not(None)).limit(1))).first()
+    ip = getattr(sess, "ip_hash", None)
+    recent = (await db.execute(select(func.count(ServiceAgentTurn.id)).join(CRMChatSession, CRMChatSession.id == ServiceAgentTurn.session_id)
+                               .where(ServiceAgentTurn.complaint_id.is_not(None), CRMChatSession.ip_hash == ip,
+                                      ServiceAgentTurn.created_at >= datetime.now(timezone.utc) - timedelta(hours=1)))).scalar_one() if ip else 0
+    if done is not None or recent >= int(_cfg("SERVICE_AGENT_SAFETY_PER_IP_HOUR", 3)):
+        return Reply(T[lang]["safety"], handoff=True, kind="safety"), {"complaint_class": "SAFETY"}
     lot_no = (LOT.search(text).group(1).upper() if LOT.search(text) and re.search(r"\d", LOT.search(text).group(1)) else None)
     lot = (await db.execute(select(Lot).where(func.upper(Lot.lot_number) == lot_no).limit(1))).scalar_one_or_none() if lot_no else None
     product = None

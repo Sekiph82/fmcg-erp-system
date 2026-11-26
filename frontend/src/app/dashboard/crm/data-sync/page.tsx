@@ -90,7 +90,7 @@ export default function DataSyncPage() {
 
 
 // ── M50.S01.T009: proposals, conflicts, reconciliation ──────────────────────────────────────────────────────────
-type Prop = { id: string; target: string; key: string; status: string; proposed_by: string | null; decided_by: string | null; error: string | null; applied_ref: string | null; payload: { head: Record<string, unknown>; lines: unknown[] } };
+type Prop = { id: string; target: string; key: string; status: string; payload_hash: string; proposed_by: string | null; decided_by: string | null; error: string | null; applied_ref: string | null; payload: { head: Record<string, unknown>; lines: unknown[] } };
 type Conf = { id: string; target: string; key: string; field: string; source_value: string | null; erp_value: string | null };
 function M50Panels({ msg, reload }: { msg: (m: string) => void; reload: () => void }) {
   const [props, setProps] = useState<Prop[]>([]);
@@ -107,7 +107,7 @@ function M50Panels({ msg, reload }: { msg: (m: string) => void; reload: () => vo
       <h3 className="font-semibold">Order proposals (a second person approves)</h3>
       {props.length === 0 ? <p className="text-xs text-gray-500">Nothing is waiting.</p> : <ul className="text-xs divide-y">{props.map((p) => <li key={p.id} className="py-1 flex flex-wrap justify-between gap-2">
         <span>{p.target.replace("_", " ")} <b>{p.key}</b> · {p.payload.lines.length} line(s) · {p.status.toLowerCase()} · proposed by {p.proposed_by ?? "?"}{p.error ? ` · ${p.error}` : ""}{p.applied_ref ? " · draft created" : ""}</span>
-        {p.status === "PENDING" && <span className="flex gap-2"><button className="underline" onClick={() => act(apiClient.post(`/api/v1/data-sync/proposals/${p.id}/approve`), "Approved: draft created.")}>Approve</button>
+        {p.status === "PENDING" && <span className="flex gap-2"><button className="underline" onClick={() => act(apiClient.post(`/api/v1/data-sync/proposals/${p.id}/approve`, { payload_hash: p.payload_hash }), "Approved: draft created.")}>Approve</button>
           <button className="underline" onClick={() => act(apiClient.post(`/api/v1/data-sync/proposals/${p.id}/reject`), "Rejected.")}>Reject</button></span>}</li>)}</ul>}
       <h3 className="font-semibold">Open conflicts (the ERP value was kept)</h3>
       {confs.length === 0 ? <p className="text-xs text-gray-500">None.</p> : <ul className="text-xs divide-y">{confs.map((c) => <li key={c.id} className="py-1 flex flex-wrap justify-between gap-2">

@@ -37,12 +37,18 @@ function store_(t) {
   setSession_({ access: t.access_token, refresh: t.refresh_token, exp: Date.now() + (t.expires_in - 30) * 1000 });
 }
 function refresh_() {
-  var s = session_();
-  if (!s) throw new Error("Signed out.");
-  var r = raw_("post", "/auth/refresh", { refresh_token: s.refresh });
-  if (r.code !== 200) { setSession_(null); throw new Error("Signed out. Sign in again."); }
-  store_(r.body);
-  return session_();
+  var lock = LockService.getUserLock();      // single-flight: parallel executions must not present the rotating token twice
+  lock.waitLock(20000);
+  try {
+    var s = session_();
+    if (!s) throw new Error("Signed out.");
+    if (Date.now() < s.exp) return s;        // another execution refreshed while we waited for the lock
+    var r = raw_("post", "/auth/refresh", { refresh_token: s.refresh });
+    if (r.code === 409) { Utilities.sleep(1500); s = session_(); r = raw_("post", "/auth/refresh", { refresh_token: s.refresh }); }
+    if (r.code !== 200) { setSession_(null); throw new Error("Signed out. Sign in again."); }
+    store_(r.body);
+    return session_();
+  } finally { lock.releaseLock(); }
 }
 function call_(method, path, payload) {
   var s = session_();
@@ -64,6 +70,7 @@ function authCard_(note) {
   var url = APP_ORIGIN + "/addin/authorize?host=gmail&challenge=" + challenge + "&state=" + state;
   var sec = CardService.newCardSection()
     .addWidget(CardService.newTextParagraph().setText(note || "Sign in with your ERP account to use the CRM from Gmail."))
+    .addWidget(CardService.newTextParagraph().setText("Check code: <b>" + state + "</b>. The ERP page must show the same check code; if it does not, close it and do not enter any code."))
     .addWidget(CardService.newTextButton().setText("1. Open the ERP sign-in page").setOpenLink(CardService.newOpenLink().setUrl(url)))
     .addWidget(CardService.newTextInput().setFieldName("code").setTitle("2. Code shown on that page"))
     .addWidget(CardService.newTextButton().setText("3. Finish sign-in").setOnClickAction(CardService.newAction().setFunctionName("finishAuth_")));

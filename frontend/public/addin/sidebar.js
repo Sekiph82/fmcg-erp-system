@@ -26,8 +26,19 @@
       return d;
     });
   }
+  var inflight = null;      // single-flight: concurrent 401s share ONE refresh, so the rotating token is never presented twice
   function refresh() {
-    return raw("POST", "/auth/refresh", { refresh_token: sess.refresh }).then(parse).then(function (t) { sess.access = t.access_token; sess.refresh = t.refresh_token; save(); });
+    if (inflight) return inflight;
+    var attempt = function (n) {
+      try { sess = JSON.parse(sessionStorage.getItem(SKEY) || "null") || sess; } catch (e) { /* keep in-memory */ }
+      return raw("POST", "/auth/refresh", { refresh_token: sess.refresh }).then(parse).then(function (t) { sess.access = t.access_token; sess.refresh = t.refresh_token; save(); },
+        function (e) {      // 409: another request just rotated the token; pick up its result and retry once
+          if (e.status === 409 && n < 2) return new Promise(function (ok) { setTimeout(ok, 1000); }).then(function () { return attempt(n + 1); });
+          throw e;
+        });
+    };
+    inflight = attempt(0).then(function () { inflight = null; }, function (e) { inflight = null; throw e; });
+    return inflight;
   }
   function call(method, path, body, retried) {
     return raw(method, path, body, sess.access).then(function (r) {

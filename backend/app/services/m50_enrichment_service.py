@@ -159,7 +159,7 @@ def view(p: M50EnrichmentProposal, current: Optional[dict] = None) -> dict:
 async def apply(db: AsyncSession, pid: uuid.UUID, user, overwrite: bool = False) -> dict:
     from app.models.sales import Customer
     from app.services import pat_service as pats
-    p = await db.get(M50EnrichmentProposal, pid)
+    p = await db.get(M50EnrichmentProposal, pid, with_for_update=True, populate_existing=True)   # serialises concurrent decisions
     if p is None:
         raise EnrichError(404, "Proposal not found")
     if p.status != "PROPOSED":
@@ -186,7 +186,7 @@ async def apply(db: AsyncSession, pid: uuid.UUID, user, overwrite: bool = False)
 
 async def reject(db: AsyncSession, pid: uuid.UUID, user) -> None:
     from app.services import pat_service as pats
-    p = await db.get(M50EnrichmentProposal, pid)
+    p = await db.get(M50EnrichmentProposal, pid, with_for_update=True, populate_existing=True)   # serialises concurrent decisions
     if p is None or p.status != "PROPOSED":
         raise EnrichError(404, "Proposal not found")
     p.status, p.decided_by, p.decided_at = "REJECTED", user.username, _now()
@@ -197,7 +197,7 @@ async def revoke(db: AsyncSession, pid: uuid.UUID, user) -> dict:
     """Consent/licence withdrawn for one value: restore the value that was there (unless a person changed it since)."""
     from app.models.sales import Customer
     from app.services import pat_service as pats
-    p = await db.get(M50EnrichmentProposal, pid)
+    p = await db.get(M50EnrichmentProposal, pid, with_for_update=True, populate_existing=True)   # serialises concurrent decisions
     if p is None or p.status == "REVOKED":
         raise EnrichError(404, "Proposal not found")
     restored = False

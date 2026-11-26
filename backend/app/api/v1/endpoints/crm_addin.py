@@ -177,7 +177,7 @@ async def thread(thread_id: str = Query(..., min_length=1, max_length=200, patte
     user, _ = ctx
     all_ = user.is_superuser or has_any_permission(user, ("crm.view_all", "crm.edit_all"))
     q = select(CRMActivity, CRMRecord).join(CRMRecord, CRMRecord.id == CRMActivity.crm_record_id).where(
-        CRMActivity.notes.like(f"Thread: {thread_id}\n%")).order_by(CRMActivity.activity_datetime.desc().nullslast()).limit(20)
+        CRMActivity.notes.startswith(f"Thread: {thread_id}\n", autoescape=True)).order_by(CRMActivity.activity_datetime.desc().nullslast()).limit(20)
     rows = [(a, r) for a, r in (await db.execute(q)).all() if all_ or r.assigned_rep_id == str(user.id)]
     await db.commit()
     return [{"type": a.activity_type.value, "subject": a.subject, "deal": r.company_name, "deal_id": str(r.id),

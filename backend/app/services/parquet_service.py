@@ -3,7 +3,7 @@
 Write: a column's Arrow type comes from the ERP table column (UUID/text/enum -> string, integer -> int64, numeric(p,s) ->
 decimal128(p,s), boolean, date -> date32, timestamp -> timestamp[us, UTC]); masked (sensitive) columns are written as strings.
 The file carries the dataset name, export time and column list as schema metadata, zstd-compressed.
-Read: size / row-group / row limits are checked from the footer before any data is decoded; an upload that is not valid Parquet
+Read: size / row-group / row / total-uncompressed-size limits are checked from the footer before any data is decoded; an upload that is not valid Parquet
 or exceeds the limits is refused. Nothing is executed from the file (Parquet carries data, not code).
 """
 from __future__ import annotations
@@ -19,6 +19,7 @@ import pyarrow.parquet as pq
 
 MAX_READ_BYTES = 20 * 1024 * 1024
 MAX_READ_ROWS = 200_000
+MAX_UNCOMPRESSED_BYTES = 200 * 1024 * 1024      # decompression-bomb cap: a 20 MB upload may not inflate past this
 
 
 class ParquetError(ValueError):
@@ -89,6 +90,10 @@ def read(data: bytes, max_rows: int = MAX_READ_ROWS) -> tuple[list[dict], dict]:
         n = pf.metadata.num_rows
         if n > max_rows:
             raise ParquetError(f"The file has {n} rows; the limit is {max_rows}.")
+        md = pf.metadata
+        raw = sum(md.row_group(g).column(c).total_uncompressed_size for g in range(md.num_row_groups) for c in range(md.num_columns))
+        if raw > MAX_UNCOMPRESSED_BYTES:
+            raise ParquetError(f"The file would expand to {raw // (1024 * 1024)} MB; the limit is {MAX_UNCOMPRESSED_BYTES // (1024 * 1024)} MB.")
         table = pf.read()
     except ParquetError:
         raise

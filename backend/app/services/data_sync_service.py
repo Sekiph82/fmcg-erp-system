@@ -251,7 +251,7 @@ def _jsonable(v):
 # ── IN run ───────────────────────────────────────────────────────────────────
 
 async def run_in(db: AsyncSession, sync: SyncDefinition, rows: list[dict], *, dry_run: bool, user: str, trigger: str = "MANUAL",
-                 full_snapshot: bool = True, actor=None) -> SyncRun:
+                 full_snapshot: bool = True, actor=None, proposer: Optional[str] = None) -> SyncRun:
     from app.services import m50_sync as m50
     await db.refresh(sync)                    # callers may hold an expired instance
     spec = await m50.spec_for(db, sync.target, await m50.options(db, sync))
@@ -263,7 +263,7 @@ async def run_in(db: AsyncSession, sync: SyncDefinition, rows: list[dict], *, dr
     db.add(run)
     await db.flush()
     if mode == "propose":                       # orders: staged for a second person, never written directly
-        out = await m50.stage(db, sync, spec, rows, dry_run=dry_run, user=user, trigger=trigger, run=run)
+        out = await m50.stage(db, sync, spec, rows, dry_run=dry_run, user=user, trigger=trigger, run=run, proposer=proposer)
         run.counts, run.diff, run.errors, run.before = out["counts"], out["diff"][:200], out["errors"][:200], []
         run.status, run.finished_at = "DONE", _now()
         await db.flush()

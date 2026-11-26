@@ -211,6 +211,8 @@ class Settings(BaseSettings):
     SERVICE_AGENT_LLM_MAX_CALLS_PER_DAY: int = 500
     SERVICE_AGENT_HISTORY_TURNS: int = 6
     ADDIN_ALLOWED_ORIGINS: list[str] = []
+    ADDIN_GRANT_MAX_DAYS: int = 30
+    SERVICE_AGENT_SAFETY_PER_IP_HOUR: int = 3
     ADS_LIVE_MUTATIONS: bool = False             # M48.S01.T001–T004 live ad mutations
     CARD_PAYMENTS_LIVE_ENABLED: bool = False     # M48.S01.T010 Pesapal live money
     WAREHOUSE_LIVE_ENABLED: bool = False         # M48.S01.T007/T008 Snowflake/BigQuery live sync

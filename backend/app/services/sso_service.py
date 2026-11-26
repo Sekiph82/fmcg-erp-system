@@ -158,8 +158,17 @@ async def login_user(db: AsyncSession, email: str, groups: list, role_mapping: d
     mapped = {role_mapping[g] for g in groups if g in role_mapping}
     if mapped:
         have = {r.name for r in user.roles}
-        for role in (await db.execute(select(Role).where(Role.name.in_(mapped - have), Role.is_active.is_(True)))).scalars():
+        added = list((await db.execute(select(Role).where(Role.name.in_(mapped - have), Role.is_active.is_(True)))).scalars())
+        for role in added:
             user.roles.append(role)
+        if added:
+            await db.flush()
+            if await requires_privileged_2fa(db, user.id):      # the mapping itself made the account privileged
+                for role in added:
+                    user.roles.remove(role)
+                await db.flush()
+                raise SSOError(403, "Privileged accounts sign in with password and authenticator app (break-glass), not SSO.",
+                               "privileged_2fa_required")
     return user
 
 

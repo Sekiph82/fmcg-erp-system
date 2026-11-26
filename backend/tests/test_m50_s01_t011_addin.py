@@ -254,6 +254,12 @@ async def test_oauth_pkce_flow_scopes_host_origin_refresh_and_revocation():
         assert r1["access_token"] != tok["access_token"] and r1["refresh_token"] != tok["refresh_token"]
         assert (await c.get(f"{BASE}/whoami", headers=H(tok["access_token"]))).status_code == 401                # old access token is gone
         assert (await c.get(f"{BASE}/whoami", headers=H(r1["access_token"]))).status_code == 200
+        assert (await c.post(f"{BASE}/auth/refresh", json={"refresh_token": tok["refresh_token"]})).status_code == 409   # parallel request inside the 10 s race window
+        assert (await c.get(f"{BASE}/whoami", headers=H(r1["access_token"]))).status_code == 200                 # ...is not theft: the grant lives
+        async with _S() as db:
+            g = (await db.execute(select(AddinGrant).where(AddinGrant.prev_refresh_hash == hashlib.sha256(tok["refresh_token"].encode()).hexdigest()))).scalar_one()
+            g.rotated_at = datetime.now(timezone.utc) - timedelta(seconds=60)
+            await db.commit()
         assert (await c.post(f"{BASE}/auth/refresh", json={"refresh_token": tok["refresh_token"]})).status_code == 401   # replay of the rotated-out token
         assert (await c.get(f"{BASE}/whoami", headers=H(r1["access_token"]))).status_code == 401                 # ...which killed the grant
         # sign-out from the add-in; user lists and revokes sessions

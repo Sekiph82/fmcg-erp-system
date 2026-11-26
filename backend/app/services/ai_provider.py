@@ -464,15 +464,18 @@ def _retry_after_s(exc: Exception) -> Optional[float]:
 
 
 async def generate_with_retry(provider: BaseAIProvider, prompt: str, system: Optional[str] = None, *, max_attempts: int = 4,
-                              base_delay: float = 1.0, sleep=None, on_attempt=None) -> AIResponse:
+                              base_delay: float = 1.0, sleep=None, on_attempt=None, before_attempt=None) -> AIResponse:
     """provider.generate_text with retries on 429/5xx/overloaded. Waits Retry-After when the provider sent it, else
     exponential back-off (capped at MAX_RETRY_SLEEP_S). on_attempt(attempt, status, retry_after, response_or_None) is
-    called for every attempt (used for measured usage logs). Raises RateLimited / ProviderError when retries run out;
+    called for every attempt (used for measured usage logs); before_attempt() is awaited before every attempt and may
+    raise to veto the call (the budget ledger reserves the worst case there). Raises RateLimited / ProviderError when retries run out;
     errors that are not retryable (400, 401, …) are raised at once as ProviderError."""
     import asyncio
     sleep = sleep or asyncio.sleep
     last: Optional[ProviderError] = None
     for attempt in range(1, max_attempts + 1):
+        if before_attempt:
+            await before_attempt()
         try:
             resp = await provider.generate_text(prompt, system=system)
             if on_attempt:

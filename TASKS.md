@@ -3596,6 +3596,26 @@ Dependency: prior major milestone accepted and synchronized; extend actual exist
   - **Acceptance at milestone gate:** At gate execute deterministic benchmark plus permitted local models, record expected/actual and failures; manual reviewer inspects evidence and fixes regressions, no made-up scores.
   - **Required evidence:** source/migration/API/UI/permissions and docs as applicable, actual local app manual click log with screenshots, tests prepared now/run at major gate, official contracts for external adapters; synthetic data only, future activation separately. Update TASKS.md and Project Status immediately after task, [v] pending gate, then autonomously select next task. Never [x] before PASS.
 
+- [v] M50.S01.T013 — Gate remediation: independent-review findings S1–S9, I1–I2, C1–C2, M1 (added by the M50 gate)
+  - Implemented 2026-11-26 [v], pending the M50 gate:
+    - S1: SSRF DNS-rebinding closed. Live egress resolves once, validates every address and connects to the pinned IP; Host and SNI stay on the original name.
+    - S2: data-sync order proposals from webhook, scheduler or replay record the accountable owner (mapping editor or creator). The proposer, creator and mapping editor can never approve.
+    - S3: approval is bound to a payload hash.
+    - S4: an SSO group→role mapping to a privileged role is refused without 2FA (SAML and OIDC).
+    - S5: add-in refresh is single-flight, with a 10 s 409 grace window; reuse detection is kept.
+    - S6: at most one safety escalation per chat session, plus a per-IP-hash hourly cap.
+    - S7: add-in thread lookup escapes LIKE wildcards.
+    - S8: Gmail consent page shows a warning and a check code.
+    - S9: add-in grants have an absolute lifetime (ADDIN_GRANT_MAX_DAYS).
+    - I1: worst-case budget is reserved before every model call; settle is clamped, with the overage logged.
+    - I2: lease heartbeat is owner-checked, and a run that was recovered elsewhere is discarded.
+    - C1: enrichment apply, reject and revoke lock the proposal row.
+    - C2: Parquet uncompressed-size cap.
+    - M1: sa_actions is archived on downgrade.
+  - Tests: test_m50_s01_t013_review_fixes (17 passed); affected runner set 22/22.
+- [v] M50.S01.T014 — Gate remediation: browser walkthrough defect F (added by the M50 gate)
+  - Implemented 2026-11-26 [v]: a prospecting run with no matches now says so and explains how to widen the profile. Evidence: coordination/milestones/M50/gate/05_browser_walkthrough.md.
+
 ## M50.S02 — Consolidated milestone gate and synchronization
 - [ ] M50.S02.T001 — Run milestone-only consolidated tests on frozen candidate SHA: full applicable backend, DB-gated integration and legacy regression, migration from empty and prior populated head, local provider contracts, frontend tsc/lint/build, security/roles/company isolation, real local ERP manual UI clicks and screenshots desktop/mobile for every affected persona and feature; evaluate applicable quality categories and original task mappings; add remediation tasks for any gap; independent reviewer on exact source; record commands, counts, skipped-test dispositions, screenshot paths, click logs, reviewer identity and verdict. Fix failures, rerun, [x] only after all applicable checks pass; no account activation needed.
 - [ ] M50.S02.T002 — After successful gate, mark evidence-backed tasks [x], update TASKS.md/Project Status, commit/push main, fetch and verify Desktop HEAD == origin/main, preserve owner changes, record evidence SHA and sync result. Automatically proceed to next milestone; do not stop for missing business accounts.

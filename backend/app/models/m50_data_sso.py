@@ -127,6 +127,7 @@ class AddinGrant(Base):
     refresh_hash    = Column(String(64), nullable=True, index=True)
     refresh_expires_at = Column(DateTime(timezone=True), nullable=True)
     prev_refresh_hash = Column(String(64), nullable=True, index=True)      # last rotated-out refresh token (reuse detection)
+    rotated_at      = Column(DateTime(timezone=True), nullable=True)       # last refresh rotation (race grace window)
     revoked_at      = Column(DateTime(timezone=True), nullable=True)
     revoked_reason  = Column(String(40), nullable=True)
     created_at      = Column(DateTime(timezone=True), nullable=False, server_default=func.now())

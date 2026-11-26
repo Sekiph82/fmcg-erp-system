@@ -99,6 +99,12 @@ async def _user(db, tag, perms=(), superuser=False):
                            access_scopes=[], roles=[SimpleNamespace(name="r", is_active=True, permissions=plist, access_scopes=[])])
 
 
+def _H(p):
+    from app.api.v1.endpoints import data_sync as api
+    from app.services import m50_sync
+    return api.ApproveIn(payload_hash=m50_sync.payload_hash(p))
+
+
 def _S():
     from sqlalchemy.ext.asyncio import async_sessionmaker
     from app.db.session import engine
@@ -330,17 +336,17 @@ async def test_orders_are_staged_two_person_approved_and_created_as_drafts_throu
         assert (await db.execute(select(SalesOrder).where(SalesOrder.order_no == f"SO-{s}"))).first() is None   # nothing written yet
         prop = (await db.execute(select(SyncProposal).where(SyncProposal.sync_id == so_id))).scalar_one()
         assert prop.status == "PENDING" and len(prop.payload["lines"]) == 2
-        prop_id = prop.id
+        prop_id, ph = prop.id, _H(prop)
         # the proposer may not approve; someone without the create right may not either
         with pytest.raises(HE) as e:
-            await api.approve_proposal(prop_id, db, proposer)
+            await api.approve_proposal(prop_id, ph, db, proposer)
         assert e.value.status_code == 403 and "different person" in e.value.detail
         await db.rollback()
         with pytest.raises(HE) as e:
-            await api.approve_proposal(prop_id, db, nobody)
+            await api.approve_proposal(prop_id, ph, db, nobody)
         assert e.value.status_code == 403
         await db.rollback()
-        out = await api.approve_proposal(prop_id, db, approver)
+        out = await api.approve_proposal(prop_id, ph, db, approver)
         assert out["status"] == "APPLIED"
         so = (await db.execute(select(SalesOrder).where(SalesOrder.order_no == f"SO-{s}"))).scalar_one()
         assert so.status == SOStatus.DRAFT and so.created_by_id == approver.id
@@ -369,7 +375,7 @@ async def test_orders_are_staged_two_person_approved_and_created_as_drafts_throu
         await db.commit()
         await db.refresh(pp)
         assert pp.status == "PENDING"
-        assert (await api.approve_proposal(pp_id, db, approver))["status"] == "APPLIED"
+        assert (await api.approve_proposal(pp_id, _H(pp), db, approver))["status"] == "APPLIED"
         po = (await db.execute(select(PurchaseOrder).where(PurchaseOrder.po_no == f"PO-{s}"))).scalar_one()
         assert po.status.value == "DRAFT"
 

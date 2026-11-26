@@ -3,7 +3,7 @@ issued by the ERP itself (RFC 6749 sections 4.1 / 6; RFC 6819 and OAuth 2.0 Secu
 
 Flow: the add-in (host gmail | outlook) makes a code verifier, opens the ERP consent page (a signed-in staff user approves
 the scopes), the ERP issues a one-time code (60 s) bound to the PKCE challenge, the host and the origin that asked, and the
-add-in exchanges code + verifier for a short-lived access token (15 min) and a rotating refresh token (8 h). Tokens travel
+add-in exchanges code + verifier for a short-lived access token (15 min) and a rotating refresh token (8 h; the just-rotated token gets a 10 s race grace, a grant lives at most ADDIN_GRANT_MAX_DAYS). Tokens travel
 only in Authorization headers and JSON bodies, never in URLs; only SHA-256 hashes are stored.
 
 Controls: host binding (X-Addin-Host must equal the grant's host), origin binding (an Outlook browser request must carry the
@@ -34,6 +34,7 @@ HOSTS = ("gmail", "outlook")
 SCOPES = ("addin.read", "addin.write")
 CODE_TTL, ACCESS_TTL, REFRESH_TTL = timedelta(seconds=60), timedelta(minutes=15), timedelta(hours=8)
 RATE_PER_MIN = 120
+REUSE_GRACE = timedelta(seconds=10)    # a parallel refresh with the just-rotated token is a race, not theft
 _hits: dict = defaultdict(deque)
 CHALLENGE_RE = re.compile(r"^[A-Za-z0-9_-]{43}$")
 VERIFIER_RE = re.compile(r"^[A-Za-z0-9\-._~]{43,128}$")
@@ -96,6 +97,7 @@ async def authorize(db: AsyncSession, user, host: str, challenge: str, origin: s
 def _issue(g: AddinGrant) -> dict:
     access, refresh = "povua_" + secrets.token_urlsafe(32), "povur_" + secrets.token_urlsafe(32)
     now = _now()
+    g.rotated_at = now
     g.prev_refresh_hash = g.refresh_hash                        # kept to recognise a stolen, already-rotated refresh token
     g.access_hash, g.access_expires_at = h(access), now + ACCESS_TTL
     g.refresh_hash, g.refresh_expires_at = h(refresh), now + REFRESH_TTL
@@ -125,13 +127,25 @@ async def refresh(db: AsyncSession, refresh_token: str) -> dict:
         # a refresh token that was already rotated out: treat as theft and revoke the grant it belonged to
         old = (await db.execute(select(AddinGrant).where(AddinGrant.prev_refresh_hash == h(refresh_token or ""),
                                                          AddinGrant.revoked_at.is_(None)))).scalar_one_or_none() if refresh_token else None
+        if old is not None and old.rotated_at is not None and old.rotated_at > _now() - REUSE_GRACE:
+            # Only hashes are stored, so the new pair cannot be replayed: tell the caller to pick up the winner's tokens.
+            raise HTTPException(409, {"error": "refresh_in_progress", "detail": "Another request just refreshed this sign-in; retry with the newest token."})
         if old is not None:
             await revoke(db, old, "refresh_reuse")
             await db.commit()
         raise HTTPException(401, {"error": "invalid_grant", "detail": "Refresh token invalid."})
     if g.revoked_at is not None or g.refresh_expires_at < _now():
         raise HTTPException(401, {"error": "invalid_grant", "detail": "Refresh token expired or revoked."})
+    if _past_lifetime(g):
+        await revoke(db, g, "max_lifetime")
+        await db.commit()
+        raise HTTPException(401, {"error": "invalid_grant", "detail": "This sign-in reached its maximum lifetime; sign in again."})
     return _issue(g)
+
+
+def _past_lifetime(g: AddinGrant) -> bool:
+    """Absolute cap on a grant however often it is used (ADDIN_GRANT_MAX_DAYS, default 30)."""
+    return g.created_at is not None and g.created_at < _now() - timedelta(days=int(getattr(settings, "ADDIN_GRANT_MAX_DAYS", 30)))
 
 
 async def revoke(db: AsyncSession, g: AddinGrant, reason: str) -> None:
@@ -157,6 +171,8 @@ async def authenticate(db: AsyncSession, raw: str, scope: str, host: Optional[st
     g = (await db.execute(select(AddinGrant).where(AddinGrant.access_hash == h(raw)))).scalar_one_or_none() if raw else None
     if g is None or g.revoked_at is not None or g.access_expires_at is None or g.access_expires_at <= _now():
         raise HTTPException(401, "Invalid, revoked or expired add-in token.", headers=www)
+    if _past_lifetime(g):
+        raise HTTPException(401, "This add-in sign-in reached its maximum lifetime.", headers=www)
     if (host or "").lower() != g.host:
         raise HTTPException(403, "This token belongs to a different add-in host.")
     if g.host == "gmail":
