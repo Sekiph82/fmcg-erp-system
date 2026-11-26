@@ -23,11 +23,13 @@ TABLES = [
     "dw_targets", "dw_jobs", "dw_runs",
     "sd_agents", "sd_sla_policies", "sd_ticket_sla", "sd_surveys", "sd_macros", "sd_qa_reviews", "sd_views",
     "ds_syncs", "ds_state", "ds_runs", "dq_snapshots",
+    "cpq_quote_templates", "cpq_contract_templates", "cpq_approvals", "cpq_quote_promos", "cpq_renewals", "cpq_billing",
 ]
 
 COLUMNS = [
     ("crm_contacts", "language", "VARCHAR(8)"),
     ("crm_chat_sessions", "portal_account_id", "UUID REFERENCES portal_accounts(id) ON DELETE SET NULL"),
+    ("crm_document_links", "password_hash", "VARCHAR(255)"),
 ]
 
 

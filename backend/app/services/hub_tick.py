@@ -25,6 +25,9 @@ async def _daily_customer_intel(db) -> None:
         await apply_retention(db)
         from app.services.data_sync_service import snapshot   # T011 data-quality trend
         await snapshot(db)
+        from app.services import cpq_service   # T014 contract renewals and recurring billing
+        await cpq_service.renewals_tick(db)
+        await cpq_service.billing_tick(db)
         await db.commit()
     _last_daily = today
 

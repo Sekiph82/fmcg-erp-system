@@ -119,7 +119,7 @@ export const quoteApi = {
     req<Quotation>(`${BASE}/${id}/discount/${approve ? "approve" : "reject"}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reason }) }),
   convert: (id: string) => req<{ so_id: string; so_no: string; quote_no: string; version: number }>(`${BASE}/${id}/convert`, { method: "POST" }),
   shareLinks: (id: string) => req<ShareLink[]>(`${BASE}/${id}/share-links`),
-  createShareLink: (id: string, body: { expires_in_days: number; label?: string }) =>
+  createShareLink: (id: string, body: { expires_in_days: number; label?: string; password?: string }) =>
     req<ShareLink & { url: string }>(`${BASE}/${id}/share-links`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }),
   revokeShareLink: (linkId: string) => req<ShareLink>(`${BASE}/share-links/${linkId}/revoke`, { method: "POST" }),
   decision: (id: string) => req<CustomerDecision>(`${BASE}/${id}/decision`),

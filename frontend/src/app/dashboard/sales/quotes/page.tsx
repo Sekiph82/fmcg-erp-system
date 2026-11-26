@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { CPQPanel } from "@/components/sales/CPQPanel";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   quoteApi, Quotation, QuoteStatus, QuoteCreate, QuoteLineCreate,
@@ -280,13 +281,14 @@ function SharePanel({ quote, onClose }: { quote: Quotation; onClose: () => void 
   const qc = useQueryClient();
   const [days, setDays] = useState(14);
   const [label, setLabel] = useState("");
+  const [password, setPassword] = useState("");
   const [newUrl, setNewUrl] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const links = useQuery({ queryKey: ["share-links", quote.id], queryFn: () => quoteApi.shareLinks(quote.id) });
   const signed = useQuery({ queryKey: ["quote-decision", quote.id], queryFn: () => quoteApi.decision(quote.id) });
   const refresh = () => qc.invalidateQueries({ queryKey: ["share-links", quote.id] });
   const create = useMutation({
-    mutationFn: () => quoteApi.createShareLink(quote.id, { expires_in_days: days, label: label || undefined }),
+    mutationFn: () => quoteApi.createShareLink(quote.id, { expires_in_days: days, label: label || undefined, password: password || undefined }),
     onSuccess: (r) => { setNewUrl(r.url); setErr(null); refresh(); },
     onError: (e: Error) => setErr(e.message),
   });
@@ -312,8 +314,10 @@ function SharePanel({ quote, onClose }: { quote: Quotation; onClose: () => void 
           <select aria-label="Valid for" value={days} onChange={(e) => setDays(Number(e.target.value))} className="border rounded px-2 py-1.5 text-sm">
             {[3, 7, 14, 30, 60, 90].map((d) => <option key={d} value={d}>{d} days</option>)}
           </select>
+          <input aria-label="Password (optional)" type="password" placeholder="Password (optional)" value={password} onChange={(e) => setPassword(e.target.value)} className="border rounded px-2 py-1.5 text-sm w-40" />
           <button disabled={create.isPending} onClick={() => create.mutate()} className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded">Create link</button>
         </div>
+        <CPQPanel quoteId={quote.id} status={quote.status} onChanged={() => qc.invalidateQueries({ queryKey: ["quotes"] })} />
         {newUrl && (
           <div className="space-y-1">
             <p className="text-xs text-emerald-700">Copy it now; it is shown only once.</p>

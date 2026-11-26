@@ -2394,11 +2394,27 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
   - Files that are not malware-scan CLEAN are never served (423).
   - Revoked or expired links → 410; unknown links → 404.
   - Tests: tests/test_m45_s01_t013_sales_docs.py.
-- [ ] M45.S01.T014 — Advanced CPQ and contract lifecycle (original recommendation 35/40)
+- [v] M45.S01.T014 — Advanced CPQ and contract lifecycle (original recommendation 35/40)
   - **Scope:** Extend native quotations/discount approvals with configurable bundles, pricing rules, volume tiers, currency/tax, contract templates, version negotiation, renewal/expiry, signatory verification, provider-agnostic signature adapter (documented provider where feasible), downstream order/credit/stock/finance. Audit subscription billing and payment links; add uncovered software capabilities. Extended by matrix v2: apply existing promotion BUNDLE/MIX_AND_MATCH/TIERED schemes to quotes; quote templates, password protection, price books, multi-step approvals, quote reporting; recurring billing with retries and billing portal on top of subscription order templates; credit-memo verification.
   - **Acceptance at milestone gate:** Synthetic quote-to-contract-to-order/invoice/renewal flow; correct approvals/totals, signature evidence, no bypass, local provider contracts; third-party e-sign/payment activation deferred.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable. Do not rebuild already working functionality; record evidence and bounded delta.
   - **Claude checkpoint:** update TASKS.md/Project Status immediately after this task, [v] pending milestone gate, tests NOT RUN; automatically continue next dependency-ready task. Never [x] before milestone PASS.
+  Implemented 2026-11-26 [v] (tests NOT RUN as gate):
+  - Reused: quote versions (revise), discount approval, share links with tracking, signer verification by one-time code, conversion, contracts with approval, price lists with tiers, promotion schemes, subscriptions and payment links.
+  - Added the bounded delta (app/services/cpq_service.py, /api/v1/cpq, CPQ panel in the quote share dialog):
+    - Price book: quote lines priced from the customer's price list.
+    - Promotions: TIERED/BUNDLE/MIX_AND_MATCH schemes evaluated and applied on quotes, and recorded.
+    - Templates: quote templates and contract templates (clauses with placeholders).
+    - Password-protected share links: X-Doc-Password, wrong attempts rate-limited.
+    - Multi-step discount approvals: configurable levels; each level by a different person with that level's right; the price setter is refused. Send and accept are blocked until all levels are done, and any price change resets the approvals.
+    - Quote report: status values, win rate, days to accept, average discount.
+    - Readiness before conversion: credit exposure and stock per line.
+    - Contract from an accepted quote, then renewal: notice, plus a renewal quote once per auto-renewing contract (daily job).
+    - Signature adapters: LOCAL evidence flow active; DocuSign/Adobe Sign NOT_CONFIGURED.
+    - Recurring billing: subscription-order invoices get a payment link with retried reminders (3/7/14 days). Billing portal: the portal opens a fresh pay link for the customer's own invoice.
+    - Credit-note verification: returned qty/price against the original invoice, net of earlier returns.
+  - Third-party e-sign and card payments: M47.
+  - Tests: tests/test_m45_s01_t014_cpq.py.
 
 - [v] M45.S01.T015 — Custom objects and associations (additional gap, Source: HubSpot parity matrix 2026-11-25 (coordination/milestones/M43/HUBSPOT_PARITY_MATRIX_2026-11-25.md).)
   - **Scope:** Admin-defined object types (typed fields, required/unique, display name), records, many-to-many associations to customers, CRM records, products and orders with labels, list/detail UI, import/export, report-builder source and workflow triggers. Per-object permissions; no arbitrary SQL.

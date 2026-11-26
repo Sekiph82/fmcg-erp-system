@@ -557,6 +557,7 @@ ENDPOINT_ROUTE_DEFINITIONS: tuple[EndpointRouteDefinition, ...] = (
     EndpointRouteDefinition(key="service_desk_public", route_prefix="/public/survey", import_path="app.api.v1.endpoints.service_desk_public", tags=('helpdesk',)),
     EndpointRouteDefinition(key="data_sync", route_prefix="/data-sync", import_path="app.api.v1.endpoints.data_sync", tags=('integrations',)),
     EndpointRouteDefinition(key="data_sync_public", route_prefix="/public/data-sync", import_path="app.api.v1.endpoints.data_sync_public", tags=('integrations',)),
+    EndpointRouteDefinition(key="cpq", route_prefix="/cpq", import_path="app.api.v1.endpoints.cpq", tags=('sales',)),
     EndpointRouteDefinition(key="customer_intel", route_prefix="/customer-intel", import_path="app.api.v1.endpoints.customer_intel", tags=('crm',)),
     EndpointRouteDefinition(key="marketing_assets", route_prefix="/marketing-assets", import_path="app.api.v1.endpoints.marketing_assets", tags=('marketing',)),
     EndpointRouteDefinition(key="marketing_assets_public", route_prefix="/public/assets", import_path="app.api.v1.endpoints.marketing_assets_public", tags=('marketing',)),

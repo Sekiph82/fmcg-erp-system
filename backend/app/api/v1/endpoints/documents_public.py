@@ -21,11 +21,28 @@ def _check(token: str) -> None:
         raise HTTPException(404, GONE)
 
 
+async def _unlock(link, request: Request) -> None:
+    """M45.S01.T014: a password-protected link needs X-Doc-Password; wrong attempts are rate-limited per link."""
+    if not getattr(link, "password_hash", None):
+        return
+    from app.core.login_limiter import check_login_allowed, clear_login_failures, record_login_failure
+    from app.core.external_auth import check_password
+    key = f"doclink:{link.id}"
+    await check_login_allowed(key)
+    pw = request.headers.get("x-doc-password", "")
+    if not pw or not check_password(pw, link.password_hash)[0]:
+        if pw:
+            await record_login_failure(key)
+        raise HTTPException(401, {"message": "This document is password protected.", "password_required": True})
+    clear_login_failures(key)
+
+
 @router.get("/{token}")
-async def shared_document(token: str, db: AsyncSession = Depends(get_db)):
+async def shared_document(token: str, request: Request, db: AsyncSession = Depends(get_db)):
     _check(token)
     try:
         link = await docs.resolve(db, token)
+        await _unlock(link, request)
         d = await docs.decision_for(db, link.quotation_id)
         # once answered, the signer can always re-open their confirmation (also after a decline)
         doc = await docs.public_document(db, link, any_status=d is not None)
@@ -45,6 +62,7 @@ async def shared_document_viewed(token: str, request: Request, db: AsyncSession 
         link = await docs.resolve(db, token, for_update=True)
     except docs.LinkGone:
         raise HTTPException(404, GONE)
+    await _unlock(link, request)
     client = request.client.host if request.client else ""
     counted = await docs.record_view(db, link, docs.viewer_hash(link.id, client, request.headers.get("user-agent", "")))
     await db.commit()
@@ -56,7 +74,8 @@ class SignerCodeIn(BaseModel):
 
 
 @router.post("/{token}/signer-code")
-async def send_signer_code(token: str, body: SignerCodeIn, background: BackgroundTasks, db: AsyncSession = Depends(get_db)):
+async def send_signer_code(token: str, body: SignerCodeIn, background: BackgroundTasks, request: Request,
+                           db: AsyncSession = Depends(get_db)):
     """E-mail a one-time code to the signer — only to an address on file for the quoted customer. The answer (and its
     timing: the e-mail goes out after the response) is the same whether or not the address is on file."""
     import logging
@@ -69,6 +88,7 @@ async def send_signer_code(token: str, body: SignerCodeIn, background: Backgroun
         raise HTTPException(503, "E-mail is not set up yet. Please contact your POVU representative.")
     try:
         link = await docs.resolve(db, token, for_update=True)
+        await _unlock(link, request)
         code = await docs.request_signer_code(db, link, str(body.signer_email))
     except docs.LinkGone:
         raise HTTPException(404, GONE)
@@ -109,6 +129,7 @@ async def shared_document_decision(token: str, body: DecisionIn, request: Reques
         raise HTTPException(422, "Please tick the box to confirm.")
     try:
         link = await docs.resolve(db, token, for_update=True)
+        await _unlock(link, request)
         client = request.client.host if request.client else ""
         rec = await docs.decide(db, link, decision=body.decision, signer_name=body.signer_name.strip(),
                                 signer_email=str(body.signer_email), seen_hash=body.document_hash, reason=body.reason,

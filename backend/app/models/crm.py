@@ -682,6 +682,7 @@ class CRMDocumentLink(Base):
     expires_at      = Column(DateTime(timezone=True), nullable=False)
     revoked_at      = Column(DateTime(timezone=True), nullable=True)
     view_count      = Column(Integer, nullable=False, default=0)           # distinct visits (30-minute dedupe)
+    password_hash   = Column(String(255), nullable=True)                   # optional password (M45.S01.T014)
     first_viewed_at = Column(DateTime(timezone=True), nullable=True)
     last_viewed_at  = Column(DateTime(timezone=True), nullable=True)
 

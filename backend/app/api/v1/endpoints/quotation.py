@@ -304,6 +304,15 @@ async def update_quote(
 
 # ── Status Actions ────────────────────────────────────────────────────────────
 
+async def _cpq_levels(db, q, action: str) -> None:
+    """M45.S01.T014 multi-step discount approval: every required level must be approved first."""
+    from app.services import cpq_service as cpq
+    try:
+        await cpq.ensure_levels(db, await cpq._quote(db, q.id), action)
+    except cpq.CPQError as e:
+        raise HTTPException(e.status, str(e))
+
+
 @router.post("/{quote_id}/send", response_model=QuotationRead)
 async def send_quote(quote_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     await _lock(db, quote_id)
@@ -312,6 +321,7 @@ async def send_quote(quote_id: uuid.UUID, db: AsyncSession = Depends(get_db), cu
     if q.status not in (QuoteStatus.DRAFT,):
         raise HTTPException(422, "Only DRAFT quotes can be sent")
     discount_approval.ensure_approved(q, "send it")
+    await _cpq_levels(db, q, "send it")
     q.status = QuoteStatus.SENT
     q.sent_at = datetime.now(tz=timezone.utc)
     await db.commit()
@@ -326,6 +336,7 @@ async def accept_quote(quote_id: uuid.UUID, db: AsyncSession = Depends(get_db), 
     if q.status not in (QuoteStatus.SENT,):
         raise HTTPException(422, "Only SENT quotes can be accepted")
     discount_approval.ensure_approved(q, "accept it")
+    await _cpq_levels(db, q, "accept it")
     q.status = QuoteStatus.ACCEPTED
     q.accepted_at = datetime.now(tz=timezone.utc)
     await db.commit()
@@ -505,6 +516,7 @@ def _may_share(user, q) -> None:
 class ShareLinkIn(_BaseModel):
     expires_in_days: int = _Field(14, ge=1, le=90)
     label: Optional[str] = _Field(None, max_length=150, pattern=r"^[^\r\n]*$")
+    password: Optional[str] = _Field(None, min_length=6, max_length=100)   # M45.S01.T014 optional password
 
 
 @router.post("/{quote_id}/share-links", status_code=201)
@@ -519,6 +531,9 @@ async def create_share_link(quote_id: uuid.UUID, body: ShareLinkIn, db: AsyncSes
         raise HTTPException(422, "Only draft, sent or accepted quotations can be shared")
     _may_share(current_user, q)
     link, token = await docs.create_link(db, q, current_user.id, body.expires_in_days, body.label)
+    if body.password:
+        from app.core.security import hash_password
+        link.password_hash = hash_password(body.password)
     await db.commit()
     return {**docs.link_out(link), "url": f"{settings.PUBLIC_APP_URL.rstrip('/')}/d/{token}"}
 

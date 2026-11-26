@@ -434,6 +434,24 @@ async def invoices(page: int = Query(1, ge=1, le=500), user: PortalUser = Depend
     return await svc.get_portal_invoices(db, user.account, skip=(page - 1) * 50, limit=50)
 
 
+@router.post("/invoices/{invoice_id}/pay-link")
+async def invoice_pay_link(invoice_id: uuid.UUID, user: PortalUser = Depends(ext.get_portal_user), db: AsyncSession = Depends(get_db)):
+    """Billing portal (M45.S01.T014): a fresh payment link for one of the customer's own open invoices."""
+    from app.core.config import settings
+    from app.models.sales import Invoice
+    from app.services import payment_link_service as pls
+    customer = await _customer(db, user)
+    inv = await db.get(Invoice, invoice_id)
+    if inv is None or inv.customer_id != customer.id:
+        raise HTTPException(404, "Invoice not found")
+    try:
+        link, token = await pls.create(db, inv.id, None, 7, True)
+    except pls.LinkError as e:
+        raise HTTPException(e.status, str(e))
+    await db.commit()
+    return {"url": f"{settings.PUBLIC_APP_URL.rstrip('/')}/pay/{token}", "expires_at": link.expires_at.isoformat()}
+
+
 @router.get("/statement")
 async def statement(from_date: Optional[date] = None, to_date: Optional[date] = None,
                     user: PortalUser = Depends(ext.get_portal_user), db: AsyncSession = Depends(get_db)):
