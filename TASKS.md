@@ -2723,7 +2723,7 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable.
   - **Claude checkpoint:** [v] pending milestone gate, tests NOT RUN until gate; never [x] before milestone PASS.
 
-- [ ] M46.S01.T008 — M45 carry-overs (from the M45 gate review, 2026-11-26)
+- [v] M46.S01.T008 — M45 carry-overs (from the M45 gate review, 2026-11-26)
   - **Scope:**
     - Payment-link attempts left PENDING without a callback expire after a timeout, and the balance is released.
     - The M45 daily jobs (intelligence, retention, DQ snapshot, renewals, billing) keep a per-step daily ledger, so one failing step does not skip the others.
@@ -2731,6 +2731,16 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
     - Config bundles strip or remap user ids inside workflow graphs.
   - **Acceptance at milestone gate:** each item has a test.
   - **Claude checkpoint:** [v] pending milestone gate, tests NOT RUN until gate; never [x] before milestone PASS.
+  Implemented 2026-11-26 [v] (tests NOT RUN as gate):
+  - Payment links: a PENDING STK push stops reserving the balance after 15 minutes. A job marks it EXPIRED. A late successful callback still settles, because the money moved.
+  - Daily job ledger (hub_tick.run_daily_steps):
+    - each step runs at most once per day, under an advisory lock;
+    - a failing step is retried on the next tick without skipping the others.
+  - Custom objects are a report-builder source ("co:<key>"):
+    - listed per user, with per-type roles and company scope applied in run and CSV export;
+    - refused without a signed-in user (scheduled runs).
+  - Config bundles: user ids and e-mail addresses inside workflow graphs are stripped on export ("<set after import>").
+  - Tests: tests/test_m46_s01_t008_carryovers.py.
 
 ## M46.S02 — Major milestone acceptance and synchronization
 - [ ] M46.S02.T001 — Run consolidated milestone acceptance once all implementation work is ready: backend/DB/provider-contract/frontend/build/real browser desktop+mobile/synthetic E2E/security/independent review; include relevant prior features, fix and rerun failures, record exact code SHA, commands, results, screenshots and reviewer. No live-provider requirement. Reconcile applicable older [v] rows only if evidence/gate covers them. Update TASKS.md; do not mark [x] on failure.

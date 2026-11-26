@@ -229,6 +229,36 @@ async def import_csv(db: AsyncSession, t: CustomObjectType, text_: str, user) ->
     return {"created": created, "errors": errors[:200]}
 
 
+async def catalog(db: AsyncSession, user) -> dict:
+    """Custom object types this user may read, as report-builder data sources "co:<key>" (M46.S01.T008)."""
+    out = {}
+    for t in (await db.execute(select(CustomObjectType).order_by(CustomObjectType.label))).scalars():
+        if can(user, t, False):
+            fields = [{"path": "display", "label": t.label, "type": "string"}] + [
+                {"path": f["key"], "label": f["label"], "type": "number" if f["type"] == "number" else "string"} for f in t.fields]
+            out[f"co:{t.key}"] = {"label": f"{t.label_plural} (custom)", "module": "custom_objects", "table": None, "fields": fields}
+    return out
+
+
+async def report_rows(db: AsyncSession, key: str, user, paths: list[str], filters: list[dict], limit: int, offset: int) -> dict:
+    """Rows for the report builder, through the same access rules as the object screens (roles + company scope)."""
+    from app.services.report_builder_service import _apply_filter_python
+    t = (await db.execute(select(CustomObjectType).where(CustomObjectType.key == key))).scalar_one_or_none()
+    if t is None or not can(user, t, False):
+        return {"columns": [], "rows": [], "total": 0, "error": "Not found"}
+    allowed = ["display"] + [f["key"] for f in t.fields]
+    cols = [p for p in paths if p in allowed] or allowed[:6]
+    stmt = visible(select(CustomObjectRecord).where(CustomObjectRecord.type_id == t.id), user).order_by(CustomObjectRecord.display)
+    recs = list((await db.execute(stmt.limit(5000))).scalars())
+    rows = [{c: (r.display if c == "display" else r.data.get(c)) for c in cols} for r in recs]
+    for f in filters:
+        if f.get("field_path") in allowed:
+            rows = _apply_filter_python(rows, f["field_path"], f["operator"], f.get("value", ""), f.get("value_to"))
+    total = len(rows)
+    rows = [{k: (None if v is None else str(v)) for k, v in r.items()} for r in rows[offset: offset + limit]]
+    return {"columns": [{"path": c, "label": c, "type": "string"} for c in cols], "rows": rows, "total": total}
+
+
 async def report(db: AsyncSession, t: CustomObjectType, user, group_by: str, metric: Optional[str]) -> list[dict]:
     """Count (and sum of a number field) per value of a field, over the records this user may see."""
     keys = {f["key"]: f for f in t.fields}

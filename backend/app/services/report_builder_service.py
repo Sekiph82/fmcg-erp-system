@@ -278,7 +278,13 @@ def _apply_filter_python(rows: List[Dict], field: str, op: str, value: str, valu
     return result
 
 
-async def _execute_query(db: AsyncSession, data_source: str, fields: List[Dict], filters: List[Dict], limit: int, offset: int) -> Dict:
+async def _execute_query(db: AsyncSession, data_source: str, fields: List[Dict], filters: List[Dict], limit: int, offset: int,
+                         user=None) -> Dict:
+    if data_source.startswith("co:"):   # M46.S01.T008 custom objects: only with a user, filtered by that user's access
+        from app.services import custom_object_service as cos
+        if user is None:
+            return {"columns": [], "rows": [], "total": 0, "error": "Custom-object reports run only for a signed-in user."}
+        return await cos.report_rows(db, data_source[3:], user, [f["path"] for f in fields], filters, limit, offset)
     ds_info = DATA_SOURCES.get(data_source)
     if not ds_info:
         return {"columns": [], "rows": [], "total": 0}
@@ -417,7 +423,7 @@ async def clone_report(db: AsyncSession, report_id: UUID, new_code: str, new_nam
 
 # ── Run Engine ────────────────────────────────────────────────────────────────
 
-async def run_report(db: AsyncSession, report_id: UUID, req: RunRequest) -> RunResult:
+async def run_report(db: AsyncSession, report_id: UUID, req: RunRequest, user=None) -> RunResult:
     report = await get_report(db, report_id)
     if not report:
         return RunResult(report_id=report_id, report_name="Not Found", data_source="", columns=[], rows=[], total_count=0, execution_ms=0, page=1, page_size=req.limit)
@@ -426,7 +432,7 @@ async def run_report(db: AsyncSession, report_id: UUID, req: RunRequest) -> RunR
     fields_meta = [{"path": f.field_path, "alias": f.alias, "aggregation": f.aggregation, "is_group_by": f.is_group_by} for f in report.fields]
     filters_meta = [{"field_path": f.field_path, "operator": f.operator, "value": f.value, "value_to": f.value_to} for f in report.filters]
 
-    result = await _execute_query(db, report.data_source, fields_meta, filters_meta, req.limit, req.offset)
+    result = await _execute_query(db, report.data_source, fields_meta, filters_meta, req.limit, req.offset, user)
     ms = int((time.time() - t0) * 1000)
 
     # Update run stats
@@ -446,8 +452,8 @@ async def run_report(db: AsyncSession, report_id: UUID, req: RunRequest) -> RunR
     )
 
 
-async def export_report_csv(db: AsyncSession, report_id: UUID) -> str:
-    result = await run_report(db, report_id, RunRequest(limit=10000, offset=0))
+async def export_report_csv(db: AsyncSession, report_id: UUID, user=None) -> str:
+    result = await run_report(db, report_id, RunRequest(limit=10000, offset=0), user=user)
     output = io.StringIO()
     writer = csv.DictWriter(output, fieldnames=[c["path"] for c in result.columns])
     writer.writeheader()

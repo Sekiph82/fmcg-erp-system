@@ -1,35 +1,101 @@
-"""Background jobs added in M45, run from the CRM automation loop (every 15 s). Each job uses its own session and
-is isolated: one failing job never stops the others. Jobs are idempotent and cheap when there is nothing to do."""
+"""Background jobs added in M45/M46, run from the CRM automation loop (every 15 s). Each job uses its own session and
+is isolated: one failing job never stops the others. Jobs are idempotent and cheap when there is nothing to do.
+
+Daily steps keep a per-step ledger (ci_settings key "daily_ledger": {step: last successful day}), claimed under an
+advisory lock, so one failing step is retried on the next tick without skipping the others, and two workers never
+run the same step twice (M46.S01.T008).
+"""
 from __future__ import annotations
 
 import logging
 from datetime import date
 
 logger = logging.getLogger(__name__)
-_last_daily: date | None = None
 
 
-async def _daily_customer_intel(db) -> None:
-    global _last_daily
-    from sqlalchemy import select
-    from app.models.customer_intel import CIHealthSnapshot
+async def _step_customer_intel(db) -> None:
     from app.services import customer_intel_service as ci
-    today = date.today()
-    if _last_daily == today:
-        return
-    if (await db.execute(select(CIHealthSnapshot.id).where(CIHealthSnapshot.day == today).limit(1))).first() is None:
-        await ci.run_daily(db)
-        from app.services.customer_data_service import purge_expired   # T002/T003 source retention
-        await purge_expired(db)
-        from app.services.sensitive_service import apply_retention   # T017 retention hook
-        await apply_retention(db)
-        from app.services.data_sync_service import snapshot   # T011 data-quality trend
-        await snapshot(db)
-        from app.services import cpq_service   # T014 contract renewals and recurring billing
-        await cpq_service.renewals_tick(db)
-        await cpq_service.billing_tick(db)
-        await db.commit()
-    _last_daily = today
+    await ci.run_daily(db)
+
+
+async def _step_source_retention(db) -> None:
+    from app.services.customer_data_service import purge_expired
+    await purge_expired(db)
+
+
+async def _step_sensitive_retention(db) -> None:
+    from app.services.sensitive_service import apply_retention
+    await apply_retention(db)
+
+
+async def _step_dq_snapshot(db) -> None:
+    from app.services.data_sync_service import snapshot
+    await snapshot(db)
+
+
+async def _step_renewals(db) -> None:
+    from app.services import cpq_service
+    await cpq_service.renewals_tick(db)
+
+
+async def _step_billing(db) -> None:
+    from app.services import cpq_service
+    await cpq_service.billing_tick(db)
+
+
+async def _step_expire_payment_attempts(db) -> None:
+    from app.services import payment_link_service
+    await payment_link_service.expire_stale(db)
+
+
+DAILY = {"customer_intel": _step_customer_intel, "source_retention": _step_source_retention,
+         "sensitive_retention": _step_sensitive_retention, "dq_snapshot": _step_dq_snapshot,
+         "renewals": _step_renewals, "billing": _step_billing}
+
+
+async def run_daily_steps(db, today: date | None = None) -> dict:
+    """Run each daily step at most once per day; a failure is logged and retried later. Returns {step: status}."""
+    from sqlalchemy import text
+    from app.models.customer_intel import CISetting
+    today = today or date.today()
+    out = {}
+    for name, fn in DAILY.items():
+        got = (await db.execute(text("SELECT pg_try_advisory_xact_lock(hashtext(:k))"), {"k": f"daily:{name}"})).scalar()
+        if not got:
+            out[name] = "busy"
+            await db.rollback()
+            continue
+        row = await db.get(CISetting, "daily_ledger")
+        ledger = dict(row.value) if row else {}
+        if ledger.get(name) == today.isoformat():
+            out[name] = "done"
+            await db.rollback()
+            continue
+        try:
+            await fn(db)
+            row = await db.get(CISetting, "daily_ledger")
+            ledger = dict(row.value) if row else {}
+            ledger[name] = today.isoformat()
+            if row is None:
+                db.add(CISetting(key="daily_ledger", value=ledger, updated_by="scheduler"))
+            else:
+                row.value = ledger
+            await db.commit()
+            out[name] = "ran"
+        except Exception:
+            await db.rollback()
+            logger.exception("daily step %s failed; it is retried on the next tick", name)
+            out[name] = "failed"
+    return out
+
+
+async def _daily(db) -> None:
+    await run_daily_steps(db)
+
+
+async def _payment_attempts(db) -> None:
+    await _step_expire_payment_attempts(db)
+    await db.commit()
 
 
 async def _agents(db) -> None:
@@ -53,7 +119,7 @@ async def _data_sync(db) -> None:
     await data_sync_service.tick(db)
 
 
-JOBS = [_daily_customer_intel, _agents, _warehouse_exports, _sla, _data_sync]
+JOBS = [_daily, _payment_attempts, _agents, _warehouse_exports, _sla, _data_sync]
 
 
 async def tick() -> None:
@@ -63,4 +129,4 @@ async def tick() -> None:
             async with AsyncSessionLocal() as db:
                 await job(db)
         except Exception:
-            logger.exception("M45 job %s failed", job.__name__)
+            logger.exception("hub job %s failed", job.__name__)

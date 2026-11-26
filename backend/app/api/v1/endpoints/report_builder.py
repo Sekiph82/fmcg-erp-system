@@ -25,7 +25,9 @@ router = APIRouter()
 # ── Metadata ──────────────────────────────────────────────────────────────────
 
 @router.get("/catalog", dependencies=[Depends(require_permission("reports", "view"))])
-async def get_catalog():
+async def get_catalog(db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    from app.services import custom_object_service as cos
+    sources = {**svc.DATA_SOURCES, **await cos.catalog(db, current_user)}   # M46.S01.T008 custom objects per user
     return {
         k: {
             "label": v["label"],
@@ -33,7 +35,7 @@ async def get_catalog():
             "field_count": len(v["fields"]),
             "fields": v["fields"],
         }
-        for k, v in svc.DATA_SOURCES.items()
+        for k, v in sources.items()
     }
 
 
@@ -49,8 +51,9 @@ async def get_data_source(data_source: str):
 
 @router.post("/reports", response_model=ReportOut, status_code=201,
              dependencies=[Depends(require_permission("reports", "create"))])
-async def create_report(data: ReportCreate, db: AsyncSession = Depends(get_db)):
-    if data.data_source not in svc.DATA_SOURCES:
+async def create_report(data: ReportCreate, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    from app.services import custom_object_service as cos
+    if data.data_source not in svc.DATA_SOURCES and data.data_source not in await cos.catalog(db, current_user):
         raise HTTPException(400, f"Unknown data source: {data.data_source}")
     return await svc.create_report(db, data)
 
@@ -117,14 +120,14 @@ async def seed_templates(db: AsyncSession = Depends(get_db)):
 
 @router.post("/reports/{report_id}/run", response_model=RunResult,
              dependencies=[Depends(require_permission("reports", "run"))])
-async def run_report(report_id: UUID, req: RunRequest, db: AsyncSession = Depends(get_db)):
-    return await svc.run_report(db, report_id, req)
+async def run_report(report_id: UUID, req: RunRequest, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    return await svc.run_report(db, report_id, req, user=current_user)
 
 
 @router.get("/reports/{report_id}/export",
             dependencies=[Depends(require_permission("reports", "export"))])
-async def export_report(report_id: UUID, db: AsyncSession = Depends(get_db)):
-    csv_data = await svc.export_report_csv(db, report_id)
+async def export_report(report_id: UUID, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    csv_data = await svc.export_report_csv(db, report_id, user=current_user)
     return StreamingResponse(
         io.StringIO(csv_data),
         media_type="text/csv",

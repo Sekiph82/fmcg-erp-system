@@ -24,6 +24,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.payments_hub import PaymentLink, PaymentLinkAttempt
 
 
+PENDING_TTL = timedelta(minutes=15)    # an STK push not answered by then no longer reserves the balance (M46.S01.T008)
+
+
 class LinkError(Exception):
     def __init__(self, status: int, msg: str):
         super().__init__(msg)
@@ -43,7 +46,8 @@ async def open_balance(db: AsyncSession, inv) -> Decimal:
     from app.api.v1.endpoints.field_app import open_to_collect
     pending = (await db.execute(select(func.coalesce(func.sum(PaymentLinkAttempt.amount), 0))
                                 .join(PaymentLink, PaymentLink.id == PaymentLinkAttempt.link_id)
-                                .where(PaymentLink.invoice_id == inv.id, PaymentLinkAttempt.status == "PENDING"))).scalar_one()
+                                .where(PaymentLink.invoice_id == inv.id, PaymentLinkAttempt.status == "PENDING",
+                                       PaymentLinkAttempt.created_at >= _now() - PENDING_TTL))).scalar_one()
     return max(Decimal("0"), Decimal(await open_to_collect(db, inv)) - Decimal(pending)).quantize(Decimal("0.01"))
 
 
@@ -130,8 +134,9 @@ async def on_mpesa_callback(db: AsyncSession, tx) -> Optional[PaymentLinkAttempt
     if tx is None or tx.related_entity_type != "payment_link":
         return None
     a = (await db.execute(select(PaymentLinkAttempt).where(PaymentLinkAttempt.mpesa_tx_id == tx.id).with_for_update())).scalar_one_or_none()
-    if a is None or a.status != "PENDING":
+    if a is None or a.status not in ("PENDING", "EXPIRED"):
         return a                                   # unknown or already settled: replays change nothing
+                                                   # (a late success after expiry still settles: the money moved)
     link = await db.get(PaymentLink, a.link_id, with_for_update=True)
     if tx.status != MpesaTxStatus.SUCCESS:
         a.status = "FAILED"
@@ -157,3 +162,13 @@ async def on_mpesa_callback(db: AsyncSession, tx) -> Optional[PaymentLinkAttempt
     if await open_to_collect(db, inv) <= 0:
         link.status = "PAID"
     return a
+
+
+async def expire_stale(db: AsyncSession, now: Optional[datetime] = None) -> int:
+    """Mark pushes with no callback after PENDING_TTL as EXPIRED, releasing the balance they reserved."""
+    from sqlalchemy import update
+    now = now or _now()
+    res = await db.execute(update(PaymentLinkAttempt).where(PaymentLinkAttempt.status == "PENDING",
+                                                            PaymentLinkAttempt.created_at < now - PENDING_TTL)
+                           .values(status="EXPIRED"))
+    return res.rowcount or 0

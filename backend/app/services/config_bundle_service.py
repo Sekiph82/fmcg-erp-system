@@ -14,6 +14,7 @@ from __future__ import annotations
 import enum
 import hashlib
 import json
+import re
 import uuid
 from datetime import date, datetime, timezone
 from decimal import Decimal
@@ -53,6 +54,22 @@ def _tables():
     import app.models  # noqa: F401
     from app.db.base import Base
     return Base.metadata.tables
+
+
+PEOPLE_KEY = re.compile(r"(^|_)(user|owner|assignee|rep|approver|agent)(_ids?|s)?$", re.I)
+EMAIL = re.compile(r"[^@\s\"']+@[^@\s\"']+\.[a-z]{2,}", re.I)
+
+
+def strip_people(value: Any) -> Any:
+    """Workflow graphs travel between environments: people (user ids, e-mail addresses) do not (M46.S01.T008).
+    Such values become null / "<set after import>" and must be filled in on the target before publishing."""
+    if isinstance(value, dict):
+        return {k: (None if PEOPLE_KEY.search(str(k)) and v not in (None, "", []) else strip_people(v)) for k, v in value.items()}
+    if isinstance(value, list):
+        return [strip_people(v) for v in value]
+    if isinstance(value, str) and EMAIL.search(value):
+        return EMAIL.sub("<set after import>", value)
+    return value
 
 
 def _j(v: Any) -> Any:
@@ -98,7 +115,7 @@ async def export(db: AsyncSession) -> dict:
                 v = tables["crm_workflow_versions"]
                 pub = (await db.execute(select(v.c.graph).where(v.c.id == r["published_version_id"]))).scalar() if r["published_version_id"] else None
                 latest = (await db.execute(select(v.c.graph).where(v.c.workflow_id == r["id"]).order_by(v.c.version_no.desc()).limit(1))).scalar()
-                item["graph"] = pub if pub is not None else latest
+                item["graph"] = strip_people(pub if pub is not None else latest)
             rows.append(item)
         out[spec["table"]] = sorted(rows, key=lambda x: json.dumps([x.get(k) for k in spec["key"]], default=str))
     body = {"format": FORMAT, "format_version": FORMAT_VERSION, "schema_revision": await _revision(db),
