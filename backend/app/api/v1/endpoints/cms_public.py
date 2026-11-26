@@ -19,6 +19,7 @@ from app.db.session import get_db
 from app.models.cms import CmsCta, CmsMedia, CmsPage, CmsPageVersion, CmsRedirect, CmsSite
 from app.services import cms_media_service as media
 from app.services import cms_personalize as pz
+from app.services import cms_layout_service as L
 from app.services import cms_service as cms
 
 router = APIRouter()
@@ -85,7 +86,7 @@ async def page(key: str, request: Request, response: Response, path: str = Query
     if row is not None:
         blocks = cms._fill_row(blocks, row)
     who = await pz.visitor(db, visitor, p.locale, portal_user)
-    blocks = await cms.expand(db, s, blocks, public=p.access == "PUBLIC")   # embeds first, so their blocks are personalized too
+    blocks = await cms.expand(db, s, blocks, public=p.access == "PUBLIC", locale=p.locale)   # embeds first, so their blocks are personalized too
     blocks = pz.personalize(blocks, who)
     blocks, picked = await pz.choose(db, p, blocks, who)
     keys = [b["cta"]["key"] for b in blocks if b.get("cta")]
@@ -98,10 +99,14 @@ async def page(key: str, request: Request, response: Response, path: str = Query
     title = (row.values or {}).get("name") if row is not None else None
     meta = v.content.get("meta") or {}
     blocks = pz.strip(blocks)
+    tokens = await L.effective_tokens(db, s)                                  # M51: approved brand tokens → css per breakpoint
+    blocks = L.attach_css(blocks, tokens)
+    frame = await L.public_layout(db, s, v.content.get("layout"), p.locale, tokens)
     seo = dict(v.content.get("seo") or {})
     if p.access == "MEMBERS":
         seo["noindex"] = True
-    return {"site": _site_public(s),
+    site_out = {**_site_public(s), "theme": await L.theme_for(db, s, tokens)}
+    return {"site": site_out, "layout": frame,
             "page": {"id": str(p.id), "title": title or v.title, "kind": p.kind, "locale": p.locale, "path": path, "author": meta.get("author"),
                      "category": meta.get("category"), "tags": meta.get("tags") or [], "published_at": v.published_at.isoformat(), "version": v.version,
                      "members_only": p.access == "MEMBERS"},

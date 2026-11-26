@@ -1,0 +1,7 @@
+# M51.S01.T007 optional neural TTS (not installed by default; ffmpeg and espeak-ng come from the Docker image via apt).
+# Install into the backend image only when owner wants piper voices: pip install -r requirements-media.txt
+# then download voice models (.onnx + .onnx.json) into PIPER_VOICES_DIR and set TTS_ENGINE=piper.
+#   python -m piper.download_voices en_US-lessac-low sw_CD-lanfrica-medium tr_TR-dfki-medium --data-dir /var/lib/fmcg-erp/voices
+# Licences: piper-tts GPL-3.0-or-later (run as a separate process, not imported by the app); voice models: see each model card
+# (lessac: Blizzard licence note, lanfrica/dfki: check the card before commercial use).
+piper-tts==1.3.0

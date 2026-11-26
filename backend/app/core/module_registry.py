@@ -590,6 +590,12 @@ ENDPOINT_ROUTE_DEFINITIONS: tuple[EndpointRouteDefinition, ...] = (
     EndpointRouteDefinition(key="marketing_studio", route_prefix="/marketing-studio", import_path="app.api.v1.endpoints.marketing_studio", tags=('marketing',)),  # M49.S01.T012
     EndpointRouteDefinition(key="m50_prospecting", route_prefix="/prospecting-agent", import_path="app.api.v1.endpoints.m50_prospecting", tags=('crm',)),  # M50.S01.T001-T004
     EndpointRouteDefinition(key="business_card_ocr", route_prefix="/crm/card-ocr", import_path="app.api.v1.endpoints.business_card_ocr", tags=('crm',)),  # M50.S01.T010
+    EndpointRouteDefinition(key="cms_layout", route_prefix="/cms-layout", import_path="app.api.v1.endpoints.cms_layout", tags=('content',)),  # M51.S01.T001-T002
+    EndpointRouteDefinition(key="m51_seo", route_prefix="/seo-pro", import_path="app.api.v1.endpoints.m51_seo", tags=('marketing',)),  # M51.S01.T003-T005
+    EndpointRouteDefinition(key="m51_visitor_verify", route_prefix="/visitor-verification", import_path="app.api.v1.endpoints.m51_visitor_verify", tags=('marketing',)),  # M51.S01.T009
+    EndpointRouteDefinition(key="m51_visitor_verify_public", route_prefix="/public/visitor-verify", import_path="app.api.v1.endpoints.m51_visitor_verify_public", tags=('marketing',)),  # M51.S01.T009
+    EndpointRouteDefinition(key="m51_media", route_prefix="/media-studio", import_path="app.api.v1.endpoints.m51_media", tags=('content',)),  # M51.S01.T006/T007/T010
+    EndpointRouteDefinition(key="m51_media_public", route_prefix="/public/media-files", import_path="app.api.v1.endpoints.m51_media_public", tags=('content',)),  # M51.S01.T010
     EndpointRouteDefinition(key="booking_pages", route_prefix="/booking-pages", import_path="app.api.v1.endpoints.booking_pages", tags=('meetings',)),
     EndpointRouteDefinition(key="booking_public", route_prefix="/public/book", import_path="app.api.v1.endpoints.booking_public", tags=('meetings',)),
     EndpointRouteDefinition(key="oauth_connections", route_prefix="/integrations/oauth", import_path="app.api.v1.endpoints.oauth_connections", tags=('integrations',)),
@@ -795,6 +801,12 @@ PUBLIC_ROUTES: frozenset[tuple[str, str]] = frozenset({
     ("/public/crm-addin/auth/revoke", "POST"),
     ("/public/crm-addin/thread", "GET"),                                  # bearer add-in token (scoped, short-lived)
     ("/public/crm-addin/whoami", "GET"),
+    ("/public/visitor-verify/request", "POST"),            # M51.S01.T009 identical answers, per-IP/e-mail/visitor limits
+    ("/public/visitor-verify/confirm", "POST"),            # hashed single-use token/code bound to visitor + session
+    ("/public/visitor-verify/status", "POST"),
+    ("/public/visitor-verify/revoke", "POST"),
+    ("/public/media-files/{token}", "GET"),                # M51.S01.T010 HMAC-signed short-lived token, DB re-check
+    ("/public/media-files/member/{cms_media_id}", "POST"), # portal cookie + CMS access list
     ("/public/docs/{token}", "GET"),                       # shared sales document (M45.S01.T013): token, expiry, revocation
     ("/public/docs/{token}/view", "POST"),
     ("/public/docs/{token}/file", "GET"),                  # only APPROVED + malware-scan CLEAN files

@@ -262,6 +262,8 @@ const MarketIntelPage         = dynamic(() => import("@/app/dashboard/market-int
 const WebsitePage             = dynamic(() => import("@/app/dashboard/marketing/website/page"),     { ssr: false });   // M46
 const ContentStudioPage       = dynamic(() => import("@/app/dashboard/marketing/content-studio/page"), { ssr: false });
 const MarketingStudioPage     = dynamic(() => import("@/app/dashboard/marketing/studio/page"), { ssr: false });   // M49.S01.T012
+const SeoProPage            = dynamic(() => import("@/app/dashboard/marketing/seo-pro/page"), { ssr: false });   // M51.S01.T003-T005/T009
+const MediaStudioPage        = dynamic(() => import("@/app/dashboard/marketing/media-studio/page"), { ssr: false });   // M51.S01.T006/T007/T010
 const MembersMediaPage        = dynamic(() => import("@/app/dashboard/marketing/members-media/page"), { ssr: false });
 
 export default function MarketingPage() {
@@ -284,6 +286,8 @@ export default function MarketingPage() {
     { key: "analytics",     label: "Analytics",        permission: "marketing_analytics.view", content: <MarketingAnalyticsPage /> },
     { key: "website",       label: "Website & blog",   permission: "marketing.view", content: <WebsitePage /> },
     { key: "content-studio", label: "Content studio",  permission: "marketing.view", content: <ContentStudioPage /> },
+    { key: "media-studio", label: "Media studio",     permission: "marketing.view", content: <MediaStudioPage /> },
+    { key: "seo-pro",      label: "SEO & AEO",        permission: "marketing.view", content: <SeoProPage /> },
     { key: "members-media", label: "Members & media",  permission: "marketing.view", content: <MembersMediaPage /> },
   ];
   return (

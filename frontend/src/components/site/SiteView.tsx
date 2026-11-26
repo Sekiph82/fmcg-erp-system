@@ -10,6 +10,7 @@ export type PageData = {
   page: { id: string; title: string; kind: string; locale: string; path: string; author: string | null; category: string | null; tags: string[];
     published_at: string; version: number; members_only: boolean };
   blocks: Block[]; seo: { meta_title?: string; meta_description?: string; noindex?: boolean; keywords?: string[]; og_image?: string; canonical?: string };
+  layout?: { header: Block[]; nav: Block[]; footer: Block[] };      // M51 shared header / navigation / footer components
   alternates: { locale: string; path: string }[]; json_ld: object[]; experiments: Record<string, string>; personalized: boolean; canonical: string;
 };
 
@@ -60,10 +61,13 @@ export default function SiteView({ siteKey, locale, path, initial, initialStatus
     <div style={{ background: theme.background, color: theme.text_color, fontFamily: theme.font }} className="min-h-screen">
       {data.json_ld.map((ld, i) => <script key={i} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ld).replace(/</g, "\\u003c") }} />)}
       <header className="border-b" style={{ borderColor: `${theme.brand_color}33` }}>
+        {data.layout?.header.length ? <div className="max-w-5xl mx-auto px-4"><SiteBlocks blocks={data.layout.header} theme={theme} base={base} siteKey={siteKey} /></div> : null}
         <div className="max-w-5xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
-          <a href={base} className="font-bold text-lg" style={{ color: theme.brand_color }}>{data.site.name}</a>
-          <nav aria-label={t("public.site.mainNav")} className="flex flex-wrap gap-4 text-sm">{data.site.nav.filter((n) => !n.locale || n.locale === data.page.locale).map((n) =>
-            <a key={n.path + n.label} href={n.path.startsWith("/") ? `${base}${n.path === "/" ? "" : n.path}` : n.path} className="hover:underline">{n.label}</a>)}</nav>
+          {!data.layout?.header.length && <a href={base} className="font-bold text-lg" style={{ color: theme.brand_color }}>{data.site.name}</a>}
+          {data.layout?.nav.length
+            ? <nav aria-label={t("public.site.mainNav")}><SiteBlocks blocks={data.layout.nav} theme={theme} base={base} siteKey={siteKey} /></nav>
+            : <nav aria-label={t("public.site.mainNav")} className="flex flex-wrap gap-4 text-sm">{data.site.nav.filter((n) => !n.locale || n.locale === data.page.locale).map((n) =>
+              <a key={n.path + n.label} href={n.path.startsWith("/") ? `${base}${n.path === "/" ? "" : n.path}` : n.path} className="hover:underline">{n.label}</a>)}</nav>}
           {data.alternates.length > 1 && <nav aria-label={t("common.language")} className="flex flex-wrap gap-2 text-xs">{data.alternates.map((a) =>
             <a key={a.locale} hrefLang={a.locale} lang={a.locale} href={`/site/${siteKey}/${a.locale}${a.path === "/" ? "" : a.path}`}
               className={a.locale === data.page.locale ? "font-bold underline" : "opacity-70"}>{LOCALE_NAME[a.locale as Locale] ?? a.locale}</a>)}</nav>}
@@ -74,7 +78,9 @@ export default function SiteView({ siteKey, locale, path, initial, initialStatus
           <p className="text-sm opacity-70">{data.page.author && `${t("public.site.by", { author: data.page.author })} · `}{formatters(asLocale(data.page.locale)).date(data.page.published_at)}{data.page.category ? ` · ${data.page.category}` : ""}</p></div>}
         <SiteBlocks blocks={data.blocks} theme={theme} base={base} siteKey={siteKey} />
       </main>
-      <footer className="max-w-5xl mx-auto px-4 py-6 text-xs opacity-60">© {data.site.name}</footer>
+      {data.layout?.footer.length
+        ? <footer><SiteBlocks blocks={data.layout.footer} theme={theme} base={base} siteKey={siteKey} /></footer>
+        : <footer className="max-w-5xl mx-auto px-4 py-6 text-xs opacity-60">© {data.site.name}</footer>}
     </div>
   );
 }

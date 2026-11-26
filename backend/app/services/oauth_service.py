@@ -39,6 +39,9 @@ SCOPES = {
     # for getSchedule. None of them is in REQUIRED_GRANTS: an older connection keeps working, the new feature says so.
     ("google", "calendar"): ["openid", "email", "https://www.googleapis.com/auth/calendar.events",
                              "https://www.googleapis.com/auth/calendar.freebusy"],
+    # M51.S01.T003 Google Search Console: read-only analytics/inspection; the _edit purpose adds sitemap submission
+    ("google", "searchconsole"): ["openid", "email", "https://www.googleapis.com/auth/webmasters.readonly"],
+    ("google", "searchconsole_edit"): ["openid", "email", "https://www.googleapis.com/auth/webmasters"],
     ("microsoft", "mail"): ["openid", "email", "offline_access", "User.Read", "Mail.ReadWrite", "Mail.Send",
                             "Mail.Read.Shared", "Mail.Send.Shared"],
     ("microsoft", "calendar"): ["openid", "email", "offline_access", "User.Read", "Calendars.ReadWrite",
@@ -48,6 +51,8 @@ SCOPES = {
 REQUIRED_GRANTS = {
     ("google", "mail"): {"https://www.googleapis.com/auth/gmail.readonly", "https://www.googleapis.com/auth/gmail.send"},
     ("google", "calendar"): {"https://www.googleapis.com/auth/calendar.events"},
+    ("google", "searchconsole"): {"https://www.googleapis.com/auth/webmasters.readonly"},
+    ("google", "searchconsole_edit"): {"https://www.googleapis.com/auth/webmasters"},
     ("microsoft", "mail"): {"mail.readwrite", "mail.send"},
     ("microsoft", "calendar"): {"calendars.readwrite"},
 }

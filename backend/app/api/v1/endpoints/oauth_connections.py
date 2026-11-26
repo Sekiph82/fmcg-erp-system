@@ -73,7 +73,8 @@ async def callback(request: Request, state: str = Query("", max_length=128),
                    code: Optional[str] = Query(None, max_length=4096),
                    error: Optional[str] = Query(None, max_length=100), db: AsyncSession = Depends(get_db)):
     # mail connections return to the mailbox screen, calendar connections to meetings (both show ConnectedAccounts)
-    pages = {"mail": "/dashboard/email", "calendar": "/dashboard/meetings"}
+    pages = {"mail": "/dashboard/email", "calendar": "/dashboard/meetings",
+             "searchconsole": "/dashboard/marketing/seo-pro", "searchconsole_edit": "/dashboard/marketing/seo-pro"}
     target = settings.PUBLIC_APP_URL.rstrip("/") + "/dashboard/email"
     import hmac as _hmac
     if not _hmac.compare_digest(request.cookies.get(BIND_COOKIE, ""), _bind(state or "-")):

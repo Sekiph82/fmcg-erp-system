@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { apiClient } from "@/lib/api";
 import BlockEditor from "@/components/site/BlockEditor";
+import LibraryPanel from "@/components/site/LibraryPanel";
 import { SiteBlocks, type Block, type Theme } from "@/components/site/SiteBlocks";
 
 type Site = { id: string; key: string; name: string; locales: string[]; default_locale: string; domain: string | null; domain_status: string; theme: Theme; nav: { label: string; path: string }[]; require_approval: boolean; local_url: string };
@@ -51,8 +52,11 @@ function Editor({ id, site, pages, acls, tables, reload, say }: { id: string; si
   const [aeo, setAeo] = useState<any>(null);
   const [exps, setExps] = useState<any[]>([]);
   const [aiTr, setAiTr] = useState(false);
+  const [lay, setLay] = useState<Record<string, string>>({});                       // M51 per-page header / nav / footer override
+  const [lib, setLib] = useState<{ id: string; key: string; kind: string; name: string; live_version_id: string | null }[]>([]);
+  useEffect(() => { apiClient.get(`/api/v1/cms-layout/sites/${site.id}/components`).then((r) => setLib(r.data)).catch(() => setLib([])); }, [site.id]);
   const load = useCallback(() => apiClient.get(`/api/v1/cms/pages/${id}`).then((r) => {
-    setD(r.data); setBlocks(r.data.draft?.blocks ?? []); setSeo(r.data.draft?.seo ?? {});
+    setD(r.data); setBlocks(r.data.draft?.blocks ?? []); setSeo(r.data.draft?.seo ?? {}); setLay(r.data.draft?.layout ?? {});
     setMeta({ title: r.data.title, slug: r.data.slug, author: r.data.author ?? "", category: r.data.category ?? "", tags: (r.data.tags ?? []).join(", "), parent_id: r.data.parent_id ?? "" });
     apiClient.get(`/api/v1/cms/pages/${id}/experiments`).then((x) => setExps(x.data)).catch(() => setExps([]));
   }).catch((e) => say(err(e))), [id, say]);
@@ -60,7 +64,7 @@ function Editor({ id, site, pages, acls, tables, reload, say }: { id: string; si
   if (!d) return <p className="text-xs">Loading…</p>;
   const act = (path: string, body: object = {}) => apiClient.post(`/api/v1/cms/pages/${id}/${path}`, body).then(() => { say("Done."); load(); reload(); }).catch((e) => say(err(e)));
   const save = () => {
-    let draft = { blocks, seo };
+    let draft: object = { blocks, seo, ...(Object.keys(lay).length ? { layout: lay } : {}) };
     if (json !== null) { try { draft = JSON.parse(json); } catch { say("The JSON is not valid."); return; } }
     return apiClient.patch(`/api/v1/cms/pages/${id}`, { title: meta.title, slug: meta.slug, draft, author: meta.author, category: meta.category,
       tags: meta.tags.split(",").map((t) => t.trim()).filter(Boolean), parent_id: meta.parent_id || null })
@@ -97,7 +101,13 @@ function Editor({ id, site, pages, acls, tables, reload, say }: { id: string; si
       </Panel>
       <Panel title="Content">
         <div className="flex gap-2 text-xs"><button className="underline" onClick={() => setJson(json === null ? JSON.stringify({ blocks, seo }, null, 2) : null)}>{json === null ? "JSON view" : "Visual editor"}</button></div>
-        {json === null ? <BlockEditor blocks={blocks} onChange={setBlocks} /> : <textarea aria-label="Page JSON" className="w-full border rounded font-mono text-xs" rows={16} value={json} onChange={(e) => setJson(e.target.value)} />}
+        {json === null ? <>
+          <fieldset className="border rounded p-2 text-xs"><legend>Site frame for this page</legend><div className="grid gap-2 sm:grid-cols-3">
+            {(["header", "nav", "footer"] as const).map((slot) => <label key={slot} className="block capitalize">{slot}
+              <select aria-label={`Page ${slot}`} className="border rounded block w-full" value={lay[slot] ?? "inherit"} onChange={(e) => setLay((l) => { const n = { ...l, [slot]: e.target.value }; if (e.target.value === "inherit") delete n[slot]; return n; })}>
+                <option value="inherit">inherit from site</option><option value="none">none on this page</option>
+                {lib.filter((i) => i.kind === slot.toUpperCase() && i.live_version_id).map((i) => <option key={i.key} value={i.key}>{i.name}</option>)}</select></label>)}</div></fieldset>
+          <BlockEditor blocks={blocks} onChange={setBlocks} siteId={site.id} locale={d.locale} extraDoc={Object.keys(lay).length ? { layout: lay } : undefined} library={lib} /></> : <textarea aria-label="Page JSON" className="w-full border rounded font-mono text-xs" rows={16} value={json} onChange={(e) => setJson(e.target.value)} />}
         <div className="flex flex-wrap gap-2 text-xs pt-2 border-t">
           <button className="bg-indigo-600 text-white rounded px-3 py-1" onClick={save}>Save draft</button>
           <button className="border rounded px-3 py-1" onClick={() => apiClient.get(`/api/v1/cms/pages/${id}/preview`).then((r) => setPreview(r.data)).catch((e) => say(err(e)))}>Preview</button>
@@ -197,13 +207,16 @@ export default function WebsitePage() {
   const [msg, setMsg] = useState<string | null>(null);
   const [nf, setNf] = useState({ title: "", kind: "PAGE", locale: "en", table_id: "" });
   const [ns, setNs] = useState({ name: "", key: "" });
-  const [view, setView] = useState<"pages" | "settings" | "data">("pages");
+  const [tpls, setTpls] = useState<{ key: string; name: string }[]>([]);
+  const [tpl, setTpl] = useState("");
+  const [view, setView] = useState<"pages" | "settings" | "data" | "library">("pages");
   const say = useCallback((m: string) => setMsg(m), []);
   const loadSites = useCallback(() => apiClient.get("/api/v1/cms/sites").then((r) => { setSites(r.data); setSite((s) => r.data.find((x: Site) => x.id === s?.id) ?? r.data[0] ?? null); }).catch((e) => say(err(e))), [say]);
   const loadPages = useCallback(() => { if (site) apiClient.get(`/api/v1/cms/sites/${site.id}/pages`).then((r) => setPages(r.data)).catch(() => setPages([])); }, [site]);
   useEffect(() => { loadSites(); apiClient.get("/api/v1/cms/access-lists").then((r) => setAcls(r.data)).catch(() => {}); }, [loadSites]);
   useEffect(() => { loadPages(); if (site) apiClient.get(`/api/v1/cms/sites/${site.id}/tables`).then((r) => setTables(r.data)).catch(() => setTables([])); }, [loadPages, site]);
-  const create = () => site && apiClient.post("/api/v1/cms/pages", { site_id: site.id, title: nf.title, kind: nf.kind, locale: nf.locale, ...(nf.kind === "DYNAMIC" && nf.table_id ? { table_id: nf.table_id } : {}) })
+  useEffect(() => { if (site) apiClient.get(`/api/v1/cms-layout/sites/${site.id}/components`, { params: { kind: "PAGE_TEMPLATE" } }).then((r) => setTpls(r.data.filter((i: { live_version_id: string | null }) => i.live_version_id))).catch(() => setTpls([])); setTpl(""); }, [site]);
+  const create = () => site && (tpl && nf.kind === "PAGE" ? apiClient.post("/api/v1/cms-layout/pages/from-template", { site_id: site.id, template_key: tpl, title: nf.title, locale: nf.locale }) : apiClient.post("/api/v1/cms/pages", { site_id: site.id, title: nf.title, kind: nf.kind, locale: nf.locale, ...(nf.kind === "DYNAMIC" && nf.table_id ? { table_id: nf.table_id } : {}) }))
     .then((r) => { setSel(r.data.id); setNf({ ...nf, title: "" }); loadPages(); }).catch((e) => say(err(e)));
   return (
     <div className="p-4 space-y-3 text-sm">
@@ -216,10 +229,11 @@ export default function WebsitePage() {
         <input aria-label="New site name" placeholder="New site name" className="border rounded px-1" value={ns.name} onChange={(e) => setNs({ ...ns, name: e.target.value })} />
         <input aria-label="New site key" placeholder="key" className="border rounded px-1 w-24" value={ns.key} onChange={(e) => setNs({ ...ns, key: e.target.value })} />
         <button className="border rounded px-2" onClick={() => apiClient.post("/api/v1/cms/sites", ns).then(() => { setNs({ name: "", key: "" }); loadSites(); }).catch((e) => say(err(e)))}>Create site</button>
-        {site && <span className="ml-auto flex gap-3">{(["pages", "settings", "data"] as const).map((v) => <button key={v} className={view === v ? "font-bold underline" : ""} onClick={() => setView(v)}>{v === "data" ? "Redirects, CTAs, tables, keywords" : v[0].toUpperCase() + v.slice(1)}</button>)}</span>}
+        {site && <span className="ml-auto flex gap-3">{(["pages", "library", "settings", "data"] as const).map((v) => <button key={v} className={view === v ? "font-bold underline" : ""} onClick={() => setView(v)}>{v === "data" ? "Redirects, CTAs, tables, keywords" : v === "library" ? "Library & theme" : v[0].toUpperCase() + v.slice(1)}</button>)}</span>}
       </div>
       {site && view === "settings" && <SiteSettings key={site.id} site={site} onSaved={loadSites} say={say} />}
       {site && view === "data" && <SiteData site={site} say={say} />}
+      {site && view === "library" && <LibraryPanel key={site.id} siteId={site.id} locales={site.locales} say={say} />}
       {site && view === "pages" && <div className="grid gap-3 lg:grid-cols-[18rem_1fr]">
         <aside className="space-y-2">
           <div className="border rounded p-2 bg-white space-y-1 text-xs">
@@ -229,6 +243,7 @@ export default function WebsitePage() {
               <select aria-label="Page language" className="border rounded" value={nf.locale} onChange={(e) => setNf({ ...nf, locale: e.target.value })}>{site.locales.map((l) => <option key={l}>{l}</option>)}</select>
               {nf.kind === "DYNAMIC" && <select aria-label="Data table" className="border rounded" value={nf.table_id} onChange={(e) => setNf({ ...nf, table_id: e.target.value })}><option value="">table…</option>{tables.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}</select>}
               <button className="bg-indigo-600 text-white rounded px-2" onClick={create}>Add</button></div>
+            {nf.kind === "PAGE" && tpls.length > 0 && <select aria-label="Start from template" className="border rounded w-full" value={tpl} onChange={(e) => setTpl(e.target.value)}><option value="">blank page</option>{tpls.map((t) => <option key={t.key} value={t.key}>Template: {t.name}</option>)}</select>}
           </div>
           <ul className="border rounded bg-white divide-y text-xs">{pages.length === 0 ? <li className="p-2 text-gray-500">No pages yet.</li> : pages.map((p) =>
             <li key={p.id} className={`p-2 cursor-pointer ${sel === p.id ? "bg-indigo-50" : ""}`} onClick={() => setSel(p.id)} style={{ paddingLeft: 8 + 10 * (p.path.split("/").length - 2) }}>

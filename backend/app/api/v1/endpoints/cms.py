@@ -348,8 +348,10 @@ async def preview(page_id: uuid.UUID, version: Optional[int] = None, db: AsyncSe
             doc, _ = cms.validate_doc(p.draft or {})
         except cms.CmsError as e:
             _fail(e)
-    blocks = await cms.expand(db, s, doc["blocks"])
-    return {"preview": True, "site": _site_out(s), "page": {"title": p.title, "kind": p.kind, "locale": p.locale, "path": p.path,
+    from app.services import cms_layout_service as L
+    tokens = await L.effective_tokens(db, s)
+    blocks = L.attach_css(await cms.expand(db, s, doc["blocks"], locale=p.locale), tokens)
+    return {"preview": True, "site": {**_site_out(s), "theme": await L.theme_for(db, s, tokens)}, "page": {"title": p.title, "kind": p.kind, "locale": p.locale, "path": p.path,
             "author": p.author, "category": p.category}, "blocks": blocks, "seo": doc.get("seo", {})}
 
 

@@ -90,7 +90,7 @@ def strip(blocks: list) -> list:
     out = []
     for b in blocks:
         b = {k: v for k, v in b.items() if k not in RULE_KEYS}
-        for k in ("left", "right", "blocks"):
+        for k in ("left", "right", "blocks", "children"):
             if isinstance(b.get(k), list):
                 b[k] = strip(b[k])
         out.append(b)
@@ -98,7 +98,7 @@ def strip(blocks: list) -> list:
 
 
 def _nested(b: dict, fn) -> dict:
-    return {**b, **{k: fn(b[k]) for k in ("left", "right", "blocks") if isinstance(b.get(k), list)}}
+    return {**b, **{k: fn(b[k]) for k in ("left", "right", "blocks", "children") if isinstance(b.get(k), list)}}
 
 
 def personalize(blocks: list, v: Visitor) -> list:
@@ -122,7 +122,7 @@ def _experiment_groups(blocks: list, groups: dict) -> dict:
             vs = groups.setdefault(b["experiment"]["key"], [])
             if b["experiment"]["variant"] not in vs:
                 vs.append(b["experiment"]["variant"])
-        for k in ("left", "right", "blocks"):
+        for k in ("left", "right", "blocks", "children"):
             if isinstance(b.get(k), list):
                 _experiment_groups(b[k], groups)
     return groups

@@ -7,6 +7,34 @@ import { API_ORIGIN } from "@/lib/api";
 
 export type Theme = { brand_color: string; text_color: string; background: string; accent: string; font: string; radius: string };
 export type Block = Record<string, any> & { type: string; id?: string };
+export type Bp = "desktop" | "tablet" | "mobile";
+
+// M51 responsive layout. `css` comes from the server (fixed lookup tables over an allow-list); it is filtered again here
+// and applied as React inline style, never as text. The editor canvas forces a breakpoint through BpContext.
+export const BpContext = React.createContext<Bp | "auto">("auto");
+export const CanvasContext = React.createContext(false);
+const CSS_KEYS = new Set(["paddingTop", "paddingBottom", "paddingLeft", "paddingRight", "marginTop", "marginBottom", "marginLeft", "marginRight", "textAlign", "maxWidth",
+  "fontSize", "fontWeight", "fontFamily", "lineHeight", "color", "backgroundColor", "borderStyle", "borderWidth", "borderColor", "borderRadius", "boxShadow", "display",
+  "gridTemplateColumns", "gap", "alignItems", "justifyContent", "gridColumn", "minWidth"]);
+const CSS_VALUE = /^[#A-Za-z0-9 ,.\-()/%]*$/;
+export function safeCss(css?: Record<string, string | number>): React.CSSProperties | undefined {
+  if (!css) return undefined;
+  const out: Record<string, string | number> = {};
+  for (const [k, v] of Object.entries(css)) if (CSS_KEYS.has(k) && (typeof v === "number" || (typeof v === "string" && CSS_VALUE.test(v)))) out[k] = v;
+  return out as React.CSSProperties;
+}
+export function useBp(): Bp {
+  const forced = React.useContext(BpContext);
+  const [bp, setBp] = React.useState<Bp>("desktop");
+  React.useEffect(() => {
+    if (forced !== "auto" || typeof window === "undefined" || !window.matchMedia) return;
+    const lg = window.matchMedia("(min-width: 1024px)"), sm = window.matchMedia("(min-width: 640px)");
+    const f = () => setBp(lg.matches ? "desktop" : sm.matches ? "tablet" : "mobile");
+    f(); lg.addEventListener("change", f); sm.addEventListener("change", f);
+    return () => { lg.removeEventListener("change", f); sm.removeEventListener("change", f); };
+  }, [forced]);
+  return forced === "auto" ? bp : forced;
+}
 
 const safe = (u: string) => (/^\/(?!\/)/.test(u) || /^https?:\/\//i.test(u) ? u : "#");
 
@@ -61,8 +89,23 @@ function Media({ b }: { b: Block }) {
 }
 
 export function SiteBlocks({ blocks, theme, base, siteKey }: { blocks: Block[]; theme: Theme; base: string; siteKey: string }) {
+  const bp = useBp();
+  const canvas = React.useContext(CanvasContext);
+  const kids = (list?: Block[]) => <SiteBlocks blocks={list ?? []} theme={theme} base={base} siteKey={siteKey} />;
   const one = (b: Block, i: number): React.ReactNode => {
     const k = b.id ?? i;
+    if ((b.hide ?? []).includes(bp)) return null;
+    const css = safeCss(b.css?.[bp]);
+    const id = { "data-block-id": b.id };
+    switch (b.type) {
+      case "section": { const Tag = (["section", "aside", "article"].includes(b.as) ? b.as : "div") as "div"; return <Tag key={k} style={css} {...id} aria-label={b.as !== "div" && b.label ? b.label : undefined}>{kids(b.children)}</Tag>; }
+      case "row": case "column": case "grid": return <div key={k} style={css} {...id}>{kids(b.children)}</div>;
+      case "component": return <div key={k} style={css} {...id}>{kids(b.blocks)}</div>;
+    }
+    const node = leaf(b, k);
+    return node && (css || canvas) ? <div key={k} style={css} {...id}>{node}</div> : node;
+  };
+  const leaf = (b: Block, k: React.Key): React.ReactNode => {
     switch (b.type) {
       case "hero":
         return <section key={k} className="py-10 sm:py-16 text-center space-y-4" style={b.image ? { backgroundImage: `url(${JSON.stringify(safe(b.image))})`, backgroundSize: "cover" } : {}}>

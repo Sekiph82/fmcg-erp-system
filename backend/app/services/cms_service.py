@@ -29,7 +29,7 @@ from app.models.cms import CmsCta, CmsPage, CmsPageVersion, CmsRedirect, CmsSite
 
 LOCALES = ("en", "sw", "tr")
 BLOCK_TYPES = ("heading", "text", "image", "button", "cta", "columns", "divider", "spacer", "form", "embed", "faq",
-               "table", "video", "audio", "product", "hero")
+               "table", "video", "audio", "product", "hero", "section", "row", "column", "grid", "component")
 THEME_KEYS = {"brand_color": "#1D4ED8", "text_color": "#111827", "background": "#FFFFFF", "accent": "#F59E0B",
               "font": "Inter, Arial, sans-serif", "radius": "8"}
 HEX = re.compile(r"^#[0-9A-Fa-f]{6}$")
@@ -91,10 +91,30 @@ def _audience(a: dict) -> dict:
     return out
 
 
-def validate_block(b: dict, warnings: list[str], depth: int = 0) -> dict:
+def kids(b: dict) -> list[list]:
+    """Every child list of a block (legacy two-column left/right and the M51 layout `children`)."""
+    return [b[k] for k in ("left", "right", "children") if isinstance(b.get(k), list)]
+
+
+def flat(blocks: list) -> list:
+    """All blocks of a tree, depth first (containers and legacy columns included)."""
+    out = []
+    for b in blocks:
+        out.append(b)
+        for ch in kids(b):
+            out += flat(ch)
+    return out
+
+
+def validate_block(b: dict, warnings: list[str], depth: int = 0, parent: str = "") -> dict:
+    from app.services import cms_layout_service as L
+    if not isinstance(b, dict):
+        raise CmsError("A block must be an object")
     t = b.get("type")
-    if t not in BLOCK_TYPES or (depth and t in ("columns", "hero")):
+    if t not in BLOCK_TYPES or (parent == "columns" and t in ("columns", "hero")) or (t == "column" and parent != "row"):
         raise CmsError(f"Unknown or misplaced block: {t!r}")
+    if depth > L.MAX_DEPTH:
+        raise CmsError(f"Layouts nest at most {L.MAX_DEPTH} levels")
     o: dict = {"type": t, "id": re.sub(r"[^\w-]", "", str(b.get("id") or uuid.uuid4().hex[:8]))[:20]}
     if b.get("audience"):
         o["audience"] = _audience(b["audience"])
@@ -147,8 +167,29 @@ def validate_block(b: dict, warnings: list[str], depth: int = 0) -> dict:
         if b.get("image"):
             o["image"] = https(b["image"])
     elif t == "columns":
-        o["left"] = [validate_block(x, warnings, depth + 1) for x in (b.get("left") or [])[:20]]
-        o["right"] = [validate_block(x, warnings, depth + 1) for x in (b.get("right") or [])[:20]]
+        o["left"] = [validate_block(x, warnings, depth + 1, "columns") for x in (b.get("left") or [])[:20]]
+        o["right"] = [validate_block(x, warnings, depth + 1, "columns") for x in (b.get("right") or [])[:20]]
+    elif t in L.CONTAINERS:
+        ch = b.get("children") or []
+        if not isinstance(ch, list):
+            raise CmsError("children must be a list")
+        if t == "row" and any(not isinstance(x, dict) or x.get("type") != "column" for x in ch):
+            raise CmsError("A row holds columns only")
+        o["children"] = [validate_block(x, warnings, depth + 1, t) for x in ch[:L.MAX_CHILDREN]]
+        if t == "section":
+            o["as"] = b.get("as") if b.get("as") in L.SECTION_TAGS else "div"
+            if b.get("label"):
+                o["label"] = str(b["label"])[:120]
+    elif t == "component":
+        key = str(b.get("key") or "")
+        if not SLUG.match(key) or len(key) > 40:
+            raise CmsError("A component reference needs the component's key")
+        o["key"] = key
+        o["overrides"] = L.clean_overrides(b.get("overrides"))
+    if b.get("style"):
+        o["style"] = L.clean_style(b["style"], t)
+    if b.get("hide"):
+        o["hide"] = L.clean_hide(b["hide"])
     return o
 
 
@@ -168,6 +209,8 @@ def _validate_doc(doc: dict) -> tuple[dict, list[str]]:
     blocks = doc.get("blocks") or []
     if not isinstance(blocks, list) or len(blocks) > MAX_BLOCKS:
         raise CmsError(f"A page holds at most {MAX_BLOCKS} blocks")
+    from app.services import cms_layout_service as L
+    L.nodes_ok(blocks)
     seo_in = doc.get("seo") or {}
     seo = {"meta_title": str(seo_in.get("meta_title") or "")[:90], "meta_description": str(seo_in.get("meta_description") or "")[:200],
            "noindex": bool(seo_in.get("noindex")), "keywords": [str(k)[:60] for k in (seo_in.get("keywords") or [])][:10]}
@@ -175,7 +218,10 @@ def _validate_doc(doc: dict) -> tuple[dict, list[str]]:
         seo["canonical"] = href(seo_in["canonical"])
     if seo_in.get("og_image"):
         seo["og_image"] = https(seo_in["og_image"])
-    return {"blocks": [validate_block(b, warnings) for b in blocks], "seo": seo}, warnings
+    out = {"blocks": [validate_block(b, warnings) for b in blocks], "seo": seo}
+    if doc.get("layout"):
+        out["layout"] = L.clean_page_layout(doc["layout"])      # header / nav / footer: inherit | none | component key
+    return out, warnings
 
 
 def validate_theme(theme: dict) -> dict:
@@ -345,8 +391,9 @@ def _fill_row(blocks: list, row: CmsTableRow) -> list:
         for k in ("text", "title", "subtitle", "name", "size", "price", "label"):
             if isinstance(b.get(k), str):
                 b[k] = sub(b[k])
-        if b["type"] == "columns":
-            b["left"], b["right"] = [one(x) for x in b["left"]], [one(x) for x in b["right"]]
+        for k in ("left", "right", "children"):
+            if isinstance(b.get(k), list):
+                b[k] = [one(x) for x in b[k]]
         return b
     return [one(b) for b in blocks]
 
@@ -355,14 +402,15 @@ async def _members_table(db: AsyncSession, table_id) -> bool:
     return bool((await db.execute(select(CmsPage.id).where(CmsPage.table_id == table_id, CmsPage.access == "MEMBERS"))).first())
 
 
-async def expand(db: AsyncSession, site: CmsSite, blocks: list, depth: int = 0, public: bool = True, budget: Optional[list] = None) -> list:
+async def expand(db: AsyncSession, site: CmsSite, blocks: list, depth: int = 0, public: bool = True, budget: Optional[list] = None,
+                 locale: Optional[str] = None) -> list:
     """Resolve CTAs, embeds and table blocks into data the page can render without more calls. At most EXPAND_BUDGET
     lookups per request; blocks beyond it render without the resolved data (CTAs/embeds dropped, tables empty)."""
     budget = budget if budget is not None else [EXPAND_BUDGET]
     out = []
     for b in blocks:
         b = dict(b)
-        if b["type"] in ("cta", "hero", "embed", "table") and (b.get("cta_key") or b["type"] in ("embed", "table")):
+        if b["type"] in ("cta", "hero", "embed", "table", "component") and (b.get("cta_key") or b["type"] in ("embed", "table", "component")):
             budget[0] -= 1
             if budget[0] < 0:
                 if b["type"] == "table":
@@ -382,7 +430,12 @@ async def expand(db: AsyncSession, site: CmsSite, blocks: list, depth: int = 0, 
                 continue
             src = await db.get(CmsPage, uuid.UUID(b["page_id"]))
             v = await _live(db, src) if src and src.site_id == site.id and src.access == "PUBLIC" else None
-            b["blocks"] = await expand(db, site, (v.content or {}).get("blocks", []), depth + 1, public, budget) if v else []
+            b["blocks"] = await expand(db, site, (v.content or {}).get("blocks", []), depth + 1, public, budget, locale) if v else []
+        elif b["type"] == "component":                   # M51.S01.T002 reuse: the live version of a library component + page overrides
+            from app.services import cms_layout_service as L
+            hit = await L.live_component(db, site.id, b["key"], ("SECTION", "COMPONENT")) if depth < 3 else None
+            b["blocks"] = (await expand(db, site, L.apply_overrides(L.blocks_for(hit[1].content, locale), b.get("overrides") or {}),
+                                        depth + 1, public, budget, locale)) if hit else []
         elif b["type"] == "table":
             t = (await db.execute(select(CmsTable).where(CmsTable.site_id == site.id, CmsTable.key == b["table_key"]))).scalar_one_or_none()
             hidden = not t or not t.published or (public and await _members_table(db, t.id))
@@ -391,8 +444,9 @@ async def expand(db: AsyncSession, site: CmsSite, blocks: list, depth: int = 0, 
             cols = b.get("columns") or [c["key"] for c in (t.columns if t else [])][:6]
             b["rows"] = [{"slug": r.slug, **{c: (r.values or {}).get(c) for c in cols}} for r in rows]
             b["columns"] = cols
-        elif b["type"] == "columns":
-            b["left"], b["right"] = await expand(db, site, b["left"], depth, public, budget), await expand(db, site, b["right"], depth, public, budget)
+        for k in ("left", "right", "children"):
+            if isinstance(b.get(k), list):
+                b[k] = await expand(db, site, b[k], depth, public, budget, locale)
         out.append(b)
     return out
 
@@ -412,7 +466,7 @@ def json_ld(site: CmsSite, page: CmsPage, version: CmsPageVersion, blocks: list,
                     "mainEntityOfPage": url, "publisher": {"@type": "Organization", "name": site.name}})
     else:
         out.append({"@context": "https://schema.org", "@type": "WebPage", "name": version.title, "inLanguage": page.locale, "url": url})
-    faqs = [i for b in blocks if b["type"] == "faq" for i in b["items"]]
+    faqs = [i for b in flat(blocks) if b["type"] == "faq" for i in b["items"]]
     if faqs:
         out.append({"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [
             {"@type": "Question", "name": i["q"], "acceptedAnswer": {"@type": "Answer", "text": LINK.sub(r"\1", i["a"]).replace("**", "")}} for i in faqs]})
@@ -475,8 +529,8 @@ def _all_text(blocks: list) -> str:
                 parts.append(b[k])
         if b["type"] == "faq":
             parts += [f'{i["q"]} {i["a"]}' for i in b["items"]]
-        if b["type"] == "columns":
-            parts.append(_all_text(b["left"] + b["right"]))
+        for ch in kids(b):
+            parts.append(_all_text(ch))
     return LINK.sub(r"\1", " ".join(parts)).replace("**", "")
 
 
@@ -489,8 +543,8 @@ def _links(blocks: list) -> list[str]:
             out += [m.group(2) for i in b["items"] for m in LINK.finditer(i["a"])]
         if b.get("href"):
             out.append(b["href"])
-        if b["type"] == "columns":
-            out += _links(b["left"] + b["right"])
+        for ch in kids(b):
+            out += _links(ch)
     return out
 
 
@@ -506,7 +560,7 @@ async def seo_audit(db: AsyncSession, page: CmsPage) -> dict:
         f.append({"level": "error", "code": "no_description", "message": "Meta description is missing."})
     elif not 50 <= len(seo["meta_description"]) <= 160:
         f.append({"level": "warn", "code": "description_length", "message": f"Description is {len(seo['meta_description'])} characters (aim for 50–160)."})
-    h1 = [b for b in blocks if (b["type"] == "heading" and b["level"] == 1) or b["type"] == "hero"]
+    h1 = [b for b in flat(blocks) if (b["type"] == "heading" and b["level"] == 1) or b["type"] == "hero"]
     if len(h1) != 1:
         f.append({"level": "warn", "code": "h1", "message": f"The page has {len(h1)} main headings (H1/hero); use exactly one."})
     text = _all_text(blocks)
@@ -541,8 +595,8 @@ async def aeo_audit(db: AsyncSession, page: CmsPage) -> dict:
     measurement provider; it is never estimated."""
     doc, _ = validate_doc(page.draft or {})
     blocks = doc["blocks"]
-    faqs = [i for b in blocks if b["type"] == "faq" for i in b["items"]]
-    q_heads = [b for b in blocks if b["type"] == "heading" and QUESTION.search(b["text"].strip())]
+    faqs = [i for b in flat(blocks) if b["type"] == "faq" for i in b["items"]]
+    q_heads = [b for b in flat(blocks) if b["type"] == "heading" and QUESTION.search(b["text"].strip())]
     long_answers = [i["q"] for i in faqs if len(i["a"].split()) > 80]
     translations = (await db.execute(select(func.count()).select_from(CmsPage).where(CmsPage.translation_group == page.translation_group,
                                                                                     CmsPage.id != page.id))).scalar_one()
@@ -580,9 +634,8 @@ def _walk_texts(doc: dict, fn) -> None:
                 for i in b["items"]:
                     i["q"] = fn(i["q"])
                     i["a"] = fn(i["a"])
-            if b["type"] == "columns":
-                blocks(b["left"])
-                blocks(b["right"])
+            for ch in kids(b):
+                blocks(ch)
     blocks(doc["blocks"])
     for k in ("meta_title", "meta_description"):
         if doc["seo"].get(k):
