@@ -453,3 +453,47 @@ async def test_adobe_flow_idempotency_client_id_decline_expire_cancel(sim):
         assert sim["agreements"][e3["provider_ref"]]["status"] == "CANCELLED"
         lst = (await cr.get("/api/v1/esign/providers/envelopes", params={"source_type": "QUOTATION", "source_id": str(q3)})).json()
         assert [x["status"] for x in lst] == ["CANCELLED"] and lst[0]["timeline"][-1]["via"] == "user"
+
+
+@DB
+@pytest.mark.asyncio
+async def test_envelope_reads_and_contract_sends_respect_record_scope(sim):
+    """Review fix: esign.view alone does not open envelopes of quotations/contracts outside the caller's scope."""
+    from app.db.session import AsyncSessionLocal
+    from app.models.contracts import Contract
+    w = await _world()
+    async with AsyncSessionLocal() as db:
+        blind = (await _user(db, ("esign.view", "esign.request", "esign.cancel", "procurement.edit"), "blind")).username
+        con = Contract(contract_code=f"CT-T009-{uuid.uuid4().hex[:6]}", contract_name="POVU AllClean supply", contract_type="SUPPLY",
+                       party_type="CUSTOMER", party_id=w["customer"], start_date=date.today(), status="APPROVED", currency="KES",
+                       notes="Supply of POVU AllClean 1 L")
+        db.add(con)
+        await db.commit()
+    async with _client() as ca, _client() as cr, _client() as cb:
+        await _login(ca, w["admin"])
+        await _login(cr, w["rep"])
+        await _login(cb, blind)
+        await _configure(ca, "DOCUSIGN")
+        sim.update(delay=3600)
+        qid = await _quote(w)
+        env = (await cr.post("/api/v1/esign/providers/send", json=_send_body("DOCUSIGN", qid))).json()
+        base = f"/api/v1/esign/providers/envelopes/{env['id']}"
+        # out of scope (no sales view of the quotation): nothing listed, 404 on get / files / reconcile / cancel
+        assert env["id"] not in [e["id"] for e in (await cb.get("/api/v1/esign/providers/envelopes")).json()]
+        for path in ("", "/files/snapshot"):
+            assert (await cb.get(base + path)).status_code == 404
+        assert (await cb.post(base + "/reconcile")).status_code == 404
+        assert (await cb.post(base + "/cancel", json={"reason": "not mine"})).status_code == 404
+        # in scope: the rep; and the e-signature admin sees all
+        assert env["id"] in [e["id"] for e in (await cr.get("/api/v1/esign/providers/envelopes")).json()]
+        assert (await cr.get(base)).status_code == 200
+        f = await cr.get(base + "/files/snapshot")
+        assert f.status_code == 200 and f.content.startswith(b"%PDF")
+        assert env["id"] in [e["id"] for e in (await ca.get("/api/v1/esign/providers/envelopes")).json()]
+        assert (await ca.get(base + "/files/snapshot")).status_code == 200
+        # contract send: an edit right without sight of the contract is refused; the rep (sales view + edit) may send
+        body = {**_send_body("DOCUSIGN", con.id), "source_type": "CONTRACT"}
+        assert (await cb.post("/api/v1/esign/providers/send", json=body)).status_code == 403
+        sent = await cr.post("/api/v1/esign/providers/send", json=body)
+        assert sent.status_code == 201 and sent.json()["status"] == "SENT", sent.text
+        assert sent.json()["id"] not in [e["id"] for e in (await cb.get("/api/v1/esign/providers/envelopes")).json()]

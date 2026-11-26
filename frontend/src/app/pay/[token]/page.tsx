@@ -45,11 +45,11 @@ export default function PayPage() {
           <p className="break-words">{t("public.pay.invoice")} <b>{p.invoice_no}</b>{p.customer ? ` · ${p.customer}` : ""}</p>
           {p.status === "ACTIVE" ? <>
             <p className="text-2xl font-bold break-words">{f.money(p.amount_due, p.currency)}</p>
-            <p className="text-xs text-gray-500 break-words">{t("public.pay.validUntil", { date: f.date(p.expires_at) })} M-Pesa: {p.providers.mpesa === "LIVE" ? t("public.pay.providerLive") : t("public.pay.providerSimulated")}. {t("public.pay.card")}: {p.providers.card === "NOT_CONFIGURED" ? t("public.pay.providerNotConfigured") : p.providers.card.toLowerCase().replace("_", " ")}.</p>
+            <p className="text-xs text-gray-500 break-words">{t("public.pay.validUntil", { date: f.date(p.expires_at) })} M-Pesa: {p.providers.mpesa === "LIVE" ? t("public.pay.providerLive") : t("public.pay.providerSimulated")}. {t("public.pay.card")}: {p.providers.card === "NOT_CONFIGURED" || p.providers.card === "BLOCKED" ? t("public.pay.providerNotConfigured") : p.providers.card.toLowerCase().replace("_", " ")}.</p>
             <label className="block text-xs">{t("public.pay.phone")}<input aria-label={t("public.pay.phone")} inputMode="tel" className="border rounded px-2 py-2 w-full" placeholder="07XX XXX XXX" value={phone} onChange={(e) => setPhone(e.target.value)} /></label>
             {p.allow_partial && <label className="block text-xs">{t("common.amount")}<input aria-label={t("common.amount")} inputMode="decimal" className="border rounded px-2 py-2 w-full" value={amount} onChange={(e) => setAmount(e.target.value)} /></label>}
             <button className="w-full bg-green-600 text-white rounded py-2 font-semibold disabled:opacity-50" disabled={phone.length < 9} onClick={pay}>{t("public.pay.payMpesa")}</button>
-            {p.providers.card !== "NOT_CONFIGURED" && <>
+            {(p.providers.card === "LIVE" || p.providers.card === "SIMULATED") && <>
               <label className="block text-xs">{t("public.pay.cardEmail")}<input aria-label={t("public.pay.cardEmail")} type="email" className="border rounded px-2 py-2 w-full" value={email} onChange={(e) => setEmail(e.target.value)} /></label>
               <button className="w-full bg-blue-600 text-white rounded py-2 font-semibold disabled:opacity-50" disabled={!email && phone.length < 9} onClick={payCard}>{t("public.pay.payCard")}</button>
             </>}

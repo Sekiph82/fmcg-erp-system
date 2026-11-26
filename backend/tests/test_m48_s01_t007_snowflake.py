@@ -199,10 +199,24 @@ async def test_not_configured_live_gate_and_dry_plan(sim, monkeypatch):
     with pytest.raises(wes.ExportError, match="LIVE_DISABLED: live warehouse sync is off"):
         wes.writer(t)
     monkeypatch.setattr(cw, "_live_switch", lambda: True)
-    with pytest.raises(wes.ExportError, match="second report administrator"):
+    with pytest.raises(wes.ExportError, match="independent report administrator"):
         wes.writer(t)
-    t.config = {**t.config, "approved_by": "admin2"}
-    assert wes.writer(t).mode == "LIVE"
+    # live: the simulator override is refused even after an approval (endpoint pinning)
+    t.config = {**t.config, "approved_by": "admin2", "approved_hosts": [f"{BASE}/snowflake"]}
+    with pytest.raises(wes.ExportError, match="only allowed against the local simulator"):
+        wes.writer(t)
+    official = {k: v for k, v in t.config.items() if k != "base_url"}
+    live = SimpleNamespace(kind="SNOWFLAKE", config={**official, "approved_hosts": ["https://povu-demo.snowflakecomputing.com"]},
+                           secret=t.secret, created_by="admin1", secret_set_by="admin1")
+    assert wes.writer(live).mode == "LIVE" and wes.writer(live).base == "https://povu-demo.snowflakecomputing.com"
+    for who in ("created_by", "secret_set_by"):                       # approver must be independent of both
+        setattr(live, who, "admin2")
+        with pytest.raises(wes.ExportError, match="independent approval"):
+            wes.writer(live)
+        setattr(live, who, "admin1")
+    live.config = {**live.config, "approved_hosts": ["https://other.snowflakecomputing.com"]}
+    with pytest.raises(wes.ExportError, match="endpoints changed since approval"):
+        wes.writer(live)
     monkeypatch.setattr(settings, "PROVIDER_EGRESS", "local")
     steps = await cw.plan(cw.SnowflakeWriter(SimpleNamespace(config=t.config, secret=None)), "customers", COLS, 5)
     assert (await _c("GET", "/_control/state"))["calls"] == []        # nothing sent
@@ -310,13 +324,15 @@ async def test_staff_api_wizard_rbac_dry_run_and_approval(sim, _dispose_engine):
     async with AsyncSessionLocal() as db:
         a1 = await _user(db, ("reports.admin",), "dwadmin")
         a2 = await _user(db, ("reports.admin",), "dwadmin2")
+        a3 = await _user(db, ("reports.admin",), "dwadmin3")
         out = await _user(db, ("sales.view",), "outsider")
         await db.commit()
     creds = await _c("GET", "/_control/demo-credentials")
     name = f"POVU Snowflake {uuid.uuid4().hex[:5]}"
-    async with _client() as c, _client() as c2, _client() as co:
+    async with _client() as c, _client() as c2, _client() as c3, _client() as co:
         await _login(c, a1)
         await _login(c2, a2)
+        await _login(c3, a3)
         await _login(co, out)
         assert (await co.get("/api/v1/warehouse-exports")).status_code == 403
         assert (await co.post("/api/v1/warehouse-exports/targets", json={"name": "x", "kind": "SNOWFLAKE", "config": {}})).status_code == 403
@@ -330,14 +346,25 @@ async def test_staff_api_wizard_rbac_dry_run_and_approval(sim, _dispose_engine):
         assert next(x for x in ov["targets"] if x["id"] == tid)["status"] == "NOT_CONFIGURED"
         res = (await c.post(f"/api/v1/warehouse-exports/targets/{tid}/test")).json()
         assert res["ok"] is False and "NOT_CONFIGURED" in res["error"]
-        r = await c.put(f"/api/v1/warehouse-exports/targets/{tid}/secret", json={"secret": creds["snowflake"]["private_key"]})
+        # admin 2 (not the creator) stores the credential: from now on admin 2 is not independent either
+        r = await c2.put(f"/api/v1/warehouse-exports/targets/{tid}/secret", json={"secret": creds["snowflake"]["private_key"]})
         assert r.status_code == 200 and r.json()["public_key_fp"].startswith("SHA256:")
         ov_text = (await c.get("/api/v1/warehouse-exports")).text
         assert "PRIVATE KEY" not in ov_text and "secret" not in json.loads(ov_text)["targets"][0]
         assert (await c.post(f"/api/v1/warehouse-exports/targets/{tid}/test")).json() == \
             {"ok": True, "role": "ERP_LOADER", "warehouse": "LOAD_WH", "database": "POVU_DW", "mode": "SIMULATED"}
-        assert (await c.post(f"/api/v1/warehouse-exports/targets/{tid}/approve")).status_code == 403    # not their own
-        assert (await c2.post(f"/api/v1/warehouse-exports/targets/{tid}/approve")).json() == {"status": "APPROVED"}
+        assert (await c.post(f"/api/v1/warehouse-exports/targets/{tid}/approve")).status_code == 403    # creator
+        assert (await c2.post(f"/api/v1/warehouse-exports/targets/{tid}/approve")).status_code == 403   # set the secret
+        tv = next(x for x in (await c.get("/api/v1/warehouse-exports")).json()["targets"] if x["id"] == tid)
+        assert tv["hosts"] == [f"{BASE}/snowflake"] and tv["secret_set_by"] == a2
+        ok = (await c3.post(f"/api/v1/warehouse-exports/targets/{tid}/approve")).json()
+        assert ok == {"status": "APPROVED", "hosts": [f"{BASE}/snowflake"]}
+        # replacing the credential after approval withdraws it; the replacer cannot re-approve
+        assert (await c3.put(f"/api/v1/warehouse-exports/targets/{tid}/secret", json={"secret": creds["snowflake"]["private_key"]})).status_code == 200
+        tv = next(x for x in (await c.get("/api/v1/warehouse-exports")).json()["targets"] if x["id"] == tid)
+        assert tv["status"] == "CONFIGURED" and "approved_by" not in tv["config"] and "approved_hosts" not in tv["config"]
+        assert (await c3.post(f"/api/v1/warehouse-exports/targets/{tid}/approve")).status_code == 403
+        assert (await c2.post(f"/api/v1/warehouse-exports/targets/{tid}/approve")).json()["status"] == "APPROVED"
         j = await c.post("/api/v1/warehouse-exports/jobs", json={"target_id": tid, "dataset": "products"})
         jid = j.json()["id"]
         dry = (await c.post(f"/api/v1/warehouse-exports/jobs/{jid}/dry-run")).json()

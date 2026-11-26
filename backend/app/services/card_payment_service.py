@@ -208,9 +208,13 @@ def is_live(cfg: Optional[CardProviderConfig]) -> bool:
 
 
 def mode(cfg: Optional[CardProviderConfig]) -> str:
+    """Only SANDBOX is SIMULATED. LIVE credentials that are not switched on and approved are BLOCKED: an order there
+    would take real money, so checkout is refused rather than booked as test money."""
     if cfg is None or not cfg.ipn_id:
         return "NOT_CONFIGURED"
-    return "LIVE" if is_live(cfg) else "SIMULATED"
+    if cfg.environment != "LIVE":
+        return "SIMULATED"
+    return "LIVE" if is_live(cfg) else "BLOCKED"
 
 
 def disabled_reasons(cfg: Optional[CardProviderConfig]) -> list[str]:
@@ -227,6 +231,8 @@ def disabled_reasons(cfg: Optional[CardProviderConfig]) -> list[str]:
         if not cfg.live_active:
             out.append("Live card payments need a second finance approver." if cfg.live_requested_by_id
                        else "Live card payments have not been requested for approval.")
+        if not is_live(cfg):
+            out.append("Card checkout is refused until then: LIVE credentials take real money and are never used for test payments.")
     return out
 
 
@@ -318,8 +324,8 @@ async def start_checkout(db: AsyncSession, link: PaymentLink, amount: Optional[D
     if link.expires_at <= _now():
         raise CardError(410, "This payment link has expired.")
     cfg = await config(db)
-    if mode(cfg) == "NOT_CONFIGURED":
-        raise CardError(503, "Card payments are not set up: " + " ".join(disabled_reasons(cfg)))
+    if mode(cfg) in ("NOT_CONFIGURED", "BLOCKED"):
+        raise CardError(503, "Card payments are not available: " + " ".join(disabled_reasons(cfg)))
     inv = await db.get(Invoice, link.invoice_id, with_for_update=True, populate_existing=True)
     if link.currency != inv.currency:
         raise CardError(422, f"Currency mismatch: link {link.currency}, invoice {inv.currency}. Create a new link.")
@@ -341,7 +347,7 @@ async def start_checkout(db: AsyncSession, link: PaymentLink, amount: Optional[D
     email, phone = email or (cust.email if cust else None), phone or (cust.phone if cust else None)
     if not email and not phone:
         raise CardError(422, "Pesapal needs the payer's e-mail or phone number.")
-    p = CardPayment(link_id=link.id, invoice_id=inv.id, simulated=not is_live(cfg), amount=amount, currency=inv.currency,
+    p = CardPayment(link_id=link.id, invoice_id=inv.id, simulated=cfg.environment != "LIVE", amount=amount, currency=inv.currency,
                     merchant_reference=f"POVU-{inv.invoice_no}-{secrets.token_hex(4).upper()}"[-50:],
                     created_by_id=getattr(user, "id", None))
     db.add(p)
@@ -368,9 +374,27 @@ async def _lock(db: AsyncSession, model, id_):
                              .execution_options(populate_existing=True))).scalar_one_or_none()
 
 
-async def refresh(db: AsyncSession, payment_id, *, notified: bool = False, force: bool = False) -> CardPayment:
+class NotVerified(CardError):
+    """The provider was not asked (re-query suppressed) and our state is not final: do not acknowledge."""
+    def __init__(self):
+        super().__init__(409, "Checked moments ago and not final yet; notify again later.")
+
+
+async def _final(db: AsyncSession, p: CardPayment) -> bool:
+    if p.status in ("FAILED", "REVERSED"):
+        return True
+    if p.status != "COMPLETED":
+        return False
+    open_refund = (await db.execute(select(CardRefund.id).where(CardRefund.card_payment_id == p.id,
+                                                                CardRefund.status.in_(("SUBMITTED", "UNKNOWN"))))).first()
+    return open_refund is None
+
+
+async def refresh(db: AsyncSession, payment_id, *, notified: bool = False, force: bool = False,
+                  strict: bool = False) -> CardPayment:
     """Ask the provider and apply its answer. Concurrent IPNs/replays serialise on the payment row; inside
-    REQUERY_MIN_GAP a replay is answered from what we already know."""
+    REQUERY_MIN_GAP a replay is answered from what we already know — with strict=True (notifications) only when that
+    state is final, otherwise NotVerified so the caller does not acknowledge an unverified notice."""
     p = await _lock(db, CardPayment, payment_id)
     if p is None:
         raise CardError(404, "Card payment not found.")
@@ -379,6 +403,8 @@ async def refresh(db: AsyncSession, payment_id, *, notified: bool = False, force
     if not p.order_tracking_id:
         return p
     if not force and p.last_checked_at and _now() - p.last_checked_at < REQUERY_MIN_GAP:
+        if strict and not await _final(db, p):
+            raise NotVerified()
         return p
     cfg = await config(db)
     if cfg is None:
@@ -497,6 +523,31 @@ async def expire_stale(db: AsyncSession, now: Optional[datetime] = None) -> int:
     res = await db.execute(update(CardPayment).where(CardPayment.status == "PENDING",
                                                      CardPayment.created_at < now - CARD_PENDING_TTL).values(status="EXPIRED"))
     return res.rowcount or 0
+
+
+async def poll_open(db: AsyncSession, limit: int = 50, max_age: timedelta = timedelta(days=7),
+                    min_gap: timedelta = timedelta(minutes=1)) -> int:
+    """Hub tick: re-query card payments that are not final (PENDING/EXPIRED/INVALID, or a refund awaiting the
+    provider), so a missed IPN still settles. Bounded: newest max_age only, `limit` per run, each at most every min_gap."""
+    if mode(await config(db)) == "NOT_CONFIGURED":
+        return 0
+    now = _now()
+    refunding = select(CardRefund.card_payment_id).where(CardRefund.status.in_(("SUBMITTED", "UNKNOWN")))
+    ids = (await db.execute(select(CardPayment.id).where(
+        CardPayment.order_tracking_id.is_not(None), CardPayment.created_at >= now - max_age,
+        CardPayment.status.in_(("PENDING", "EXPIRED", "INVALID")) | CardPayment.id.in_(refunding),
+        (CardPayment.last_checked_at.is_(None)) | (CardPayment.last_checked_at < now - min_gap))
+        .order_by(CardPayment.last_checked_at.asc().nullsfirst()).limit(limit))).scalars().all()
+    await db.rollback()                                   # end the read transaction; one transaction per payment below
+    done = 0
+    for pid in ids:
+        try:
+            await refresh(db, pid, force=True)
+            await db.commit()
+            done += 1
+        except Exception:                                 # one bad row must not stop the others; retried next tick
+            await db.rollback()
+    return done
 
 
 async def pending_reserved(db: AsyncSession, invoice_id) -> Decimal:

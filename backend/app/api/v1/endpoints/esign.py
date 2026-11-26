@@ -592,33 +592,40 @@ async def provider_send(body: ProviderSendIn, db: AsyncSession = Depends(get_db)
 
 @router.get("/providers/envelopes", dependencies=[Depends(require_permission("esign", "view"))])
 async def provider_envelopes(source_type: Optional[str] = Query(None, pattern="^(QUOTATION|CONTRACT)$"),
-                             source_id: Optional[uuid.UUID] = None, db: AsyncSession = Depends(get_db)):
+                             source_id: Optional[uuid.UUID] = None, db: AsyncSession = Depends(get_db),
+                             current_user: User = Depends(get_current_user)):
+    """Only envelopes whose quotation / contract the caller may see (e-signature admins: all)."""
     from app.models.m48_esign import ESignEnvelope
     q = select(ESignEnvelope).order_by(ESignEnvelope.created_at.desc()).limit(200)
     if source_type:
         q = q.where(ESignEnvelope.source_type == source_type)
     if source_id:
         q = q.where(ESignEnvelope.source_id == source_id)
-    return [esp.envelope_out(e) for e in (await db.execute(q)).scalars()]
+    envs = list((await db.execute(q)).scalars())
+    return [esp.envelope_out(e) for e in await esp.visible_envelopes(db, current_user, envs)]
 
 
-async def _envelope(db, env_id):
+async def _envelope(db, env_id, user):
+    """The envelope, or 404 when it does not exist or its source record is outside the caller's scope."""
     from app.models.m48_esign import ESignEnvelope
     env = await db.get(ESignEnvelope, env_id)
-    if env is None:
-        raise HTTPException(404, "Signature request not found")
+    try:
+        await esp.ensure_envelope_visible(db, user, env)
+    except esp.ESignError as e:
+        _esp_fail(e)
     return env
 
 
 @router.get("/providers/envelopes/{env_id}", dependencies=[Depends(require_permission("esign", "view"))])
-async def provider_envelope(env_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
-    return esp.envelope_out(await _envelope(db, env_id))
+async def provider_envelope(env_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    return esp.envelope_out(await _envelope(db, env_id, current_user))
 
 
 @router.post("/providers/envelopes/{env_id}/reconcile",
              dependencies=[Depends(require_permission("esign", "request"))])
 async def provider_reconcile(env_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Read the status back from the provider (and resolve an unknown create by our reference)."""
+    await _envelope(db, env_id, current_user)
     try:
         env = await esp.reconcile(db, env_id, "user", current_user)
     except esp.ESignError as e:
@@ -634,7 +641,7 @@ class ProviderCancelIn(BaseModel):
 @router.post("/providers/envelopes/{env_id}/cancel", dependencies=[Depends(require_permission("esign", "cancel"))])
 async def provider_cancel(env_id: uuid.UUID, body: ProviderCancelIn, db: AsyncSession = Depends(get_db),
                           current_user: User = Depends(get_current_user)):
-    env = await _envelope(db, env_id)
+    env = await _envelope(db, env_id, current_user)
     if not (current_user.is_superuser or has_any_permission(current_user, ("esign.admin",)) or env.created_by_id == current_user.id):
         raise HTTPException(403, "Only the requester or an e-signature admin can cancel this request.")
     try:
@@ -650,7 +657,7 @@ async def provider_file(env_id: uuid.UUID, kind: str, db: AsyncSession = Depends
     """snapshot (what was sent), signed (combined signed document), evidence (certificate / audit trail).
     The stored SHA-256 is checked before the file is served."""
     import hashlib
-    env = await _envelope(db, env_id)
+    env = await _envelope(db, env_id, current_user)
     blob, digest = {"snapshot": (env.snapshot_pdf, env.snapshot_sha256), "signed": (env.signed_pdf, env.signed_sha256),
                     "evidence": (env.evidence_pdf, env.evidence_sha256)}.get(kind, (None, None))
     if blob is None:

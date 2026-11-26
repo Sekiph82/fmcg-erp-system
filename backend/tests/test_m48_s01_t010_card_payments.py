@@ -537,17 +537,104 @@ async def test_sandbox_payments_never_reach_collections_or_ledger(sim):
         assert (await db.get(CardPayment, pid)).settlement == "TEST_SETTLED"
         assert (await db.get(PaymentLink, w.link)).status == "TEST_PAID"
     assert await _collections(w.inv) == []
-    # LIVE credentials without the second approver stay SIMULATED, with the reason shown
-    await _reset_config()
-    await api.as_(w.fin1, "PUT", "/api/v1/payment-links/card/config",
-                  json={"environment": "LIVE", "consumer_key": SIM_KEY, "consumer_secret": SIM_SECRET, "base_url": BASE})
-    v = (await api.as_(w.fin1, "POST", "/api/v1/payment-links/card/config/register-ipn")).json()
-    assert v["mode"] == "SIMULATED" and any("requested" in x for x in v["disabled_reasons"])
     # only the official host or a local simulator may be configured
     r = await api.as_(w.fin1, "PUT", "/api/v1/payment-links/card/config",
                       json={"environment": "LIVE", "consumer_key": SIM_KEY, "consumer_secret": SIM_SECRET,
                             "base_url": "https://evil.example.com/v3"})
     assert r.status_code == 422
+
+
+@DB
+@pytest.mark.asyncio
+async def test_unapproved_live_credentials_refuse_checkout(sim, monkeypatch):
+    """Review fix (HIGH): LIVE credentials not switched on + approved must never send an order (it would take real
+    money and be booked as test money). Only SANDBOX is SIMULATED."""
+    from app.db.session import AsyncSessionLocal
+    from app.models.m48_payments import CardPayment
+    from app.services import card_payment_service as cards
+    w = await _world(total="900.00")
+    api = Api()
+    await _reset_config()
+    await api.as_(w.fin1, "PUT", "/api/v1/payment-links/card/config",
+                  json={"environment": "LIVE", "consumer_key": SIM_KEY, "consumer_secret": SIM_SECRET, "base_url": BASE})
+    calls_before = len(sim.state.sim["calls"])
+
+    def submits():
+        return [c for c in sim.state.sim["calls"][calls_before:] if c[1].endswith("SubmitOrderRequest")]
+
+    async def refused(expect_reason):
+        v = (await api.as_(w.fin1, "GET", "/api/v1/payment-links/card/config")).json()
+        assert v["mode"] == "BLOCKED" and any(expect_reason in x for x in v["disabled_reasons"]), v
+        assert any("refused" in x for x in v["disabled_reasons"])
+        assert (await api.c.get(f"/api/v1/public/pay/{w.token}")).json()["providers"]["card"] == "BLOCKED"
+        r = await api.c.post(f"/api/v1/public/pay/{w.token}/card", json={})
+        assert r.status_code == 503 and expect_reason in r.text, r.text
+        r = await api.as_(w.rep, "POST", f"/api/v1/payment-links/{w.link}/card", json={})
+        assert r.status_code == 503
+    v = (await api.as_(w.fin1, "POST", "/api/v1/payment-links/card/config/register-ipn")).json()
+    await refused("not been requested")                                         # not requested
+    assert (await api.as_(w.fin1, "POST", "/api/v1/payment-links/card/config/request-live")).status_code == 200
+    await refused("second finance approver")                                    # requested, not approved
+    assert (await api.as_(w.fin2, "POST", "/api/v1/payment-links/card/config/approve-live")).json()["mode"] == "LIVE"
+    monkeypatch.setattr(cards, "_live_flag", lambda: False)
+    await refused("CARD_PAYMENTS_LIVE_ENABLED")                                 # approved, runtime flag off
+    assert submits() == []
+    async with AsyncSessionLocal() as db:
+        assert (await db.execute(select(func.count()).select_from(CardPayment).where(CardPayment.link_id == w.link))).scalar_one() == 0
+    monkeypatch.setattr(cards, "_live_flag", lambda: True)                      # fully enabled: real (non-test) order
+    r = await api.as_(w.rep, "POST", f"/api/v1/payment-links/{w.link}/card", json={})
+    assert r.status_code == 201 and r.json()["simulated"] is False and len(submits()) == 1
+
+
+@DB
+@pytest.mark.asyncio
+async def test_ipn_inside_requery_gap_is_not_acknowledged_and_poller_settles(sim):
+    """Review fix (MEDIUM): a throttled IPN on a non-final payment gets status 500 (Pesapal retries); the hub tick
+    polls open payments so a missed IPN still settles, bounded by age and batch size."""
+    from app.db.session import AsyncSessionLocal
+    from app.models.m48_payments import CardPayment
+    from app.services import card_payment_service as cards
+    from app.services import hub_tick
+    w = await _world(total="1500.00")
+    api = Api()
+    await _setup_provider(api, w)
+    async with AsyncSessionLocal() as db:            # this disposable DB: earlier tests' open payments out of the window
+        await db.execute(update(CardPayment).values(created_at=datetime.now(timezone.utc) - timedelta(days=30)))
+        await db.commit()
+    r = await api.as_(w.rep, "POST", f"/api/v1/payment-links/{w.link}/card", json={"amount": "500"})
+    pid = uuid.UUID(r.json()["id"])
+    tid = await _pay(sim, pid, after=2)
+    assert (await _ipn(api, tid))["status"] == 200                              # verified: still pending
+    assert (await _ipn(api, tid))["status"] == 500                              # inside the gap, not final: no ack
+    async with AsyncSessionLocal() as db:
+        assert (await db.get(CardPayment, pid)).status == "PENDING"
+    # no further IPN arrives; the hub tick's payment job polls and settles it
+    await _unthrottle(pid)
+    async with AsyncSessionLocal() as db:
+        await hub_tick._payment_attempts(db)
+    async with AsyncSessionLocal() as db:
+        p = await db.get(CardPayment, pid)
+        assert (p.status, p.settlement) == ("COMPLETED", "COLLECTION")
+    assert (await _ipn(api, tid))["status"] == 200                              # final now: a replay may be acknowledged
+    assert len(await _collections(w.inv)) == 1
+    # bounds: too old or checked within min_gap are skipped; batch limit respected
+    r = await api.as_(w.rep, "POST", f"/api/v1/payment-links/{w.link}/card", json={"amount": "300"})
+    old = uuid.UUID(r.json()["id"])
+    r = await api.as_(w.rep, "POST", f"/api/v1/payment-links/{w.link}/card", json={"amount": "300"})
+    a = uuid.UUID(r.json()["id"])
+    r = await api.as_(w.rep, "POST", f"/api/v1/payment-links/{w.link}/card", json={"amount": "300"})
+    b = uuid.UUID(r.json()["id"])
+    async with AsyncSessionLocal() as db:
+        await db.execute(update(CardPayment).where(CardPayment.id == old)
+                         .values(created_at=datetime.now(timezone.utc) - timedelta(days=8)))
+        await db.commit()
+    async with AsyncSessionLocal() as db:
+        assert await cards.poll_open(db, limit=1) == 1
+    async with AsyncSessionLocal() as db:
+        assert await cards.poll_open(db) == 1                                    # the other of a/b; the first is within min_gap
+        assert (await db.get(CardPayment, old)).last_checked_at is None          # beyond max_age: never polled
+        for x in (a, b):
+            assert (await db.get(CardPayment, x)).last_checked_at is not None
 
 
 @DB

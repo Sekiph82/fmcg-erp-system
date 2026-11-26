@@ -31,12 +31,23 @@ def _admin(u):
 async def overview(db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
     _admin(current_user)
     targets = (await db.execute(select(ExportTarget).order_by(ExportTarget.name))).scalars().all()
+
+    def hosts(t):
+        if t.kind not in wes.CLOUD_KINDS:
+            return None
+        from app.services.warehouse_cloud_writers import effective_hosts
+        try:
+            return effective_hosts(t.kind, t.config)
+        except wes.ExportError as e:
+            return [f"REFUSED: {e}"]
+
     jobs = (await db.execute(select(ExportJob).order_by(ExportJob.dataset))).scalars().all()
     runs = (await db.execute(select(ExportRun).order_by(ExportRun.started_at.desc()).limit(50))).scalars().all()
     return {"datasets": list(wes.DATASETS), "formats": {"csv": "available", "jsonl": "available", "parquet": "NOT_AVAILABLE (pyarrow)"},
             "kinds": {k: "available" for k in ("LOCAL_DIR", "S3", "POSTGRES", "SNOWFLAKE", "BIGQUERY")},
             "targets": [{"id": str(t.id), "name": t.name, "kind": t.kind, "config": {k: v for k, v in t.config.items() if k != "access_key"},
                          "active": t.active, "configured": bool(t.secret), "created_by": t.created_by,
+                         "secret_set_by": t.secret_set_by, "hosts": hosts(t),
                          "status": (None if t.kind not in wes.CLOUD_KINDS else
                                     "NOT_CONFIGURED" if not t.secret else "APPROVED" if t.config.get("approved_by") else "CONFIGURED")}
                         for t in targets],
@@ -94,11 +105,12 @@ async def add_target(body: TargetIn, db: AsyncSession = Depends(get_db), current
     need = {"LOCAL_DIR": ["dir"], "S3": ["endpoint_url", "bucket", "access_key"], "POSTGRES": []}.get(body.kind, [])
     if any(not body.config.get(k) for k in need) or (body.kind in ("S3", "POSTGRES") and not body.secret):
         raise HTTPException(422, f"{body.kind} needs {', '.join(need + (['secret'] if body.kind in ('S3', 'POSTGRES') else []))}.")
-    config = {k: v for k, v in body.config.items() if k not in ("approved_by", "approved_at", "public_key_fp", "client_email")}
+    config = {k: v for k, v in body.config.items() if k not in ("approved_by", "approved_at", "approved_hosts", "public_key_fp", "client_email")}
     if body.kind in wes.CLOUD_KINDS:
         _check_cloud_config(body.kind, config)
     sealed, facts = _seal(body.kind, body.secret, body.passphrase)
-    t = ExportTarget(name=body.name, kind=body.kind, config={**config, **facts}, secret=sealed, created_by=current_user.username)
+    t = ExportTarget(name=body.name, kind=body.kind, config={**config, **facts}, secret=sealed, created_by=current_user.username,
+                     secret_set_by=current_user.username if sealed else None)
     db.add(t)
     pats.audit(db, current_user, "DW_TARGET_ADDED", "dw_target", body.name, {"kind": body.kind, "credential": bool(sealed)})
     await db.commit()
@@ -123,7 +135,8 @@ async def set_secret(tid: uuid.UUID, body: SecretIn, db: AsyncSession = Depends(
     _admin(current_user)
     t = await _target(db, tid)
     t.secret, facts = _seal(t.kind, body.secret, body.passphrase)
-    t.config = {**{k: v for k, v in t.config.items() if k not in ("approved_by", "approved_at")}, **facts}
+    t.secret_set_by = current_user.username       # this user can no longer approve; earlier approval is withdrawn
+    t.config = {**{k: v for k, v in t.config.items() if k not in ("approved_by", "approved_at", "approved_hosts")}, **facts}
     pats.audit(db, current_user, "DW_TARGET_SECRET_SET", "dw_target", str(t.id), {"kind": t.kind})
     await db.commit()
     return {"configured": True, **facts}
@@ -131,17 +144,24 @@ async def set_secret(tid: uuid.UUID, body: SecretIn, db: AsyncSession = Depends(
 
 @router.post("/targets/{tid}/approve")
 async def approve_target(tid: uuid.UUID, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
-    """Second administrator's approval, required before a LIVE (non-simulated) Snowflake/BigQuery sync."""
+    """Independent approval, required before a LIVE (non-simulated) Snowflake/BigQuery sync. The approver must not have
+    created the target or stored its credential; the approval is bound to the endpoints shown (official hosts live)."""
     _admin(current_user)
+    from app.services.warehouse_cloud_writers import effective_hosts
     t = await _target(db, tid)
     if t.kind not in wes.CLOUD_KINDS or not t.secret:
         raise HTTPException(422, "Only a configured Snowflake/BigQuery target needs approval.")
-    if t.created_by == current_user.username:
-        raise HTTPException(403, "A different administrator must approve a target they did not set up.")
-    t.config = {**t.config, "approved_by": current_user.username, "approved_at": datetime.now(timezone.utc).isoformat()}
-    pats.audit(db, current_user, "DW_TARGET_APPROVED", "dw_target", str(t.id), {"kind": t.kind})
+    if current_user.username in (t.created_by, t.secret_set_by):
+        raise HTTPException(403, "An independent administrator must approve: you created this target or set its credential.")
+    try:
+        hosts = effective_hosts(t.kind, t.config)
+    except wes.ExportError as e:
+        raise HTTPException(422, str(e)) from None
+    t.config = {**t.config, "approved_by": current_user.username, "approved_at": datetime.now(timezone.utc).isoformat(),
+                "approved_hosts": hosts}
+    pats.audit(db, current_user, "DW_TARGET_APPROVED", "dw_target", str(t.id), {"kind": t.kind, "hosts": hosts})
     await db.commit()
-    return {"status": "APPROVED"}
+    return {"status": "APPROVED", "hosts": hosts}
 
 
 @router.post("/targets/{tid}/test")

@@ -101,6 +101,8 @@ async def _daily(db) -> None:
 async def _payment_attempts(db) -> None:
     await _step_expire_payment_attempts(db)
     await db.commit()
+    from app.services import card_payment_service   # M48.S01.T010: verify card payments whose IPN never came
+    await card_payment_service.poll_open(db)
 
 
 async def _agents(db) -> None:

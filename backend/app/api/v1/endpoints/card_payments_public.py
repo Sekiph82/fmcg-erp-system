@@ -3,7 +3,8 @@
 Pesapal IPNs are not signed (https://developer.pesapal.com/how-to-integrate/e-commerce/api-30-json/registeripnurl), so
 nothing in the request is trusted: an IPN or the payer's return only names an OrderTrackingId we already issued; we then
 ask GetTransactionStatus ourselves (card_payment_service.refresh) and act on that answer alone. Replays are idempotent
-(row lock + settlement claim) and inside a 5 s window are answered without re-querying the provider.
+(row lock + settlement claim); inside a 5 s window a replay is not re-queried and is acknowledged only if our state is
+already final — otherwise it gets status 500 so Pesapal retries (the hub tick also polls open payments).
   GET  /pesapal?OrderTrackingId=&OrderNotificationType=IPNCHANGE&OrderMerchantReference=   (we register GET)
   POST /pesapal {OrderTrackingId, OrderNotificationType, OrderMerchantReference}            (same, if registered as POST)
   GET  /return?OrderTrackingId=&OrderMerchantReference=   payer's browser after checkout (callback_url): plain page
@@ -30,7 +31,7 @@ async def _handle(db: AsyncSession, tracking_id: str, merchant_ref: str) -> Card
     if p is None or (merchant_ref and merchant_ref != p.merchant_reference):
         return None
     try:
-        p = await cards.refresh(db, p.id, notified=True)
+        p = await cards.refresh(db, p.id, notified=True, strict=True)
     except cards.CardError:
         await db.rollback()
         return None

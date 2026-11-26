@@ -337,12 +337,15 @@ async def stock_transfer(
 async def transfer_replay(db: AsyncSession, req: StockTransferRequest, created_by_id: uuid.UUID) -> Optional[StockMovement]:
     """The movement already made with this idempotency key (a retry or double submit), else None.
     The key is bound to the user and the transfer it was first used for; reusing it for anything else is a 409."""
-    done = (await db.execute(select(StockMovement).where(StockMovement.idempotency_key == req.idempotency_key))).scalar_one_or_none()
+    from sqlalchemy.orm import selectinload
+    done = (await db.execute(select(StockMovement).options(selectinload(StockMovement.lot))
+                             .where(StockMovement.idempotency_key == req.idempotency_key))).scalar_one_or_none()
     if done is None:
         return None
     same = (done.movement_type == MovementType.TRANSFER and done.created_by_id == created_by_id
             and done.product_id == req.product_id and done.source_warehouse_id == req.from_warehouse_id
-            and done.destination_warehouse_id == req.to_warehouse_id and Decimal(done.quantity) == Decimal(req.quantity))
+            and done.destination_warehouse_id == req.to_warehouse_id and Decimal(done.quantity) == Decimal(req.quantity)
+            and (done.lot.lot_number if done.lot_id else None) == (req.lot_number or None))   # lot too (M48 review #8)
     if not same:
         raise HTTPException(status_code=409, detail="This idempotency key was already used for a different transfer.")
     return done

@@ -94,6 +94,9 @@ import calendar
 import hashlib
 import json
 import uuid
+from contextlib import asynccontextmanager
+
+from sqlalchemy import text
 
 from app.core.provider_http import EgressBlocked, egress_mode
 from app.models.m48_ads import AdAccountControl, AdApproval, AdCampaignNode, AdMutation
@@ -304,8 +307,35 @@ async def _approved(db: AsyncSession, root: AdCampaignNode, acct: AdAccount, nod
     return ap
 
 
-def _tree_transport(nodes, g: dict) -> str:
+CLAIM_GRACE = timedelta(minutes=2)   # a PENDING ledger row younger than this may still be in flight
+
+
+def _tree_transport(nodes, g: dict, root: Optional[AdCampaignNode] = None) -> str:
+    """A LIVE tree always talks to the real provider (http): it is never simulated, even when live changes are
+    gated off — then the call is either refused up front or blocked by the egress guard, never faked."""
+    if root is not None and root.mode == "LIVE":
+        return "http"
     return "offline" if any((n.provider_id or "").startswith("SIM-") for n in nodes) else g["transport"]
+
+
+@asynccontextmanager
+async def root_lock(db: AsyncSession, root: AdCampaignNode):
+    """Serialise submit / pause / resume / reconcile on one campaign tree. A PostgreSQL session advisory lock on a
+    dedicated connection, so it survives the ledger's intermediate commits (a FOR UPDATE row lock would not)."""
+    key = int.from_bytes(root.id.bytes[:8], "big", signed=True)
+    bind = db.bind
+    if bind is None:
+        from app.db.session import engine as bind
+    async with bind.connect() as conn:
+        got = (await conn.execute(text("SELECT pg_try_advisory_lock(:k)"), {"k": key})).scalar()
+        await conn.commit()
+        if not got:
+            raise Refused(409, "Another change to this campaign is in progress; try again shortly.")
+        try:
+            yield
+        finally:
+            await conn.execute(text("SELECT pg_advisory_unlock(:k)"), {"k": key})
+            await conn.commit()
 
 
 def _check_mode(root: AdCampaignNode, nodes, g: dict) -> None:
@@ -368,7 +398,7 @@ async def readback(db: AsyncSession, acct: AdAccount, root: AdCampaignNode, node
     """Status read-back of every created object (safe reads, retried). Returns {level: parse_read result}."""
     g = gate(acct, await control(db, acct))
     out: dict = {}
-    if _tree_transport(nodes, g) == "offline":
+    if _tree_transport(nodes, g, root) == "offline":
         for n in nodes:
             if n.provider_id:
                 n.provider_status = f"SIMULATED {'ACTIVE' if root.status == 'ACTIVE' else 'PAUSED'}"
@@ -394,6 +424,12 @@ def _confirmed_active(provider: str, info: dict) -> bool:
 
 async def submit(db: AsyncSession, root: AdCampaignNode, acct: AdAccount, user) -> dict:
     """Create the approved tree (paused) or push an approved new budget version."""
+    async with root_lock(db, root):
+        await db.refresh(root)
+        return await _submit(db, root, acct, user)
+
+
+async def _submit(db: AsyncSession, root: AdCampaignNode, acct: AdAccount, user) -> dict:
     ctrl = await control(db, acct)
     require_member(user, ctrl)
     nodes = await nodes_of(db, root)
@@ -403,9 +439,9 @@ async def submit(db: AsyncSession, root: AdCampaignNode, acct: AdAccount, user) 
     if not all(n.provider_id for n in nodes):
         ap = await _approved(db, root, acct, nodes, "SUBMIT")
         await check_caps(db, acct, ctrl, root, Decimal(root.daily_budget))
-        transport = _tree_transport(nodes, g)
         if not any(n.provider_id for n in nodes):
             root.mode = g["mode"]
+        transport = _tree_transport(nodes, g, root)
         root.status = "SUBMITTING"
         audit(db, user, "ads.campaign.submitted", root.id, {"mode": root.mode, "transport": transport,
                                                             "version": root.budget_version})
@@ -432,7 +468,7 @@ async def submit(db: AsyncSession, root: AdCampaignNode, acct: AdAccount, user) 
         n = next(m for m in nodes if m.level == BUDGET_LEVEL[acct.provider])
         await db.commit()
         await _mutate(db, acct, n, "BUDGET", f"{n.id}:BUDGET:v{root.budget_version}", b.budget(n.provider_id, ctx(acct, root, nodes, n)),
-                      f"BUDGET v{root.budget_version}", root.mode, _tree_transport(nodes, g), user)
+                      f"BUDGET v{root.budget_version}", root.mode, _tree_transport(nodes, g, root), user)
         ap.status, root.budget_pushed = "USED", root.budget_version
         audit(db, user, "ads.campaign.budget_pushed", root.id, {"version": root.budget_version})
     else:
@@ -443,16 +479,28 @@ async def submit(db: AsyncSession, root: AdCampaignNode, acct: AdAccount, user) 
 
 
 async def set_status(db: AsyncSession, root: AdCampaignNode, acct: AdAccount, user, active: bool) -> dict:
-    """Pause: top object only (fastest stop, no approval). Resume: every object, children first, needs a RESUME approval."""
+    """Pause: top object only (fastest stop, no approval). Resume: every object, children first, needs a RESUME approval.
+    Pausing a LIVE tree is allowed even when live changes are gated off (it only reduces spend), but only as a real
+    provider call: without live egress and credentials it is refused, never recorded as done."""
+    async with root_lock(db, root):
+        await db.refresh(root)
+        return await _set_status(db, root, acct, user, active)
+
+
+async def _set_status(db: AsyncSession, root: AdCampaignNode, acct: AdAccount, user, active: bool) -> dict:
     ctrl = await control(db, acct)
     require_member(user, ctrl)
     nodes = await nodes_of(db, root)
     if not all(n.provider_id for n in nodes):
         raise Refused(409, "The campaign is not fully created on the provider yet.")
     g = gate(acct, ctrl)
-    if root.mode == "LIVE" and g["mode"] != "LIVE" and not (not active and egress_mode() == "live"
-                                                            and ADAPTERS[acct.provider].configured()):
-        raise Refused(409, "Live changes are switched off: " + " ".join(g["reasons"]))
+    if root.mode == "LIVE" and g["mode"] != "LIVE":
+        if active:
+            raise Refused(409, "Live changes are switched off: " + " ".join(g["reasons"]))
+        if egress_mode() != "live" or not ADAPTERS[acct.provider].configured():
+            raise Refused(409, "Cannot pause this live campaign from here: the provider is unreachable ("
+                               + " ".join(r for r in g["reasons"] if "EGRESS" in r or "credentials" in r)
+                               + "). Nothing was sent — pause it in the platform's own ads manager now.")
     if root.mode == "SIMULATED" and g["mode"] == "LIVE":
         raise Refused(409, "This campaign was created in simulation; create a new campaign for live use.")
     ap = None
@@ -467,10 +515,11 @@ async def set_status(db: AsyncSession, root: AdCampaignNode, acct: AdAccount, us
     await db.commit()
     for n in targets:
         await _mutate(db, acct, n, "STATUS", f"{n.id}:STATUS:{root.op_seq}", b.status(n.level, n.provider_id, active,
-                      ctx(acct, root, nodes, n)), "ACTIVE" if active else "PAUSED", root.mode, _tree_transport(nodes, g), user)
+                      ctx(acct, root, nodes, n)), "ACTIVE" if active else "PAUSED", root.mode,
+                      _tree_transport(nodes, g, root), user)
     if ap:
         ap.status = "USED"
-    if _tree_transport(nodes, g) == "offline":
+    if _tree_transport(nodes, g, root) == "offline":
         root.status = "ACTIVE" if active else "PAUSED"
         await readback(db, acct, root, nodes)
     else:
@@ -481,22 +530,33 @@ async def set_status(db: AsyncSession, root: AdCampaignNode, acct: AdAccount, us
 
 
 async def reconcile(db: AsyncSession, root: AdCampaignNode, acct: AdAccount, user) -> dict:
-    """Resolve UNKNOWN / stale PENDING ledger rows by read-back, then refresh every object's provider status."""
+    """Resolve UNKNOWN / stale PENDING ledger rows by read-back, then refresh every object's provider status.
+    A PENDING row younger than CLAIM_GRACE may still be in flight and is left alone (no false FAILED)."""
+    async with root_lock(db, root):
+        await db.refresh(root)
+        return await _reconcile(db, root, acct, user)
+
+
+async def _reconcile(db: AsyncSession, root: AdCampaignNode, acct: AdAccount, user) -> dict:
     ctrl = await control(db, acct)
     require_member(user, ctrl)
     nodes = await nodes_of(db, root)
     by_id = {n.id: n for n in nodes}
     g = gate(acct, ctrl)
     b = BUILDERS[acct.provider]
-    rows = (await db.execute(select(AdMutation).where(AdMutation.node_id.in_(list(by_id)),
-                                                      AdMutation.state.in_(("UNKNOWN", "PENDING")))
-                             .order_by(AdMutation.created_at))).scalars().all()
+    cutoff = datetime.now(timezone.utc) - CLAIM_GRACE
+    rows = (await db.execute(select(AdMutation).where(
+        AdMutation.node_id.in_(list(by_id)),
+        (AdMutation.state == "UNKNOWN") | ((AdMutation.state == "PENDING") & (AdMutation.updated_at < cutoff)))
+        .order_by(AdMutation.created_at))).scalars().all()
+    in_flight = (await db.execute(select(func.count()).select_from(AdMutation).where(
+        AdMutation.node_id.in_(list(by_id)), AdMutation.state == "PENDING", AdMutation.updated_at >= cutoff))).scalar_one()
     resolved = []
     for row in rows:
         n = by_id[row.node_id]
         x = ctx(acct, root, nodes, n)
         if row.operation == "CREATE":
-            pid = None if _tree_transport(nodes, g) == "offline" else await find_created(acct.provider, n.level, x)
+            pid = None if _tree_transport(nodes, g, root) == "offline" else await find_created(acct.provider, n.level, x)
             if pid:
                 row.state, row.provider_id = "SUCCEEDED", pid
                 n.provider_id, n.status, n.mode = pid, "CREATED", root.mode
@@ -533,11 +593,11 @@ async def reconcile(db: AsyncSession, root: AdCampaignNode, acct: AdAccount, use
             root.status = "PAUSED"
     elif any(n.provider_id for n in nodes):
         root.status = "PARTIAL"
-    elif root.status in ("SUBMITTING", "UNKNOWN"):
+    elif root.status in ("SUBMITTING", "UNKNOWN") and not in_flight:
         root.status = "FAILED"
-    audit(db, user, "ads.campaign.reconciled", root.id, {"resolved": resolved})
+    audit(db, user, "ads.campaign.reconciled", root.id, {"resolved": resolved, "in_flight": in_flight})
     await db.commit()
-    return {"resolved": resolved, "status": root.status}
+    return {"resolved": resolved, "status": root.status, "in_flight": in_flight}
 
 
 async def validate_tree(db: AsyncSession, root: AdCampaignNode, acct: AdAccount) -> dict:

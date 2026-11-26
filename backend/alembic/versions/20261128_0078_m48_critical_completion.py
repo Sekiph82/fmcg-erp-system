@@ -30,6 +30,7 @@ COLUMNS = [
     ("social_posts", "next_poll_at", "TIMESTAMPTZ"),
     ("social_posts", "poll_count", "INTEGER NOT NULL DEFAULT 0"),
     ("dw_runs", "mode", "VARCHAR(10)"),                                                     # T007/T008 SIMULATED | LIVE
+    ("dw_targets", "secret_set_by", "VARCHAR(100)"),                                        # T007/T008 independent approval
     ("stock_movements", "idempotency_key", "VARCHAR(64) UNIQUE"),                           # T018 transfer replay
 ]
 

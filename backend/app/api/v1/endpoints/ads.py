@@ -314,7 +314,7 @@ async def _tree_out(db: AsyncSession, root: AdCampaignNode, acct: AdAccount, use
     return {"id": str(root.id), "account_id": str(acct.id), "provider": acct.provider, "currency": acct.currency,
             "name": root.name, "objective": root.objective, "spec": root.spec, "daily_budget": float(root.daily_budget),
             "budget_version": root.budget_version, "budget_pushed": root.budget_pushed, "status": root.status,
-            "mode": root.mode if any_created else g["mode"], "transport": svc._tree_transport(nodes, g),
+            "mode": root.mode if any_created else g["mode"], "transport": svc._tree_transport(nodes, g, root),
             "live_blockers": g["reasons"], "validation": root.validation, "last_error": root.last_error,
             "created_by": root.created_by,
             "nodes": [{"id": str(n.id), "level": n.level, "label": LEVEL_LABEL[acct.provider][n.level], "name": n.name,

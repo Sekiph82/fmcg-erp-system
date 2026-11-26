@@ -504,6 +504,38 @@ async def _load_source(db: AsyncSession, source_type: str, source_id, lock: bool
     return (await db.execute(stmt.execution_options(populate_existing=True))).scalar_one_or_none()
 
 
+CONTRACT_MODULES = ("sales", "procurement", "finance")      # the /contracts route guard's modules
+
+
+def can_view_source(user, source_type: str, obj) -> bool:
+    """Record scope for provider envelope reads: the user must be allowed to see the quotation / contract itself.
+    E-signature admins see all."""
+    from app.core.access_control import can_view_record, has_permission
+    if getattr(user, "is_superuser", False) or has_permission(user, "esign.admin"):
+        return True
+    if obj is None:
+        return False
+    mods = ("sales",) if source_type == "QUOTATION" else CONTRACT_MODULES
+    return any(can_view_record(user, m, obj) for m in mods)
+
+
+async def visible_envelopes(db: AsyncSession, user, envs: list) -> list:
+    from app.models.contracts import Contract
+    from app.models.quotation import Quotation
+    out = []
+    for st, model in (("QUOTATION", Quotation), ("CONTRACT", Contract)):
+        ids = {e.source_id for e in envs if e.source_type == st}
+        objs = {o.id: o for o in (await db.execute(select(model).where(model.id.in_(ids)))).scalars()} if ids else {}
+        out += [e for e in envs if e.source_type == st and can_view_source(user, st, objs.get(e.source_id))]
+    return sorted(out, key=lambda e: e.created_at, reverse=True)
+
+
+async def ensure_envelope_visible(db: AsyncSession, user, env) -> None:
+    """404 (not 403) for an envelope whose source the user may not see, so its existence is not revealed."""
+    if env is None or not can_view_source(user, env.source_type, await _load_source(db, env.source_type, env.source_id)):
+        raise ESignError(404, "Signature request not found")
+
+
 async def fingerprint(db: AsyncSession, source_type: str, obj) -> str:
     content, _ = await (_quote_content(db, obj) if source_type == "QUOTATION" else _contract_content(obj))
     return _fp(content)
@@ -534,8 +566,10 @@ async def snapshot(db: AsyncSession, source_type: str, source_id, user) -> tuple
         content, text = await _quote_content(db, obj)
         ref = f"{obj.quote_no} v{obj.version}"
     else:
-        if not (user.is_superuser or has_any_permission(user, ("sales.edit", "procurement.edit", "finance.edit"))):
-            raise ESignError(403, "You may not send contracts for signature.")
+        from app.core.access_control import can_view_record
+        if not (user.is_superuser or any(has_any_permission(user, (f"{m}.edit",)) and can_view_record(user, m, obj)
+                                         for m in CONTRACT_MODULES)):
+            raise ESignError(403, "You may not send this contract for signature (right or record scope missing).")
         if obj.status not in ("APPROVED", "ACTIVE"):
             raise ESignError(409, "Only an approved or active contract can go out for signature.")
         content, text = await _contract_content(obj)

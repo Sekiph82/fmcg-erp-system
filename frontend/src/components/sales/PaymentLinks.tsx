@@ -60,7 +60,7 @@ export function PaymentLinks({ invoiceId, open }: { invoiceId: string; open: boo
   const saveSetup = () => setup && act(async () => { await apiClient.put("/api/v1/payment-links/card/config", setup); setSetup(null); });
   const cfgAction = (a: string) => act(() => apiClient.post(`/api/v1/payment-links/card/config/${a}`));
 
-  const cardOff = !cfg || cfg.mode === "NOT_CONFIGURED";
+  const cardOff = !cfg || cfg.mode === "NOT_CONFIGURED" || cfg.mode === "BLOCKED";
   const cardReason = (l: Link) => l.status !== "ACTIVE" ? "The link is not open for payment." :
     cardOff ? (cfg?.disabled_reasons.join(" ") || "Card payments are not set up.") : "";
 

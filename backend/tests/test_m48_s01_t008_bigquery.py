@@ -195,6 +195,22 @@ async def test_not_configured_and_dry_plan(sim):
     assert any("MERGE" in (s.get("body") or {}).get("query", "") for s in steps)
 
 
+@pytest.mark.asyncio
+async def test_live_mode_pins_official_google_hosts(sim, monkeypatch):
+    t = await _target()
+    monkeypatch.setattr(settings, "PROVIDER_EGRESS", "live")
+    with pytest.raises(wes.ExportError, match="BigQuery API URL override .* only allowed against the local simulator"):
+        cw.BigQueryWriter(t)
+    with pytest.raises(wes.ExportError, match="Google token URL override https://evil.example.com/token"):
+        cw.BigQueryWriter(SimpleNamespace(config={"project": "povu-demo-erp", "dataset": "erp_export",
+                                                  "token_url": "https://evil.example.com/token"}, secret=None))
+    official = {"project": "povu-demo-erp", "dataset": "erp_export"}
+    assert cw.effective_hosts("BIGQUERY", official) == ["https://bigquery.googleapis.com", "https://oauth2.googleapis.com/token"]
+    monkeypatch.setattr(settings, "PROVIDER_EGRESS", "off")              # not local: overrides refused too
+    with pytest.raises(wes.ExportError, match="only allowed against the local simulator"):
+        cw.effective_hosts("BIGQUERY", t.config)
+
+
 # ── DB: the real incremental job ────────────────────────────────────────────
 
 DB = pytest.mark.skipif(os.environ.get("M48_DB") != "1", reason="requires the task-owned disposable PostgreSQL")

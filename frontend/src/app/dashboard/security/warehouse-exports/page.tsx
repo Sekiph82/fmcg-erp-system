@@ -5,7 +5,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { apiClient } from "@/lib/api";
 
-type Target = { id: string; name: string; kind: string; config: Record<string, unknown>; configured: boolean; status: string | null; created_by: string | null };
+type Target = { id: string; name: string; kind: string; config: Record<string, unknown>; configured: boolean; status: string | null; created_by: string | null; secret_set_by: string | null; hosts: string[] | null };
 type O = { datasets: string[]; formats: Record<string, string>; kinds: Record<string, string>;
   targets: Target[];
   jobs: { id: string; target_id: string; dataset: string; format: string; every_minutes: number | null; watermark: string | null }[];
@@ -57,7 +57,7 @@ export default function WarehouseExportsPage() {
   const run = (id: string) => act(`run-${id}`, async () => { const r = await apiClient.post(`/api/v1/warehouse-exports/jobs/${id}/run`); return `Run ${r.data.status.toLowerCase()}${r.data.mode ? ` (${r.data.mode.toLowerCase()})` : ""}: ${r.data.rows} rows, ${r.data.deleted} deletes${r.data.error ? ` — ${r.data.error}` : ""}`; });
   const dry = (id: string) => act(`dry-${id}`, async () => { const r = await apiClient.post(`/api/v1/warehouse-exports/jobs/${id}/dry-run`); setPlan((p) => ({ ...p, [id]: r.data })); return `Dry run: ${r.data.pending_rows} rows pending; nothing was sent.`; });
   const test = (id: string) => act(`test-${id}`, async () => { const r = await apiClient.post(`/api/v1/warehouse-exports/targets/${id}/test`); return r.data.ok ? `Connection OK (${(r.data.mode ?? "").toLowerCase()}): ${Object.entries(r.data).filter(([k]) => !["ok", "mode"].includes(k)).map(([k, v]) => `${k} ${v}`).join(", ")}` : `Connection failed: ${r.data.error}`; });
-  const approve = (id: string) => act(`approve-${id}`, async () => { await apiClient.post(`/api/v1/warehouse-exports/targets/${id}/approve`); return "Target approved for live sync (still needs the owner's runtime switch)."; });
+  const approve = (id: string) => act(`approve-${id}`, async () => { const r = await apiClient.post(`/api/v1/warehouse-exports/targets/${id}/approve`); return `Target approved for live sync to ${(r.data.hosts ?? []).join(", ")} (still needs the owner's runtime switch).`; });
   const saveSecret = () => replace && act(`secret-${replace.id}`, async () => { const r = await apiClient.put(`/api/v1/warehouse-exports/targets/${replace.id}/secret`, { secret: replace.secret, passphrase: replace.passphrase || null }); setReplace(null); return `Credential saved${r.data.public_key_fp ? ` — fingerprint ${r.data.public_key_fp}` : ""}${r.data.client_email ? ` — ${r.data.client_email}` : ""}. Approval must be given again.`; });
   if (!o) return <p className="p-4 text-sm">{msg ?? "Loading…"}</p>;
   const tgt = (id: string) => o.targets.find((y) => y.id === id);
@@ -86,12 +86,13 @@ export default function WarehouseExportsPage() {
         <ul className="text-xs divide-y">{o.targets.map((x) => {
           const c = CLOUD.includes(x.kind);
           return <li key={x.id} className="py-1 space-y-1"><div className="flex flex-wrap justify-between gap-2">
-            <span>{x.name} · {x.kind}{c && <> · <b>{x.status?.replace("_", " ").toLowerCase()}</b>{x.config.public_key_fp ? ` · key ${String(x.config.public_key_fp).slice(0, 20)}…` : ""}{x.config.client_email ? ` · ${x.config.client_email}` : ""}{x.config.approved_by ? ` · approved by ${x.config.approved_by}` : ""}</>}</span>
+            <span>{x.name} · {x.kind}{c && <> · <b>{x.status?.replace("_", " ").toLowerCase()}</b>{x.config.public_key_fp ? ` · key ${String(x.config.public_key_fp).slice(0, 20)}…` : ""}{x.config.client_email ? ` · ${x.config.client_email}` : ""}{x.config.approved_by ? ` · approved by ${x.config.approved_by}` : ""}{x.secret_set_by ? ` · credential set by ${x.secret_set_by}` : ""}</>}</span>
             {c && <span className="flex gap-2">
               <button className="underline disabled:opacity-50" disabled={busy === `test-${x.id}`} onClick={() => test(x.id)}>Test connection</button>
               <button className="underline" onClick={() => setReplace({ id: x.id, secret: "", passphrase: "" })}>{x.configured ? "Replace credential" : "Add credential"}</button>
-              <button className="underline disabled:opacity-50" disabled={!x.configured || !!x.config.approved_by} title={!x.configured ? "Save a credential first" : x.config.approved_by ? "Already approved" : "A different administrator than the creator must approve"} onClick={() => approve(x.id)}>Approve</button>
+              <button className="underline disabled:opacity-50" disabled={!x.configured || !!x.config.approved_by} title={!x.configured ? "Save a credential first" : x.config.approved_by ? "Already approved" : `Approve live sync to ${(x.hosts ?? []).join(", ")} — only an administrator who neither created this target nor set its credential`} onClick={() => approve(x.id)}>Approve</button>
             </span>}</div>
+            {c && x.hosts && <p className={x.hosts.some((h) => h.startsWith("REFUSED")) ? "text-red-700" : "text-gray-600"}>Sends to: {x.hosts.join(" · ")}</p>}
             {replace?.id === x.id && <div className="flex flex-wrap gap-2"><textarea aria-label="New credential" className={`${inp} font-mono h-16 flex-1`} autoComplete="off" spellCheck={false} placeholder={x.kind === "SNOWFLAKE" ? "PEM private key" : "service-account JSON"} value={replace.secret} onChange={(e) => setReplace({ ...replace, secret: e.target.value })} />
               {x.kind === "SNOWFLAKE" && <input aria-label="New key passphrase" type="password" className={inp} placeholder="passphrase" value={replace.passphrase} onChange={(e) => setReplace({ ...replace, passphrase: e.target.value })} />}
               <button className="border rounded px-2 disabled:opacity-50" disabled={!replace.secret} onClick={saveSecret}>Save</button><button className="underline" onClick={() => setReplace(null)}>Cancel</button></div>}

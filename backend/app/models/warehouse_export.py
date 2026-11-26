@@ -17,6 +17,7 @@ class ExportTarget(Base):
     secret     = Column(Text, nullable=True)                 # encrypted: S3 secret key / PostgreSQL DSN / Snowflake key JSON / BigQuery SA JSON
     active     = Column(Boolean, nullable=False, default=True)
     created_by = Column(String(100), nullable=True)
+    secret_set_by = Column(String(100), nullable=True)           # who last stored the credential (cannot approve)
     created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
 

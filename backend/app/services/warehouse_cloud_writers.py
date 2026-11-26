@@ -128,16 +128,40 @@ def _live_switch() -> bool:
     return bool(getattr(settings, "WAREHOUSE_LIVE_ENABLED", False))
 
 
+def _host(url: Optional[str], official: str, what: str) -> str:
+    """Endpoint pinning: an override (simulator URL) is honoured only under PROVIDER_EGRESS=local; anywhere else the
+    data, the Snowflake JWT and the Google assertion may only go to the provider's official host."""
+    from app.core.provider_http import egress_mode
+    eff = (url or official).rstrip("/")
+    if eff != official.rstrip("/") and egress_mode() != "local":
+        raise ExportError(f"{what} override {eff[:120]} is only allowed against the local simulator "
+                          f"(PROVIDER_EGRESS=local); live traffic must go to {official}.")
+    return eff
+
+
+def effective_hosts(kind: str, config: dict) -> list[str]:
+    """The URLs a sync of this target would talk to (shown to the approver and bound to the approval)."""
+    from types import SimpleNamespace
+    w = (SnowflakeWriter if kind == "SNOWFLAKE" else BigQueryWriter)(SimpleNamespace(config=config, secret=None))
+    return [w.base] if kind == "SNOWFLAKE" else [w.base, w.token_url]
+
+
 def _live_gate(t) -> str:
     """SIMULATED under PROVIDER_EGRESS=local (only the local simulator is reachable); LIVE needs the runtime switch
-    WAREHOUSE_LIVE_ENABLED and a second administrator's approval of this target."""
+    WAREHOUSE_LIVE_ENABLED and an approval by an administrator who neither created the target nor set its
+    credential, bound to the exact official hosts shown at approval."""
     from app.core.provider_http import egress_mode
     if egress_mode() != "live":
         return "SIMULATED"
     if not _live_switch():
         raise ExportError("LIVE_DISABLED: live warehouse sync is off until the owner sets WAREHOUSE_LIVE_ENABLED.")
-    if not (t.config or {}).get("approved_by"):
-        raise ExportError("LIVE_DISABLED: a second report administrator must approve this target first.")
+    c = t.config or {}
+    if not c.get("approved_by"):
+        raise ExportError("LIVE_DISABLED: an independent report administrator must approve this target first.")
+    if c["approved_by"] in (getattr(t, "created_by", None), getattr(t, "secret_set_by", None)):
+        raise ExportError("LIVE_DISABLED: the approver set up this target or its credential; an independent approval is needed.")
+    if c.get("approved_hosts") != effective_hosts(t.kind, c):
+        raise ExportError("LIVE_DISABLED: the target's endpoints changed since approval; approve again.")
     return "LIVE"
 
 
@@ -209,7 +233,7 @@ class SnowflakeWriter(Writer):
         if c["role"].upper() in SF_ADMIN_ROLES:
             raise ExportError(f"Refused role {c['role'].upper()}: use a least-privilege loader role that owns only the export schema.")
         self.c = c
-        self.base = (c.get("base_url") or f"https://{c['account'].lower()}.snowflakecomputing.com").rstrip("/")
+        self.base = _host(c.get("base_url"), f"https://{c['account'].lower()}.snowflakecomputing.com", "Snowflake API URL")
         self.allow_deletes = c.get("allow_deletes", True) is not False
         self._tok: Optional[tuple[str, float]] = None
         self._ready: set[str] = set()
@@ -390,8 +414,8 @@ class BigQueryWriter(Writer):
             raise ExportError("max_bytes_billed must be a whole number of bytes.") from None
         if self.cap <= 0:
             raise ExportError("max_bytes_billed must be positive.")
-        self.base = (c.get("base_url") or "https://bigquery.googleapis.com").rstrip("/")
-        self.token_url = c.get("token_url") or "https://oauth2.googleapis.com/token"
+        self.base = _host(c.get("base_url"), "https://bigquery.googleapis.com", "BigQuery API URL")
+        self.token_url = _host(c.get("token_url"), "https://oauth2.googleapis.com/token", "Google token URL")
         self.allow_deletes = c.get("allow_deletes", True) is not False
         self._tok: Optional[tuple[str, float]] = None
         self._ready: set[str] = set()

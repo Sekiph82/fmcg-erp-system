@@ -261,7 +261,9 @@ async def create_count_entry(
     tolerance_pct: Decimal = Decimal("2.0"),
     auto_approve: bool = True,
 ) -> CountEntry:
-    task = await get_task(db, data.task_id)
+    # lock the task: concurrent scans of the same task run one after another, so the duplicate guard below holds
+    task = (await db.execute(select(CycleCountTask).where(CycleCountTask.id == data.task_id).with_for_update()
+                             .execution_options(populate_existing=True))).scalar_one_or_none()
     if not task:
         raise ValueError("Task not found")
     # scan checks (M48.S01.T014): the scanned item must be the task's item, a closed task takes no counts,
@@ -337,15 +339,14 @@ async def create_count_entry(
     if task.status == TaskStatus.PENDING:
         task.status = TaskStatus.IN_PROGRESS
 
-    await db.commit()
-    await db.refresh(entry)
+    await db.flush()
 
-    # Post adjustment immediately if auto-approved
+    # Post an auto-approved adjustment in the same transaction as the entry: if posting fails (GL rule, ambiguous
+    # stock row, …) nothing is stored, so no APPROVED-but-unposted adjustment blocks a recount (M48 review #6)
     if adj_status == AdjustmentStatus.APPROVED and variance_qty != 0:
         await _post_stock_adjustment(db, entry, adjustment)
-        await db.commit()          # the posting was flushed only and rolled back when the request ended (M48.S01.T014)
-        await db.refresh(entry)
-
+    await db.commit()
+    await db.refresh(entry)
     return entry
 
 
@@ -374,7 +375,8 @@ async def approve_adjustments(
 ) -> int:
     count = 0
     for entry_id in data.entry_ids:
-        entry_r = await db.execute(select(CountEntry).options(selectinload(CountEntry.adjustment)).where(CountEntry.id == entry_id))
+        entry_r = await db.execute(select(CountEntry).options(selectinload(CountEntry.adjustment)).where(CountEntry.id == entry_id)
+                                  .with_for_update(of=CountEntry).execution_options(populate_existing=True))   # one approver at a time
         entry = entry_r.scalar_one_or_none()
         if not entry or not entry.adjustment:
             continue
@@ -400,7 +402,8 @@ async def reject_adjustments(
 ) -> int:
     count = 0
     for entry_id in data.entry_ids:
-        entry_r = await db.execute(select(CountEntry).options(selectinload(CountEntry.adjustment)).where(CountEntry.id == entry_id))
+        entry_r = await db.execute(select(CountEntry).options(selectinload(CountEntry.adjustment)).where(CountEntry.id == entry_id)
+                                  .with_for_update(of=CountEntry).execution_options(populate_existing=True))   # one approver at a time
         entry = entry_r.scalar_one_or_none()
         if not entry or not entry.adjustment:
             continue
