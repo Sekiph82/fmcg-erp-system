@@ -40,6 +40,52 @@ export default function SSOPage() {
       <label className="text-xs flex gap-2 items-center"><input type="checkbox" checked={cfg.enforced} onChange={(e) => setCfg({ ...cfg, enforced: e.target.checked })} /> Enforce: block password login except break-glass</label>
       <p className="text-xs text-gray-500">Only users that already exist in the ERP (same e-mail) can sign in; disabled users are refused.</p>
       <button className="bg-indigo-600 text-white rounded px-3 py-1 text-xs" onClick={save}>Save</button>
+      <SamlSection />
     </div>
+  );
+}
+
+// M50.S01.T010 SAML 2.0 (python3-saml + xmlsec): IdP details, signing certificate, role mapping; SP metadata for the IdP admin.
+type Saml = { name: string; idp_entity_id: string; idp_sso_url: string; idp_x509_cert: string; sp_entity_id: string; email_attribute: string; groups_attribute: string; clock_skew_seconds: number; active: boolean };
+type SamlOut = { library: { available: boolean; detail: string }; config: (Saml & { role_mapping: Record<string, string>; acs_url: string; metadata_url: string; certificate: { subject: string; not_after: string; expired: boolean; sha256: string } }) | null; defaults: { sp_entity_id: string; acs_url: string } };
+function SamlSection() {
+  const [o, setO] = useState<SamlOut | null>(null);
+  const [f, setF] = useState<Saml>({ name: "Company SAML IdP", idp_entity_id: "", idp_sso_url: "https://", idp_x509_cert: "", sp_entity_id: "", email_attribute: "email", groups_attribute: "groups", clock_skew_seconds: 60, active: false });
+  const [map, setMap] = useState("");
+  const [m, setM] = useState<string | null>(null);
+  useEffect(() => {
+    apiClient.get("/api/v1/sso/saml/config").then((r) => {
+      setO(r.data);
+      if (r.data.config) { const { role_mapping, certificate: _c, acs_url: _a, metadata_url: _m, id: _i, ...rest } = r.data.config; setF({ ...rest, idp_x509_cert: "" }); setMap(Object.entries(role_mapping ?? {}).map(([k, v]) => `${k}=${v}`).join("\n")); }
+      else setF((x) => ({ ...x, sp_entity_id: r.data.defaults.sp_entity_id }));
+    }).catch((e) => setM(err(e)));
+  }, []);
+  const save = () => {
+    const role_mapping = Object.fromEntries(map.split("\n").map((l) => l.split("=").map((x) => x.trim())).filter((x) => x.length === 2 && x[0] && x[1]));
+    apiClient.put("/api/v1/sso/saml/config", { ...f, idp_x509_cert: f.idp_x509_cert || undefined, role_mapping }).then((r) => { setM("SAML saved."); setO({ ...o!, config: r.data }); }).catch((e) => setM(err(e)));
+  };
+  const t = (k: keyof Saml, label: string) => <label className="text-xs block">{label}<input aria-label={label} className={inp} value={String(f[k] ?? "")} onChange={(e) => setF({ ...f, [k]: k === "clock_skew_seconds" ? Number(e.target.value) : e.target.value })} /></label>;
+  return (
+    <section className="border-t pt-4 mt-4 space-y-3" aria-label="SAML 2.0">
+      <h3 className="font-semibold">SAML 2.0</h3>
+      {o && !o.library.available && <p className="text-xs text-red-600">SAML library not available on this server: {o.library.detail}</p>}
+      {o && o.library.available && <p className="text-xs text-gray-500">Library: {o.library.detail}. Sign-in is service-provider initiated; the assertion must be signed by the certificate below.</p>}
+      {m && <p role="status" className="text-xs">{m}</p>}
+      {o?.config && <div className="text-xs border rounded p-2 bg-gray-50 space-y-1">
+        <div>Give the IdP administrator: SP entity ID <code>{o.config.sp_entity_id}</code>, ACS URL <code>{o.config.acs_url}</code> (HTTP-POST), or the metadata: <a className="underline" href={o.config.metadata_url} target="_blank" rel="noreferrer">{o.config.metadata_url}</a></div>
+        <div>IdP certificate: {o.config.certificate.subject}, valid until {new Date(o.config.certificate.not_after).toLocaleDateString()}{o.config.certificate.expired ? " (EXPIRED)" : ""}, SHA-256 {o.config.certificate.sha256.slice(0, 16)}…</div></div>}
+      {t("name", "SAML name shown on the login page")}
+      {t("idp_entity_id", "IdP entity ID")}
+      {t("idp_sso_url", "IdP single sign-on URL (HTTP-Redirect)")}
+      <label className="text-xs block">IdP signing certificate (PEM, public part only){o?.config ? " — paste again only to replace it" : ""}<textarea aria-label="IdP certificate" className={`${inp} font-mono`} rows={4} value={f.idp_x509_cert} onChange={(e) => setF({ ...f, idp_x509_cert: e.target.value })} /></label>
+      {t("sp_entity_id", "SP entity ID")}
+      {t("email_attribute", "E-mail attribute name")}
+      {t("groups_attribute", "Groups attribute name")}
+      {t("clock_skew_seconds", "Allowed clock skew (seconds, max 120)")}
+      <label className="text-xs block">Role mapping (idp-group=ERP role name, one per line)<textarea aria-label="SAML role mapping" className={inp} rows={3} value={map} onChange={(e) => setMap(e.target.value)} /></label>
+      <label className="text-xs flex gap-2 items-center"><input type="checkbox" checked={f.active} onChange={(e) => setF({ ...f, active: e.target.checked })} /> Active (shows the SAML button on the login page)</label>
+      <p className="text-xs text-gray-500">Only users that already exist in the ERP (same e-mail) can sign in; privileged accounts keep password + authenticator app.</p>
+      <button className="bg-indigo-600 text-white rounded px-3 py-1 text-xs disabled:opacity-50" disabled={!o?.library.available || (!o?.config && !f.idp_x509_cert)} onClick={save}>Save SAML</button>
+    </section>
   );
 }

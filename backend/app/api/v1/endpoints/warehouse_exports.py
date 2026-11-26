@@ -43,7 +43,7 @@ async def overview(db: AsyncSession = Depends(get_db), current_user=Depends(get_
 
     jobs = (await db.execute(select(ExportJob).order_by(ExportJob.dataset))).scalars().all()
     runs = (await db.execute(select(ExportRun).order_by(ExportRun.started_at.desc()).limit(50))).scalars().all()
-    return {"datasets": list(wes.DATASETS), "formats": {"csv": "available", "jsonl": "available", "parquet": "NOT_AVAILABLE (pyarrow)"},
+    return {"datasets": list(wes.DATASETS), "formats": {"csv": "available", "jsonl": "available", "parquet": "available"},
             "kinds": {k: "available" for k in ("LOCAL_DIR", "S3", "POSTGRES", "SNOWFLAKE", "BIGQUERY")},
             "targets": [{"id": str(t.id), "name": t.name, "kind": t.kind, "config": {k: v for k, v in t.config.items() if k != "access_key"},
                          "active": t.active, "configured": bool(t.secret), "created_by": t.created_by,
@@ -193,8 +193,6 @@ async def add_job(body: JobIn, db: AsyncSession = Depends(get_db), current_user=
     _admin(current_user)
     if body.dataset not in wes.DATASETS:
         raise HTTPException(422, f"Dataset must be one of {', '.join(wes.DATASETS)}.")
-    if body.file_format == "parquet":
-        raise HTTPException(422, "Parquet is NOT_AVAILABLE: pyarrow is not installed; use csv or jsonl.")
     if await db.get(ExportTarget, body.target_id) is None:
         raise HTTPException(404, "Target not found")
     j = ExportJob(**body.model_dump(), known_ids=[], schema_cols=[])

@@ -177,6 +177,8 @@ const SensitivePage      = dynamic(() => import("@/app/dashboard/crm/sensitive/p
 const SalesDocsPage      = dynamic(() => import("@/app/dashboard/crm/sales-docs/page"), { ssr: false });
 const PlatformDepthPage  = dynamic(() => import("@/app/dashboard/crm/platform-depth/page"), { ssr: false });   // M47
 const DataSyncPage       = dynamic(() => import("@/app/dashboard/crm/data-sync/page"), { ssr: false });
+const ProspectingPage    = dynamic(() => import("@/app/dashboard/crm/prospecting/page"), { ssr: false });   // M50.S01.T001-T004
+const AddinSessionsPage  = dynamic(() => import("@/app/dashboard/crm/addin-sessions/page"), { ssr: false });   // M50.S01.T011
 const SocialPage         = dynamic(() => import("@/app/dashboard/crm/social/page"), { ssr: false });
 const AdsPage            = dynamic(() => import("@/app/dashboard/crm/ads/page"), { ssr: false });
 const AudiencesPage      = dynamic(() => import("@/app/dashboard/crm/audiences/page"), { ssr: false });
@@ -233,6 +235,8 @@ export default function CRMPage() {
     { key: "channels", label: "Messaging channels", permission: "crm.view", content: <MsgChannelsPage /> },
     { key: "success", label: "Customer success", permission: "crm.view", content: <SuccessPage /> },
     { key: "data-hub", label: "Prospecting & data", permission: "crm.view", content: <DataHubPage /> },
+    { key: "prospecting", label: "Prospecting agent", permission: "crm.view", content: <ProspectingPage /> },
+    { key: "addin-sessions", label: "Mail add-in sessions", permission: "crm.view", content: <AddinSessionsPage /> },
     { key: "duplicates", label: "Duplicates", permission: "crm.view_all", content: <DuplicatesPage /> },
     { key: "data-sync", label: "Data sync & quality", permission: "crm.view", content: <DataSyncPage /> },
     { key: "objects", label: "Custom objects", permission: "crm.view", content: <ObjectsPage /> },

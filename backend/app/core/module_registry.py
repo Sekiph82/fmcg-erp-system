@@ -588,6 +588,8 @@ ENDPOINT_ROUTE_DEFINITIONS: tuple[EndpointRouteDefinition, ...] = (
     EndpointRouteDefinition(key="ads_lifecycle", route_prefix="/ads-lifecycle", import_path="app.api.v1.endpoints.ads_lifecycle", tags=('marketing',)),  # M49.S01.T006
     EndpointRouteDefinition(key="audience_sync", route_prefix="/audience-sync", import_path="app.api.v1.endpoints.audience_sync", tags=('marketing',)),  # M49.S01.T011
     EndpointRouteDefinition(key="marketing_studio", route_prefix="/marketing-studio", import_path="app.api.v1.endpoints.marketing_studio", tags=('marketing',)),  # M49.S01.T012
+    EndpointRouteDefinition(key="m50_prospecting", route_prefix="/prospecting-agent", import_path="app.api.v1.endpoints.m50_prospecting", tags=('crm',)),  # M50.S01.T001-T004
+    EndpointRouteDefinition(key="business_card_ocr", route_prefix="/crm/card-ocr", import_path="app.api.v1.endpoints.business_card_ocr", tags=('crm',)),  # M50.S01.T010
     EndpointRouteDefinition(key="booking_pages", route_prefix="/booking-pages", import_path="app.api.v1.endpoints.booking_pages", tags=('meetings',)),
     EndpointRouteDefinition(key="booking_public", route_prefix="/public/book", import_path="app.api.v1.endpoints.booking_public", tags=('meetings',)),
     EndpointRouteDefinition(key="oauth_connections", route_prefix="/integrations/oauth", import_path="app.api.v1.endpoints.oauth_connections", tags=('integrations',)),
@@ -783,6 +785,16 @@ PUBLIC_ROUTES: frozenset[tuple[str, str]] = frozenset({
     ("/public/calendar-hooks/microsoft", "POST"),          # Graph validationToken handshake / clientState + replay
     ("/public/calendar-hooks/microsoft/lifecycle", "POST"),
     ("/calls/cc/twilio/webhook", "POST"),                  # M49.S01.T004 X-Twilio-Signature HMAC-SHA1, replay-keyed
+    ("/public/chat/sessions/{session_id}/actions/{action_id}", "POST"),   # M50.S01.T005 X-Chat-Token + signed-in customer
+    ("/public/chat/sessions/{session_id}/feedback", "POST"),              # M50.S01.T006 X-Chat-Token (CSAT/CES)
+    ("/sso/saml/metadata", "GET"),                                        # M50.S01.T010 SP metadata
+    ("/sso/saml/start", "GET"),                                           # SP-initiated AuthnRequest
+    ("/sso/saml/acs", "POST"),                                            # signed assertion, audience/recipient/time, InResponseTo, browser cookie, replay
+    ("/public/crm-addin/auth/token", "POST"),                             # M50.S01.T011 PKCE code + verifier (hashed)
+    ("/public/crm-addin/auth/refresh", "POST"),                           # rotating refresh token (hashed, reuse detection)
+    ("/public/crm-addin/auth/revoke", "POST"),
+    ("/public/crm-addin/thread", "GET"),                                  # bearer add-in token (scoped, short-lived)
+    ("/public/crm-addin/whoami", "GET"),
     ("/public/docs/{token}", "GET"),                       # shared sales document (M45.S01.T013): token, expiry, revocation
     ("/public/docs/{token}/view", "POST"),
     ("/public/docs/{token}/file", "GET"),                  # only APPROVED + malware-scan CLEAN files

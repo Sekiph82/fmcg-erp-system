@@ -20,7 +20,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<LoginError | null>(null);
   const [loading, setLoading] = useState(false);
-  const [sso, setSso] = useState<{ oidc: string; name: string | null; enforced: boolean } | null>(null);
+  const [sso, setSso] = useState<{ oidc: string; name: string | null; enforced: boolean; saml?: string; saml_name?: string | null } | null>(null);
   useEffect(() => {   // M45.S01.T016 staff single sign-on
     apiClient.get("/api/v1/sso/status").then((r) => setSso(r.data)).catch(() => setSso(null));
     const e = new URLSearchParams(window.location.search).get("sso_error");
@@ -102,6 +102,8 @@ export default function LoginPage() {
           </form>
           {sso?.oidc === "ACTIVE" && <a href={`${API_ORIGIN}/api/v1/sso/start`} className="mt-3 block w-full text-center border rounded-md py-2 text-sm font-medium" data-testid="login-sso">
             {t(sso.enforced ? "staff.login.ssoWithRequired" : "staff.login.ssoWith", { name: sso.name ?? t("staff.login.ssoDefault") })}</a>}
+          {sso?.saml === "ACTIVE" && <a href={`${API_ORIGIN}/api/v1/sso/saml/start`} className="mt-3 block w-full text-center border rounded-md py-2 text-sm font-medium" data-testid="login-saml">
+            Sign in with {sso.saml_name ?? "SAML"}</a>}
         </div>
       </div>
     </div>

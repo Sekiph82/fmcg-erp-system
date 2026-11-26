@@ -12,6 +12,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade "pip>=26.2" \
     && pip install --no-cache-dir -r requirements.txt
+# M50.S01.T010: SAML (xmlsec), Parquet (pyarrow) and OCR (rapidocr + onnxruntime) are pip wheels only; fail the build if one does not load
+RUN python -c "import xmlsec, pyarrow, rapidocr, onnxruntime; from onelogin.saml2.auth import OneLogin_Saml2_Auth"
 
 COPY . .
 

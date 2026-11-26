@@ -480,6 +480,7 @@ const HelpdeskEscalatedPage = dynamic(() => import("@/app/dashboard/helpdesk/esc
 const HelpdeskSLAPage       = dynamic(() => import("@/app/dashboard/helpdesk/sla/page"),       { ssr: false });
 const ServiceDeskPage = dynamic(() => import("@/app/dashboard/helpdesk/service/page"), { ssr: false });
 const HelpdeskPipelinesPage = dynamic(() => import("@/app/dashboard/helpdesk/pipelines/page"), { ssr: false });   // M47
+const ServiceAgentPage = dynamic(() => import("@/app/dashboard/helpdesk/service-agent/page"), { ssr: false });   // M50.S01.T005-T006
 const HelpdeskTicketsPage   = dynamic(() => import("@/app/dashboard/helpdesk/tickets/page"),   { ssr: false });
 
 export default function HelpdeskPage() {
@@ -491,6 +492,7 @@ export default function HelpdeskPage() {
     { key: "tickets",   label: "Tickets",     permission: "crm.view|sales.view|quality.view|consumer_complaints.view", content: <HelpdeskTicketsPage /> },
     { key: "service",   label: "Service desk", permission: "crm.view|sales.view|quality.view|consumer_complaints.view", content: <ServiceDeskPage /> },
     { key: "pipelines", label: "Pipelines",    permission: "crm.view|sales.view|quality.view|consumer_complaints.view", content: <HelpdeskPipelinesPage /> },
+    { key: "service-agent", label: "AI service agent", permission: "crm.view|sales.view|quality.view|consumer_complaints.view", content: <ServiceAgentPage /> },
   ];
   return (
     <ModuleWorkspace

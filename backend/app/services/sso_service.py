@@ -8,8 +8,7 @@
 - Only pre-provisioned, active ERP users are signed in (matched by e-mail); unknown or disabled users are refused.
   Role mapping adds the ERP roles mapped from the token's groups claim; it never removes roles.
 - Enforced SSO: password login is refused for everyone except the configured break-glass usernames.
-- SAML 2.0: not offered: no maintained SAML library is available in this stack (python3-saml/xmlsec are not
-  installed); reported as NOT_AVAILABLE.
+- SAML 2.0 (M50.S01.T010): see saml_service.py (python3-saml + xmlsec); it shares login_user() with this flow.
 """
 from __future__ import annotations
 
@@ -137,6 +136,15 @@ async def callback(db: AsyncSession, state: str, code: str):
     email = str(claims.get("email") or "").strip().lower()
     if not email or claims.get("email_verified") is not True:
         raise SSOError(403, "The identity provider did not confirm an e-mail address.", "no_verified_email")
+    user = await login_user(db, email, claims.get("groups") or [], cfg.role_mapping or {})
+    return user, claims, st.redirect_to
+
+
+async def login_user(db: AsyncSession, email: str, groups: list, role_mapping: dict):
+    """The pre-provisioned, active, non-privileged ERP user for a verified IdP e-mail (OIDC and SAML); maps groups to roles."""
+    from sqlalchemy.orm import selectinload
+    from app.models.role import Role
+    from app.models.user import User
     from sqlalchemy import func
     user = (await db.execute(select(User).options(selectinload(User.roles)).where(func.lower(User.email) == email))).scalar_one_or_none()
     if user is None:
@@ -147,12 +155,12 @@ async def callback(db: AsyncSession, state: str, code: str):
     if await requires_privileged_2fa(db, user.id):
         raise SSOError(403, "Privileged accounts sign in with password and authenticator app (break-glass), not SSO.",
                        "privileged_2fa_required")
-    mapped = {cfg.role_mapping[g] for g in claims.get("groups") or [] if g in (cfg.role_mapping or {})}
+    mapped = {role_mapping[g] for g in groups if g in role_mapping}
     if mapped:
         have = {r.name for r in user.roles}
         for role in (await db.execute(select(Role).where(Role.name.in_(mapped - have), Role.is_active.is_(True)))).scalars():
             user.roles.append(role)
-    return user, claims, st.redirect_to
+    return user
 
 
 async def password_allowed(db: AsyncSession, user) -> bool:

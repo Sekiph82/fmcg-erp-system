@@ -425,6 +425,98 @@ def get_ai_provider() -> BaseAIProvider:
     return _instance
 
 
+# ── M50.S01.T008: rate-limit aware retries and a scripted simulator (additive) ───────────────────────────────────────
+
+class ProviderError(Exception):
+    """A model call failed after retries. retry_after is the provider's advice in seconds (None if none was given)."""
+    def __init__(self, message: str, status: Optional[int] = None, retry_after: Optional[float] = None, attempts: int = 1):
+        super().__init__(message)
+        self.status, self.retry_after, self.attempts = status, retry_after, attempts
+
+
+class RateLimited(ProviderError):
+    pass
+
+
+RETRYABLE_STATUS = {408, 409, 429, 500, 502, 503, 504, 529}   # 529 = Anthropic "overloaded"
+MAX_RETRY_SLEEP_S = 60.0
+
+
+def _retry_after_s(exc: Exception) -> Optional[float]:
+    """Retry-After header of an SDK/HTTP error: delta-seconds or an HTTP date (RFC 9110 §10.2.3)."""
+    headers = getattr(getattr(exc, "response", None), "headers", None) or getattr(exc, "headers", None) or {}
+    raw = None
+    try:
+        raw = headers.get("retry-after") or headers.get("Retry-After")
+    except Exception:
+        pass
+    if raw is None:
+        return getattr(exc, "retry_after", None)
+    try:
+        return max(0.0, float(raw))
+    except (TypeError, ValueError):
+        from email.utils import parsedate_to_datetime
+        from datetime import datetime, timezone
+        try:
+            return max(0.0, (parsedate_to_datetime(str(raw)) - datetime.now(timezone.utc)).total_seconds())
+        except Exception:
+            return None
+
+
+async def generate_with_retry(provider: BaseAIProvider, prompt: str, system: Optional[str] = None, *, max_attempts: int = 4,
+                              base_delay: float = 1.0, sleep=None, on_attempt=None) -> AIResponse:
+    """provider.generate_text with retries on 429/5xx/overloaded. Waits Retry-After when the provider sent it, else
+    exponential back-off (capped at MAX_RETRY_SLEEP_S). on_attempt(attempt, status, retry_after, response_or_None) is
+    called for every attempt (used for measured usage logs). Raises RateLimited / ProviderError when retries run out;
+    errors that are not retryable (400, 401, …) are raised at once as ProviderError."""
+    import asyncio
+    sleep = sleep or asyncio.sleep
+    last: Optional[ProviderError] = None
+    for attempt in range(1, max_attempts + 1):
+        try:
+            resp = await provider.generate_text(prompt, system=system)
+            if on_attempt:
+                await on_attempt(attempt, 200, None, resp)
+            return resp
+        except Exception as e:
+            status = getattr(e, "status_code", None) or getattr(e, "status", None)
+            ra = _retry_after_s(e)
+            if on_attempt:
+                await on_attempt(attempt, status, ra, None)
+            if status not in RETRYABLE_STATUS:
+                raise ProviderError(f"{type(e).__name__}: {e}"[:300], status, None, attempt) from e
+            cls = RateLimited if status == 429 else ProviderError
+            last = cls(f"Provider returned {status} ({type(e).__name__})", status, ra, attempt)
+            if attempt < max_attempts:
+                await sleep(min(MAX_RETRY_SLEEP_S, ra if ra is not None else base_delay * 2 ** (attempt - 1)))
+    assert last is not None
+    raise last
+
+
+class ScriptedHTTPError(Exception):
+    def __init__(self, status: int, retry_after: Optional[float] = None):
+        super().__init__(f"scripted HTTP {status}")
+        self.status_code = status
+        self.response = type("R", (), {"headers": {"retry-after": str(retry_after)} if retry_after is not None else {}})()
+
+
+class ScriptedProvider(BaseAIProvider):
+    """Local simulator for tests and offline evaluation: plays a script of statuses (e.g. [429, 429, 200]) and answers
+    deterministically from the prompt (token counts = len/4). Never makes a network call, never costs money."""
+
+    def __init__(self, script: Optional[list] = None, retry_after: Optional[float] = None, reply=None):
+        self.script, self.retry_after, self.reply, self.calls = list(script or []), retry_after, reply, 0
+
+    async def generate_text(self, prompt: str, system: Optional[str] = None) -> AIResponse:
+        self.calls += 1
+        status = self.script.pop(0) if self.script else 200
+        if status != 200:
+            raise ScriptedHTTPError(status, self.retry_after)
+        text = self.reply(prompt) if self.reply else f"[simulated] {prompt[:80]}"
+        return AIResponse(text=text, provider="simulator", model="scripted-v1", prompt_tokens=max(1, len(prompt) // 4),
+                          completion_tokens=max(1, len(text) // 4), latency_ms=5)
+
+
 def reset_provider():
     """Force re-instantiation (useful after config changes)."""
     global _instance

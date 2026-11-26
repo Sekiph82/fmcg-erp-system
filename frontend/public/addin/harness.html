@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Outlook host harness (local)</title>
+<!-- M50.S01.T011 local Outlook host: stands in for Outlook's task pane so the real sidebar can be driven against the real
+     ERP without a Microsoft account. Only works on localhost (?host=harness). It supplies the small part of Office.js the
+     sidebar uses: mailbox.item (from, subject, internetMessageId, conversationId, body.getAsync, displayReplyForm) and
+     ui.displayDialogAsync, which opens the ERP's consent page in a window and relays only messages from the ERP's own origin. -->
+<style>
+  body { font: 13px system-ui, sans-serif; margin: 0; display: grid; grid-template-columns: 340px 1fr; min-height: 100vh; }
+  .pane { padding: 12px; border-left: 1px solid #ddd; } .mail { padding: 12px; background: #f6f7f9; }
+  .mail label { display: block; margin-bottom: 6px; } .mail input, .mail textarea { width: 100%; box-sizing: border-box; }
+  #reply { white-space: pre-wrap; border: 1px dashed #999; padding: 6px; margin-top: 8px; }
+  h1 { font-size: 15px; margin: 0 0 8px; } h2 { font-size: 13px; margin: 12px 0 4px; }
+  input, textarea, select, button { font: inherit; width: 100%; box-sizing: border-box; margin: 2px 0 6px; padding: 5px; }
+  .muted { color: #6b7280; } .err { color: #dc2626; }
+</style>
+</head>
+<body>
+<section class="mail" aria-label="Open e-mail (simulated)">
+  <h1>Outlook (harness)</h1>
+  <label>From <input id="h-from" value="buyer@povu-demo.test"></label>
+  <label>Subject <input id="h-subject" value="Order for POVU AllClean 1 L"></label>
+  <label>Message-ID <input id="h-id" value="harness-msg-1@povu-demo.test"></label>
+  <label>Conversation id <input id="h-conv" value="harness-conv-1"></label>
+  <label>Body <textarea id="h-body" rows="5">Please send 20 cartons of POVU AllClean 1 L.</textarea></label>
+  <button id="h-open" type="button">Open this e-mail in the add-in</button>
+  <div id="reply" aria-live="polite"></div>
+</section>
+<section class="pane" aria-label="Task pane">
+  <h1>POVU CRM</h1>
+  <div id="setup" hidden><p class="muted">Sign in with your ERP account.</p><button id="signin">Sign in to POVU ERP</button></div>
+  <div id="main" hidden>
+    <p id="who" class="muted"></p><div id="contact"></div><div id="thread"></div>
+    <div id="actions" hidden>
+      <h2>Deal</h2><select id="deal" aria-label="Deal"></select>
+      <button id="log">Log this e-mail</button>
+      <textarea id="text" rows="3" aria-label="Note or task" placeholder="Note or follow-up task"></textarea>
+      <button id="note">Add note</button><button id="task">Add task</button>
+    </div>
+    <h2>Templates</h2><select id="tpl" aria-label="Template"><option value="">Reply with a template…</option></select>
+    <button id="signout">Sign out of the add-in</button>
+  </div>
+  <p id="msg" role="status"></p>
+</section>
+<script src="harness.js"></script>
+<script src="sidebar.js"></script>
+</body>
+</html>

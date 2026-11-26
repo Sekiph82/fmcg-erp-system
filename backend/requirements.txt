@@ -34,3 +34,12 @@ pytest>=8.0.0
 pytest-asyncio>=0.23.0
 graphql-core==3.2.6
 paho-mqtt==2.1.0
+# ── M50.S01.T010 SAML sign-in, typed Parquet, business-card OCR (exact pins; licences/SBOM: docs/INSTALL_M50_LIBRARIES.md) ──
+python3-saml==1.16.0          # MIT. SAML 2.0 service provider (OneLogin toolkit)
+xmlsec==1.3.18                # MIT. XML-DSig verification; manylinux + Windows wheels bundle libxmlsec1 (no apt packages)
+lxml==6.1.0                   # BSD-3-Clause. XML parser used by python3-saml
+isodate==0.7.2                # BSD-3-Clause. python3-saml dependency
+pyarrow==26.0.1               # Apache-2.0. Parquet read/write
+rapidocr==3.10.0              # Apache-2.0. Text recognition; PP-OCR ONNX models are bundled in the wheel (no download, no system binary)
+onnxruntime==1.20.1           # MIT. CPU inference runtime for rapidocr
+opencv-python-headless==5.1.0.95   # Apache-2.0. Image pre-processing for rapidocr (headless: no GUI libraries)

@@ -242,6 +242,7 @@ const AIGovernancePage     = dynamic(() => import("@/app/dashboard/ai/governance
 const AINLCommandPage      = dynamic(() => import("@/app/dashboard/ai/nl-command/page"),     { ssr: false });
 const AILogsPage           = dynamic(() => import("@/app/dashboard/ai/logs/page"),           { ssr: false });
 const AIAgentsPage         = dynamic(() => import("@/app/dashboard/ai/agents/page"),         { ssr: false });
+const AIEvalsPage          = dynamic(() => import("@/app/dashboard/ai/evals/page"),          { ssr: false });   // M50.S01.T012
 
 export default function AIPage() {
   const tabs = [
@@ -253,6 +254,7 @@ export default function AIPage() {
     { key: "scenarios",      label: "Scenarios",       permission: "ai.view", content: <AIScenariosPage /> },
     { key: "compliance",     label: "Compliance",      permission: "ai.view", content: <AICompliancePage /> },
     { key: "agents",         label: "Agents",          permission: "ai.view", content: <AIAgentsPage /> },
+    { key: "evals",          label: "Evaluations",     permission: "ai.view", content: <AIEvalsPage /> },
     { key: "governance",     label: "Governance",      permission: "ai.view", content: <AIGovernancePage /> },
     { key: "nl-command",     label: "NL Command",      permission: "ai.view", content: <AINLCommandPage /> },
     { key: "logs",           label: "Logs",            permission: "ai.view", content: <AILogsPage /> },

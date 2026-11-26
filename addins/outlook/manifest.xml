@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- M45.S01.T012 Outlook add-in (XML manifest, MailApp). Replace https://erp.povu.example with the ERP's public
-     HTTPS origin and generate a new <Id> before sideloading; see addins/README.md. -->
+<!-- M45.S01.T012 / M50.S01.T011 Outlook add-in (XML manifest, MailApp) TEMPLATE. Do not sideload this file: run
+     addins/build.py, which sets the ERP origin, derives a stable <Id> and validates the result (addins/README.md). -->
 <OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
            xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
            xmlns:mailappor="http://schemas.microsoft.com/office/mailappversionoverrides/1.0"
            xsi:type="MailApp">
   <Id>6f1c2a4e-9b7d-4c35-8e21-5a0d3f4b7c19</Id>
-  <Version>1.0.0.0</Version>
+  <Version>1.1.0.0</Version>
   <ProviderName>POVU</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
   <DisplayName DefaultValue="POVU CRM"/>
@@ -17,7 +17,7 @@
   <SupportUrl DefaultValue="https://erp.povu.example/dashboard/help"/>
   <AppDomains><AppDomain>https://erp.povu.example</AppDomain></AppDomains>
   <Hosts><Host Name="Mailbox"/></Hosts>
-  <Requirements><Sets><Set Name="Mailbox" MinVersion="1.5"/></Sets></Requirements>
+  <Requirements><Sets><Set Name="Mailbox" MinVersion="1.5"/><Set Name="DialogApi" MinVersion="1.1"/></Sets></Requirements>
   <FormSettings>
     <Form xsi:type="ItemRead">
       <DesktopSettings>
@@ -26,7 +26,7 @@
       </DesktopSettings>
     </Form>
   </FormSettings>
-  <Permissions>ReadWriteItem</Permissions>
+  <Permissions>ReadItem</Permissions>
   <Rule xsi:type="RuleCollection" Mode="Or">
     <Rule xsi:type="ItemIs" ItemType="Message" FormType="Read"/>
   </Rule>

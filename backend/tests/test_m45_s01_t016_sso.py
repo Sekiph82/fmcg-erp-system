@@ -116,7 +116,7 @@ async def test_oidc_login_and_refusals(idp):
         assert (await erp.post("/api/v1/auth/login", data={"username": a_name, "password": pw})).status_code == 403
         assert (await erp.post("/api/v1/auth/login", data={"username": g_name, "password": pw})).status_code == 200
         st = (await erp.get("/api/v1/sso/status")).json()
-        assert st["oidc"] == "ACTIVE" and st["enforced"] and st["saml"] == "NOT_AVAILABLE"
+        assert st["oidc"] == "ACTIVE" and st["enforced"] and st["saml"] in ("NOT_CONFIGURED", "ACTIVE")      # M50.S01.T010: SAML is implemented (python3-saml + xmlsec)
     async with AsyncSessionLocal() as db:
         cfg = (await db.execute(select(SSOConfig).where(SSOConfig.active.is_(True)))).scalar_one()
         cfg.enforced, cfg.active = False, False

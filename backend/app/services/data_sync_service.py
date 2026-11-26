@@ -1,4 +1,4 @@
-"""M45.S01.T011 no-code data sync and transformation.
+"""M45.S01.T011 no-code data sync and transformation; M50.S01.T009 extends it to every ERP object (see m50_sync_registry).
 
 A sync maps source fields to ERP fields with typed, whitelisted transformations (no code, no SQL, no regex from
 users). IN syncs read an uploaded CSV/JSON, a JSON endpoint (through provider_http egress) or a webhook body; OUT
@@ -25,18 +25,22 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.models.data_sync import DataQualitySnapshot, SyncDefinition, SyncRun, SyncState
+from app.services import m50_sync_registry as reg
 
 TARGETS: dict[str, dict] = {
     "customers": {"model": ("app.models.sales", "Customer"), "key": "code", "perm": ("sales.edit", "sales.create"),
                   "fields": {"code": "text", "name": "text", "email": "email", "phone": "phone", "city": "text", "country": "text",
                              "region": "text", "segment": "text", "address": "text", "tax_id": "text", "currency": "text",
                              "payment_terms_days": "integer", "credit_limit": "number", "is_active": "bool"},
+                  "view_perm": ("sales.view_all", "sales.view"),
                   "required": ["code", "name"], "defaults": {"currency": "KES"}},
     "crm_contacts": {"model": ("app.models.crm", "CRMContact"), "key": "email", "perm": ("crm.edit", "crm.edit_all"),
                      "fields": {"email": "email", "full_name": "text", "phone": "phone", "job_title": "text", "language": "text"},
+                     "view_perm": ("crm.view_all", "crm.view"),
                      "required": ["email", "full_name"], "defaults": {}},
 }
-CONTROLLED_FIELDS = {"credit_limit", "payment_terms_days", "tax_id", "is_active"}   # commercial controls: admin-run syncs only
+TARGETS.update(reg.EXTRA_TARGETS)
+CONTROLLED_FIELDS = {"credit_limit", "payment_terms_days", "tax_id", "is_active"} | reg.EXTRA_CONTROLLED   # commercial controls: admin-run syncs only
 TRANSFORMS = {"trim", "upper", "lower", "title", "phone_ke", "email", "number", "integer", "bool", "date", "default", "map",
               "prefix", "suffix", "concat", "truncate"}
 MAX_INPUT_KEEP = 5000
@@ -58,6 +62,11 @@ def _model(target: str):
     return getattr(importlib.import_module(mod), cls)
 
 
+def read_only_reason(spec: dict, target: str) -> str:
+    return (f"{target} is read-only for synchronisation: {spec.get('why', 'it is never written by a sync')} "
+            "Define an OUT (export) sync instead.")
+
+
 def _cipher():
     from cryptography.fernet import Fernet
     key = hashlib.sha256(b"fmcg-erp:data-sync:v1\0" + settings.SECRET_KEY.encode("utf-8")).digest()
@@ -74,16 +83,20 @@ def decrypt(v: Optional[str]) -> Optional[str]:
 
 # ── mapping validation and transforms ────────────────────────────────────────
 
-def validate_mapping(target: str, key_field: str, mapping: list[dict]) -> list[dict]:
+def validate_mapping(target: str, key_field: str, mapping: list[dict], spec: Optional[dict] = None, direction: str = "IN") -> list[dict]:
     if target not in TARGETS:
         raise SyncError(422, f"Target must be one of {', '.join(TARGETS)}.")
-    spec = TARGETS[target]
+    spec = spec or TARGETS[target]
+    if direction == "IN" and spec.get("mode") == "read_only":
+        raise SyncError(409, read_only_reason(spec, target))
     if key_field != spec["key"]:
         raise SyncError(422, f"{target} are matched by {spec['key']}.")
+    export_extra = {"lines": "json"} if spec.get("export") in ("sales_orders", "purchase_orders") else {}
+    allowed = {**spec["fields"], **(export_extra if direction == "OUT" else {})}
     seen = set()
     for m in mapping:
         t = m.get("target")
-        if t not in spec["fields"]:
+        if t not in allowed:
             raise SyncError(422, f"Unknown target field {t!r}.")
         if t in seen:
             raise SyncError(422, f"{t} is mapped twice.")
@@ -99,9 +112,10 @@ def validate_mapping(target: str, key_field: str, mapping: list[dict]) -> list[d
                     json.loads(str(x).split(":", 1)[1])
                 except (IndexError, ValueError):
                     raise SyncError(422, f"{t}: map needs JSON, e.g. map:{{\"A\":\"Wholesale\"}}.")
-    for r in spec["required"]:
-        if r not in seen:
-            raise SyncError(422, f"{r} must be mapped.")
+    if direction == "IN":
+        for r in spec["required"]:
+            if r not in seen:
+                raise SyncError(422, f"{r} must be mapped.")
     return mapping
 
 
@@ -170,14 +184,28 @@ def check_type(kind: str, v: Any) -> Any:
     if kind == "integer":
         return int(v)
     if kind == "number":
-        return Decimal(str(v))
+        try:
+            return Decimal(str(v).replace(",", ""))
+        except InvalidOperation:
+            raise ValueError(f"{v!r} is not a number")
     if kind == "bool":
         return v if isinstance(v, bool) else str(v).lower() in ("1", "true", "yes")
+    if kind == "date":
+        if isinstance(v, datetime):
+            return v.date()
+        return v if isinstance(v, date) else date.fromisoformat(str(v)[:10])
+    if kind.startswith("enum:"):
+        from app.services.m50_sync import enum_class
+        cls = enum_class(kind[5:])
+        name = str(v).strip().upper().replace(" ", "_")
+        if name not in cls.__members__:
+            raise ValueError(f"{v!r} is not one of {', '.join(cls.__members__)}")
+        return name
     return str(v)[:255]
 
 
-def map_row(sync: SyncDefinition, row: dict) -> dict:
-    spec = TARGETS[sync.target]
+def map_row(sync: SyncDefinition, row: dict, spec: Optional[dict] = None) -> dict:
+    spec = spec or TARGETS[sync.target]
     out = {}
     for m in sync.mapping:
         v = transform(row.get(m.get("source")) if m.get("source") else None, m.get("transforms", []), row)
@@ -187,10 +215,20 @@ def map_row(sync: SyncDefinition, row: dict) -> dict:
     for r in spec["required"]:
         if out.get(r) in (None, ""):
             raise ValueError(f"{r} is empty")
+    if spec.get("adapter") == "assoc":
+        from app.services.m50_sync import association_key
+        out["link"] = association_key(out)
     return out
 
 
 def parse_upload(text: str, fmt: str) -> list[dict]:
+    if fmt == "parquet":                        # base64 of the file; typed values become JSON-safe strings
+        from app.services import parquet_service as pqs
+        try:
+            rows, _info = pqs.read(base64.b64decode(text, validate=True))
+        except (ValueError, pqs.ParquetError) as e:
+            raise SyncError(422, f"Parquet: {e}")
+        return [{k: _jsonable(v) for k, v in r.items()} for r in rows]
     if fmt == "json":
         data = json.loads(text)
         rows = data.get("rows", data) if isinstance(data, dict) else data
@@ -202,7 +240,7 @@ def parse_upload(text: str, fmt: str) -> list[dict]:
 
 def _jsonable(v):
     if isinstance(v, Decimal):
-        return str(v.normalize()) if v == v.to_integral() else str(v.normalize())
+        return format(v.normalize(), "f")                # never 4E+1
     if isinstance(v, uuid.UUID):
         return str(v)
     if isinstance(v, (date, datetime)):
@@ -213,58 +251,83 @@ def _jsonable(v):
 # ── IN run ───────────────────────────────────────────────────────────────────
 
 async def run_in(db: AsyncSession, sync: SyncDefinition, rows: list[dict], *, dry_run: bool, user: str, trigger: str = "MANUAL",
-                 full_snapshot: bool = True) -> SyncRun:
+                 full_snapshot: bool = True, actor=None) -> SyncRun:
+    from app.services import m50_sync as m50
     await db.refresh(sync)                    # callers may hold an expired instance
-    M = _model(sync.target)
-    spec = TARGETS[sync.target]
-    keycol = getattr(M, spec["key"])
+    spec = await m50.spec_for(db, sync.target, await m50.options(db, sync))
+    mode = spec.get("mode", "write")
+    if mode == "read_only":
+        raise SyncError(409, read_only_reason(spec, sync.target))
     run = SyncRun(sync_id=sync.id, version=sync.version, dry_run=dry_run, trigger=trigger, run_by=user,
                   input=rows[:MAX_INPUT_KEEP])
     db.add(run)
     await db.flush()
+    if mode == "propose":                       # orders: staged for a second person, never written directly
+        out = await m50.stage(db, sync, spec, rows, dry_run=dry_run, user=user, trigger=trigger, run=run)
+        run.counts, run.diff, run.errors, run.before = out["counts"], out["diff"][:200], out["errors"][:200], []
+        run.status, run.finished_at = "DONE", _now()
+        await db.flush()
+        return run
+    try:
+        ad = m50.adapter(db, spec, actor)
+    except ValueError as e:
+        raise SyncError(403, str(e))
     counts = {"create": 0, "update": 0, "unchanged": 0, "skip": 0, "error": 0, "delete": 0}
     diff, errors, before = [], [], []
     states = {s.key: s for s in (await db.execute(select(SyncState).where(SyncState.sync_id == sync.id))).scalars()}
-    seen = set()
+    seen, cache = set(), {}
     for i, raw in enumerate(rows, start=1):
         try:
-            vals = map_row(sync, raw)
+            mapped = map_row(sync, raw, spec)
+            vals = await m50.resolve(db, spec, mapped, cache)
         except (ValueError, TypeError) as e:
             counts["error"] += 1
             errors.append({"row": i, "error": str(e)})
             continue
-        key = str(vals[spec["key"]])
+        key = str(mapped[spec["key"]])
         seen.add(key)
-        h = hashlib.sha256(json.dumps(vals, sort_keys=True, default=str).encode()).hexdigest()
+        h = hashlib.sha256(json.dumps(mapped, sort_keys=True, default=str).encode()).hexdigest()
         if key in states and states[key].hash == h:
             counts["unchanged"] += 1
             continue
-        obj = (await db.execute(select(M).where(keycol == vals[spec["key"]]).with_for_update())).scalar_one_or_none()
-        if obj is None:
-            counts["create"] += 1
-            diff.append({"key": key, "action": "create", "values": {k: _jsonable(v) for k, v in vals.items()}})
-            if not dry_run:
-                obj = M(**vals)
-                db.add(obj)
-                await db.flush()
-                before.append({"id": str(obj.id), "action": "create"})
-        else:
-            changes = {k: (_jsonable(getattr(obj, k)), _jsonable(v)) for k, v in vals.items() if _jsonable(getattr(obj, k)) != _jsonable(v)}
-            if not changes:
-                counts["unchanged"] += 1
-            elif sync.conflict_rule == "skip" or (sync.conflict_rule == "target_wins" and key in states):
-                counts["skip"] += 1
-                diff.append({"key": key, "action": "skip", "changes": changes})
-            else:
-                if sync.conflict_rule == "target_wins":     # first contact: only fill empty ERP fields
-                    changes = {k: c for k, c in changes.items() if c[0] in (None, "")}
-                counts["update"] += 1
-                diff.append({"key": key, "action": "update", "changes": changes})
+        vals.pop("link", None)
+        try:
+            obj = await ad.find(key, vals)
+            if obj is None:
+                counts["create"] += 1
+                diff.append({"key": key, "action": "create", "values": {k: _jsonable(v) for k, v in vals.items()}})
                 if not dry_run:
-                    before.append({"id": str(obj.id), "action": "update", "values": {k: c[0] for k, c in changes.items()},
-                                   "after": {k: c[1] for k, c in changes.items()}})
-                    for k in changes:
-                        setattr(obj, k, vals[k])
+                    async with db.begin_nested():
+                        obj = await ad.create(vals)
+                    before.append({"id": ad.ident(obj), "action": "create"})
+            elif ad.immutable:
+                counts["unchanged"] += 1
+            else:
+                changes = {k: (_jsonable(ad.get(obj, k)), _jsonable(v)) for k, v in vals.items() if _jsonable(ad.get(obj, k)) != _jsonable(v)}
+                if not changes:
+                    counts["unchanged"] += 1
+                elif sync.conflict_rule == "skip" or (sync.conflict_rule == "target_wins" and key in states):
+                    counts["skip"] += 1
+                    diff.append({"key": key, "action": "skip", "changes": changes})
+                    if not dry_run:
+                        m50.record_conflicts(db, sync.id, run.id, key, changes)
+                else:
+                    if sync.conflict_rule == "target_wins":     # first contact: only fill empty ERP fields
+                        kept = {k: c for k, c in changes.items() if c[0] in (None, "")}
+                        if not dry_run:
+                            m50.record_conflicts(db, sync.id, run.id, key, {k: c for k, c in changes.items() if k not in kept})
+                        changes = kept
+                    counts["update"] += 1
+                    diff.append({"key": key, "action": "update", "changes": changes})
+                    if not dry_run:
+                        before.append({"id": ad.ident(obj), "action": "update", "values": {k: c[0] for k, c in changes.items()},
+                                       "after": {k: c[1] for k, c in changes.items()}})
+                        async with db.begin_nested():
+                            await ad.update(obj, {k: vals[k] for k in changes})
+        except ValueError as e:
+            counts["error"] += 1
+            errors.append({"row": i, "error": str(e)})
+            continue
         if not dry_run:
             if key in states:
                 states[key].hash = h
@@ -274,12 +337,15 @@ async def run_in(db: AsyncSession, sync: SyncDefinition, rows: list[dict], *, dr
     if full_snapshot:
         for key in sorted(set(states) - seen):
             counts["delete"] += 1
-            diff.append({"key": key, "action": "delete" if sync.delete_mode == "deactivate" else "delete-ignored"})
-            if not dry_run and sync.delete_mode == "deactivate" and hasattr(M, "is_active"):
-                obj = (await db.execute(select(M).where(keycol == key))).scalar_one_or_none()
-                if obj is not None and obj.is_active:
-                    before.append({"id": str(obj.id), "action": "update", "values": {"is_active": True}})
-                    obj.is_active = False
+            can_off = sync.delete_mode == "deactivate" and not ad.immutable
+            diff.append({"key": key, "action": "delete" if can_off else "delete-ignored"})
+            if not dry_run and can_off:
+                try:
+                    obj = await ad.find(key)
+                except ValueError:
+                    obj = None
+                if obj is not None and ad.deactivate(obj):
+                    before.append({"id": ad.ident(obj), "action": "update", "values": {"is_active": True}})
             if not dry_run:
                 await db.delete(states[key])
     run.counts, run.diff, run.errors, run.before = counts, diff[:200], errors[:200], before
@@ -288,36 +354,39 @@ async def run_in(db: AsyncSession, sync: SyncDefinition, rows: list[dict], *, dr
     return run
 
 
-async def rollback(db: AsyncSession, run: SyncRun, user: str) -> dict:
+async def rollback(db: AsyncSession, run: SyncRun, user: str, actor=None) -> dict:
     """Undo a run: restore updated values, delete created rows (or deactivate them when other records use them)."""
     from sqlalchemy.exc import IntegrityError
+    from app.services import m50_sync as m50
     if run.dry_run or run.status != "DONE":
         raise SyncError(409, "Only a finished, real run can be rolled back.")
     sync = await db.get(SyncDefinition, run.sync_id)
-    M = _model(sync.target)
+    spec = await m50.spec_for(db, sync.target, await m50.options(db, sync))
+    if spec.get("mode") == "propose":
+        raise SyncError(409, "A staged run changed nothing in the ERP; reject its proposals instead. Documents already created "
+                             "from them are changed or cancelled through the sales/purchase flows.")
+    try:
+        ad = m50.adapter(db, spec, actor)
+    except ValueError as e:
+        raise SyncError(403, str(e))
     restored = removed = deactivated = 0
     for b in reversed(run.before):
-        obj = await db.get(M, uuid.UUID(b["id"]))
+        obj = await ad.load(b["id"])
         if obj is None:
             continue
         if b["action"] == "update":
-            col = M.__table__.c
             now_vals = b.get("after") or {}
-            if any(_jsonable(getattr(obj, k)) != v for k, v in now_vals.items()):
+            if any(_jsonable(ad.get(obj, k)) != v for k, v in now_vals.items()):
                 continue                                   # changed again since this run: leave the newer value
-            for k, v in b["values"].items():
-                t = col[k].type
-                setattr(obj, k, Decimal(v) if v is not None and t.__class__.__name__ == "Numeric" else v)
+            await ad.restore(obj, b["values"])
             restored += 1
         else:
             try:
                 async with db.begin_nested():
-                    await db.delete(obj)
-                    await db.flush()
+                    await ad.remove(obj)
                 removed += 1
             except IntegrityError:
-                if hasattr(obj, "is_active"):
-                    obj.is_active = False
+                if ad.deactivate(obj):
                     deactivated += 1
     await db.execute(SyncState.__table__.delete().where(SyncState.sync_id == sync.id))   # next run compares afresh
     run.status = "ROLLED_BACK"
@@ -342,17 +411,17 @@ async def pull(sync: SyncDefinition, attempts: int = 3) -> list[dict]:
     raise SyncError(502, f"Source not reachable after {attempts} attempts ({last}).")
 
 
-async def run_out(db: AsyncSession, sync: SyncDefinition, *, dry_run: bool, user: str, attempts: int = 3) -> SyncRun:
-    """Send rows changed since the watermark to the destination; the mapping reads ERP field `target` into `source`."""
+async def run_out(db: AsyncSession, sync: SyncDefinition, *, dry_run: bool, user: str, attempts: int = 3, actor=None) -> SyncRun:
+    """Send rows changed since the watermark to the destination; the mapping reads ERP field `target` into `source`.
+    Reading is all an OUT sync does to the ERP, so it is allowed for read-only targets (stock, invoices)."""
     from app.core.provider_http import provider_client
+    from app.services import m50_sync as m50
     await db.refresh(sync)
-    M = _model(sync.target)
-    q = select(M).order_by(M.updated_at)
-    if sync.watermark:
-        q = q.where(M.updated_at > sync.watermark)
-    objs = list((await db.execute(q.limit(1000))).scalars())
-    payload = [{m["source"]: _jsonable(transform(getattr(o, m["target"]), m.get("transforms", []), {}))
-                for m in sync.mapping if m.get("source")} for o in objs]
+    opts = await m50.options(db, sync)
+    spec = await m50.spec_for(db, sync.target, opts)
+    rows = await m50.export_rows(db, spec, sync.watermark, opts, actor)
+    payload = [{m["source"]: _jsonable(transform(r.get(m["target"]), m.get("transforms", []), {}))
+                for m in sync.mapping if m.get("source")} for _u, r in rows]
     run = SyncRun(sync_id=sync.id, version=sync.version, dry_run=dry_run, trigger="MANUAL", run_by=user, input=payload[:MAX_INPUT_KEEP],
                   counts={"sent": 0 if dry_run else len(payload)}, diff=payload[:200])
     db.add(run)
@@ -374,7 +443,7 @@ async def run_out(db: AsyncSession, sync: SyncDefinition, *, dry_run: bool, user
             run.status, run.errors, run.finished_at = "FAILED", [{"error": last}], _now()
             await db.flush()
             return run
-        sync.watermark = objs[-1].updated_at
+        sync.watermark = rows[-1][0]
     run.status, run.finished_at = "DONE", _now()
     await db.flush()
     return run

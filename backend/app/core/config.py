@@ -198,6 +198,19 @@ class Settings(BaseSettings):
     GOOGLE_DATA_MANAGER_API_URL: str = "https://datamanager.googleapis.com"
     GOOGLE_CUSTOMER_MATCH_TOS_ACCEPTED: bool = False
     MARKETING_STUDIO_BUDGET_CAP: float = 50000
+    # M50 (blank/off = not configured; live provider use also needs PROVIDER_EGRESS=live and owner activation)
+    BRAVE_SEARCH_API_KEY: str = ""
+    BRAVE_SEARCH_BASE_URL: str = ""          # blank = official https://api.search.brave.com/res/v1/web/search
+    PDL_API_KEY: str = ""
+    PDL_BASE_URL: str = "https://api.peopledatalabs.com"
+    M50_FETCH_MAX_BYTES: int = 1000000
+    M50_FETCH_TIMEOUT: float = 8.0
+    M50_FETCH_MAX_REDIRECTS: int = 3
+    SERVICE_AGENT_LLM_ENABLED: bool = False
+    SERVICE_AGENT_LLM_MAX_CALLS_PER_SESSION: int = 20
+    SERVICE_AGENT_LLM_MAX_CALLS_PER_DAY: int = 500
+    SERVICE_AGENT_HISTORY_TURNS: int = 6
+    ADDIN_ALLOWED_ORIGINS: list[str] = []
     ADS_LIVE_MUTATIONS: bool = False             # M48.S01.T001–T004 live ad mutations
     CARD_PAYMENTS_LIVE_ENABLED: bool = False     # M48.S01.T010 Pesapal live money
     WAREHOUSE_LIVE_ENABLED: bool = False         # M48.S01.T007/T008 Snowflake/BigQuery live sync

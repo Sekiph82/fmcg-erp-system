@@ -22,6 +22,9 @@ export default function WebsiteChat() {
   const [form, setForm] = useState({ name: "", email: "", consent: false, website: "" });
   const [text, setText] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState<{ id: string; kind: string; summary: string | null } | null>(null);   // a write the assistant proposed
+  const [rated, setRated] = useState<{ csat?: number; ces?: number }>({});
+  const [busy, setBusy] = useState(false);
   const end = useRef<HTMLDivElement>(null);
 
   const merge = (more: Msg[]) => setMsgs((m) => { const ids = new Set(m.map((x) => x.id)); return [...m, ...more.filter((x) => !ids.has(x.id))]; });
@@ -30,7 +33,7 @@ export default function WebsiteChat() {
   const poll = useCallback(async (c: { id: string; token: string }) => {
     const after = lastAt.current ? `?after=${encodeURIComponent(lastAt.current)}` : "";   // only new messages
     const r = await fetch(`${BASE}/sessions/${c.id}/messages${after}`, { headers: { "X-Chat-Token": c.token } }).catch(() => null);
-    if (r?.ok) { const j = await r.json(); merge(j.messages); setStatus(j.status); }
+    if (r?.ok) { const j = await r.json(); merge(j.messages); setStatus(j.status); setPending(j.pending_action ?? null); }
     else if (r && r.status === 404) { try { sessionStorage.removeItem(KEY); } catch { /* ignore */ } setChat(null); }
   }, []);
 
@@ -59,7 +62,23 @@ export default function WebsiteChat() {
     const r = await fetch(`${BASE}/sessions/${chat.id}/messages`, { method: "POST", headers: { "Content-Type": "application/json", "X-Chat-Token": chat.token },
       body: JSON.stringify({ body }) }).catch(() => null);
     if (!r || !r.ok) { setError(r?.status === 429 ? t("public.chat.slowDown") : r?.status === 409 ? t("public.chat.closedError") : t("public.chat.notSent")); setText(body); return; }
-    const j = await r.json(); merge(j.messages); setStatus(j.status);
+    const j = await r.json(); merge(j.messages); setStatus(j.status); setPending(j.pending_action ?? null);
+  }
+
+  async function decide(confirm: boolean) {
+    if (!chat || !pending || busy) return;
+    setBusy(true); setError(null);
+    const r = await fetch(`${BASE}/sessions/${chat.id}/actions/${pending.id}`, { method: "POST", headers: { "Content-Type": "application/json", "X-Chat-Token": chat.token },
+      body: JSON.stringify({ confirm }) }).catch(() => null);
+    setBusy(false);
+    if (!r || !r.ok) { setError("That could not be saved. Please try again."); return; }
+    const j = await r.json(); merge(j.messages); setPending(j.pending_action ?? null);
+  }
+
+  async function rate(v: { csat?: number; ces?: number }) {
+    if (!chat) return;
+    const r = await fetch(`${BASE}/sessions/${chat.id}/feedback`, { method: "POST", headers: { "Content-Type": "application/json", "X-Chat-Token": chat.token }, body: JSON.stringify(v) }).catch(() => null);
+    if (r?.ok) setRated((x) => ({ ...x, ...v })); else setError("Your rating could not be saved.");
   }
 
   const bubble = (m: Msg) => m.from === "visitor" ? "bg-indigo-600 text-white ml-auto" : m.from === "agent" ? "bg-emerald-50 border border-emerald-200" : "bg-gray-100";
@@ -87,6 +106,25 @@ export default function WebsiteChat() {
             {status === "CLOSED" && <p className="text-xs text-gray-400 text-center">{t("public.chat.ended")}</p>}
             <div ref={end} />
           </div>
+          {pending && (
+            <div className="mx-3 mb-2 rounded-lg border border-amber-300 bg-amber-50 p-2 text-xs space-y-2" role="group" aria-label="Confirm assistant action">
+              <p>{pending.kind === "TICKET_CREATE" ? "Open a support ticket" : "Add a note to your ticket"}: <b className="break-words">{pending.summary}</b>. Nothing happens until you confirm.</p>
+              <div className="flex gap-2">
+                <button disabled={busy} onClick={() => decide(true)} className="px-3 py-1.5 rounded-lg bg-indigo-600 text-white disabled:opacity-50">Confirm</button>
+                <button disabled={busy} onClick={() => decide(false)} className="px-3 py-1.5 rounded-lg border">Cancel</button>
+              </div>
+            </div>
+          )}
+          {msgs.some((m) => m.from === "bot") && msgs.length > 2 && status !== "CLOSED" && (
+            <div className="mx-3 mb-2 text-xs text-gray-600 space-y-1">
+              <div className="flex items-center gap-1 flex-wrap"><span>How satisfied are you with the answers?</span>
+                {[1, 2, 3, 4, 5].map((n) => <button key={n} aria-label={`Satisfaction ${n} of 5`} disabled={rated.csat !== undefined} onClick={() => rate({ csat: n })}
+                  className={`w-7 h-7 rounded border ${rated.csat === n ? "bg-indigo-600 text-white" : ""} disabled:opacity-60`}>{n}</button>)}</div>
+              <div className="flex items-center gap-1 flex-wrap"><span>How easy was it? (1 hard - 7 easy)</span>
+                {[1, 2, 3, 4, 5, 6, 7].map((n) => <button key={n} aria-label={`Ease ${n} of 7`} disabled={rated.ces !== undefined} onClick={() => rate({ ces: n })}
+                  className={`w-7 h-7 rounded border ${rated.ces === n ? "bg-indigo-600 text-white" : ""} disabled:opacity-60`}>{n}</button>)}</div>
+            </div>
+          )}
           {error && <p role="alert" className="px-3 text-xs text-red-700">{error}</p>}
           {status !== "CLOSED" && (
             <form className="p-3 border-t flex gap-2" onSubmit={(e) => { e.preventDefault(); send(); }}>

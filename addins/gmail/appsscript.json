@@ -5,12 +5,18 @@
   "oauthScopes": [
     "https://www.googleapis.com/auth/gmail.addons.execute",
     "https://www.googleapis.com/auth/gmail.addons.current.message.readonly",
+    "https://www.googleapis.com/auth/gmail.addons.current.action.compose",
     "https://www.googleapis.com/auth/script.external_request",
     "https://www.googleapis.com/auth/script.storage"
   ],
   "urlFetchWhitelist": ["https://erp.povu.example/"],
   "addOns": {
-    "common": { "name": "POVU CRM", "logoUrl": "https://erp.povu.example/icons/icon-192.png", "useLocaleFromApp": true },
+    "common": {
+      "name": "POVU CRM",
+      "logoUrl": "https://erp.povu.example/icons/icon-192.png",
+      "useLocaleFromApp": true,
+      "homepageTrigger": { "runFunction": "onHomepage" }
+    },
     "gmail": { "contextualTriggers": [{ "unconditional": {}, "onTriggerFunction": "onGmailMessage" }] }
   }
 }

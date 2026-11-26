@@ -3,7 +3,7 @@
 Targets: LOCAL_DIR (files), S3 (any S3-compatible store, e.g. MinIO, through boto3), POSTGRES (upsert into a
 warehouse schema), SNOWFLAKE (SQL API v2) and BIGQUERY (REST v2) through warehouse_cloud_writers (M48.S01.T007/T008);
 those two are NOT_CONFIGURED only while their credential is missing.
-Formats: CSV and JSON Lines; Parquet is NOT_AVAILABLE (pyarrow is not installed).
+Formats: CSV, JSON Lines and typed Parquet (pyarrow, M50.S01.T010; see parquet_service).
 
 - Incremental: rows with (updated_at, id) after the job's watermark, in batches; the watermark moves after every
   successfully written batch, so a failed run resumes where it stopped without gaps or duplicates.
@@ -93,7 +93,11 @@ def _cell(v: Any) -> Any:
     return v
 
 
-def serialize(rows: list[dict], cols: list[str], fmt: str) -> bytes:
+def serialize(rows: list[dict], cols: list[str], fmt: str, table: Optional[str] = None, masked: tuple = ()) -> bytes:
+    if fmt == "parquet":
+        from app.services import parquet_service as pqs
+        return pqs.write(rows, pqs.dataset_types(table, cols, masked), {"dataset": table, "exported_at": _now().isoformat(),
+                                                                          "masked": ",".join(sorted(masked))})
     if fmt == "jsonl":
         return "".join(json.dumps({c: _cell(r.get(c)) for c in cols}, ensure_ascii=False) + "\n" for r in rows).encode()
     buf = io.StringIO()
@@ -229,8 +233,8 @@ async def _run_job_locked(db: AsyncSession, job: ExportJob, fail_after_batches: 
     try:
         w = writer(target)
         run.mode = getattr(w, "mode", None)      # SIMULATED (local simulator) or LIVE, cloud targets only
-        if job.file_format not in ("csv", "jsonl"):
-            raise ExportError("Parquet is NOT_AVAILABLE: install pyarrow to enable it.")
+        if job.file_format not in ("csv", "jsonl", "parquet"):
+            raise ExportError(f"Unknown file format {job.file_format!r}.")
         cols = list(spec["columns"])
         masked = (await sens.policy(db)).get(spec.get("entity", ""), set()) if spec.get("entity") else set()
         change = {"added": [c for c in cols if job.schema_cols and c not in job.schema_cols],
@@ -255,7 +259,7 @@ async def _run_job_locked(db: AsyncSession, job: ExportJob, fail_after_batches: 
                     if f in r:
                         r[f] = sens.mask(r[f] if isinstance(r[f], str) else None)
             key = f"{job.dataset}/{stamp}-{run.id.hex[:8]}-part{batches:04d}.{job.file_format}"
-            loc = await w.put(key, serialize(rows, cols, job.file_format))
+            loc = await w.put(key, serialize(rows, cols, job.file_format, spec["table"], tuple(masked)))
             added = await w.upsert(job.dataset, cols, rows)
             if added and job.schema_cols:
                 change["added"] = sorted(set(change["added"]) | set(added))

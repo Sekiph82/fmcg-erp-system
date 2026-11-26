@@ -27,7 +27,7 @@ class ExportJob(Base):
     id             = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     target_id      = Column(UUID(as_uuid=True), ForeignKey("dw_targets.id", ondelete="CASCADE"), nullable=False, index=True)
     dataset        = Column(String(40), nullable=False)
-    file_format    = Column(String(6), nullable=False, default="csv")   # csv | jsonl (parquet needs pyarrow)
+    file_format    = Column(String(10), nullable=False, default="csv")   # csv | jsonl | parquet (M50.S01.T010: widened from 6)
     every_minutes  = Column(Integer, nullable=True)
     watermark      = Column(DateTime(timezone=True), nullable=True)      # last updated_at fully exported
     watermark_id   = Column(String(64), nullable=True)                   # tie-breaker within the same timestamp

@@ -42,7 +42,8 @@ def test_manifests_and_sidebar():
     assert not any("gmail.modify" in s or "mail.google.com" in s for s in g["oauthScopes"])   # read-only access to mail
     assert "function onGmailMessage" in (ROOT / "addins/gmail/Code.gs").read_text(encoding="utf-8")
     html = (ROOT / "frontend/public/addin/sidebar.html").read_text(encoding="utf-8")
-    assert 'src="sidebar.js"' in html and "crm.addin" in html
+    assert 'src="loader.js"' in html and "Sign in to POVU ERP" in html      # M50.S01.T011: OAuth sign-in replaces the pasted token
+    assert (ROOT / "frontend/public/addin/sidebar.js").exists() and root.find("o:Permissions", ns).text == "ReadItem"
 
 
 async def _user(db, *, superuser=False, perms=()):

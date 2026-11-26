@@ -263,3 +263,9 @@ async def survey_answer(token: str, body: AnswerIn, db: AsyncSession = Depends(g
         raise HTTPException(409 if "already" in str(e) else 422, str(e))
     await db.commit()
     return {"ok": True}
+
+
+# M50.S01.T006 service-agent QA, gaps and safety cases: /api/v1/service-desk/agent/*
+from app.api.v1.endpoints.service_agent_admin import router as _agent_qa_router  # noqa: E402
+
+router.include_router(_agent_qa_router, prefix="/agent")

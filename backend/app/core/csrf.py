@@ -24,6 +24,10 @@ class CSRFOriginMiddleware(BaseHTTPMiddleware):
     async def dispatch(
         self, request: Request, call_next: RequestResponseEndpoint
     ) -> Response:
+        # M50.S01.T010: the SAML IdP posts the signed response cross-site by design; trust comes from the signed
+        # assertion, InResponseTo bound to this browser's request cookie and the replay store, not the Origin.
+        if request.method == "POST" and request.url.path == "/api/v1/sso/saml/acs":
+            return await call_next(request)
         if request.method in {"POST", "PUT", "PATCH", "DELETE"}:
             origin = request.headers.get("origin")
             referer = request.headers.get("referer")

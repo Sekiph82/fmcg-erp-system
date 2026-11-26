@@ -25,6 +25,8 @@ export default function DataHubPage() {
   const [card, setCard] = useState("");
   const [cardFields, setCardFields] = useState<Record<string, string> | null>(null);
   const [confirmed, setConfirmed] = useState(false);
+  const [draft, setDraft] = useState<string | null>(null);   // M50.S01.T010 picture scan draft (text only is kept)
+  const [scanBusy, setScanBusy] = useState(false);
   const [preview, setPreview] = useState<{ id: string; subject: string; body: string; sources: string[]; catalogue_empty: boolean } | null>(null);
   const load = useCallback(() => {
     apiClient.get("/api/v1/customer-data/sources").then((r) => setSources(r.data)).catch(() => setSources([]));
@@ -103,11 +105,22 @@ export default function DataHubPage() {
       <section className={box}>
         <h3 className="font-semibold">Business card to contact</h3>
         <textarea aria-label="Card text" className={`${inp} w-full`} rows={4} placeholder="Paste the card text (from your phone's text recognition) or type it" value={card} onChange={(e) => setCard(e.target.value)} />
+        <label className="block text-xs">Or scan a picture of the card (JPEG/PNG, up to 4 MB; the picture is not kept, only the text)
+          <input aria-label="Card picture" type="file" accept="image/jpeg,image/png" disabled={scanBusy} className="block mt-1" onChange={(e) => {
+            const file = e.target.files?.[0]; if (!file) return; const fd = new FormData(); fd.append("file", file); setScanBusy(true);
+            go(apiClient.post("/api/v1/crm/card-ocr/scan", fd, { headers: { "Content-Type": "multipart/form-data" } }).then((r) => {
+              setDraft(r.data.id); setCard(r.data.text);
+              setCardFields(Object.fromEntries(["full_name", "job_title", "company", "email", "phone"].map((k) => [k, r.data.fields[k]?.value ?? ""]))); setConfirmed(false);
+            }).finally(() => setScanBusy(false)), "Card read. Check every field below.");
+          }} /></label>
         <button className="border rounded px-3 py-1 text-xs" onClick={() => go(apiClient.post("/api/v1/customer-data/business-card/parse", { text: card }).then((r) => {
           setCardFields(Object.fromEntries(["full_name", "job_title", "company", "email", "phone"].map((k) => [k, r.data.fields[k]?.value ?? ""]))); setConfirmed(false); }))}>Read fields</button>
         {cardFields && <div className="grid sm:grid-cols-2 gap-2 text-xs">{Object.keys(cardFields).map((k) => <label key={k}>{k.replace("_", " ")}<input aria-label={k} className={`${inp} w-full`} value={cardFields[k]} onChange={(e) => setCardFields({ ...cardFields, [k]: e.target.value })} /></label>)}
-          <label className="flex items-center gap-2 sm:col-span-2"><input type="checkbox" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} />I checked every field</label>
-          <button className="bg-indigo-600 text-white rounded px-3 py-1" disabled={!confirmed} onClick={() => go(apiClient.post("/api/v1/customer-data/business-card/save", { ...cardFields, email: cardFields.email || null, phone: cardFields.phone || null, confirmed }).then(() => { setCardFields(null); setCard(""); }), "Contact created.")}>Create contact</button></div>}
+          <label className="flex items-center gap-2 sm:col-span-2"><input type="checkbox" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} />{draft ? "I checked every field, and the card holder gave me their card for business contact so I may keep these details" : "I checked every field"}</label>
+          <button className="bg-indigo-600 text-white rounded px-3 py-1" disabled={!confirmed} onClick={() => go((draft
+            ? apiClient.post(`/api/v1/crm/card-ocr/${draft}/confirm`, { ...cardFields, email: cardFields.email || null, phone: cardFields.phone || null, consent: confirmed })
+            : apiClient.post("/api/v1/customer-data/business-card/save", { ...cardFields, email: cardFields.email || null, phone: cardFields.phone || null, confirmed })).then(() => { setCardFields(null); setCard(""); setDraft(null); }), "Contact created.")}>Create contact</button>
+          {draft && <button className="border rounded px-3 py-1" onClick={() => go(apiClient.post(`/api/v1/crm/card-ocr/${draft}/discard`).then(() => { setCardFields(null); setCard(""); setDraft(null); }), "Scan discarded.")}>Discard scan</button>}</div>}
       </section>
     </div>
   );
