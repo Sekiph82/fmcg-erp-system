@@ -1,0 +1,4 @@
+NOTICE:  database "g_test_m45_s01_t012_t022_tokens_addin_mcp_" does not exist, skipping
+NOTICE:  database "g_test_m45_s01_t012_t022_tokens_addin_mcp__b" does not exist, skipping
+== tests/test_m45_s01_t012_t022_tokens_addin_mcp.py :: 3 passed, 76 warnings in 17.39s
+FILES PASS=1 FAIL=0

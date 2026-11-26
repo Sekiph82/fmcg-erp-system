@@ -82,6 +82,8 @@ def create_oidc_app(client_id: str = "erp-client", client_secret: str = "sim-sec
             signer = other
         elif t == "unverified":
             claims["email_verified"] = False
+        elif t == "no_verified_claim":
+            claims.pop("email_verified")
         state["tamper"] = None
         return {"access_token": secrets.token_urlsafe(16), "token_type": "Bearer", "expires_in": 300,
                 "id_token": jwt.encode(claims, signer, algorithm="RS256", headers={"kid": kid})}

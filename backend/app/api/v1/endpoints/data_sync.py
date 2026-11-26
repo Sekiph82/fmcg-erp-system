@@ -31,6 +31,9 @@ def _admin(u):
 def _may_run(u, sync: SyncDefinition):
     if not (u.is_superuser or has_any_permission(u, dss.TARGETS[sync.target]["perm"])):
         raise HTTPException(403, f"You may not change {sync.target}.")
+    guarded = {m["target"] for m in sync.mapping} & dss.CONTROLLED_FIELDS
+    if guarded and not (u.is_superuser or has_any_permission(u, ("crm.edit_all",))):
+        raise HTTPException(403, f"This sync changes {', '.join(sorted(guarded))}: only CRM administrators may run it.")
 
 
 def _out(s: SyncDefinition) -> dict:
@@ -178,7 +181,7 @@ async def quality(db: AsyncSession = Depends(get_db), current_user=Depends(get_c
 async def webhook(sid: uuid.UUID, request: Request, authorization: str = Header(""), db: AsyncSession = Depends(get_db)):
     s = await db.get(SyncDefinition, sid)
     token = authorization[7:] if authorization.lower().startswith("bearer ") else ""
-    if s is None or s.source_kind != "WEBHOOK" or not s.active or not hmac.compare_digest(token, dss.decrypt(s.secret) or "x" * 40):
+    if s is None or s.source_kind != "WEBHOOK" or not s.active or not hmac.compare_digest(token.encode(), (dss.decrypt(s.secret) or "x" * 40).encode()):
         raise HTTPException(401, "Invalid sync or token.")
     try:
         body = await request.json()

@@ -51,7 +51,10 @@ async def lookup(email: str = Query(..., min_length=3, max_length=254, pattern=r
         return {"found": False, "email": str(email)}
     rec_ids = list((await db.execute(select(CRMContactAssociation.object_id).where(
         CRMContactAssociation.contact_id == c.id, CRMContactAssociation.object_type == "crm_record"))).scalars())
-    recs = list((await db.execute(select(CRMRecord).where(CRMRecord.id.in_(rec_ids or [uuid.uuid4()])))).scalars())
+    all_ = user.is_superuser or has_any_permission(user, ("crm.view_all", "crm.edit_all"))
+    recs = [r for r in (await db.execute(select(CRMRecord).where(CRMRecord.id.in_(rec_ids or [uuid.uuid4()])))).scalars()
+            if all_ or r.assigned_rep_id == str(user.id)]
+    rec_ids = [r.id for r in recs]
     acts = list((await db.execute(select(CRMActivity).where(CRMActivity.crm_record_id.in_(rec_ids or [uuid.uuid4()]))
                                   .order_by(CRMActivity.activity_datetime.desc().nullslast()).limit(5))).scalars())
     await db.commit()

@@ -135,7 +135,7 @@ async def callback(db: AsyncSession, state: str, code: str):
         raise SSOError(401, "The identity provider refused the sign-in code.", "token_exchange_failed")
     claims = await _verify_id_token(meta, cfg, r.json()["id_token"], st.nonce)
     email = str(claims.get("email") or "").strip().lower()
-    if not email or claims.get("email_verified") is False:
+    if not email or claims.get("email_verified") is not True:
         raise SSOError(403, "The identity provider did not confirm an e-mail address.", "no_verified_email")
     from sqlalchemy import func
     user = (await db.execute(select(User).options(selectinload(User.roles)).where(func.lower(User.email) == email))).scalar_one_or_none()
@@ -143,6 +143,10 @@ async def callback(db: AsyncSession, state: str, code: str):
         raise SSOError(403, "No ERP account exists for this e-mail. Ask an administrator to create it first.", "unknown_user")
     if not user.is_active:
         raise SSOError(403, "This ERP account is disabled.", "inactive_user")
+    from app.services.auth_2fa_policy import requires_privileged_2fa
+    if await requires_privileged_2fa(db, user.id):
+        raise SSOError(403, "Privileged accounts sign in with password and authenticator app (break-glass), not SSO.",
+                       "privileged_2fa_required")
     mapped = {cfg.role_mapping[g] for g in claims.get("groups") or [] if g in (cfg.role_mapping or {})}
     if mapped:
         have = {r.name for r in user.roles}

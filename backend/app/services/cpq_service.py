@@ -185,7 +185,9 @@ async def levels_needed(db: AsyncSession, q) -> list[dict]:
 
 async def approval_state(db: AsyncSession, q) -> dict:
     need = await levels_needed(db, q)
-    done = {a.level: a for a in (await db.execute(select(QuoteApproval).where(QuoteApproval.quote_id == q.id))).scalars()}
+    cur = quote_discount(q)
+    done = {a.level: a for a in (await db.execute(select(QuoteApproval).where(QuoteApproval.quote_id == q.id))).scalars()
+            if Decimal(a.discount_pct) + Decimal("0.005") >= cur}           # stale approvals of a lower discount do not count
     return {"discount_pct": str(quote_discount(q).quantize(Decimal("0.01"))),
             "levels": [{"level": l["level"], "above_pct": l["above_pct"], "permission": l["permission"],
                         "approved_by": done[l["level"]].approver if l["level"] in done else None} for l in need],
@@ -201,7 +203,15 @@ async def approve_level(db: AsyncSession, qid, user) -> dict:
         raise CPQError(409, "No approval is waiting for this quotation.")
     if user.id in (q.created_by_id, q.discount_changed_by_id):
         raise CPQError(403, "The person who set the price cannot approve it.")
-    if any(a.approver_id == user.id for a in (await db.execute(select(QuoteApproval).where(QuoteApproval.quote_id == q.id))).scalars()):
+    from app.services.impersonation_service import current as _imp
+    if _imp.get():
+        raise CPQError(403, "Approvals cannot be given while acting as another user.")
+    old = list((await db.execute(select(QuoteApproval).where(QuoteApproval.quote_id == q.id))).scalars())
+    stale = [a for a in old if Decimal(a.discount_pct) + Decimal("0.005") < quote_discount(q)]
+    for a in stale:                                                       # the discount went up since: approve again
+        await db.delete(a)
+    await db.flush()
+    if any(a.approver_id == user.id for a in old if a not in stale):
         raise CPQError(403, "Each level needs a different approver.")
     if not (user.is_superuser or has_permission(user, nxt["permission"])):
         raise CPQError(403, f"Level {nxt['level']} needs {nxt['permission']}.")
@@ -350,15 +360,16 @@ async def billing_tick(db: AsyncSession, now: Optional[datetime] = None) -> int:
             b.status = "PAID"
             continue
         due = b.last_sent_at is None or (b.attempts <= len(retry) and now >= b.last_sent_at + timedelta(days=retry[min(b.attempts, len(retry)) - 1]))
-        if not due:
-            continue
         if b.attempts > len(retry):
             b.status = "GAVE_UP"
             continue
+        if not due:
+            continue
         try:
             link, token = await pls.create(db, inv.id, None, 30, True)
-        except pls.LinkError:
-            b.status = "PAID"
+        except pls.LinkError as e:
+            if e.status == 409 and "Nothing left" in str(e):
+                b.status = "PAID"
             continue
         b.link_id, b.attempts, b.last_sent_at = link.id, b.attempts + 1, now
         cust = await db.get(Customer, inv.customer_id)

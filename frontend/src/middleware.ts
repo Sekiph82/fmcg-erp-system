@@ -120,6 +120,11 @@ const REDIRECTS: Record<string, { p: string; t?: string; d?: string }> = {
 
 /** Real standalone pages — skip prefix-redirect so the page renders instead of redirecting */
 const BYPASS_PREFIX_REDIRECT = new Set([
+  // M45 admin pages (support access, SSO, configuration sandbox, warehouse exports)
+  "/dashboard/security/support-access",
+  "/dashboard/security/sso",
+  "/dashboard/security/config-sandbox",
+  "/dashboard/security/warehouse-exports",
   // Calibration instrument register is now a real standalone QMS page.
   "/dashboard/qms/calibration",
   // MPS real standalone pages (restored Round 13)

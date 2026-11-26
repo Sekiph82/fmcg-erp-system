@@ -14,6 +14,8 @@ export function ImpersonationBanner() {
     return () => clearInterval(t);
   }, []);
   if (!s.active) return null;
+  // a full reload is required: the signed-in identity changes, so every cached user/permission must be dropped
+  // eslint-disable-next-line @next/next/no-location-assign-relative-destination
   const end = () => apiClient.post("/api/v1/impersonation/end").finally(() => window.location.assign("/dashboard"));
   return (
     <div role="alert" className="sticky top-0 z-50 bg-red-700 text-white text-sm px-4 py-2 flex flex-wrap items-center justify-between gap-2">

@@ -38,8 +38,9 @@ async def t_search_customers(db, user, args) -> Any:
     q = str(args.get("query") or "").strip()
     if len(q) < 2:
         raise ToolError("query needs at least 2 characters.")
-    rows = (await db.execute(select(Customer).where(or_(Customer.name.ilike(f"%{q}%"), Customer.code.ilike(f"%{q}%")))
-                             .order_by(Customer.name).limit(25))).scalars()
+    like = "%" + q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
+    rows = (await db.execute(select(Customer).where(or_(Customer.name.ilike(like, escape="\\"), Customer.code.ilike(like, escape="\\")))
+                             .order_by(Customer.name).limit(200))).scalars()
     return [{"code": c.code, "name": c.name, "city": c.city, "channel": getattr(c.channel, "value", c.channel),
              "active": c.is_active} for c in rows if can_view_record(user, "sales", c)][:10]
 
@@ -169,6 +170,8 @@ async def mcp(request: Request, authorization: str = Header(""), db: AsyncSessio
     except ValueError:
         return JSONResponse(_err(None, -32700, "Parse error"), status_code=400)
     msgs = body if isinstance(body, list) else [body]
+    if len(msgs) > 20:
+        return JSONResponse(_err(None, -32600, "At most 20 messages per batch."), status_code=400)
     out = [r for m in msgs if isinstance(m, dict) for r in [await _handle(db, m, user, token)] if r is not None]
     await db.commit()
     if not out:

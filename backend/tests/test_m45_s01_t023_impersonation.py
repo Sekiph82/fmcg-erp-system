@@ -61,12 +61,13 @@ async def test_impersonation_flow():
     from app.models.identity import ImpersonationSession
     from app.models.notifications import Notification
     async with AsyncSessionLocal() as db:
-        support, spw = await _user(db, ("users.impersonate", "users.view"))
+        support, spw = await _user(db, ("users.impersonate", "users.view", "crm.view", "crm.create", "crm.edit"))
+        richer, _ = await _user(db, ("crm.view", "finance.approve"))
         plain, ppw = await _user(db, ("users.view",))
         target, _ = await _user(db, ("crm.view", "crm.create", "crm.edit"))
         boss, _ = await _user(db, superuser=True)
         await db.commit()
-        ids = {k: (u.id, u.username) for k, u in (("support", support), ("plain", plain), ("target", target), ("boss", boss))}
+        ids = {k: (u.id, u.username) for k, u in (("support", support), ("plain", plain), ("target", target), ("boss", boss), ("richer", richer))}
     async with _client() as c, _client() as p:
         assert (await c.post("/api/v1/auth/login", data={"username": ids["support"][1], "password": spw})).status_code == 200
         assert (await p.post("/api/v1/auth/login", data={"username": ids["plain"][1], "password": ppw})).status_code == 200
@@ -75,6 +76,8 @@ async def test_impersonation_flow():
         assert (await c.post("/api/v1/impersonation/start", json={**body, "reason": "short"})).status_code == 422
         assert (await c.post("/api/v1/impersonation/start", json={**body, "user_id": str(ids["boss"][0])})).status_code == 403
         assert (await c.post("/api/v1/impersonation/start", json={**body, "user_id": str(ids["support"][0])})).status_code == 422
+        rich = await c.post("/api/v1/impersonation/start", json={**body, "user_id": str(ids["richer"][0])})
+        assert rich.status_code == 403 and "rights you do not have" in rich.text                  # privilege ceiling
         r = await c.post("/api/v1/impersonation/start", json=body)
         assert r.status_code == 200
         sid = r.json()["session_id"]

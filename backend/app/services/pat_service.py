@@ -112,6 +112,10 @@ async def propose(db: AsyncSession, *, source: str, source_ref: Optional[str], u
 
 
 async def decide(db: AsyncSession, req: AIActionRequest, approver, approve: bool) -> AIActionRequest:
+    from app.services.impersonation_service import current as _imp
+    if _imp.get():
+        raise PermissionError("Approvals cannot be given while acting as another user.")
+    await db.refresh(req, with_for_update=True)                   # two approvers racing: only one decides
     if req.status != "PENDING":
         raise ValueError("Already decided.")
     if req.requested_by and approver.id == req.requested_by:

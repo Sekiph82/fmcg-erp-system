@@ -51,6 +51,19 @@ def test_transforms_and_validation():
         assert msg in str(e.value)
 
 
+def test_controlled_fields_need_admin():
+    from types import SimpleNamespace as NS
+    from fastapi import HTTPException
+    from app.api.v1.endpoints.data_sync import _may_run
+    rep = NS(is_superuser=False, roles=[NS(name="r", is_active=True, access_scopes=[], permissions=[NS(code="sales.edit", is_active=True)])],
+             access_scopes=[])
+    sync = NS(target="customers", mapping=MAP)                     # maps credit_limit
+    with pytest.raises(HTTPException) as e:
+        _may_run(rep, sync)
+    assert e.value.status_code == 403 and "credit_limit" in e.value.detail
+    _may_run(rep, NS(target="customers", mapping=MAP[:3]))         # code, name, phone: fine for a sales editor
+
+
 def _fixture_app():
     """A two-way local source: GET returns rows (fails first time), POST receives the ERP's changes (fails once)."""
     app = FastAPI()

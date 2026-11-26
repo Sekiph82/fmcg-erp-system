@@ -88,11 +88,18 @@ async def test_oidc_login_and_refusals(idp):
         assert me.status_code == 200 and me.json()["username"] == a_name
         replay = await erp.get("/api/v1/sso/callback", params={"code": q["code"][0], "state": q["state"][0]})
         assert "sso_error" in replay.headers["location"] and "already" in replay.headers["location"]
+    async with _erp() as erp, _erp() as other:
+        r = await erp.get("/api/v1/sso/start")
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=idp), base_url=ISSUER) as idp_c:
+            auth = await idp_c.get(r.headers["location"] + "&login_hint=" + a_email)
+        qq = parse_qs(urlparse(auth.headers["location"]).query)
+        csrf = await other.get("/api/v1/sso/callback", params={"code": qq["code"][0], "state": qq["state"][0]})
+        assert "sso_error" in csrf.headers["location"] and "browser" in csrf.headers["location"]   # login CSRF
     async with _erp() as erp:
         for email, tamper, words in ((f"nobody{uuid.uuid4().hex[:4]}@povu-demo.test", None, "No%20ERP%20account"),
                                      (off_email, None, "disabled"), (a_email, "nonce", "nonce"), (a_email, "aud", "rejected"),
                                      (a_email, "key", "rejected"), (a_email, "expired", "rejected"),
-                                     (a_email, "unverified", "confirm")):
+                                     (a_email, "unverified", "confirm"), (a_email, "no_verified_claim", "confirm")):
             r, _ = await _sign_in(erp, idp, email, tamper)
             assert "sso_error" in r.headers["location"] and words in r.headers["location"], (tamper, r.headers["location"])
     async with AsyncSessionLocal() as db:
@@ -101,7 +108,7 @@ async def test_oidc_login_and_refusals(idp):
         assert role_name in {r.name for r in u.roles}
         n = (await db.execute(select(func.count()).select_from(AuditLog).where(AuditLog.event_type == "LOGIN_FAILED",
                                                                                AuditLog.details["method"].astext == "oidc"))).scalar_one()
-        assert n >= 7
+        assert n >= 8
         cfg = (await db.execute(select(SSOConfig).where(SSOConfig.active.is_(True)))).scalar_one()
         cfg.enforced = True
         await db.commit()

@@ -97,6 +97,10 @@ async def pay_mpesa(db: AsyncSession, token: str, phone: str, amount: Optional[D
     link = await resolve(db, token, lock=True)
     if link.status != "ACTIVE":
         raise LinkError(409, "This invoice is already paid.")
+    recent = (await db.execute(select(func.count()).select_from(PaymentLinkAttempt).where(
+        PaymentLinkAttempt.link_id == link.id, PaymentLinkAttempt.created_at >= _now() - timedelta(hours=1)))).scalar_one()
+    if recent >= 5:
+        raise LinkError(429, "Too many payment attempts on this link; try again in an hour.")
     inv = await db.get(Invoice, link.invoice_id, with_for_update=True)
     due = await open_balance(db, inv)
     amount = due if amount is None else Decimal(amount)

@@ -100,6 +100,12 @@ async def test_cpq_lifecycle(monkeypatch):
         st = await cpq.approve_level(db, qid, fin)
         assert st["complete"]
         await cpq.ensure_levels(db, q, "send it")
+        q.lines[0].discount_pct = Decimal("0.60")                          # raised after approval (e.g. PATCH)
+        with pytest.raises(cpq.CPQError):
+            await cpq.ensure_levels(db, q, "send it")
+        await cpq.approve_level(db, qid, mgr)                              # stale approvals are dropped: approve again
+        await cpq.approve_level(db, qid, fin)
+        await cpq.ensure_levels(db, q, "send it")
         # readiness: credit and stock
         r = await cpq.readiness(db, qid)
         assert r["credit"]["ok"] and r["approvals"]["complete"] and "stock" in r

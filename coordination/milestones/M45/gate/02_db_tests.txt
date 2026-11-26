@@ -1,0 +1,127 @@
+NOTICE:  database "g_test_m45_s01_t001_t003_customer_data_" does not exist, skipping
+NOTICE:  database "g_test_m45_s01_t001_t003_customer_data__b" does not exist, skipping
+== tests/test_m45_s01_t001_t003_customer_data.py :: 3 passed in 4.53s
+NOTICE:  database "g_test_m45_s01_t004_t006_customer_intel_" does not exist, skipping
+NOTICE:  database "g_test_m45_s01_t004_t006_customer_intel__b" does not exist, skipping
+== tests/test_m45_s01_t004_t006_customer_intel.py :: 5 passed in 5.94s
+NOTICE:  database "g_test_m45_s01_t007_service_agent_" does not exist, skipping
+NOTICE:  database "g_test_m45_s01_t007_service_agent__b" does not exist, skipping
+== tests/test_m45_s01_t007_service_agent.py :: 2 passed in 5.37s
+NOTICE:  database "g_test_m45_s01_t008_t009_agents_" does not exist, skipping
+NOTICE:  database "g_test_m45_s01_t008_t009_agents__b" does not exist, skipping
+== tests/test_m45_s01_t008_t009_agents.py :: 4 passed, 11 warnings in 6.75s
+NOTICE:  database "g_test_m45_s01_t010_dedupe_merge_" does not exist, skipping
+NOTICE:  database "g_test_m45_s01_t010_dedupe_merge__b" does not exist, skipping
+== tests/test_m45_s01_t010_dedupe_merge.py :: 3 passed in 6.66s
+NOTICE:  database "g_test_m45_s01_t011_data_sync_" does not exist, skipping
+NOTICE:  database "g_test_m45_s01_t011_data_sync__b" does not exist, skipping
+== tests/test_m45_s01_t011_data_sync.py :: 3 passed, 75 warnings in 20.40s
+NOTICE:  database "g_test_m45_s01_t012_t022_tokens_addin_mcp_" does not exist, skipping
+NOTICE:  database "g_test_m45_s01_t012_t022_tokens_addin_mcp__b" does not exist, skipping
+== tests/test_m45_s01_t012_t022_tokens_addin_mcp.py :: 3 passed, 76 warnings in 23.01s
+NOTICE:  database "g_test_m45_s01_t013_sales_docs_" does not exist, skipping
+NOTICE:  database "g_test_m45_s01_t013_sales_docs__b" does not exist, skipping
+== tests/test_m45_s01_t013_sales_docs.py :: 1 passed, 75 warnings in 22.05s
+NOTICE:  database "g_test_m45_s01_t014_cpq_" does not exist, skipping
+NOTICE:  database "g_test_m45_s01_t014_cpq__b" does not exist, skipping
+== tests/test_m45_s01_t014_cpq.py :: 2 passed, 75 warnings in 20.54s
+NOTICE:  database "g_test_m45_s01_t015_custom_objects_" does not exist, skipping
+NOTICE:  database "g_test_m45_s01_t015_custom_objects__b" does not exist, skipping
+== tests/test_m45_s01_t015_custom_objects.py :: 3 passed in 7.08s
+NOTICE:  database "g_test_m45_s01_t016_sso_" does not exist, skipping
+NOTICE:  database "g_test_m45_s01_t016_sso__b" does not exist, skipping
+== tests/test_m45_s01_t016_sso.py :: 1 passed, 75 warnings in 29.13s
+NOTICE:  database "g_test_m45_s01_t017_sensitive_" does not exist, skipping
+NOTICE:  database "g_test_m45_s01_t017_sensitive__b" does not exist, skipping
+== tests/test_m45_s01_t017_sensitive.py :: 2 passed, 79 warnings in 25.93s
+NOTICE:  database "g_test_m45_s01_t018_config_bundle_" does not exist, skipping
+NOTICE:  database "g_test_m45_s01_t018_config_bundle__b" does not exist, skipping
+== tests/test_m45_s01_t018_config_bundle.py :: 1 passed, 4 warnings in 12.00s
+NOTICE:  database "g_test_m45_s01_t019_service_desk_" does not exist, skipping
+NOTICE:  database "g_test_m45_s01_t019_service_desk__b" does not exist, skipping
+== tests/test_m45_s01_t019_service_desk.py :: 2 passed, 83 warnings in 21.22s
+NOTICE:  database "g_test_m45_s01_t020_warehouse_export_" does not exist, skipping
+NOTICE:  database "g_test_m45_s01_t020_warehouse_export__b" does not exist, skipping
+== tests/test_m45_s01_t020_warehouse_export.py :: 2 passed, 2 warnings in 6.24s
+NOTICE:  database "g_test_m45_s01_t021_payment_links_" does not exist, skipping
+NOTICE:  database "g_test_m45_s01_t021_payment_links__b" does not exist, skipping
+== tests/test_m45_s01_t021_payment_links.py :: 1 passed, 75 warnings in 17.71s
+NOTICE:  database "g_test_m45_s01_t023_impersonation_" does not exist, skipping
+NOTICE:  database "g_test_m45_s01_t023_impersonation__b" does not exist, skipping
+== tests/test_m45_s01_t023_impersonation.py :: 2 passed, 80 warnings in 21.12s
+NOTICE:  database "g_test_m45_s01_t024_carryovers_" does not exist, skipping
+NOTICE:  database "g_test_m45_s01_t024_carryovers__b" does not exist, skipping
+== tests/test_m45_s01_t024_carryovers.py :: 5 passed in 5.34s
+NOTICE:  database "g_test_m44_s01_t001_email_designer_" does not exist, skipping
+NOTICE:  database "g_test_m44_s01_t001_email_designer__b" does not exist, skipping
+== tests/test_m44_s01_t001_email_designer.py :: 8 passed in 5.31s
+NOTICE:  database "g_test_m44_s01_t002_t005_ads_" does not exist, skipping
+NOTICE:  database "g_test_m44_s01_t002_t005_ads__b" does not exist, skipping
+== tests/test_m44_s01_t002_t005_ads.py :: 6 passed in 5.89s
+NOTICE:  database "g_test_m44_s01_t006_t008_social_" does not exist, skipping
+NOTICE:  database "g_test_m44_s01_t006_t008_social__b" does not exist, skipping
+== tests/test_m44_s01_t006_t008_social.py :: 6 passed in 5.20s
+NOTICE:  database "g_test_m44_s01_t009_web_analytics_db_" does not exist, skipping
+NOTICE:  database "g_test_m44_s01_t009_web_analytics_db__b" does not exist, skipping
+== tests/test_m44_s01_t009_web_analytics_db.py :: 2 passed in 4.53s
+NOTICE:  database "g_test_m44_s01_t010_audiences_db_" does not exist, skipping
+NOTICE:  database "g_test_m44_s01_t010_audiences_db__b" does not exist, skipping
+== tests/test_m44_s01_t010_audiences_db.py :: 2 passed in 4.88s
+NOTICE:  database "g_test_m44_s01_t011_deliverability_db_" does not exist, skipping
+NOTICE:  database "g_test_m44_s01_t011_deliverability_db__b" does not exist, skipping
+== tests/test_m44_s01_t011_deliverability_db.py :: 4 passed in 4.53s
+NOTICE:  database "g_test_m44_s01_t012_governance_db_" does not exist, skipping
+NOTICE:  database "g_test_m44_s01_t012_governance_db__b" does not exist, skipping
+== tests/test_m44_s01_t012_governance_db.py :: 4 passed in 5.87s
+NOTICE:  database "g_test_m44_s01_t013_messaging_" does not exist, skipping
+NOTICE:  database "g_test_m44_s01_t013_messaging__b" does not exist, skipping
+== tests/test_m44_s01_t013_messaging.py :: 4 passed, 75 warnings in 18.04s
+NOTICE:  database "g_test_m44_s01_t014_residuals_" does not exist, skipping
+NOTICE:  database "g_test_m44_s01_t014_residuals__b" does not exist, skipping
+== tests/test_m44_s01_t014_residuals.py :: 2 passed, 77 warnings in 17.16s
+NOTICE:  database "g_test_m43_s00_t004_harness_" does not exist, skipping
+NOTICE:  database "g_test_m43_s00_t004_harness__b" does not exist, skipping
+== tests/test_m43_s00_t004_harness.py :: 16 passed in 5.24s
+NOTICE:  database "g_test_m43_s01_t001_t002_oauth_mail_db_" does not exist, skipping
+NOTICE:  database "g_test_m43_s01_t001_t002_oauth_mail_db__b" does not exist, skipping
+== tests/test_m43_s01_t001_t002_oauth_mail_db.py :: 5 passed in 5.36s
+NOTICE:  database "g_test_m43_s01_t003_t004_calendar_sync_db_" does not exist, skipping
+NOTICE:  database "g_test_m43_s01_t003_t004_calendar_sync_db__b" does not exist, skipping
+== tests/test_m43_s01_t003_t004_calendar_sync_db.py :: 6 passed in 5.03s
+NOTICE:  database "g_test_m43_s01_t005_booking_db_" does not exist, skipping
+NOTICE:  database "g_test_m43_s01_t005_booking_db__b" does not exist, skipping
+== tests/test_m43_s01_t005_booking_db.py :: 4 passed, 75 warnings in 18.31s
+NOTICE:  database "g_test_m43_s01_t006_engagement_db_" does not exist, skipping
+NOTICE:  database "g_test_m43_s01_t006_engagement_db__b" does not exist, skipping
+== tests/test_m43_s01_t006_engagement_db.py :: 5 passed in 4.43s
+NOTICE:  database "g_test_m43_s01_t007_quotas_db_" does not exist, skipping
+NOTICE:  database "g_test_m43_s01_t007_quotas_db__b" does not exist, skipping
+== tests/test_m43_s01_t007_quotas_db.py :: 1 passed in 4.35s
+NOTICE:  database "g_test_m43_s01_t008_t009_voice_db_" does not exist, skipping
+NOTICE:  database "g_test_m43_s01_t008_t009_voice_db__b" does not exist, skipping
+== tests/test_m43_s01_t008_t009_voice_db.py :: 6 passed, 82 warnings in 18.77s
+NOTICE:  database "g_test_m43_s01_t010_playbooks_db_" does not exist, skipping
+NOTICE:  database "g_test_m43_s01_t010_playbooks_db__b" does not exist, skipping
+== tests/test_m43_s01_t010_playbooks_db.py :: 4 passed, 75 warnings in 16.77s
+NOTICE:  database "g_test_m43_s01_t011_pipelines_db_" does not exist, skipping
+NOTICE:  database "g_test_m43_s01_t011_pipelines_db__b" does not exist, skipping
+== tests/test_m43_s01_t011_pipelines_db.py :: 1 passed in 4.44s
+NOTICE:  database "g_test_m43_s01_t012_deal_score_db_" does not exist, skipping
+NOTICE:  database "g_test_m43_s01_t012_deal_score_db__b" does not exist, skipping
+== tests/test_m43_s01_t012_deal_score_db.py :: 1 passed in 4.53s
+NOTICE:  database "g_test_m43_s01_t013_workspace_db_" does not exist, skipping
+NOTICE:  database "g_test_m43_s01_t013_workspace_db__b" does not exist, skipping
+== tests/test_m43_s01_t013_workspace_db.py :: 2 passed in 4.37s
+NOTICE:  database "g_test_m43_s01_t014_routing_db_" does not exist, skipping
+NOTICE:  database "g_test_m43_s01_t014_routing_db__b" does not exist, skipping
+== tests/test_m43_s01_t014_routing_db.py :: 4 passed in 5.01s
+NOTICE:  database "g_test_m43_s01_t015_contacts_db_" does not exist, skipping
+NOTICE:  database "g_test_m43_s01_t015_contacts_db__b" does not exist, skipping
+== tests/test_m43_s01_t015_contacts_db.py :: 2 passed in 4.73s
+NOTICE:  database "g_test_m43_s01_t016_teams_views_db_" does not exist, skipping
+NOTICE:  database "g_test_m43_s01_t016_teams_views_db__b" does not exist, skipping
+== tests/test_m43_s01_t016_teams_views_db.py :: 2 passed in 4.56s
+NOTICE:  database "g_test_m43_s01_t017_coaching_db_" does not exist, skipping
+NOTICE:  database "g_test_m43_s01_t017_coaching_db__b" does not exist, skipping
+== tests/test_m43_s01_t017_coaching_db.py :: 1 passed, 2 warnings in 4.44s
+FILES PASS=42 FAIL=0

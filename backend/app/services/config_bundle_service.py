@@ -121,7 +121,7 @@ async def _resolve_fk(db: AsyncSession, ref_table: str, ref_key: list[str], valu
     ref_spec = next(s for s in SPEC if s["table"] == ref_table)
     vals = value if isinstance(value, list) else [value]
     cond = and_(*[t.c[k] == _coerce(t, {k: v})[k] for k, v in zip(ref_key, vals)])
-    return (await db.execute(select(t.c[ref_spec.get("pk", "id")]).where(cond))).scalar_one_or_none()
+    return (await db.execute(select(t.c[ref_spec.get("pk", "id")]).where(cond).limit(1))).scalar()
 
 
 async def plan(db: AsyncSession, bundle: dict, mode: str = "overwrite") -> list[dict]:
@@ -153,7 +153,7 @@ async def plan(db: AsyncSession, bundle: dict, mode: str = "overwrite") -> list[
             existing = None
             if all(v is not None for v in keyvals.values()):
                 c = _coerce(t, keyvals)
-                existing = (await db.execute(select(t).where(and_(*[t.c[k] == c[k] for k in spec["key"]])))).mappings().one_or_none()
+                existing = (await db.execute(select(t).where(and_(*[t.c[k] == c[k] for k in spec["key"]])))).mappings().first()
             label = " / ".join(str(item[k]) for k in spec["key"])
             if err:
                 steps.append({"table": spec["table"], "key": label, "action": "error", "detail": err})

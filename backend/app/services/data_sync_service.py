@@ -36,6 +36,7 @@ TARGETS: dict[str, dict] = {
                      "fields": {"email": "email", "full_name": "text", "phone": "phone", "job_title": "text", "language": "text"},
                      "required": ["email", "full_name"], "defaults": {}},
 }
+CONTROLLED_FIELDS = {"credit_limit", "payment_terms_days", "tax_id", "is_active"}   # commercial controls: admin-run syncs only
 TRANSFORMS = {"trim", "upper", "lower", "title", "phone_ke", "email", "number", "integer", "bool", "date", "default", "map",
               "prefix", "suffix", "concat", "truncate"}
 MAX_INPUT_KEEP = 5000
@@ -200,7 +201,9 @@ def parse_upload(text: str, fmt: str) -> list[dict]:
 
 
 def _jsonable(v):
-    if isinstance(v, (Decimal, uuid.UUID)):
+    if isinstance(v, Decimal):
+        return str(v.normalize()) if v == v.to_integral() else str(v.normalize())
+    if isinstance(v, uuid.UUID):
         return str(v)
     if isinstance(v, (date, datetime)):
         return v.isoformat()
@@ -258,7 +261,8 @@ async def run_in(db: AsyncSession, sync: SyncDefinition, rows: list[dict], *, dr
                 counts["update"] += 1
                 diff.append({"key": key, "action": "update", "changes": changes})
                 if not dry_run:
-                    before.append({"id": str(obj.id), "action": "update", "values": {k: c[0] for k, c in changes.items()}})
+                    before.append({"id": str(obj.id), "action": "update", "values": {k: c[0] for k, c in changes.items()},
+                                   "after": {k: c[1] for k, c in changes.items()}})
                     for k in changes:
                         setattr(obj, k, vals[k])
         if not dry_run:
@@ -298,6 +302,9 @@ async def rollback(db: AsyncSession, run: SyncRun, user: str) -> dict:
             continue
         if b["action"] == "update":
             col = M.__table__.c
+            now_vals = b.get("after") or {}
+            if any(_jsonable(getattr(obj, k)) != v for k, v in now_vals.items()):
+                continue                                   # changed again since this run: leave the newer value
             for k, v in b["values"].items():
                 t = col[k].type
                 setattr(obj, k, Decimal(v) if v is not None and t.__class__.__name__ == "Numeric" else v)

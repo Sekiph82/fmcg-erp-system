@@ -122,7 +122,7 @@ async def _resolve(db: AsyncSession, token: str) -> tuple[DocShareLink, Document
     if link.revoked_at is not None or link.expires_at <= _now():
         raise HTTPException(410, "This link has expired or was withdrawn.")
     d = await _served(db, link)
-    if d is None or d.status != DocumentStatus.APPROVED:
+    if d is None or d.status != DocumentStatus.APPROVED or d.confidentiality_level not in ("PUBLIC", "INTERNAL", "CUSTOMER"):
         raise HTTPException(410, "This document is no longer available.")
     return link, d
 

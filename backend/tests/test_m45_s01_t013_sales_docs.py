@@ -94,6 +94,12 @@ async def test_share_view_download_versions(tmp_path, monkeypatch):
         assert (await c.get(f"/api/v1/public/docs/{t_pin}")).status_code == 410
         stats = {l["id"]: l for l in (await c.get(f"/api/v1/sales-docs/{ids['v1']}/links")).json()}
         assert stats[pinned["id"]]["views"] == 1 and stats[pinned["id"]]["downloads"] == 1 and stats[pinned["id"]]["revoked"]
+    async with AsyncSessionLocal() as db:                                  # a newer version made confidential stops the link
+        v2 = await db.get(Document, ids["v2"])
+        v2.confidentiality_level = "CONFIDENTIAL"
+        await db.commit()
+    async with _client() as c:
+        assert (await c.get(f"/api/v1/public/docs/{t_latest}")).status_code == 410
     async with AsyncSessionLocal() as db:
         l = await db.get(DocShareLink, uuid.UUID(latest["id"]))
         l.expires_at = l.created_at - timedelta(seconds=1)

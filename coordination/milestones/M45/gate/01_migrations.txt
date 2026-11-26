@@ -1,0 +1,12 @@
+INFO  [alembic.runtime.migration] Running upgrade 20261125_0073 -> 20261125_0074, M44 Advanced Marketing Hub: e-mail designs, deliverability, governance, analytics, audiences, ads, social, channels.
+INFO  [alembic.runtime.migration] Running upgrade 20261125_0074 -> 20261126_0075, M45 AI Agent & Customer Data Hub.
+--- downgrade to 0074
+INFO  [alembic.runtime.migration] Running downgrade 20261126_0075 -> 20261125_0074, M45 AI Agent & Customer Data Hub.
+0
+0
+--- upgrade again
+INFO  [alembic.runtime.migration] Running upgrade 20261125_0074 -> 20261126_0075, M45 AI Agent & Customer Data Hub.
+20261126_0075
+50
+3
+declared=48 present=48

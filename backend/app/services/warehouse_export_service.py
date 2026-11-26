@@ -146,6 +146,8 @@ class PostgresWriter(Writer):
     async def _conn(self):
         import asyncpg
         dsn = decrypt(self.t.secret) or ""
+        if "?" in dsn:
+            raise ExportError("Connection URLs with query parameters are not accepted (they can redirect the host).")
         check_host(dsn.replace("postgresql+asyncpg://", "postgresql://"))
         return await asyncpg.connect(dsn.replace("postgresql+asyncpg://", "postgresql://"))
 
@@ -200,6 +202,17 @@ async def run_job(db: AsyncSession, job: ExportJob, fail_after_batches: Optional
     """One incremental run. `fail_after_batches` simulates an outage (tests)."""
     from app.services import sensitive_service as sens
     await db.refresh(job)                     # callers may hold an expired instance
+    got = (await db.execute(text("SELECT pg_try_advisory_lock(hashtext(:k))"), {"k": f"dw:{job.id}"})).scalar()
+    if not got:                               # another worker is exporting this job right now
+        return ExportRun(job_id=job.id, status="SKIPPED", error="Another run of this job is in progress.")
+    try:
+        return await _run_job_locked(db, job, fail_after_batches)
+    finally:
+        await db.execute(text("SELECT pg_advisory_unlock(hashtext(:k))"), {"k": f"dw:{job.id}"})
+
+
+async def _run_job_locked(db: AsyncSession, job: ExportJob, fail_after_batches: Optional[int]) -> ExportRun:
+    from app.services import sensitive_service as sens
     spec = DATASETS[job.dataset]
     target = await db.get(ExportTarget, job.target_id)
     run = ExportRun(job_id=job.id)

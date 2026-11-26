@@ -64,6 +64,14 @@ async def start(db: AsyncSession, actor, target_id: uuid.UUID, reason: str, minu
         raise ImpersonationError(403, "Superusers cannot be impersonated.")
     if target.id == actor.id:
         raise ImpersonationError(422, "You cannot impersonate yourself.")
+    if not actor.is_superuser:                                   # privilege ceiling: never gain rights by impersonating
+        from sqlalchemy.orm import selectinload as _sl
+        from app.core.access_control import get_effective_permission_codes
+        from app.models.role import Role
+        full = (await db.execute(select(User).options(_sl(User.roles).selectinload(Role.permissions)).where(User.id == target.id))).scalar_one()
+        extra = set(get_effective_permission_codes(full)) - set(get_effective_permission_codes(actor))
+        if extra:
+            raise ImpersonationError(403, f"This user has rights you do not have ({', '.join(sorted(extra)[:5])}); ask an administrator.")
     s = ImpersonationSession(actor_id=actor.id, target_id=target.id, reason=reason.strip()[:500],
                              expires_at=_now() + timedelta(minutes=max(1, min(MAX_MINUTES, minutes))))
     db.add(s)

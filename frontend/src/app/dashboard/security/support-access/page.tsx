@@ -23,6 +23,8 @@ export default function SupportAccessPage() {
   }, []);
   useEffect(() => { load(); }, [load]);
   const find = () => usersApi.list({ search: q, limit: 10, is_active: true }).then((r) => setUsers(r.items as unknown as typeof users)).catch((e) => setMsg(err(e)));
+  // a full reload is required: the signed-in identity changes, so every cached user/permission must be dropped
+  // eslint-disable-next-line @next/next/no-location-assign-relative-destination
   const start = () => apiClient.post("/api/v1/impersonation/start", { user_id: target, reason, minutes }).then(() => window.location.assign("/dashboard")).catch((e) => setMsg(err(e)));
   const setPol = (p: Pol, patch: Partial<Pol>) => apiClient.put("/api/v1/impersonation/notification-policies", { ...p, ...patch }).then((r) => setPols(r.data)).catch((e) => setMsg(err(e)));
 

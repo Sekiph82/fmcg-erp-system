@@ -42,7 +42,11 @@ async def start(next: Optional[str] = None, db: AsyncSession = Depends(get_db)):
     except (sso.SSOError, EgressBlocked) as e:
         raise HTTPException(getattr(e, "status", 503), str(e))
     await db.commit()
-    return RedirectResponse(url, status_code=302)
+    resp = RedirectResponse(url, status_code=302)
+    state = url.split("state=", 1)[1].split("&", 1)[0]
+    resp.set_cookie("erp_sso_state", state, max_age=600, httponly=True, secure=settings.AUTH_COOKIE_SECURE,
+                    samesite="lax", path="/api/v1/sso")        # binds the flow to this browser (login CSRF)
+    return resp
 
 
 @router.get("/callback")
@@ -50,7 +54,10 @@ async def callback(request: Request, state: str = "", code: str = "", error: str
     app_url = settings.PUBLIC_APP_URL.rstrip("/")
     if error:
         return RedirectResponse(f"{app_url}/login?sso_error={quote(error[:100])}", status_code=302)
+    import hmac as _hmac
     try:
+        if not _hmac.compare_digest(request.cookies.get("erp_sso_state", "").encode(), state.encode()):
+            raise sso.SSOError(400, "This sign-in was not started in this browser; start again.", "state_not_bound")
         user, claims, redirect_to = await sso.callback(db, state, code)
     except (sso.SSOError, EgressBlocked) as e:
         await db.commit()                                  # keep the used state (replay protection)

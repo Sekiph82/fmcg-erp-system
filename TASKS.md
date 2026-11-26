@@ -8,11 +8,11 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 ## Project Status
 
-- Current Milestone: M44 — ACCEPTED 2026-11-26 (gate passed); next M45 — AI Agent & Customer Data Hub
-- Current Sprint: M44.S02 — gate passed, all M44 rows [x]; synchronization recorded in M44.S02.T002
-- Current Task: M45.S01 block (T001–T024)
-- Current Task Status: M44 accepted (coordination/milestones/M44/gate/GATE_REPORT.md). M45 not started.
-- Next Task/Action: M45 block (T001–T024) as one batch, then the M45 gate.
+- Current Milestone: M45 — ACCEPTED 2026-11-26 (gate passed); next M46 — Content & Digital Experience Hub
+- Current Sprint: M45.S02 — gate passed, all M45 rows [x]; synchronization recorded in M45.S02.T002
+- Current Task: M46.S01 block (T001–T008)
+- Current Task Status: M45 accepted (coordination/milestones/M45/gate/GATE_REPORT.md). M46 not started.
+- Next Task/Action: M46 block (T001–T008) as one batch, then the M46 gate.
 - Required Actor: CLAUDE (sole active autonomous task runner and tracker writer; per coordination/CLAUDE_AUTONOMOUS_EXECUTION_POLICY.md; the 2026-11-25 owner rules below supersede older cadence/gate instructions)
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -2196,7 +2196,7 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
 Dependency: previous major milestone gate and synchronization PASS. Reuse shared harness, native models and adapter registry.
 
 ## M45.S01 — Implementation tasks
-- [v] M45.S01.T001 — AI prospecting agent (original recommendation 22/40)
+- [x] M45.S01.T001 — AI prospecting agent (original recommendation 22/40)
   - **Scope:** Extend M16/M30/copilot; configurable target criteria, ranked suggested prospects, evidence/source citations, outreach draft and human approval before sending; no auto-contact and no real external scraping.
   - **Acceptance at milestone gate:** Synthetic prospect corpus and deterministic provider responses; relevance, uncertainty, permissions, approval and disabled-provider behavior.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable. Do not rebuild already working functionality; record evidence and bounded delta.
@@ -2212,7 +2212,7 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
   - Outreach: the draft is built only from evidence. "Propose first e-mail" creates an AI request for a second person to approve, and the outbox applies suppression. Nothing is contacted automatically.
   - No scraping. The external provider adapter shows NOT_CONFIGURED.
   - Tests: tests/test_m45_s01_t001_t003_customer_data.py.
-- [v] M45.S01.T002 — AI customer and company research (original recommendation 23/40)
+- [x] M45.S01.T002 — AI customer and company research (original recommendation 23/40)
   - **Scope:** Research adapter for authorized public/business data sources, configurable search/enrichment provider and local imports, provenance, freshness, citations, conflict handling and bounded retrieval; unknown data remains unknown.
   - **Acceptance at milestone gate:** Local source corpus/contract replay; verify traceability and no fabricated company facts, unauthorized network or personal data exposure.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable. Do not rebuild already working functionality; record evidence and bounded delta.
@@ -2223,7 +2223,7 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
   - Each field shows unknown, conflict (sources disagree) or its candidates. Nothing is filled from guesses.
   - Retention: expired sources and their rows/proposals are purged daily.
   - The external research/search provider stays NOT_CONFIGURED until a licensed account exists (M47).
-- [v] M45.S01.T003 — Customer data enrichment (original recommendation 24/40)
+- [x] M45.S01.T003 — Customer data enrichment (original recommendation 24/40)
   - **Scope:** Configurable field mapping, deterministic normalization/dedup, external enrichment interface and documented provider adapters where public, evidence and field-level confidence/approval; never overwrite verified values silently. Extended by the 2026-11-25 parity matrix: business-card scan to contact (local OCR, user confirms every field).
   - **Acceptance at milestone gate:** Synthetic records, conflicting values, consent and retention; local provider contracts; future licensed datasets/account needed for actual enrichment.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable. Do not rebuild already working functionality; record evidence and bounded delta.
@@ -2236,7 +2236,7 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
   - Business card: card text (from the phone's text recognition or typed) is parsed into fields with confidence. The user edits them and must confirm before a contact is created.
   - No local OCR engine is installed: the screen says ocr_engine NOT_CONFIGURED.
   - Licensed enrichment datasets: future (M47).
-- [v] M45.S01.T004 — Buyer intent and lead signals (original recommendation 25/40)
+- [x] M45.S01.T004 — Buyer intent and lead signals (original recommendation 25/40)
   - **Scope:** First-party site/form/email/quote/order intent events, configurable scoring/decay and alerts; optional external intent feed adapter, no third-party dataset invented.
   - **Acceptance at milestone gate:** Synthetic event stream with recency, consent, explainable score and scoped alerts; optional external feed activation deferred.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable. Do not rebuild already working functionality; record evidence and bounded delta.
@@ -2248,7 +2248,7 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
   - The external intent feed shows NOT_CONFIGURED.
   - Code: app/services/customer_intel_service.py, /api/v1/customer-intel, CRM tab "Customer success".
   - Tests: tests/test_m45_s01_t004_t006_customer_intel.py.
-- [v] M45.S01.T005 — Churn and retention prediction (original recommendation 26/40)
+- [x] M45.S01.T005 — Churn and retention prediction (original recommendation 26/40)
   - **Scope:** Define churn for FMCG segments, rules and local statistical model with time-aware train/validation, explainable factors, confidence and cold-start behavior; no model claiming accuracy on real data.
   - **Acceptance at milestone gate:** Synthetic labeled cohorts, leakage checks, backtest, calibration and no fabricated business accuracy; real historical data calibration future.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable. Do not rebuild already working functionality; record evidence and bounded delta.
@@ -2261,7 +2261,7 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
   - Cold start: "insufficient history". Without a model, the rule fallback is shown with low confidence.
   - Each prediction shows its top 3 explanatory factors.
   - Not done here: calibration on real history (needs production data).
-- [v] M45.S01.T006 — Customer health score and success workspace (original recommendation 27/40)
+- [x] M45.S01.T006 — Customer health score and success workspace (original recommendation 27/40)
   - **Scope:** Configurable score from orders, overdue invoices, tickets, NPS, engagement and repeat purchase; alerts/playbooks, trend, missing-data treatment and ownership.
   - **Acceptance at milestone gate:** Synthetic accounts, no data/no score labeling, source reconciliation and permissions; integrated ERP signals beyond CRM.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable. Do not rebuild already working functionality; record evidence and bounded delta.
@@ -2272,7 +2272,7 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
   - Snapshots: daily (ci_health_snapshots) for the trend, from the M45 job runner.
   - Low health: an alert with playbook steps to the owner.
   - Workspace: lists only the customers a rep owns; crm.view_all sees all.
-- [v] M45.S01.T007 — AI customer service agent (original recommendation 28/40)
+- [x] M45.S01.T007 — AI customer service agent (original recommendation 28/40)
   - **Scope:** Extend public KB bot with retrieval grounded in approved articles, safe order/ticket status after authorization, multilingual responses, escalation and refusal, citations, audit and consent. No autonomous refunds/orders/financial actions.
   - **Acceptance at milestone gate:** Local KB + mock model, prompt-injection, account isolation, citations, escalation, no provider fallback and human approval tests.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable. Do not rebuild already working functionality; record evidence and bounded delta.
@@ -2288,7 +2288,7 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
   - Tests:
     - tests/test_m45_s01_t007_service_agent.py
     - the M36 live-chat regression test, rerun: PASS
-- [v] M45.S01.T008 — Visual AI agent builder (original recommendation 29/40)
+- [x] M45.S01.T008 — Visual AI agent builder (original recommendation 29/40)
   - **Scope:** Reuse workflow and AI governance: agents with triggers, allowed tools, prompts, knowledge, versions, simulation, approval, scoped read/write capabilities and template gallery. Extended by matrix v2: template gallery includes revenue (overdue chase on dunning), closing (buyer Q&A on approved quote content), customer-health and knowledge-base agents.
   - **Acceptance at milestone gate:** Build and simulate real local agent in UI, validate cycles/tool allowlist, version rollback, prompt injection and unauthorized action denial.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable. Do not rebuild already working functionality; record evidence and bounded delta.
@@ -2307,7 +2307,7 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
   - If tool output contains a prompt-injection pattern, the run is flagged and later writes are blocked.
   - Template gallery: overdue-invoice chaser (dunning), quote Q&A (approved quote content only), customer-health watcher and knowledge-base answerer.
   - Tests: tests/test_m45_s01_t008_t009_agents.py.
-- [v] M45.S01.T009 — Agent scheduler, cost and governance (original recommendation 30/40)
+- [x] M45.S01.T009 — Agent scheduler, cost and governance (original recommendation 30/40)
   - **Scope:** Durable jobs, schedules, limits per agent/user/company, token/cost estimates from configurable rates, retry/idempotency, approvals, kill switch, audit and deterministic fallback; no default real AI calls.
   - **Acceptance at milestone gate:** Fake model/local provider exercises budgets, time zones, concurrent runs, retries, emergency stop and human approval. Real model tests optional and explicitly authorized only.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable. Do not rebuild already working functionality; record evidence and bounded delta.
@@ -2322,7 +2322,7 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
   - Emergency stop: global and per agent.
   - Every job is audited and mirrored into ai_agent_runs, so it appears on the AI governance dashboard.
   - No default real AI call: LLM steps render deterministic templates unless use_provider is switched on and a provider key exists. That is optional, explicitly authorized and deferred to M47.
-- [v] M45.S01.T010 — Advanced customer deduplication and merge (original recommendation 31/40)
+- [x] M45.S01.T010 — Advanced customer deduplication and merge (original recommendation 31/40)
   - **Scope:** Detect candidate duplicates across contacts/companies; canonical survivor, merge preview, preserve references/orders/invoices/activity/consent, stricter suppression wins, audit/rollback strategy and RBAC. Extended by matrix v2: fuzzy matching (names, phones, KRA PIN, addresses), customer merge (merge_master today excludes customers) and bulk duplicate review.
   - **Acceptance at milestone gate:** Synthetic duplicate records with transactions and permissions, no orphan/duplicate order, consent preservation and concurrency.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable. Do not rebuild already working functionality; record evidence and bounded delta.
@@ -2340,7 +2340,7 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
   - Audit and undo: the merge log keeps the snapshot, the moved rows and the changes, and Undo restores them.
   - Concurrency: of two parallel merges of one pair, one succeeds and the other is refused.
   - Tests: tests/test_m45_s01_t010_dedupe_merge.py.
-- [v] M45.S01.T011 — No-code data sync and transformation (original recommendation 32/40)
+- [x] M45.S01.T011 — No-code data sync and transformation (original recommendation 32/40)
   - **Scope:** Visual field mapping, typed transformations, validation, dry-run diffs, conflict rules, incremental sync and connector SDK/catalog; import/export CSV/JSON, secrets separation and versioning. Audit custom objects, associations and data-quality capabilities; fill uncovered gaps. Extended by matrix v2: data quality overview and health trends, formatting recommendations, scheduled and webhook-triggered workflows.
   - **Acceptance at milestone gate:** Local two-way fixture sources test transformation/retry/replay, invalid mapping, scope, deletes and rollback; no arbitrary code execution.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable. Do not rebuild already working functionality; record evidence and bounded delta.
@@ -2364,7 +2364,7 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
   - Data-quality overview: missing or invalid e-mail and phone, possible duplicates, a score and formatting recommendations, with a daily trend (dq_snapshots).
   - Audit of the existing custom objects/associations/data-quality capabilities: they are covered by T015 (custom objects) and the old cf data-quality monitor stays.
   - Tests: tests/test_m45_s01_t011_data_sync.py (local two-way fixture with transient failures).
-- [v] M45.S01.T012 — Gmail and Outlook CRM add-ins (original recommendation 33/40)
+- [x] M45.S01.T012 — Gmail and Outlook CRM add-ins (original recommendation 33/40)
   - **Scope:** Develop installable source/manifests and shared authenticated CRM sidebar for contact lookup, log email, note/task, templates and links. Follow official supported add-on/add-in frameworks; local harness exercises actual shared API. Store publication/admin consent not required now.
   - **Acceptance at milestone gate:** Validate manifest/build locally and test sidebar using simulated host context; unsupported host-only runtime clearly deferred; real Google/Microsoft host acceptance/publishing later.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable. Do not rebuild already working functionality; record evidence and bounded delta.
@@ -2378,7 +2378,7 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
   - Tokens are created in CRM → "Add-ins & AI access". They are shown once and can be revoked; their use is audited.
   - Local harness: the sidebar page takes host context from the query string. A test validates both manifests and exercises the API.
   - Deferred to M47: real Outlook/Gmail host runtime, sideload/Marketplace publishing and admin consent (addins/README.md).
-- [v] M45.S01.T013 — General sales document library (original recommendation 34/40)
+- [x] M45.S01.T013 — General sales document library (original recommendation 34/40)
   - **Scope:** Extend quote links to authorized catalogues, proposals and sales docs; versioned storage, permissions, share/expiry/revocation, privacy-aware view tracking, download audit and malware scanner integration.
   - **Acceptance at milestone gate:** Local document store and scanner fixtures, browser views, version hash, revoked/expired access, no cross-account leaks.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable. Do not rebuild already working functionality; record evidence and bounded delta.
@@ -2394,7 +2394,7 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
   - Files that are not malware-scan CLEAN are never served (423).
   - Revoked or expired links → 410; unknown links → 404.
   - Tests: tests/test_m45_s01_t013_sales_docs.py.
-- [v] M45.S01.T014 — Advanced CPQ and contract lifecycle (original recommendation 35/40)
+- [x] M45.S01.T014 — Advanced CPQ and contract lifecycle (original recommendation 35/40)
   - **Scope:** Extend native quotations/discount approvals with configurable bundles, pricing rules, volume tiers, currency/tax, contract templates, version negotiation, renewal/expiry, signatory verification, provider-agnostic signature adapter (documented provider where feasible), downstream order/credit/stock/finance. Audit subscription billing and payment links; add uncovered software capabilities. Extended by matrix v2: apply existing promotion BUNDLE/MIX_AND_MATCH/TIERED schemes to quotes; quote templates, password protection, price books, multi-step approvals, quote reporting; recurring billing with retries and billing portal on top of subscription order templates; credit-memo verification.
   - **Acceptance at milestone gate:** Synthetic quote-to-contract-to-order/invoice/renewal flow; correct approvals/totals, signature evidence, no bypass, local provider contracts; third-party e-sign/payment activation deferred.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable. Do not rebuild already working functionality; record evidence and bounded delta.
@@ -2416,7 +2416,7 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
   - Third-party e-sign and card payments: M47.
   - Tests: tests/test_m45_s01_t014_cpq.py.
 
-- [v] M45.S01.T015 — Custom objects and associations (additional gap, Source: HubSpot parity matrix 2026-11-25 (coordination/milestones/M43/HUBSPOT_PARITY_MATRIX_2026-11-25.md).)
+- [x] M45.S01.T015 — Custom objects and associations (additional gap, Source: HubSpot parity matrix 2026-11-25 (coordination/milestones/M43/HUBSPOT_PARITY_MATRIX_2026-11-25.md).)
   - **Scope:** Admin-defined object types (typed fields, required/unique, display name), records, many-to-many associations to customers, CRM records, products and orders with labels, list/detail UI, import/export, report-builder source and workflow triggers. Per-object permissions; no arbitrary SQL.
   - **Acceptance at milestone gate:** Define object, create records, associate them, report on them, delete with association cleanup; validation and RBAC; company isolation; migration.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable.
@@ -2435,7 +2435,7 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
   - Deleting a record removes its associations.
   - Bounded delta: the generic report builder has no per-user row-level context for JSONB sources, so custom-object reporting lives on the object screen and in the CSV export. Adding it as a report-builder catalog source is left to M46 (content/reporting).
   - Tests: tests/test_m45_s01_t015_custom_objects.py.
-- [v] M45.S01.T016 — Staff single sign-on (OIDC, then SAML) (additional gap, Source: HubSpot parity matrix 2026-11-25 (coordination/milestones/M43/HUBSPOT_PARITY_MATRIX_2026-11-25.md).)
+- [x] M45.S01.T016 — Staff single sign-on (OIDC, then SAML) (additional gap, Source: HubSpot parity matrix 2026-11-25 (coordination/milestones/M43/HUBSPOT_PARITY_MATRIX_2026-11-25.md).)
   - **Scope:** Standards-based OIDC authorization-code + PKCE login for staff, IdP discovery, JIT user linking only to pre-provisioned accounts, role mapping, enforced-SSO switch per company, break-glass admin, logout. SAML 2.0 SP where a maintained library is available. Tested against a local OIDC test provider; no real IdP account.
   - **Acceptance at milestone gate:** Local IdP: login, state/nonce/PKCE replay refusal, unknown user refused, disabled user refused, enforced SSO blocks password login, break-glass works; audit.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable.
@@ -2461,7 +2461,7 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
   - SAML 2.0 is reported NOT_AVAILABLE: no maintained SAML library is installed (python3-saml/xmlsec). It can be added when one is available.
   - Real IdP activation: M47.
   - Tests: tests/test_m45_s01_t016_sso.py.
-- [v] M45.S01.T017 — Sensitive-data field classification (additional gap, Source: HubSpot parity matrix 2026-11-25 (coordination/milestones/M43/HUBSPOT_PARITY_MATRIX_2026-11-25.md).)
+- [x] M45.S01.T017 — Sensitive-data field classification (additional gap, Source: HubSpot parity matrix 2026-11-25 (coordination/milestones/M43/HUBSPOT_PARITY_MATRIX_2026-11-25.md).)
   - **Scope:** Mark fields (built-in and custom) as sensitive; masking in lists/exports/API for users without the sensitive-data right; access audit; retention policy hook. Revised by matrix v2: cf_definitions.sensitive_flag exists but is not enforced — enforce it and add field-level permissions.
   - **Acceptance at milestone gate:** Masked values for a non-privileged persona in UI, API and CSV export; audit entries on reveal; no leak through search or GraphQL.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable.
@@ -2481,7 +2481,7 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
   - Search/GraphQL: the GraphQL Customer type exposes no sensitive field (test).
   - Bounded delta: the generic report builder and other modules' ad-hoc exports do not run per-user masking. Classified fields are not among the report-builder customer columns.
   - Tests: tests/test_m45_s01_t017_sensitive.py (real login sessions for two personas).
-- [v] M45.S01.T018 — Configuration sandbox (additional gap, Source: HubSpot parity matrix 2026-11-25 (coordination/milestones/M43/HUBSPOT_PARITY_MATRIX_2026-11-25.md).)
+- [x] M45.S01.T018 — Configuration sandbox (additional gap, Source: HubSpot parity matrix 2026-11-25 (coordination/milestones/M43/HUBSPOT_PARITY_MATRIX_2026-11-25.md).)
   - **Scope:** Export/import of configuration (pipelines, forms, workflows, sequences, custom objects/fields, templates) as a versioned bundle with diff preview and dry run, so changes are tested on a staging copy before production. No customer data in bundles.
   - **Acceptance at milestone gate:** Bundle round-trip between two disposable databases; diff and dry run; conflicting IDs handled; no personal data inside.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable.
@@ -2507,7 +2507,7 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
   - Refused: tampered bundles (checksum) and other schema revisions.
   - UI: Security → Configuration sandbox.
   - Round trip between two disposable databases: tests/test_m45_s01_t018_config_bundle.py. The gate runner creates the second DB.
-- [v] M45.S01.T019 — Service routing, conditional SLAs and CSAT/CES (additional gap, Source: HubSpot parity matrix 2026-11-25 (coordination/milestones/M43/HUBSPOT_PARITY_MATRIX_2026-11-25.md).)
+- [x] M45.S01.T019 — Service routing, conditional SLAs and CSAT/CES (additional gap, Source: HubSpot parity matrix 2026-11-25 (coordination/milestones/M43/HUBSPOT_PARITY_MATRIX_2026-11-25.md).)
   - **Scope:** Agent skills and availability; skill-based and round-robin ticket routing; SLA policies by priority, channel and customer tier with business hours and pause states; CSAT/CES surveys after ticket close (portal and e-mail), results on dashboard. Extended by matrix v2: ticket CSAT already exists in the portal; add CES and post-chat survey, automatic assignment, capacity limits and agent presence, macros, reply recommendations, help desk spaces and custom views, QA and customer-experience scores, handoff summaries.
   - **Acceptance at milestone gate:** Synthetic tickets routed by skill; SLA timers with business hours and breaches; survey sent once, answered once; reports; permissions.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable.
@@ -2533,7 +2533,7 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
     - saved personal/shared views (help desk spaces);
     - customer-experience scores through the survey report.
   - Tests: tests/test_m45_s01_t019_service_desk.py (real endpoints).
-- [v] M45.S01.T020 — Data warehouse export connectors (additional gap, Source: HubSpot parity matrix 2026-11-25 (coordination/milestones/M43/HUBSPOT_PARITY_MATRIX_2026-11-25.md).)
+- [x] M45.S01.T020 — Data warehouse export connectors (additional gap, Source: HubSpot parity matrix 2026-11-25 (coordination/milestones/M43/HUBSPOT_PARITY_MATRIX_2026-11-25.md).)
   - **Scope:** Incremental, schema-documented export of CRM/ERP datasets to Parquet/CSV object storage (local MinIO/S3-compatible) and a PostgreSQL warehouse target; documented adapters for Snowflake/BigQuery left NOT_CONFIGURED until activation; row-level permission and field masking honoured.
   - **Acceptance at milestone gate:** Local S3-compatible bucket and a second PostgreSQL receive incremental loads; deletes and schema changes; masked fields; resume after failure.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable.
@@ -2554,7 +2554,7 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
   - Schedules run from the M45 job runner.
   - UI: Security → Warehouse exports.
   - Tests: tests/test_m45_s01_t020_warehouse_export.py, run against a local S3-compatible simulator (tests/provider_sim/s3_app.py) and a second disposable PostgreSQL. The MinIO image could not be pulled here without a registry download.
-- [v] M45.S01.T021 — Customer payment links (additional gap, Source: HubSpot parity matrix 2026-11-25 (coordination/milestones/M43/HUBSPOT_PARITY_MATRIX_2026-11-25.md).)
+- [x] M45.S01.T021 — Customer payment links (additional gap, Source: HubSpot parity matrix 2026-11-25 (coordination/milestones/M43/HUBSPOT_PARITY_MATRIX_2026-11-25.md).)
   - **Scope:** Shareable signed payment link for an invoice or order balance; customer page shows amount and pays by M-Pesa STK push (existing Daraja code) or a card-provider adapter left NOT_CONFIGURED; expiry, single settlement, receipt and ledger posting through existing collections.
   - **Acceptance at milestone gate:** Daraja simulator callback settles once; expired/forged links refused; partial payment; no LIVE_PAID without a real provider.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable.
@@ -2572,7 +2572,7 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
     - Without Daraja credentials the push is simulated and only reaches TEST_SETTLED/TEST_PAID, with no collection or ledger entry. There is never a paid state without a real provider.
   - Receipts show on the customer page.
   - Tests: tests/test_m45_s01_t021_payment_links.py (simulator-style callbacks).
-- [v] M45.S01.T022 — MCP server for ERP/CRM tools (additional gap, Source: HubSpot parity matrix 2026-11-25 (coordination/milestones/M43/HUBSPOT_PARITY_MATRIX_2026-11-25.md).)
+- [x] M45.S01.T022 — MCP server for ERP/CRM tools (additional gap, Source: HubSpot parity matrix 2026-11-25 (coordination/milestones/M43/HUBSPOT_PARITY_MATRIX_2026-11-25.md).)
   - **Scope:** Model Context Protocol server exposing read tools (customer, order, stock, invoice status) and approval-gated write tools to authorized AI clients with per-token scopes, rate limits and audit; reuse API permissions.
   - **Acceptance at milestone gate:** Local MCP client lists tools, read calls respect RBAC and company, write calls create approval requests only, revoked token refused.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable.
@@ -2587,7 +2587,7 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
   - Revoked or expired tokens get 401.
   - Tests: tests/test_m45_s01_t012_t022_tokens_addin_mcp.py.
 
-- [v] M45.S01.T023 — Audited impersonation and admin notification management (additional gap, Source: HubSpot parity matrix v2 2026-11-25 (coordination/milestones/M43/HUBSPOT_PARITY_MATRIX_2026-11-25.md).)
+- [x] M45.S01.T023 — Audited impersonation and admin notification management (additional gap, Source: HubSpot parity matrix v2 2026-11-25 (coordination/milestones/M43/HUBSPOT_PARITY_MATRIX_2026-11-25.md).)
   - **Scope:** 'Log in as another user' for support: superuser or a dedicated right, mandatory reason, time-boxed session, persistent banner, no password or 2FA bypass for the target's secrets, cannot impersonate a superuser, every action attributed to both people in the audit log, and the target user is notified. Admin notification management: company-wide defaults and mandatory notifications.
   - **Acceptance at milestone gate:** Impersonation is refused without the right or reason; the session expires; the audit log shows both actors; escalation to a superuser is refused; the banner is always visible; notification defaults apply.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable.
@@ -2606,7 +2606,7 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
     - the effective rule (mandatory > user preference/mute > company default) is applied when notifications are created, bulk-sent or sent to permission holders.
   - Tests: tests/test_m45_s01_t023_impersonation.py (real login sessions).
 
-- [v] M45.S01.T024 — M44 carry-overs (from the M44 build and gate review, 2026-11-26)
+- [x] M45.S01.T024 — M44 carry-overs (from the M44 build and gate review, 2026-11-26)
   - **Scope:**
     - Content and analytics:
       - an asset library (DAM) for e-mail and social media;
@@ -2632,8 +2632,53 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
   - Tests: tests/test_m45_s01_t024_carryovers.py and the extended test_m44_s01_t013_messaging.py.
 
 ## M45.S02 — Major milestone acceptance and synchronization
-- [ ] M45.S02.T001 — Run consolidated milestone acceptance once all implementation work is ready: backend/DB/provider-contract/frontend/build/real browser desktop+mobile/synthetic E2E/security/independent review; include relevant prior features, fix and rerun failures, record exact code SHA, commands, results, screenshots and reviewer. No live-provider requirement. Reconcile applicable older [v] rows only if evidence/gate covers them. Update TASKS.md; do not mark [x] on failure.
-- [ ] M45.S02.T002 — On gate PASS, mark accepted software tasks [x], document unresolved activation-only prerequisites, commit and push evidence/ledger; fetch and verify Desktop HEAD equals origin/main, record synchronization and clean status; update next milestone/action in TASKS.md. If sync fails do not claim milestone closed; retry safely. Continue autonomously.
+- [x] M45.S02.T001 — Run consolidated milestone acceptance once all implementation work is ready: backend/DB/provider-contract/frontend/build/real browser desktop+mobile/synthetic E2E/security/independent review; include relevant prior features, fix and rerun failures, record exact code SHA, commands, results, screenshots and reviewer. No live-provider requirement. Reconcile applicable older [v] rows only if evidence/gate covers them. Update TASKS.md; do not mark [x] on failure.
+  Done 2026-11-26 [x] — evidence in coordination/milestones/M45/gate/ (GATE_REPORT.md):
+  - Migrations (disposable PostgreSQL 16):
+    - Empty → head (0075) passes.
+    - The 0075 downgrade ↔ upgrade round trip passes: 48 of 48 tables and 3 of 3 columns are recreated.
+  - DB-gated tests:
+    - M43 + M44 + M45: 42/42 files pass.
+    - After the review fixes, all M45 files pass, with the M44 messaging and M36 live-chat regressions.
+  - Full backend suite: 1807 passed, 0 failed.
+  - Frontend: tsc 0; eslint 0 errors (warnings pre-existing); production build OK. tsc and build were re-run after the gate fix.
+  - Browser on the real local app (disposable DB), with non-admin personas on desktop and at 375 px:
+    - all new endpoints answer 200;
+    - prospecting shows evidence;
+    - an agent simulates, and second-person publish is enforced;
+    - a token is shown once, and the Outlook sidebar harness works against the real API;
+    - there is no overflow;
+    - the rep sees scoped data and a masked KRA PIN, and gets 403 on admin APIs.
+  - One gate defect was fixed: Security subpages were redirected by an old prefix rule.
+  - Independent review: separate reviewer agent, ACCEPT_WITH_FIXES. All medium findings are fixed with regression tests:
+    - CPQ approvals now tied to the approved discount;
+    - impersonation privilege ceiling, and no approvals while impersonating;
+    - SSO email_verified, browser-bound state, and privileged 2FA;
+    - add-in deal scoping;
+    - sales-doc confidentiality on newer versions;
+    - data-sync controlled fields;
+    - safe rollback;
+    - AI-request lock;
+    - warehouse per-job lock and DSN check;
+    - MCP batch cap;
+    - payment-link push limit;
+    - bundle key handling.
+  - Two low items moved to M46.S01.T008.
+  - Not covered here: live providers (M47).
+- [x] M45.S02.T002 — On gate PASS, mark accepted software tasks [x], document unresolved activation-only prerequisites, commit and push evidence/ledger; fetch and verify Desktop HEAD equals origin/main, record synchronization and clean status; update next milestone/action in TASKS.md. If sync fails do not claim milestone closed; retry safely. Continue autonomously.
+  Done 2026-11-26 [x]:
+  - M45.S01.T001–T024 are [x].
+  - Activation-only prerequisites stay in M47:
+    - real LLM provider for agents (use_provider);
+    - licensed enrichment and intent data;
+    - Outlook and Gmail host publishing and admin consent;
+    - a real OIDC IdP, plus SAML once a maintained library exists;
+    - Daraja credentials and a card provider;
+    - DocuSign or Adobe Sign;
+    - Snowflake and BigQuery accounts;
+    - a real S3 or MinIO bucket;
+    - an OCR engine.
+  - The synchronization result is recorded below this row after the push.
 
 # M46 — Content & Digital Experience Hub — accountless
 
@@ -2676,6 +2721,15 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
   - **Scope:** An i18n framework for the frontend (customer-facing first: portal, shop, chat, KB, booking, NPS, business card; then staff screens), locale negotiation and switcher, number/date/currency formatting per locale, translation catalogs with missing-key reporting, and server messages via codes. Machine translation only as a reviewed draft.
   - **Acceptance at milestone gate:** The portal and shop run fully in Swahili and Turkish at phone width; missing-key report is empty for customer screens; formats are correct; no layout overflow.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable.
+  - **Claude checkpoint:** [v] pending milestone gate, tests NOT RUN until gate; never [x] before milestone PASS.
+
+- [ ] M46.S01.T008 — M45 carry-overs (from the M45 gate review, 2026-11-26)
+  - **Scope:**
+    - Payment-link attempts left PENDING without a callback expire after a timeout, and the balance is released.
+    - The M45 daily jobs (intelligence, retention, DQ snapshot, renewals, billing) keep a per-step daily ledger, so one failing step does not skip the others.
+    - Custom objects become a report-builder catalog source with per-user row-level filtering.
+    - Config bundles strip or remap user ids inside workflow graphs.
+  - **Acceptance at milestone gate:** each item has a test.
   - **Claude checkpoint:** [v] pending milestone gate, tests NOT RUN until gate; never [x] before milestone PASS.
 
 ## M46.S02 — Major milestone acceptance and synchronization

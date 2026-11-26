@@ -1,0 +1,4 @@
+eslint(errors only) exit 0
+✖ 69 problems (0 errors, 69 warnings)
+  0 errors and 1 warning potentially fixable with the `--fix` option.
+

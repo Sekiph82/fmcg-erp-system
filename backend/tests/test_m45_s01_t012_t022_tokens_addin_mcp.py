@@ -166,6 +166,11 @@ async def test_addin_api():
         await db.flush()
         db.add(CRMContactAssociation(contact_id=c.id, object_type="crm_record", object_id=rec.id, label="primary",
                                      created_at=datetime.now(timezone.utc)))
+        foreign = CRMRecord(company_name="Another rep's deal", assigned_rep_id=str(other.id))
+        db.add(foreign)
+        await db.flush()
+        db.add(CRMContactAssociation(contact_id=c.id, object_type="crm_record", object_id=foreign.id, label="other",
+                                     created_at=datetime.now(timezone.utc)))
         _, tok = await pats.create(db, rep.id, "outlook", ["crm.addin"], 30)
         _, tok_other = await pats.create(db, other.id, "outlook", ["crm.addin"], 30)
         _, tok_mcp = await pats.create(db, rep.id, "mcp", ["mcp.read"], 30)
@@ -174,9 +179,10 @@ async def test_addin_api():
     async with _client() as cl:
         h = {"Authorization": f"Bearer {tok}"}
         d = (await cl.get("/api/v1/public/crm-addin/lookup", params={"email": email}, headers=h)).json()
-        assert d["found"] and d["deals"][0]["id"] == rid
-        assert not (await cl.get("/api/v1/public/crm-addin/lookup", params={"email": email},
-                                 headers={"Authorization": f"Bearer {tok_other}"})).json()["found"]    # not their contact
+        assert d["found"] and [x["id"] for x in d["deals"]] == [rid]                         # other rep's deal hidden
+        d2 = (await cl.get("/api/v1/public/crm-addin/lookup", params={"email": email},
+                           headers={"Authorization": f"Bearer {tok_other}"})).json()
+        assert d2["found"] and [x["company"] for x in d2["deals"]] == ["Another rep's deal"]       # only their own deal
         body = {"crm_record_id": rid, "subject": "Order POVU 500 ml", "body": "Please send 20 cartons", "message_id": "m1@povu-demo.test"}
         assert (await cl.post("/api/v1/public/crm-addin/log-email", json=body, headers=h)).status_code == 201
         assert (await cl.post("/api/v1/public/crm-addin/log-email", json=body, headers=h)).json() == {"duplicate": True}
