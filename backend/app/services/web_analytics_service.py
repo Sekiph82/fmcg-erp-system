@@ -103,6 +103,8 @@ async def forget(db: AsyncSession, visitor: str) -> int:
     n = (await db.execute(delete(WebEvent).where(WebEvent.visitor_hash == vh))).rowcount or 0
     await db.execute(delete(WebIdentity).where(WebIdentity.visitor_hash == vh))
     await db.execute(delete(WebConsent).where(WebConsent.visitor_hash == vh))
+    from app.models.cms import CmsExperimentEvent   # M46 experiment attribution goes with the visitor's other data
+    await db.execute(delete(CmsExperimentEvent).where(CmsExperimentEvent.visitor_hash == vh))
     return n
 
 

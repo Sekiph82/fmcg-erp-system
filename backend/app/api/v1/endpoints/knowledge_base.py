@@ -29,7 +29,7 @@ def _require_publish(user, why: str) -> None:
 
 # fields that decide who may read an article; changing them on a public/published article is publishing
 VISIBILITY_FIELDS = ("is_internal_only", "company_id", "access_level", "access_scope_type", "access_scope_id",
-                     "department_id", "factory_id", "module_key")
+                     "department_id", "factory_id", "module_key", "access_list_id")
 
 
 def _can_see_unpublished(user, article) -> bool:
@@ -262,6 +262,7 @@ async def create_article(
         review_due_date=_date_or_none(body.get("review_due_date")),
         access_scope_type=body.get("access_scope_type"),
         access_scope_id=body.get("access_scope_id"),
+        access_list_id=uuid.UUID(body["access_list_id"]) if body.get("access_list_id") else None,   # M46 KB access group
     )
     if article.status == "PUBLISHED":
         article.published_at = datetime.utcnow()
@@ -316,10 +317,10 @@ async def update_article(
         "title", "summary", "content_md", "category_id", "tags", "status",
         "is_featured", "access_level", "is_internal_only", "company_id",
         "department_id", "factory_id", "module_key", "review_due_date",
-        "access_scope_type", "access_scope_id",
+        "access_scope_type", "access_scope_id", "access_list_id",
     ]:
         if k in body:
-            if k in {"category_id", "company_id"} and body[k]:
+            if k in {"category_id", "company_id", "access_list_id"} and body[k]:
                 setattr(a, k, uuid.UUID(body[k]))
             elif k == "review_due_date":
                 setattr(a, k, _date_or_none(body[k]))

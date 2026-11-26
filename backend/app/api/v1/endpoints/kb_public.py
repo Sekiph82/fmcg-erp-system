@@ -22,7 +22,7 @@ def _public():
     # anything internal, unpublished, company-specific or scope-restricted stays private
     return (KBArticle.status == "PUBLISHED", KBArticle.is_internal_only.is_(False), KBArticle.company_id.is_(None),
             KBArticle.access_scope_type.is_(None), KBArticle.access_level == "all", KBArticle.department_id.is_(None),
-            KBArticle.factory_id.is_(None), KBArticle.module_key.is_(None))
+            KBArticle.factory_id.is_(None), KBArticle.module_key.is_(None), KBArticle.access_list_id.is_(None))
 
 
 @router.get("/search")
@@ -75,3 +75,33 @@ async def public_feedback(slug: str, body: PublicFeedback, request: Request, db:
                              source="PUBLIC", ip_hash=hashed, created_at=now))
     await db.commit()
     return {"status": "received"}
+
+
+# ── M46.S01.T006 KB access groups: members-only articles for signed-in portal users on the article's list ──
+
+def _members():
+    return (KBArticle.status == "PUBLISHED", KBArticle.is_internal_only.is_(False), KBArticle.access_list_id.isnot(None))
+
+
+@router.get("/members/articles")
+async def member_articles(request: Request, db: AsyncSession = Depends(get_db)):
+    from app.services.cms_media_service import kb_visible_ids, optional_portal_user
+    user = await optional_portal_user(request, db)
+    if user is None:
+        raise HTTPException(401, "Members only: please sign in to the customer portal.")
+    ids = await kb_visible_ids(db, user)
+    rows = (await db.execute(select(KBArticle).where(*_members(), KBArticle.id.in_(ids or [None])).order_by(KBArticle.title))).scalars() if ids else []
+    return [{"slug": a.slug, "title": a.title, "summary": a.summary} for a in rows]
+
+
+@router.get("/members/articles/{slug}")
+async def member_article(slug: str, request: Request, db: AsyncSession = Depends(get_db)):
+    from app.services.cms_media_service import kb_visible_ids, optional_portal_user
+    user = await optional_portal_user(request, db)
+    if user is None:
+        raise HTTPException(401, "Members only: please sign in to the customer portal.")
+    a = (await db.execute(select(KBArticle).where(KBArticle.slug == slug[:200], *_members()))).scalar_one_or_none()
+    if a is None or a.id not in await kb_visible_ids(db, user):
+        raise HTTPException(404, "Article not found")
+    return {"slug": a.slug, "title": a.title, "summary": a.summary, "content_md": a.content_md,
+            "updated_at": a.updated_at.isoformat() if a.updated_at else None}

@@ -61,6 +61,8 @@ class KBArticle(Base, TimestampMixin):
     module_key = Column(String(100), nullable=True, index=True)
     access_scope_type = Column(String(50), nullable=True)
     access_scope_id = Column(String(100), nullable=True)
+    # M46.S01.T006 KB access group: readable only by portal members on this list
+    access_list_id = Column(UUID(as_uuid=True), ForeignKey("cms_access_lists.id", ondelete="SET NULL"), nullable=True)
 
     category = relationship("KBCategory", back_populates="articles")
     author = relationship("User", foreign_keys=[author_id])

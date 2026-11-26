@@ -259,6 +259,9 @@ const MarketingVisitsPage     = dynamic(() => import("@/app/dashboard/marketing/
 const MarketingBrandSpendPage = dynamic(() => import("@/app/dashboard/marketing/brand-spend/page"), { ssr: false });
 const TPMPage                 = dynamic(() => import("@/app/dashboard/tpm/page"),                   { ssr: false });
 const MarketIntelPage         = dynamic(() => import("@/app/dashboard/market-intelligence/page"),   { ssr: false });
+const WebsitePage             = dynamic(() => import("@/app/dashboard/marketing/website/page"),     { ssr: false });   // M46
+const ContentStudioPage       = dynamic(() => import("@/app/dashboard/marketing/content-studio/page"), { ssr: false });
+const MembersMediaPage        = dynamic(() => import("@/app/dashboard/marketing/members-media/page"), { ssr: false });
 
 export default function MarketingPage() {
   const tabs = [
@@ -277,6 +280,9 @@ export default function MarketingPage() {
     { key: "visits",        label: "Visits",           permission: "customer_visits.view", content: <MarketingVisitsPage /> },
     { key: "market-intel",  label: "Market Intel",     permission: "marketing.view", content: <MarketIntelPage /> },
     { key: "analytics",     label: "Analytics",        permission: "marketing_analytics.view", content: <MarketingAnalyticsPage /> },
+    { key: "website",       label: "Website & blog",   permission: "marketing.view", content: <WebsitePage /> },
+    { key: "content-studio", label: "Content studio",  permission: "marketing.view", content: <ContentStudioPage /> },
+    { key: "members-media", label: "Members & media",  permission: "marketing.view", content: <MembersMediaPage /> },
   ];
   return (
     <ModuleWorkspace

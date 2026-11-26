@@ -57,6 +57,7 @@ class KBArticleBase(BaseModel):
     review_due_date: Optional[date] = None
     access_scope_type: Optional[str] = None
     access_scope_id: Optional[str] = None
+    access_list_id: Optional[uuid.UUID] = None   # M46 KB access group
 
 
 class KBArticleCreate(KBArticleBase):
@@ -81,6 +82,7 @@ class KBArticleUpdate(BaseModel):
     review_due_date: Optional[date] = None
     access_scope_type: Optional[str] = None
     access_scope_id: Optional[str] = None
+    access_list_id: Optional[uuid.UUID] = None   # M46 KB access group
     change_summary: Optional[str] = None
 
 

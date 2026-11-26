@@ -551,6 +551,9 @@ ENDPOINT_ROUTE_DEFINITIONS: tuple[EndpointRouteDefinition, ...] = (
     EndpointRouteDefinition(key="payment_links_public", route_prefix="/public/pay", import_path="app.api.v1.endpoints.payment_links_public", tags=('sales',)),
     EndpointRouteDefinition(key="sales_docs", route_prefix="/sales-docs", import_path="app.api.v1.endpoints.sales_docs", tags=('sales',)),
     EndpointRouteDefinition(key="sales_docs_public", route_prefix="/public/docs", import_path="app.api.v1.endpoints.sales_docs_public", tags=('sales',)),
+    EndpointRouteDefinition(key="cms", route_prefix="/cms", import_path="app.api.v1.endpoints.cms", tags=('content',)),
+    EndpointRouteDefinition(key="cms_public", route_prefix="/public/cms", import_path="app.api.v1.endpoints.cms_public", tags=('content',)),
+    EndpointRouteDefinition(key="content_studio", route_prefix="/content-studio", import_path="app.api.v1.endpoints.content_studio", tags=('content',)),
     EndpointRouteDefinition(key="config_bundles", route_prefix="/config-bundles", import_path="app.api.v1.endpoints.config_bundles", tags=('admin',)),
     EndpointRouteDefinition(key="warehouse_exports", route_prefix="/warehouse-exports", import_path="app.api.v1.endpoints.warehouse_exports", tags=('reports',)),
     EndpointRouteDefinition(key="service_desk", route_prefix="/service-desk", import_path="app.api.v1.endpoints.service_desk", tags=('helpdesk',)),
@@ -695,6 +698,19 @@ PUBLIC_ROUTES: frozenset[tuple[str, str]] = frozenset({
     ("/public/kb/search", "GET"),                        # published public help articles only (M36.S04.T005)
     ("/public/kb/articles/{slug}", "GET"),
     ("/public/kb/articles/{slug}/feedback", "POST"),     # rate-limited per keyed IP hash
+    ("/public/kb/members/articles", "GET"),              # M46 KB access groups: portal realm cookie + access list
+    ("/public/kb/members/articles/{slug}", "GET"),
+    ("/public/cms/site/{key}/page", "GET"),              # M46 CMS: live versions of PUBLISHED pages only; members pages need portal access
+    ("/public/cms/site/{key}/blog", "GET"),
+    ("/public/cms/site/{key}/sitemap.xml", "GET"),
+    ("/public/cms/site/{key}/robots.txt", "GET"),
+    ("/public/cms/site/{key}/convert", "POST"),          # experiment conversion (analytics consent required)
+    ("/public/cms/site/{key}/cta/{cta_key}/click", "POST"),
+    ("/public/cms/media/{media_id}", "GET"),             # public media, or portal members on the access list
+    ("/public/cms/media/{media_id}/file", "GET"),
+    ("/public/cms/media/{media_id}/captions/{locale}", "GET"),
+    ("/public/cms/media/{media_id}/view", "POST"),
+    ("/public/cms/podcast/{show}.xml", "GET"),
     ("/public/unsubscribe", "GET"),                      # HMAC-signed token from CRM e-mails
     ("/public/unsubscribe", "POST"),
     ("/public/calendar/{token}.ics", "GET"),             # personal revocable calendar feed token (M36.S01.T005)

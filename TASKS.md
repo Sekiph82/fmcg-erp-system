@@ -2685,37 +2685,104 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
 Dependency: previous major milestone gate and synchronization PASS. Reuse shared harness, native models and adapter registry.
 
 ## M46.S01 — Implementation tasks
-- [ ] M46.S01.T001 — CMS and visual website builder (original recommendation 36/40)
+- [v] M46.S01.T001 — CMS and visual website builder (original recommendation 36/40)
   - **Scope:** Build reusable component/block editor, pages, navigation, theme tokens, media library, preview/version/publish/rollback, forms/landing reuse, custom-domain configuration with localhost fallback. Safe sanitization and no public deployment now. Extended by matrix v2: site tree, content staging, multisite, content embed, URL mappings, dynamic data tables (HubDB-like) and dynamic pages, CTAs, content approval workflow.
   - **Acceptance at milestone gate:** Real local preview/publish with synthetic site, phone/desktop, XSS, drafts not public, access and rollback.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable. Do not rebuild already working functionality; record evidence and bounded delta.
   - **Claude checkpoint:** update TASKS.md/Project Status immediately after this task, [v] pending milestone gate, tests NOT RUN; automatically continue next dependency-ready task. Never [x] before milestone PASS.
-- [ ] M46.S01.T002 — Blog and SEO suite (original recommendation 37/40)
+  Implemented 2026-11-26 [v] (tests NOT RUN as gate; pre-gate check 7/7 on the disposable DB):
+  - Models/migration: models/cms.py, migration 20261127_0076 (16 tables + kb_articles.access_list_id).
+  - Service cms_service.py:
+    - sites (multisite), page tree with paths that follow parents;
+    - validated block documents (no raw HTML; links must be site paths or http(s); images https);
+    - draft = staging; second-person review (marketing.approve) before publish; immutable version snapshots and rollback;
+    - automatic 301 when a live slug moves; loop-safe redirects; content embeds;
+    - CTAs with views/clicks; HubDB-like data tables with publish gate and dynamic pages <prefix>/<row>.
+  - Staff API /api/v1/cms; public API /api/v1/public/cms/site/{key}/page serves live versions only (drafts 404).
+  - Custom domain is configuration only (DNS_PENDING); sites are served locally at /site/<key>/<locale>/<path>.
+  - UI:
+    - Marketing → "Website & blog": site settings (theme tokens, navigation, languages, domain), page tree, visual block editor with a JSON view, phone/desktop preview, review/publish/unpublish, versions, redirects, CTAs, tables;
+    - public renderer (server-rendered metadata, React-escaped blocks).
+  - Lead forms are reused through a form block (/forms/<slug>).
+  - Tests: tests/test_m46_s01_content_hub.py.
+- [v] M46.S01.T002 — Blog and SEO suite (original recommendation 37/40)
   - **Scope:** Editorial workflows, categories/authors, slug/canonical/redirects, sitemap/robots, structured data, on-page SEO audit, internal links, metadata, keyword planning from local imports/provider interface; no invented ranking/search volumes. Extended by matrix v2: Google Search Console adapter (NOT_CONFIGURED until activation) and SEO analytics.
   - **Acceptance at milestone gate:** Local crawler/HTML tests and browser editorial flow, sitemap/redirect validation, audit findings and explicit no-data states.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable. Do not rebuild already working functionality; record evidence and bounded delta.
   - **Claude checkpoint:** update TASKS.md/Project Status immediately after this task, [v] pending milestone gate, tests NOT RUN; automatically continue next dependency-ready task. Never [x] before milestone PASS.
-- [ ] M46.S01.T003 — AI brand voice and content studio (original recommendation 38/40)
+  Implemented 2026-11-26 [v] (tests NOT RUN as gate):
+  - Blog posts (kind POST) carry author, category and tags; public blog index at /site/<key>/<locale>/blog.
+  - Slugs, canonical and redirects, including automatic 301s.
+  - sitemap.xml with hreflang, dynamic rows and noindex/members exclusion; robots.txt.
+  - Structured data: BlogPosting/WebPage, plus FAQPage.
+  - On-page SEO audit: title and description length, single H1, thin content, target keyword, broken internal links, alt text.
+  - Keyword plan from a local CSV import; volume and difficulty are only what the import says, otherwise "no data".
+  - Google Search Console reports NOT_CONFIGURED until activation (M47).
+- [v] M46.S01.T003 — AI brand voice and content studio (original recommendation 38/40)
   - **Scope:** Use approved POVU brand assets only; style/terminology rules, content templates, rewrite/repurpose across channels, citations/claims review, approval and AI cost limits; deterministic fallback and draft only.
   - **Acceptance at milestone gate:** Synthetic content corpus with fake model; brand constraints, no fabricated claims, no unauthorized publish, version/approval history.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable. Do not rebuild already working functionality; record evidence and bounded delta.
   - **Claude checkpoint:** update TASKS.md/Project Status immediately after this task, [v] pending milestone gate, tests NOT RUN; automatically continue next dependency-ready task. Never [x] before milestone PASS.
-- [ ] M46.S01.T004 — CRM-driven personalization (original recommendation 39/40)
+  Implemented 2026-11-26 [v] (tests NOT RUN as gate):
+  - Brand profiles (content_studio_service.py, /api/v1/content-studio, Marketing → "Content studio"):
+    - voice, banned terms, terminology fixes, claim words, approved evidence with sources;
+    - reference brand assets must be APPROVED or PRINT_READY.
+  - Drafts per channel limit (web/blog/email/social/sms/whatsapp) from templates:
+    - written by the configured AI provider only within a monthly budget, checked before each call;
+    - otherwise by a deterministic template engine; mock provider or failures fall back.
+  - Review: uncited claims and unknown evidence are errors, and errors block approval. A second person approves; the history is kept.
+  - Repurpose to another channel.
+  - An approved draft can only be added to a website page draft, which still needs its own review. Nothing is published here.
+  - Tests: a fake model and the budget gate.
+- [v] M46.S01.T004 — CRM-driven personalization (original recommendation 39/40)
   - **Scope:** Consent-aware segments/rules for page blocks, locale, known visitor or anonymous fallback, experiment control, preview and audience privacy; integrate native CRM without leaking identity. Extended by matrix v2: adaptive (multi-armed bandit) testing alongside the existing A/B variants.
   - **Acceptance at milestone gate:** Local synthetic visitor sessions, consent withdrawal, cache isolation, segment tests and experiment attribution.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable. Do not rebuild already working functionality; record evidence and bounded delta.
   - **Claude checkpoint:** update TASKS.md/Project Status immediately after this task, [v] pending milestone gate, tests NOT RUN; automatically continue next dependency-ready task. Never [x] before milestone PASS.
-- [ ] M46.S01.T005 — Multilingual CMS and AEO (original recommendation 40/40)
+  Implemented 2026-11-26 [v] (tests NOT RUN as gate):
+  - Visitor recognition (cms_personalize.py):
+    - from the consented first-party analytics id;
+    - "known" only with marketing consent plus a self-linked e-mail;
+    - the CRM lifecycle stage and marketing audiences drive block rules (lifecycle/audience/language/known), with slot fallbacks for anonymous visitors.
+  - Consent withdrawal falls back at once. Responses never contain the e-mail or contact.
+  - Personalized or per-visitor responses are private/no-store; anonymous ones are cacheable.
+  - Experiments per block: A/B by a stable hash, or an adaptive bandit (Thompson sampling), sticky per visitor.
+    - Views and conversions are recorded only with analytics consent, once per visitor.
+    - P(best) by Beta simulation, an "enough data" flag, stop-and-keep-leader.
+  - Forgetting a visitor deletes their attribution.
+  - The editor sets audiences, slots and experiments per block.
+- [v] M46.S01.T005 — Multilingual CMS and AEO (original recommendation 40/40)
   - **Scope:** EN/SW/TR configurable locale content, translation workflow, hreflang and fallback, structured FAQ/schema, AEO readiness audit and configurable visibility/measurement adapters; synthetic local evaluation and import, no claims of external answer-engine rankings without data.
   - **Acceptance at milestone gate:** Local multi-locale site and accessibility/SEO/AEO audit; absent external measurements show NOT_AVAILABLE, not fake scores; external search/provider setup later.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable. Do not rebuild already working functionality; record evidence and bounded delta.
   - **Claude checkpoint:** update TASKS.md/Project Status immediately after this task, [v] pending milestone gate, tests NOT RUN; automatically continue next dependency-ready task. Never [x] before milestone PASS.
+  Implemented 2026-11-26 [v] (tests NOT RUN as gate):
+  - Per-site EN/SW/TR languages and a default. Translation workflow:
+    - a draft copy marked NEEDS_REVIEW, then REVIEWED;
+    - it becomes STALE when the source is republished;
+    - machine translation is never auto-published.
+  - hreflang alternates in the page metadata and sitemap; default-locale fallback; language switcher.
+  - FAQ block emitted as FAQPage schema.
+  - AEO readiness audit from the content itself: FAQ schema, question headings, concise answers, author, language, translations, indexable.
+  - Answer-engine visibility is NOT_AVAILABLE without a measurement provider; no score is shown.
 
-- [ ] M46.S01.T006 — Memberships, gated content and video assets (additional gap, Source: HubSpot parity matrix 2026-11-25 (coordination/milestones/M43/HUBSPOT_PARITY_MATRIX_2026-11-25.md).)
+- [v] M46.S01.T006 — Memberships, gated content and video assets (additional gap, Source: HubSpot parity matrix 2026-11-25 (coordination/milestones/M43/HUBSPOT_PARITY_MATRIX_2026-11-25.md).)
   - **Scope:** Gated pages for portal-authenticated customers/distributors (registration via existing portal realm), access lists by segment, video asset hosting (local storage) with captions and view analytics feeding CRM timeline. Extended by matrix v2: member blog, podcasts/audio assets, KB access groups.
   - **Acceptance at milestone gate:** Anonymous visitor blocked, authorized portal user sees content, revoked access, video upload/caption/playback on phone and desktop, views on timeline.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable.
   - **Claude checkpoint:** [v] pending milestone gate, tests NOT RUN until gate; never [x] before milestone PASS.
+  Implemented 2026-11-26 [v] (tests NOT RUN as gate):
+  - Access lists of portal accounts and/or account types, with explicit revocation (approver-only).
+  - Members-only pages and media: anonymous 401, unlisted 403, private/no-store, noindex, out of the sitemap.
+  - Uses the existing portal realm cookie and portal sign-in.
+  - Local video/audio storage (MEDIA_STORAGE_PATH, 200 MiB):
+    - type checked from the file bytes;
+    - byte-range playback for phones;
+    - WebVTT captions per language, markup stripped;
+    - public podcast RSS feed.
+  - Member plays are recorded with a 30-minute de-dupe and appear on the customer timeline (source media_view).
+  - KB access groups: kb_articles.access_list_id; members read them at /kb/members.
+  - UI: Marketing → "Members & media"; video/audio blocks in pages.
 
 - [ ] M46.S01.T007 — User interface internationalization (EN/SW/TR) (additional gap, Source: HubSpot parity matrix v2 2026-11-25 (coordination/milestones/M43/HUBSPOT_PARITY_MATRIX_2026-11-25.md).)
   - **Scope:** An i18n framework for the frontend (customer-facing first: portal, shop, chat, KB, booking, NPS, business card; then staff screens), locale negotiation and switcher, number/date/currency formatting per locale, translation catalogs with missing-key reporting, and server messages via codes. Machine translation only as a reviewed draft.

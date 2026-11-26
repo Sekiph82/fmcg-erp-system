@@ -81,6 +81,8 @@ class Settings(BaseSettings):
     DOCUMENT_STORAGE_PROVIDER: str = "local"
     DOCUMENT_STORAGE_PATH: str = "data/documents"
     DOCUMENT_MAX_UPLOAD_BYTES: int = 26_214_400  # 25 MiB
+    MEDIA_STORAGE_PATH: str = "data/media"           # M46 CMS video/audio (local)
+    MEDIA_MAX_UPLOAD_BYTES: int = 209_715_200        # 200 MiB
     DOCUMENT_CLAMAV_HOST: str = ""
     DOCUMENT_CLAMAV_PORT: int = 3310
     DOCUMENT_CLAMAV_TIMEOUT_SECONDS: int = 20

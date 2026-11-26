@@ -14,7 +14,9 @@ from sqlalchemy import Date, DateTime, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.access_control import can_view_record, get_effective_permission_codes
+from app.models.cms import CmsMediaView
 from app.models.crm import CRMActivity, CRMRecord
+from app.models.portal import PortalAccount
 from app.models.email_integration import EmailAccount, EmailThread
 from app.models.field_sales import VisitLog
 from app.models.helpdesk import HelpdeskTicket
@@ -110,6 +112,11 @@ SOURCES = [
     Source("ticket", "tickets", "quality", HelpdeskTicket.created_at,
            lambda cid, u: select(HelpdeskTicket).where(HelpdeskTicket.customer_id == cid),
            lambda t: _render("ticket", f"Ticket {t.ticket_no}: {t.subject}", t.status, t.ticket_no, "/dashboard/helpdesk")),
+    Source("media_view", "content", "marketing", CmsMediaView.created_at,   # M46.S01.T006 member video/audio plays
+           lambda cid, u: select(CmsMediaView).join(PortalAccount, PortalAccount.id == CmsMediaView.portal_account_id)
+           .where(PortalAccount.linked_customer_id == str(cid)),
+           lambda v: _render("media_view", "Watched or listened to member content", detail=f"{v.seconds} s",
+                             link="/dashboard/marketing?tab=members-media")),
     Source("email", "email", "", EmailThread.last_message_at, _email_query,
            lambda t: _render("email", f"E-mail: {t.subject}", link="/dashboard/communication", detail=t.snippet)),
 ]
