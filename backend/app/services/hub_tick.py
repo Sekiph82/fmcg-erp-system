@@ -23,6 +23,8 @@ async def _daily_customer_intel(db) -> None:
         await purge_expired(db)
         from app.services.sensitive_service import apply_retention   # T017 retention hook
         await apply_retention(db)
+        from app.services.data_sync_service import snapshot   # T011 data-quality trend
+        await snapshot(db)
         await db.commit()
     _last_daily = today
 
@@ -43,7 +45,12 @@ async def _sla(db) -> None:
     await db.commit()
 
 
-JOBS = [_daily_customer_intel, _agents, _warehouse_exports, _sla]
+async def _data_sync(db) -> None:
+    from app.services import data_sync_service
+    await data_sync_service.tick(db)
+
+
+JOBS = [_daily_customer_intel, _agents, _warehouse_exports, _sla, _data_sync]
 
 
 async def tick() -> None:

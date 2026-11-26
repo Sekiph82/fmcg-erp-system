@@ -2340,11 +2340,30 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
   - Audit and undo: the merge log keeps the snapshot, the moved rows and the changes, and Undo restores them.
   - Concurrency: of two parallel merges of one pair, one succeeds and the other is refused.
   - Tests: tests/test_m45_s01_t010_dedupe_merge.py.
-- [ ] M45.S01.T011 — No-code data sync and transformation (original recommendation 32/40)
+- [v] M45.S01.T011 — No-code data sync and transformation (original recommendation 32/40)
   - **Scope:** Visual field mapping, typed transformations, validation, dry-run diffs, conflict rules, incremental sync and connector SDK/catalog; import/export CSV/JSON, secrets separation and versioning. Audit custom objects, associations and data-quality capabilities; fill uncovered gaps. Extended by matrix v2: data quality overview and health trends, formatting recommendations, scheduled and webhook-triggered workflows.
   - **Acceptance at milestone gate:** Local two-way fixture sources test transformation/retry/replay, invalid mapping, scope, deletes and rollback; no arbitrary code execution.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable. Do not rebuild already working functionality; record evidence and bounded delta.
   - **Claude checkpoint:** update TASKS.md/Project Status immediately after this task, [v] pending milestone gate, tests NOT RUN; automatically continue next dependency-ready task. Never [x] before milestone PASS.
+  Implemented 2026-11-26 [v] (tests NOT RUN as gate):
+  - Visual field mapping (CRM → Data sync & quality) for customers and CRM contacts, with typed, whitelisted transformations: trim, case, phone_ke, e-mail, number, integer, bool, date, default, map, prefix, suffix, concat, truncate.
+  - Validation:
+    - an invalid mapping is refused (unknown field or transform, missing required field);
+    - user input is never executed as code, SQL or regex.
+  - Sources: CSV/JSON upload, JSON endpoint (provider_http egress, retried pulls) and webhook (Bearer token).
+  - IN runs:
+    - dry run with diff, writing nothing;
+    - conflict rules: source wins / ERP wins (fill empty) / skip;
+    - incremental: unchanged rows skipped by hash;
+    - vanished keys ignored or deactivated;
+    - rollback from before-images;
+    - replay of a run's input.
+  - OUT runs send rows changed since the watermark, with retry.
+  - Mapping changes create new versions with history. Secrets are encrypted and kept separate.
+  - Schedules run from the M45 job runner.
+  - Data-quality overview: missing or invalid e-mail and phone, possible duplicates, a score and formatting recommendations, with a daily trend (dq_snapshots).
+  - Audit of the existing custom objects/associations/data-quality capabilities: they are covered by T015 (custom objects) and the old cf data-quality monitor stays.
+  - Tests: tests/test_m45_s01_t011_data_sync.py (local two-way fixture with transient failures).
 - [v] M45.S01.T012 — Gmail and Outlook CRM add-ins (original recommendation 33/40)
   - **Scope:** Develop installable source/manifests and shared authenticated CRM sidebar for contact lookup, log email, note/task, templates and links. Follow official supported add-on/add-in frameworks; local harness exercises actual shared API. Store publication/admin consent not required now.
   - **Acceptance at milestone gate:** Validate manifest/build locally and test sidebar using simulated host context; unsupported host-only runtime clearly deferred; real Google/Microsoft host acceptance/publishing later.
