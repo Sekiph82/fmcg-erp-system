@@ -23,7 +23,7 @@ from app.core.provider_http import EgressBlocked, egress_mode
 from app.models.crm import AdAccount, AdDraft
 from app.models.m48_ads import AdAccountControl, AdApproval, AdCampaignNode, AdMutation
 from app.services import ads_service as svc
-from app.services.ads_adapters import ADAPTERS, LEVEL_LABEL, LEVELS, OBJECTIVES, AdsError
+from app.services.ads_adapters import ADAPTERS, LEVEL_LABEL, LEVELS, MIN_DAILY, OBJECTIVES, AdsError
 
 READ = ("marketing.view", "marketing.edit", "crm.view_all", "crm.edit_all")
 WRITE = ("marketing.edit", "crm.edit_all")
@@ -66,7 +66,9 @@ async def providers():
     return [{"provider": p, "configured": a.configured(), "validate_only": a.supports_validate_only,
              "live_publishing": flag and egress == "live" and a.configured(), "egress": egress, "live_flag": flag,
              "objectives": list(OBJECTIVES[p]), "levels": [{"level": lv, "label": LEVEL_LABEL[p][lv]} for lv in LEVELS[p]],
-             "write_tier_ok": p != "linkedin" or settings.LINKEDIN_ADS_ACCESS_TIER == "standard"}
+             "write_tier_ok": p != "linkedin" or settings.LINKEDIN_ADS_ACCESS_TIER == "standard",
+             "guardrail": float(settings.ADS_MAX_DAILY_BUDGET), "min_daily_budget": MIN_DAILY.get(p, (None,))[0] and float(MIN_DAILY[p][0]),
+             "min_budget_currency": MIN_DAILY.get(p, (None, None))[1]}
             for p, a in ADAPTERS.items()]
 
 

@@ -1,0 +1,67 @@
+{
+  "sha": "2f75d3575d9a7e4ed4e013259e3ea7bbf74f06af",
+  "template": "m48_tmpl",
+  "totals": {
+    "PASS": 2
+  },
+  "results": [
+    {
+      "file": "test_m36_s03_t001_document_links_db.py",
+      "flags": [
+        "M36_S03_T001_DISPOSABLE_TEST_DATABASE"
+      ],
+      "legacy_flags": [
+        "M36_S03_T001_DISPOSABLE_TEST_DATABASE"
+      ],
+      "db_name": "fmcg_m36_s03_t001_be6ba8cc421516264076a3d7",
+      "needs_db2": false,
+      "prep": false,
+      "services": [],
+      "class": "RUN",
+      "note": "",
+      "name_rule": {
+        "regexes": [
+          "fmcg_m36_s03_t001_[a-f0-9]{24}"
+        ],
+        "startswith": []
+      },
+      "summary": "2 passed in 6.16s",
+      "counts": {
+        "passed": 2
+      },
+      "rc": 0,
+      "skip_reasons": [],
+      "status": "PASS"
+    },
+    {
+      "file": "test_m38_clamav_scan_db.py",
+      "flags": [
+        "M38_AV_DISPOSABLE_TEST_DATABASE"
+      ],
+      "legacy_flags": [
+        "M38_AV_DISPOSABLE_TEST_DATABASE"
+      ],
+      "db_name": "fmcg_m38_av_fccc51eab013a05dd7c23473",
+      "needs_db2": false,
+      "prep": false,
+      "services": [
+        "CLAMAV_TEST_HOST"
+      ],
+      "class": "SERVICE_REQUIRED",
+      "note": "CLAMAV_TEST_HOST: ClamAV clamd, e.g. 127.0.0.1:53310",
+      "name_rule": {
+        "regexes": [
+          "fmcg_m38_av_[a-f0-9]{24}"
+        ],
+        "startswith": []
+      },
+      "summary": "1 passed, 75 warnings in 20.41s",
+      "counts": {
+        "passed": 1
+      },
+      "rc": 0,
+      "skip_reasons": [],
+      "status": "PASS"
+    }
+  ]
+}

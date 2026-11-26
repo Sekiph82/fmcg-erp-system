@@ -365,9 +365,7 @@ class TikTokAds(Adapter):
 
     async def validate(self, account_id: str, draft: dict, currency: str) -> dict:
         """No documented validate-only call: local checks only."""
-        problems = []
-        if currency.upper() == "USD" and _dec(draft["daily_budget"]) < self.MIN_DAILY_BUDGET_USD:
-            problems.append("TikTok's minimum campaign daily budget is USD 50.")
+        problems = budget_problems("tiktok", _dec(draft["daily_budget"]), currency)
         return {"provider_checked": False, "ok": not problems, "problems": problems}
 
 
@@ -666,13 +664,56 @@ def _https(v) -> bool:
     return isinstance(v, str) and v.startswith("https://") and len(v) <= 1000
 
 
+# Documented minimum DAILY budgets (M48.S01.T020). (amount, currency it is verified for; None = account currency units)
+#  TikTok: campaign daily and lifetime budgets must exceed 50 USD, ad group daily 20 USD (lifetime = 20 × days):
+#    https://ads.tiktok.com/help/article/budget . TikTok localises these per currency and we cannot verify the local
+#    table, so the 50 is applied in ACCOUNT CURRENCY UNITS (as the simulator does). Our trees use campaign budget
+#    optimisation with BUDGET_MODE_DAY, so only the campaign daily minimum applies (ad groups carry no budget).
+#  LinkedIn: minimum daily budget USD 10 (documented for USD accounts only; other currencies not verified → not applied).
+#  Meta: minimum depends on currency and billing event (no single figure) → the provider's validate_only checks it.
+#  Google Ads: no fixed documented minimum daily budget → not applied.
+MIN_DAILY = {"tiktok": (Decimal(50), None), "linkedin": (Decimal(10), "USD")}
+
+
+def min_daily_budget(provider: str, currency: str) -> Optional[Decimal]:
+    m = MIN_DAILY.get(provider)
+    if not m or (m[1] and m[1] != currency.upper()):
+        return None
+    return m[0]
+
+
+def budget_note(provider: str, currency: str) -> Optional[str]:
+    m = MIN_DAILY.get(provider)
+    if not m or (m[1] and m[1] != currency.upper()):
+        return None
+    if provider == "tiktok":
+        return (f"TikTok minimum campaign daily budget: 50 (TikTok documents USD 50; applied as 50 {currency.upper()} "
+                "because the local-currency minimum is not verified here).")
+    return f"{ {'linkedin': 'LinkedIn'}.get(provider, provider)} minimum daily budget: {m[1]} {m[0]}."
+
+
+def budget_problems(provider: str, budget: Decimal, currency: str) -> list[str]:
+    """Below the documented minimum → refused locally, before approval. Also flags a minimum above the global
+    guardrail ADS_MAX_DAILY_BUDGET (then no valid budget exists until the owner raises the guardrail)."""
+    low = min_daily_budget(provider, currency)
+    if low is None:
+        return []
+    out = []
+    guard = Decimal(str(settings.ADS_MAX_DAILY_BUDGET))
+    if low > guard:
+        out.append(f"{budget_note(provider, currency)} This is above the global guardrail ADS_MAX_DAILY_BUDGET "
+                   f"({guard}): the owner must raise the guardrail before any {provider} campaign can be valid.")
+    if Decimal(budget) < low:
+        out.append(f"Daily budget {budget} {currency.upper()} is below the minimum. {budget_note(provider, currency)}")
+    return out
+
+
 def check_spec(provider: str, objective: str, spec: dict, budget: Decimal, currency: str) -> list[str]:
     """Local checks of documented limits before anything is sent (the only check where no validate-only exists)."""
     import re
     p: list[str] = []
     if objective not in OBJECTIVES[provider]:
         p.append(f"Objective {objective} is not offered for {provider}; supported: {', '.join(OBJECTIVES[provider])}.")
-    usd = currency.upper() == "USD"
     if provider == "meta":
         if not str(spec.get("page_id", "")).isdigit():
             p.append("Meta needs the Facebook Page id the ad runs from.")
@@ -699,8 +740,6 @@ def check_spec(provider: str, objective: str, spec: dict, budget: Decimal, curre
             p.append("LinkedIn targeting needs a location URN (urn:li:geo:…).")
         if _dec(spec.get("unit_cost")) <= 0:
             p.append("LinkedIn bid (unit cost) must be positive.")
-        if usd and budget < LinkedInAds.MIN_DAILY_BUDGET_USD:
-            p.append("LinkedIn's minimum daily budget is USD 10.")
     elif provider == "tiktok":
         locs = spec.get("location_ids") or []
         if not locs or any(not str(x).isdigit() for x in locs):
@@ -711,9 +750,7 @@ def check_spec(provider: str, objective: str, spec: dict, budget: Decimal, curre
             p.append("TikTok ad text is required (at most 100 characters).")
         if not _https(spec.get("landing_page_url")):
             p.append("TikTok landing page must be an https URL.")
-        if usd and budget < TikTokAds.MIN_DAILY_BUDGET_USD:
-            p.append("TikTok's minimum campaign daily budget is USD 50.")
-    return p
+    return p + budget_problems(provider, Decimal(budget), currency)
 
 
 async def send(adapter: Adapter, req: Req, safe: bool) -> tuple[dict, httpx.Headers]:

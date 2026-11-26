@@ -1,0 +1,38 @@
+{
+  "sha": "2f75d3575d9a7e4ed4e013259e3ea7bbf74f06af",
+  "template": "m48_tmpl",
+  "totals": {
+    "FAIL": 1
+  },
+  "results": [
+    {
+      "file": "test_m36_s03_t001_document_links_db.py",
+      "flags": [
+        "M36_S03_T001_DISPOSABLE_TEST_DATABASE"
+      ],
+      "legacy_flags": [
+        "M36_S03_T001_DISPOSABLE_TEST_DATABASE"
+      ],
+      "db_name": "fmcg_m36_s03_t001_d9cd53d2a357842995ad6c18",
+      "needs_db2": false,
+      "prep": false,
+      "services": [],
+      "class": "RUN",
+      "note": "",
+      "name_rule": {
+        "regexes": [
+          "fmcg_m36_s03_t001_[a-f0-9]{24}"
+        ],
+        "startswith": []
+      },
+      "summary": "2 failed in 6.69s",
+      "counts": {
+        "failed": 2
+      },
+      "rc": 1,
+      "skip_reasons": [],
+      "status": "FAIL",
+      "tail": "FF                                                                       [100%]\n================================== FAILURES ===================================\n____________________ test_share_view_dedupe_expiry_revoke _____________________\ntests\\test_m36_s03_t001_document_links_db.py:93: in test_share_view_dedupe_expiry_revoke\n    doc = await public.shared_document(tok, db)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\napp\\api\\v1\\endpoints\\documents_public.py:44: in shared_document\n    link = await docs.resolve(db, token)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\napp\\services\\crm_document_service.py:67: in resolve\n    link = (await db.execute(q)).scalar_one_or_none()\n                  ^^^^^^^^^^\nE   AttributeError: 'Depends' object has no attribute 'execute'\n___________ test_customer_signs_accept_decline_and_tamper_evidence ____________\ntests\\test_m36_s03_t001_document_links_db.py:177: in test_customer_signs_accept_decline_and_tamper_evidence\n    doc = await public.shared_document(tok[\"ok\"], db)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\napp\\api\\v1\\endpoints\\documents_public.py:44: in shared_document\n    link = await docs.resolve(db, token)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\napp\\services\\crm_document_service.py:67: in resolve\n    link = (await db.execute(q)).scalar_one_or_none()\n                  ^^^^^^^^^^\nE   AttributeError: 'Depends' object has no attribute 'execute'\n2 failed in 6.69s"
+    }
+  ]
+}

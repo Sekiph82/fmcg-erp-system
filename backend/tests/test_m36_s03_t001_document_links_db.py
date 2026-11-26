@@ -90,7 +90,7 @@ async def test_share_view_dedupe_expiry_revoke():
         stored = (await db.execute(select(CRMDocumentLink.token_hash))).scalars().all()
         assert tok not in stored and made["state"] == "ACTIVE"
 
-        doc = await public.shared_document(tok, db)
+        doc = await public.shared_document(tok, _request("41.90.1.1", "Safari"), db)
         flat = str(doc)
         assert doc["number"] == f"QT-{s}-1" and doc["lines"][0]["description"] == "POVU AllClean 1 L carton"
         assert "margin" not in flat and "4,000" not in flat and doc["notes"] == "Delivery Friday"
@@ -113,25 +113,25 @@ async def test_share_view_dedupe_expiry_revoke():
         await db.commit()
         for bad in (tok, "x" * 32):
             with pytest.raises(HTTPException) as e:
-                await public.shared_document(bad, db)
+                await public.shared_document(bad, _request("41.90.1.1", "Safari"), db)
             assert e.value.status_code == 404
 
         # a quote withdrawn later (expired / rejected) is no longer shown, even through a valid link
         q2_link = await api.create_share_link(quotes[1], api.ShareLinkIn(), db, rep)
-        await public.shared_document(_token(q2_link["url"]), db)
+        await public.shared_document(_token(q2_link["url"]), _request("41.90.1.1", "Safari"), db)
         (await db.get(Quotation, quotes[1])).status = QuoteStatus.EXPIRED
         await db.commit()
         with pytest.raises(HTTPException):
-            await public.shared_document(_token(q2_link["url"]), db)
+            await public.shared_document(_token(q2_link["url"]), _request("41.90.1.1", "Safari"), db)
 
         # revoke a fresh link: stops at once, and only an editor may revoke
         fresh = await api.create_share_link(quotes[0], api.ShareLinkIn(), db, rep)
-        await public.shared_document(_token(fresh["url"]), db)
+        await public.shared_document(_token(fresh["url"]), _request("41.90.1.1", "Safari"), db)
         with pytest.raises(HTTPException):
             await api.revoke_share_link(UUID(fresh["id"]), db, nobody)
         assert (await api.revoke_share_link(UUID(fresh["id"]), db, rep))["state"] == "REVOKED"
         with pytest.raises(HTTPException):
-            await public.shared_document(_token(fresh["url"]), db)
+            await public.shared_document(_token(fresh["url"]), _request("41.90.1.1", "Safari"), db)
         with pytest.raises(HTTPException):
             await public.shared_document_viewed(_token(fresh["url"]), _request("1.1.1.1", "x"), db)
 
@@ -174,7 +174,7 @@ async def test_customer_signs_accept_decline_and_tamper_evidence():
             return public.DecisionIn(**{"decision": "ACCEPTED", "signer_name": "Grace Wanjiru", "signer_email": f"Grace-{s}@shops.example",
                                         "document_hash": doc["document_hash"], "agree": True, "code": codes.get(k, "000000"), **over})
 
-        doc = await public.shared_document(tok["ok"], db)
+        doc = await public.shared_document(tok["ok"], _request("41.90.1.1", "Safari"), db)
         assert doc["can_decide"] is True and len(doc["document_hash"]) == 64
         with pytest.raises(HTTPException) as e:                       # not ticked
             await public.shared_document_decision(tok["ok"], body("ok", doc, agree=False), req, db)
@@ -190,7 +190,7 @@ async def test_customer_signs_accept_decline_and_tamper_evidence():
         q = await db.get(Quotation, ids["ok"])
         await db.refresh(q)
         assert q.status == QuoteStatus.ACCEPTED and q.accepted_at is not None and q.converted_so_id is None  # SO stays a staff step
-        again = await public.shared_document(tok["ok"], db)
+        again = await public.shared_document(tok["ok"], _request("41.90.1.1", "Safari"), db)
         assert again["can_decide"] is False and again["decision"]["signer_name"] == "Grace Wanjiru" and "signer_email" not in again["decision"]
         with pytest.raises(HTTPException) as e:                       # answered once only
             await public.shared_document_decision(tok["ok"], body("ok", doc), req, db)
@@ -205,13 +205,13 @@ async def test_customer_signs_accept_decline_and_tamper_evidence():
         assert (await api.customer_decision(ids["ok"], db, rep))["unchanged_since_signing"] is False
 
         # decline: quote rejected with the reason, still verifiable by staff
-        d = await public.shared_document(tok["decline"], db)
+        d = await public.shared_document(tok["decline"], _request("41.90.1.1", "Safari"), db)
         await public.shared_document_decision(tok["decline"], body("decline", d, decision="DECLINED", reason="Price too high"), req, db)
         qd = await db.get(Quotation, ids["decline"])
         await db.refresh(qd)
         assert qd.status == QuoteStatus.REJECTED and "Price too high" in qd.lost_reason
         assert (await api.customer_decision(ids["decline"], db, rep))["unchanged_since_signing"] is True
-        reopened = await public.shared_document(tok["decline"], db)   # the signer can re-open their confirmation
+        reopened = await public.shared_document(tok["decline"], _request("41.90.1.1", "Safari"), db)   # the signer can re-open their confirmation
         assert reopened["decision"]["decision"] == "DECLINED" and reopened["can_decide"] is False
         from app.models.crm import CRMQuoteDecision
         snap = (await db.execute(select(CRMQuoteDecision.document_snapshot).where(CRMQuoteDecision.quotation_id == ids["ok"]))).scalar_one()
@@ -219,7 +219,7 @@ async def test_customer_signs_accept_decline_and_tamper_evidence():
 
         # past validity date / discount still awaiting internal approval: refused, nothing recorded
         for key in ("old", "disc"):
-            dd = await public.shared_document(tok[key], db)
+            dd = await public.shared_document(tok[key], _request("41.90.1.1", "Safari"), db)
             with pytest.raises(HTTPException) as e:
                 await public.shared_document_decision(tok[key], body(key, dd), req, db)
             assert e.value.status_code == 409

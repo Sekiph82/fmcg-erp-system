@@ -100,7 +100,7 @@ from sqlalchemy import text
 
 from app.core.provider_http import EgressBlocked, egress_mode
 from app.models.m48_ads import AdAccountControl, AdApproval, AdCampaignNode, AdMutation
-from app.services.ads_adapters import (BUDGET_LEVEL, BUILDERS, LEVEL_LABEL, LEVELS, STATUS_LEVELS, check_spec,
+from app.services.ads_adapters import (BUDGET_LEVEL, BUILDERS, budget_problems, LEVEL_LABEL, LEVELS, STATUS_LEVELS, check_spec,
                                        find_created, send)
 
 COMMITTED = ("PENDING_APPROVAL", "APPROVED", "SUBMITTING", "PARTIAL", "UNKNOWN", "PAUSED", "ACTIVE", "RESUME_SENT")
@@ -247,6 +247,9 @@ async def edit_tree(db: AsyncSession, root: AdCampaignNode, acct: AdAccount, use
 async def edit_budget(db: AsyncSession, root: AdCampaignNode, acct: AdAccount, ctrl, user, budget: Decimal) -> None:
     """A budget change is a new version; any approval for the old version stops counting."""
     check_guardrail(Decimal(budget))
+    low = budget_problems(acct.provider, Decimal(budget), acct.currency)
+    if low:
+        raise Refused(422, " ".join(low))
     created = root.provider_id is not None
     old = root.daily_budget
     root.daily_budget, root.budget_version = budget, root.budget_version + 1
@@ -261,6 +264,9 @@ async def request_approval(db: AsyncSession, root: AdCampaignNode, acct: AdAccou
     created = all(n.provider_id for n in nodes)
     if action == "SUBMIT" and created:
         raise Refused(409, "Already created on the provider.")
+    problems = check_spec(acct.provider, root.objective, root.spec or {}, Decimal(root.daily_budget), acct.currency)
+    if problems:      # never approve what the provider will refuse (M48.S01.T020)
+        raise Refused(422, "Not valid, fix before approval: " + " ".join(problems))
     if action == "BUDGET" and (not created or root.budget_pushed >= root.budget_version):
         raise Refused(409, "No new budget version to send.")
     if action == "RESUME" and (not created or root.status == "ACTIVE"):

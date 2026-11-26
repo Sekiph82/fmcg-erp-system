@@ -28,7 +28,7 @@ export function PaymentLinks({ invoiceId, open }: { invoiceId: string; open: boo
   const [busy, setBusy] = useState(false);
   const [amounts, setAmounts] = useState<Record<string, string>>({});
   const [refund, setRefund] = useState<{ id: string; amount: string; reason: string } | null>(null);
-  const [setup, setSetup] = useState<{ environment: string; consumer_key: string; consumer_secret: string } | null>(null);
+  const [setup, setSetup] = useState<{ environment: string; consumer_key: string; consumer_secret: string; base_url?: string } | null>(null);
 
   const load = useCallback(() => {
     apiClient.get("/api/v1/payment-links", { params: { invoice_id: invoiceId } }).then((r) => setLinks(r.data)).catch(() => setLinks([]));
@@ -57,7 +57,9 @@ export function PaymentLinks({ invoiceId, open }: { invoiceId: string; open: boo
     const r = await apiClient.post(`/api/v1/payment-links/card-refunds/${rid}/${d}`);
     if (r.data.message) setMsg(`Provider: ${r.data.message}`);
   });
-  const saveSetup = () => setup && act(async () => { await apiClient.put("/api/v1/payment-links/card/config", setup); setSetup(null); });
+  const saveSetup = () => setup && act(async () => {
+    await apiClient.put("/api/v1/payment-links/card/config", { ...setup, base_url: setup.base_url?.trim() || null }); setSetup(null);
+  });
   const cfgAction = (a: string) => act(() => apiClient.post(`/api/v1/payment-links/card/config/${a}`));
 
   const cardOff = !cfg || cfg.mode === "NOT_CONFIGURED" || cfg.mode === "BLOCKED";
@@ -86,6 +88,7 @@ export function PaymentLinks({ invoiceId, open }: { invoiceId: string; open: boo
             <select aria-label="Environment" className="border rounded px-1" value={setup.environment} onChange={(e) => setSetup({ ...setup, environment: e.target.value })}><option value="SANDBOX">Sandbox</option><option value="LIVE">Live</option></select>
             <input aria-label="Consumer key" className="border rounded px-1" placeholder="Consumer key" value={setup.consumer_key} onChange={(e) => setSetup({ ...setup, consumer_key: e.target.value })} />
             <input aria-label="Consumer secret" type="password" autoComplete="off" className="border rounded px-1" placeholder="Consumer secret" value={setup.consumer_secret} onChange={(e) => setSetup({ ...setup, consumer_secret: e.target.value })} />
+            <input aria-label="API URL override" className="border rounded px-1 sm:col-span-4" placeholder="API URL override (optional; local simulator only, never in live egress)" value={setup.base_url ?? ""} onChange={(e) => setSetup({ ...setup, base_url: e.target.value })} />
             <button className="border rounded px-2 disabled:opacity-40" disabled={busy || setup.consumer_key.length < 8 || setup.consumer_secret.length < 8} onClick={saveSetup}>Save (encrypted)</button>
           </div>}
         </div>

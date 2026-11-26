@@ -133,10 +133,11 @@ function Wizard({ acct, prov, busy, run }: { acct: AdAccountInfo; prov: AdProvid
   const blank = useMemo(() => Object.fromEntries(fields.map((f) => [f.k, f.def ?? ""])), [fields]);
   const [name, setName] = useState("");
   const [objective, setObjective] = useState(prov.objectives[0]);
-  const [budget, setBudget] = useState("20");
+  const [budget, setBudget] = useState(String(Math.max(20, !prov.min_budget_currency || prov.min_budget_currency === acct.currency ? prov.min_daily_budget ?? 0 : 0)));
   const [start, setStart] = useState("");
   const [spec, setSpec] = useState<Record<string, string>>(blank);
   const [key, setKey] = useState(newKey());
+  const minApplies = prov.min_daily_budget !== null && (!prov.min_budget_currency || prov.min_budget_currency === acct.currency);
   const toSpec = () => {
     const out: Record<string, unknown> = {};
     for (const f of fields) {
@@ -151,6 +152,11 @@ function Wizard({ acct, prov, busy, run }: { acct: AdAccountInfo; prov: AdProvid
       <h3 className="font-semibold">New {LABEL[acct.provider]} campaign</h3>
       <p className="text-xs text-gray-500">Creates: {prov.levels.map((l) => l.label).join(" → ")}. Only objectives this builder can complete from documented fields are offered.
         {!prov.write_tier_ok && " LinkedIn Development tier: provider writes are refused until Standard tier."}</p>
+      {minApplies && <p className="text-xs text-gray-700">Minimum daily budget: {prov.min_daily_budget} {acct.currency}
+        {prov.min_budget_currency ? "" : ` (${LABEL[acct.provider]} documents ${prov.min_daily_budget} USD; applied as ${prov.min_daily_budget} ${acct.currency} because the local-currency minimum is not verified)`}.
+        Global guardrail: {prov.guardrail} {acct.currency}/day.</p>}
+      {minApplies && (prov.min_daily_budget ?? 0) > prov.guardrail && <p role="alert" className="text-xs text-red-700">The provider minimum is above the
+        global guardrail ADS_MAX_DAILY_BUDGET ({prov.guardrail}): no {LABEL[acct.provider]} campaign can be valid until the owner raises the guardrail.</p>}
       <form className="grid grid-cols-1 md:grid-cols-3 gap-2" onSubmit={(e) => { e.preventDefault();
         run(() => adCampaignsApi.create({ account_id: acct.id, idempotency_key: key, name, objective, daily_budget: budget, spec: toSpec() })
           .then(() => { setName(""); setSpec(blank); setKey(newKey()); }), "Campaign draft created (paused, not sent).");

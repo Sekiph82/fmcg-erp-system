@@ -78,3 +78,48 @@ async def test_tiktok_lifecycle_http(sim):
 async def test_tiktok_unknown_reconciled_and_lost_retried(sim):
     await unknown_then_reconcile("tiktok")
     await lost_then_retry("tiktok")
+
+
+# ── M48.S01.T020: provider minimum budgets refused before approval ────────────────────────────────────────────
+
+def test_tiktok_minimum_in_account_currency_and_guardrail(monkeypatch):
+    from decimal import Decimal
+    from app.core.config import settings
+    spec = ads.check_spec("tiktok", "TRAFFIC", ctx("tiktok")["spec"], Decimal(40), "KES")
+    assert len(spec) == 1 and "below the minimum" in spec[0] and "50 KES" in spec[0] and "not verified" in spec[0]
+    assert ads.check_spec("tiktok", "TRAFFIC", ctx("tiktok")["spec"], Decimal(50), "KES") == []
+    assert ads.check_spec("linkedin", "WEBSITE_VISIT", ctx("linkedin")["spec"], Decimal(5), "KES") == []   # USD rule only
+    assert any("USD 10" in p or "10 USD" in p for p in ads.check_spec("linkedin", "WEBSITE_VISIT", ctx("linkedin")["spec"], Decimal(5), "USD"))
+    monkeypatch.setattr(settings, "ADS_MAX_DAILY_BUDGET", 30.0)
+    p = ads.check_spec("tiktok", "TRAFFIC", ctx("tiktok")["spec"], Decimal(30), "KES")
+    assert any("owner must raise the guardrail" in x for x in p)
+    import asyncio
+    assert asyncio.run(ads.TikTokAds().validate("7001", {"daily_budget": "40"}, "KES"))["ok"] is False   # legacy drafts too
+
+
+@DB
+@pytest.mark.asyncio
+async def test_tiktok_below_minimum_refused_before_approval(sim):
+    import uuid
+    from app.db.session import AsyncSessionLocal
+    from app.models.m48_ads import AdCampaignNode
+    from tests.m48_ads_support import campaign_body, client, login, setup_account
+    p = await setup_account("tiktok")
+    async with client() as ca:
+        await login(ca, p["author"])
+        r = await ca.post("/api/v1/ads/campaigns", json=campaign_body("tiktok", p["account"], "POVU Low budget", budget="40"))
+        assert r.status_code == 422 and "below the minimum" in r.text, r.text                   # refused at create
+        prov = next(x for x in (await ca.get("/api/v1/ads/providers")).json() if x["provider"] == "tiktok")
+        assert prov["min_daily_budget"] == 50.0 and prov["min_budget_currency"] is None and prov["guardrail"] == 1000.0
+        rid = (await ca.post("/api/v1/ads/campaigns", json=campaign_body("tiktok", p["account"], "POVU Ok budget"))).json()["id"]
+        r = await ca.post(f"/api/v1/ads/campaigns/{rid}/budget", json={"daily_budget": "40"})
+        assert r.status_code == 422 and "below the minimum" in r.text                         # new version refused
+        async with AsyncSessionLocal() as db:                    # a draft stored below the minimum (e.g. before T020)
+            root = await db.get(AdCampaignNode, uuid.UUID(rid))
+            root.daily_budget = 40
+            await db.commit()
+        r = await ca.post(f"/api/v1/ads/campaigns/{rid}/approvals", json={"action": "SUBMIT"})
+        assert r.status_code == 422 and "fix before approval" in r.text, r.text               # never approvable
+        r = await ca.post(f"/api/v1/ads/campaigns/{rid}/validate")
+        assert r.json()["validation"]["ok"] is False and "below the minimum" in " ".join(r.json()["validation"]["problems"])
+    assert await sim_objects("tiktok") == {}

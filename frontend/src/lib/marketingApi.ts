@@ -751,6 +751,7 @@ export type AdProvider = "meta" | "google" | "linkedin" | "tiktok";
 export interface AdProviderInfo {
   provider: AdProvider; configured: boolean; validate_only: boolean; live_publishing: boolean; egress: string;
   live_flag: boolean; objectives: string[]; levels: { level: string; label: string }[]; write_tier_ok: boolean;
+  guardrail: number; min_daily_budget: number | null; min_budget_currency: string | null;
 }
 export interface AdAccountInfo { id: string; provider: AdProvider; external_id: string; name: string; currency: string; status: string }
 export interface AdAccountControls {

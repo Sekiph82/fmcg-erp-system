@@ -3319,6 +3319,17 @@ These rows describe commissioning only; they must never stop accountless coding,
     - Extra pre-existing defect fixed: approve/reject adjustments always failed with 500 (lazy load in async code); they now use selectinload.
     - Also: test_m34_s02_t004 had a race-order-dependent assertion; it now accepts both serialisation orders.
 
+- [v] M48.S01.T020 — Defect found in the M48 gate browser walkthrough.
+  - Fixed 2026-11-26 [v], pending the gate.
+    - Local validation applies the documented TikTok campaign daily minimum. TikTok states USD 50; because the local-currency figure is unverified, 50 is applied in the account currency, and the UI says so.
+    - LinkedIn USD minimum of 10 applies to USD accounts only.
+    - A provider minimum above the guardrail shows an owner message.
+    - Enforced at create, budget edit, approval request and validate.
+    - Tests: 2 regressions in test_m48_s01_t004_tiktok_ads.py (39 passed with the M44 ads file).
+    - UI re-check: 31_ads_tiktok_min_budget_refused_before_approval.jpg.
+  - What happened: a TikTok campaign with a daily budget below the provider minimum passed "local checks", received approval, and was then rejected by the provider at submit (40002).
+  - Fix: add the documented TikTok minimum daily and total budget, plus other provider budget minimums that are available locally, to the local validation. A budget below the minimum must be refused before approval, with the documented reason.
+
 ## M48.S02 — Consolidated milestone gate and synchronization
 - [ ] M48.S02.T001 — Run milestone-only consolidated tests on frozen candidate SHA: full applicable backend, DB-gated integration and legacy regression, migration from empty and prior populated head, local provider contracts, frontend tsc/lint/build, security/roles/company isolation, real local ERP manual UI clicks and screenshots desktop/mobile for every affected persona and feature; evaluate applicable quality categories and original task mappings; add remediation tasks for any gap; independent reviewer on exact source; record commands, counts, skipped-test dispositions, screenshot paths, click logs, reviewer identity and verdict. Fix failures, rerun, [x] only after all applicable checks pass; no account activation needed.
 - [ ] M48.S02.T002 — After successful gate, mark evidence-backed tasks [x], update TASKS.md/Project Status, commit/push main, fetch and verify Desktop HEAD == origin/main, preserve owner changes, record evidence SHA and sync result. Automatically proceed to next milestone; do not stop for missing business accounts.
