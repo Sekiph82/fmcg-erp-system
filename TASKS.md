@@ -2847,6 +2847,7 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
     - real LLM provider budget for the content studio;
     - CDN or object storage for media.
   - The synchronization result is recorded below this row after the push.
+  - Synchronization: the gate commit 54f43bc was pushed to origin/main. After fetch, Desktop HEAD equals origin/main (54f43bc). The working tree is clean apart from files the owner left untracked (.hiveai/ and two M25 logs). The walkthrough servers were stopped, .next-m46walk was removed, and the dev-server edits to tsconfig.json and next-env.d.ts were reverted. m46-gate-pg stays up for the M47 final gate.
 
 # M47 — Parity-plus final integrated acceptance and future commissioning register
 
