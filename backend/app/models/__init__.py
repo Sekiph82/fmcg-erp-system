@@ -647,7 +647,7 @@ from app.models import (  # noqa: F401,E402
     customer_intel, ai_hub, customer_data, custom_objects, identity, payments_hub, warehouse_export, service_desk, data_sync, cpq,  # M45
     cms,  # M46
     m47_datasets, m47_automation, m47_sales_depth, m47_platform,  # M47
-    m48_ads, m48_payments, m48_esign,  # M48
+    m48_ads, m48_payments, m48_esign, m48_crm_send_approval,  # M48
 )
 
 __all__ = [

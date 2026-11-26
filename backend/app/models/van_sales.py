@@ -153,6 +153,7 @@ class VanVisit(Base, TimestampMixin):
     status          = Column(String(50), nullable=False, default=VisitStatus.PLANNED.value)
     gps_lat         = Column(Numeric(10, 7), nullable=True)
     gps_lng         = Column(Numeric(10, 7), nullable=True)
+    gps_accuracy_m  = Column(Numeric(8, 1), nullable=True)   # check-in fix radius reported by the device (M48.S01.T024)
     missed_reason   = Column(Text, nullable=True)
     notes           = Column(Text, nullable=True)
     offline_id      = Column(String(100), unique=True, nullable=True)  # client UUID for dedup
@@ -233,6 +234,7 @@ class VanPayment(Base, TimestampMixin):
     collected_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     receipt_no   = Column(String(100), nullable=True)
     notes        = Column(Text, nullable=True)
+    offline_id   = Column(String(100), unique=True, nullable=True)  # device key: a resent payment is never booked twice (T024)
 
     txn = relationship("VanSalesTxn", back_populates="payments")
 

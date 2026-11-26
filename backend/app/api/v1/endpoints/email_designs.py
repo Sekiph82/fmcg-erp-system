@@ -9,7 +9,7 @@ from __future__ import annotations
 import uuid
 from typing import Any, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
@@ -123,25 +123,90 @@ class SingleSendIn(BaseModel):
     subject: str = Field(min_length=1, max_length=300, pattern=r"^[^\r\n]+$")
     values: dict[str, str] = Field(default_factory=dict)
     track_engagement: bool = False
+    approval_id: Optional[uuid.UUID] = None     # M48.S01.T023: when MARKETING_EMAIL_APPROVAL_REQUIRED is on
+
+
+def _send_payload(d: EmailDesign, body: SingleSendIn) -> tuple[dict, dict]:
+    from app.services import crm_outbound_service as outbound
+    vals = {k: str(v)[:200] for k, v in body.values.items() if k in ("contact_name", "company_name", "first_name", "lifecycle", "channel")}
+    return vals, {"design_id": str(d.id), "to_email": outbound.norm(body.to_email), "subject": body.subject,
+                  "values": vals, "track_engagement": body.track_engagement}
+
+
+async def _published(db: AsyncSession, design_id: uuid.UUID) -> EmailDesign:
+    d = await db.get(EmailDesign, design_id)
+    if d is None or d.status != "PUBLISHED":
+        raise HTTPException(422, "Only a published design can be sent.")
+    return d
 
 
 @router.post("/{design_id}/send")
 async def single_send(design_id: uuid.UUID, body: SingleSendIn, db: AsyncSession = Depends(get_db),
                       current_user=Depends(get_current_user)):
     """M44.S01.T012 single-send API: one published design to one contact, as marketing mail — marketing consent,
-    suppression and the frequency cap apply exactly as for campaigns."""
+    suppression and the frequency cap apply exactly as for campaigns. M48.S01.T023: the per-editor daily cap and,
+    when MARKETING_EMAIL_APPROVAL_REQUIRED is on, a second editor's approval of this exact send apply too."""
     _need_write(current_user)
     from app.services import crm_outbound_service as outbound
-    d = await db.get(EmailDesign, design_id)
-    if d is None or d.status != "PUBLISHED":
-        raise HTTPException(422, "Only a published design can be sent.")
-    vals = {k: str(v)[:200] for k, v in body.values.items() if k in ("contact_name", "company_name", "first_name", "lifecycle", "channel")}
+    from app.services import marketing_send_guard as guard
+    d = await _published(db, design_id)
+    vals, payload = _send_payload(d, body)
+    try:
+        await guard.check_cap(db, current_user.username, 1)
+        await guard.consume(db, "DESIGN_SEND", d.id, payload, body.approval_id, current_user)
+    except guard.GuardError as e:
+        await db.rollback()
+        raise HTTPException(e.status, e.detail) from None
     msg = await outbound.queue(db, to_email=body.to_email, subject=body.subject, body=eds.render_text(d.document, vals),
                                body_html=eds.render_html(d.document, vals, d.preheader or ""), purpose="CAMPAIGN",
                                dedupe_key=f"single:{d.id}:{uuid.uuid4()}", created_by=current_user.username,
                                track=body.track_engagement)
     await db.commit()
     return {"id": str(msg.id), "status": msg.status, "reason": msg.status_reason}
+
+
+@router.post("/{design_id}/send/approval", status_code=201)
+async def request_send_approval(design_id: uuid.UUID, body: SingleSendIn, db: AsyncSession = Depends(get_db),
+                                current_user=Depends(get_current_user)):
+    _need_write(current_user)
+    from app.services import marketing_send_guard as guard
+    d = await _published(db, design_id)
+    row = await guard.request(db, "DESIGN_SEND", d.id, _send_payload(d, body)[1], current_user)
+    await db.commit()
+    return guard.out(row)
+
+
+@router.get("/send-approvals/policy")
+async def send_policy(db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    _need_write(current_user)
+    from app.services import marketing_send_guard as guard
+    return await guard.policy(db, current_user.username)
+
+
+@router.get("/send-approvals")
+async def list_send_approvals(status: str = Query("PENDING", pattern="^(PENDING|APPROVED|REJECTED|USED)$"), db: AsyncSession = Depends(get_db),
+                              current_user=Depends(get_current_user)):
+    _need_write(current_user)
+    from app.models.m48_crm_send_approval import CRMSendApproval
+    from app.services import marketing_send_guard as guard
+    rows = (await db.execute(select(CRMSendApproval).where(CRMSendApproval.kind == "DESIGN_SEND", CRMSendApproval.status == status)
+                             .order_by(CRMSendApproval.created_at.desc()).limit(200))).scalars()
+    return [guard.out(r) for r in rows]
+
+
+@router.post("/send-approvals/{approval_id}/{action}")
+async def decide_send_approval(approval_id: uuid.UUID, action: str, db: AsyncSession = Depends(get_db),
+                               current_user=Depends(get_current_user)):
+    _need_write(current_user)
+    from app.services import marketing_send_guard as guard
+    if action not in ("approve", "reject"):
+        raise HTTPException(404, "Unknown action")
+    try:
+        row = await guard.decide(db, approval_id, "DESIGN_SEND", current_user, action == "approve")
+    except guard.GuardError as e:
+        raise HTTPException(e.status, e.detail) from None
+    await db.commit()
+    return guard.out(row)
 
 
 @router.post("/{design_id}/test-send")

@@ -1,5 +1,15 @@
 # M38.S00 — Persona / channel screen audit (2026-11-19)
 
+> **Status note (M48.S01.T024, 2026-11-26): this matrix is the pre-M38 state (commit `0f9b7bf`), not current.**
+> Most rows were closed by M38/M40 work; see the independent review
+> `coordination/milestones/M48/gate/T015_M38_independent_review.md` for the per-claim status at HEAD. Corrections:
+> finding 3 should read about **154** redirect stubs, not "~40". Closed by T024: van-sales check-in now sends GPS with
+> accuracy, and visit photo, rep day log and offline sync have UI; a cash collector without a SalesRep link gets the
+> field-app collector screen (open dunning cases assigned to them); the dead `portal_service.login`,
+> `lib/moto_sales.ts` and `deliveryApi.createPod` were removed. The personas and channels missing here (field
+> marketing agent, marketing back-office, logistics officer, read-only auditor, regional sales manager, order desk,
+> WhatsApp, M-Pesa payer, developer/integrator, post-audit public channels) are carried into the M52 persona inventory.
+
 Owner question: "Who has modules in the app, and are their screens complete? Distributors, field controllers,
 motorised teams — every team that should benefit needs its own screen."
 

@@ -1,0 +1,37 @@
+{
+  "sha": "60e360afd96ffa77c46b8f89c83c7ca88c0c2177",
+  "template": "t024_tmpl",
+  "totals": {
+    "PASS": 1
+  },
+  "results": [
+    {
+      "file": "test_m40_s01_t004_shelf_check_db.py",
+      "flags": [
+        "M40_S01_T004_DISPOSABLE_TEST_DATABASE"
+      ],
+      "legacy_flags": [
+        "M40_S01_T004_DISPOSABLE_TEST_DATABASE"
+      ],
+      "db_name": "fmcg_m40_s01_t004_1a9423eb0501c934b044d6ea",
+      "needs_db2": false,
+      "prep": false,
+      "services": [],
+      "class": "RUN",
+      "note": "",
+      "name_rule": {
+        "regexes": [
+          "fmcg_m40_s01_t004_[a-f0-9]{24}"
+        ],
+        "startswith": []
+      },
+      "summary": "1 passed in 10.30s",
+      "counts": {
+        "passed": 1
+      },
+      "rc": 0,
+      "skip_reasons": [],
+      "status": "PASS"
+    }
+  ]
+}

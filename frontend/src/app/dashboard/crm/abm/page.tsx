@@ -4,6 +4,9 @@
 import { Fragment, useCallback, useEffect, useState } from "react";
 import { apiClient } from "@/lib/api";
 import { EntityPicker } from "@/components/EntityPicker";
+import { SendApprovalsPanel } from "@/components/SendApprovalsPanel";
+import { getActiveCompanyId } from "@/lib/company";
+import { sendApprovalsApi, type SendPolicy } from "@/lib/send_approvals";
 
 interface Group { id: string; name: string; description: string | null; accounts: number; campaign_started_at: string | null }
 interface Account { customer_id: string; name: string; code: string; tier: number; contacts: number; contacts_engaged: number;
@@ -23,6 +26,11 @@ export default function ABMPage() {
   const [open, setOpen] = useState<string | null>(null);
   const [camp, setCamp] = useState({ subject: "", body: "Hello {contact_name},\n\n" });
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  // M48.S01.T023 send controls: one company per campaign, approval by a second editor, daily cap
+  const [useActiveCompany, setUseActiveCompany] = useState(false);
+  const [approvalId, setApprovalId] = useState<string | null>(null);
+  const [policy, setPolicy] = useState<SendPolicy | null>(null);
+  const [approvalsKey, setApprovalsKey] = useState(0);
   const say = (ok: boolean, text: string) => setMsg({ ok, text });
 
   const loadGroups = useCallback(() => apiClient.get<Group[]>("/api/v1/abm/groups").then((r) => setGroups(r.data)).catch((e) => say(false, err(e))), []);
@@ -30,7 +38,7 @@ export default function ABMPage() {
   useEffect(() => { loadGroups(); }, [loadGroups]);
   useEffect(() => { if (sel) loadOv(sel); else setOv(null); }, [sel, loadOv]);
 
-  const act = async (fn: () => Promise<unknown>, ok: string) => { try { await fn(); say(true, ok); loadGroups(); if (sel) loadOv(sel); } catch (e) { say(false, err(e)); } };
+  const act = async (fn: () => Promise<unknown>, ok: string) => { try { await fn(); say(true, ok); loadGroups(); if (sel) loadOv(sel); } catch (e) { say(false, err(e)); setApprovalsKey((k) => k + 1); } };
   return (
     <div className="p-4 sm:p-6 space-y-4">
       <div><h1 className="text-xl font-bold text-gray-900">Key accounts</h1>
@@ -83,8 +91,36 @@ export default function ABMPage() {
           <p className="text-xs text-gray-500">Sent through the outbox: people without marketing consent are suppressed automatically. Placeholders: {"{contact_name}"}, {"{company_name}"}.</p>
           <input aria-label="Campaign subject" placeholder="Subject" value={camp.subject} onChange={(e) => setCamp({ ...camp, subject: e.target.value })} className="w-full border rounded px-3 py-2 text-sm" />
           <textarea aria-label="Campaign message" rows={4} value={camp.body} onChange={(e) => setCamp({ ...camp, body: e.target.value })} className="w-full border rounded px-3 py-2 text-sm" />
-          <button disabled={camp.subject.length < 3 || camp.body.length < 10} onClick={() => act(async () => { const r = await apiClient.post<{ queued: number }>(`/api/v1/abm/groups/${ov.id}/campaign`, camp); say(true, `${r.data.queued} messages queued.`); }, "Campaign queued.")}
-            className="rounded bg-indigo-600 px-3 py-2 text-sm text-white disabled:opacity-50">Queue campaign</button>
+          {(() => {
+            const activeCompany = getActiveCompanyId();
+            const payload = { ...camp, company_id: useActiveCompany ? activeCompany : null };
+            const contentReason = camp.subject.length < 3 ? "Write a subject (3+ characters)." : camp.body.length < 10 ? "Write a message (10+ characters)." : null;
+            const companyReason = useActiveCompany && !activeCompany ? "No active company is selected in the company switcher." : null;
+            const capReason = policy && policy.used_today >= policy.daily_cap ? `Daily limit reached (${policy.used_today} of ${policy.daily_cap} direct marketing sends today).` : null;
+            const approvalReason = policy?.approval_required && !approvalId ? "Approval required: request it, have a second editor approve, then pick the approval below." : null;
+            const sendReason = contentReason ?? companyReason ?? capReason ?? approvalReason;
+            const requestReason = contentReason ?? companyReason;
+            return (<>
+              <label className="flex items-center gap-2 text-xs text-gray-600">
+                <input type="checkbox" checked={useActiveCompany} onChange={(e) => { setUseActiveCompany(e.target.checked); setApprovalId(null); }} />
+                Send only to accounts of the active company (needed when the group has accounts of several companies)</label>
+              <div className="flex flex-wrap gap-2 items-center">
+                <button disabled={!!sendReason} title={sendReason ?? undefined}
+                  onClick={async () => {
+                    try { const r = await apiClient.post<{ queued: number; suppressed: number }>(`/api/v1/abm/groups/${ov.id}/campaign`, { ...payload, approval_id: approvalId });
+                      say(true, `${r.data.queued} messages queued, ${r.data.suppressed} suppressed (no consent).`); loadOv(ov.id); }
+                    catch (e) { say(false, err(e)); }
+                    setApprovalId(null); setApprovalsKey((k) => k + 1);
+                  }}
+                  className="rounded bg-indigo-600 px-3 py-2 text-sm text-white disabled:opacity-50">{approvalId ? "Queue campaign with approval" : "Queue campaign"}</button>
+                <button disabled={!!requestReason} title={requestReason ?? undefined}
+                  onClick={() => act(async () => { await sendApprovalsApi.requestAbm(ov.id, payload); setApprovalsKey((k) => k + 1); }, "Approval requested; another editor must approve it.")}
+                  className="rounded border px-3 py-2 text-sm disabled:opacity-50">Request approval</button>
+                {sendReason && <span className="text-xs text-amber-700">{sendReason}</span>}
+              </div>
+            </>);
+          })()}
+          <SendApprovalsPanel kind="abm" targetId={ov.id} picked={approvalId} onPick={setApprovalId} refresh={approvalsKey} onPolicy={setPolicy} />
         </div>
       </>)}
     </div>

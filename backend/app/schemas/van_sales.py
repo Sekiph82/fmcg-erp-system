@@ -4,7 +4,7 @@ from decimal import Decimal
 from typing import List, Optional, Dict, Any
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 # ── Van ───────────────────────────────────────────────────────────────────────
@@ -83,8 +83,17 @@ class VisitCreate(BaseModel):
 
 
 class VisitCheckIn(BaseModel):
-    gps_lat: Optional[Decimal] = None
-    gps_lng: Optional[Decimal] = None
+    gps_lat: Optional[Decimal] = Field(default=None, ge=-90, le=90)
+    gps_lng: Optional[Decimal] = Field(default=None, ge=-180, le=180)
+    gps_accuracy_m: Optional[Decimal] = Field(default=None, ge=0, le=100000)  # browser fix radius (metres)
+
+    @model_validator(mode="after")
+    def _pair(self):
+        if (self.gps_lat is None) != (self.gps_lng is None):
+            raise ValueError("Send both gps_lat and gps_lng, or neither")
+        if self.gps_accuracy_m is not None and self.gps_lat is None:
+            raise ValueError("gps_accuracy_m needs a position")
+        return self
 
 
 class VisitCheckOut(BaseModel):
@@ -104,6 +113,8 @@ class VisitOut(BaseModel):
     status: str
     gps_lat: Optional[Decimal]
     gps_lng: Optional[Decimal]
+    gps_accuracy_m: Optional[Decimal] = None
+    outlet_photo_url: Optional[str] = None
     missed_reason: Optional[str]
     offline_id: Optional[str]
     created_at: datetime
@@ -190,6 +201,7 @@ class PaymentCreate(BaseModel):
     reference_no: Optional[str] = None
     collected_at: datetime
     notes: Optional[str] = None
+    offline_id: Optional[str] = Field(default=None, min_length=8, max_length=100, pattern=r"^[A-Za-z0-9-]+$")
 
 
 class PaymentOut(BaseModel):

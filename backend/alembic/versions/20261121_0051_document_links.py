@@ -21,6 +21,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.execute("DROP INDEX IF EXISTS ix_crm_document_views_link_viewer")
-    for t in reversed(_tables()):
-        t.drop(op.get_bind(), checkfirst=True)
+    # M48.S01.T023 (audit F3): evidence is archived (renamed), never dropped; see app.db.downgrade_archive.
+    from app.db.downgrade_archive import archive_tables
+
+    archive_tables(op.get_bind(), ['crm_document_views', 'crm_document_links'], "0051")

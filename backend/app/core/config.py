@@ -123,6 +123,18 @@ class Settings(BaseSettings):
     CRM_OUTBOUND_EMAIL_ENABLED: bool = False
     CRM_OUTBOUND_MAX_PER_TICK: int = 30            # delivery rate limit per 15 s worker tick
     PUBLIC_APP_URL: str = "http://localhost:3000"  # used in unsubscribe links
+    # M48.S01.T022 unsubscribe / consent-confirmation link signing. Blank = SECRET_KEY (links already sent keep working).
+    # To rotate: move the old value (or the old SECRET_KEY) into UNSUBSCRIBE_PREVIOUS_SECRETS (comma list), set a new one.
+    UNSUBSCRIBE_SECRET: str = ""
+    UNSUBSCRIBE_PREVIOUS_SECRETS: str = ""
+    CRM_CONSENT_CONFIRM_TTL_HOURS: int = 72         # double opt-in link lifetime
+    # M48.S01.T022 retention (days); the daily purge job deletes older rows
+    CRM_LEAD_SUBMISSION_RETENTION_DAYS: int = 730
+    CRM_EMAIL_EVENT_RETENTION_DAYS: int = 395
+    CRM_LANDING_EVENT_RETENTION_DAYS: int = 395
+    CRM_DOCUMENT_VIEW_RETENTION_DAYS: int = 730
+    CRM_SIGNER_CODE_RETENTION_DAYS: int = 30        # counted from the code's expiry
+    CRM_CONSENT_PENDING_RETENTION_DAYS: int = 30    # unconfirmed double opt-in requests
     # M43.S01.T006 e-mail engagement tracking: off unless enabled; then only for e-mails that opt in
     CRM_EMAIL_TRACKING_ENABLED: bool = False
     CRM_TRACKING_LINK_DOMAINS: str = ""
@@ -161,6 +173,7 @@ class Settings(BaseSettings):
     SOCIAL_PUBLISH_TIMEOUT_MINUTES: int = 30
     SOCIAL_STATUS_POLL_SECONDS: int = 15
     SOCIAL_STATUS_BACKOFF_SECONDS: float = 1.0
+    MARKETING_DIRECT_SEND_DAILY_CAP: int = 200    # M48.S01.T023 F4: ABM / design single-send recipients per editor per 24 h
     ADS_LIVE_MUTATIONS: bool = False             # M48.S01.T001–T004 live ad mutations
     CARD_PAYMENTS_LIVE_ENABLED: bool = False     # M48.S01.T010 Pesapal live money
     WAREHOUSE_LIVE_ENABLED: bool = False         # M48.S01.T007/T008 Snowflake/BigQuery live sync
@@ -428,6 +441,16 @@ class Settings(BaseSettings):
                     raise ValueError("INITIAL_ADMIN_PASSWORD must be a unique password of at least 12 characters in production")
             if not self.AUTH_COOKIE_SECURE:
                 raise ValueError("AUTH_COOKIE_SECURE must be true in production")
+            if self.CRM_OUTBOUND_EMAIL_ENABLED:   # M48.S01.T022: links in sent mail must be public https URLs
+                from urllib.parse import urlparse
+                for name in ("PUBLIC_APP_URL", "PUBLIC_API_URL"):
+                    u = urlparse(getattr(self, name) or "")
+                    host = (u.hostname or "").lower()
+                    local = host in {"localhost", "127.0.0.1", "::1", "0.0.0.0"} or host.endswith(".localhost")
+                    if u.scheme != "https" or not host or local:
+                        raise ValueError(f"{name} must be a public https URL in production when CRM_OUTBOUND_EMAIL_ENABLED=true")
+            if self.UNSUBSCRIBE_SECRET and len(self.UNSUBSCRIBE_SECRET.encode("utf-8")) < 32:
+                raise ValueError("UNSUBSCRIBE_SECRET must contain at least 32 UTF-8 bytes in production")
             if self.SYNC_INITIAL_ADMIN_PASSWORD:
                 raise ValueError(
                     "SYNC_INITIAL_ADMIN_PASSWORD=true is not allowed in production. "

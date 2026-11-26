@@ -2,7 +2,9 @@
 import { EntityPicker } from "@/components/EntityPicker";
 import { useState } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
-import { vanSalesApi } from "@/lib/van_sales";
+import { vanSalesApi, readOutbox, writeOutbox, isOffline } from "@/lib/van_sales";
+import { newRef } from "@/lib/field";
+import { VanOutbox } from "@/components/van-sales/VanOutbox";
 import { useSearchParams } from "next/navigation";
 
 interface PosLine {
@@ -35,6 +37,10 @@ export default function POSPage() {
   const [step, setStep] = useState<"items" | "payment" | "receipt">("items");
   const [createdTxn, setCreatedTxn] = useState<any>(null);
   const [error, setError] = useState("");
+  const [obVer, setObVer] = useState(0);
+  const queue = (kind: "transactions" | "payments", row: Record<string, unknown>) => {
+    const ob = readOutbox(selectedVan); ob[kind].push(row); writeOutbox(selectedVan, ob); setObVer((v) => v + 1);
+  };
 
   const { data: vans = [] } = useQuery({ queryKey: ["vans"], queryFn: () => vanSalesApi.listVans() });
   const [selectedVan, setSelectedVan] = useState(vanId);
@@ -47,7 +53,15 @@ export default function POSPage() {
   const txnMut = useMutation({
     mutationFn: (data: any) => vanSalesApi.createTransaction(selectedVan, data),
     onSuccess: (t) => { setCreatedTxn(t); setStep("payment"); },
-    onError: (e: any) => setError(e?.message ?? "Failed to create transaction"),
+    onError: (e: any, data: any) => {
+      if (isOffline(e)) {  // no connection: keep the sale on this device; Sync sends it (same offline_id, never twice)
+        queue("transactions", data);
+        setCreatedTxn({ offline: true, offline_id: data.offline_id, txn_no: "Saved offline — not yet synced", total_amount: +totals.total.toFixed(2) });
+        setStep("payment");
+        return;
+      }
+      setError(e?.message ?? "Failed to create transaction");
+    },
   });
 
   const payMut = useMutation({
@@ -69,12 +83,18 @@ export default function POSPage() {
       customer_id: customerId,
       txn_type: txnType,
       txn_datetime: new Date().toISOString(),
-      offline_id: `pos-${Date.now()}`,
+      offline_id: `pos-${newRef()}`,
       lines: lines.map((l) => ({ ...l })),
     });
   };
 
   const handlePay = () => {
+    if (createdTxn?.offline) {  // the sale itself is still in the outbox: the payment goes with it
+      queue("payments", { offline_id: `pay-${newRef()}`, offline_txn_id: createdTxn.offline_id, method: payMethod, amount: createdTxn.total_amount,
+        reference_no: payRef || undefined, collected_at: new Date().toISOString() });
+      setStep("receipt");
+      return;
+    }
     payMut.mutate({
       method: payMethod,
       amount: totals.total,
@@ -103,6 +123,8 @@ export default function POSPage() {
           </button>
         </div>
       </div>
+
+      <div className="mb-4"><VanOutbox vanId={selectedVan} version={obVer} /></div>
 
       {step === "items" && (
         <div className="space-y-4">
@@ -234,7 +256,7 @@ export default function POSPage() {
         <div className="space-y-4 text-center">
           <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-6">
             <p className="text-4xl mb-3">✅</p>
-            <p className="text-lg font-bold text-white">Payment Complete</p>
+            <p className="text-lg font-bold text-white">{createdTxn.offline ? "Payment saved on this device" : "Payment Complete"}</p>
             <p className="text-sm text-slate-400 mt-1">{createdTxn.txn_no}</p>
             <p className="text-2xl font-bold text-emerald-400 mt-3">KES {createdTxn.total_amount?.toLocaleString()}</p>
             <p className="text-xs text-slate-500 mt-2">via {payMethod}</p>

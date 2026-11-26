@@ -4,10 +4,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   fx, fpost, newRef, currentPosition, kes, mapsLink,
-  type FieldMe, type Today, type Stop, type CatalogItem, type OpenInvoice, type Trip, type TripStop, type AuditRow,
+  type FieldMe, type Today, type Stop, type CatalogItem, type OpenInvoice, type Trip, type TripStop, type AuditRow, type CollectorAccount,
 } from "@/lib/field";
 
-type Tab = "route" | "trips" | "audits";
+type Tab = "route" | "collect" | "trips" | "audits";
 const OUTCOMES: [string, string][] = [["NO_ORDER", "Visited, no order"], ["ORDERED", "Ordered"], ["CUSTOMER_CLOSED", "Shop closed"], ["CREDIT_HOLD", "Credit hold"], ["NOT_FOUND", "Could not find shop"]];
 const box = "bg-white rounded-xl border p-3";
 const btn = "px-3 py-2 rounded-lg text-sm font-medium disabled:opacity-50";
@@ -21,12 +21,13 @@ export default function FieldApp() {
   const fail = useCallback((e: unknown) => say(false, (e as Error).message), [say]);
 
   useEffect(() => {
-    fx<FieldMe>("/field/me").then((m) => { setMe(m); setTab(m.rep ? "route" : m.is_driver ? "trips" : m.can_audit ? "audits" : null); }).catch(fail);
+    fx<FieldMe>("/field/me").then((m) => { setMe(m); setTab(m.rep ? "route" : m.is_collector ? "collect" : m.is_driver ? "trips" : m.can_audit ? "audits" : null); }).catch(fail);
   }, [fail]);
 
   if (!me) return <main className="p-4 text-sm text-gray-500">{msg?.text ?? "Loading…"}</main>;
   const tabs: [Tab, string][] = [
     ...(me.rep ? [["route", me.rep.vehicle_type === "MOTORBIKE" ? "My route (moto)" : "My route"] as [Tab, string]] : []),
+    ...(me.is_collector ? [["collect", "My collections"] as [Tab, string]] : []),
     ...(me.is_driver ? [["trips", "My deliveries"] as [Tab, string]] : []),
     ...(me.can_audit ? [["audits", "Outlet audits"] as [Tab, string]] : []),
   ];
@@ -43,8 +44,9 @@ export default function FieldApp() {
         </nav>)}
       <div className="max-w-2xl mx-auto p-3 space-y-3">
         {msg && <p role={msg.ok ? "status" : "alert"} className={`rounded-lg p-3 text-sm border ${msg.ok ? "bg-emerald-50 border-emerald-200 text-emerald-800" : "bg-red-50 border-red-200 text-red-700"}`}>{msg.text}</p>}
-        {tab === null && <p className={box + " text-sm text-gray-600"}>Your login is not set up for field work yet (sales rep, driver or field controller). Ask your manager.{me.can_supervise ? " You can open the Team view." : ""}</p>}
+        {tab === null && <p className={box + " text-sm text-gray-600"}>Your login is not set up for field work yet (sales rep, collector, driver or field controller). Ask your manager.{me.can_supervise ? " You can open the Team view." : ""}</p>}
         {tab === "route" && <RouteTab say={say} fail={fail} />}
+        {tab === "collect" && <CollectorTab say={say} fail={fail} />}
         {tab === "trips" && <TripsTab say={say} fail={fail} />}
         {tab === "audits" && <AuditsTab say={say} fail={fail} />}
         {me.van && <Link href="/dashboard/van-sales/pos" className="block text-center text-sm text-indigo-700 underline">Open van POS (sell from van stock)</Link>}
@@ -193,7 +195,39 @@ function OrderForm({ stop, say, fail, reload }: Say & { stop: Stop; reload: () =
   );
 }
 
-function CollectForm({ stop, say, fail, reload }: Say & { stop: Stop; reload: () => void }) {
+// ── cash collector (assigned on dunning cases; no rep link needed) ────────────
+
+function CollectorTab({ say, fail }: Say) {
+  const [rows, setRows] = useState<CollectorAccount[] | null>(null);
+  const [open, setOpen] = useState<string | null>(null);
+  const load = useCallback(() => fx<CollectorAccount[]>("/field/collector/accounts").then(setRows).catch(fail), [fail]);
+  useEffect(() => { load(); }, [load]);
+  if (!rows) return <p className="text-sm text-gray-500">Loading…</p>;
+  return (
+    <div className="space-y-2">
+      {rows.length === 0 && <p className={box + " text-sm text-gray-500"}>No accounts to collect from.</p>}
+      {rows.map((a) => {
+        const maps = mapsLink(a.lat, a.lng, a.address);
+        return (
+          <div key={a.case_id} className={box}>
+            <button className="w-full text-left flex justify-between gap-2" aria-expanded={open === a.case_id} onClick={() => setOpen(open === a.case_id ? null : a.case_id)}>
+              <span className="min-w-0"><span className="font-medium block truncate">{a.name}</span><span className="text-xs text-gray-500 block truncate">{a.case_no}{a.address ? ` · ${a.address}` : ""}</span></span>
+              <span className="text-right text-xs shrink-0"><span className="block text-red-700">owes {kes(a.open_balance, a.currency)}</span>{a.next_action_date && <span className="block text-gray-500">follow up {a.next_action_date}</span>}</span>
+            </button>
+            {open === a.case_id && <div className="mt-2 border-t pt-2 space-y-2">
+              <div className="flex gap-2 text-xs">
+                {a.phone && <a href={`tel:${a.phone}`} className="underline text-indigo-700">Call {a.contact ?? ""}</a>}
+                {maps && <a href={maps} target="_blank" rel="noreferrer" className="underline text-indigo-700">Directions</a>}
+              </div>
+              <CollectForm stop={{ customer_id: a.customer_id, name: a.name, phone: a.phone }} say={say} fail={fail} reload={load} />
+            </div>}
+          </div>);
+      })}
+    </div>
+  );
+}
+
+function CollectForm({ stop, say, fail, reload }: Say & { stop: Pick<Stop, "customer_id" | "name" | "phone">; reload: () => void }) {
   const [invoices, setInvoices] = useState<OpenInvoice[]>([]);
   const [form, setForm] = useState({ invoice_id: "", method: "CASH", amount: "", mpesa_code: "", mpesa_phone: stop.phone ?? "", reference: "" });
   const [busy, setBusy] = useState(false);

@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
@@ -213,12 +213,13 @@ async def create_visit(
 async def check_in_visit(
     db: AsyncSession, visit: VanVisit, payload: VisitCheckIn
 ) -> VanVisit:
+    if visit.status != VisitStatus.PLANNED.value:
+        raise ValueError(f"Visit is {visit.status}; only a PLANNED visit can be checked in")
     visit.status = VisitStatus.CHECKED_IN.value
     visit.check_in_time = datetime.utcnow()
-    if payload.gps_lat:
-        visit.gps_lat = payload.gps_lat
-    if payload.gps_lng:
-        visit.gps_lng = payload.gps_lng
+    if payload.gps_lat is not None:
+        visit.gps_lat, visit.gps_lng = payload.gps_lat, payload.gps_lng
+        visit.gps_accuracy_m = payload.gps_accuracy_m
     await db.commit()
     await db.refresh(visit)
     return visit
@@ -291,7 +292,7 @@ async def create_transaction(
         visit_id=payload.visit_id,
         driver_id=user_id,
         txn_type=payload.txn_type,
-        txn_datetime=payload.txn_datetime,
+        txn_datetime=_naive_utc(payload.txn_datetime),
         status=TxnStatus.CONFIRMED.value,
         payment_status=PaymentStatus.UNPAID.value,
         subtotal=subtotal,
@@ -373,18 +374,36 @@ async def get_transaction(db: AsyncSession, txn_id: uuid.UUID) -> Optional[VanSa
 
 # ── Payments ──────────────────────────────────────────────────────────────────
 
+def _naive_utc(v: datetime) -> datetime:
+    """The van tables use naive UTC DateTime columns; browsers send ISO times with "Z"."""
+    return v.astimezone(timezone.utc).replace(tzinfo=None) if v.tzinfo is not None else v
+
+
+async def payment_by_offline_id(db: AsyncSession, offline_id: Optional[str]) -> Optional[VanPayment]:
+    if not offline_id:
+        return None
+    return (await db.execute(select(VanPayment).where(VanPayment.offline_id == offline_id))).scalars().first()
+
+
 async def add_payment(
     db: AsyncSession, txn: VanSalesTxn, payload: PaymentCreate, user_id: Optional[uuid.UUID]
 ) -> VanPayment:
+    """Idempotent on payload.offline_id: a resend returns the payment already booked (same txn) and changes nothing."""
+    existing = await payment_by_offline_id(db, payload.offline_id)
+    if existing is not None:
+        if existing.txn_id != txn.id:
+            raise ValueError("Payment offline_id already used for another transaction")
+        return existing
     payment = VanPayment(
         txn_id=txn.id,
         method=payload.method,
         amount=payload.amount,
         reference_no=payload.reference_no,
-        collected_at=payload.collected_at,
+        collected_at=_naive_utc(payload.collected_at),
         collected_by=user_id,
         receipt_no=_gen_receipt_no(),
         notes=payload.notes,
+        offline_id=payload.offline_id,
     )
     db.add(payment)
 
@@ -499,6 +518,7 @@ async def process_sync(
         except ValueError:
             result.duplicates_skipped += 1
         except Exception as e:
+            await db.rollback()
             result.errors.append(f"visit: {e}")
 
     # Sync transactions
@@ -513,32 +533,48 @@ async def process_sync(
         except ValueError:
             result.duplicates_skipped += 1
         except Exception as e:
+            await db.rollback()
             result.errors.append(f"txn: {e}")
 
-    # Sync payments
+    # Sync payments. A payment's txn is found by this batch's map, else by the sale's offline_id already on the server
+    # (a resend after a lost response), else by txn_id; it must be a txn of this van. The payment's own offline_id
+    # makes the resend a no-op instead of a second payment.
     for pp in payload.payments:
         try:
             offline_txn_id = pp.get("offline_txn_id")
             server_txn_id = txn_id_map.get(offline_txn_id) if offline_txn_id else None
+            if not server_txn_id and offline_txn_id:
+                prior = (await db.execute(select(VanSalesTxn.id).where(
+                    VanSalesTxn.offline_id == offline_txn_id, VanSalesTxn.van_id == van.id))).scalars().first()
+                server_txn_id = prior
             if not server_txn_id and pp.get("txn_id"):
-                server_txn_id = uuid.UUID(pp["txn_id"])
+                server_txn_id = uuid.UUID(str(pp["txn_id"]))
             if not server_txn_id:
                 result.errors.append(f"payment: could not resolve txn for offline_txn_id={offline_txn_id}")
                 continue
             txn = await get_transaction(db, server_txn_id)
-            if not txn:
-                result.errors.append(f"payment: txn {server_txn_id} not found")
+            if not txn or txn.van_id != van.id:
+                result.errors.append(f"payment: txn {server_txn_id} not found on this van")
                 continue
+            collected = pp["collected_at"]
+            if isinstance(collected, str):
+                collected = datetime.fromisoformat(collected)
             pc = PaymentCreate(
                 method=pp["method"],
                 amount=Decimal(str(pp["amount"])),
                 reference_no=pp.get("reference_no"),
-                collected_at=datetime.fromisoformat(pp["collected_at"]) if isinstance(pp["collected_at"], str) else pp["collected_at"],
+                collected_at=collected,
                 notes=pp.get("notes"),
+                offline_id=pp.get("offline_id"),
             )
+            if await payment_by_offline_id(db, pc.offline_id) is not None:
+                await add_payment(db, txn, pc, user_id)  # same txn check; returns the existing row
+                result.duplicates_skipped += 1
+                continue
             await add_payment(db, txn, pc, user_id)
             result.payments_created += 1
         except Exception as e:
+            await db.rollback()
             result.errors.append(f"payment: {e}")
 
     return result

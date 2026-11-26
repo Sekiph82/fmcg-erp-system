@@ -5,11 +5,12 @@ from datetime import date
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from sqlalchemy import select, desc
 from sqlalchemy.ext.asyncio import AsyncSession
-from pydantic import BaseModel as _BM
+from pydantic import BaseModel as _BM, Field as _F
 
+from app.core.deps import get_current_user
 from app.db.session import get_db
 from app.schemas.van_sales import (
     VanCreate, VanUpdate, VanOut,
@@ -28,6 +29,34 @@ router = APIRouter()
 
 def _404(label: str = "Record"):
     return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"{label} not found")
+
+
+VAN_MANAGERS = ("field.supervise", "logistics.edit")  # supervisors / logistics officers act for any van
+
+
+async def _van_actor_or_403(db: AsyncSession, user, van) -> None:
+    """Van actions (check-in, photo, POS sale/payment, sync): the van's driver, the rep assigned to the van's route,
+    or a supervisor / logistics manager. Everyone else gets 403 (M48.S01.T024)."""
+    from app.core.access_control import has_any_permission
+    from app.models.field_sales import SalesRep, SalesRoute
+
+    if van.driver_id == user.id or has_any_permission(user, VAN_MANAGERS):
+        return
+    if van.route_id is not None:
+        rep_user = (await db.execute(select(SalesRep.user_id).join(SalesRoute, SalesRoute.assigned_rep_id == SalesRep.id)
+                                     .where(SalesRoute.id == van.route_id))).scalars().first()
+        if rep_user == user.id:
+            return
+    raise HTTPException(status_code=403, detail="Only this van's driver or rep, or a supervisor, can do this")
+
+
+async def _visit_for_actor(db: AsyncSession, user, visit_id: UUID):
+    from app.models.van_sales import Van, VanVisit
+    visit = await db.get(VanVisit, visit_id)
+    if not visit:
+        raise _404("Visit")
+    await _van_actor_or_403(db, user, await db.get(Van, visit.van_id))
+    return visit
 
 
 # ── Vans ─────────────────────────────────────────────────────────────────────
@@ -105,29 +134,26 @@ async def create_visit(van_id: UUID, payload: VisitCreate, db: AsyncSession = De
 
 
 @router.post("/visits/{visit_id}/check-in", response_model=VisitOut)
-async def check_in(visit_id: UUID, payload: VisitCheckIn, db: AsyncSession = Depends(get_db)):
-    from app.models.van_sales import VanVisit
-    visit = await db.get(VanVisit, visit_id)
-    if not visit:
-        raise _404("Visit")
-    return await svc.check_in_visit(db, visit, payload)
+async def check_in(visit_id: UUID, payload: VisitCheckIn, db: AsyncSession = Depends(get_db),
+                   user=Depends(get_current_user)):
+    visit = await _visit_for_actor(db, user, visit_id)
+    try:
+        return await svc.check_in_visit(db, visit, payload)
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e))
 
 
 @router.post("/visits/{visit_id}/check-out", response_model=VisitOut)
-async def check_out(visit_id: UUID, notes: Optional[str] = None, db: AsyncSession = Depends(get_db)):
-    from app.models.van_sales import VanVisit
-    visit = await db.get(VanVisit, visit_id)
-    if not visit:
-        raise _404("Visit")
+async def check_out(visit_id: UUID, notes: Optional[str] = None, db: AsyncSession = Depends(get_db),
+                    user=Depends(get_current_user)):
+    visit = await _visit_for_actor(db, user, visit_id)
     return await svc.check_out_visit(db, visit, notes)
 
 
 @router.post("/visits/{visit_id}/missed", response_model=VisitOut)
-async def missed(visit_id: UUID, reason: Optional[str] = None, db: AsyncSession = Depends(get_db)):
-    from app.models.van_sales import VanVisit
-    visit = await db.get(VanVisit, visit_id)
-    if not visit:
-        raise _404("Visit")
+async def missed(visit_id: UUID, reason: Optional[str] = None, db: AsyncSession = Depends(get_db),
+                 user=Depends(get_current_user)):
+    visit = await _visit_for_actor(db, user, visit_id)
     return await svc.mark_missed_visit(db, visit, reason)
 
 
@@ -148,15 +174,17 @@ async def list_transactions(
 
 @router.post("/vans/{van_id}/transactions", response_model=TxnOut, status_code=201)
 async def create_transaction(
-    van_id: UUID, payload: TxnCreate, db: AsyncSession = Depends(get_db)
+    van_id: UUID, payload: TxnCreate, db: AsyncSession = Depends(get_db), user=Depends(get_current_user)
 ):
     v = await svc.get_van(db, van_id)
     if not v:
         raise _404("Van")
+    await _van_actor_or_403(db, user, v)
     try:
-        return await svc.create_transaction(db, v, payload, user_id=None)
+        txn = await svc.create_transaction(db, v, payload, user_id=user.id)
     except ValueError as e:
         raise HTTPException(status_code=409, detail=str(e))
+    return await svc.get_transaction(db, txn.id)  # lines/payments loaded (TxnOut cannot lazy-load in async)
 
 
 @router.get("/transactions/{txn_id}", response_model=TxnOut)
@@ -171,12 +199,16 @@ async def get_transaction(txn_id: UUID, db: AsyncSession = Depends(get_db)):
 
 @router.post("/transactions/{txn_id}/payments", response_model=PaymentOut, status_code=201)
 async def add_payment(
-    txn_id: UUID, payload: PaymentCreate, db: AsyncSession = Depends(get_db)
+    txn_id: UUID, payload: PaymentCreate, db: AsyncSession = Depends(get_db), user=Depends(get_current_user)
 ):
     t = await svc.get_transaction(db, txn_id)
     if not t:
         raise _404("Transaction")
-    return await svc.add_payment(db, t, payload, user_id=None)
+    await _van_actor_or_403(db, user, await svc.get_van(db, t.van_id))
+    try:
+        return await svc.add_payment(db, t, payload, user_id=user.id)
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e))
 
 
 # ── Reconciliation ────────────────────────────────────────────────────────────
@@ -210,11 +242,12 @@ async def approve_reconciliation(recon_id: UUID, db: AsyncSession = Depends(get_
 # ── Offline Sync ──────────────────────────────────────────────────────────────
 
 @router.post("/vans/{van_id}/sync", response_model=SyncResult, status_code=201)
-async def sync(van_id: UUID, payload: SyncPayload, db: AsyncSession = Depends(get_db)):
+async def sync(van_id: UUID, payload: SyncPayload, db: AsyncSession = Depends(get_db), user=Depends(get_current_user)):
     v = await svc.get_van(db, van_id)
     if not v:
         raise _404("Van")
-    return await svc.process_sync(db, v, payload, user_id=None)
+    await _van_actor_or_403(db, user, v)
+    return await svc.process_sync(db, v, payload, user_id=user.id)
 
 
 # ── Reports ───────────────────────────────────────────────────────────────────
@@ -261,7 +294,7 @@ async def ack_rec(rec_id: UUID, payload: VSAIRecAck, db: AsyncSession = Depends(
 # ── Outlet Photo Capture ──────────────────────────────────────────────────────
 
 class PhotoIn(_BM):
-    photo_url: str
+    photo_url: str = _F(max_length=2000, pattern=r"^https://\S+$")
 
 
 @router.post("/visits/{visit_id}/photo")
@@ -269,45 +302,74 @@ async def set_visit_photo(
     visit_id: UUID,
     payload: PhotoIn,
     db: AsyncSession = Depends(get_db),
+    user=Depends(get_current_user),
 ):
     """Record an outlet photo URL against a visit."""
-    from app.models.van_sales import VanVisit
-    visit = await db.get(VanVisit, visit_id)
-    if not visit:
-        raise _404("Visit")
+    visit = await _visit_for_actor(db, user, visit_id)
     visit.outlet_photo_url = payload.photo_url
     await db.commit()
     return {"visit_id": str(visit_id), "outlet_photo_url": payload.photo_url}
 
 
+@router.post("/visits/{visit_id}/photo-upload")
+async def upload_visit_photo(visit_id: UUID, file: UploadFile = File(...), db: AsyncSession = Depends(get_db),
+                             user=Depends(get_current_user)):
+    """Outlet photo from the device camera: stored (and malware-scanned) like the field app's photos; the visit keeps
+    the storage key, not a public URL. Only a visit that was checked in can carry a photo."""
+    from app.api.v1.endpoints.field_app import _forget, _store
+    from app.models.van_sales import VisitStatus
+    visit = await _visit_for_actor(db, user, visit_id)
+    if visit.status not in (VisitStatus.CHECKED_IN.value, VisitStatus.COMPLETED.value):
+        raise HTTPException(status_code=409, detail="Check in before adding the outlet photo")
+    old = visit.outlet_photo_url
+    visit.outlet_photo_url = "doc:" + await _store(file)
+    await db.commit()
+    if old and old.startswith("doc:"):
+        _forget([old[4:]])
+    return {"visit_id": str(visit_id), "has_photo": True}
+
+
 # ── Field Rep Daily GPS Log ───────────────────────────────────────────────────
 
 class RepDayLogIn(_BM):
-    rep_user_id: Optional[str] = None
+    rep_user_id: Optional[UUID] = None
     rep_name: Optional[str] = None
     log_date: date
     start_time: Optional[str] = None
-    start_gps_lat: Optional[float] = None
-    start_gps_lng: Optional[float] = None
+    start_gps_lat: Optional[float] = _F(default=None, ge=-90, le=90)
+    start_gps_lng: Optional[float] = _F(default=None, ge=-180, le=180)
     start_photo_url: Optional[str] = None
     end_time: Optional[str] = None
-    end_gps_lat: Optional[float] = None
-    end_gps_lng: Optional[float] = None
+    end_gps_lat: Optional[float] = _F(default=None, ge=-90, le=90)
+    end_gps_lng: Optional[float] = _F(default=None, ge=-180, le=180)
     end_photo_url: Optional[str] = None
-    total_visits: Optional[int] = None
-    total_km_est: Optional[float] = None
-    total_sales: Optional[float] = None
-    notes: Optional[str] = None
+    total_visits: Optional[int] = _F(default=None, ge=0, le=10000)
+    total_km_est: Optional[float] = _F(default=None, ge=0, le=100000)
+    total_sales: Optional[float] = _F(default=None, ge=0)
+    notes: Optional[str] = _F(default=None, max_length=2000)
+
+
+def _day_log_writer_or_403(user, rep_user_id: UUID) -> None:
+    """A rep writes only their own day log; a supervisor (field.supervise) may write for another rep."""
+    from app.core.access_control import has_permission
+    if rep_user_id != user.id and not has_permission(user, "field.supervise"):
+        raise HTTPException(status_code=403, detail="You can only write your own day log")
 
 
 @router.post("/rep-day-log", status_code=201)
 async def create_rep_day_log(
     payload: RepDayLogIn,
     db: AsyncSession = Depends(get_db),
+    user=Depends(get_current_user),
 ):
-    """Create or upsert a field rep daily GPS log entry."""
+    """Create or upsert a field rep daily GPS log entry (defaults to the signed-in user's own log)."""
     from app.models.van_sales import VanRepDayLog
-    from datetime import datetime as _dt
+    from datetime import datetime as _dt, timezone as _tz
+
+    if not payload.rep_user_id:
+        payload.rep_user_id = user.id
+        payload.rep_name = payload.rep_name or user.full_name or user.username
+    _day_log_writer_or_403(user, payload.rep_user_id)
 
     existing_r = await db.execute(
         select(VanRepDayLog).where(
@@ -322,9 +384,11 @@ async def create_rep_day_log(
         if not s:
             return None
         try:
-            return _dt.fromisoformat(s)
+            v = _dt.fromisoformat(s)
         except Exception:
             return None
+        # the column is naive UTC; a browser sends ISO with "Z"
+        return v.astimezone(_tz.utc).replace(tzinfo=None) if v.tzinfo else v
 
     if existing:
         for attr, val in [
@@ -369,11 +433,15 @@ async def create_rep_day_log(
 async def list_rep_day_logs(
     rep_user_id: Optional[str] = None,
     log_date: Optional[date] = None,
+    mine: bool = False,
     limit: int = Query(50, le=200),
     db: AsyncSession = Depends(get_db),
+    user=Depends(get_current_user),
 ):
-    """List field rep daily logs."""
+    """List field rep daily logs (``mine=true``: only the signed-in user's)."""
     from app.models.van_sales import VanRepDayLog
+    if mine:
+        rep_user_id = str(user.id)
     q = select(VanRepDayLog)
     if rep_user_id:
         q = q.where(VanRepDayLog.rep_user_id == rep_user_id)

@@ -16,4 +16,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.execute("DROP TABLE IF EXISTS crm_quote_decisions")
+    # M48.S01.T023 (audit F3): evidence is archived (renamed), never dropped; see app.db.downgrade_archive.
+    from app.db.downgrade_archive import archive_tables
+
+    archive_tables(op.get_bind(), ['crm_quote_decisions'], "0052")

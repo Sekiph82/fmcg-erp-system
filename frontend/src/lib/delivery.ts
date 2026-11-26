@@ -65,8 +65,6 @@ export const deliveryApi = {
 
   listPods: () =>
     apiClient.get<ProofOfDelivery[]>("/api/v1/delivery/pod").then((r) => r.data),
-  createPod: (data: Partial<ProofOfDelivery>) =>
-    apiClient.post<ProofOfDelivery>("/api/v1/delivery/pod", data).then((r) => r.data),
   getPodByShipment: (shipmentId: string) =>
     apiClient.get<ProofOfDelivery>(`/api/v1/delivery/pod/shipment/${shipmentId}`).then((r) => r.data),
 };

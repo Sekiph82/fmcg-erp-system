@@ -2,6 +2,8 @@
 // M44.S01.T001 visual e-mail designer: blocks, theme, live desktop/phone preview, accessibility warnings, versions.
 import { useCallback, useEffect, useState } from "react";
 import { apiClient } from "@/lib/api";
+import { SendApprovalsPanel } from "@/components/SendApprovalsPanel";
+import { sendApprovalsApi, type SendPolicy } from "@/lib/send_approvals";
 
 type Block = { type: string; [k: string]: unknown };
 interface Doc { theme: { brand_color: string; text_color: string; background: string; font: string }; blocks: Block[] }
@@ -112,6 +114,7 @@ export default function EmailDesignerPage() {
           {cur && cur.status !== "DRAFT" && <button className="border rounded px-3 py-1 text-xs" onClick={() => act("new-version", "New draft version.")}>New version</button>}
           {cur && <button className="border rounded px-3 py-1 text-xs" onClick={() => act("test-send", "Test queued to your own address.")}>Send me a test</button>}
         </div>
+        {cur?.status === "PUBLISHED" && <SingleSend design={cur} />}
         {warn.map((w, i) => <p key={i} className="text-xs text-amber-700">⚠ {w}</p>)}
         {msg && <p role="status" className="text-xs">{msg}</p>}
       </section>
@@ -119,6 +122,58 @@ export default function EmailDesignerPage() {
         <div className="flex gap-2 text-xs"><button className={width === 600 ? "font-bold" : ""} onClick={() => setWidth(600)}>Desktop</button><button className={width === 375 ? "font-bold" : ""} onClick={() => setWidth(375)}>Phone</button></div>
         <iframe title="E-mail preview" sandbox="" srcDoc={html} style={{ width, height: 640 }} className="border rounded bg-white max-w-full" />
       </section>
+    </div>
+  );
+}
+
+// M48.S01.T023 single send of a published design: marketing consent applies; daily cap and, when switched on, approval
+// of this exact send by a second editor.
+function SingleSend({ design }: { design: Design }) {
+  const [f, setF] = useState({ to_email: "", subject: "", contact_name: "", company_name: "", track_engagement: false });
+  const [approvalId, setApprovalId] = useState<string | null>(null);
+  const [policy, setPolicy] = useState<SendPolicy | null>(null);
+  const [key, setKey] = useState(0);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const values: Record<string, string> = {};
+  if (f.contact_name) { values.contact_name = f.contact_name; values.first_name = f.contact_name.split(" ")[0]; }
+  if (f.company_name) values.company_name = f.company_name;
+  const body = { to_email: f.to_email.trim(), subject: f.subject, values, track_engagement: f.track_engagement };
+  const contentReason = !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(body.to_email) ? "Enter the recipient's e-mail address."
+    : !f.subject.trim() ? "Enter a subject." : /[\r\n]/.test(f.subject) ? "The subject must be one line." : null;
+  const capReason = policy && policy.used_today >= policy.daily_cap ? `Daily limit reached (${policy.used_today} of ${policy.daily_cap} direct marketing sends today).` : null;
+  const approvalReason = policy?.approval_required && !approvalId ? "Approval required: request it, have a second editor approve, then pick the approval below." : null;
+  const sendReason = contentReason ?? capReason ?? approvalReason;
+  const change = (k: keyof typeof f, v: string | boolean) => { setF({ ...f, [k]: v }); setApprovalId(null); };
+  const send = async () => {
+    try {
+      const r = await apiClient.post<{ status: string; reason: string | null }>(`/api/v1/email-designs/${design.id}/send`, { ...body, approval_id: approvalId });
+      setMsg({ ok: r.data.status !== "SUPPRESSED", text: r.data.status === "SUPPRESSED" ? `Not sent: ${r.data.reason ?? "suppressed"}` : `Queued (${r.data.status.toLowerCase()}).` });
+    } catch (e) { setMsg({ ok: false, text: err(e) }); }
+    setApprovalId(null); setKey((k) => k + 1);
+  };
+  const request = async () => {
+    try { await sendApprovalsApi.requestDesign(design.id, body); setMsg({ ok: true, text: "Approval requested; another editor must approve it." }); }
+    catch (e) { setMsg({ ok: false, text: err(e) }); }
+    setKey((k) => k + 1);
+  };
+  const box = "border rounded px-2 py-1 text-xs";
+  return (
+    <div className="border rounded p-2 space-y-2 bg-white">
+      <p className="font-medium text-xs">Send this design to one contact (marketing mail: consent and suppression apply)</p>
+      <div className="grid gap-2 sm:grid-cols-2">
+        <input aria-label="Recipient e-mail" placeholder="Recipient e-mail" className={box} value={f.to_email} onChange={(e) => change("to_email", e.target.value)} />
+        <input aria-label="Send subject" placeholder="Subject" className={box} value={f.subject} onChange={(e) => change("subject", e.target.value)} />
+        <input aria-label="Contact name" placeholder="Contact name (optional)" className={box} value={f.contact_name} onChange={(e) => change("contact_name", e.target.value)} />
+        <input aria-label="Company name" placeholder="Company name (optional)" className={box} value={f.company_name} onChange={(e) => change("company_name", e.target.value)} />
+      </div>
+      <label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={f.track_engagement} onChange={(e) => change("track_engagement", e.target.checked)} />Track opens and clicks</label>
+      <div className="flex flex-wrap gap-2 items-center">
+        <button disabled={!!sendReason} title={sendReason ?? undefined} onClick={send} className="bg-indigo-600 text-white rounded px-3 py-1 text-xs disabled:opacity-50">{approvalId ? "Send with approval" : "Send"}</button>
+        <button disabled={!!contentReason} title={contentReason ?? undefined} onClick={request} className="border rounded px-3 py-1 text-xs disabled:opacity-50">Request approval</button>
+        {sendReason && <span className="text-xs text-amber-700">{sendReason}</span>}
+      </div>
+      {msg && <p role="status" className={`text-xs ${msg.ok ? "text-emerald-700" : "text-red-700"}`}>{msg.text}</p>}
+      <SendApprovalsPanel kind="design" targetId={design.id} picked={approvalId} onPick={setApprovalId} refresh={key} onPolicy={setPolicy} />
     </div>
   );
 }

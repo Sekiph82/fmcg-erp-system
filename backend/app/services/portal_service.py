@@ -42,12 +42,6 @@ def _hash_password(password: str) -> str:
     return hash_password(password)
 
 
-def _verify_password(password: str, hashed: str) -> bool:
-    from app.core.external_auth import check_password
-
-    return check_password(password, hashed)[0]
-
-
 async def _next_account_code(db: AsyncSession) -> str:
     n = (await db.execute(select(func.count(PortalAccount.id)))).scalar() or 0
     return f"PA-{n + 1:05d}"
@@ -211,38 +205,6 @@ async def deactivate_user(db: AsyncSession, user_id: str) -> Optional[PortalUser
     await db.commit()
     await db.refresh(user)
     return user
-
-
-# ── Authentication ────────────────────────────────────────────────────────────
-
-async def login(db: AsyncSession, email: str, password: str) -> Optional[dict]:
-    result = await db.execute(
-        select(PortalUser)
-        .options(selectinload(PortalUser.account))
-        .where(PortalUser.email == email, PortalUser.is_active.is_(True))
-    )
-    user = result.scalar_one_or_none()
-    if not user or not user.password_hash:
-        return None
-    if not _verify_password(password, user.password_hash):
-        return None
-    if user.account.portal_status != PortalAccountStatus.ACTIVE:
-        return None
-    user.last_login_at = datetime.utcnow()
-    await db.flush()
-    await _log_activity(db, str(user.id), str(user.portal_account_id), PortalActivityType.LOGIN)
-    await db.commit()
-    # Build a simple JWT-like token (placeholder — use real JWT in production)
-    token = secrets.token_urlsafe(48)
-    return {
-        "token": token,
-        "portal_user_id": str(user.id),
-        "portal_account_id": str(user.portal_account_id),
-        "full_name": user.full_name,
-        "role_type": str(user.role_type),
-        "account_type": str(user.account.account_type),
-        "account_code": user.account.account_code,
-    }
 
 
 # ── Dashboard ─────────────────────────────────────────────────────────────────

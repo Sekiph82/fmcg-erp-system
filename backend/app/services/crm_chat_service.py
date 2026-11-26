@@ -146,13 +146,13 @@ async def messages(db: AsyncSession, sess: CRMChatSession, after: Optional[datet
 async def _ensure_lead(db: AsyncSession, sess: CRMChatSession) -> None:
     """Consent given with an e-mail: link to the open lead of that address in no company, or create one."""
     from app.models.crm import CRMRecord, CRMRecordType, CRMSourceType, CRMStatus
-    from app.services.crm_outbound_service import record_consent
+    from app.services.crm_outbound_service import request_confirmation
     from app.services.crm_pipeline_service import _next_lead_code
 
     if sess.crm_record_id or not sess.visitor_email:
         return
-    await record_consent(db, sess.visitor_email, "SUBSCRIBED", "website chat",
-                         "I agree that POVU may contact me about my question and its products.")
+    await request_confirmation(db, sess.visitor_email, "website chat",   # M48.S01.T022 double opt-in (PENDING)
+                               "I agree that POVU may contact me about my question and its products.")
     existing = (await db.execute(select(CRMRecord).where(
         CRMRecord.record_type == CRMRecordType.LEAD, CRMRecord.status == CRMStatus.OPEN,
         func.lower(CRMRecord.contact_email) == sess.visitor_email, CRMRecord.company_id.is_(None))
@@ -181,19 +181,22 @@ async def purge_old(db: AsyncSession, days: int = RETENTION_DAYS) -> int:
 
 
 async def run_purge(interval: float = 24 * 3600) -> None:
-    """Lifespan task, once a day: expired chats, call recordings and website events (retention)."""
+    """Lifespan task, once a day: expired chats, call recordings, website events and CRM events (retention)."""
     import asyncio
     import logging
 
     from app.db.session import AsyncSessionLocal
 
     from app.api.v1.endpoints.voip import purge_expired_recordings
+    from app.services.conversation_intel_service import purge_orphaned as purge_insights
+    from app.services.crm_lead_capture_service import purge_retention as purge_crm_events
     from app.services.web_analytics_service import purge_expired as purge_web_events
 
     while True:
         # each purge in its own transaction: one failing never blocks the other
         for name, job in (("chat", purge_old), ("call recording", purge_expired_recordings),
-                          ("web analytics", purge_web_events)):
+                          ("web analytics", purge_web_events), ("CRM event", purge_crm_events),
+                          ("conversation insights", purge_insights)):
             try:
                 async with AsyncSessionLocal() as db:
                     await job(db)

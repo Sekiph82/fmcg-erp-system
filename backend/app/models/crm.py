@@ -509,11 +509,13 @@ class CRMContactConsent(Base):
 
     id             = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     email          = Column(String(254), nullable=False, unique=True, index=True)   # stored lower-case
-    status         = Column(String(15), nullable=False)    # SUBSCRIBED | UNSUBSCRIBED | BOUNCED | COMPLAINED
+    status         = Column(String(15), nullable=False)    # PENDING | SUBSCRIBED | UNSUBSCRIBED | BOUNCED | COMPLAINED
     source         = Column(String(100), nullable=True)    # form:<slug> | unsubscribe-link | manual:<user> ...
     consent_text   = Column(Text, nullable=True)
     updated_at     = Column(DateTime(timezone=True), nullable=False)
     tracking_opt_out = Column(Boolean, nullable=False, default=False, server_default="false")  # M43.S01.T006
+    confirmed_at   = Column(DateTime(timezone=True), nullable=True)   # M48.S01.T022 double opt-in: link clicked
+    confirm_ip_hash = Column(String(64), nullable=True)               # keyed hash of the confirming connection
 
 
 class CRMOutboundMessage(Base):
@@ -1215,6 +1217,15 @@ class MailFeedbackEvent(Base):
     outbound_id = Column(UUID(as_uuid=True), ForeignKey("crm_outbound_messages.id", ondelete="SET NULL"), nullable=True)
     applied     = Column(Boolean, nullable=False, default=False)
     received_at = Column(DateTime(timezone=True), nullable=False)
+
+
+class MailWebhookToken(Base):
+    """M48.S01.T022 Mailgun signature tokens already accepted: a captured signature cannot be replayed with other
+    event data inside the timestamp window. Rows older than the window are pruned."""
+    __tablename__ = "mail_webhook_tokens"
+
+    token     = Column(String(128), primary_key=True)
+    signed_at = Column(DateTime(timezone=True), nullable=False, index=True)   # the signature's own timestamp
 
 
 class WebEvent(Base):

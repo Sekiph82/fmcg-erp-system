@@ -20,17 +20,29 @@ export const fpost = <T,>(path: string, data: unknown) => fx<T>(path, { method: 
 /** A fresh idempotency key; keep it until the server answered, so a resend after a dropped connection is not a duplicate. */
 export const newRef = () => (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
 
-export function currentPosition(): Promise<{ lat: number; lng: number } | null> {
+/** A GPS fix with its accuracy radius (metres), or why there is none ("denied" = the user/browser blocked location). */
+export type Fix = { lat: number; lng: number; accuracy: number } | { error: "denied" | "unavailable" };
+export function positionFix(): Promise<Fix> {
   return new Promise((resolve) => {
-    if (typeof navigator === "undefined" || !navigator.geolocation) return resolve(null);
-    navigator.geolocation.getCurrentPosition((p) => resolve({ lat: +p.coords.latitude.toFixed(7), lng: +p.coords.longitude.toFixed(7) }),
-      () => resolve(null), { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 });
+    if (typeof navigator === "undefined" || !navigator.geolocation) return resolve({ error: "unavailable" });
+    navigator.geolocation.getCurrentPosition(
+      (p) => resolve({ lat: +p.coords.latitude.toFixed(7), lng: +p.coords.longitude.toFixed(7), accuracy: Math.round(p.coords.accuracy * 10) / 10 }),
+      (e) => resolve({ error: e.code === e.PERMISSION_DENIED ? "denied" : "unavailable" }), { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 });
   });
+}
+
+export async function currentPosition(): Promise<{ lat: number; lng: number } | null> {
+  const f = await positionFix();
+  return "error" in f ? null : { lat: f.lat, lng: f.lng };
 }
 
 export interface FieldMe {
   full_name: string; rep: { id: string; code: string; name: string; vehicle_type: string; region: string | null } | null;
-  van: { id: string; van_code: string } | null; is_driver: boolean; can_audit: boolean; can_supervise: boolean;
+  van: { id: string; van_code: string } | null; is_driver: boolean; is_collector: boolean; can_audit: boolean; can_supervise: boolean;
+}
+export interface CollectorAccount {
+  case_id: string; case_no: string; status: string; customer_id: string; name: string; contact: string | null; phone: string | null;
+  address: string | null; lat: number | null; lng: number | null; overdue: number; open_balance: number; currency: string; next_action_date: string | null;
 }
 export interface Stop {
   customer_id: string; name: string; contact: string | null; phone: string | null; address: string | null; route: string; sequence: number;

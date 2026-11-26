@@ -163,9 +163,10 @@ async def submit(db: AsyncSession, form: CRMLeadForm, body: LeadSubmission, ip: 
         raise ConsentRequired()
     phone = _clean(body.contact_phone)
     if email and body.consent and form.consent_text:
-        from app.services.crm_outbound_service import record_consent
+        from app.services.crm_outbound_service import request_confirmation
 
-        await record_consent(db, email, "SUBSCRIBED", f"form:{form.slug}", form.consent_text)  # never lifts an unsubscribe
+        # M48.S01.T022 double opt-in: PENDING until the address owner clicks the e-mailed link; never lifts an unsubscribe
+        await request_confirmation(db, email, f"form:{form.slug}", form.consent_text)
     existing = None
     if email:  # dedupe on e-mail only, and only within the form's own company: a visitor typing someone
         # else's address must not reach leads of another company
@@ -209,3 +210,35 @@ async def submit(db: AsyncSession, form: CRMLeadForm, body: LeadSubmission, ip: 
     await intel.rescore(db, lead, await intel.active_rules(db), "web-form", has_history=False)
     await db.commit()
     return sub
+
+
+async def purge_retention(db: AsyncSession) -> dict:
+    """M48.S01.T022 daily retention purge (docs/PRIVACY_RETENTION.md): lead submissions, e-mail open/click events,
+    landing-page events, document views, used/expired signer codes and unconfirmed opt-in requests older than their
+    CRM_*_RETENTION_DAYS. Lead records, consent decisions and signed quote decisions are kept. Caller commits."""
+    from sqlalchemy import delete
+
+    from app.models.crm import (CRMContactConsent, CRMDocumentView, CRMEmailEvent, CRMLandingEvent,
+                                CRMQuoteSignerCode)
+
+    now = datetime.now(timezone.utc)
+
+    def cutoff(name: str, default: int) -> datetime:
+        return now - timedelta(days=max(1, int(getattr(settings, name, default))))
+
+    jobs = {
+        "lead_submissions": delete(CRMLeadSubmission).where(
+            CRMLeadSubmission.received_at < cutoff("CRM_LEAD_SUBMISSION_RETENTION_DAYS", 730)),
+        "email_events": delete(CRMEmailEvent).where(
+            CRMEmailEvent.occurred_at < cutoff("CRM_EMAIL_EVENT_RETENTION_DAYS", 395)),
+        "landing_events": delete(CRMLandingEvent).where(
+            CRMLandingEvent.created_at < cutoff("CRM_LANDING_EVENT_RETENTION_DAYS", 395)),
+        "document_views": delete(CRMDocumentView).where(
+            CRMDocumentView.last_seen_at < cutoff("CRM_DOCUMENT_VIEW_RETENTION_DAYS", 730)),
+        "signer_codes": delete(CRMQuoteSignerCode).where(
+            CRMQuoteSignerCode.expires_at < cutoff("CRM_SIGNER_CODE_RETENTION_DAYS", 30)),
+        "pending_consents": delete(CRMContactConsent).where(
+            CRMContactConsent.status == "PENDING",
+            CRMContactConsent.updated_at < cutoff("CRM_CONSENT_PENDING_RETENTION_DAYS", 30)),
+    }
+    return {name: (await db.execute(stmt)).rowcount or 0 for name, stmt in jobs.items()}

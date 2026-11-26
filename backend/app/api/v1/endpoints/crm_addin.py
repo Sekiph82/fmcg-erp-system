@@ -84,6 +84,9 @@ async def _add(db, user, rec: CRMRecord, kind: CRMActivityType, subject: str, no
                outcome: Optional[str] = None) -> dict:
     if not has_any_permission(user, EDIT):
         raise HTTPException(403, "You may not change CRM records.")
+    # M48.S01.T023 (audit F5): writes use the pipeline's *edit* scope for this deal, not the view scope
+    from app.services.commercial_access_service import ensure_commercial_action_allowed
+    ensure_commercial_action_allowed(user, rec, "edit", "crm")
     a = CRMActivity(crm_record_id=rec.id, activity_type=kind, subject=subject[:300], notes=notes,
                     activity_datetime=datetime.utcnow(), due_datetime=due.replace(tzinfo=None) if due else None,
                     created_by=user.username[:50], assigned_to=str(user.id), outcome_code=outcome)

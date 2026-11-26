@@ -2,12 +2,51 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { vanSalesApi, VISIT_STATUS_COLORS } from "@/lib/van_sales";
+import { positionFix, type Fix } from "@/lib/field";
+import { VanOutbox } from "@/components/van-sales/VanOutbox";
 import Link from "next/link";
+
+const errText = (e: unknown) => {
+  const d = (e as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail;
+  return typeof d === "string" ? d : Array.isArray(d) ? d.map((x) => (x as { msg?: string }).msg).join("; ") : (e as Error)?.message ?? "Request failed";
+};
+const noFixText = (f: Fix) => "error" in f && f.error === "denied"
+  ? "Location permission is blocked for this site. Allow location in the browser settings to check in with GPS."
+  : "Your location could not be found (no GPS signal or timeout). Move to open sky and try again.";
+
+/** Start / end of the signed-in rep's working day, with GPS (van_rep_day_logs). */
+function DayLog({ today, visitsDone }: { today: string; visitsDone: number }) {
+  const { data: logs = [], refetch } = useQuery({ queryKey: ["rep-day-log", today], queryFn: () => vanSalesApi.myDayLogs(today) });
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const log = logs[0];
+  const mut = useMutation({
+    mutationFn: async (kind: "start" | "end") => {
+      const f = await positionFix();
+      const gps = "error" in f ? {} : kind === "start" ? { start_gps_lat: f.lat, start_gps_lng: f.lng } : { end_gps_lat: f.lat, end_gps_lng: f.lng };
+      await vanSalesApi.saveDayLog({ log_date: today, [`${kind}_time`]: new Date().toISOString(), ...gps, ...(kind === "end" ? { total_visits: visitsDone } : {}) });
+      return f;
+    },
+    onSuccess: (f, kind) => { setMsg("error" in f ? { ok: false, text: `Day ${kind} saved without location. ${noFixText(f)}` } : { ok: true, text: `Day ${kind} saved with location (±${f.accuracy} m).` }); refetch(); },
+    onError: (e) => setMsg({ ok: false, text: errText(e) }),
+  });
+  return (
+    <div className="glow-card p-4 flex flex-wrap items-center gap-3 text-sm">
+      <span className="font-medium text-white">My day</span>
+      <span className="text-slate-400">{log?.start_time ? `Started ${new Date(log.start_time + "Z").toLocaleTimeString()}${log.start_gps_lat != null ? " · GPS" : ""}` : "Not started"}
+        {log?.end_time ? ` · Ended ${new Date(log.end_time + "Z").toLocaleTimeString()}` : ""}</span>
+      {!log?.start_time && <button onClick={() => mut.mutate("start")} disabled={mut.isPending} className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium disabled:opacity-50">Start day</button>}
+      {log?.start_time && !log.end_time && <button onClick={() => mut.mutate("end")} disabled={mut.isPending} className="px-3 py-1.5 rounded-lg border border-white/[0.15] text-slate-200 text-xs disabled:opacity-50">End day</button>}
+      {msg && <p role={msg.ok ? "status" : "alert"} className={`w-full text-xs ${msg.ok ? "text-emerald-400" : "text-amber-300"}`}>{msg.text}</p>}
+    </div>
+  );
+}
 
 export default function RouteExecutionPage() {
   const qc = useQueryClient();
   const today = new Date().toISOString().split("T")[0];
   const [selectedVanId, setSelectedVanId] = useState("");
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [noGps, setNoGps] = useState<string | null>(null);  // visit id whose check-in could not get a GPS fix
 
   const { data: vans = [] } = useQuery({ queryKey: ["vans"], queryFn: () => vanSalesApi.listVans({ status: "ACTIVE" }) });
   const { data: visits = [], refetch } = useQuery({
@@ -17,8 +56,20 @@ export default function RouteExecutionPage() {
   });
 
   const checkInMut = useMutation({
-    mutationFn: (id: string) => vanSalesApi.checkIn(id, {}),
-    onSuccess: () => refetch(),
+    // GPS is required unless the user explicitly checks in without it after a failed fix
+    mutationFn: async ({ id, withoutGps }: { id: string; withoutGps?: boolean }) => {
+      if (withoutGps) return vanSalesApi.checkIn(id, {});
+      const f = await positionFix();
+      if ("error" in f) { setNoGps(id); throw new Error(noFixText(f)); }
+      return vanSalesApi.checkIn(id, { gps_lat: f.lat, gps_lng: f.lng, gps_accuracy_m: f.accuracy });
+    },
+    onSuccess: (v) => { setNoGps(null); setMsg({ ok: true, text: v.gps_lat != null ? `Checked in with location (±${v.gps_accuracy_m ?? "?"} m).` : "Checked in without location." }); refetch(); },
+    onError: (e) => setMsg({ ok: false, text: errText(e) }),
+  });
+  const photoMut = useMutation({
+    mutationFn: ({ id, file }: { id: string; file: File }) => vanSalesApi.uploadVisitPhoto(id, file),
+    onSuccess: () => { setMsg({ ok: true, text: "Outlet photo saved." }); refetch(); },
+    onError: (e) => setMsg({ ok: false, text: errText(e) }),
   });
   const checkOutMut = useMutation({
     mutationFn: (id: string) => vanSalesApi.checkOut(id),
@@ -40,6 +91,9 @@ export default function RouteExecutionPage() {
         <p className="text-slate-500 text-sm mt-0.5">{today} — Visit tracking</p>
       </div>
 
+      <DayLog today={today} visitsDone={visits.filter((v) => v.status === "COMPLETED").length} />
+      {msg && <p role={msg.ok ? "status" : "alert"} className={`text-sm rounded-lg border p-3 ${msg.ok ? "border-emerald-500/30 text-emerald-300" : "border-red-500/30 text-red-300"}`}>{msg.text}</p>}
+
       <div>
         <label className="text-xs text-slate-400 mb-1 block">Select Van / Driver</label>
         <select value={selectedVanId} onChange={(e) => setSelectedVanId(e.target.value)}
@@ -51,6 +105,7 @@ export default function RouteExecutionPage() {
 
       {selectedVanId && (
         <>
+          <VanOutbox vanId={selectedVanId} />
           {/* Progress */}
           <div className="grid grid-cols-3 gap-4">
             <div className="glow-card p-4 text-center">
@@ -86,10 +141,14 @@ export default function RouteExecutionPage() {
 
                 {v.status === "PLANNED" && (
                   <div className="flex gap-2">
-                    <button onClick={() => checkInMut.mutate(v.id)}
-                      className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium">
-                      Check In
+                    <button onClick={() => checkInMut.mutate({ id: v.id })} disabled={checkInMut.isPending}
+                      className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium disabled:opacity-50">
+                      {checkInMut.isPending && checkInMut.variables?.id === v.id ? "Getting location…" : "Check In"}
                     </button>
+                    {noGps === v.id && <button onClick={() => checkInMut.mutate({ id: v.id, withoutGps: true })} disabled={checkInMut.isPending}
+                      className="px-3 py-1.5 rounded-lg border border-amber-500/40 text-amber-300 text-xs">
+                      Check in without location
+                    </button>}
                     <button onClick={() => missedMut.mutate(v.id)}
                       className="px-3 py-1.5 rounded-lg border border-red-500/40 text-red-400 hover:bg-red-500/10 text-xs">
                       Mark Missed
@@ -107,6 +166,14 @@ export default function RouteExecutionPage() {
                       Check Out
                     </button>
                   </div>
+                )}
+                {(v.status === "CHECKED_IN" || v.status === "COMPLETED") && (
+                  <label className="block text-xs text-slate-400 mt-2">
+                    Outlet photo {v.outlet_photo_url ? "· saved (replace)" : "(optional)"}
+                    <input type="file" accept="image/jpeg,image/png" capture="environment" aria-label="Outlet photo" disabled={photoMut.isPending}
+                      onChange={(e) => { const f = e.target.files?.[0]; if (f) photoMut.mutate({ id: v.id, file: f }); e.target.value = ""; }}
+                      className="mt-1 block w-full text-xs" />
+                  </label>
                 )}
                 {v.check_in_time && (
                   <p className="text-xs text-slate-600 mt-2">

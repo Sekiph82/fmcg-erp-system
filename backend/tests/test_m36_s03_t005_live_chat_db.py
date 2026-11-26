@@ -78,7 +78,7 @@ async def test_live_chat_bot_handoff_lead_limits_purge():
         sess = await db.get(CRMChatSession, sid)
         lead = await db.get(CRMRecord, sess.crm_record_id)
         assert lead.contact_email == f"grace-{s}@shops.example" and lead.source_detail == "live chat"
-        assert (await db.execute(select(CRMContactConsent.status).where(CRMContactConsent.email == f"grace-{s}@shops.example"))).scalar_one() == "SUBSCRIBED"
+        assert (await db.execute(select(CRMContactConsent.status).where(CRMContactConsent.email == f"grace-{s}@shops.example"))).scalar_one() == "PENDING"  # M48.S01.T022 double opt-in
         with pytest.raises(HTTPException) as e:                       # someone else's token
             await public.poll(sid, None, "not-the-token-" + s, db)
         assert e.value.status_code == 404

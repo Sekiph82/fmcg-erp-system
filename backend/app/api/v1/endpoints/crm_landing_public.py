@@ -58,6 +58,8 @@ async def convert(slug: str, body: ConvertIn, request: Request, db: AsyncSession
         raise HTTPException(429, "Too many submissions; please try again later.")
     except capture.ConsentRequired:
         raise HTTPException(422, "Please accept the consent statement to send the form.")
+    except capture.MissingField as e:   # M48.S01.T023 (audit F9): a required field left empty is the visitor's error
+        raise HTTPException(422, str(e))
     if v is not None and getattr(sub, "status", None) == "ACCEPTED":   # new, real leads only (not spam or repeats)
         await lp.record(db, page, v, body.visitor, "CONVERT")
     await db.commit()

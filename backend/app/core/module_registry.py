@@ -580,6 +580,7 @@ ENDPOINT_ROUTE_DEFINITIONS: tuple[EndpointRouteDefinition, ...] = (
     EndpointRouteDefinition(key="social_tiktok_webhook_public", route_prefix="/public/social/tiktok", import_path="app.api.v1.endpoints.social_tiktok_webhook_public", tags=('marketing',)),  # M48.S01.T005
     EndpointRouteDefinition(key="card_payments_public", route_prefix="/public/card-ipn", import_path="app.api.v1.endpoints.card_payments_public", tags=('sales',)),  # M48.S01.T010
     EndpointRouteDefinition(key="esign_connect_public", route_prefix="/public/esign", import_path="app.api.v1.endpoints.esign_connect_public", tags=('esign',)),  # M48.S01.T009
+    EndpointRouteDefinition(key="crm_consent_confirm_public", route_prefix="/public/consent-confirm", import_path="app.api.v1.endpoints.crm_consent_confirm_public", tags=('crm',)),  # M48.S01.T022 double opt-in
     EndpointRouteDefinition(key="booking_pages", route_prefix="/booking-pages", import_path="app.api.v1.endpoints.booking_pages", tags=('meetings',)),
     EndpointRouteDefinition(key="booking_public", route_prefix="/public/book", import_path="app.api.v1.endpoints.booking_public", tags=('meetings',)),
     EndpointRouteDefinition(key="oauth_connections", route_prefix="/integrations/oauth", import_path="app.api.v1.endpoints.oauth_connections", tags=('integrations',)),
@@ -767,6 +768,8 @@ PUBLIC_ROUTES: frozenset[tuple[str, str]] = frozenset({
     ("/public/esign/docusign", "POST"),                    # DocuSign Connect HMAC over raw body, replay-keyed (M48.S01.T009)
     ("/public/esign/adobe-sign", "GET"),                   # Adobe X-AdobeSign-ClientId intent check/echo
     ("/public/esign/adobe-sign", "POST"),
+    ("/public/consent-confirm", "GET"),                    # M48.S01.T022: HMAC-signed expiring token; GET validates only
+    ("/public/consent-confirm", "POST"),                   # POST confirms PENDING -> SUBSCRIBED
     ("/public/docs/{token}", "GET"),                       # shared sales document (M45.S01.T013): token, expiry, revocation
     ("/public/docs/{token}/view", "POST"),
     ("/public/docs/{token}/file", "GET"),                  # only APPROVED + malware-scan CLEAN files

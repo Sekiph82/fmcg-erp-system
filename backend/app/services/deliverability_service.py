@@ -5,7 +5,8 @@ Signed provider event webhooks (public, documented contracts):
 - SendGrid Event Webhook: ECDSA P-256 over (timestamp header + raw body), public key from the account settings,
   headers X-Twilio-Email-Event-Webhook-Signature / -Timestamp.
 - generic: HMAC-SHA256(secret, raw body) hex in X-POVU-Signature, for any other relay.
-Unconfigured providers refuse events (503). Timestamps older than 10 minutes are refused (replay).
+Unconfigured providers refuse events (503). Timestamps older than 10 minutes are refused (replay); a Mailgun
+signature token is accepted only once (M48.S01.T022), so its signature cannot be reused with other event data.
 
 An event only changes anything when it names a CRM e-mail we really sent (provider_message_id match) to the same
 recipient — forged or mismatched events are stored as ignored. Permanent bounces → BOUNCED, complaints → COMPLAINED,
@@ -68,7 +69,7 @@ def verify_mailgun(payload: dict) -> list[dict]:
         kind = "SOFT_BOUNCE"
     mid = ((ev.get("message") or {}).get("headers") or {}).get("message-id")
     return [{"event_id": str(ev.get("id") or sig.get("token")), "kind": kind, "email": ev.get("recipient"),
-             "message_id": mid}]
+             "message_id": mid, "token": str(sig.get("token", "")), "signed_at": int(sig["timestamp"])}]
 
 
 def verify_sendgrid(raw: bytes, signature: str, timestamp: str) -> list[dict]:
@@ -111,10 +112,34 @@ def _norm_mid(mid: Optional[str]) -> str:
     return (mid or "").strip().strip("<>")
 
 
+async def _first_use(db: AsyncSession, events: list[dict]) -> bool:
+    """M48.S01.T022: Mailgun signs only timestamp+token, so each token is accepted once (a captured signature cannot
+    carry other event data). Tokens are kept with their signed timestamp and pruned once outside MAX_AGE, when the
+    timestamp check refuses them anyway."""
+    from sqlalchemy import delete
+    from sqlalchemy.dialects.postgresql import insert
+
+    from app.models.crm import MailWebhookToken
+    await db.execute(delete(MailWebhookToken).where(
+        MailWebhookToken.signed_at < datetime.fromtimestamp(time.time() - MAX_AGE, timezone.utc)))
+    for e in events:
+        token = (e.get("token") or "")[:128]
+        if not token:
+            return False
+        new = (await db.execute(insert(MailWebhookToken).values(
+            token=token, signed_at=datetime.fromtimestamp(e["signed_at"], timezone.utc))
+            .on_conflict_do_nothing(index_elements=["token"]))).rowcount == 1
+        if not new:
+            return False
+    return True
+
+
 async def apply(db: AsyncSession, provider: str, events: list[dict]) -> dict:
     """Store and apply verified events once each. Caller commits."""
     from app.services.crm_outbound_service import norm, record_consent
     counts = {"applied": 0, "ignored": 0, "duplicate": 0}
+    if provider == "mailgun" and not await _first_use(db, events):
+        return {**counts, "replayed": len(events)}
     for e in events[:1000]:
         eid = (e.get("event_id") or "")[:200]
         if not eid:

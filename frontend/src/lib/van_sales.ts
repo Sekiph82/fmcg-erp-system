@@ -50,10 +50,34 @@ export interface VanVisit {
   status: VisitStatus;
   gps_lat?: number;
   gps_lng?: number;
+  gps_accuracy_m?: number;
+  outlet_photo_url?: string | null;
   missed_reason?: string;
   offline_id?: string;
   created_at: string;
 }
+
+export interface RepDayLog {
+  id: string; log_date: string; start_time: string | null; end_time: string | null;
+  start_gps_lat: number | null; start_gps_lng: number | null; end_gps_lat: number | null; end_gps_lng: number | null;
+  total_visits: number | null; notes: string | null;
+}
+
+// ── Offline outbox (per van, this device only) ────────────────────────────────
+// Sales/payments made while offline wait here and go up through POST /vans/{id}/sync. Every sale carries its
+// offline_id (and every payment its own offline_id), so a resend after a lost response is skipped by the server as a
+// duplicate, never booked twice.
+export interface Outbox { transactions: Record<string, unknown>[]; payments: Record<string, unknown>[] }
+const outboxKey = (vanId: string) => `povu.van.outbox.${vanId}`;
+export function readOutbox(vanId: string): Outbox {
+  try { return JSON.parse(localStorage.getItem(outboxKey(vanId)) ?? "") as Outbox; } catch { return { transactions: [], payments: [] }; }
+}
+export function writeOutbox(vanId: string, ob: Outbox) {
+  if (ob.transactions.length || ob.payments.length) localStorage.setItem(outboxKey(vanId), JSON.stringify(ob));
+  else localStorage.removeItem(outboxKey(vanId));
+}
+/** True when the request never reached the server (no HTTP response), i.e. worth keeping for a later sync. */
+export const isOffline = (e: unknown) => (typeof navigator !== "undefined" && !navigator.onLine) || !(e as { response?: unknown })?.response;
 
 export interface TxnLine {
   id: string;
@@ -224,12 +248,22 @@ export const vanSalesApi = {
     apiClient.get<VanVisit[]>(`${BASE}/vans/${vanId}/visits`, { params: { route_date } }).then((r) => r.data),
   createVisit: (vanId: string, data: Partial<VanVisit>) =>
     apiClient.post<VanVisit>(`${BASE}/vans/${vanId}/visits`, data).then((r) => r.data),
-  checkIn: (visitId: string, data: { gps_lat?: number; gps_lng?: number }) =>
+  checkIn: (visitId: string, data: { gps_lat?: number; gps_lng?: number; gps_accuracy_m?: number }) =>
     apiClient.post<VanVisit>(`${BASE}/visits/${visitId}/check-in`, data).then((r) => r.data),
   checkOut: (visitId: string, notes?: string) =>
     apiClient.post<VanVisit>(`${BASE}/visits/${visitId}/check-out`, {}, { params: { notes } }).then((r) => r.data),
   markMissed: (visitId: string, reason?: string) =>
     apiClient.post<VanVisit>(`${BASE}/visits/${visitId}/missed`, {}, { params: { reason } }).then((r) => r.data),
+  uploadVisitPhoto: (visitId: string, file: File) => {
+    const fd = new FormData(); fd.append("file", file);
+    return apiClient.post<{ has_photo: boolean }>(`${BASE}/visits/${visitId}/photo-upload`, fd).then((r) => r.data);
+  },
+
+  // Rep day log (own: start / end of day with GPS)
+  myDayLogs: (log_date: string) =>
+    apiClient.get<RepDayLog[]>(`${BASE}/rep-day-log`, { params: { mine: true, log_date } }).then((r) => r.data),
+  saveDayLog: (data: Record<string, unknown>) =>
+    apiClient.post<{ id: string; action: string }>(`${BASE}/rep-day-log`, data).then((r) => r.data),
 
   // Transactions
   listTransactions: (vanId: string, route_date?: string, params?: { skip?: number; limit?: number }) =>
@@ -252,7 +286,7 @@ export const vanSalesApi = {
     apiClient.post<VanReconciliation>(`${BASE}/reconciliations/${reconId}/approve`, {}).then((r) => r.data),
 
   // Sync
-  sync: (vanId: string, payload: any) =>
+  sync: (vanId: string, payload: Outbox & { device_id?: string }) =>
     apiClient.post<SyncResult>(`${BASE}/vans/${vanId}/sync`, payload).then((r) => r.data),
 
   // Reports

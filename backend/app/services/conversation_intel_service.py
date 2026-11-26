@@ -103,7 +103,10 @@ def verified(text: str, suggestions: list) -> list[dict]:
 
 
 async def analyse(db: AsyncSession, source_type: str, source_id: uuid.UUID, user) -> CRMConversationInsight:
+    from app.services.crm_copilot_service import redact
     text, owner = await source_text(db, source_type, source_id, user)
+    # M48.S01.T023 (audit F6): personal data is masked before rules, the AI provider and the stored quotes
+    text = redact(text) or ""
     findings, engine = extract(text), "rules"
     from app.services.ai_provider import get_ai_provider
     provider = get_ai_provider()
@@ -148,6 +151,19 @@ async def review(db: AsyncSession, insight_id: uuid.UUID, user, status: str, not
     row.reviewed_by_id, row.reviewed_at = user.id, datetime.now(timezone.utc)
     await db.flush()
     return row
+
+
+async def purge_orphaned(db: AsyncSession) -> int:
+    """M48.S01.T023 (audit F6): delete insights whose source chat is gone or whose call has no transcript any more
+    (quotes never outlive their source). Run after the chat and call-recording retention purges. Caller commits."""
+    from sqlalchemy import and_, delete, exists, or_
+    from app.models.crm import CRMChatSession
+    from app.models.voip import CallLog
+    I = CRMConversationInsight
+    chat_gone = and_(I.source_type == "chat", ~exists().where(CRMChatSession.id == I.source_id))
+    call_gone = and_(I.source_type == "call", ~exists().where(CallLog.id == I.source_id, CallLog.transcript.is_not(None)))
+    return (await db.execute(delete(I).where(or_(chat_gone, call_gone))
+                               .execution_options(synchronize_session=False))).rowcount or 0
 
 
 def visible(q, user):

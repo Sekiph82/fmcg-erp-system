@@ -1,0 +1,13 @@
+# M48 gate migrations, candidate 60e360a, 2026-11-26T13:15:08+03:00
+## empty -> head
+providers, warehouse run mode.
+20261128_0078
+M48 tables: 10
+## 0078 downgrade -> upgrade
+providers, warehouse run mode.
+after downgrade M48 tables: 0
+providers, warehouse run mode.
+## populated legacy downgrade to 20261029_0038 then upgrade head (0043 replay fix)
+INFO  [alembic.runtime.migration] Running downgrade 20261029_0039 -> 20261029_0038, track estimated and actual landed-cost line amounts
+providers, warehouse run mode.
+20261128_0078

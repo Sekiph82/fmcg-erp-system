@@ -5,6 +5,8 @@
   (cash / M-Pesa code / cheque, PENDING until finance confirms) and M-Pesa STK requests.
 * Delivery driver (DeliveryTrip.driver_user_id): my trips, start/finish, proof of delivery with signature, photo and
   GPS, failed delivery with reason.
+* Cash collector (assigned collector on open dunning cases, DunningCase.assigned_collector_id; no SalesRep link
+  needed): the assigned accounts only, their open invoices, collections and M-Pesa STK requests (M48.S01.T024).
 * Field controller (permission field.audit): outlet audits with a fixed checklist, score, photos, GPS.
 * Supervisor (permission field.supervise): compliance per rep (coverage, orders, collections, audit scores).
 
@@ -142,6 +144,40 @@ async def _my_customer(db: AsyncSession, rep, customer_id: uuid.UUID):
     raise HTTPException(403, "This customer is not on your route.")
 
 
+OPEN_CASE = ("OPEN", "ON_HOLD", "DISPUTED", "PROMISE_TO_PAY", "ESCALATED")  # not RESOLVED / CLOSED
+
+
+async def _collector_cases(db: AsyncSession, user):
+    """Open dunning cases assigned to this user as collector: what a cash collector may work on."""
+    from app.models.dunning import DunningCase, DunningCaseStatus
+
+    return (await db.execute(select(DunningCase).where(
+        DunningCase.assigned_collector_id == user.id,
+        DunningCase.case_status.in_([DunningCaseStatus(s) for s in OPEN_CASE])))).scalars().all()
+
+
+async def _collect_scope(db: AsyncSession, user, customer_id: uuid.UUID):
+    """(customer, rep or None) when the user may collect from this customer: it is on their rep route, or they are the
+    assigned collector on an open dunning case of the customer. Anything else is 403."""
+    from app.models.sales import Customer
+
+    rep = await _my_rep(db, user)
+    if rep is not None:
+        for stop, _route in await _route_stops(db, rep):
+            if stop.customer_id == customer_id:
+                customer = await db.get(Customer, customer_id)
+                if customer is not None and customer.is_active:
+                    return customer, rep
+    cases = await _collector_cases(db, user)
+    if any(c.customer_id == customer_id for c in cases):
+        customer = await db.get(Customer, customer_id)
+        if customer is not None and customer.is_active:
+            return customer, rep
+    if rep is None and not cases:
+        raise HTTPException(403, "You are not set up as a field sales rep or collector. Ask your manager to link your login.")
+    raise HTTPException(403, "This customer is not on your route or collection list.")
+
+
 def _gps(body):
     return getattr(body, "lat", None), getattr(body, "lng", None)
 
@@ -224,6 +260,7 @@ async def me(db: AsyncSession = Depends(get_db), user=Depends(get_current_user))
                 "region": rep.region} if rep else None,
         "van": {"id": str(van.id), "van_code": van.van_code} if van else None,
         "is_driver": driver > 0,
+        "is_collector": bool(await _collector_cases(db, user)),
         "can_audit": has_permission(user, "field.audit"),
         "can_supervise": has_permission(user, "field.supervise"),
     }
@@ -392,8 +429,7 @@ async def place_order(body: OrderIn, db: AsyncSession = Depends(get_db), user=De
 async def open_invoices(customer_id: uuid.UUID, db: AsyncSession = Depends(get_db), user=Depends(get_current_user)):
     from app.models.sales import Invoice, InvoiceStatus
 
-    rep = await _rep_or_403(db, user)
-    await _my_customer(db, rep, customer_id)
+    await _collect_scope(db, user, customer_id)
     rows = (await db.execute(select(Invoice).where(Invoice.customer_id == customer_id,
                                                   Invoice.status.in_([InvoiceStatus[s] for s in OPEN_INVOICE]))
                              .order_by(Invoice.due_date))).scalars().all()
@@ -407,12 +443,11 @@ async def record_collection(body: CollectionIn, db: AsyncSession = Depends(get_d
     from app.models.field_ops import CashCollection
     from app.models.sales import Invoice, InvoiceStatus
 
-    rep = await _rep_or_403(db, user)
     if (existing := await _existing(db, CashCollection, body.client_ref)) is not None:
         if existing.collected_by_id != user.id:
             raise HTTPException(409, "Duplicate reference.")
         return {"id": str(existing.id), "collection_no": existing.collection_no, "duplicate": True}
-    customer, _ = await _my_customer(db, rep, body.customer_id)
+    customer, rep = await _collect_scope(db, user, body.customer_id)
     if body.method == "MPESA" and not body.mpesa_code:
         raise HTTPException(422, "Enter the M-Pesa confirmation code from the customer's message.")
     inv = (await db.execute(select(Invoice).where(Invoice.id == body.invoice_id).with_for_update())).scalar_one_or_none()
@@ -423,7 +458,7 @@ async def record_collection(body: CollectionIn, db: AsyncSession = Depends(get_d
     so_id = inv.so_id
     lat, lng = _gps(body)
     c = CashCollection(collection_no=_no("COL"), customer_id=customer.id, invoice_id=body.invoice_id, sales_order_id=so_id,
-                       rep_id=rep.id, collected_by_id=user.id, collection_date=date.today(), method=body.method,
+                       rep_id=rep.id if rep else None, collected_by_id=user.id, collection_date=date.today(), method=body.method,
                        amount=body.amount, currency=inv.currency, reference=body.reference, mpesa_code=body.mpesa_code,
                        mpesa_phone=body.mpesa_phone, gps_lat=lat, gps_lng=lng, status="PENDING", client_ref=body.client_ref,
                        notes=body.notes)
@@ -459,11 +494,10 @@ async def stk_push(invoice_id: uuid.UUID, body: StkIn, db: AsyncSession = Depend
     from app.models.sales import Invoice, SalesOrder
     from app.services import mpesa_service
 
-    rep = await _rep_or_403(db, user)
     inv = await db.get(Invoice, invoice_id)
     if inv is None:
         raise HTTPException(404, "Invoice not found")
-    customer, _ = await _my_customer(db, rep, inv.customer_id)
+    customer, _ = await _collect_scope(db, user, inv.customer_id)
     if inv.status.value not in OPEN_INVOICE:
         raise HTTPException(422, "This invoice is not open.")
     if body.amount > inv.total_amount - inv.paid_amount:
@@ -477,6 +511,34 @@ async def stk_push(invoice_id: uuid.UUID, body: StkIn, db: AsyncSession = Depend
     tx = await mpesa_service.initiate_payment(db, so, body.phone, body.amount, user.id)
     await db.commit()
     return {"id": str(tx.id), "status": getattr(tx.status, "value", tx.status), "checkout_request_id": tx.mpesa_request_id}
+
+
+@router.get("/collector/accounts")
+async def collector_accounts(db: AsyncSession = Depends(get_db), user=Depends(get_current_user)):
+    """The cash collector's own list: customers of the open dunning cases assigned to them, nothing else."""
+    from app.models.sales import Customer, Invoice, InvoiceStatus
+
+    cases = await _collector_cases(db, user)
+    if not cases:
+        raise HTTPException(403, "No collection accounts are assigned to you.")
+    ids = list({c.customer_id for c in cases})
+    customers = {c.id: c for c in (await db.execute(select(Customer).where(Customer.id.in_(ids)))).scalars()}
+    balances = dict((await db.execute(select(Invoice.customer_id, func.sum(Invoice.total_amount - Invoice.paid_amount)).where(
+        Invoice.customer_id.in_(ids), Invoice.status.in_([InvoiceStatus[s] for s in OPEN_INVOICE]))
+        .group_by(Invoice.customer_id))).all())
+    out = []
+    for case in sorted(cases, key=lambda c: (-(c.priority_score or 0), c.case_no)):
+        cu = customers.get(case.customer_id)
+        if cu is None or not cu.is_active:
+            continue
+        out.append({"case_id": str(case.id), "case_no": case.case_no, "status": case.case_status.value,
+                    "customer_id": str(cu.id), "name": cu.name, "contact": cu.contact_person, "phone": cu.phone,
+                    "address": cu.delivery_address or cu.address,
+                    "lat": float(cu.gps_lat) if cu.gps_lat is not None else None,
+                    "lng": float(cu.gps_lng) if cu.gps_lng is not None else None,
+                    "overdue": float(case.total_overdue_amount or 0), "open_balance": float(balances.get(cu.id) or 0),
+                    "currency": cu.currency, "next_action_date": str(case.next_action_date) if case.next_action_date else None})
+    return out
 
 
 # ── driver: my trips ──────────────────────────────────────────────────────────

@@ -1,0 +1,69 @@
+{
+  "sha": "60e360afd96ffa77c46b8f89c83c7ca88c0c2177",
+  "template": "t022_tmpl",
+  "totals": {
+    "PASS": 2
+  },
+  "results": [
+    {
+      "file": "test_m36_outbound_consent_db.py",
+      "flags": [
+        "M36_OUTBOUND_DISPOSABLE_TEST_DATABASE"
+      ],
+      "legacy_flags": [
+        "M36_OUTBOUND_DISPOSABLE_TEST_DATABASE"
+      ],
+      "db_name": "fmcg_m36_outbound_9423abda8c44cd6b433c7c01",
+      "needs_db2": false,
+      "prep": false,
+      "services": [
+        "SMTP_TEST_SERVER"
+      ],
+      "class": "SERVICE_REQUIRED",
+      "note": "SMTP_TEST_SERVER: SMTP sink (Mailpit), e.g. 127.0.0.1:51025",
+      "name_rule": {
+        "regexes": [
+          "fmcg_m36_outbound_[a-f0-9]{24}"
+        ],
+        "startswith": []
+      },
+      "summary": "1 passed, 76 warnings in 43.04s",
+      "counts": {
+        "passed": 1
+      },
+      "rc": 0,
+      "skip_reasons": [],
+      "status": "PASS"
+    },
+    {
+      "file": "test_m36_s02_t005_campaigns_db.py",
+      "flags": [
+        "M36_S02_DISPOSABLE_TEST_DATABASE"
+      ],
+      "legacy_flags": [
+        "M36_S02_DISPOSABLE_TEST_DATABASE"
+      ],
+      "db_name": "fmcg_m36_s02_80259ecf790421874a606104",
+      "needs_db2": false,
+      "prep": false,
+      "services": [
+        "SMTP_TEST_SERVER"
+      ],
+      "class": "SERVICE_REQUIRED",
+      "note": "SMTP_TEST_SERVER: SMTP sink (Mailpit), e.g. 127.0.0.1:51025",
+      "name_rule": {
+        "regexes": [
+          "fmcg_m36_s02_[a-f0-9]{24}"
+        ],
+        "startswith": []
+      },
+      "summary": "2 passed, 76 warnings in 41.42s",
+      "counts": {
+        "passed": 2
+      },
+      "rc": 0,
+      "skip_reasons": [],
+      "status": "PASS"
+    }
+  ]
+}

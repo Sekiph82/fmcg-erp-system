@@ -10,7 +10,7 @@ from typing import Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, EmailStr, Field
-from sqlalchemy import exists, or_, select
+from sqlalchemy import and_, exists, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.access_control import has_any_permission, require_any_permission
@@ -41,6 +41,26 @@ async def _get(db, contact_id, u) -> CRMContact:
     c = (await db.execute(_visible(select(CRMContact).where(CRMContact.id == contact_id), u))).scalar_one_or_none()
     if c is None:
         raise HTTPException(404, "Contact not found")
+    return c
+
+
+def _edit_all(u) -> bool:
+    """M48.S01.T023 (audit F5): only these rights write to every contact; a company-wide *view* right does not."""
+    return u.is_superuser or has_any_permission(u, ("crm.edit_all", "crm.edit"))
+
+
+async def _get_edit(db, contact_id, u) -> CRMContact:
+    """A contact the caller may change: visible, and either edit-all rights, owned by the caller, or linked to a CRM
+    record the caller may edit (the same edit scope as the pipeline)."""
+    from app.core.access_control import can_modify_record
+    c = await _get(db, contact_id, u)
+    if _edit_all(u) or c.owner_user_id == u.id:
+        return c
+    recs = (await db.execute(select(CRMRecord).join(CRMContactAssociation, and_(
+        CRMContactAssociation.object_id == CRMRecord.id, CRMContactAssociation.object_type == "crm_record"))
+        .where(CRMContactAssociation.contact_id == c.id))).scalars().all()
+    if not any(can_modify_record(u, "crm", "edit", r) for r in recs):
+        raise HTTPException(403, "You may view this contact but not change it.")
     return c
 
 
@@ -150,7 +170,7 @@ async def get_contact(contact_id: uuid.UUID, db: AsyncSession = Depends(get_db),
 @router.put("/{contact_id}", dependencies=[Depends(require_any_permission(EDIT))])
 async def update_contact(contact_id: uuid.UUID, body: ContactIn, db: AsyncSession = Depends(get_db),
                          current_user=Depends(get_current_user)):
-    c = await _get(db, contact_id, current_user)
+    c = await _get_edit(db, contact_id, current_user)
     if body.phone and body.phone.startswith("•••"):   # M45.S01.T017 masked value: keep the stored one
         body.phone = c.phone
     rules = await _rules(db, current_user)
@@ -178,12 +198,12 @@ class AssocIn(BaseModel):
 @router.post("/{contact_id}/associations", status_code=201, dependencies=[Depends(require_any_permission(EDIT))])
 async def add_association(contact_id: uuid.UUID, body: AssocIn, db: AsyncSession = Depends(get_db),
                           current_user=Depends(get_current_user)):
-    c = await _get(db, contact_id, current_user)
+    c = await _get_edit(db, contact_id, current_user)
     if body.object_type == "crm_record":
         from app.api.v1.endpoints.crm_pipeline import _scoped_record
         await _scoped_record(db, body.object_id, current_user, "edit")
     else:   # review M43 #14: other objects need company-wide CRM rights and must exist
-        if not _all(current_user):
+        if not _edit_all(current_user):   # M48.S01.T023: a write needs company-wide *edit* rights
             raise HTTPException(403, "Company-wide CRM rights are needed to link this record.")
         from sqlalchemy import text as _text
         table = {"customer": "customers", "ticket": "helpdesk_tickets", "quotation": "quotations",
@@ -202,7 +222,7 @@ async def add_association(contact_id: uuid.UUID, body: AssocIn, db: AsyncSession
                dependencies=[Depends(require_any_permission(EDIT))])
 async def remove_association(contact_id: uuid.UUID, association_id: uuid.UUID, db: AsyncSession = Depends(get_db),
                              current_user=Depends(get_current_user)):
-    c = await _get(db, contact_id, current_user)
+    c = await _get_edit(db, contact_id, current_user)
     a = await db.get(CRMContactAssociation, association_id)
     if a is None or a.contact_id != c.id:
         raise HTTPException(404, "Association not found")
@@ -218,7 +238,7 @@ class LifecycleIn(BaseModel):
 @router.put("/{contact_id}/lifecycle", dependencies=[Depends(require_any_permission(EDIT))])
 async def set_lifecycle(contact_id: uuid.UUID, body: LifecycleIn, db: AsyncSession = Depends(get_db),
                         current_user=Depends(get_current_user)):
-    c = await _get(db, contact_id, current_user)
+    c = await _get_edit(db, contact_id, current_user)
     rules = await _rules(db, current_user)
     _guard(rules, {"lifecycle_stage": body.stage}, _std(c))
     try:
@@ -255,7 +275,7 @@ async def set_property(contact_id: uuid.UUID, body: PropertyIn, db: AsyncSession
                        current_user=Depends(get_current_user)):
     """Typed properties only; smart (rule-filled) properties are recomputed from activity and cannot be typed over."""
     from app.models.m47_platform import CRMContactProperty
-    c = await _get(db, contact_id, current_user)
+    c = await _get_edit(db, contact_id, current_user)
     if body.key in cs.SMART_KEYS or body.key in ContactIn.model_fields:
         raise HTTPException(422, "This property is filled automatically or is a standard field.")
     p = await db.get(CRMContactProperty, (c.id, body.key))

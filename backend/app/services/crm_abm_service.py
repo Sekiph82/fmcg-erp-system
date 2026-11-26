@@ -100,10 +100,27 @@ async def attribution(db: AsyncSession, group: CRMAccountGroup) -> Optional[dict
             "note": "Orders from the group's accounts after the campaign started — influenced, not proven caused."}
 
 
+async def campaign_company(db: AsyncSession, group: CRMAccountGroup, company_id: Optional[uuid.UUID]) -> Optional[uuid.UUID]:
+    """M48.S01.T023 (audit F4): one campaign speaks for one company. Without `company_id` the group's accounts must
+    all belong to the same company (or none); a mixed group needs an explicit company_id."""
+    from app.models.sales import Customer
+    companies = set((await db.execute(select(Customer.company_id).join(
+        CRMAccountGroupMember, CRMAccountGroupMember.customer_id == Customer.id)
+        .where(CRMAccountGroupMember.group_id == group.id).distinct())).scalars().all())
+    if company_id is not None:
+        if company_id not in companies:
+            raise ABMError(422, "No account of this group belongs to that company.")
+        return company_id
+    if len(companies) > 1:
+        raise ABMError(422, "This group has accounts of several companies; choose company_id.")
+    return next(iter(companies), None)
+
+
 async def run_campaign(db: AsyncSession, group: CRMAccountGroup, subject: str, body: str, roles: Optional[list[str]],
-                       created_by: str) -> dict:
-    """Queue one e-mail per committee contact of every account in the group through the consent-aware outbox
-    (contacts without consent are suppressed by the outbox, never sent). Idempotent per group + subject + address."""
+                       created_by: str, company_id: Optional[uuid.UUID] = None, before_queue=None) -> dict:
+    """Queue one e-mail per committee contact of the group's accounts of one company through the consent-aware outbox
+    (contacts without consent are suppressed by the outbox, never sent). Idempotent per group + subject + address.
+    `before_queue(n_recipients)` runs before anything is queued (cap and approval checks)."""
     from app.models.sales import Customer
     from app.services import crm_outbound_service as outbound
     if roles and set(roles) - set(ROLES):
@@ -111,10 +128,9 @@ async def run_campaign(db: AsyncSession, group: CRMAccountGroup, subject: str, b
     rows = (await db.execute(select(CRMAccountContact, Customer).join(Customer, Customer.id == CRMAccountContact.customer_id)
                              .join(CRMAccountGroupMember, and_(CRMAccountGroupMember.customer_id == CRMAccountContact.customer_id,
                                                                CRMAccountGroupMember.group_id == group.id))
-                             .where(CRMAccountContact.email.is_not(None)))).all()
-    queued = suppressed = 0
-    seen = set()
-    key = uuid.uuid5(uuid.NAMESPACE_URL, f"{group.id}:{subject}:{body}").hex[:12]
+                             .where(CRMAccountContact.email.is_not(None),
+                                    Customer.company_id.is_(None) if company_id is None else Customer.company_id == company_id))).all()
+    targets, seen = [], set()
     for contact, customer in rows:
         if roles and contact.committee_role not in roles:
             continue
@@ -122,6 +138,12 @@ async def run_campaign(db: AsyncSession, group: CRMAccountGroup, subject: str, b
         if not email or email in seen:
             continue
         seen.add(email)
+        targets.append((contact, customer, email))
+    if before_queue is not None:
+        await before_queue(len(targets))
+    queued = suppressed = 0
+    key = uuid.uuid5(uuid.NAMESPACE_URL, f"{group.id}:{subject}:{body}").hex[:12]
+    for contact, customer, email in targets:
         text = body.replace("{contact_name}", contact.full_name).replace("{company_name}", customer.name)
         msg = await outbound.queue(db, to_email=email, subject=subject.replace("{company_name}", customer.name)[:300], body=text,
                                    purpose="CAMPAIGN", dedupe_key=f"abm:{key}:{email}", customer_id=customer.id,

@@ -201,6 +201,14 @@ data; there is no way back except a restore.
   - messaging channel messages, custom channels and Slack deliveries;
   - the A/B and approval columns on campaigns.
 
+**Archived, not dropped (M48.S01.T023):** the downgrades of `20261119_0041` (consent register, outbox), `0042`
+(sequences), `0043` (segment campaigns), `20261121_0051` (document links and views), `0052` (signed quote decisions) and
+`0055` (live chat) rename each table to `<table>_archived_<revision>` (then `_2`, `_3`, ... if that name is taken),
+rename its indexes and drop its outgoing foreign keys. A later `alembic upgrade` creates new, empty tables; the archived
+evidence stays until someone exports or deletes it by hand after review. The forward DDL of those revisions is still
+built from the current models (frozen DDL was not retrofitted), so replaying them on an old schema creates the current
+column set.
+
 Before `alembic downgrade` past either revision:
 1. Take a backup (see Backup and Restore below).
 2. Confirm that losing that data is intended.
@@ -271,6 +279,8 @@ Use `pg_dump --clean --if-exists` when the dump is meant to replace an existing 
 - **JSON request bodies:** capped at 12 MB.
 - **`/docs`, `/redoc`, `/openapi.json`:** still served in production. Block them at the reverse proxy if the API should not be self-describing to the internet.
 - **`FORWARDED_ALLOW_IPS`:** set it to the reverse proxy address. Otherwise every visitor shares one IP and the per-IP limits apply to everyone together. Several of these limits are per-worker memory windows, so with N workers the effective limit is N times higher.
+  - In production the API logs a startup warning (`app.core.deploy_warnings`) when it is unset or `*`. Unset: behind a proxy container all visitors share the proxy address (the Dockerfiles default to 127.0.0.1). `*`: any client can forge `X-Forwarded-For` and bypass the per-IP limits.
+  - Per-worker windows: the public lead-form `known` lookup (`crm_lead_forms_public._known_limit`) and similar in-process limiters count per gunicorn worker, so the effective limit is `WEB_CONCURRENCY` times the configured one. Lead submissions themselves are limited in the database. Moving the in-process windows to a shared store (Redis) is not done yet; until then, also rate-limit `/api/v1/public/*` at the reverse proxy.
 
 ---
 

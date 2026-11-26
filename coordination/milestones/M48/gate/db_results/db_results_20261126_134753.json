@@ -1,0 +1,796 @@
+{
+  "sha": "60e360afd96ffa77c46b8f89c83c7ca88c0c2177",
+  "template": "t023_tmpl",
+  "totals": {
+    "SERVICE_REQUIRED": 2,
+    "PASS": 28
+  },
+  "results": [
+    {
+      "file": "test_m36_outbound_consent_db.py",
+      "flags": [
+        "M36_OUTBOUND_DISPOSABLE_TEST_DATABASE"
+      ],
+      "legacy_flags": [
+        "M36_OUTBOUND_DISPOSABLE_TEST_DATABASE"
+      ],
+      "db_name": "fmcg_m36_outbound_d2b531b28e9eeeb2541893b9",
+      "needs_db2": false,
+      "prep": false,
+      "services": [
+        "SMTP_TEST_SERVER"
+      ],
+      "class": "SERVICE_REQUIRED",
+      "note": "SMTP_TEST_SERVER: SMTP sink (Mailpit), e.g. 127.0.0.1:51025",
+      "name_rule": {
+        "regexes": [
+          "fmcg_m36_outbound_[a-f0-9]{24}"
+        ],
+        "startswith": []
+      },
+      "status": "SERVICE_REQUIRED",
+      "summary": ""
+    },
+    {
+      "file": "test_m36_s01_t001_mailbox_db.py",
+      "flags": [
+        "M36_S01_T001_DISPOSABLE_TEST_DATABASE"
+      ],
+      "legacy_flags": [
+        "M36_S01_T001_DISPOSABLE_TEST_DATABASE"
+      ],
+      "db_name": "fmcg_m36_s01_t001_830dc18832e13c73f03c8b3c",
+      "needs_db2": false,
+      "prep": false,
+      "services": [],
+      "class": "RUN",
+      "note": "",
+      "name_rule": {
+        "regexes": [
+          "fmcg_m36_s01_t001_[a-f0-9]{24}"
+        ],
+        "startswith": []
+      },
+      "summary": "1 passed in 11.40s",
+      "counts": {
+        "passed": 1
+      },
+      "rc": 0,
+      "skip_reasons": [],
+      "status": "PASS"
+    },
+    {
+      "file": "test_m36_s01_t002_sequences_db.py",
+      "flags": [
+        "M36_S01_DISPOSABLE_TEST_DATABASE"
+      ],
+      "legacy_flags": [
+        "M36_S01_DISPOSABLE_TEST_DATABASE"
+      ],
+      "db_name": "fmcg_m36_s01_794671405aca6ab78501e295",
+      "needs_db2": false,
+      "prep": false,
+      "services": [],
+      "class": "RUN",
+      "note": "",
+      "name_rule": {
+        "regexes": [
+          "fmcg_m36_s01_[a-f0-9]{24}"
+        ],
+        "startswith": []
+      },
+      "summary": "2 passed, 3 warnings in 11.06s",
+      "counts": {
+        "passed": 2
+      },
+      "rc": 0,
+      "skip_reasons": [],
+      "status": "PASS"
+    },
+    {
+      "file": "test_m36_s01_t003_inbox_db.py",
+      "flags": [
+        "M36_S01_T003_DISPOSABLE_TEST_DATABASE"
+      ],
+      "legacy_flags": [
+        "M36_S01_T003_DISPOSABLE_TEST_DATABASE"
+      ],
+      "db_name": "fmcg_m36_s01_t003_b892ca42cfc15c123b83cdc9",
+      "needs_db2": false,
+      "prep": false,
+      "services": [],
+      "class": "RUN",
+      "note": "",
+      "name_rule": {
+        "regexes": [
+          "fmcg_m36_s01_t003_[a-f0-9]{24}"
+        ],
+        "startswith": []
+      },
+      "summary": "1 passed in 11.58s",
+      "counts": {
+        "passed": 1
+      },
+      "rc": 0,
+      "skip_reasons": [],
+      "status": "PASS"
+    },
+    {
+      "file": "test_m36_s01_t004_crm_automation_db.py",
+      "flags": [
+        "M36_S01_DISPOSABLE_TEST_DATABASE"
+      ],
+      "legacy_flags": [
+        "M36_S01_DISPOSABLE_TEST_DATABASE"
+      ],
+      "db_name": "fmcg_m36_s01_891eb4ea084d46242581b330",
+      "needs_db2": false,
+      "prep": false,
+      "services": [],
+      "class": "RUN",
+      "note": "",
+      "name_rule": {
+        "regexes": [
+          "fmcg_m36_s01_[a-f0-9]{24}"
+        ],
+        "startswith": []
+      },
+      "summary": "1 passed, 37 warnings in 10.89s",
+      "counts": {
+        "passed": 1
+      },
+      "rc": 0,
+      "skip_reasons": [],
+      "status": "PASS"
+    },
+    {
+      "file": "test_m36_s01_t005_meetings_db.py",
+      "flags": [
+        "M36_S01_T005_DISPOSABLE_TEST_DATABASE"
+      ],
+      "legacy_flags": [
+        "M36_S01_T005_DISPOSABLE_TEST_DATABASE"
+      ],
+      "db_name": "fmcg_m36_s01_t005_fda7f1ec4736516d4e4165a4",
+      "needs_db2": false,
+      "prep": false,
+      "services": [],
+      "class": "RUN",
+      "note": "",
+      "name_rule": {
+        "regexes": [
+          "fmcg_m36_s01_t005_[a-f0-9]{24}"
+        ],
+        "startswith": []
+      },
+      "summary": "3 passed in 11.52s",
+      "counts": {
+        "passed": 3
+      },
+      "rc": 0,
+      "skip_reasons": [],
+      "status": "PASS"
+    },
+    {
+      "file": "test_m36_s02_sales_intelligence_db.py",
+      "flags": [
+        "M36_S02_DISPOSABLE_TEST_DATABASE"
+      ],
+      "legacy_flags": [
+        "M36_S02_DISPOSABLE_TEST_DATABASE"
+      ],
+      "db_name": "fmcg_m36_s02_1d6492b1e47df50ab7aca159",
+      "needs_db2": false,
+      "prep": false,
+      "services": [],
+      "class": "RUN",
+      "note": "",
+      "name_rule": {
+        "regexes": [
+          "fmcg_m36_s02_[a-f0-9]{24}"
+        ],
+        "startswith": []
+      },
+      "summary": "1 passed in 10.29s",
+      "counts": {
+        "passed": 1
+      },
+      "rc": 0,
+      "skip_reasons": [],
+      "status": "PASS"
+    },
+    {
+      "file": "test_m36_s02_t001_lead_capture_db.py",
+      "flags": [
+        "M36_S02_DISPOSABLE_TEST_DATABASE"
+      ],
+      "legacy_flags": [
+        "M36_S02_DISPOSABLE_TEST_DATABASE"
+      ],
+      "db_name": "fmcg_m36_s02_d0334ca7b4cdfd0f2fa9f9b1",
+      "needs_db2": false,
+      "prep": false,
+      "services": [],
+      "class": "RUN",
+      "note": "",
+      "name_rule": {
+        "regexes": [
+          "fmcg_m36_s02_[a-f0-9]{24}"
+        ],
+        "startswith": []
+      },
+      "summary": "1 passed, 76 warnings in 43.15s",
+      "counts": {
+        "passed": 1
+      },
+      "rc": 0,
+      "skip_reasons": [],
+      "status": "PASS"
+    },
+    {
+      "file": "test_m36_s02_t005_bounce_db.py",
+      "flags": [
+        "M36_S02_T005B_DISPOSABLE_TEST_DATABASE"
+      ],
+      "legacy_flags": [
+        "M36_S02_T005B_DISPOSABLE_TEST_DATABASE"
+      ],
+      "db_name": "fmcg_m36_s02_t005b_0ce929696a1be4787e8ebe0f",
+      "needs_db2": false,
+      "prep": false,
+      "services": [],
+      "class": "RUN",
+      "note": "",
+      "name_rule": {
+        "regexes": [
+          "fmcg_m36_s02_t005b_[a-f0-9]{24}"
+        ],
+        "startswith": []
+      },
+      "summary": "1 passed in 10.59s",
+      "counts": {
+        "passed": 1
+      },
+      "rc": 0,
+      "skip_reasons": [],
+      "status": "PASS"
+    },
+    {
+      "file": "test_m36_s02_t005_campaigns_db.py",
+      "flags": [
+        "M36_S02_DISPOSABLE_TEST_DATABASE"
+      ],
+      "legacy_flags": [
+        "M36_S02_DISPOSABLE_TEST_DATABASE"
+      ],
+      "db_name": "fmcg_m36_s02_23ce28dd377ed4837c73866f",
+      "needs_db2": false,
+      "prep": false,
+      "services": [
+        "SMTP_TEST_SERVER"
+      ],
+      "class": "SERVICE_REQUIRED",
+      "note": "SMTP_TEST_SERVER: SMTP sink (Mailpit), e.g. 127.0.0.1:51025",
+      "name_rule": {
+        "regexes": [
+          "fmcg_m36_s02_[a-f0-9]{24}"
+        ],
+        "startswith": []
+      },
+      "status": "SERVICE_REQUIRED",
+      "summary": ""
+    },
+    {
+      "file": "test_m36_s03_customer_timeline_db.py",
+      "flags": [
+        "M36_S03_DISPOSABLE_TEST_DATABASE"
+      ],
+      "legacy_flags": [
+        "M36_S03_DISPOSABLE_TEST_DATABASE"
+      ],
+      "db_name": "fmcg_m36_s03_0ef42742b10c146f21871f14",
+      "needs_db2": false,
+      "prep": false,
+      "services": [],
+      "class": "RUN",
+      "note": "",
+      "name_rule": {
+        "regexes": [
+          "fmcg_m36_s03_[a-f0-9]{24}"
+        ],
+        "startswith": []
+      },
+      "summary": "1 passed in 12.31s",
+      "counts": {
+        "passed": 1
+      },
+      "rc": 0,
+      "skip_reasons": [],
+      "status": "PASS"
+    },
+    {
+      "file": "test_m36_s03_t001_document_links_db.py",
+      "flags": [
+        "M36_S03_T001_DISPOSABLE_TEST_DATABASE"
+      ],
+      "legacy_flags": [
+        "M36_S03_T001_DISPOSABLE_TEST_DATABASE"
+      ],
+      "db_name": "fmcg_m36_s03_t001_43d9f59f7f68fed3dd94093d",
+      "needs_db2": false,
+      "prep": false,
+      "services": [],
+      "class": "RUN",
+      "note": "",
+      "name_rule": {
+        "regexes": [
+          "fmcg_m36_s03_t001_[a-f0-9]{24}"
+        ],
+        "startswith": []
+      },
+      "summary": "2 passed in 11.58s",
+      "counts": {
+        "passed": 2
+      },
+      "rc": 0,
+      "skip_reasons": [],
+      "status": "PASS"
+    },
+    {
+      "file": "test_m36_s03_t003_quick_notes_db.py",
+      "flags": [
+        "M36_S03_T003_DISPOSABLE_TEST_DATABASE"
+      ],
+      "legacy_flags": [
+        "M36_S03_T003_DISPOSABLE_TEST_DATABASE"
+      ],
+      "db_name": "fmcg_m36_s03_t003_10fcc6e6d6a5bdb6d4a121fb",
+      "needs_db2": false,
+      "prep": false,
+      "services": [],
+      "class": "RUN",
+      "note": "",
+      "name_rule": {
+        "regexes": [
+          "fmcg_m36_s03_t003_[a-f0-9]{24}"
+        ],
+        "startswith": []
+      },
+      "summary": "1 passed in 11.68s",
+      "counts": {
+        "passed": 1
+      },
+      "rc": 0,
+      "skip_reasons": [],
+      "status": "PASS"
+    },
+    {
+      "file": "test_m36_s03_t004_workflow_designer_db.py",
+      "flags": [
+        "M36_S03_T004_DISPOSABLE_TEST_DATABASE"
+      ],
+      "legacy_flags": [
+        "M36_S03_T004_DISPOSABLE_TEST_DATABASE"
+      ],
+      "db_name": "fmcg_m36_s03_t004_55e65d767c81299eac1151e9",
+      "needs_db2": false,
+      "prep": false,
+      "services": [],
+      "class": "RUN",
+      "note": "",
+      "name_rule": {
+        "regexes": [
+          "fmcg_m36_s03_t004_[a-f0-9]{24}"
+        ],
+        "startswith": []
+      },
+      "summary": "1 passed in 11.14s",
+      "counts": {
+        "passed": 1
+      },
+      "rc": 0,
+      "skip_reasons": [],
+      "status": "PASS"
+    },
+    {
+      "file": "test_m36_s03_t005_live_chat_db.py",
+      "flags": [
+        "M36_S03_T005_DISPOSABLE_TEST_DATABASE"
+      ],
+      "legacy_flags": [
+        "M36_S03_T005_DISPOSABLE_TEST_DATABASE"
+      ],
+      "db_name": "fmcg_m36_s03_t005_9ea1ea12b60622e214917fbc",
+      "needs_db2": false,
+      "prep": false,
+      "services": [],
+      "class": "RUN",
+      "note": "",
+      "name_rule": {
+        "regexes": [
+          "fmcg_m36_s03_t005_[a-f0-9]{24}"
+        ],
+        "startswith": []
+      },
+      "summary": "1 passed in 12.22s",
+      "counts": {
+        "passed": 1
+      },
+      "rc": 0,
+      "skip_reasons": [],
+      "status": "PASS"
+    },
+    {
+      "file": "test_m36_s04_t001_copilot_db.py",
+      "flags": [
+        "M36_S04_T001_DISPOSABLE_TEST_DATABASE"
+      ],
+      "legacy_flags": [
+        "M36_S04_T001_DISPOSABLE_TEST_DATABASE"
+      ],
+      "db_name": "fmcg_m36_s04_t001_cc7533ae1dd2b61ea4a3ae79",
+      "needs_db2": false,
+      "prep": false,
+      "services": [],
+      "class": "RUN",
+      "note": "",
+      "name_rule": {
+        "regexes": [
+          "fmcg_m36_s04_t001_[a-f0-9]{24}"
+        ],
+        "startswith": []
+      },
+      "summary": "1 passed in 11.94s",
+      "counts": {
+        "passed": 1
+      },
+      "rc": 0,
+      "skip_reasons": [],
+      "status": "PASS"
+    },
+    {
+      "file": "test_m36_s04_t002_telephony_db.py",
+      "flags": [
+        "M36_S04_T002_DISPOSABLE_TEST_DATABASE"
+      ],
+      "legacy_flags": [
+        "M36_S04_T002_DISPOSABLE_TEST_DATABASE"
+      ],
+      "db_name": "fmcg_m36_s04_t002_b87bafba32c6d351bdef6317",
+      "needs_db2": false,
+      "prep": false,
+      "services": [],
+      "class": "RUN",
+      "note": "",
+      "name_rule": {
+        "regexes": [
+          "fmcg_m36_s04_t002_[a-f0-9]{24}"
+        ],
+        "startswith": []
+      },
+      "summary": "1 passed, 5 warnings in 11.57s",
+      "counts": {
+        "passed": 1
+      },
+      "rc": 0,
+      "skip_reasons": [],
+      "status": "PASS"
+    },
+    {
+      "file": "test_m36_s04_t004_portal_ticket_files_db.py",
+      "flags": [
+        "M36_S04_T004_DISPOSABLE_TEST_DATABASE"
+      ],
+      "legacy_flags": [
+        "M36_S04_T004_DISPOSABLE_TEST_DATABASE"
+      ],
+      "db_name": "fmcg_m36_s04_t004_a5077356386d4f0bc5580514",
+      "needs_db2": false,
+      "prep": false,
+      "services": [],
+      "class": "RUN",
+      "note": "",
+      "name_rule": {
+        "regexes": [
+          "fmcg_m36_s04_t004_[a-f0-9]{24}"
+        ],
+        "startswith": []
+      },
+      "summary": "1 passed in 11.43s",
+      "counts": {
+        "passed": 1
+      },
+      "rc": 0,
+      "skip_reasons": [],
+      "status": "PASS"
+    },
+    {
+      "file": "test_m36_s04_t005_kb_db.py",
+      "flags": [
+        "M36_S04_DISPOSABLE_TEST_DATABASE"
+      ],
+      "legacy_flags": [
+        "M36_S04_DISPOSABLE_TEST_DATABASE"
+      ],
+      "db_name": "fmcg_m36_s04_6833aaccfbda9d77e116f156",
+      "needs_db2": false,
+      "prep": false,
+      "services": [],
+      "class": "RUN",
+      "note": "",
+      "name_rule": {
+        "regexes": [
+          "fmcg_m36_s04_[a-f0-9]{24}"
+        ],
+        "startswith": []
+      },
+      "summary": "1 passed, 77 warnings in 44.31s",
+      "counts": {
+        "passed": 1
+      },
+      "rc": 0,
+      "skip_reasons": [],
+      "status": "PASS"
+    },
+    {
+      "file": "test_m36_s05_t001_attribution_db.py",
+      "flags": [
+        "M36_S05_T001_DISPOSABLE_TEST_DATABASE"
+      ],
+      "legacy_flags": [
+        "M36_S05_T001_DISPOSABLE_TEST_DATABASE"
+      ],
+      "db_name": "fmcg_m36_s05_t001_0a72640c011061743123999a",
+      "needs_db2": false,
+      "prep": false,
+      "services": [],
+      "class": "RUN",
+      "note": "",
+      "name_rule": {
+        "regexes": [
+          "fmcg_m36_s05_t001_[a-f0-9]{24}"
+        ],
+        "startswith": []
+      },
+      "summary": "1 passed in 10.32s",
+      "counts": {
+        "passed": 1
+      },
+      "rc": 0,
+      "skip_reasons": [],
+      "status": "PASS"
+    },
+    {
+      "file": "test_m36_s05_t002_landing_ab_db.py",
+      "flags": [
+        "M36_S05_T002_DISPOSABLE_TEST_DATABASE"
+      ],
+      "legacy_flags": [
+        "M36_S05_T002_DISPOSABLE_TEST_DATABASE"
+      ],
+      "db_name": "fmcg_m36_s05_t002_179f2b0e93d0f3bfd3f0c3b4",
+      "needs_db2": false,
+      "prep": false,
+      "services": [],
+      "class": "RUN",
+      "note": "",
+      "name_rule": {
+        "regexes": [
+          "fmcg_m36_s05_t002_[a-f0-9]{24}"
+        ],
+        "startswith": []
+      },
+      "summary": "1 passed in 13.64s",
+      "counts": {
+        "passed": 1
+      },
+      "rc": 0,
+      "skip_reasons": [],
+      "status": "PASS"
+    },
+    {
+      "file": "test_m36_s05_t003_integration_console_db.py",
+      "flags": [
+        "M36_S05_T003_DISPOSABLE_TEST_DATABASE"
+      ],
+      "legacy_flags": [
+        "M36_S05_T003_DISPOSABLE_TEST_DATABASE"
+      ],
+      "db_name": "fmcg_m36_s05_t003_547e42d5a776090aff318e60",
+      "needs_db2": false,
+      "prep": false,
+      "services": [],
+      "class": "RUN",
+      "note": "",
+      "name_rule": {
+        "regexes": [
+          "fmcg_m36_s05_t003_[a-f0-9]{24}"
+        ],
+        "startswith": []
+      },
+      "summary": "2 passed in 10.46s",
+      "counts": {
+        "passed": 2
+      },
+      "rc": 0,
+      "skip_reasons": [],
+      "status": "PASS"
+    },
+    {
+      "file": "test_m36_s05_t004_conversation_intel_db.py",
+      "flags": [
+        "M36_S05_T004_DISPOSABLE_TEST_DATABASE"
+      ],
+      "legacy_flags": [
+        "M36_S05_T004_DISPOSABLE_TEST_DATABASE"
+      ],
+      "db_name": "fmcg_m36_s05_t004_20b4ba5fe99d1f519a4bc022",
+      "needs_db2": false,
+      "prep": false,
+      "services": [],
+      "class": "RUN",
+      "note": "",
+      "name_rule": {
+        "regexes": [
+          "fmcg_m36_s05_t004_[a-f0-9]{24}"
+        ],
+        "startswith": []
+      },
+      "summary": "1 passed in 9.96s",
+      "counts": {
+        "passed": 1
+      },
+      "rc": 0,
+      "skip_reasons": [],
+      "status": "PASS"
+    },
+    {
+      "file": "test_m36_s05_t005_abm_db.py",
+      "flags": [
+        "M36_S05_T005_DISPOSABLE_TEST_DATABASE"
+      ],
+      "legacy_flags": [
+        "M36_S05_T005_DISPOSABLE_TEST_DATABASE"
+      ],
+      "db_name": "fmcg_m36_s05_t005_76141dd3477d56d537900101",
+      "needs_db2": false,
+      "prep": false,
+      "services": [],
+      "class": "RUN",
+      "note": "",
+      "name_rule": {
+        "regexes": [
+          "fmcg_m36_s05_t005_[a-f0-9]{24}"
+        ],
+        "startswith": []
+      },
+      "summary": "1 passed, 1 warning in 10.20s",
+      "counts": {
+        "passed": 1
+      },
+      "rc": 0,
+      "skip_reasons": [],
+      "status": "PASS"
+    },
+    {
+      "file": "test_m44_s01_t012_governance_db.py",
+      "flags": [
+        "M44_DB"
+      ],
+      "legacy_flags": [],
+      "db_name": "m48r_4a00e8a800d6a30d9d32",
+      "needs_db2": false,
+      "prep": false,
+      "services": [],
+      "class": "RUN",
+      "note": "",
+      "summary": "4 passed in 11.11s",
+      "counts": {
+        "passed": 4
+      },
+      "rc": 0,
+      "skip_reasons": [],
+      "status": "PASS"
+    },
+    {
+      "file": "test_m45_s01_t001_t003_customer_data.py",
+      "flags": [
+        "M45_DB"
+      ],
+      "legacy_flags": [],
+      "db_name": "m48r_6f085933b23649f622b8",
+      "needs_db2": false,
+      "prep": false,
+      "services": [],
+      "class": "RUN",
+      "note": "",
+      "summary": "3 passed in 9.77s",
+      "counts": {
+        "passed": 3
+      },
+      "rc": 0,
+      "skip_reasons": [],
+      "status": "PASS"
+    },
+    {
+      "file": "test_m45_s01_t012_t022_tokens_addin_mcp.py",
+      "flags": [
+        "M45_DB"
+      ],
+      "legacy_flags": [],
+      "db_name": "m48r_c5061552c8e47c2beda0",
+      "needs_db2": false,
+      "prep": false,
+      "services": [],
+      "class": "RUN",
+      "note": "",
+      "summary": "3 passed, 76 warnings in 40.46s",
+      "counts": {
+        "passed": 3
+      },
+      "rc": 0,
+      "skip_reasons": [],
+      "status": "PASS"
+    },
+    {
+      "file": "test_m47_s01_t005_followups.py",
+      "flags": [
+        "M46_DB"
+      ],
+      "legacy_flags": [],
+      "db_name": "m48r_3d2cae0dca5e694afb54",
+      "needs_db2": false,
+      "prep": false,
+      "services": [],
+      "class": "RUN",
+      "note": "",
+      "summary": "4 passed, 75 warnings in 38.62s",
+      "counts": {
+        "passed": 4
+      },
+      "rc": 0,
+      "skip_reasons": [],
+      "status": "PASS"
+    },
+    {
+      "file": "test_m47_s01_t005_review_fixes.py",
+      "flags": [
+        "M46_DB"
+      ],
+      "legacy_flags": [],
+      "db_name": "m48r_af287c708c2dc9cfe351",
+      "needs_db2": false,
+      "prep": false,
+      "services": [],
+      "class": "RUN",
+      "note": "",
+      "summary": "12 passed, 77 warnings in 48.38s",
+      "counts": {
+        "passed": 12
+      },
+      "rc": 0,
+      "skip_reasons": [],
+      "status": "PASS"
+    },
+    {
+      "file": "test_m47_s01_t010_platform_depth.py",
+      "flags": [
+        "M46_DB"
+      ],
+      "legacy_flags": [],
+      "db_name": "m48r_29d6d97735304760c825",
+      "needs_db2": false,
+      "prep": false,
+      "services": [],
+      "class": "RUN",
+      "note": "",
+      "summary": "11 passed, 79 warnings in 55.78s",
+      "counts": {
+        "passed": 11
+      },
+      "rc": 0,
+      "skip_reasons": [],
+      "status": "PASS"
+    }
+  ]
+}

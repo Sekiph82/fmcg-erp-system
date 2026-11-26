@@ -58,6 +58,8 @@ async def run_provider_credentials_refresh(interval: int = 60) -> None:
 async def lifespan(app: FastAPI):
     logger.info("Starting %s v%s", settings.PROJECT_NAME, settings.VERSION)
     logger.info("Automatic table creation disabled; use Alembic migrations for schema changes")
+    from app.core.deploy_warnings import warn_on_startup   # M48.S01.T023 F10 proxy / rate-limit warning
+    warn_on_startup()
 
     try:
         async with AsyncSessionLocal() as db:

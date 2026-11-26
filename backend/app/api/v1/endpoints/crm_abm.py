@@ -44,6 +44,8 @@ class CampaignIn(BaseModel):
     subject: str = Field(min_length=3, max_length=300)
     body: str = Field(min_length=10, max_length=20000)
     roles: Optional[List[str]] = None
+    company_id: Optional[uuid.UUID] = None      # required when the group's accounts belong to several companies
+    approval_id: Optional[uuid.UUID] = None     # when MARKETING_EMAIL_APPROVAL_REQUIRED is on
 
 
 async def _group(db: AsyncSession, group_id: uuid.UUID) -> CRMAccountGroup:
@@ -134,11 +136,83 @@ async def remove_contact(contact_id: uuid.UUID, db: AsyncSession = Depends(get_d
     return {"ok": True}
 
 
+def _may_send_for(user, company_id) -> None:
+    """M48.S01.T023: the sender must have marketing (or company-wide CRM) edit rights in the campaign's company."""
+    from app.core.access_control import can_access_scope, has_any_permission
+    if user.is_superuser or has_any_permission(user, ("crm.edit_all",)):
+        return
+    if not can_access_scope(user, "marketing", "edit", "company", company_id or "ALL"):
+        raise HTTPException(403, "You may not send marketing e-mail for this company.")
+
+
+def _payload(group_id: uuid.UUID, company_id, body: CampaignIn) -> dict:
+    return {"group_id": str(group_id), "company_id": str(company_id) if company_id else None, "subject": body.subject,
+            "body": body.body, "roles": sorted(body.roles or [])}
+
+
 @router.post("/groups/{group_id}/campaign")
 async def group_campaign(group_id: uuid.UUID, body: CampaignIn, db: AsyncSession = Depends(get_db), user=Depends(WRITE)):
+    """Coordinated send to one company's accounts of the group: company scope, the per-editor daily cap and, when
+    MARKETING_EMAIL_APPROVAL_REQUIRED is on, a second editor's approval of this exact content (M48.S01.T023)."""
+    from app.services import marketing_send_guard as guard
     try:
-        out = await abm.run_campaign(db, await _group(db, group_id), body.subject, body.body, body.roles, user.username)
-    except abm.ABMError as e:
+        g = await _group(db, group_id)
+        company_id = await abm.campaign_company(db, g, body.company_id)
+        _may_send_for(user, company_id)
+
+        async def _checks(n: int) -> None:
+            await guard.check_cap(db, user.username, n)
+            await guard.consume(db, "ABM_GROUP", group_id, _payload(group_id, company_id, body), body.approval_id, user)
+
+        out = await abm.run_campaign(db, g, body.subject, body.body, body.roles, user.username, company_id, _checks)
+    except (abm.ABMError, guard.GuardError) as e:
+        await db.rollback()
         raise HTTPException(e.status, e.detail)
     await db.commit()
     return out
+
+
+@router.post("/groups/{group_id}/campaign/approval", status_code=201)
+async def request_campaign_approval(group_id: uuid.UUID, body: CampaignIn, db: AsyncSession = Depends(get_db),
+                                    user=Depends(WRITE)):
+    from app.services import marketing_send_guard as guard
+    try:
+        company_id = await abm.campaign_company(db, await _group(db, group_id), body.company_id)
+    except abm.ABMError as e:
+        raise HTTPException(e.status, e.detail)
+    _may_send_for(user, company_id)
+    row = await guard.request(db, "ABM_GROUP", group_id, _payload(group_id, company_id, body), user, company_id)
+    await db.commit()
+    return guard.out(row)
+
+
+@router.get("/campaign-approvals/policy")
+async def campaign_send_policy(db: AsyncSession = Depends(get_db), user=Depends(WRITE)):
+    from app.services import marketing_send_guard as guard
+    return await guard.policy(db, user.username)
+
+
+@router.get("/campaign-approvals")
+async def list_campaign_approvals(status: str = Query("PENDING", pattern="^(PENDING|APPROVED|REJECTED|USED)$"),
+                                  db: AsyncSession = Depends(get_db), _=Depends(WRITE)):
+    from app.models.m48_crm_send_approval import CRMSendApproval
+    from app.services import marketing_send_guard as guard
+    rows = (await db.execute(select(CRMSendApproval).where(CRMSendApproval.kind == "ABM_GROUP", CRMSendApproval.status == status)
+                             .order_by(CRMSendApproval.created_at.desc()).limit(200))).scalars()
+    return [guard.out(r) for r in rows]
+
+
+@router.post("/campaign-approvals/{approval_id}/{action}")
+async def decide_campaign_approval(approval_id: uuid.UUID, action: str, db: AsyncSession = Depends(get_db),
+                                   user=Depends(WRITE)):
+    from app.services import marketing_send_guard as guard
+    if action not in ("approve", "reject"):
+        raise HTTPException(404, "Unknown action")
+    try:
+        row = await guard.decide(db, approval_id, "ABM_GROUP", user, action == "approve")
+    except guard.GuardError as e:
+        raise HTTPException(e.status, e.detail)
+    if row.company_id:
+        _may_send_for(user, row.company_id)
+    await db.commit()
+    return guard.out(row)

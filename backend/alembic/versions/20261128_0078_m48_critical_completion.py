@@ -17,6 +17,8 @@ TABLES = [
     "ads_account_controls", "ads_campaign_nodes", "ads_approvals", "ads_mutations",        # T001–T004
     "card_provider_configs", "card_payments", "card_refunds",                              # T010
     "esign_provider_configs", "esign_envelopes", "esign_webhook_events",                   # T009
+    "crm_send_approvals",                                                                  # T023 F4 marketing send approvals
+    "mail_webhook_tokens",                                                                 # T022 Mailgun token replay
 ]
 
 COLUMNS = [
@@ -29,9 +31,13 @@ COLUMNS = [
     ("social_posts", "submitted_at", "TIMESTAMPTZ"),
     ("social_posts", "next_poll_at", "TIMESTAMPTZ"),
     ("social_posts", "poll_count", "INTEGER NOT NULL DEFAULT 0"),
-    ("dw_runs", "mode", "VARCHAR(10)"),                                                     # T007/T008 SIMULATED | LIVE
+    ("dw_runs", "mode", "VARCHAR(10)"),
+    ("van_visits", "gps_accuracy_m", "NUMERIC(8,1)"),
+    ("van_payments", "offline_id", "VARCHAR(100) UNIQUE"),                                 # T024 idempotent offline payments                                     # T024 van check-in GPS accuracy                                                     # T007/T008 SIMULATED | LIVE
     ("dw_targets", "secret_set_by", "VARCHAR(100)"),                                        # T007/T008 independent approval
     ("stock_movements", "idempotency_key", "VARCHAR(64) UNIQUE"),                           # T018 transfer replay
+    ("crm_contact_consents", "confirmed_at", "TIMESTAMPTZ"),                                # T022 double opt-in
+    ("crm_contact_consents", "confirm_ip_hash", "VARCHAR(64)"),
 ]
 
 INDEXES = [
