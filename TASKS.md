@@ -8,8 +8,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 ## Project Status
 
-- Current Milestone: M49 — CRM, Advertising & Social Marketing Excellence (M48 ACCEPTED 2026-11-26)
-- Current Sprint: M49.S01 — mandatory audit recommendations 13–24
+- Current Milestone: M50 (M48 ACCEPTED 2026-11-26; M49 ACCEPTED 2026-11-26)
+- Current Sprint: M50.S01
 - Current Task: M49.S01 batch (T001–T012)
 - Current Task Status: PLANNED (2026-11-26). M43–M47 historical software gate remains accepted at its recorded scope; new owner-directed improvements M48–M52 are open. Do not equate previous [x] with full depth or production readiness.
 - Next Task/Action: Claude autonomously executes all 60 audit recommendations plus mandatory full persona/mobile acceptance, fixes any newly verified software defect and closes M48–M52 only through consolidated milestone gates. No real company accounts or factory needed. After M52 acceptance and synchronization, continue autonomously with M53–M55 POVU CONNECT.
@@ -3419,68 +3419,68 @@ These rows describe commissioning only; they must never stop accountless coding,
 Dependency: prior major milestone accepted and synchronized; extend actual existing modules, no parallel fake ERP.
 
 ## M49.S01 — Mandatory audit recommendations
-- [v] M49.S01.T001 — Recurring Google and Outlook meetings (audit recommendation 13/60)
+- [x] M49.S01.T001 — Recurring Google and Outlook meetings (audit recommendation 13/60)
   - Implemented 2026-11-26 [v], pending the M49 gate: recurring series (RRULE + TZ/DST, exceptions, single/all/following edit, cancel, RSVP from iCalendar REPLY, free/busy, no double booking); Google/Graph mapping. Tests: test_m49_s01_t001 (16 passed). Migration 20261129_0079. Simulated only, live use is activation-only.
   - **Implementation:** Extend calendar model and adapter for recurring series, RRULE/timezone, exceptions, edit single/all/future, cancel, RSVP/busy slots and bidirectional mapping; prevent double booking.
   - **Acceptance at milestone gate:** Manual recurring create/edit/cancel/exception across both simulators and DST; no duplicate invite or data leakage.
   - **Required evidence:** source/migration/API/UI/permissions and docs as applicable, actual local app manual click log with screenshots, tests prepared now/run at major gate, official contracts for external adapters; synthetic data only, future activation separately. Update TASKS.md and Project Status immediately after task, [v] pending gate, then autonomously select next task. Never [x] before PASS.
-- [v] M49.S01.T002 — Calendar webhooks and renewal (audit recommendation 14/60)
+- [x] M49.S01.T002 — Calendar webhooks and renewal (audit recommendation 14/60)
   - Implemented 2026-11-26 [v], pending the M49 gate: Google events.watch channels and Graph subscriptions; verified callbacks, renewal, delta sync and polling fallback, replay-safe, disconnect; public /public/calendar-hooks/*. Tests: test_m49_s01_t002 (18 passed). Migration 20261129_0079. Simulated only, live use is activation-only.
   - **Implementation:** Implement Google Calendar channels and Graph subscriptions where officially supported; verified callback, initial sync, expiry/renewal, delta reconciliation and polling fallback. Public HTTPS activation later.
   - **Acceptance at milestone gate:** Manual connect/enable subscription and observe synthetic webhook updates, replay, expired channel renewal, fallback and disconnect.
   - **Required evidence:** source/migration/API/UI/permissions and docs as applicable, actual local app manual click log with screenshots, tests prepared now/run at major gate, official contracts for external adapters; synthetic data only, future activation separately. Update TASKS.md and Project Status immediately after task, [v] pending gate, then autonomously select next task. Never [x] before PASS.
-- [v] M49.S01.T003 — Shared/delegated mailboxes (audit recommendation 15/60)
+- [x] M49.S01.T003 — Shared/delegated mailboxes (audit recommendation 15/60)
   - Implemented 2026-11-26 [v], pending the M49 gate: Shared and delegated mailboxes: membership-based access, Gmail send-as and Graph send-as/on-behalf, per-mailbox threads, revoke, audit. Tests: test_m49_s01_t003 (5 passed). Migration 20261129_0079. Simulated only, live use is activation-only.
   - **Implementation:** Support authorized shared/delegated mailbox selection, permissioned access/send-as/send-on-behalf when provider allows, per-mailbox thread scope, personal separation, revocation, audit and bounded incremental sync.
   - **Acceptance at milestone gate:** Manual two synthetic users and shared mailbox send/reply, unauthorized access denied, refresh/revoke and attachment/thread regressions.
   - **Required evidence:** source/migration/API/UI/permissions and docs as applicable, actual local app manual click log with screenshots, tests prepared now/run at major gate, official contracts for external adapters; synthetic data only, future activation separately. Update TASKS.md and Project Status immediately after task, [v] pending gate, then autonomously select next task. Never [x] before PASS.
-- [v] M49.S01.T004 — Advanced VoIP and contact center (audit recommendation 16/60)
+- [x] M49.S01.T004 — Advanced VoIP and contact center (audit recommendation 16/60)
   - Implemented 2026-11-26 [v], pending the M49 gate: Twilio Programmable Voice adapter with signed webhook; queues, IVR to queue, cold and warm transfer, missed-call callbacks, dispositions, voicemail, agent presence, consent and retention; capability matrix with disabled reasons. Tests: test_m49_s01_t004 (13 passed). Migration 20261129_0079. Simulated only, live use is activation-only.
   - **Implementation:** Extend provider capability registry and at least one additional documented carrier or SIP adapter when feasible; inbound/outbound queues, IVR, transfer, missed-call callbacks, call outcomes, dialing/voicemail where supported, agent presence, consent and recording retention. No provider capability invented.
   - **Acceptance at milestone gate:** Manual UI call routing, transfer, queue and agent presence using local voice simulator; duplicate callback, consent refusal, recovery, unsupported capability clearly disabled.
   - **Required evidence:** source/migration/API/UI/permissions and docs as applicable, actual local app manual click log with screenshots, tests prepared now/run at major gate, official contracts for external adapters; synthetic data only, future activation separately. Update TASKS.md and Project Status immediately after task, [v] pending gate, then autonomously select next task. Never [x] before PASS.
-- [v] M49.S01.T005 — Multilingual transcription and speaker separation (audit recommendation 17/60)
+- [x] M49.S01.T005 — Multilingual transcription and speaker separation (audit recommendation 17/60)
   - Implemented 2026-11-26 [v], pending the M49 gate: OpenAI transcription adapter (verbose/diarized); local faster-whisper NOT_AVAILABLE (not installed); EN/SW/TR, speakers, redaction, review/edit/approve/withdraw, retention, coaching feed. Tests: test_m49_s01_t005 (11 passed). Migration 20261129_0079. Simulated only, live use is activation-only.
   - **Implementation:** Integrate documented transcription provider and optional local engine; EN/SW/TR support, timestamp/speaker label where supported, language selection, quality/error states, review/correction, redact and retention; meeting/call coaching.
   - **Acceptance at milestone gate:** Local licensed/synthetic audio fixture, speaker and language evaluation, manual transcription start/review/edit/withdraw, graceful fallback and no hallucinated metrics.
   - **Required evidence:** source/migration/API/UI/permissions and docs as applicable, actual local app manual click log with screenshots, tests prepared now/run at major gate, official contracts for external adapters; synthetic data only, future activation separately. Update TASKS.md and Project Status immediately after task, [v] pending gate, then autonomously select next task. Never [x] before PASS.
-- [v] M49.S01.T006 — Unified advertising lifecycle UI (audit recommendation 18/60)
+- [x] M49.S01.T006 — Unified advertising lifecycle UI (audit recommendation 18/60)
   - Implemented 2026-11-26 [v], pending the M49 gate: Cross-account ad tree, wizard, post-create edits (documented fields only) through ledger and approval, schedules, read-back, per-node reporting. Tests: test_m49_s01_t006 (5 passed). Migration 20261129_0079. Simulated only, live use is activation-only.
   - **Implementation:** Build operator-facing cross-platform account/campaign/ad set/ad group/creative tree, supported type wizard, draft validation, approval, versioned budget, schedules, status, create/edit/pause/resume and reporting using M48 adapters. Explicit activation switch and cap; read-back truth, no static placeholder controls.
   - **Acceptance at milestone gate:** Manually click every relevant action for each of four providers; local provider logs prove actual adapter calls, cross-account/role refusal and status reconciliation; no live spend.
   - **Required evidence:** source/migration/API/UI/permissions and docs as applicable, actual local app manual click log with screenshots, tests prepared now/run at major gate, official contracts for external adapters; synthetic data only, future activation separately. Update TASKS.md and Project Status immediately after task, [v] pending gate, then autonomously select next task. Never [x] before PASS.
-- [v] M49.S01.T007 — Facebook and Instagram rich media (audit recommendation 19/60)
+- [x] M49.S01.T007 — Facebook and Instagram rich media (audit recommendation 19/60)
   - Implemented 2026-11-26 [v], pending the M49 gate: Facebook/Instagram formats (text/link/photo/video, album/carousel, Reels, resumable video, containers, alt text, cover, scheduling, insights). Tests: test_m49_s01_t007 (10 passed). Migration 20261129_0079. Simulated only, live use is activation-only.
   - **Implementation:** Implement every documented permitted Facebook Page and Instagram professional account format relevant to POVU: text/link/photo/video, multi-image/album/carousel, Reels and other supported formats, media upload/container status polling, captions/alt text where supported, thumbnails, scheduling, error recovery and analytics.
   - **Acceptance at milestone gate:** Manual per-platform/per-format upload/preview/schedule/approve/submit/status/retry and analytics on local provider simulator; incompatible types disabled with exact reason; no fake PUBLISHED.
   - **Required evidence:** source/migration/API/UI/permissions and docs as applicable, actual local app manual click log with screenshots, tests prepared now/run at major gate, official contracts for external adapters; synthetic data only, future activation separately. Update TASKS.md and Project Status immediately after task, [v] pending gate, then autonomously select next task. Never [x] before PASS.
-- [v] M49.S01.T008 — LinkedIn image/video publishing (audit recommendation 20/60)
+- [x] M49.S01.T008 — LinkedIn image/video publishing (audit recommendation 20/60)
   - Implemented 2026-11-26 [v], pending the M49 gate: LinkedIn Images/Videos/MultiImage organization posts, processing status, own scheduler, insights. Tests: test_m49_s01_t008 (8 passed). Migration 20261129_0079. Simulated only, live use is activation-only.
   - **Implementation:** Implement official asset upload initialization, upload completion/status, organization post image/video/multi-image where supported, text/link, version headers, media processing, scheduling and insights where allowed.
   - **Acceptance at milestone gate:** Manual upload and publish lifecycle per supported format; async status, auth/permission, upload failure and retry verified locally.
   - **Required evidence:** source/migration/API/UI/permissions and docs as applicable, actual local app manual click log with screenshots, tests prepared now/run at major gate, official contracts for external adapters; synthetic data only, future activation separately. Update TASKS.md and Project Status immediately after task, [v] pending gate, then autonomously select next task. Never [x] before PASS.
-- [v] M49.S01.T009 — YouTube and other supported social adapters (audit recommendation 21/60)
+- [x] M49.S01.T009 — YouTube and other supported social adapters (audit recommendation 21/60)
   - Implemented 2026-11-26 [v], pending the M49 gate: YouTube resumable upload (private-only default for unverified projects, owner to confirm), X posts and media; TikTok photo and inbox drafts (EXPORTED, never PUBLISHED). Tests: test_m49_s01_t009 (11 passed). Migration 20261129_0079. Simulated only, live use is activation-only.
   - **Implementation:** Implement YouTube Data API upload (resumable), video metadata, visibility/scheduling and status/analytics as public contract permits; X posting/media upload and permitted scheduling/analytics under documented tiers; expand capability matrix and manual export only where API truly unavailable. Audit all current TikTok formats/privacy and complete supported paths.
   - **Acceptance at milestone gate:** Manual app workflow for each supported network/format including TikTok; local simulators exercise upload progress, processing, quotas, visibility and failures; no real account/spend.
   - **Required evidence:** source/migration/API/UI/permissions and docs as applicable, actual local app manual click log with screenshots, tests prepared now/run at major gate, official contracts for external adapters; synthetic data only, future activation separately. Update TASKS.md and Project Status immediately after task, [v] pending gate, then autonomously select next task. Never [x] before PASS.
-- [v] M49.S01.T010 — Multichannel social listening and moderation (audit recommendation 22/60)
+- [x] M49.S01.T010 — Multichannel social listening and moderation (audit recommendation 22/60)
   - Implemented 2026-11-26 [v], pending the M49 gate: Listening and moderation for Meta, LinkedIn, YouTube and X where documented (polling or webhook); assignment, approved replies, hide/delete only where allowed, opt-out, retention; unsupported operations visibly unavailable. Tests: test_m49_s01_t010 (8 passed). Migration 20261129_0079. Simulated only, live use is activation-only.
   - **Implementation:** Extend Meta to documented LinkedIn, TikTok, YouTube, X comments/mentions/replies, metrics and webhooks/polling where permissions/API exist; moderation/assignment, reply drafts/approved send, sentiment source evidence, deletion and retention. No scraping or pretending broad monitoring.
   - **Acceptance at milestone gate:** Manual ingest, filter, assign, reply/approve, hide/delete where allowed, opt-out, webhook replay; local fixtures per network, unsupported operations visibly unavailable.
   - **Required evidence:** source/migration/API/UI/permissions and docs as applicable, actual local app manual click log with screenshots, tests prepared now/run at major gate, official contracts for external adapters; synthetic data only, future activation separately. Update TASKS.md and Project Status immediately after task, [v] pending gate, then autonomously select next task. Never [x] before PASS.
-- [v] M49.S01.T011 — Audience lifecycle and platform synchronization (audit recommendation 23/60)
+- [x] M49.S01.T011 — Audience lifecycle and platform synchronization (audit recommendation 23/60)
   - Implemented 2026-11-26 [v], pending the M49 gate: Audience lifecycle for Meta, Google (Data Manager API), LinkedIn DMP and TikTok: diff sync, status, reconcile, consent withdrawal and suppression everywhere, eligibility, Meta-only provider lookalike, local similarity labelled as local. Tests: test_m49_s01_t011 (7 passed). Migration 20261129_0079. Simulated only, live use is activation-only.
   - **Implementation:** Expand audience create/update/remove/delete/sync, membership diffs, conversion upload, consent withdrawal/suppression, hash identifiers, status/poll, reconciliation and audience eligibility for Meta/Google/LinkedIn/TikTok where public API supports it; provider lookalike creation only if allowed, local similarity clearly labeled.
   - **Acceptance at milestone gate:** Manual segment → preview → approve → local simulated upload → sync → remove consent → remove audience member → status; no unconsented identifiers or invented provider-generated lookalike.
   - **Required evidence:** source/migration/API/UI/permissions and docs as applicable, actual local app manual click log with screenshots, tests prepared now/run at major gate, official contracts for external adapters; synthetic data only, future activation separately. Update TASKS.md and Project Status immediately after task, [v] pending gate, then autonomously select next task. Never [x] before PASS.
-- [v] M49.S01.T012 — Integrated Marketing Studio (audit recommendation 24/60)
+- [x] M49.S01.T012 — Integrated Marketing Studio (audit recommendation 24/60)
   - Implemented 2026-11-26 [v], pending the M49 gate: Marketing Studio tab (/dashboard/marketing → Marketing Studio; API /marketing-studio). Versioned brief, approved-asset links with outdated detection, audience/audience-sync, ads tree (second-person approve, simulated submit), social, email links. Finance cap MARKETING_STUDIO_BUDGET_CAP (default 50000): over-cap budgets need a different finance approver, and the plain campaign create/PATCH refuses over-cap budgets (409). Attribution uses only stored data (sales_orders.campaign_id/promotion, UTM leads); ROAS only with approved same-currency spend. Tables m49_studio_* added to 0079. Tests: test_m49_s01_t012 (2 passed). Limits: mkt_campaigns has no company_id (analytics-only filter); drag/drop template improvements not built (existing designer reused).
   - **Implementation:** Connect campaigns, brand/approved DAM assets, email designer, social calendar, ads, audiences, budget approval, attribution, content versions and channel analytics in one workspace; improve responsive drag/drop templates and campaign assets; shared workflow/roles, audit and reports.
   - **Acceptance at milestone gate:** Manual synthetic campaign from brief → creative → audience → approved ads/social/email local submission → analytics → ERP order/attribution; role-based approval and finance budget caps.
   - **Required evidence:** source/migration/API/UI/permissions and docs as applicable, actual local app manual click log with screenshots, tests prepared now/run at major gate, official contracts for external adapters; synthetic data only, future activation separately. Update TASKS.md and Project Status immediately after task, [v] pending gate, then autonomously select next task. Never [x] before PASS.
 
-- [v] M49.S01.T013 — Gate remediation: independent-review findings F1–F12 (added by the M49 gate)
+- [x] M49.S01.T013 — Gate remediation: independent-review findings F1–F12 (added by the M49 gate)
   - Implemented 2026-11-26 [v], pending the M49 gate:
     - F1: consent withdrawal on every suppressing path (`record_consent` choke point, dedupe merge) writes the suppression and queues removal from every platform list. It never blocks the unsubscribe response; Reconcile retries.
     - F2: withdraw/drain take the sync `root_lock`; suppressed members are filtered before add and re-checked before IN_SYNC.
@@ -3500,7 +3500,7 @@ Dependency: prior major milestone accepted and synchronized; extend actual exist
     - N2: a mail bounce is no longer an ad-audience withdrawal, and an authorised re-subscribe lifts the suppression.
     - N3: requesters never see or get notified of their own studio budget request.
   - Tests: test_m49_s01_t013 (26 passed). The legacy m36 mailbox access test fake was adapted to the shared-mailbox check (5 passed).
-- [v] M49.S01.T014 — Gate remediation: browser walkthrough defects (added by the M49 gate)
+- [x] M49.S01.T014 — Gate remediation: browser walkthrough defects (added by the M49 gate)
   - Implemented 2026-11-26 [v], pending the M49 gate. Defects A–E in coordination/milestones/M49/gate/05_browser_walkthrough.md:
     - A: Studio budget requests are now in My Approvals.
     - B: finance approvers can reach the Studio decide route.
@@ -3510,7 +3510,16 @@ Dependency: prior major milestone accepted and synchronized; extend actual exist
     - Also: the Studio section numbering follows the on-screen order.
 
 ## M49.S02 — Consolidated milestone gate and synchronization
-- [ ] M49.S02.T001 — Run milestone-only consolidated tests on frozen candidate SHA: full applicable backend, DB-gated integration and legacy regression, migration from empty and prior populated head, local provider contracts, frontend tsc/lint/build, security/roles/company isolation, real local ERP manual UI clicks and screenshots desktop/mobile for every affected persona and feature; evaluate applicable quality categories and original task mappings; add remediation tasks for any gap; independent reviewer on exact source; record commands, counts, skipped-test dispositions, screenshot paths, click logs, reviewer identity and verdict. Fix failures, rerun, [x] only after all applicable checks pass; no account activation needed.
+- [x] M49.S02.T001 — Run milestone-only consolidated tests on frozen candidate SHA: full applicable backend, DB-gated integration and legacy regression, migration from empty and prior populated head, local provider contracts, frontend tsc/lint/build, security/roles/company isolation, real local ERP manual UI clicks and screenshots desktop/mobile for every affected persona and feature; evaluate applicable quality categories and original task mappings; add remediation tasks for any gap; independent reviewer on exact source; record commands, counts, skipped-test dispositions, screenshot paths, click logs, reviewer identity and verdict. Fix failures, rerun, [x] only after all applicable checks pass; no account activation needed.
+  - M49 gate PASS 2026-11-26. Evidence: coordination/milestones/M49/gate/GATE_REPORT.md.
+    - Final candidate 64dfe6a.
+    - Migrations: empty, populated and repeated round trips.
+    - DB tests: 246 files on 5dde89d gave 245 PASS plus 1 environmental failure (MQTT broker config path) that PASSES after a broker restart. Rerun of 24 affected files on 64dfe6a: 24/24.
+    - No-DB suite: 1915 passed, 0 failed.
+    - Frontend: tsc 0, eslint 0 errors, i18n ok, build 0.
+    - Browser walkthrough: 9 screenshots; defects A–E fixed (T014).
+    - Independent Opus review: 12 findings fixed (T013); re-review found N1–N3, all fixed.
+    - No quality score claimed (M52).
 - [ ] M49.S02.T002 — After successful gate, mark evidence-backed tasks [x], update TASKS.md/Project Status, commit/push main, fetch and verify Desktop HEAD == origin/main, preserve owner changes, record evidence SHA and sync result. Automatically proceed to next milestone; do not stop for missing business accounts.
 
 # M50 — AI & Enterprise Data Intelligence
