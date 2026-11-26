@@ -2,6 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { tpmApi, TPMClaim, fmtCurrency, CLAIM_STATUS_BADGE } from "@/lib/tpm";
 import Link from "next/link";
+import { tx } from "@/lib/i18n/core";
 
 export default function TPMSettlementPage() {
   const { data: claims = [], isLoading } = useQuery({
@@ -40,7 +41,7 @@ export default function TPMSettlementPage() {
         </td>
         <td className="px-4 py-3">
           {outstanding > 0 && (
-            <Link href={`/dashboard/tpm/claims`} className="text-xs text-indigo-400 hover:text-indigo-300">Settle →</Link>
+            <Link href={`/dashboard/tpm/claims`} className="text-xs text-indigo-400 hover:text-indigo-300">{tx("Settle →")}</Link>
           )}
         </td>
       </tr>
@@ -50,25 +51,25 @@ export default function TPMSettlementPage() {
   return (
     <div className="p-6 space-y-5">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Settlement Tracker</h1>
-        <p className="text-sm text-gray-500">Track settlement status of approved trade promotion claims.</p>
+        <h1 className="text-2xl font-bold text-gray-900">{tx("Settlement Tracker")}</h1>
+        <p className="text-sm text-gray-500">{tx("Track settlement status of approved trade promotion claims.")}</p>
       </div>
 
       <div className="grid grid-cols-3 gap-4">
         <div className="glow-card p-4 text-center">
-          <p className="text-xs text-gray-500">Fully Settled</p>
+          <p className="text-xs text-gray-500">{tx("Fully Settled")}</p>
           <p className="text-lg font-bold text-teal-400 mt-1">{fmtCurrency(totalSettled)}</p>
-          <p className="text-xs text-gray-500">{settled.length} claims</p>
+          <p className="text-xs text-gray-500">{settled.length} {tx("claims")}</p>
         </div>
         <div className="glow-card p-4 text-center">
-          <p className="text-xs text-gray-500">Partially Settled (Outstanding)</p>
+          <p className="text-xs text-gray-500">{tx("Partially Settled (Outstanding)")}</p>
           <p className="text-lg font-bold text-orange-400 mt-1">{fmtCurrency(totalPartial)}</p>
-          <p className="text-xs text-gray-500">{partial.length} claims</p>
+          <p className="text-xs text-gray-500">{partial.length} {tx("claims")}</p>
         </div>
         <div className="glow-card p-4 text-center">
-          <p className="text-xs text-gray-500">Approved Awaiting Settlement</p>
+          <p className="text-xs text-gray-500">{tx("Approved Awaiting Settlement")}</p>
           <p className="text-lg font-bold text-yellow-400 mt-1">{fmtCurrency(totalPending)}</p>
-          <p className="text-xs text-gray-500">{approved.length} claims</p>
+          <p className="text-xs text-gray-500">{approved.length} {tx("claims")}</p>
         </div>
       </div>
 
@@ -76,22 +77,22 @@ export default function TPMSettlementPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-blue-900/30">
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Claim</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Type</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Claimant</th>
-              <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Claimed</th>
-              <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Approved</th>
-              <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Settled</th>
-              <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Outstanding</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Status</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Claim")}</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Type")}</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Claimant")}</th>
+              <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Claimed")}</th>
+              <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Approved")}</th>
+              <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Settled")}</th>
+              <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Outstanding")}</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Status")}</th>
               <th className="px-4 py-3" />
             </tr>
           </thead>
           <tbody>
             {isLoading ? (
-              <tr><td colSpan={9} className="text-center py-10 text-gray-400">Loading…</td></tr>
+              <tr><td colSpan={9} className="text-center py-10 text-gray-400">{tx("Loading…")}</td></tr>
             ) : [...partial, ...approved, ...settled].length === 0 ? (
-              <tr><td colSpan={9} className="text-center py-10 text-gray-400">No settlement data.</td></tr>
+              <tr><td colSpan={9} className="text-center py-10 text-gray-400">{tx("No settlement data.")}</td></tr>
             ) : [...partial, ...approved, ...settled].map((c: TPMClaim) => (
               <ClaimRow key={c.id} c={c} />
             ))}

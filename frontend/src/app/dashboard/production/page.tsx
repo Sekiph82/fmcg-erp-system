@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { ToastContainer } from "@/components/ui/Toast";
 import { useToast } from "@/hooks/useToast";
+import { tx, lx } from "@/lib/i18n/core";
 
 const planStatusVariant = (s: PlanStatus) =>
   s === "CONFIRMED" || s === "IN_PROGRESS"
@@ -28,14 +29,14 @@ const planStatusVariant = (s: PlanStatus) =>
     ? "green"
     : "red";
 
-const STATUS_OPTIONS = [
-  { value: "", label: "All Statuses" },
-  { value: "DRAFT", label: "Draft" },
-  { value: "CONFIRMED", label: "Confirmed" },
-  { value: "IN_PROGRESS", label: "In Progress" },
-  { value: "COMPLETED", label: "Completed" },
-  { value: "CANCELLED", label: "Cancelled" },
-];
+const STATUS_OPTIONS = lx(() => [
+  { value: "", label: tx("All Statuses") },
+  { value: "DRAFT", label: tx("Draft") },
+  { value: "CONFIRMED", label: tx("Confirmed") },
+  { value: "IN_PROGRESS", label: tx("In Progress") },
+  { value: "COMPLETED", label: tx("Completed") },
+  { value: "CANCELLED", label: tx("Cancelled") },
+]);
 
 const emptyPlan: PlanCreate = { plan_no: "", name: "", planned_date: "" };
 
@@ -59,18 +60,18 @@ function ProductionPlansTab() {
       qc.invalidateQueries({ queryKey: ["production-plans"] });
       setPlanOpen(false);
       setPlanForm(emptyPlan);
-      toast("success", "Plan created", `${p.plan_no} created as DRAFT.`);
+      toast("success", tx("Plan created"), tx("{plan_no} created as DRAFT.", { plan_no: p.plan_no }));
     },
-    onError: (err) => toast("error", "Failed", extractApiError(err)),
+    onError: (err) => toast("error", tx("Failed"), extractApiError(err)),
   });
 
   const confirmPlan = useMutation({
     mutationFn: (id: string) => productionApi.confirmPlan(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["production-plans"] });
-      toast("success", "Confirmed", "Plan confirmed.");
+      toast("success", tx("Confirmed"), tx("Plan confirmed."));
     },
-    onError: (err) => toast("error", "Failed", extractApiError(err)),
+    onError: (err) => toast("error", tx("Failed"), extractApiError(err)),
   });
 
   const filtered = plans.filter(
@@ -85,15 +86,15 @@ function ProductionPlansTab() {
 
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Production Plans</h1>
-          <p className="text-sm text-gray-500 mt-1">{plans.length} total</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Production Plans")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{plans.length} {tx("total")}</p>
         </div>
-        <Button onClick={() => setPlanOpen(true)} data-testid="production-create-plan-button">+ New Plan</Button>
+        <Button onClick={() => setPlanOpen(true)} data-testid="production-create-plan-button">{tx("+ New Plan")}</Button>
       </div>
 
       <div className="mb-4 flex gap-3">
         <Input
-          placeholder="Search by name or plan no…"
+          placeholder={tx("Search by name or plan no…")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="max-w-xs"
@@ -118,7 +119,7 @@ function ProductionPlansTab() {
             emptyMessage="No production plans yet."
             columns={[
             {
-              header: "Plan No",
+              header: tx("Plan No"),
               accessor: (p) => (
                 <button
                   className="font-mono text-xs text-indigo-600 hover:underline"
@@ -128,13 +129,13 @@ function ProductionPlansTab() {
                 </button>
               ),
             },
-            { header: "Name", accessor: "name" },
+            { header: tx("Name"), accessor: "name" },
             {
-              header: "Status",
+              header: tx("Status"),
               accessor: (p) => <Badge label={p.status} variant={planStatusVariant(p.status)} />,
             },
             {
-              header: "Planned Date",
+              header: tx("Planned Date"),
               accessor: (p) => new Date(p.planned_date).toLocaleDateString(),
             },
             {
@@ -147,14 +148,14 @@ function ProductionPlansTab() {
                       onClick={() => confirmPlan.mutate(p.id)}
                       data-testid="production-confirm-plan-button"
                     >
-                      Confirm
+                      {tx("Confirm")}
                     </Button>
                   )}
                   <Button
                     variant="secondary"
                     onClick={() => router.push(`/dashboard/production/plans/${p.id}`)}
                   >
-                    View
+                    {tx("View")}
                   </Button>
                 </div>
               ),
@@ -167,7 +168,7 @@ function ProductionPlansTab() {
       <Modal
         open={planOpen}
         onClose={() => { setPlanOpen(false); setPlanForm(emptyPlan); }}
-        title="New Production Plan"
+        title={tx("New Production Plan")}
       >
         <form
           onSubmit={(e) => { e.preventDefault(); createPlan.mutate(planForm); }}
@@ -175,36 +176,36 @@ function ProductionPlansTab() {
         >
           <div className="grid grid-cols-2 gap-4">
             <Input
-              label="Plan No *"
+              label={tx("Plan No *")}
               value={planForm.plan_no}
               onChange={(e) => setPlanForm((f) => ({ ...f, plan_no: e.target.value }))}
               required
-              placeholder="e.g. PP-2026-001"
+              placeholder={tx("e.g. PP-2026-001")}
             />
             <Input
-              label="Name *"
+              label={tx("Name *")}
               value={planForm.name}
               onChange={(e) => setPlanForm((f) => ({ ...f, name: e.target.value }))}
               required
             />
           </div>
           <Input
-            label="Planned Date *"
+            label={tx("Planned Date *")}
             type="datetime-local"
             onChange={(e) => setPlanForm((f) => ({ ...f, planned_date: e.target.value }))}
             required
           />
           <Input
-            label="Description"
+            label={tx("Description")}
             value={planForm.description ?? ""}
             onChange={(e) => setPlanForm((f) => ({ ...f, description: e.target.value || undefined }))}
           />
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" type="button" onClick={() => { setPlanOpen(false); setPlanForm(emptyPlan); }}>
-              Cancel
+              {tx("Cancel")}
             </Button>
             <Button type="submit" loading={createPlan.isPending} disabled={!planForm.plan_no || !planForm.name}>
-              Create Plan
+              {tx("Create Plan")}
             </Button>
           </div>
         </form>
@@ -236,31 +237,31 @@ const ProjectsPage             = dynamic(() => import("@/app/dashboard/projects/
 
 export default function ProductionPage() {
   const tabs = [
-    { key: "plans",         label: "Plans",           permission: "production.view", content: <ProductionPlansTab /> },
-    { key: "orders",        label: "Work Orders",     permission: "production.view", content: <ProductionOrdersPage /> },
-    { key: "scheduling",    label: "Scheduling",      permission: "production.view", content: <ProductionSchedulingPage /> },
-    { key: "work-centers",  label: "Work Centers",    permission: "production.view", content: <ProductionWorkCentersPage /> },
-    { key: "routing",       label: "Routing",         permission: "production.view", content: <ProductionRoutingPage /> },
-    { key: "batch-lots",    label: "Batch / Lots",    permission: "production.view", content: <ProductionBatchLotsPage /> },
+    { key: "plans",         label: tx("Plans"),           permission: "production.view", content: <ProductionPlansTab /> },
+    { key: "orders",        label: tx("Work Orders"),     permission: "production.view", content: <ProductionOrdersPage /> },
+    { key: "scheduling",    label: tx("Scheduling"),      permission: "production.view", content: <ProductionSchedulingPage /> },
+    { key: "work-centers",  label: tx("Work Centers"),    permission: "production.view", content: <ProductionWorkCentersPage /> },
+    { key: "routing",       label: tx("Routing"),         permission: "production.view", content: <ProductionRoutingPage /> },
+    { key: "batch-lots",    label: tx("Batch / Lots"),    permission: "production.view", content: <ProductionBatchLotsPage /> },
     { key: "quality-control",label:"QC",              permission: "production.view", content: <ProductionQCPage /> },
-    { key: "labor",         label: "Labor",           permission: "production.view", content: <ProductionLaborPage /> },
-    { key: "time-tracking", label: "Time Tracking",   permission: "production.view", content: <ProductionTimeTrackPage /> },
+    { key: "labor",         label: tx("Labor"),           permission: "production.view", content: <ProductionLaborPage /> },
+    { key: "time-tracking", label: tx("Time Tracking"),   permission: "production.view", content: <ProductionTimeTrackPage /> },
     { key: "oee",           label: "OEE",             permission: "production.view", content: <ProductionOEEPage /> },
-    { key: "downtime",      label: "Downtime",        permission: "production.view", content: <ProductionDowntimePage /> },
-    { key: "waste-yield",   label: "Waste & Yield",   permission: "production.view", content: <ProductionWasteYieldPage /> },
+    { key: "downtime",      label: tx("Downtime"),        permission: "production.view", content: <ProductionDowntimePage /> },
+    { key: "waste-yield",   label: tx("Waste & Yield"),   permission: "production.view", content: <ProductionWasteYieldPage /> },
     { key: "wip",           label: "WIP",             permission: "finance.view", exact: true, content: <ProductionWIPPage /> },
-    { key: "costing",       label: "Costing",         permission: "finance.view", exact: true, content: <ProductionCostingPage /> },
-    { key: "variance",      label: "Variance",        permission: "finance.view", exact: true, content: <ProductionVariancePage /> },
-    { key: "reports",       label: "Reports",         permission: "production.view", content: <ProductionReportsPage /> },
-    { key: "execution",     label: "Execution",       permission: "production.view", exact: true, content: <ExecutionPage /> },
-    { key: "machine-ops",   label: "Machine Ops",     permission: "production.view", exact: true, content: <MachineOpsPage /> },
-    { key: "material-flow", label: "Material Flow",   permission: "production.view", content: <MaterialFlowPage /> },
-    { key: "projects",      label: "Projects",        permission: "production.view", content: <ProjectsPage /> },
-    { key: "warehouse-links", label: "Warehouse Links", permission: "production.view", content: <ProductionWarehouseLinksPage /> },
+    { key: "costing",       label: tx("Costing"),         permission: "finance.view", exact: true, content: <ProductionCostingPage /> },
+    { key: "variance",      label: tx("Variance"),        permission: "finance.view", exact: true, content: <ProductionVariancePage /> },
+    { key: "reports",       label: tx("Reports"),         permission: "production.view", content: <ProductionReportsPage /> },
+    { key: "execution",     label: tx("Execution"),       permission: "production.view", exact: true, content: <ExecutionPage /> },
+    { key: "machine-ops",   label: tx("Machine Ops"),     permission: "production.view", exact: true, content: <MachineOpsPage /> },
+    { key: "material-flow", label: tx("Material Flow"),   permission: "production.view", content: <MaterialFlowPage /> },
+    { key: "projects",      label: tx("Projects"),        permission: "production.view", content: <ProjectsPage /> },
+    { key: "warehouse-links", label: tx("Warehouse Links"), permission: "production.view", content: <ProductionWarehouseLinksPage /> },
   ];
   return (
     <ModuleWorkspace
-      title="Production"
+      title={tx("Production")}
       description="Plans, work orders, scheduling, OEE, quality, costing"
       permission="production.view"
       tabs={tabs}

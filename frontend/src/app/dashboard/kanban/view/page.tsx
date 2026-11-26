@@ -5,6 +5,7 @@ import {
   kanbanApi, KanbanBoard, KanbanCard, KanbanColumn,
   CardPriority, PRIORITY_COLOR, PRIORITY_BADGE, STATUS_COLOR, STAGE_COLOR, PRIORITIES,
 } from "@/lib/kanban";
+import { tx } from "@/lib/i18n/core";
 
 function CardChip({ card, onMove, onOpen }: {
   card: KanbanCard;
@@ -33,7 +34,7 @@ function CardChip({ card, onMove, onOpen }: {
             {card.due_date}
           </span>
         )}
-        {card.status === "blocked" && <span className="bg-red-100 text-red-700 rounded px-1.5">Blocked</span>}
+        {card.status === "blocked" && <span className="bg-red-100 text-red-700 rounded px-1.5">{tx("Blocked")}</span>}
         {card.comments.length > 0 && <span className="text-gray-400">💬 {card.comments.length}</span>}
         {card.tags && card.tags.split(",").slice(0,2).map(t => (
           <span key={t} className="bg-indigo-50 text-indigo-600 rounded px-1">{t.trim()}</span>
@@ -131,29 +132,29 @@ export default function KanbanViewPage() {
   return (
     <div className="p-4 space-y-3 h-full flex flex-col">
       <div className="flex items-center gap-3 flex-wrap">
-        <h1 className="text-xl font-bold text-gray-900">Board View</h1>
+        <h1 className="text-xl font-bold text-gray-900">{tx("Board View")}</h1>
         <select className="border rounded px-2 py-1 text-sm" value={selectedBoardId}
           onChange={(e) => setSelectedBoardId(e.target.value)}>
-          <option value="">Select board…</option>
+          <option value="">{tx("Select board…")}</option>
           {boards.map(b => <option key={b.board_id} value={b.board_id}>{b.board_name}</option>)}
         </select>
         {selectedBoardId && (
           <>
             <select className="border rounded px-2 py-1 text-sm" value={filterUser}
               onChange={(e) => setFilterUser(e.target.value)}>
-              <option value="">All Users</option>
+              <option value="">{tx("All Users")}</option>
               {allUsers.map(u => <option key={u} value={u}>{u}</option>)}
             </select>
             <select className="border rounded px-2 py-1 text-sm" value={filterPriority}
               onChange={(e) => setFilterPriority(e.target.value)}>
-              <option value="">All Priorities</option>
+              <option value="">{tx("All Priorities")}</option>
               {PRIORITIES.map(p => <option key={p} value={p}>{p}</option>)}
             </select>
           </>
         )}
       </div>
 
-      {loading ? <p className="text-gray-500 text-sm">Loading…</p> : board ? (
+      {loading ? <p className="text-gray-500 text-sm">{tx("Loading…")}</p> : board ? (
         <div className="flex gap-3 overflow-x-auto pb-4 flex-1">
           {board.columns.map(col => {
             const colCards = filteredCards(col.column_id);
@@ -185,11 +186,11 @@ export default function KanbanViewPage() {
                 <div className="p-2 border-t">
                   {showAddCard === col.column_id ? (
                     <div className="space-y-1">
-                      <input autoFocus className="w-full border rounded px-2 py-1 text-xs" placeholder="Card title…"
+                      <input autoFocus className="w-full border rounded px-2 py-1 text-xs" placeholder={tx("Card title…")}
                         value={cardForm.title} onChange={(e) => setCardForm({ ...cardForm, title: e.target.value })}
                         onKeyDown={(e) => { if (e.key === "Enter") addCard(col.column_id); if (e.key === "Escape") setShowAddCard(null); }}
                       />
-                      <input className="w-full border rounded px-2 py-1 text-xs" placeholder="Assignee"
+                      <input className="w-full border rounded px-2 py-1 text-xs" placeholder={tx("Assignee")}
                         value={cardForm.assigned_user_name} onChange={(e) => setCardForm({ ...cardForm, assigned_user_name: e.target.value })} />
                       <div className="flex gap-1">
                         <input type="date" className="flex-1 border rounded px-2 py-1 text-xs"
@@ -201,15 +202,15 @@ export default function KanbanViewPage() {
                       </div>
                       <div className="flex gap-1">
                         <button onClick={() => addCard(col.column_id)}
-                          className="flex-1 rounded bg-blue-600 py-1 text-xs text-white hover:bg-blue-700">Add</button>
+                          className="flex-1 rounded bg-blue-600 py-1 text-xs text-white hover:bg-blue-700">{tx("Add")}</button>
                         <button onClick={() => setShowAddCard(null)}
-                          className="flex-1 rounded border py-1 text-xs text-gray-600 hover:bg-gray-50">Cancel</button>
+                          className="flex-1 rounded border py-1 text-xs text-gray-600 hover:bg-gray-50">{tx("Cancel")}</button>
                       </div>
                     </div>
                   ) : (
                     <button onClick={() => setShowAddCard(col.column_id)}
                       className="w-full rounded py-1 text-xs text-gray-400 hover:bg-gray-100 hover:text-gray-700 text-left px-2">
-                      + Add card
+                      {tx("+ Add card")}
                     </button>
                   )}
                 </div>
@@ -219,7 +220,7 @@ export default function KanbanViewPage() {
         </div>
       ) : selectedBoardId ? null : (
         <div className="flex-1 flex items-center justify-center">
-          <p className="text-gray-400">Select a board above to start.</p>
+          <p className="text-gray-400">{tx("Select a board above to start.")}</p>
         </div>
       )}
 
@@ -239,36 +240,36 @@ export default function KanbanViewPage() {
               {selected.description && <p className="text-sm text-gray-600">{selected.description}</p>}
 
               <div className="grid grid-cols-2 gap-2 text-xs text-gray-500">
-                {selected.assigned_user_name && <div><span className="font-medium">Assigned:</span> {selected.assigned_user_name}</div>}
-                {selected.due_date && <div><span className="font-medium">Due:</span> {selected.due_date}</div>}
-                {selected.tags && <div className="col-span-2"><span className="font-medium">Tags:</span> {selected.tags}</div>}
-                {selected.reference_type && <div className="col-span-2"><span className="font-medium">Ref:</span> {selected.reference_type} #{selected.reference_id}</div>}
+                {selected.assigned_user_name && <div><span className="font-medium">{tx("Assigned:")}</span> {selected.assigned_user_name}</div>}
+                {selected.due_date && <div><span className="font-medium">{tx("Due:")}</span> {selected.due_date}</div>}
+                {selected.tags && <div className="col-span-2"><span className="font-medium">{tx("Tags:")}</span> {selected.tags}</div>}
+                {selected.reference_type && <div className="col-span-2"><span className="font-medium">{tx("Ref:")}</span> {selected.reference_type} #{selected.reference_id}</div>}
               </div>
 
               <div className="flex gap-2">
                 {selected.status !== "blocked" && (
                   <button onClick={() => updateCardStatus("blocked")}
-                    className="rounded border border-red-200 px-2 py-1 text-xs text-red-600 hover:bg-red-50">Mark Blocked</button>
+                    className="rounded border border-red-200 px-2 py-1 text-xs text-red-600 hover:bg-red-50">{tx("Mark Blocked")}</button>
                 )}
                 {selected.status !== "active" && (
                   <button onClick={() => updateCardStatus("active")}
-                    className="rounded border border-green-200 px-2 py-1 text-xs text-green-600 hover:bg-green-50">Mark Active</button>
+                    className="rounded border border-green-200 px-2 py-1 text-xs text-green-600 hover:bg-green-50">{tx("Mark Active")}</button>
                 )}
                 {selected.status !== "done" && (
                   <button onClick={() => updateCardStatus("done")}
-                    className="rounded border border-gray-200 px-2 py-1 text-xs text-gray-600 hover:bg-gray-50">Mark Done</button>
+                    className="rounded border border-gray-200 px-2 py-1 text-xs text-gray-600 hover:bg-gray-50">{tx("Mark Done")}</button>
                 )}
               </div>
 
               {selected.activities.length > 0 && (
                 <div>
-                  <h3 className="text-xs font-semibold text-gray-600 mb-2">Activity</h3>
+                  <h3 className="text-xs font-semibold text-gray-600 mb-2">{tx("Activity")}</h3>
                   <div className="space-y-1.5">
                     {selected.activities.slice(0, 8).map(a => (
                       <div key={a.activity_id} className="flex gap-2 text-xs text-gray-500">
                         <span className="text-gray-400 w-20 shrink-0">{new Date(a.created_at).toLocaleString().slice(0,10)}</span>
                         <span className="capitalize font-medium text-gray-700">{a.event_type.replace(/_/g," ")}</span>
-                        {a.from_value && <span>from <em>{a.from_value}</em></span>}
+                        {a.from_value && <span>{tx("from")} <em>{a.from_value}</em></span>}
                         {a.to_value && <span>→ <em>{a.to_value}</em></span>}
                       </div>
                     ))}
@@ -277,12 +278,12 @@ export default function KanbanViewPage() {
               )}
 
               <div>
-                <h3 className="text-xs font-semibold text-gray-600 mb-2">Comments ({selected.comments.length})</h3>
+                <h3 className="text-xs font-semibold text-gray-600 mb-2">{tx("Comments (")}{selected.comments.length})</h3>
                 <div className="space-y-2 mb-2">
                   {selected.comments.map(c => (
                     <div key={c.comment_id} className="bg-gray-50 rounded p-2 text-xs">
                       <div className="flex items-center gap-1 text-gray-400 mb-0.5">
-                        <span className="font-medium text-gray-700">{c.author_name ?? "Anonymous"}</span>
+                        <span className="font-medium text-gray-700">{c.author_name ?? tx("Anonymous")}</span>
                         <span>·</span>
                         <span>{new Date(c.created_at).toLocaleString()}</span>
                       </div>
@@ -291,11 +292,11 @@ export default function KanbanViewPage() {
                   ))}
                 </div>
                 <div className="flex gap-2">
-                  <input className="flex-1 border rounded px-2 py-1 text-xs" placeholder="Add comment…"
+                  <input className="flex-1 border rounded px-2 py-1 text-xs" placeholder={tx("Add comment…")}
                     value={comment} onChange={(e) => setComment(e.target.value)}
                     onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) postComment(); }}
                   />
-                  <button onClick={postComment} className="rounded bg-blue-600 px-2 py-1 text-xs text-white hover:bg-blue-700">Post</button>
+                  <button onClick={postComment} className="rounded bg-blue-600 px-2 py-1 text-xs text-white hover:bg-blue-700">{tx("Post")}</button>
                 </div>
               </div>
             </div>

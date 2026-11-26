@@ -8,6 +8,7 @@ import { financeApi } from "@/lib/finance";
 import { Badge } from "@/components/ui/Badge";
 import { RequirePermission } from "@/components/PermissionGuard";
 import { useAuth } from "@/context/AuthContext";
+import { tx } from "@/lib/i18n/core";
 
 function FinanceDashboardContent() {
   const router = useRouter();
@@ -50,28 +51,28 @@ function FinanceDashboardContent() {
 
   const tiles = [
     {
-      label: "Total Cash & Bank",
+      label: tx("Total Cash & Bank"),
       value: `KES ${totalCash.toLocaleString(undefined, { minimumFractionDigits: 0 })}`,
       sub: `${cashPosition.length} accounts`,
       color: "text-green-700",
       href: "/dashboard/finance/cashbook",
     },
     {
-      label: "Outstanding Receivables",
+      label: tx("Outstanding Receivables"),
       value: `KES ${totalReceivables.toLocaleString(undefined, { minimumFractionDigits: 0 })}`,
       sub: `${overdueCount > 0 ? `${overdueCount} overdue` : "no overdue"}`,
       color: overdueCount > 0 ? "text-red-600" : "text-orange-600",
       href: "/dashboard/finance/receivables",
     },
     {
-      label: "M-Pesa This Month",
+      label: tx("M-Pesa This Month"),
       value: `KES ${monthMpesaTotal.toLocaleString(undefined, { minimumFractionDigits: 0 })}`,
       sub: `${monthMpesaMatched} matched / ${monthMpesaUnmatched} pending`,
       color: "text-indigo-700",
       href: "/dashboard/finance/mpesa",
     },
     {
-      label: "Recon Exceptions",
+      label: tx("Recon Exceptions"),
       value: exceptionCount.toString(),
       sub: `${unmatchedCount} unmatched`,
       color: exceptionCount > 0 ? "text-red-600" : "text-gray-700",
@@ -83,8 +84,8 @@ function FinanceDashboardContent() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Finance & Accounting</h1>
-          <p className="text-sm text-gray-500 mt-1">Cash, M-Pesa, receivables, costing & budgets</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Finance & Accounting")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{tx("Cash, M-Pesa, receivables, costing & budgets")}</p>
         </div>
       </div>
 
@@ -106,26 +107,26 @@ function FinanceDashboardContent() {
       {/* Cash Position table */}
       <div className="bg-white rounded-lg border">
         <div className="px-5 py-3 border-b flex items-center justify-between">
-          <h2 className="font-semibold text-gray-800">Cash Position</h2>
+          <h2 className="font-semibold text-gray-800">{tx("Cash Position")}</h2>
           <button
             className="text-xs text-indigo-600 hover:underline"
             onClick={() => router.push("/dashboard/finance/cashbook")}
           >
-            Manage accounts
+            {tx("Manage accounts")}
           </button>
         </div>
         {cashPosition.length === 0 ? (
-          <p className="px-5 py-8 text-sm text-gray-400 text-center">No cash accounts configured</p>
+          <p className="px-5 py-8 text-sm text-gray-400 text-center">{tx("No cash accounts configured")}</p>
         ) : (
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-gray-50 text-xs text-gray-500 uppercase">
-                <th className="px-5 py-2 text-left">Account</th>
-                <th className="px-5 py-2 text-left">Type</th>
-                <th className="px-5 py-2 text-right">Balance</th>
-                <th className="px-5 py-2 text-right">Pending In</th>
-                <th className="px-5 py-2 text-right">Pending Out</th>
-                <th className="px-5 py-2 text-right">Cleared</th>
+                <th className="px-5 py-2 text-left">{tx("Account")}</th>
+                <th className="px-5 py-2 text-left">{tx("Type")}</th>
+                <th className="px-5 py-2 text-right">{tx("Balance")}</th>
+                <th className="px-5 py-2 text-right">{tx("Pending In")}</th>
+                <th className="px-5 py-2 text-right">{tx("Pending Out")}</th>
+                <th className="px-5 py-2 text-right">{tx("Cleared")}</th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -152,12 +153,12 @@ function FinanceDashboardContent() {
       {/* Quick-links */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label: "Cashbook & Bank Entries", desc: "Record and manage cash/bank/M-Pesa transactions", href: "/dashboard/finance/cashbook" },
-          { label: "M-Pesa Reconciliation", desc: "Match M-Pesa receipts to invoices automatically or manually", href: "/dashboard/finance/mpesa" },
-          { label: "Product Costing", desc: "View production cost rollups and unit costs by period", href: "/dashboard/finance/costing" },
-          { label: "Receivables", desc: "Customer outstanding balances and overdue invoices", href: "/dashboard/finance/receivables" },
-          { label: "Budget Management", desc: "Create, approve and track department budgets vs actuals", href: "/dashboard/finance/budget" },
-          { label: "Journal Entries", desc: "Double-entry ledger entries and chart of accounts", href: "/dashboard/finance/cashbook?tab=journal" },
+          { label: tx("Cashbook & Bank Entries"), desc: tx("Record and manage cash/bank/M-Pesa transactions"), href: "/dashboard/finance/cashbook" },
+          { label: tx("M-Pesa Reconciliation"), desc: tx("Match M-Pesa receipts to invoices automatically or manually"), href: "/dashboard/finance/mpesa" },
+          { label: tx("Product Costing"), desc: tx("View production cost rollups and unit costs by period"), href: "/dashboard/finance/costing" },
+          { label: tx("Receivables"), desc: tx("Customer outstanding balances and overdue invoices"), href: "/dashboard/finance/receivables" },
+          { label: tx("Budget Management"), desc: tx("Create, approve and track department budgets vs actuals"), href: "/dashboard/finance/budget" },
+          { label: tx("Journal Entries"), desc: tx("Double-entry ledger entries and chart of accounts"), href: "/dashboard/finance/cashbook?tab=journal" },
         ].map((item) => (
           <button
             key={item.href}
@@ -194,29 +195,29 @@ const ExpensesPage            = dynamic(() => import("@/app/dashboard/expenses/p
 
 export default function FinanceDashboardPage() {
   const tabs = [
-    { key: "overview",       label: "Overview",        permission: "finance.view", exact: true, content: <FinanceDashboardContent /> },
-    { key: "accounting",     label: "Accounting",      permission: "finance.view", exact: true, content: <FinanceAccountingPage /> },
-    { key: "cashbook",       label: "Cashbook",        permission: "finance.view", exact: true, content: <FinanceCashbookPage /> },
-    { key: "receivables",    label: "Receivables",     permission: "finance.view", exact: true, content: <FinanceReceivablesPage /> },
-    { key: "budget",         label: "Budget",          permission: "finance.view", exact: true, content: <FinanceBudgetPage /> },
-    { key: "mpesa",          label: "M-Pesa",          permission: "finance.view", exact: true, content: <FinanceMpesaPage /> },
-    { key: "costing",        label: "Costing",         permission: "finance.view", exact: true, content: <FinanceCostingPage /> },
-    { key: "exchange-rates", label: "Exchange Rates",  permission: "finance.view", exact: true, content: <FinanceExchangeRatesPage /> },
-    { key: "posting-rules", label: "Posting Rules",   permission: "finance.view", exact: true, content: <FinancePostingRulesPage /> },
+    { key: "overview",       label: tx("Overview"),        permission: "finance.view", exact: true, content: <FinanceDashboardContent /> },
+    { key: "accounting",     label: tx("Accounting"),      permission: "finance.view", exact: true, content: <FinanceAccountingPage /> },
+    { key: "cashbook",       label: tx("Cashbook"),        permission: "finance.view", exact: true, content: <FinanceCashbookPage /> },
+    { key: "receivables",    label: tx("Receivables"),     permission: "finance.view", exact: true, content: <FinanceReceivablesPage /> },
+    { key: "budget",         label: tx("Budget"),          permission: "finance.view", exact: true, content: <FinanceBudgetPage /> },
+    { key: "mpesa",          label: tx("M-Pesa"),          permission: "finance.view", exact: true, content: <FinanceMpesaPage /> },
+    { key: "costing",        label: tx("Costing"),         permission: "finance.view", exact: true, content: <FinanceCostingPage /> },
+    { key: "exchange-rates", label: tx("Exchange Rates"),  permission: "finance.view", exact: true, content: <FinanceExchangeRatesPage /> },
+    { key: "posting-rules", label: tx("Posting Rules"),   permission: "finance.view", exact: true, content: <FinancePostingRulesPage /> },
     { key: "etims",          label: "eTIMS",           permission: "finance.view", exact: true, content: <FinanceEtimsPage /> },
-    { key: "vat-returns",    label: "VAT Returns",     permission: "finance.view", exact: true, content: <FinanceVATPage /> },
-    { key: "bank-recon",     label: "Bank Recon",      permission: "finance.view", content: <BankReconPage /> },
-    { key: "invoice-match",  label: "Invoice Match",   permission: "finance.view", exact: true, content: <InvoiceMatchPage /> },
-    { key: "fixed-assets",   label: "Fixed Assets",    permission: "finance.view", exact: true, content: <FixedAssetsPage /> },
-    { key: "dimensions",     label: "Dimensions",      permission: "finance.view", exact: true, content: <DimensionsPage /> },
-    { key: "dunning",        label: "Dunning",         permission: "finance.view", exact: true, content: <DunningPage /> },
-    { key: "tax",            label: "Tax",             permission: "finance.view", exact: true, content: <TaxPage /> },
-    { key: "bank-api",       label: "Bank API",        permission: "finance.view", content: <BankAPIPage /> },
-    { key: "expenses",       label: "Expenses",        permission: "hr.view",      content: <ExpensesPage /> },
+    { key: "vat-returns",    label: tx("VAT Returns"),     permission: "finance.view", exact: true, content: <FinanceVATPage /> },
+    { key: "bank-recon",     label: tx("Bank Recon"),      permission: "finance.view", content: <BankReconPage /> },
+    { key: "invoice-match",  label: tx("Invoice Match"),   permission: "finance.view", exact: true, content: <InvoiceMatchPage /> },
+    { key: "fixed-assets",   label: tx("Fixed Assets"),    permission: "finance.view", exact: true, content: <FixedAssetsPage /> },
+    { key: "dimensions",     label: tx("Dimensions"),      permission: "finance.view", exact: true, content: <DimensionsPage /> },
+    { key: "dunning",        label: tx("Dunning"),         permission: "finance.view", exact: true, content: <DunningPage /> },
+    { key: "tax",            label: tx("Tax"),             permission: "finance.view", exact: true, content: <TaxPage /> },
+    { key: "bank-api",       label: tx("Bank API"),        permission: "finance.view", content: <BankAPIPage /> },
+    { key: "expenses",       label: tx("Expenses"),        permission: "hr.view",      content: <ExpensesPage /> },
   ];
   return (
     <ModuleWorkspace
-      title="Finance"
+      title={tx("Finance")}
       description="Accounting, cashbook, receivables, bank recon, tax, expenses"
       permission="finance.view"
       tabs={tabs}

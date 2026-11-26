@@ -2,6 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { dimApi } from "@/lib/dimensions";
 import Link from "next/link";
+import { tx } from "@/lib/i18n/core";
 
 export default function CompletenessPage() {
   const { data: rows = [], isLoading } = useQuery({
@@ -20,24 +21,24 @@ export default function CompletenessPage() {
     <div className="p-6 space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Tagging Completeness Report</h1>
-          <p className="text-sm text-gray-500">Review dimension coverage across all transaction types.</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Tagging Completeness Report")}</h1>
+          <p className="text-sm text-gray-500">{tx("Review dimension coverage across all transaction types.")}</p>
         </div>
-        <Link href="/dashboard/dimensions/ai" className="glow-button text-sm">View AI Recs →</Link>
+        <Link href="/dashboard/dimensions/ai" className="glow-button text-sm">{tx("View AI Recs →")}</Link>
       </div>
 
       {mandatory.length > 0 && (
         <div className="liquid-glass p-4 space-y-2">
-          <h2 className="text-sm font-semibold text-gray-700">Mandatory Dimensions</h2>
+          <h2 className="text-sm font-semibold text-gray-700">{tx("Mandatory Dimensions")}</h2>
           <div className="flex flex-wrap gap-2">
             {mandatory.map((t) => (
               <span key={t.id} className="px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
-                {t.type_name} (required)
+                {t.type_name} {tx("(required)")}
               </span>
             ))}
           </div>
           <p className="text-xs text-gray-400">
-            These dimensions must be tagged on every applicable transaction. Validation rules enforce this.
+            {tx("These dimensions must be tagged on every applicable transaction. Validation rules enforce this.")}
           </p>
         </div>
       )}
@@ -46,19 +47,19 @@ export default function CompletenessPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-blue-900/30">
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Transaction Type</th>
-              <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Tagged Count</th>
-              <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Untagged</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Completeness</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Transaction Type")}</th>
+              <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Tagged Count")}</th>
+              <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Untagged")}</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Completeness")}</th>
             </tr>
           </thead>
           <tbody>
             {isLoading ? (
-              <tr><td colSpan={4} className="text-center py-10 text-gray-400">Loading…</td></tr>
+              <tr><td colSpan={4} className="text-center py-10 text-gray-400">{tx("Loading…")}</td></tr>
             ) : rows.length === 0 ? (
               <tr>
                 <td colSpan={4} className="text-center py-10 text-gray-400">
-                  No tagged transactions found. Start tagging via the API or enable auto-derivation rules.
+                  {tx("No tagged transactions found. Start tagging via the API or enable auto-derivation rules.")}
                 </td>
               </tr>
             ) : rows.map((r: any, i: number) => {
@@ -86,20 +87,20 @@ export default function CompletenessPage() {
 
       <div className="grid grid-cols-2 gap-4">
         <div className="liquid-glass p-4 space-y-2">
-          <h3 className="text-sm font-semibold text-gray-700">Quick Actions</h3>
+          <h3 className="text-sm font-semibold text-gray-700">{tx("Quick Actions")}</h3>
           <div className="space-y-1">
-            <Link href="/dashboard/dimensions/validation" className="block text-sm text-indigo-400 hover:text-indigo-300">→ Manage Validation Rules</Link>
-            <Link href="/dashboard/dimensions/defaults" className="block text-sm text-indigo-400 hover:text-indigo-300">→ Set Up Auto-Derivation Rules</Link>
-            <Link href="/dashboard/dimensions/reclassify" className="block text-sm text-indigo-400 hover:text-indigo-300">→ Reclassify Tagged Transactions</Link>
+            <Link href="/dashboard/dimensions/validation" className="block text-sm text-indigo-400 hover:text-indigo-300">{tx("→ Manage Validation Rules")}</Link>
+            <Link href="/dashboard/dimensions/defaults" className="block text-sm text-indigo-400 hover:text-indigo-300">{tx("→ Set Up Auto-Derivation Rules")}</Link>
+            <Link href="/dashboard/dimensions/reclassify" className="block text-sm text-indigo-400 hover:text-indigo-300">{tx("→ Reclassify Tagged Transactions")}</Link>
           </div>
         </div>
         <div className="liquid-glass p-4 space-y-2">
-          <h3 className="text-sm font-semibold text-gray-700">All Dimension Types</h3>
+          <h3 className="text-sm font-semibold text-gray-700">{tx("All Dimension Types")}</h3>
           <div className="space-y-1">
             {types.map((t) => (
               <div key={t.id} className="flex items-center justify-between text-xs">
                 <span className="text-gray-300">{t.type_name}</span>
-                <span className="text-gray-400">{t.value_count} values</span>
+                <span className="text-gray-400">{t.value_count} {tx("values")}</span>
               </div>
             ))}
           </div>

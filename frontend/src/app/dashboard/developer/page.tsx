@@ -9,6 +9,7 @@ import {
   PartnerAuditEvent,
   PartnerUsageAnalytics,
 } from "@/lib/api_portal_api";
+import { tx } from "@/lib/i18n/core";
 
 export default function DeveloperPortalPage() {
   const [dash, setDash] = useState<DevPortalDashboard | null>(null);
@@ -36,7 +37,7 @@ export default function DeveloperPortalPage() {
     const failure = results.find((result) => result.status === "rejected");
     if (failure?.status === "rejected") {
       const reason = failure.reason;
-      setError(reason instanceof Error ? reason.message : "Developer Portal could not be loaded.");
+      setError(reason instanceof Error ? reason.message : tx("Developer Portal could not be loaded."));
       const status = typeof reason === "object" && reason !== null && "status" in reason
         ? (reason as { status?: unknown }).status
         : undefined;
@@ -48,34 +49,34 @@ export default function DeveloperPortalPage() {
   useEffect(() => { void load(); }, []);
 
   const links = [
-    { href: "/dashboard/developer/applications", label: "API Applications", desc: "Register and manage API client applications" },
-    { href: "/dashboard/developer/keys", label: "API Keys", desc: "Generate and manage API keys" },
-    { href: "/dashboard/developer/graphql", label: "GraphQL Layer", desc: "GraphQL schema info and status" },
-    { href: "/docs", label: "OpenAPI Docs", desc: "Interactive Swagger UI", external: true },
-    { href: "/redoc", label: "ReDoc", desc: "Alternative API documentation", external: true },
-    { href: "/dashboard/webhooks", label: "Webhooks", desc: "Event subscriptions and deliveries" },
-    { href: "/dashboard/integrations", label: "Integrations Hub", desc: "Connector marketplace overview" },
+    { href: "/dashboard/developer/applications", label: tx("API Applications"), desc: tx("Register and manage API client applications") },
+    { href: "/dashboard/developer/keys", label: tx("API Keys"), desc: tx("Generate and manage API keys") },
+    { href: "/dashboard/developer/graphql", label: tx("GraphQL Layer"), desc: tx("GraphQL schema info and status") },
+    { href: "/docs", label: tx("OpenAPI Docs"), desc: tx("Interactive Swagger UI"), external: true },
+    { href: "/redoc", label: tx("ReDoc"), desc: tx("Alternative API documentation"), external: true },
+    { href: "/dashboard/webhooks", label: tx("Webhooks"), desc: tx("Event subscriptions and deliveries") },
+    { href: "/dashboard/integrations", label: tx("Integrations Hub"), desc: tx("Connector marketplace overview") },
   ];
 
   return (
     <div className="w-full min-w-0 p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Developer Portal</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{tx("Developer Portal")}</h1>
         <p className="text-sm text-gray-500 mt-1">
-          API key management, GraphQL layer, SDK resources, and developer tools.
+          {tx("API key management, GraphQL layer, SDK resources, and developer tools.")}
         </p>
       </div>
 
       {loading ? (
-        <p className="text-gray-500 text-sm">Loading…</p>
+        <p className="text-gray-500 text-sm">{tx("Loading…")}</p>
       ) : (
         <>
           {error && (
             <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
               <span>{error}</span>
               <div className="flex items-center gap-2">
-                {sessionExpired && <Link href="/login" className="rounded border border-amber-300 px-3 py-1.5 font-medium hover:bg-amber-100">Sign in</Link>}
-                {!sessionExpired && <button type="button" onClick={() => void load()} className="rounded border border-amber-300 px-3 py-1.5 font-medium hover:bg-amber-100">Retry</button>}
+                {sessionExpired && <Link href="/login" className="rounded border border-amber-300 px-3 py-1.5 font-medium hover:bg-amber-100">{tx("Sign in")}</Link>}
+                {!sessionExpired && <button type="button" onClick={() => void load()} className="rounded border border-amber-300 px-3 py-1.5 font-medium hover:bg-amber-100">{tx("Retry")}</button>}
               </div>
             </div>
           )}
@@ -83,11 +84,11 @@ export default function DeveloperPortalPage() {
           {dash && usage && (
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
               {[
-                { label: "Total Keys", value: dash.total_keys, color: "text-gray-800" },
-                { label: "Active Keys", value: dash.active_keys, color: "text-blue-600" },
-                { label: "Recorded calls (30d)", value: usage.total_calls, color: "text-gray-800" },
-                { label: "Success (30d)", value: usage.success_calls, color: "text-green-600" },
-                { label: "Errors (30d)", value: usage.error_calls, color: "text-red-600" },
+                { label: tx("Total Keys"), value: dash.total_keys, color: "text-gray-800" },
+                { label: tx("Active Keys"), value: dash.active_keys, color: "text-blue-600" },
+                { label: tx("Recorded calls (30d)"), value: usage.total_calls, color: "text-gray-800" },
+                { label: tx("Success (30d)"), value: usage.success_calls, color: "text-green-600" },
+                { label: tx("Errors (30d)"), value: usage.error_calls, color: "text-red-600" },
               ].map((k) => (
                 <div key={k.label} className="bg-white border rounded-lg p-4 shadow-sm">
                   <p className="text-xs text-gray-500">{k.label}</p>
@@ -101,11 +102,11 @@ export default function DeveloperPortalPage() {
             <section aria-labelledby="partner-usage-heading" className="bg-white border rounded-lg p-4 shadow-sm space-y-3">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
-                  <h2 id="partner-usage-heading" className="text-sm font-semibold text-gray-800">Partner usage analytics</h2>
-                  <p className="text-xs text-gray-500">Recorded usage-log rows from the last {usage.days} days</p>
+                  <h2 id="partner-usage-heading" className="text-sm font-semibold text-gray-800">{tx("Partner usage analytics")}</h2>
+                  <p className="text-xs text-gray-500">{tx("Recorded usage-log rows from the last")} {usage.days} {tx("days")}</p>
                 </div>
                 <p className="text-xs text-gray-600">
-                  Average response: {usage.average_response_ms === null ? "—" : `${Math.round(usage.average_response_ms)} ms`}
+                  {tx("Average response:")} {usage.average_response_ms === null ? "—" : `${Math.round(usage.average_response_ms)} ms`}
                 </p>
               </div>
               <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded p-2">{usage.collection_note}</p>
@@ -114,10 +115,10 @@ export default function DeveloperPortalPage() {
                   <table className="w-full text-xs">
                     <thead className="text-left text-gray-500 border-b">
                       <tr>
-                        <th className="py-2 pr-3">Date (UTC)</th>
-                        <th className="py-2 pr-3">Recorded</th>
-                        <th className="py-2 pr-3">Successful</th>
-                        <th className="py-2">Errors</th>
+                        <th className="py-2 pr-3">{tx("Date (UTC)")}</th>
+                        <th className="py-2 pr-3">{tx("Recorded")}</th>
+                        <th className="py-2 pr-3">{tx("Successful")}</th>
+                        <th className="py-2">{tx("Errors")}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -133,18 +134,18 @@ export default function DeveloperPortalPage() {
                   </table>
                 </div>
               ) : (
-                <p className="text-sm text-gray-500">No usage-log rows were recorded in this window.</p>
+                <p className="text-sm text-gray-500">{tx("No usage-log rows were recorded in this window.")}</p>
               )}
               {usage.unclassified_calls > 0 && (
-                <p className="text-xs text-gray-500">{usage.unclassified_calls} rows have no classifiable HTTP status.</p>
+                <p className="text-xs text-gray-500">{usage.unclassified_calls} {tx("rows have no classifiable HTTP status.")}</p>
               )}
             </section>
           )}
 
           <section aria-labelledby="partner-audit-heading" className="bg-white border rounded-lg p-4 shadow-sm space-y-3">
             <div>
-              <h2 id="partner-audit-heading" className="text-sm font-semibold text-gray-800">Partner credential audit</h2>
-              <p className="text-xs text-gray-500">Recent application and credential changes performed by your account</p>
+              <h2 id="partner-audit-heading" className="text-sm font-semibold text-gray-800">{tx("Partner credential audit")}</h2>
+              <p className="text-xs text-gray-500">{tx("Recent application and credential changes performed by your account")}</p>
             </div>
             {audit.length ? (
               <ul className="divide-y">
@@ -161,7 +162,7 @@ export default function DeveloperPortalPage() {
                 ))}
               </ul>
             ) : (
-              <p className="text-sm text-gray-500">No partner application or credential changes have been recorded.</p>
+              <p className="text-sm text-gray-500">{tx("No partner application or credential changes have been recorded.")}</p>
             )}
           </section>
 
@@ -170,7 +171,7 @@ export default function DeveloperPortalPage() {
             <div className="bg-white border rounded-lg p-4 shadow-sm space-y-4">
               <div className="flex flex-wrap gap-6">
                 <div>
-                  <p className="text-xs text-gray-500 mb-1">Available Scope Policies</p>
+                  <p className="text-xs text-gray-500 mb-1">{tx("Available Scope Policies")}</p>
                   <div className="flex gap-2">
                     {dash.available_scopes.map((scope) => (
                       <span key={scope} className="bg-blue-100 text-blue-700 text-xs font-medium rounded-full px-3 py-1">{scope}</span>
@@ -178,9 +179,9 @@ export default function DeveloperPortalPage() {
                   </div>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500 mb-1">Per-key Rate Policy</p>
+                  <p className="text-xs text-gray-500 mb-1">{tx("Per-key Rate Policy")}</p>
                   <span className="text-sm font-semibold text-gray-700">
-                    {dash.default_rate_limit} req/min default · {res.rate_limits.minimum}–{res.rate_limits.maximum} allowed
+                    {dash.default_rate_limit} {tx("req/min default ·")} {res.rate_limits.minimum}–{res.rate_limits.maximum} {tx("allowed")}
                   </span>
                 </div>
               </div>
@@ -190,7 +191,7 @@ export default function DeveloperPortalPage() {
                 ))}
               </ul>
               <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded p-2">
-                These are stored credential policies. API-key request authentication is not enabled, so scopes and rate limits are not currently enforced.
+                {tx("These are stored credential policies. API-key request authentication is not enabled, so scopes and rate limits are not currently enforced.")}
               </p>
             </div>
           )}
@@ -198,7 +199,7 @@ export default function DeveloperPortalPage() {
           {/* Auth info */}
           {res && (
             <div className="bg-white border rounded-lg p-4 shadow-sm space-y-2">
-              <h2 className="text-sm font-semibold text-gray-700">Authentication</h2>
+              <h2 className="text-sm font-semibold text-gray-700">{tx("Authentication")}</h2>
               <div className="text-sm text-gray-600 space-y-1">
                 {Object.entries(res.authentication).map(([k, v]) => (
                   <div key={k} className="flex gap-2">
@@ -215,7 +216,7 @@ export default function DeveloperPortalPage() {
 
       {/* Navigation */}
       <div className="bg-white border rounded-lg p-4 shadow-sm">
-        <h2 className="text-sm font-semibold text-gray-700 mb-3">Developer Tools</h2>
+        <h2 className="text-sm font-semibold text-gray-700 mb-3">{tx("Developer Tools")}</h2>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {links.map((l) => (
             <Link

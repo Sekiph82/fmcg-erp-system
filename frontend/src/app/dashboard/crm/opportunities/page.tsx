@@ -6,6 +6,7 @@ import {
   crmApi, CRMRecord, CRMStage, fmtCurrency,
   STATUS_LABELS, STATUS_COLORS, TEMPERATURE_LABELS, TEMPERATURE_COLORS,
 } from "@/lib/crm_pipeline";
+import { tx } from "@/lib/i18n/core";
 
 export default function OpportunitiesPage() {
   const [records, setRecords] = useState<CRMRecord[]>([]);
@@ -51,25 +52,25 @@ export default function OpportunitiesPage() {
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-gray-900">Opportunities</h1>
+        <h1 className="text-xl font-bold text-gray-900">{tx("Opportunities")}</h1>
         <button onClick={() => setShowCreate(true)}
           className="px-3 py-1.5 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700">
-          + New Opportunity
+          {tx("+ New Opportunity")}
         </button>
       </div>
 
       {/* Summary Bars */}
       <div className="grid grid-cols-3 gap-3">
         <div className="bg-purple-50 border border-purple-200 rounded-xl p-3">
-          <div className="text-xs text-gray-500">Open Opportunities</div>
+          <div className="text-xs text-gray-500">{tx("Open Opportunities")}</div>
           <div className="text-xl font-bold text-purple-700">{records.filter(r => r.status === "OPEN").length}</div>
         </div>
         <div className="bg-white border rounded-xl p-3 shadow-sm">
-          <div className="text-xs text-gray-500">Total Pipeline</div>
+          <div className="text-xs text-gray-500">{tx("Total Pipeline")}</div>
           <div className="text-xl font-bold text-gray-800">{fmtCurrency(totalPipeline)}</div>
         </div>
         <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-3">
-          <div className="text-xs text-gray-500">Weighted Pipeline</div>
+          <div className="text-xs text-gray-500">{tx("Weighted Pipeline")}</div>
           <div className="text-xl font-bold text-indigo-700">{fmtCurrency(weightedPipeline)}</div>
         </div>
       </div>
@@ -78,15 +79,15 @@ export default function OpportunitiesPage() {
       <div className="flex flex-wrap gap-3 items-center">
         <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
           className="text-sm border rounded-lg px-2 py-1.5">
-          <option value="">All Statuses</option>
+          <option value="">{tx("All Statuses")}</option>
           {Object.entries(STATUS_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </select>
         <select value={stageFilter} onChange={e => setStageFilter(e.target.value)}
           className="text-sm border rounded-lg px-2 py-1.5">
-          <option value="">All Stages</option>
+          <option value="">{tx("All Stages")}</option>
           {stages.map(s => <option key={s.id} value={s.id}>{s.stage_name}</option>)}
         </select>
-        <span className="text-sm text-gray-500">{records.length} records</span>
+        <span className="text-sm text-gray-500">{records.length} {tx("records")}</span>
       </div>
 
       {/* Table */}
@@ -94,22 +95,22 @@ export default function OpportunitiesPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b bg-gray-50 text-xs text-gray-600">
-              <th className="px-3 py-2 text-left">Code</th>
-              <th className="px-3 py-2 text-left">Company</th>
-              <th className="px-3 py-2 text-left">Stage</th>
-              <th className="px-3 py-2 text-left">Temp</th>
-              <th className="px-3 py-2 text-left">Prob %</th>
-              <th className="px-3 py-2 text-left">Expected Rev</th>
-              <th className="px-3 py-2 text-left">Weighted</th>
-              <th className="px-3 py-2 text-left">Close Date</th>
-              <th className="px-3 py-2 text-left">Rep</th>
-              <th className="px-3 py-2 text-left">Status</th>
-              <th className="px-3 py-2 text-left">Actions</th>
+              <th className="px-3 py-2 text-left">{tx("Code")}</th>
+              <th className="px-3 py-2 text-left">{tx("Company")}</th>
+              <th className="px-3 py-2 text-left">{tx("Stage")}</th>
+              <th className="px-3 py-2 text-left">{tx("Temp")}</th>
+              <th className="px-3 py-2 text-left">{tx("Prob %")}</th>
+              <th className="px-3 py-2 text-left">{tx("Expected Rev")}</th>
+              <th className="px-3 py-2 text-left">{tx("Weighted")}</th>
+              <th className="px-3 py-2 text-left">{tx("Close Date")}</th>
+              <th className="px-3 py-2 text-left">{tx("Rep")}</th>
+              <th className="px-3 py-2 text-left">{tx("Status")}</th>
+              <th className="px-3 py-2 text-left">{tx("Actions")}</th>
             </tr>
           </thead>
           <tbody>
-            {loading && <tr><td colSpan={11} className="px-3 py-6 text-center text-gray-400">Loading…</td></tr>}
-            {!loading && records.length === 0 && <tr><td colSpan={11} className="px-3 py-6 text-center text-gray-400">No opportunities found</td></tr>}
+            {loading && <tr><td colSpan={11} className="px-3 py-6 text-center text-gray-400">{tx("Loading…")}</td></tr>}
+            {!loading && records.length === 0 && <tr><td colSpan={11} className="px-3 py-6 text-center text-gray-400">{tx("No opportunities found")}</td></tr>}
             {records.map(rec => {
               const weighted = ((rec.expected_revenue || 0) * (rec.probability_pct || 0) / 100);
               return (
@@ -135,7 +136,7 @@ export default function OpportunitiesPage() {
                     </span>
                   </td>
                   <td className="px-3 py-2">
-                    <Link href={`/dashboard/crm/records/${rec.id}`} className="text-blue-600 hover:underline text-xs">View</Link>
+                    <Link href={`/dashboard/crm/records/${rec.id}`} className="text-blue-600 hover:underline text-xs">{tx("View")}</Link>
                   </td>
                 </tr>
               );
@@ -148,35 +149,35 @@ export default function OpportunitiesPage() {
       {showCreate && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md space-y-3">
-            <h2 className="font-semibold text-lg">New Opportunity</h2>
-            <input placeholder="Company Name *" value={form.company_name}
+            <h2 className="font-semibold text-lg">{tx("New Opportunity")}</h2>
+            <input placeholder={tx("Company Name *")} value={form.company_name}
               onChange={e => setForm(f => ({ ...f, company_name: e.target.value }))}
               className="w-full border rounded-lg px-3 py-2 text-sm" />
-            <input placeholder="Contact Person" value={form.contact_person_name}
+            <input placeholder={tx("Contact Person")} value={form.contact_person_name}
               onChange={e => setForm(f => ({ ...f, contact_person_name: e.target.value }))}
               className="w-full border rounded-lg px-3 py-2 text-sm" />
-            <input placeholder="Email" value={form.contact_email}
+            <input placeholder={tx("Email")} value={form.contact_email}
               onChange={e => setForm(f => ({ ...f, contact_email: e.target.value }))}
               className="w-full border rounded-lg px-3 py-2 text-sm" />
-            <input type="number" placeholder="Expected Revenue" value={form.expected_revenue}
+            <input type="number" placeholder={tx("Expected Revenue")} value={form.expected_revenue}
               onChange={e => setForm(f => ({ ...f, expected_revenue: e.target.value }))}
               className="w-full border rounded-lg px-3 py-2 text-sm" />
-            <input type="date" placeholder="Expected Close Date" value={form.expected_close_date}
+            <input type="date" placeholder={tx("Expected Close Date")} value={form.expected_close_date}
               onChange={e => setForm(f => ({ ...f, expected_close_date: e.target.value }))}
               className="w-full border rounded-lg px-3 py-2 text-sm" />
             <select value={form.stage_id} onChange={e => setForm(f => ({ ...f, stage_id: e.target.value }))}
               className="w-full border rounded-lg px-3 py-2 text-sm">
-              <option value="">Select Stage</option>
+              <option value="">{tx("Select Stage")}</option>
               {stages.map(s => <option key={s.id} value={s.id}>{s.stage_name}</option>)}
             </select>
-            <EntityPicker kind="user" label="Assigned rep" value={form.assigned_rep_id} onChange={(id) => setForm(f => ({ ...f, assigned_rep_id: id }))} />
+            <EntityPicker kind="user" label={tx("Assigned rep")} value={form.assigned_rep_id} onChange={(id) => setForm(f => ({ ...f, assigned_rep_id: id }))} />
             <div className="flex gap-2 pt-1">
               <button onClick={handleCreate} disabled={saving || !form.company_name}
                 className="flex-1 bg-purple-600 text-white py-2 rounded-lg text-sm hover:bg-purple-700 disabled:opacity-50">
-                {saving ? "Saving…" : "Create Opportunity"}
+                {saving ? tx("Saving…") : tx("Create Opportunity")}
               </button>
               <button onClick={() => setShowCreate(false)}
-                className="flex-1 border rounded-lg py-2 text-sm hover:bg-gray-50">Cancel</button>
+                className="flex-1 border rounded-lg py-2 text-sm hover:bg-gray-50">{tx("Cancel")}</button>
             </div>
           </div>
         </div>

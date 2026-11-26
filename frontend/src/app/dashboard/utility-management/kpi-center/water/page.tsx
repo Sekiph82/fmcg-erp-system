@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, BarChart, Bar } from "recharts";
 import { kpiApi, type DailyTrendPoint } from "@/lib/utilityKpi";
+import { tx } from "@/lib/i18n/core";
 
 const today = new Date().toISOString().slice(0, 10);
 const mtdStart = today.slice(0, 8) + "01";
@@ -26,7 +27,7 @@ function DateFilter({ from, to, onFrom, onTo }: { from: string; to: string; onFr
   return (
     <div className="flex gap-3 items-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3">
       <input type="date" className={ic} value={from} onChange={e => onFrom(e.target.value)} />
-      <span className="text-gray-400 text-xs">to</span>
+      <span className="text-gray-400 text-xs">{tx("to")}</span>
       <input type="date" className={ic} value={to} onChange={e => onTo(e.target.value)} />
     </div>
   );
@@ -55,12 +56,12 @@ export default function WaterKpiPage() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <div className="flex items-center gap-3 mb-1">
-            <Link href="/dashboard/utility-management/kpi-center" className="text-sm text-gray-500 hover:text-blue-600">← KPI Center</Link>
+            <Link href="/dashboard/utility-management/kpi-center" className="text-sm text-gray-500 hover:text-blue-600">{tx("← KPI Center")}</Link>
             <span className="text-gray-300">|</span>
-            <Link href="/dashboard/utility-management/water" className="text-sm text-blue-600 hover:underline">Operational Records →</Link>
+            <Link href="/dashboard/utility-management/water" className="text-sm text-blue-600 hover:underline">{tx("Operational Records →")}</Link>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white" style={{ borderLeft: "4px solid #60a5fa", paddingLeft: 12 }}>Water KPI Dashboard</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Track water consumption, process allocation, cost per m³, and production efficiency for the selected period.</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white" style={{ borderLeft: "4px solid #60a5fa", paddingLeft: 12 }}>{tx("Water KPI Dashboard")}</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{tx("Track water consumption, process allocation, cost per m³, and production efficiency for the selected period.")}</p>
         </div>
         <DateFilter from={dateFrom} to={dateTo} onFrom={setDateFrom} onTo={setDateTo} />
       </div>
@@ -68,38 +69,38 @@ export default function WaterKpiPage() {
       {/* KPI cards grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         <KpiCard
-          label="Water m³ Total"
+          label={tx("Water m³ Total")}
           value={fmt(kpi?.water_m3_total, 1)}
           unit="m³"
           sub={`${dateFrom} – ${dateTo}`}
         />
         <KpiCard
-          label="Process Water m³"
+          label={tx("Process Water m³")}
           value={fmt(kpi?.process_water_m3, 1)}
           unit="m³"
         />
         <KpiCard
-          label="Total Cost"
+          label={tx("Total Cost")}
           value={fmt(kpi?.total_cost, 2)}
           unit="$"
         />
         <KpiCard
-          label="Cost per m³"
+          label={tx("Cost per m³")}
           value={fmt(kpi?.cost_per_m3, 4)}
           unit="$/m³"
         />
         <KpiCard
-          label="m³ / Ton"
+          label={tx("m³ / Ton")}
           value={fmt(kpi?.water_m3_per_ton, 3)}
           unit="m³/t"
         />
         <KpiCard
-          label="Estimated %"
+          label={tx("Estimated %")}
           value={pct(kpi?.estimated_pct)}
           warn={(kpi?.estimated_pct ?? 0) > 20}
         />
         <KpiCard
-          label="Anomaly Count"
+          label={tx("Anomaly Count")}
           value={kpi?.anomaly_count == null ? "—" : String(kpi.anomaly_count)}
           warn={(kpi?.anomaly_count ?? 0) > 0}
         />
@@ -107,7 +108,7 @@ export default function WaterKpiPage() {
 
       {/* Trend chart */}
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Water KPI Dashboard — Daily Trend</h3>
+        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">{tx("Water KPI Dashboard — Daily Trend")}</h3>
         <ResponsiveContainer width="100%" height={260}>
           <LineChart data={trend} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" />

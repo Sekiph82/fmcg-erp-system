@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
+import { tx } from "@/lib/i18n/core";
 
 type Tab = "reps" | "routes" | "visits" | "targets";
 
@@ -60,10 +61,10 @@ export default function FieldSalesPage() {
   });
 
   const tabs: { id: Tab; label: string }[] = [
-    { id: "reps", label: "Sales Reps" },
-    { id: "routes", label: "Routes" },
-    { id: "visits", label: "Today's Visits" },
-    { id: "targets", label: "Targets" },
+    { id: "reps", label: tx("Sales Reps") },
+    { id: "routes", label: tx("Routes") },
+    { id: "visits", label: tx("Today's Visits") },
+    { id: "targets", label: tx("Targets") },
   ];
 
   const outcomeColor: Record<string, string> = {
@@ -78,22 +79,22 @@ export default function FieldSalesPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Field Sales</h1>
-          <p className="text-sm text-gray-500 mt-1">Motorbike reps · Routes · Daily tracking</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Field Sales")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{tx("Motorbike reps · Routes · Daily tracking")}</p>
         </div>
         <div className="flex gap-2">
-          {tab === "reps" && <Button onClick={() => setRepOpen(true)}>+ Add Rep</Button>}
-          {tab === "routes" && <Button onClick={() => setRouteOpen(true)}>+ Add Route</Button>}
+          {tab === "reps" && <Button onClick={() => setRepOpen(true)}>{tx("+ Add Rep")}</Button>}
+          {tab === "routes" && <Button onClick={() => setRouteOpen(true)}>{tx("+ Add Route")}</Button>}
         </div>
       </div>
 
       {/* KPI Row */}
       <div className="grid grid-cols-4 gap-3 mb-6">
         {[
-          { label: "Active Reps", value: reps.filter((r) => r.is_active).length, icon: "🏍️" },
-          { label: "Active Routes", value: routes.filter((r) => r.is_active).length, icon: "🗺️" },
-          { label: "Visits Today", value: visits.length, icon: "📍" },
-          { label: "Orders Today", value: visits.filter((v) => v.outcome === "ORDERED").length, icon: "📋" },
+          { label: tx("Active Reps"), value: reps.filter((r) => r.is_active).length, icon: "🏍️" },
+          { label: tx("Active Routes"), value: routes.filter((r) => r.is_active).length, icon: "🗺️" },
+          { label: tx("Visits Today"), value: visits.length, icon: "📍" },
+          { label: tx("Orders Today"), value: visits.filter((v) => v.outcome === "ORDERED").length, icon: "📋" },
         ].map((kpi) => (
           <div key={kpi.label} className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
             <div className="flex items-center gap-2 mb-1">
@@ -129,15 +130,15 @@ export default function FieldSalesPage() {
           keyField="id"
           data={reps}
           columns={[
-            { header: "Code", accessor: "code", className: "font-mono text-xs" },
-            { header: "Name", accessor: (r) => (
+            { header: tx("Code"), accessor: "code", className: "font-mono text-xs" },
+            { header: tx("Name"), accessor: (r) => (
               <span>{VEHICLE_ICONS[r.vehicle_type]} {r.name}</span>
             )},
-            { header: "Phone", accessor: (r) => r.phone ?? "—" },
-            { header: "Region", accessor: (r) => r.region ?? "—" },
-            { header: "Vehicle", accessor: "vehicle_type" },
-            { header: "Status", accessor: (r) => (
-              <Badge label={r.is_active ? "Active" : "Inactive"} variant={r.is_active ? "green" : "red"} />
+            { header: tx("Phone"), accessor: (r) => r.phone ?? "—" },
+            { header: tx("Region"), accessor: (r) => r.region ?? "—" },
+            { header: tx("Vehicle"), accessor: "vehicle_type" },
+            { header: tx("Status"), accessor: (r) => (
+              <Badge label={r.is_active ? tx("Active") : tx("Inactive")} variant={r.is_active ? "green" : "red"} />
             )},
           ]}
         />
@@ -150,13 +151,13 @@ export default function FieldSalesPage() {
           keyField="id"
           data={routes}
           columns={[
-            { header: "Code", accessor: "code", className: "font-mono text-xs" },
-            { header: "Name", accessor: "name" },
-            { header: "Region", accessor: (r) => r.region ?? "—" },
-            { header: "Assigned Rep", accessor: (r) => r.rep_name ?? "—" },
-            { header: "Stops", accessor: (r) => `${r.stop_count} customers` },
-            { header: "Status", accessor: (r) => (
-              <Badge label={r.is_active ? "Active" : "Inactive"} variant={r.is_active ? "green" : "red"} />
+            { header: tx("Code"), accessor: "code", className: "font-mono text-xs" },
+            { header: tx("Name"), accessor: "name" },
+            { header: tx("Region"), accessor: (r) => r.region ?? "—" },
+            { header: tx("Assigned Rep"), accessor: (r) => r.rep_name ?? "—" },
+            { header: tx("Stops"), accessor: (r) => `${r.stop_count} customers` },
+            { header: tx("Status"), accessor: (r) => (
+              <Badge label={r.is_active ? tx("Active") : tx("Inactive")} variant={r.is_active ? "green" : "red"} />
             )},
           ]}
         />
@@ -166,7 +167,7 @@ export default function FieldSalesPage() {
       {tab === "visits" && (
         visitsLoading ? <Spinner /> :
         visits.length === 0 ? (
-          <p className="text-gray-400 text-sm py-8 text-center">No visits recorded today.</p>
+          <p className="text-gray-400 text-sm py-8 text-center">{tx("No visits recorded today.")}</p>
         ) : (
           <div className="space-y-2">
             {visits.map((v) => (
@@ -181,7 +182,7 @@ export default function FieldSalesPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  {v.gps_lat && <span className="text-xs text-gray-400">📍 GPS</span>}
+                  {v.gps_lat && <span className="text-xs text-gray-400">{tx("📍 GPS")}</span>}
                   <span className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${outcomeColor[v.outcome] ?? "bg-gray-100 text-gray-600"}`}>
                     {v.outcome.replace("_", " ")}
                   </span>
@@ -195,7 +196,7 @@ export default function FieldSalesPage() {
       {/* Targets Tab */}
       {tab === "targets" && (
         targets.length === 0 ? (
-          <p className="text-gray-400 text-sm py-8 text-center">No targets set for today.</p>
+          <p className="text-gray-400 text-sm py-8 text-center">{tx("No targets set for today.")}</p>
         ) : (
           <div className="space-y-3">
             {targets.map((t) => {
@@ -207,13 +208,13 @@ export default function FieldSalesPage() {
                   <div className="flex items-center justify-between mb-2">
                     <div>
                       <p className="font-medium text-gray-800">{t.rep_name}</p>
-                      <p className="text-xs text-gray-400">{t.route_name ?? "No route"}</p>
+                      <p className="text-xs text-gray-400">{t.route_name ?? tx("No route")}</p>
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-bold text-gray-900">
                         {t.currency} {(t.actual_amount ?? 0).toLocaleString()} / {t.target_amount.toLocaleString()}
                       </p>
-                      <p className="text-xs text-gray-400">{pct.toFixed(0)}% achieved</p>
+                      <p className="text-xs text-gray-400">{pct.toFixed(0)}{tx("% achieved")}</p>
                     </div>
                   </div>
                   <div className="h-2 rounded-full bg-gray-100">
@@ -230,18 +231,18 @@ export default function FieldSalesPage() {
       )}
 
       {/* Add Rep Modal */}
-      <Modal open={repOpen} onClose={() => setRepOpen(false)} title="Add Sales Rep">
+      <Modal open={repOpen} onClose={() => setRepOpen(false)} title={tx("Add Sales Rep")}>
         <form onSubmit={(e) => { e.preventDefault(); createRep.mutate(repForm); }} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Code *" value={repForm.code} onChange={(e) => setRepForm((f) => ({ ...f, code: e.target.value }))} required />
-            <Input label="Name *" value={repForm.name} onChange={(e) => setRepForm((f) => ({ ...f, name: e.target.value }))} required />
+            <Input label={tx("Code *")} value={repForm.code} onChange={(e) => setRepForm((f) => ({ ...f, code: e.target.value }))} required />
+            <Input label={tx("Name *")} value={repForm.name} onChange={(e) => setRepForm((f) => ({ ...f, name: e.target.value }))} required />
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Phone" value={repForm.phone} onChange={(e) => setRepForm((f) => ({ ...f, phone: e.target.value }))} />
-            <Input label="Region" value={repForm.region} onChange={(e) => setRepForm((f) => ({ ...f, region: e.target.value }))} />
+            <Input label={tx("Phone")} value={repForm.phone} onChange={(e) => setRepForm((f) => ({ ...f, phone: e.target.value }))} />
+            <Input label={tx("Region")} value={repForm.region} onChange={(e) => setRepForm((f) => ({ ...f, region: e.target.value }))} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Vehicle Type</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{tx("Vehicle Type")}</label>
             <select
               value={repForm.vehicle_type}
               onChange={(e) => setRepForm((f) => ({ ...f, vehicle_type: e.target.value as VehicleType }))}
@@ -252,24 +253,24 @@ export default function FieldSalesPage() {
               ))}
             </select>
           </div>
-          {createRep.error && <p className="text-sm text-red-600">Failed to create rep.</p>}
+          {createRep.error && <p className="text-sm text-red-600">{tx("Failed to create rep.")}</p>}
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" type="button" onClick={() => setRepOpen(false)}>Cancel</Button>
-            <Button type="submit" loading={createRep.isPending}>Create</Button>
+            <Button variant="secondary" type="button" onClick={() => setRepOpen(false)}>{tx("Cancel")}</Button>
+            <Button type="submit" loading={createRep.isPending}>{tx("Create")}</Button>
           </div>
         </form>
       </Modal>
 
       {/* Add Route Modal */}
-      <Modal open={routeOpen} onClose={() => setRouteOpen(false)} title="Add Sales Route">
+      <Modal open={routeOpen} onClose={() => setRouteOpen(false)} title={tx("Add Sales Route")}>
         <form onSubmit={(e) => { e.preventDefault(); createRoute.mutate(routeForm); }} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Code *" value={routeForm.code} onChange={(e) => setRouteForm((f) => ({ ...f, code: e.target.value }))} required />
-            <Input label="Name *" value={routeForm.name} onChange={(e) => setRouteForm((f) => ({ ...f, name: e.target.value }))} required />
+            <Input label={tx("Code *")} value={routeForm.code} onChange={(e) => setRouteForm((f) => ({ ...f, code: e.target.value }))} required />
+            <Input label={tx("Name *")} value={routeForm.name} onChange={(e) => setRouteForm((f) => ({ ...f, name: e.target.value }))} required />
           </div>
-          <Input label="Region" value={routeForm.region} onChange={(e) => setRouteForm((f) => ({ ...f, region: e.target.value }))} placeholder="e.g. Nairobi West" />
+          <Input label={tx("Region")} value={routeForm.region} onChange={(e) => setRouteForm((f) => ({ ...f, region: e.target.value }))} placeholder={tx("e.g. Nairobi West")} />
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{tx("Description")}</label>
             <textarea
               value={routeForm.description}
               onChange={(e) => setRouteForm((f) => ({ ...f, description: e.target.value }))}
@@ -277,10 +278,10 @@ export default function FieldSalesPage() {
               className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
-          {createRoute.error && <p className="text-sm text-red-600">Failed to create route.</p>}
+          {createRoute.error && <p className="text-sm text-red-600">{tx("Failed to create route.")}</p>}
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" type="button" onClick={() => setRouteOpen(false)}>Cancel</Button>
-            <Button type="submit" loading={createRoute.isPending}>Create</Button>
+            <Button variant="secondary" type="button" onClick={() => setRouteOpen(false)}>{tx("Cancel")}</Button>
+            <Button type="submit" loading={createRoute.isPending}>{tx("Create")}</Button>
           </div>
         </form>
       </Modal>

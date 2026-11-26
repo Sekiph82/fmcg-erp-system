@@ -1,6 +1,7 @@
 "use client";
 
 import { TrendPoint, DistributionSlice } from "@/lib/analytics";
+import { tx } from "@/lib/i18n/core";
 
 interface BarChartProps {
   data: (TrendPoint | DistributionSlice)[];
@@ -20,7 +21,7 @@ export function BarChart({
   labelKey = "date",
 }: BarChartProps) {
   if (!data.length) {
-    return <div className="text-xs text-gray-400 text-center py-6">No data</div>;
+    return <div className="text-xs text-gray-400 text-center py-6">{tx("No data")}</div>;
   }
 
   const width = 480;

@@ -1,6 +1,7 @@
 "use client";
 import { useQuery } from "@tanstack/react-query";
 import { brApi, BRBalanceSummary } from "@/lib/bank_reconciliation";
+import { tx } from "@/lib/i18n/core";
 
 export default function BalanceSummaryPage() {
   const { data: rows = [], isLoading } = useQuery<BRBalanceSummary[]>({
@@ -14,29 +15,29 @@ export default function BalanceSummaryPage() {
     <div className="p-6 space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Bank vs Ledger Balance</h1>
-          <p className="text-sm text-gray-500 mt-1">Statement closing vs ERP cash book — real-time variance view</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Bank vs Ledger Balance")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{tx("Statement closing vs ERP cash book — real-time variance view")}</p>
         </div>
         <div className="text-right">
           <p className={`text-2xl font-bold ${Math.abs(totalVariance) < 1 ? "text-green-600" : "text-red-600"}`}>
             {totalVariance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
           </p>
-          <p className="text-xs text-gray-500">Total variance</p>
+          <p className="text-xs text-gray-500">{tx("Total variance")}</p>
         </div>
       </div>
 
       {isLoading ? (
-        <p className="text-gray-400">Loading…</p>
+        <p className="text-gray-400">{tx("Loading…")}</p>
       ) : rows.length === 0 ? (
         <div className="bg-gray-50 border rounded-xl p-8 text-center">
-          <p className="text-gray-500">No bank accounts configured. Create bank accounts and import statements first.</p>
+          <p className="text-gray-500">{tx("No bank accounts configured. Create bank accounts and import statements first.")}</p>
         </div>
       ) : (
         <div className="bg-white border rounded-xl overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
               <tr>
-                {["Account", "Currency", "Last Statement", "Statement Closing", "ERP Book Balance", "Variance", "Status"].map((h) => (
+                {[tx("Account"), tx("Currency"), tx("Last Statement"), tx("Statement Closing"), tx("ERP Book Balance"), tx("Variance"), tx("Status")].map((h) => (
                   <th key={h} className="px-4 py-2 text-left font-medium">{h}</th>
                 ))}
               </tr>
@@ -68,11 +69,11 @@ export default function BalanceSummaryPage() {
       )}
 
       <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800">
-        <p className="font-semibold mb-1">Variance Interpretation</p>
+        <p className="font-semibold mb-1">{tx("Variance Interpretation")}</p>
         <ul className="space-y-1 text-xs list-disc list-inside text-blue-700">
-          <li>Positive variance = Statement closing higher than ERP book (unposted credits)</li>
-          <li>Negative variance = ERP book higher than statement (outstanding debits / uncleared cheques)</li>
-          <li>Variance ≤ 1.00 is treated as matched</li>
+          <li>{tx("Positive variance = Statement closing higher than ERP book (unposted credits)")}</li>
+          <li>{tx("Negative variance = ERP book higher than statement (outstanding debits / uncleared cheques)")}</li>
+          <li>{tx("Variance ≤ 1.00 is treated as matched")}</li>
         </ul>
       </div>
     </div>

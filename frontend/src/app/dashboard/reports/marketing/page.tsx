@@ -16,6 +16,7 @@ import {
   fmt,
 } from "@/lib/analytics";
 import { TrendLineChart, HBarChart, Sparkline } from "@/components/bi/Charts";
+import { tx } from "@/lib/i18n/core";
 
 // ── Shared UI primitives ──────────────────────────────────────────────────────
 
@@ -38,7 +39,7 @@ function Section({ title, href, children }: { title: string; href?: string; chil
         <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-widest">{title}</h2>
         {href && (
           <Link href={href} className="text-xs text-blue-400 hover:text-blue-300 transition-colors">
-            View source →
+            {tx("View source →")}
           </Link>
         )}
       </div>
@@ -119,75 +120,75 @@ function OverviewTab({ kpi, days }: { kpi: MarketingBIKPIs; days: number }) {
         </div>
       )}
 
-      <Section title="Campaign Performance" href="/dashboard/marketing/campaigns">
+      <Section title={tx("Campaign Performance")} href="/dashboard/marketing/campaigns">
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-4">
-          <KpiTile label="Active" value={fmt(kpi.active_campaigns)} accent="text-blue-400" />
-          <KpiTile label="Completed" value={fmt(kpi.completed_campaigns)} />
-          <KpiTile label="Avg ROI" value={`${kpi.avg_campaign_roi.toFixed(2)}x`} accent="text-emerald-400" />
-          <KpiTile label="Budget" value={fmtKES(kpi.total_campaign_budget)} accent="text-amber-400" />
-          <KpiTile label="Revenue" value={fmtKES(kpi.total_campaign_revenue)} accent="text-emerald-400" />
-          <KpiTile label="Efficiency" value={`${kpi.overall_campaign_efficiency.toFixed(2)}x`}
+          <KpiTile label={tx("Active")} value={fmt(kpi.active_campaigns)} accent="text-blue-400" />
+          <KpiTile label={tx("Completed")} value={fmt(kpi.completed_campaigns)} />
+          <KpiTile label={tx("Avg ROI")} value={`${kpi.avg_campaign_roi.toFixed(2)}x`} accent="text-emerald-400" />
+          <KpiTile label={tx("Budget")} value={fmtKES(kpi.total_campaign_budget)} accent="text-amber-400" />
+          <KpiTile label={tx("Revenue")} value={fmtKES(kpi.total_campaign_revenue)} accent="text-emerald-400" />
+          <KpiTile label={tx("Efficiency")} value={`${kpi.overall_campaign_efficiency.toFixed(2)}x`}
             accent={kpi.overall_campaign_efficiency >= 1 ? "text-emerald-400" : "text-red-400"} />
         </div>
         <Card>
-          <p className="text-xs text-slate-500 mb-2">Campaign Revenue Trend</p>
+          <p className="text-xs text-slate-500 mb-2">{tx("Campaign Revenue Trend")}</p>
           <TrendLineChart data={kpi.campaign_revenue_trend} color="#10b981" formatY={fmtKES} />
         </Card>
       </Section>
 
       <div className="grid md:grid-cols-2 gap-6">
-        <Section title="Marketing Spend" href="/dashboard/reports/marketing?tab=spend">
+        <Section title={tx("Marketing Spend")} href="/dashboard/reports/marketing?tab=spend">
           <div className="grid grid-cols-2 gap-3 mb-4">
-            <KpiTile label="Trade Spend" value={fmtKES(kpi.total_trade_spend)} accent="text-orange-400" />
-            <KpiTile label="Brand Spend" value={fmtKES(kpi.total_brand_spend)} accent="text-blue-400" />
-            <KpiTile label="Trade/Sales %" value={`${kpi.trade_spend_vs_sales_pct.toFixed(1)}%`}
+            <KpiTile label={tx("Trade Spend")} value={fmtKES(kpi.total_trade_spend)} accent="text-orange-400" />
+            <KpiTile label={tx("Brand Spend")} value={fmtKES(kpi.total_brand_spend)} accent="text-blue-400" />
+            <KpiTile label={tx("Trade/Sales %")} value={`${kpi.trade_spend_vs_sales_pct.toFixed(1)}%`}
               accent={kpi.trade_spend_vs_sales_pct > 15 ? "text-orange-400" : "text-slate-200"} />
-            <KpiTile label="Brand/Revenue %" value={`${kpi.brand_spend_vs_revenue_pct.toFixed(1)}%`} />
+            <KpiTile label={tx("Brand/Revenue %")} value={`${kpi.brand_spend_vs_revenue_pct.toFixed(1)}%`} />
           </div>
         </Section>
 
-        <Section title="Ad Performance" href="/dashboard/reports/marketing?tab=ads">
+        <Section title={tx("Ad Performance")} href="/dashboard/reports/marketing?tab=ads">
           <div className="grid grid-cols-2 gap-3 mb-4">
-            <KpiTile label="Total Ad Spend" value={fmtKES(kpi.total_ad_spend)} accent="text-blue-400" />
-            <KpiTile label="Ad Revenue" value={fmtKES(kpi.total_ad_revenue)} accent="text-emerald-400" />
+            <KpiTile label={tx("Total Ad Spend")} value={fmtKES(kpi.total_ad_spend)} accent="text-blue-400" />
+            <KpiTile label={tx("Ad Revenue")} value={fmtKES(kpi.total_ad_revenue)} accent="text-emerald-400" />
             <KpiTile label="ROAS" value={`${kpi.overall_roas.toFixed(2)}x`}
               accent={kpi.overall_roas >= 2 ? "text-emerald-400" : kpi.overall_roas >= 1.2 ? "text-yellow-400" : "text-red-400"} />
-            <KpiTile label="Best Platform" value={kpi.best_ad_platform ?? "—"} accent="text-sky-400" />
+            <KpiTile label={tx("Best Platform")} value={kpi.best_ad_platform ?? "—"} accent="text-sky-400" />
           </div>
         </Section>
       </div>
 
       <div className="grid md:grid-cols-3 gap-6">
-        <Section title="Influencers" href="/dashboard/reports/marketing?tab=influencers">
+        <Section title={tx("Influencers")} href="/dashboard/reports/marketing?tab=influencers">
           <div className="space-y-3">
-            <KpiTile label="Active Influencers" value={fmt(kpi.active_influencers)} accent="text-pink-400" />
-            <KpiTile label="Influencer Revenue" value={fmtKES(kpi.total_influencer_revenue)} accent="text-emerald-400" />
-            <KpiTile label="Influencer ROI" value={`${kpi.influencer_roi.toFixed(2)}x`}
+            <KpiTile label={tx("Active Influencers")} value={fmt(kpi.active_influencers)} accent="text-pink-400" />
+            <KpiTile label={tx("Influencer Revenue")} value={fmtKES(kpi.total_influencer_revenue)} accent="text-emerald-400" />
+            <KpiTile label={tx("Influencer ROI")} value={`${kpi.influencer_roi.toFixed(2)}x`}
               accent={kpi.influencer_roi >= 2 ? "text-emerald-400" : "text-yellow-400"} />
           </div>
         </Section>
 
-        <Section title="Social Media" href="/dashboard/reports/marketing?tab=social">
+        <Section title={tx("Social Media")} href="/dashboard/reports/marketing?tab=social">
           <div className="space-y-3">
-            <KpiTile label="Total Impressions" value={fmt(kpi.total_impressions)} accent="text-sky-400" />
-            <KpiTile label="Total Engagements" value={fmt(kpi.total_engagements)} accent="text-indigo-400" />
-            <KpiTile label="Engagement Rate" value={`${(kpi.avg_engagement_rate * 100).toFixed(2)}%`}
+            <KpiTile label={tx("Total Impressions")} value={fmt(kpi.total_impressions)} accent="text-sky-400" />
+            <KpiTile label={tx("Total Engagements")} value={fmt(kpi.total_engagements)} accent="text-indigo-400" />
+            <KpiTile label={tx("Engagement Rate")} value={`${(kpi.avg_engagement_rate * 100).toFixed(2)}%`}
               accent={kpi.avg_engagement_rate > 0.03 ? "text-emerald-400" : "text-slate-200"} />
           </div>
         </Section>
 
-        <Section title="CRM & Sentiment" href="/dashboard/reports/marketing?tab=crm">
+        <Section title={tx("CRM & Sentiment")} href="/dashboard/reports/marketing?tab=crm">
           <div className="space-y-3">
-            <KpiTile label="At-Risk Customers" value={fmt(kpi.at_risk_customers)} accent="text-orange-400" />
-            <KpiTile label="VIP Customers" value={fmt(kpi.vip_customers)} accent="text-yellow-300" />
-            <KpiTile label="Survey Sentiment" value={`${kpi.avg_survey_sentiment.toFixed(1)}/10`}
+            <KpiTile label={tx("At-Risk Customers")} value={fmt(kpi.at_risk_customers)} accent="text-orange-400" />
+            <KpiTile label={tx("VIP Customers")} value={fmt(kpi.vip_customers)} accent="text-yellow-300" />
+            <KpiTile label={tx("Survey Sentiment")} value={`${kpi.avg_survey_sentiment.toFixed(1)}/10`}
               accent={kpi.avg_survey_sentiment >= 7 ? "text-emerald-400" : kpi.avg_survey_sentiment >= 5 ? "text-yellow-400" : "text-red-400"} />
           </div>
         </Section>
       </div>
 
       {kpi.by_campaign_type.length > 0 && (
-        <Section title="Campaign ROI by Type">
+        <Section title={tx("Campaign ROI by Type")}>
           <Card>
             <HBarChart
               data={kpi.by_campaign_type.map(d => ({ label: d.label, value: d.value }))}
@@ -219,15 +220,15 @@ function CampaignsTab({ days }: { days: number }) {
     <div className="space-y-6">
       {data && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <KpiTile label="Total Budget" value={fmtKES(data.total_budget)} accent="text-amber-400" />
-          <KpiTile label="Total Revenue" value={fmtKES(data.total_revenue)} accent="text-emerald-400" />
-          <KpiTile label="Avg ROI" value={`${data.avg_roi.toFixed(2)}x`} accent={data.avg_roi >= 1 ? "text-emerald-400" : "text-red-400"} />
-          <KpiTile label="Campaigns" value={fmt(data.campaigns.length)} />
+          <KpiTile label={tx("Total Budget")} value={fmtKES(data.total_budget)} accent="text-amber-400" />
+          <KpiTile label={tx("Total Revenue")} value={fmtKES(data.total_revenue)} accent="text-emerald-400" />
+          <KpiTile label={tx("Avg ROI")} value={`${data.avg_roi.toFixed(2)}x`} accent={data.avg_roi >= 1 ? "text-emerald-400" : "text-red-400"} />
+          <KpiTile label={tx("Campaigns")} value={fmt(data.campaigns.length)} />
         </div>
       )}
 
       {data && (
-        <Section title="Revenue by Type" href="/dashboard/marketing/campaigns">
+        <Section title={tx("Revenue by Type")} href="/dashboard/marketing/campaigns">
           <Card>
             <HBarChart
               data={data.by_type}
@@ -240,25 +241,25 @@ function CampaignsTab({ days }: { days: number }) {
       )}
 
       {data && (
-        <Section title="Campaign Revenue Trend">
+        <Section title={tx("Campaign Revenue Trend")}>
           <Card>
             <TrendLineChart data={data.revenue_trend} color="#10b981" formatY={fmtKES} />
           </Card>
         </Section>
       )}
 
-      <Section title="Campaign List" href="/dashboard/marketing/campaigns">
+      <Section title={tx("Campaign List")} href="/dashboard/marketing/campaigns">
         {isLoading ? <LoadingSkeleton rows={6} /> : data && (
           <div className="rounded-xl border border-slate-700/50 overflow-hidden">
             <table className="w-full text-xs">
               <thead>
                 <tr className="bg-slate-800/50 text-slate-400">
-                  <th className="px-3 py-2 text-left font-medium">Campaign</th>
-                  <th className="px-3 py-2 text-left font-medium">Type</th>
-                  <th className="px-3 py-2 text-left font-medium">Status</th>
-                  <th className="px-3 py-2 text-left font-medium">Region</th>
-                  <th className="px-3 py-2 text-right font-medium">Budget</th>
-                  <th className="px-3 py-2 text-right font-medium">Revenue</th>
+                  <th className="px-3 py-2 text-left font-medium">{tx("Campaign")}</th>
+                  <th className="px-3 py-2 text-left font-medium">{tx("Type")}</th>
+                  <th className="px-3 py-2 text-left font-medium">{tx("Status")}</th>
+                  <th className="px-3 py-2 text-left font-medium">{tx("Region")}</th>
+                  <th className="px-3 py-2 text-right font-medium">{tx("Budget")}</th>
+                  <th className="px-3 py-2 text-right font-medium">{tx("Revenue")}</th>
                   <th className="px-3 py-2 text-right font-medium">ROI</th>
                 </tr>
               </thead>
@@ -272,7 +273,7 @@ function CampaignsTab({ days }: { days: number }) {
                     <td className="px-3 py-2 text-right text-slate-300">{fmtKES(c.budget)}</td>
                     <td className="px-3 py-2 text-right text-emerald-400">{fmtKES(c.actual_revenue)}</td>
                     <td className={`px-3 py-2 text-right font-semibold ${c.actual_roi >= 1 ? "text-emerald-400" : "text-red-400"}`}>
-                      {c.actual_roi.toFixed(2)}x
+                      {c.actual_roi.toFixed(2)}{tx("x")}
                     </td>
                   </tr>
                 ))}
@@ -291,41 +292,41 @@ function SpendTab({ kpi }: { kpi: MarketingBIKPIs }) {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <KpiTile label="Trade Spend" value={fmtKES(kpi.total_trade_spend)} accent="text-orange-400" />
-        <KpiTile label="Brand Spend" value={fmtKES(kpi.total_brand_spend)} accent="text-blue-400" />
-        <KpiTile label="Trade vs Sales" value={`${kpi.trade_spend_vs_sales_pct.toFixed(1)}%`}
+        <KpiTile label={tx("Trade Spend")} value={fmtKES(kpi.total_trade_spend)} accent="text-orange-400" />
+        <KpiTile label={tx("Brand Spend")} value={fmtKES(kpi.total_brand_spend)} accent="text-blue-400" />
+        <KpiTile label={tx("Trade vs Sales")} value={`${kpi.trade_spend_vs_sales_pct.toFixed(1)}%`}
           sub="% of invoiced revenue"
           accent={kpi.trade_spend_vs_sales_pct > 15 ? "text-orange-400" : "text-slate-200"} />
-        <KpiTile label="Brand vs Revenue" value={`${kpi.brand_spend_vs_revenue_pct.toFixed(1)}%`}
+        <KpiTile label={tx("Brand vs Revenue")} value={`${kpi.brand_spend_vs_revenue_pct.toFixed(1)}%`}
           sub="% of campaign revenue" />
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">
-        <Section title="Trade Spend Trend" href="/dashboard/marketing/trade-spend">
+        <Section title={tx("Trade Spend Trend")} href="/dashboard/marketing/trade-spend">
           <Card>
             <TrendLineChart data={kpi.trade_spend_trend} color="#f97316" formatY={fmtKES} />
           </Card>
         </Section>
-        <Section title="Brand Spend Trend" href="/dashboard/marketing/brand-spend">
+        <Section title={tx("Brand Spend Trend")} href="/dashboard/marketing/brand-spend">
           <Card>
             <TrendLineChart data={kpi.brand_spend_trend} color="#3b82f6" formatY={fmtKES} />
           </Card>
         </Section>
       </div>
 
-      <Section title="Attribution" href="/dashboard/marketing/sales">
+      <Section title={tx("Attribution")} href="/dashboard/marketing/sales">
         <div className="grid grid-cols-2 gap-3">
-          <KpiTile label="Campaign-Linked Orders" value={fmt(kpi.campaign_linked_orders)}
+          <KpiTile label={tx("Campaign-Linked Orders")} value={fmt(kpi.campaign_linked_orders)}
             sub="Sales orders with campaign_id" accent="text-indigo-400" />
-          <KpiTile label="Promotion-Linked Orders" value={fmt(kpi.promotion_linked_orders)}
+          <KpiTile label={tx("Promotion-Linked Orders")} value={fmt(kpi.promotion_linked_orders)}
             sub="Sales orders with promotion_id" accent="text-violet-400" />
         </div>
       </Section>
 
       <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 text-xs text-amber-400">
-        For full spend breakdown by trade type / brand category, view the{" "}
-        <Link href="/dashboard/marketing/trade-spend" className="underline">Trade Spend</Link> and{" "}
-        <Link href="/dashboard/marketing/brand-spend" className="underline">Brand Spend</Link> source pages.
+        {tx("For full spend breakdown by trade type / brand category, view the")}{" "}
+        <Link href="/dashboard/marketing/trade-spend" className="underline">{tx("Trade Spend")}</Link> {tx("and")}{" "}
+        <Link href="/dashboard/marketing/brand-spend" className="underline">{tx("Brand Spend")}</Link> {tx("source pages.")}
       </div>
     </div>
   );
@@ -343,16 +344,16 @@ function InfluencersTab({ days }: { days: number }) {
     <div className="space-y-6">
       {data && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <KpiTile label="Total Revenue" value={fmtKES(data.total_revenue)} accent="text-emerald-400" />
-          <KpiTile label="Total Fees" value={fmtKES(data.total_fees)} accent="text-orange-400" />
-          <KpiTile label="Overall ROI" value={`${data.overall_roi.toFixed(2)}x`}
+          <KpiTile label={tx("Total Revenue")} value={fmtKES(data.total_revenue)} accent="text-emerald-400" />
+          <KpiTile label={tx("Total Fees")} value={fmtKES(data.total_fees)} accent="text-orange-400" />
+          <KpiTile label={tx("Overall ROI")} value={`${data.overall_roi.toFixed(2)}x`}
             accent={data.overall_roi >= 2 ? "text-emerald-400" : "text-yellow-400"} />
-          <KpiTile label="Avg Score" value={data.avg_score.toFixed(1)} sub="/ 10" />
+          <KpiTile label={tx("Avg Score")} value={data.avg_score.toFixed(1)} sub="/ 10" />
         </div>
       )}
 
       {data && data.by_platform.length > 0 && (
-        <Section title="Revenue by Platform">
+        <Section title={tx("Revenue by Platform")}>
           <Card>
             <div className="space-y-2">
               {data.by_platform.map(p => (
@@ -364,20 +365,20 @@ function InfluencersTab({ days }: { days: number }) {
         </Section>
       )}
 
-      <Section title="Top Influencers" href="/dashboard/marketing/influencers">
+      <Section title={tx("Top Influencers")} href="/dashboard/marketing/influencers">
         {isLoading ? <LoadingSkeleton rows={6} /> : data && (
           <div className="rounded-xl border border-slate-700/50 overflow-hidden">
             <table className="w-full text-xs">
               <thead>
                 <tr className="bg-slate-800/50 text-slate-400">
-                  <th className="px-3 py-2 text-left font-medium">Influencer</th>
-                  <th className="px-3 py-2 text-left font-medium">Platform</th>
-                  <th className="px-3 py-2 text-left font-medium">Category</th>
-                  <th className="px-3 py-2 text-right font-medium">Followers</th>
-                  <th className="px-3 py-2 text-right font-medium">Revenue</th>
-                  <th className="px-3 py-2 text-right font-medium">Fee</th>
+                  <th className="px-3 py-2 text-left font-medium">{tx("Influencer")}</th>
+                  <th className="px-3 py-2 text-left font-medium">{tx("Platform")}</th>
+                  <th className="px-3 py-2 text-left font-medium">{tx("Category")}</th>
+                  <th className="px-3 py-2 text-right font-medium">{tx("Followers")}</th>
+                  <th className="px-3 py-2 text-right font-medium">{tx("Revenue")}</th>
+                  <th className="px-3 py-2 text-right font-medium">{tx("Fee")}</th>
                   <th className="px-3 py-2 text-right font-medium">ROI</th>
-                  <th className="px-3 py-2 text-right font-medium">Score</th>
+                  <th className="px-3 py-2 text-right font-medium">{tx("Score")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -393,7 +394,7 @@ function InfluencersTab({ days }: { days: number }) {
                     <td className="px-3 py-2 text-right text-emerald-400">{fmtKES(inf.attributed_revenue)}</td>
                     <td className="px-3 py-2 text-right text-slate-300">{fmtKES(inf.agreed_fee)}</td>
                     <td className={`px-3 py-2 text-right font-semibold ${inf.roi >= 2 ? "text-emerald-400" : inf.roi >= 1 ? "text-yellow-400" : "text-red-400"}`}>
-                      {inf.roi.toFixed(2)}x
+                      {inf.roi.toFixed(2)}{tx("x")}
                     </td>
                     <td className="px-3 py-2 text-right text-slate-300">{inf.performance_score.toFixed(1)}</td>
                   </tr>
@@ -419,21 +420,21 @@ function SocialTab({ days }: { days: number }) {
     <div className="space-y-6">
       {data && (
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          <KpiTile label="Total Impressions" value={fmt(data.total_impressions)} accent="text-sky-400" />
-          <KpiTile label="Total Engagements" value={fmt(data.total_engagements)} accent="text-indigo-400" />
-          <KpiTile label="Avg Engagement Rate" value={`${(data.avg_engagement_rate * 100).toFixed(2)}%`}
+          <KpiTile label={tx("Total Impressions")} value={fmt(data.total_impressions)} accent="text-sky-400" />
+          <KpiTile label={tx("Total Engagements")} value={fmt(data.total_engagements)} accent="text-indigo-400" />
+          <KpiTile label={tx("Avg Engagement Rate")} value={`${(data.avg_engagement_rate * 100).toFixed(2)}%`}
             accent={data.avg_engagement_rate > 0.03 ? "text-emerald-400" : "text-slate-200"} />
         </div>
       )}
 
       {data && (
         <div className="grid md:grid-cols-2 gap-6">
-          <Section title="Engagement Trend">
+          <Section title={tx("Engagement Trend")}>
             <Card>
               <TrendLineChart data={data.engagement_trend} color="#6366f1" height={180} />
             </Card>
           </Section>
-          <Section title="Impression Trend">
+          <Section title={tx("Impression Trend")}>
             <Card>
               <TrendLineChart data={data.impression_trend} color="#0ea5e9" height={180} />
             </Card>
@@ -441,18 +442,18 @@ function SocialTab({ days }: { days: number }) {
         </div>
       )}
 
-      <Section title="By Platform" href="/dashboard/marketing/social">
+      <Section title={tx("By Platform")} href="/dashboard/marketing/social">
         {isLoading ? <LoadingSkeleton rows={4} /> : data && (
           <div className="rounded-xl border border-slate-700/50 overflow-hidden">
             <table className="w-full text-xs">
               <thead>
                 <tr className="bg-slate-800/50 text-slate-400">
-                  <th className="px-3 py-2 text-left font-medium">Platform</th>
-                  <th className="px-3 py-2 text-right font-medium">Impressions</th>
-                  <th className="px-3 py-2 text-right font-medium">Engagements</th>
-                  <th className="px-3 py-2 text-right font-medium">Clicks</th>
-                  <th className="px-3 py-2 text-right font-medium">Posts</th>
-                  <th className="px-3 py-2 text-right font-medium">Eng. Rate</th>
+                  <th className="px-3 py-2 text-left font-medium">{tx("Platform")}</th>
+                  <th className="px-3 py-2 text-right font-medium">{tx("Impressions")}</th>
+                  <th className="px-3 py-2 text-right font-medium">{tx("Engagements")}</th>
+                  <th className="px-3 py-2 text-right font-medium">{tx("Clicks")}</th>
+                  <th className="px-3 py-2 text-right font-medium">{tx("Posts")}</th>
+                  <th className="px-3 py-2 text-right font-medium">{tx("Eng. Rate")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -489,21 +490,21 @@ function AdsTab({ days }: { days: number }) {
     <div className="space-y-6">
       {data && (
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          <KpiTile label="Total Ad Spend" value={fmtKES(data.total_spend)} accent="text-blue-400" />
-          <KpiTile label="Total Ad Revenue" value={fmtKES(data.total_revenue)} accent="text-emerald-400" />
-          <KpiTile label="Overall ROAS" value={`${data.overall_roas.toFixed(2)}x`}
+          <KpiTile label={tx("Total Ad Spend")} value={fmtKES(data.total_spend)} accent="text-blue-400" />
+          <KpiTile label={tx("Total Ad Revenue")} value={fmtKES(data.total_revenue)} accent="text-emerald-400" />
+          <KpiTile label={tx("Overall ROAS")} value={`${data.overall_roas.toFixed(2)}x`}
             accent={data.overall_roas >= 2 ? "text-emerald-400" : data.overall_roas >= 1.2 ? "text-yellow-400" : "text-red-400"} />
         </div>
       )}
 
       {data && (
         <div className="grid md:grid-cols-2 gap-6">
-          <Section title="Ad Spend Trend">
+          <Section title={tx("Ad Spend Trend")}>
             <Card>
               <TrendLineChart data={data.spend_trend} color="#3b82f6" formatY={fmtKES} height={180} />
             </Card>
           </Section>
-          <Section title="Ad Revenue Trend">
+          <Section title={tx("Ad Revenue Trend")}>
             <Card>
               <TrendLineChart data={data.revenue_trend} color="#10b981" formatY={fmtKES} height={180} />
             </Card>
@@ -511,19 +512,19 @@ function AdsTab({ days }: { days: number }) {
         </div>
       )}
 
-      <Section title="By Ad Platform" href="/dashboard/marketing/ads">
+      <Section title={tx("By Ad Platform")} href="/dashboard/marketing/ads">
         {isLoading ? <LoadingSkeleton rows={4} /> : data && (
           <div className="rounded-xl border border-slate-700/50 overflow-hidden">
             <table className="w-full text-xs">
               <thead>
                 <tr className="bg-slate-800/50 text-slate-400">
-                  <th className="px-3 py-2 text-left font-medium">Platform</th>
-                  <th className="px-3 py-2 text-right font-medium">Spend</th>
-                  <th className="px-3 py-2 text-right font-medium">Revenue</th>
+                  <th className="px-3 py-2 text-left font-medium">{tx("Platform")}</th>
+                  <th className="px-3 py-2 text-right font-medium">{tx("Spend")}</th>
+                  <th className="px-3 py-2 text-right font-medium">{tx("Revenue")}</th>
                   <th className="px-3 py-2 text-right font-medium">ROAS</th>
-                  <th className="px-3 py-2 text-right font-medium">Impressions</th>
-                  <th className="px-3 py-2 text-right font-medium">Clicks</th>
-                  <th className="px-3 py-2 text-right font-medium">Conversions</th>
+                  <th className="px-3 py-2 text-right font-medium">{tx("Impressions")}</th>
+                  <th className="px-3 py-2 text-right font-medium">{tx("Clicks")}</th>
+                  <th className="px-3 py-2 text-right font-medium">{tx("Conversions")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -533,7 +534,7 @@ function AdsTab({ days }: { days: number }) {
                     <td className="px-3 py-2 text-right text-slate-300">{fmtKES(p.spend)}</td>
                     <td className="px-3 py-2 text-right text-emerald-400">{fmtKES(p.revenue)}</td>
                     <td className={`px-3 py-2 text-right font-semibold ${p.roas >= 2 ? "text-emerald-400" : p.roas >= 1.2 ? "text-yellow-400" : "text-red-400"}`}>
-                      {p.roas.toFixed(2)}x
+                      {p.roas.toFixed(2)}{tx("x")}
                     </td>
                     <td className="px-3 py-2 text-right text-slate-400">{fmt(p.impressions)}</td>
                     <td className="px-3 py-2 text-right text-slate-400">{fmt(p.clicks)}</td>
@@ -561,16 +562,16 @@ function EcommerceTab({ days }: { days: number }) {
     <div className="space-y-6">
       {data && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <KpiTile label="E-com Revenue" value={fmtKES(data.total_revenue)} accent="text-teal-400" />
-          <KpiTile label="Total Orders" value={fmt(data.total_orders)} />
-          <KpiTile label="Avg Conversion" value={`${(data.avg_conversion_rate * 100).toFixed(1)}%`} />
-          <KpiTile label="Avg Return Rate" value={`${(data.avg_return_rate * 100).toFixed(1)}%`}
+          <KpiTile label={tx("E-com Revenue")} value={fmtKES(data.total_revenue)} accent="text-teal-400" />
+          <KpiTile label={tx("Total Orders")} value={fmt(data.total_orders)} />
+          <KpiTile label={tx("Avg Conversion")} value={`${(data.avg_conversion_rate * 100).toFixed(1)}%`} />
+          <KpiTile label={tx("Avg Return Rate")} value={`${(data.avg_return_rate * 100).toFixed(1)}%`}
             accent={data.avg_return_rate > 0.1 ? "text-red-400" : "text-slate-200"} />
         </div>
       )}
 
       {data && data.by_platform.length > 0 && (
-        <Section title="Revenue by Platform">
+        <Section title={tx("Revenue by Platform")}>
           <Card>
             <div className="space-y-2">
               {data.by_platform.map(p => (
@@ -583,26 +584,26 @@ function EcommerceTab({ days }: { days: number }) {
       )}
 
       {data && (
-        <Section title="Revenue Trend">
+        <Section title={tx("Revenue Trend")}>
           <Card>
             <TrendLineChart data={data.revenue_trend} color="#14b8a6" formatY={fmtKES} />
           </Card>
         </Section>
       )}
 
-      <Section title="Top Stores" href="/dashboard/marketing/stores">
+      <Section title={tx("Top Stores")} href="/dashboard/marketing/stores">
         {isLoading ? <LoadingSkeleton rows={6} /> : data && (
           <div className="rounded-xl border border-slate-700/50 overflow-hidden">
             <table className="w-full text-xs">
               <thead>
                 <tr className="bg-slate-800/50 text-slate-400">
-                  <th className="px-3 py-2 text-left font-medium">Store</th>
-                  <th className="px-3 py-2 text-left font-medium">Platform</th>
-                  <th className="px-3 py-2 text-left font-medium">Region</th>
-                  <th className="px-3 py-2 text-right font-medium">Revenue</th>
-                  <th className="px-3 py-2 text-right font-medium">Orders</th>
+                  <th className="px-3 py-2 text-left font-medium">{tx("Store")}</th>
+                  <th className="px-3 py-2 text-left font-medium">{tx("Platform")}</th>
+                  <th className="px-3 py-2 text-left font-medium">{tx("Region")}</th>
+                  <th className="px-3 py-2 text-right font-medium">{tx("Revenue")}</th>
+                  <th className="px-3 py-2 text-right font-medium">{tx("Orders")}</th>
                   <th className="px-3 py-2 text-right font-medium">CVR</th>
-                  <th className="px-3 py-2 text-right font-medium">Return Rate</th>
+                  <th className="px-3 py-2 text-right font-medium">{tx("Return Rate")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -634,26 +635,26 @@ function CrmTab({ kpi }: { kpi: MarketingBIKPIs }) {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        <KpiTile label="CRM Profiles" value={fmt(kpi.total_crm_profiles)} />
-        <KpiTile label="At-Risk" value={fmt(kpi.at_risk_customers)} accent="text-orange-400" sub="Churn risk ≥ 60" />
+        <KpiTile label={tx("CRM Profiles")} value={fmt(kpi.total_crm_profiles)} />
+        <KpiTile label={tx("At-Risk")} value={fmt(kpi.at_risk_customers)} accent="text-orange-400" sub="Churn risk ≥ 60" />
         <KpiTile label="VIP" value={fmt(kpi.vip_customers)} accent="text-yellow-300" />
-        <KpiTile label="Avg Engagement" value={kpi.avg_engagement_score.toFixed(1)} sub="/ 100" />
-        <KpiTile label="Survey Sentiment" value={`${kpi.avg_survey_sentiment.toFixed(1)}/10`}
+        <KpiTile label={tx("Avg Engagement")} value={kpi.avg_engagement_score.toFixed(1)} sub="/ 100" />
+        <KpiTile label={tx("Survey Sentiment")} value={`${kpi.avg_survey_sentiment.toFixed(1)}/10`}
           accent={kpi.avg_survey_sentiment >= 7 ? "text-emerald-400" : kpi.avg_survey_sentiment >= 5 ? "text-yellow-400" : "text-red-400"} />
-        <KpiTile label="Surveys (period)" value={fmt(kpi.survey_count)} />
+        <KpiTile label={tx("Surveys (period)")} value={fmt(kpi.survey_count)} />
       </div>
 
-      <Section title="Campaign-Linked Attribution">
+      <Section title={tx("Campaign-Linked Attribution")}>
         <div className="grid grid-cols-2 gap-3">
-          <KpiTile label="Campaign-Linked Orders" value={fmt(kpi.campaign_linked_orders)}
+          <KpiTile label={tx("Campaign-Linked Orders")} value={fmt(kpi.campaign_linked_orders)}
             sub="Sales orders with campaign_id" accent="text-indigo-400" />
-          <KpiTile label="Promotion-Linked Orders" value={fmt(kpi.promotion_linked_orders)}
+          <KpiTile label={tx("Promotion-Linked Orders")} value={fmt(kpi.promotion_linked_orders)}
             sub="Sales orders with promotion_id" accent="text-violet-400" />
         </div>
       </Section>
 
       {kpi.by_influencer_platform.length > 0 && (
-        <Section title="Influencer Revenue by Platform">
+        <Section title={tx("Influencer Revenue by Platform")}>
           <Card>
             <div className="space-y-2">
               {kpi.by_influencer_platform.map(p => (
@@ -668,15 +669,15 @@ function CrmTab({ kpi }: { kpi: MarketingBIKPIs }) {
       <div className="flex gap-3 flex-wrap">
         <Link href="/dashboard/marketing/crm"
           className="rounded-lg border border-slate-700 bg-slate-800/50 px-4 py-2 text-xs text-slate-300 hover:bg-slate-800 transition-colors">
-          CRM Profiles →
+          {tx("CRM Profiles →")}
         </Link>
         <Link href="/dashboard/marketing/surveys"
           className="rounded-lg border border-slate-700 bg-slate-800/50 px-4 py-2 text-xs text-slate-300 hover:bg-slate-800 transition-colors">
-          Survey Responses →
+          {tx("Survey Responses →")}
         </Link>
         <Link href="/dashboard/marketing/segments"
           className="rounded-lg border border-slate-700 bg-slate-800/50 px-4 py-2 text-xs text-slate-300 hover:bg-slate-800 transition-colors">
-          Customer Segments →
+          {tx("Customer Segments →")}
         </Link>
       </div>
     </div>
@@ -695,15 +696,15 @@ function ReturnsTab({ days }: { days: number }) {
     <div className="space-y-6">
       {data && (
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          <KpiTile label="Total Returns" value={fmt(data.total_returns)} accent="text-red-400" />
-          <KpiTile label="Avg Return Rate" value={`${(data.avg_return_rate * 100).toFixed(1)}%`}
+          <KpiTile label={tx("Total Returns")} value={fmt(data.total_returns)} accent="text-red-400" />
+          <KpiTile label={tx("Avg Return Rate")} value={`${(data.avg_return_rate * 100).toFixed(1)}%`}
             accent={data.avg_return_rate > 0.1 ? "text-red-400" : "text-slate-200"} />
-          <KpiTile label="Return Reasons" value={fmt(data.by_reason.length)} sub="distinct reasons" />
+          <KpiTile label={tx("Return Reasons")} value={fmt(data.by_reason.length)} sub="distinct reasons" />
         </div>
       )}
 
       {data && (
-        <Section title="Returns Trend">
+        <Section title={tx("Returns Trend")}>
           <Card>
             <TrendLineChart data={data.trend} color="#ef4444" height={180} />
           </Card>
@@ -711,7 +712,7 @@ function ReturnsTab({ days }: { days: number }) {
       )}
 
       {data && data.by_reason.length > 0 && (
-        <Section title="Top Return Reasons">
+        <Section title={tx("Top Return Reasons")}>
           <Card>
             <div className="space-y-2">
               {data.by_reason.map(r => (
@@ -723,16 +724,16 @@ function ReturnsTab({ days }: { days: number }) {
         </Section>
       )}
 
-      <Section title="Return Log" href="/dashboard/marketing/returns">
+      <Section title={tx("Return Log")} href="/dashboard/marketing/returns">
         {isLoading ? <LoadingSkeleton rows={6} /> : data && (
           <div className="rounded-xl border border-slate-700/50 overflow-hidden">
             <table className="w-full text-xs">
               <thead>
                 <tr className="bg-slate-800/50 text-slate-400">
-                  <th className="px-3 py-2 text-left font-medium">Date</th>
-                  <th className="px-3 py-2 text-left font-medium">Reason</th>
-                  <th className="px-3 py-2 text-right font-medium">Count</th>
-                  <th className="px-3 py-2 text-right font-medium">Return Rate</th>
+                  <th className="px-3 py-2 text-left font-medium">{tx("Date")}</th>
+                  <th className="px-3 py-2 text-left font-medium">{tx("Reason")}</th>
+                  <th className="px-3 py-2 text-right font-medium">{tx("Count")}</th>
+                  <th className="px-3 py-2 text-right font-medium">{tx("Return Rate")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -769,9 +770,9 @@ export default function MarketingBIPage() {
       {/* Header */}
       <div className="mb-5 flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Marketing BI</h1>
+          <h1 className="text-2xl font-bold">{tx("Marketing BI")}</h1>
           <p className="text-sm text-slate-400 mt-0.5">
-            Cross-module marketing KPIs — campaigns, spend, influencers, ads, social, e-commerce, CRM, surveys
+            {tx("Cross-module marketing KPIs — campaigns, spend, influencers, ads, social, e-commerce, CRM, surveys")}
           </p>
         </div>
         <select
@@ -780,7 +781,7 @@ export default function MarketingBIPage() {
           className="rounded-lg border border-slate-700 bg-[#131c2e] px-3 py-2 text-sm text-white shrink-0"
         >
           {[7, 14, 30, 60, 90].map((d) => (
-            <option key={d} value={d}>Last {d} days</option>
+            <option key={d} value={d}>{tx("Last")} {d} {tx("days")}</option>
           ))}
         </select>
       </div>
@@ -814,7 +815,7 @@ export default function MarketingBIPage() {
 
       {error && (
         <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-400">
-          Failed to load marketing analytics. Check your permissions.
+          {tx("Failed to load marketing analytics. Check your permissions.")}
         </div>
       )}
 

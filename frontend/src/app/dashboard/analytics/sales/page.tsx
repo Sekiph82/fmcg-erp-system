@@ -11,6 +11,7 @@ import { ExceptionList } from "@/components/analytics/ExceptionList";
 import { ChartCard } from "@/components/analytics/ChartCard";
 import { DaysSelector } from "@/components/analytics/DaysSelector";
 import { RequirePermission } from "@/components/PermissionGuard";
+import { tx } from "@/lib/i18n/core";
 
 export default function SalesAnalyticsPage() {
   const [days, setDays] = useState(30);
@@ -25,15 +26,15 @@ export default function SalesAnalyticsPage() {
       <div className="max-w-2xl mx-auto space-y-5 pb-10">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Sales Dashboard</h1>
-            <p className="text-xs text-gray-400 mt-0.5">Revenue, orders &amp; receivables</p>
+            <h1 className="text-xl font-bold text-gray-900">{tx("Sales Dashboard")}</h1>
+            <p className="text-xs text-gray-400 mt-0.5">{tx("Revenue, orders & receivables")}</p>
           </div>
           <DaysSelector value={days} onChange={setDays} />
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <KPICard
-            label="Today Revenue"
+            label={tx("Today Revenue")}
             value={fmtKES(data?.today_revenue ?? 0)}
             subtext={`${data?.today_orders ?? 0} orders`}
             status="ok"
@@ -41,14 +42,14 @@ export default function SalesAnalyticsPage() {
             loading={isLoading}
           />
           <KPICard
-            label="MTD Revenue"
+            label={tx("MTD Revenue")}
             value={fmtKES(data?.mtd_revenue ?? 0)}
             subtext={`YTD: ${fmtKES(data?.ytd_revenue ?? 0)}`}
             status="ok"
             loading={isLoading}
           />
           <KPICard
-            label="Overdue Invoices"
+            label={tx("Overdue Invoices")}
             value={data?.overdue_invoices ?? 0}
             subtext={fmtKES(data?.overdue_value ?? 0)}
             status={(data?.overdue_invoices ?? 0) > 0 ? "critical" : "ok"}
@@ -56,7 +57,7 @@ export default function SalesAnalyticsPage() {
             loading={isLoading}
           />
           <KPICard
-            label="Open Orders"
+            label={tx("Open Orders")}
             value={data?.open_orders ?? 0}
             subtext={`Avg: ${fmtKES(data?.avg_order_value ?? 0)}`}
             status="ok"
@@ -64,7 +65,7 @@ export default function SalesAnalyticsPage() {
             loading={isLoading}
           />
           <KPICard
-            label="Pending Shipments"
+            label={tx("Pending Shipments")}
             value={data?.pending_shipments ?? 0}
             subtext="Not yet dispatched"
             status={(data?.pending_shipments ?? 0) > 5 ? "warning" : "ok"}
@@ -72,7 +73,7 @@ export default function SalesAnalyticsPage() {
             loading={isLoading}
           />
           <KPICard
-            label="Overdue Value"
+            label={tx("Overdue Value")}
             value={fmtKES(data?.overdue_value ?? 0)}
             subtext="Outstanding balance"
             status={(data?.overdue_value ?? 0) > 0 ? "warning" : "ok"}
@@ -82,7 +83,7 @@ export default function SalesAnalyticsPage() {
         </div>
 
         {/* Revenue trend */}
-        <ChartCard title="Revenue Trend" subtitle={`Last ${days} days (invoiced)`}>
+        <ChartCard title={tx("Revenue Trend")} subtitle={`Last ${days} days (invoiced)`}>
           <LineChart
             series={[
               { name: "Revenue", color: "#f97316", data: data?.revenue_trend ?? [] },
@@ -93,12 +94,12 @@ export default function SalesAnalyticsPage() {
         </ChartCard>
 
         {/* By channel */}
-        <ChartCard title="Sales by Channel" subtitle={`Last ${days} days`}>
+        <ChartCard title={tx("Sales by Channel")} subtitle={`Last ${days} days`}>
           <DistributionBar data={data?.by_channel ?? []} formatValue={(v) => fmtKES(v)} />
         </ChartCard>
 
         {/* Order count trend as bar */}
-        <ChartCard title="Daily Order Count" subtitle={`Last ${days} days`}>
+        <ChartCard title={tx("Daily Order Count")} subtitle={`Last ${days} days`}>
           <BarChart
             data={data?.order_count_trend ?? []}
             color="#6366f1"
@@ -107,12 +108,12 @@ export default function SalesAnalyticsPage() {
         </ChartCard>
 
         {/* Top customers */}
-        <ChartCard title="Top Customers" subtitle="By invoice value">
+        <ChartCard title={tx("Top Customers")} subtitle="By invoice value">
           <DistributionBar data={data?.top_customers ?? []} formatValue={(v) => fmtKES(v)} />
         </ChartCard>
 
         {/* Exceptions */}
-        <ChartCard title="Exceptions">
+        <ChartCard title={tx("Exceptions")}>
           <ExceptionList items={data?.exceptions ?? []} title="" />
         </ChartCard>
       </div>

@@ -4,6 +4,7 @@ import {
   chatterApi, ActivityOut, ActivityType, ReferenceType,
   TYPE_ICON, TYPE_BADGE, REF_LABEL, timeAgo,
 } from "@/lib/chatter";
+import { tx } from "@/lib/i18n/core";
 
 const ACTIVITY_TYPES: ActivityType[] = [
   "comment", "system_event", "status_change", "assignment",
@@ -49,14 +50,14 @@ export default function SearchPage() {
 
   return (
     <div className="p-6 space-y-4">
-      <h1 className="text-xl font-bold text-gray-900">Search Activities</h1>
+      <h1 className="text-xl font-bold text-gray-900">{tx("Search Activities")}</h1>
 
       <div className="bg-white border rounded-lg p-4 shadow-sm space-y-3">
         <div>
-          <label className="text-xs text-gray-500 block mb-1">Search text</label>
+          <label className="text-xs text-gray-500 block mb-1">{tx("Search text")}</label>
           <input
             className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-            placeholder="Search titles and messages…"
+            placeholder={tx("Search titles and messages…")}
             value={query}
             onChange={e => setQuery(e.target.value)}
             onKeyDown={e => { if (e.key === "Enter") search(); }}
@@ -64,44 +65,44 @@ export default function SearchPage() {
         </div>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
           <div>
-            <label className="text-xs text-gray-500 block mb-1">Activity Type</label>
+            <label className="text-xs text-gray-500 block mb-1">{tx("Activity Type")}</label>
             <select className="w-full border rounded px-2 py-1.5 text-sm" value={filterType}
               onChange={e => setFilterType(e.target.value)}>
-              <option value="">All Types</option>
+              <option value="">{tx("All Types")}</option>
               {ACTIVITY_TYPES.map(t => (
                 <option key={t} value={t} className="capitalize">{t.replace("_", " ")}</option>
               ))}
             </select>
           </div>
           <div>
-            <label className="text-xs text-gray-500 block mb-1">Module</label>
+            <label className="text-xs text-gray-500 block mb-1">{tx("Module")}</label>
             <select className="w-full border rounded px-2 py-1.5 text-sm" value={filterRef}
               onChange={e => setFilterRef(e.target.value)}>
-              <option value="">All Modules</option>
+              <option value="">{tx("All Modules")}</option>
               {REF_TYPES.map(t => (
                 <option key={t} value={t}>{REF_LABEL[t]}</option>
               ))}
             </select>
           </div>
           <div>
-            <label className="text-xs text-gray-500 block mb-1">Created By</label>
-            <input className="w-full border rounded px-2 py-1.5 text-sm" placeholder="Username…"
+            <label className="text-xs text-gray-500 block mb-1">{tx("Created By")}</label>
+            <input className="w-full border rounded px-2 py-1.5 text-sm" placeholder={tx("Username…")}
               value={filterUser} onChange={e => setFilterUser(e.target.value)} />
           </div>
         </div>
         <button onClick={() => search(1)} disabled={loading}
           className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">
-          {loading ? "Searching…" : "Search"}
+          {loading ? tx("Searching…") : tx("Search")}
         </button>
       </div>
 
       {searched && (
         <>
           <div className="flex items-center justify-between">
-            <p className="text-sm text-gray-600">{total} result{total !== 1 ? "s" : ""} found</p>
+            <p className="text-sm text-gray-600">{total} {tx("result")}{total !== 1 ? tx("s") : ""} {tx("found")}</p>
           </div>
 
-          {loading ? <p className="text-sm text-gray-500 text-center py-8">Searching…</p> : (
+          {loading ? <p className="text-sm text-gray-500 text-center py-8">{tx("Searching…")}</p> : (
             <div className="space-y-3">
               {results.map(a => (
                 <div key={a.activity_id} className="bg-white border rounded-lg p-4 shadow-sm">
@@ -122,8 +123,8 @@ export default function SearchPage() {
                         <p className="text-sm text-gray-600 mt-0.5 line-clamp-3">{a.message}</p>
                       )}
                       <div className="flex items-center gap-3 mt-1">
-                        <span className="text-xs text-gray-400">by {a.created_by ?? "System"}</span>
-                        <span className="text-xs text-gray-300">ref: {a.reference_id.slice(0, 8)}…</span>
+                        <span className="text-xs text-gray-400">{tx("by")} {a.created_by ?? tx("System")}</span>
+                        <span className="text-xs text-gray-300">{tx("ref:")} {a.reference_id.slice(0, 8)}…</span>
                         {a.comments.filter(c => !c.deleted_flag).length > 0 && (
                           <span className="text-xs text-gray-400">💬 {a.comments.filter(c => !c.deleted_flag).length}</span>
                         )}
@@ -133,7 +134,7 @@ export default function SearchPage() {
                 </div>
               ))}
               {results.length === 0 && (
-                <p className="text-sm text-gray-400 text-center py-12">No results found. Try different search terms.</p>
+                <p className="text-sm text-gray-400 text-center py-12">{tx("No results found. Try different search terms.")}</p>
               )}
             </div>
           )}
@@ -141,10 +142,10 @@ export default function SearchPage() {
           {pages > 1 && (
             <div className="flex items-center justify-center gap-3">
               <button onClick={() => search(Math.max(1, page - 1))} disabled={page === 1 || loading}
-                className="rounded border px-3 py-1.5 text-sm hover:bg-gray-50 disabled:opacity-40">‹ Prev</button>
-              <span className="text-sm text-gray-600">Page {page} of {pages}</span>
+                className="rounded border px-3 py-1.5 text-sm hover:bg-gray-50 disabled:opacity-40">{tx("‹ Prev")}</button>
+              <span className="text-sm text-gray-600">{tx("Page")} {page} {tx("of")} {pages}</span>
               <button onClick={() => search(Math.min(pages, page + 1))} disabled={page === pages || loading}
-                className="rounded border px-3 py-1.5 text-sm hover:bg-gray-50 disabled:opacity-40">Next ›</button>
+                className="rounded border px-3 py-1.5 text-sm hover:bg-gray-50 disabled:opacity-40">{tx("Next ›")}</button>
             </div>
           )}
         </>

@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { spApi, SPAccount, SPDashboard, SP_STATUS_COLORS } from "@/lib/supplier_portal";
 import { SupplierUsersPanel } from "@/components/SupplierUsersPanel";
+import { tx } from "@/lib/i18n/core";
 
 export default function SPAccountDetail() {
   const { id } = useParams<{ id: string }>();
@@ -26,13 +27,13 @@ export default function SPAccountDetail() {
     setSaving(false);
   };
 
-  if (!account) return <div className="p-6 text-gray-400">Loading...</div>;
+  if (!account) return <div className="p-6 text-gray-400">{tx("Loading...")}</div>;
 
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center gap-4">
-        <a href="/dashboard/supplier-portal" className="text-blue-600 hover:underline text-sm">← Supplier Portal</a>
-        <h1 className="text-2xl font-bold text-gray-900">Supplier Account</h1>
+        <a href="/dashboard/supplier-portal" className="text-blue-600 hover:underline text-sm">{tx("← Supplier Portal")}</a>
+        <h1 className="text-2xl font-bold text-gray-900">{tx("Supplier Account")}</h1>
         <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${SP_STATUS_COLORS[account.portal_status]}`}>{account.portal_status}</span>
       </div>
 
@@ -40,11 +41,11 @@ export default function SPAccountDetail() {
       {dashboard && (
         <div className="grid grid-cols-5 gap-4">
           {[
-            { label: "Open POs", value: dashboard.open_pos },
-            { label: "Pending ACK", value: dashboard.pending_acknowledgment },
-            { label: "Invoices (30d)", value: dashboard.uploaded_invoices_30d },
-            { label: "Docs Uploaded (30d)", value: dashboard.uploaded_docs_30d },
-            { label: "Expiring Certs", value: dashboard.expiring_certs, warn: dashboard.expiring_certs > 0 },
+            { label: tx("Open POs"), value: dashboard.open_pos },
+            { label: tx("Pending ACK"), value: dashboard.pending_acknowledgment },
+            { label: tx("Invoices (30d)"), value: dashboard.uploaded_invoices_30d },
+            { label: tx("Docs Uploaded (30d)"), value: dashboard.uploaded_docs_30d },
+            { label: tx("Expiring Certs"), value: dashboard.expiring_certs, warn: dashboard.expiring_certs > 0 },
           ].map((k) => (
             <div key={k.label} className={`bg-white rounded-xl border p-4 ${k.warn ? "border-red-300" : "border-gray-200"}`}>
               <div className={`text-2xl font-bold ${k.warn ? "text-red-600" : "text-gray-900"}`}>{k.value}</div>
@@ -60,19 +61,19 @@ export default function SPAccountDetail() {
       <div className="grid grid-cols-2 gap-6">
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-base font-semibold text-gray-900">Account Details</h2>
+            <h2 className="text-base font-semibold text-gray-900">{tx("Account Details")}</h2>
             {!editing && (
-              <button onClick={() => setEditing(true)} className="text-xs text-blue-600 hover:underline">Edit</button>
+              <button onClick={() => setEditing(true)} className="text-xs text-blue-600 hover:underline">{tx("Edit")}</button>
             )}
           </div>
           {editing ? (
             <div className="space-y-3">
               {[
-                { key: "primary_contact_name", label: "Contact Name" },
-                { key: "primary_contact_email", label: "Contact Email" },
-                { key: "primary_contact_phone", label: "Contact Phone" },
-                { key: "default_currency", label: "Currency" },
-                { key: "timezone", label: "Timezone" },
+                { key: "primary_contact_name", label: tx("Contact Name") },
+                { key: "primary_contact_email", label: tx("Contact Email") },
+                { key: "primary_contact_phone", label: tx("Contact Phone") },
+                { key: "default_currency", label: tx("Currency") },
+                { key: "timezone", label: tx("Timezone") },
               ].map(({ key, label }) => (
                 <div key={key}>
                   <label className="text-xs text-gray-600">{label}</label>
@@ -85,17 +86,17 @@ export default function SPAccountDetail() {
                 <label className="flex items-center gap-2 text-sm">
                   <input type="checkbox" checked={!!form.can_view_payment}
                     onChange={(e) => setForm({ ...form, can_view_payment: e.target.checked })} />
-                  Can View Payment
+                  {tx("Can View Payment")}
                 </label>
                 <label className="flex items-center gap-2 text-sm ml-4">
                   <input type="checkbox" checked={!!form.can_view_prices}
                     onChange={(e) => setForm({ ...form, can_view_prices: e.target.checked })} />
-                  Can View Prices
+                  {tx("Can View Prices")}
                 </label>
               </div>
               <div className="flex gap-2 pt-2">
-                <button onClick={() => setEditing(false)} className="px-3 py-1.5 border border-gray-300 rounded-lg text-xs">Cancel</button>
-                <button onClick={save} disabled={saving} className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs">Save</button>
+                <button onClick={() => setEditing(false)} className="px-3 py-1.5 border border-gray-300 rounded-lg text-xs">{tx("Cancel")}</button>
+                <button onClick={save} disabled={saving} className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs">{tx("Save")}</button>
               </div>
             </div>
           ) : (
@@ -122,16 +123,16 @@ export default function SPAccountDetail() {
 
         {/* Quick Links */}
         <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <h2 className="text-base font-semibold text-gray-900 mb-4">Quick Access</h2>
+          <h2 className="text-base font-semibold text-gray-900 mb-4">{tx("Quick Access")}</h2>
           <div className="grid grid-cols-2 gap-3">
             {[
-              { label: "Purchase Orders", href: `/dashboard/supplier-portal/accounts/${id}/purchase-orders`, icon: "📋" },
-              { label: "ETA Management", href: `/dashboard/supplier-portal/eta?account=${id}`, icon: "📅" },
-              { label: "Documents", href: `/dashboard/supplier-portal/documents?account=${id}`, icon: "📁" },
-              { label: "Invoices", href: `/dashboard/supplier-portal/invoices?account=${id}`, icon: "🧾" },
-              { label: "Payment Status", href: `/dashboard/supplier-portal/payment?account=${id}`, icon: "💳" },
-              { label: "Users", href: `/dashboard/supplier-portal/users?account=${id}`, icon: "👥" },
-              { label: "Activity Log", href: `/dashboard/supplier-portal/activity?account=${id}`, icon: "📝" },
+              { label: tx("Purchase Orders"), href: `/dashboard/supplier-portal/accounts/${id}/purchase-orders`, icon: "📋" },
+              { label: tx("ETA Management"), href: `/dashboard/supplier-portal/eta?account=${id}`, icon: "📅" },
+              { label: tx("Documents"), href: `/dashboard/supplier-portal/documents?account=${id}`, icon: "📁" },
+              { label: tx("Invoices"), href: `/dashboard/supplier-portal/invoices?account=${id}`, icon: "🧾" },
+              { label: tx("Payment Status"), href: `/dashboard/supplier-portal/payment?account=${id}`, icon: "💳" },
+              { label: tx("Users"), href: `/dashboard/supplier-portal/users?account=${id}`, icon: "👥" },
+              { label: tx("Activity Log"), href: `/dashboard/supplier-portal/activity?account=${id}`, icon: "📝" },
             ].map((l) => (
               <a key={l.label} href={l.href}
                 className="flex items-center gap-2 p-3 border border-gray-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 text-sm font-medium text-gray-700">
@@ -145,7 +146,7 @@ export default function SPAccountDetail() {
       {/* AI Alerts */}
       {dashboard && dashboard.ai_alerts.length > 0 && (
         <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <h2 className="text-base font-semibold text-gray-900 mb-3">AI Alerts</h2>
+          <h2 className="text-base font-semibold text-gray-900 mb-3">{tx("AI Alerts")}</h2>
           <div className="space-y-2">
             {dashboard.ai_alerts.map((a) => (
               <div key={a.id} className={`p-3 rounded-lg border text-sm ${a.severity === "CRITICAL" ? "border-red-200 bg-red-50" : a.severity === "WARNING" ? "border-yellow-200 bg-yellow-50" : "border-blue-200 bg-blue-50"}`}>
@@ -160,13 +161,13 @@ export default function SPAccountDetail() {
       {/* Recent Activity */}
       {dashboard && (
         <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <h2 className="text-base font-semibold text-gray-900 mb-3">Recent Activity</h2>
+          <h2 className="text-base font-semibold text-gray-900 mb-3">{tx("Recent Activity")}</h2>
           <table className="w-full text-sm">
             <thead>
               <tr className="text-xs text-gray-500 border-b">
-                <th className="pb-2 text-left">Type</th>
-                <th className="pb-2 text-left">Reference</th>
-                <th className="pb-2 text-left">When</th>
+                <th className="pb-2 text-left">{tx("Type")}</th>
+                <th className="pb-2 text-left">{tx("Reference")}</th>
+                <th className="pb-2 text-left">{tx("When")}</th>
               </tr>
             </thead>
             <tbody>

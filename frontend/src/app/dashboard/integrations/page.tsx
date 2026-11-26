@@ -5,16 +5,17 @@ import { ModuleWorkspace } from "@/components/workspace";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { integrationsApi, IntegrationCapability, ProviderStatus } from "@/lib/integrations";
+import { tx, lx } from "@/lib/i18n/core";
 
-const PROVIDER_META: Record<string, { icon: string; label: string; href: string }> = {
-  MPESA: { icon: "📱", label: "M-Pesa Daraja", href: "/dashboard/integrations/mpesa" },
+const PROVIDER_META: Record<string, { icon: string; label: string; href: string }> = lx(() => ({
+  MPESA: { icon: "📱", label: tx("M-Pesa Daraja"), href: "/dashboard/integrations/mpesa" },
   CRM: { icon: "👥", label: "CRM", href: "/dashboard/integrations/sync" },
-  SHOPIFY: { icon: "🛒", label: "Shopify", href: "/dashboard/integrations/sync" },
-  WOOCOMMERCE: { icon: "🛍️", label: "WooCommerce", href: "/dashboard/integrations/sync" },
-  BARCODE: { icon: "📷", label: "Barcode", href: "/dashboard/integrations/barcode" },
-  IOT: { icon: "🏭", label: "IoT / Machines", href: "/dashboard/integrations/sync" },
-  GENERIC: { icon: "🔌", label: "Generic", href: "/dashboard/integrations/logs" },
-};
+  SHOPIFY: { icon: "🛒", label: tx("Shopify"), href: "/dashboard/integrations/sync" },
+  WOOCOMMERCE: { icon: "🛍️", label: tx("WooCommerce"), href: "/dashboard/integrations/sync" },
+  BARCODE: { icon: "📷", label: tx("Barcode"), href: "/dashboard/integrations/barcode" },
+  IOT: { icon: "🏭", label: tx("IoT / Machines"), href: "/dashboard/integrations/sync" },
+  GENERIC: { icon: "🔌", label: tx("Generic"), href: "/dashboard/integrations/logs" },
+}));
 
 function StatusBadge({ status }: { status: string }) {
   const cfg: Record<string, string> = {
@@ -66,19 +67,19 @@ function ProviderCard({ p }: { p: ProviderStatus }) {
         <div className="grid grid-cols-2 gap-2 mt-3">
           <div className="text-center bg-gray-50 rounded-lg p-2">
             <p className="text-lg font-bold text-gray-900">{p.recent_success}</p>
-            <p className="text-xs text-gray-500">Success (24h)</p>
+            <p className="text-xs text-gray-500">{tx("Success (24h)")}</p>
           </div>
           <div className={`text-center rounded-lg p-2 ${hasErrors ? "bg-red-50" : "bg-gray-50"}`}>
             <p className={`text-lg font-bold ${hasErrors ? "text-red-600" : "text-gray-900"}`}>
               {p.recent_failures}
             </p>
-            <p className="text-xs text-gray-500">Errors (24h)</p>
+            <p className="text-xs text-gray-500">{tx("Errors (24h)")}</p>
           </div>
         </div>
 
         {p.last_tested_at && (
           <p className="text-xs text-gray-400 mt-2 text-right">
-            Tested: {new Date(p.last_tested_at).toLocaleString()}
+            {tx("Tested:")} {new Date(p.last_tested_at).toLocaleString()}
           </p>
         )}
       </div>
@@ -99,19 +100,19 @@ function CapabilityCard({ capability }: { capability: IntegrationCapability }) {
       <p className="text-xs text-gray-600 mt-3 min-h-[2.5rem]">{capability.notes}</p>
       <div className="mt-3 flex flex-wrap gap-2 text-[11px]">
         {capability.sandbox_supported && (
-          <span className="px-2 py-1 rounded bg-blue-50 text-blue-700">Sandbox</span>
+          <span className="px-2 py-1 rounded bg-blue-50 text-blue-700">{tx("Sandbox")}</span>
         )}
         {capability.simulation_supported && (
-          <span className="px-2 py-1 rounded bg-amber-50 text-amber-700">Simulation</span>
+          <span className="px-2 py-1 rounded bg-amber-50 text-amber-700">{tx("Simulation")}</span>
         )}
         {capability.requires_signature_validation && (
-          <span className="px-2 py-1 rounded bg-purple-50 text-purple-700">Signature required</span>
+          <span className="px-2 py-1 rounded bg-purple-50 text-purple-700">{tx("Signature required")}</span>
         )}
         {capability.can_execute_in_production ? (
-          <span className="px-2 py-1 rounded bg-emerald-50 text-emerald-700">Production allowed</span>
+          <span className="px-2 py-1 rounded bg-emerald-50 text-emerald-700">{tx("Production allowed")}</span>
         ) : (
           <span className="px-2 py-1 rounded bg-red-50 text-red-700">
-            {capability.production_blocked_reason ?? "Production blocked"}
+            {capability.production_blocked_reason ?? tx("Production blocked")}
           </span>
         )}
       </div>
@@ -120,7 +121,7 @@ function CapabilityCard({ capability }: { capability: IntegrationCapability }) {
           href={capability.frontend_route}
           className="inline-flex mt-3 text-xs font-medium text-indigo-600 hover:text-indigo-700"
         >
-          Open workspace
+          {tx("Open workspace")}
         </Link>
       )}
     </div>
@@ -149,21 +150,21 @@ function IntegrationsDashboardTab() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Integration Hub</h1>
-          <p className="text-gray-500 text-sm mt-0.5">All external system connections</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Integration Hub")}</h1>
+          <p className="text-gray-500 text-sm mt-0.5">{tx("All external system connections")}</p>
         </div>
         <div className="flex gap-2">
           <button
             onClick={() => refetch()}
             className="px-3 py-1.5 text-sm bg-white border border-gray-200 rounded-lg hover:bg-gray-50"
           >
-            ↻ Refresh
+            {tx("↻ Refresh")}
           </button>
           <Link
             href="/dashboard/integrations/logs"
             className="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
           >
-            View Logs
+            {tx("View Logs")}
           </Link>
         </div>
       </div>
@@ -172,10 +173,10 @@ function IntegrationsDashboardTab() {
       {!isLoading && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[
-            { label: "Active Providers", value: activeCount, color: "text-emerald-600" },
-            { label: "Calls (24h)", value: totalCalls, color: "text-blue-600" },
-            { label: "Errors (24h)", value: totalErrors, color: totalErrors > 0 ? "text-red-600" : "text-gray-600" },
-            { label: "Production Blocked", value: productionBlockedCount, color: productionBlockedCount > 0 ? "text-amber-600" : "text-emerald-600" },
+            { label: tx("Active Providers"), value: activeCount, color: "text-emerald-600" },
+            { label: tx("Calls (24h)"), value: totalCalls, color: "text-blue-600" },
+            { label: tx("Errors (24h)"), value: totalErrors, color: totalErrors > 0 ? "text-red-600" : "text-gray-600" },
+            { label: tx("Production Blocked"), value: productionBlockedCount, color: productionBlockedCount > 0 ? "text-amber-600" : "text-emerald-600" },
           ].map((s) => (
             <div key={s.label} className="bg-white border border-gray-200 rounded-xl p-4 text-center">
               <p className={`text-3xl font-bold ${s.color}`}>{s.value}</p>
@@ -187,9 +188,9 @@ function IntegrationsDashboardTab() {
 
       <div className="space-y-3" data-testid="integration-capabilities">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">Provider Capability Status</h2>
+          <h2 className="text-lg font-semibold text-gray-900">{tx("Provider Capability Status")}</h2>
           <p className="text-sm text-gray-500">
-            Source-owned live/sandbox/simulated/stub classification for production readiness review.
+            {tx("Source-owned live/sandbox/simulated/stub classification for production readiness review.")}
           </p>
         </div>
         {capabilitiesLoading ? (
@@ -225,10 +226,10 @@ function IntegrationsDashboardTab() {
       {/* Quick links */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { href: "/dashboard/integrations/mpesa", icon: "📱", label: "M-Pesa Transactions" },
-          { href: "/dashboard/integrations/logs", icon: "📋", label: "Integration Logs" },
-          { href: "/dashboard/integrations/barcode", icon: "📷", label: "Barcode Scanner" },
-          { href: "/dashboard/integrations/sync", icon: "🔄", label: "Sync Status" },
+          { href: "/dashboard/integrations/mpesa", icon: "📱", label: tx("M-Pesa Transactions") },
+          { href: "/dashboard/integrations/logs", icon: "📋", label: tx("Integration Logs") },
+          { href: "/dashboard/integrations/barcode", icon: "📷", label: tx("Barcode Scanner") },
+          { href: "/dashboard/integrations/sync", icon: "🔄", label: tx("Sync Status") },
         ].map((link) => (
           <Link
             key={link.href}
@@ -257,21 +258,21 @@ const DeveloperPage                = dynamic(() => import("@/app/dashboard/devel
 
 export default function IntegrationsDashboardPage() {
   const tabs = [
-    { key: "overview",        label: "Overview",        permission: "integrations.view", content: <IntegrationsDashboardTab /> },
-    { key: "console",         label: "Console",         permission: "integrations.view", content: <IntegrationConsolePage /> },
-    { key: "mpesa",           label: "M-Pesa",          permission: "integrations.view", content: <IntegrationsMpesaPage /> },
-    { key: "sync",            label: "Sync",            permission: "integrations.view", content: <IntegrationsSyncPage /> },
-    { key: "marketplace",     label: "Marketplace",     permission: "integrations.view", content: <IntegrationsMarketplacePage /> },
-    { key: "barcode",         label: "Barcode",         permission: "integrations.view", content: <IntegrationsBarcodePage /> },
-    { key: "marketing-sync",  label: "Marketing Sync",  permission: "integrations.view", content: <IntegrationsMarketingSyncPage /> },
-    { key: "logs",            label: "Logs",            permission: "integrations.view", content: <IntegrationsLogsPage /> },
-    { key: "provider-keys",   label: "Provider Keys",   permission: "integrations.provider_keys", exact: true, content: <ProviderKeysPage /> },  // superuser or full-access ("*") only
-    { key: "webhooks",        label: "Webhooks",        permission: "self.superuser", content: <WebhooksPage /> },  // API is superuser-only
-    { key: "developer",       label: "Developer",       permission: "integrations.view", content: <DeveloperPage /> },
+    { key: "overview",        label: tx("Overview"),        permission: "integrations.view", content: <IntegrationsDashboardTab /> },
+    { key: "console",         label: tx("Console"),         permission: "integrations.view", content: <IntegrationConsolePage /> },
+    { key: "mpesa",           label: tx("M-Pesa"),          permission: "integrations.view", content: <IntegrationsMpesaPage /> },
+    { key: "sync",            label: tx("Sync"),            permission: "integrations.view", content: <IntegrationsSyncPage /> },
+    { key: "marketplace",     label: tx("Marketplace"),     permission: "integrations.view", content: <IntegrationsMarketplacePage /> },
+    { key: "barcode",         label: tx("Barcode"),         permission: "integrations.view", content: <IntegrationsBarcodePage /> },
+    { key: "marketing-sync",  label: tx("Marketing Sync"),  permission: "integrations.view", content: <IntegrationsMarketingSyncPage /> },
+    { key: "logs",            label: tx("Logs"),            permission: "integrations.view", content: <IntegrationsLogsPage /> },
+    { key: "provider-keys",   label: tx("Provider Keys"),   permission: "integrations.provider_keys", exact: true, content: <ProviderKeysPage /> },  // superuser or full-access ("*") only
+    { key: "webhooks",        label: tx("Webhooks"),        permission: "self.superuser", content: <WebhooksPage /> },  // API is superuser-only
+    { key: "developer",       label: tx("Developer"),       permission: "integrations.view", content: <DeveloperPage /> },
   ];
   return (
     <ModuleWorkspace
-      title="Integrations"
+      title={tx("Integrations")}
       description="M-Pesa, sync, marketplace, barcode, webhooks, developer tools"
       permission="integrations.view"
       tabs={tabs}

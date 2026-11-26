@@ -11,6 +11,7 @@ import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
 import { ToastContainer } from "@/components/ui/Toast";
 import { useToast } from "@/hooks/useToast";
+import { tx } from "@/lib/i18n/core";
 
 export default function ShipmentDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -34,7 +35,7 @@ export default function ShipmentDetailPage() {
 
   const startPickingMut = useMutation({
     mutationFn: () => salesApi.startPicking(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["sales-shipment", id] }); toast("success", "Picking started"); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["sales-shipment", id] }); toast("success", tx("Picking started")); },
     onError: (e) => toast("error", extractApiError(e)),
   });
 
@@ -46,7 +47,7 @@ export default function ShipmentDetailPage() {
 
   const dispatchMut = useMutation({
     mutationFn: () => salesApi.dispatchShipment(id, dispatchDate),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["sales-shipment", id] }); toast("success", "Shipment dispatched"); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["sales-shipment", id] }); toast("success", tx("Shipment dispatched")); },
     onError: (e) => toast("error", extractApiError(e)),
   });
 
@@ -66,8 +67,8 @@ export default function ShipmentDetailPage() {
     onError: (e) => toast("error", extractApiError(e)),
   });
 
-  if (isLoading) return <div className="text-center py-12 text-gray-500">Loading...</div>;
-  if (!shipment) return <div className="text-center py-12 text-red-500">Shipment not found</div>;
+  if (isLoading) return <div className="text-center py-12 text-gray-500">{tx("Loading...")}</div>;
+  if (!shipment) return <div className="text-center py-12 text-red-500">{tx("Shipment not found")}</div>;
 
   const statusColor = (s: string) =>
     s === "DISPATCHED" || s === "DELIVERED" ? "green"
@@ -98,15 +99,15 @@ export default function ShipmentDetailPage() {
         </div>
         <div className="flex gap-2">
           {canStartPicking && (
-            <Button onClick={() => startPickingMut.mutate()} disabled={startPickingMut.isPending}>Start Picking</Button>
+            <Button onClick={() => startPickingMut.mutate()} disabled={startPickingMut.isPending}>{tx("Start Picking")}</Button>
           )}
           {canDispatch && (
             <div className="flex items-center gap-2">
               <input type="date" value={dispatchDate} onChange={(e) => setDispatchDate(e.target.value)}
                 className="border rounded px-2 py-1 text-sm" />
-              <Button onClick={() => { if (confirm("Dispatch this shipment? This will issue stock.")) dispatchMut.mutate(); }}
+              <Button onClick={() => { if (confirm(tx("Dispatch this shipment? This will issue stock."))) dispatchMut.mutate(); }}
                 disabled={dispatchMut.isPending}>
-                {dispatchMut.isPending ? "Dispatching..." : "Dispatch"}
+                {dispatchMut.isPending ? tx("Dispatching...") : tx("Dispatch")}
               </Button>
             </div>
           )}
@@ -119,7 +120,7 @@ export default function ShipmentDetailPage() {
                 notes: "",
               });
               setShowInvoice(true);
-            }}>Create Invoice</Button>
+            }}>{tx("Create Invoice")}</Button>
           )}
         </div>
       </div>
@@ -127,14 +128,14 @@ export default function ShipmentDetailPage() {
       {/* Shipment Info */}
       <div className="grid grid-cols-4 gap-4">
         {[
-          { label: "Warehouse", value: shipment.warehouse_name || "—" },
-          { label: "Scheduled Date", value: shipment.scheduled_date },
-          { label: "Dispatched Date", value: shipment.dispatched_date || "—" },
-          { label: "Carrier", value: shipment.carrier || "—" },
-          { label: "Tracking", value: shipment.tracking_number || "—" },
-          { label: "Lines", value: `${shipment.line_count}` },
-          { label: "Picked", value: `${shipment.picked_count} / ${shipment.line_count}` },
-          { label: "Progress", value: shipment.line_count ? `${Math.round((shipment.picked_count / shipment.line_count) * 100)}%` : "—" },
+          { label: tx("Warehouse"), value: shipment.warehouse_name || "—" },
+          { label: tx("Scheduled Date"), value: shipment.scheduled_date },
+          { label: tx("Dispatched Date"), value: shipment.dispatched_date || "—" },
+          { label: tx("Carrier"), value: shipment.carrier || "—" },
+          { label: tx("Tracking"), value: shipment.tracking_number || "—" },
+          { label: tx("Lines"), value: `${shipment.line_count}` },
+          { label: tx("Picked"), value: `${shipment.picked_count} / ${shipment.line_count}` },
+          { label: tx("Progress"), value: shipment.line_count ? `${Math.round((shipment.picked_count / shipment.line_count) * 100)}%` : "—" },
         ].map((item) => (
           <div key={item.label} className="bg-white rounded-lg border p-4">
             <p className="text-xs text-gray-500 uppercase tracking-wide">{item.label}</p>
@@ -147,7 +148,7 @@ export default function ShipmentDetailPage() {
       {shipment.line_count > 0 && (
         <div className="bg-white rounded-lg border p-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-700">Picking Progress</span>
+            <span className="text-sm font-medium text-gray-700">{tx("Picking Progress")}</span>
             <span className="text-sm text-gray-500">{shipment.picked_count}/{shipment.line_count}</span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
@@ -162,16 +163,16 @@ export default function ShipmentDetailPage() {
       {/* Shipment Lines */}
       <div className="bg-white rounded-lg border">
         <div className="px-6 py-4 border-b flex items-center justify-between">
-          <h2 className="font-semibold text-gray-900">Shipment Lines</h2>
+          <h2 className="font-semibold text-gray-900">{tx("Shipment Lines")}</h2>
           {allPicked && shipment.status === "PICKING" && (
-            <span className="text-sm text-green-600 font-medium">All lines picked — auto-advancing to PACKED</span>
+            <span className="text-sm text-green-600 font-medium">{tx("All lines picked — auto-advancing to PACKED")}</span>
           )}
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                {["Product", "SKU", "Lot", "Quantity", "Unit", "Picked", "Stock Movement", "Action"].map((h) => (
+                {[tx("Product"), "SKU", tx("Lot"), tx("Quantity"), tx("Unit"), tx("Picked"), tx("Stock Movement"), tx("Action")].map((h) => (
                   <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>
                 ))}
               </tr>
@@ -186,8 +187,8 @@ export default function ShipmentDetailPage() {
                   <td className="px-4 py-3 text-sm">{line.unit}</td>
                   <td className="px-4 py-3 text-sm">
                     {line.is_picked
-                      ? <span className="text-green-600 font-medium">✓ Picked</span>
-                      : <span className="text-gray-400">Pending</span>
+                      ? <span className="text-green-600 font-medium">{tx("✓ Picked")}</span>
+                      : <span className="text-gray-400">{tx("Pending")}</span>
                     }
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-500">
@@ -196,7 +197,7 @@ export default function ShipmentDetailPage() {
                   <td className="px-4 py-3 text-sm">
                     {canPickLines && !line.is_picked && (
                       <Button variant="secondary" onClick={() => pickLineMut.mutate(line.id)}>
-                        Mark Picked
+                        {tx("Mark Picked")}
                       </Button>
                     )}
                   </td>
@@ -208,19 +209,19 @@ export default function ShipmentDetailPage() {
       </div>
 
       {/* Invoice Modal */}
-      <Modal open={showInvoice} onClose={() => setShowInvoice(false)} title="Create Invoice">
+      <Modal open={showInvoice} onClose={() => setShowInvoice(false)} title={tx("Create Invoice")}>
         <div className="space-y-4">
-          <p className="text-sm text-gray-600">Create an invoice from dispatched shipment quantities.</p>
-          <Input label="Invoice No" value={invoiceForm.invoice_no} onChange={(e) => setInvoiceForm({ ...invoiceForm, invoice_no: e.target.value })} required />
+          <p className="text-sm text-gray-600">{tx("Create an invoice from dispatched shipment quantities.")}</p>
+          <Input label={tx("Invoice No")} value={invoiceForm.invoice_no} onChange={(e) => setInvoiceForm({ ...invoiceForm, invoice_no: e.target.value })} required />
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Invoice Date" type="date" value={invoiceForm.invoice_date} onChange={(e) => setInvoiceForm({ ...invoiceForm, invoice_date: e.target.value })} required />
-            <Input label="Due Date" type="date" value={invoiceForm.due_date} onChange={(e) => setInvoiceForm({ ...invoiceForm, due_date: e.target.value })} required />
+            <Input label={tx("Invoice Date")} type="date" value={invoiceForm.invoice_date} onChange={(e) => setInvoiceForm({ ...invoiceForm, invoice_date: e.target.value })} required />
+            <Input label={tx("Due Date")} type="date" value={invoiceForm.due_date} onChange={(e) => setInvoiceForm({ ...invoiceForm, due_date: e.target.value })} required />
           </div>
-          <Input label="Notes" value={invoiceForm.notes} onChange={(e) => setInvoiceForm({ ...invoiceForm, notes: e.target.value })} />
+          <Input label={tx("Notes")} value={invoiceForm.notes} onChange={(e) => setInvoiceForm({ ...invoiceForm, notes: e.target.value })} />
           <div className="flex justify-end gap-3">
-            <Button variant="secondary" onClick={() => setShowInvoice(false)}>Cancel</Button>
+            <Button variant="secondary" onClick={() => setShowInvoice(false)}>{tx("Cancel")}</Button>
             <Button onClick={() => invoiceMut.mutate()} disabled={invoiceMut.isPending || !invoiceForm.invoice_no || !invoiceForm.due_date}>
-              {invoiceMut.isPending ? "Creating..." : "Create Invoice"}
+              {invoiceMut.isPending ? tx("Creating...") : tx("Create Invoice")}
             </Button>
           </div>
         </div>

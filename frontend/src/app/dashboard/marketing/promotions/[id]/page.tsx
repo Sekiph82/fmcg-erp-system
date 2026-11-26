@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
 import { marketingApi, MktPromotion, PromotionType, DiscountType } from "@/lib/marketingApi";
 import { RequirePermission } from "@/components/PermissionGuard";
+import { tx } from "@/lib/i18n/core";
 
 const PROMOTION_TYPES: PromotionType[] = [
   "DISCOUNT", "BUNDLE", "FREE_ITEM", "REBATE", "BUY_X_GET_Y",
@@ -44,7 +45,7 @@ export default function PromotionDetailPage() {
       setEditing(false);
     },
     onError: (err: unknown) => {
-      setSaveError((err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ?? "Save failed.");
+      setSaveError((err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ?? tx("Save failed."));
     },
   });
 
@@ -76,8 +77,8 @@ export default function PromotionDetailPage() {
     ? campaigns.find((c) => c.id === promotion.campaign_id)
     : null;
 
-  if (isLoading) return <div className="min-h-screen bg-[#0b1120] p-6 text-slate-400">Loading...</div>;
-  if (!promotion) return <div className="min-h-screen bg-[#0b1120] p-6 text-red-400">Promotion not found.</div>;
+  if (isLoading) return <div className="min-h-screen bg-[#0b1120] p-6 text-slate-400">{tx("Loading...")}</div>;
+  if (!promotion) return <div className="min-h-screen bg-[#0b1120] p-6 text-red-400">{tx("Promotion not found.")}</div>;
 
   return (
     <RequirePermission permission="promotions.view">
@@ -86,7 +87,7 @@ export default function PromotionDetailPage() {
         <div className="flex items-start justify-between mb-6">
           <div>
             <a href="/dashboard/marketing/promotions" className="text-sm text-slate-400 hover:text-white mb-1 inline-block">
-              ← Promotions
+              {tx("← Promotions")}
             </a>
             <h1 className="text-2xl font-bold">{promotion.promotion_name}</h1>
             <div className="flex items-center gap-3 mt-1">
@@ -103,11 +104,11 @@ export default function PromotionDetailPage() {
             <div className="flex gap-2 mt-5">
               <button onClick={startEdit}
                 className="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-sm font-medium transition-colors">
-                Edit
+                {tx("Edit")}
               </button>
-              <button onClick={() => { if (confirm("Delete this promotion?")) deleteMut.mutate(); }}
+              <button onClick={() => { if (confirm(tx("Delete this promotion?"))) deleteMut.mutate(); }}
                 className="px-3 py-1.5 rounded-lg bg-red-600/20 text-red-400 hover:bg-red-600/40 text-sm font-medium transition-colors">
-                Delete
+                {tx("Delete")}
               </button>
             </div>
           )}
@@ -117,17 +118,17 @@ export default function PromotionDetailPage() {
         {!editing && (
           <div className="rounded-xl bg-[#131c2e] border border-slate-700/50 p-5 space-y-4">
             <div className="grid grid-cols-2 gap-4 text-sm">
-              <div><p className="text-xs text-slate-500 mb-0.5">Region</p><p>{promotion.region ?? "—"}</p></div>
-              <div><p className="text-xs text-slate-500 mb-0.5">Dates</p><p>{promotion.start_date} → {promotion.end_date}</p></div>
+              <div><p className="text-xs text-slate-500 mb-0.5">{tx("Region")}</p><p>{promotion.region ?? "—"}</p></div>
+              <div><p className="text-xs text-slate-500 mb-0.5">{tx("Dates")}</p><p>{promotion.start_date} → {promotion.end_date}</p></div>
               <div>
-                <p className="text-xs text-slate-500 mb-0.5">Discount</p>
+                <p className="text-xs text-slate-500 mb-0.5">{tx("Discount")}</p>
                 <p>{promotion.discount_type && promotion.discount_value
                   ? `${Number(promotion.discount_value).toFixed(2)}${promotion.discount_type === "PERCENTAGE" ? "%" : " KES"}`
                   : "—"}</p>
               </div>
-              <div><p className="text-xs text-slate-500 mb-0.5">Min. Quantity</p><p>{promotion.minimum_quantity ?? "—"}</p></div>
+              <div><p className="text-xs text-slate-500 mb-0.5">{tx("Min. Quantity")}</p><p>{promotion.minimum_quantity ?? "—"}</p></div>
               <div>
-                <p className="text-xs text-slate-500 mb-0.5">Linked Campaign</p>
+                <p className="text-xs text-slate-500 mb-0.5">{tx("Linked Campaign")}</p>
                 {linkedCampaign ? (
                   <a href={`/dashboard/marketing/campaigns/${linkedCampaign.id}`}
                     className="text-blue-400 hover:underline text-sm">{linkedCampaign.campaign_name}</a>
@@ -136,7 +137,7 @@ export default function PromotionDetailPage() {
             </div>
             {promotion.notes && (
               <div>
-                <p className="text-xs text-slate-500 mb-0.5">Notes</p>
+                <p className="text-xs text-slate-500 mb-0.5">{tx("Notes")}</p>
                 <p className="text-sm text-slate-400">{promotion.notes}</p>
               </div>
             )}
@@ -152,12 +153,12 @@ export default function PromotionDetailPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Promotion Name</label>
+                <label className="block text-xs text-slate-400 mb-1">{tx("Promotion Name")}</label>
                 <input value={editForm.promotion_name ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, promotion_name: e.target.value }))}
                   className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white" />
               </div>
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Type</label>
+                <label className="block text-xs text-slate-400 mb-1">{tx("Type")}</label>
                 <select value={editForm.promotion_type ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, promotion_type: e.target.value as PromotionType }))}
                   className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
                   {PROMOTION_TYPES.map((t) => <option key={t} value={t}>{t.replace(/_/g, " ")}</option>)}
@@ -167,14 +168,14 @@ export default function PromotionDetailPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Status</label>
+                <label className="block text-xs text-slate-400 mb-1">{tx("Status")}</label>
                 <select value={editForm.status ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, status: e.target.value }))}
                   className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
                   {["DRAFT", "ACTIVE", "PAUSED", "EXPIRED"].map((s) => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Region</label>
+                <label className="block text-xs text-slate-400 mb-1">{tx("Region")}</label>
                 <input value={editForm.region ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, region: e.target.value }))}
                   className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white" />
               </div>
@@ -182,12 +183,12 @@ export default function PromotionDetailPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Start Date</label>
+                <label className="block text-xs text-slate-400 mb-1">{tx("Start Date")}</label>
                 <input type="date" value={editForm.start_date ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, start_date: e.target.value }))}
                   className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white" />
               </div>
               <div>
-                <label className="block text-xs text-slate-400 mb-1">End Date</label>
+                <label className="block text-xs text-slate-400 mb-1">{tx("End Date")}</label>
                 <input type="date" value={editForm.end_date ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, end_date: e.target.value }))}
                   className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white" />
               </div>
@@ -195,32 +196,32 @@ export default function PromotionDetailPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Discount Type</label>
+                <label className="block text-xs text-slate-400 mb-1">{tx("Discount Type")}</label>
                 <select value={editForm.discount_type ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, discount_type: e.target.value as DiscountType }))}
                   className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
-                  <option value="">None</option>
-                  <option value="PERCENTAGE">Percentage (%)</option>
-                  <option value="FIXED">Fixed Amount</option>
+                  <option value="">{tx("None")}</option>
+                  <option value="PERCENTAGE">{tx("Percentage (%)")}</option>
+                  <option value="FIXED">{tx("Fixed Amount")}</option>
                 </select>
               </div>
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Discount Value</label>
+                <label className="block text-xs text-slate-400 mb-1">{tx("Discount Value")}</label>
                 <input type="number" value={editForm.discount_value ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, discount_value: e.target.value as unknown as string }))}
                   className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white" />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Campaign</label>
+              <label className="block text-xs text-slate-400 mb-1">{tx("Campaign")}</label>
               <select value={editForm.campaign_id ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, campaign_id: e.target.value }))}
                 className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
-                <option value="">No campaign</option>
+                <option value="">{tx("No campaign")}</option>
                 {campaigns.map((c) => <option key={c.id} value={c.id}>{c.campaign_name}</option>)}
               </select>
             </div>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Notes</label>
+              <label className="block text-xs text-slate-400 mb-1">{tx("Notes")}</label>
               <textarea value={editForm.notes ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, notes: e.target.value }))}
                 rows={2} className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white resize-none" />
             </div>
@@ -228,11 +229,11 @@ export default function PromotionDetailPage() {
             <div className="flex gap-3 pt-2">
               <button onClick={() => updateMut.mutate()} disabled={updateMut.isPending}
                 className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-sm font-medium disabled:opacity-50 transition-colors">
-                {updateMut.isPending ? "Saving..." : "Save Changes"}
+                {updateMut.isPending ? tx("Saving...") : tx("Save Changes")}
               </button>
               <button onClick={() => setEditing(false)}
                 className="px-5 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-sm font-medium transition-colors">
-                Cancel
+                {tx("Cancel")}
               </button>
             </div>
           </div>

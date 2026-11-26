@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { dunningApi, DunningDashboard, DunningCase, CASE_STATUS_COLORS, DunningCaseStatus } from "@/lib/dunning";
+import { tx } from "@/lib/i18n/core";
 
 export default function DunningDashboardPage() {
   const [kpis, setKpis] = useState<DunningDashboard | null>(null);
@@ -23,20 +24,20 @@ export default function DunningDashboardPage() {
     const res = await dunningApi.runDetection();
     setRunning(false);
     load();
-    alert(`Detection complete: ${res.cases_created} cases created, ${res.cases_updated} updated, ${res.overdue_invoices} overdue invoices found.`);
+    alert(tx("Detection complete: {cases_created} cases created, {cases_updated} updated, {overdue_invoices} overdue invoices found.", { cases_created: res.cases_created, cases_updated: res.cases_updated, overdue_invoices: res.overdue_invoices }));
   };
 
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Dunning & Collections</h1>
-          <p className="text-sm text-gray-500 mt-1">Automated overdue receivables management — reminders, holds, escalations</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Dunning & Collections")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{tx("Automated overdue receivables management — reminders, holds, escalations")}</p>
         </div>
         <div className="flex gap-3">
           <button onClick={runDetection} disabled={running}
             className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50">
-            {running ? "Scanning…" : "Run Overdue Detection"}
+            {running ? tx("Scanning…") : tx("Run Overdue Detection")}
           </button>
         </div>
       </div>
@@ -45,12 +46,12 @@ export default function DunningDashboardPage() {
       {kpis && (
         <div className="grid grid-cols-3 gap-4 lg:grid-cols-6">
           {[
-            { label: "Open Cases", value: kpis.open_cases, color: "text-blue-700" },
-            { label: "Total Overdue", value: `KES ${kpis.total_overdue_amount.toLocaleString()}`, color: "text-red-700" },
-            { label: "Credit Holds", value: kpis.credit_hold_count, color: "text-orange-700" },
-            { label: "Disputed Cases", value: kpis.disputed_cases, color: "text-yellow-700" },
-            { label: "Open PTPs", value: kpis.open_ptps, color: "text-purple-700" },
-            { label: "Broken PTPs", value: kpis.broken_ptps, color: "text-red-700" },
+            { label: tx("Open Cases"), value: kpis.open_cases, color: "text-blue-700" },
+            { label: tx("Total Overdue"), value: `KES ${kpis.total_overdue_amount.toLocaleString()}`, color: "text-red-700" },
+            { label: tx("Credit Holds"), value: kpis.credit_hold_count, color: "text-orange-700" },
+            { label: tx("Disputed Cases"), value: kpis.disputed_cases, color: "text-yellow-700" },
+            { label: tx("Open PTPs"), value: kpis.open_ptps, color: "text-purple-700" },
+            { label: tx("Broken PTPs"), value: kpis.broken_ptps, color: "text-red-700" },
           ].map((k) => (
             <div key={k.label} className="bg-white rounded-xl border border-gray-200 p-4">
               <div className={`text-2xl font-bold ${k.color}`}>{k.value}</div>
@@ -63,10 +64,10 @@ export default function DunningDashboardPage() {
       {/* Quick Links */}
       <div className="grid grid-cols-4 gap-4">
         {[
-          { label: "Aging Report", href: "/dashboard/dunning/aging", icon: "📊", desc: "Customer-level aging buckets" },
-          { label: "Collector Queue", href: "/dashboard/dunning/workqueue", icon: "📋", desc: "Today's action queue" },
-          { label: "Credit Holds", href: "/dashboard/dunning/credit-holds", icon: "🔒", desc: "Review & release holds" },
-          { label: "Policies", href: "/dashboard/dunning/policies", icon: "⚙️", desc: "Configure dunning rules" },
+          { label: tx("Aging Report"), href: "/dashboard/dunning/aging", icon: "📊", desc: tx("Customer-level aging buckets") },
+          { label: tx("Collector Queue"), href: "/dashboard/dunning/workqueue", icon: "📋", desc: tx("Today's action queue") },
+          { label: tx("Credit Holds"), href: "/dashboard/dunning/credit-holds", icon: "🔒", desc: tx("Review & release holds") },
+          { label: tx("Policies"), href: "/dashboard/dunning/policies", icon: "⚙️", desc: tx("Configure dunning rules") },
         ].map((l) => (
           <a key={l.label} href={l.href}
             className="bg-white rounded-xl border border-gray-200 p-4 hover:border-blue-400 hover:bg-blue-50 transition">
@@ -80,22 +81,22 @@ export default function DunningDashboardPage() {
       {/* Top Priority Cases */}
       <div className="bg-white rounded-xl border border-gray-200">
         <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-          <h2 className="text-base font-semibold text-gray-900">Top Priority Cases</h2>
-          <a href="/dashboard/dunning/cases" className="text-blue-600 text-sm hover:underline">View all →</a>
+          <h2 className="text-base font-semibold text-gray-900">{tx("Top Priority Cases")}</h2>
+          <a href="/dashboard/dunning/cases" className="text-blue-600 text-sm hover:underline">{tx("View all →")}</a>
         </div>
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
-              {["Case #", "Customer", "Overdue Amount", "Level", "Status", "Credit Hold", "Priority", "Next Action"].map((h) => (
+              {[tx("Case #"), tx("Customer"), tx("Overdue Amount"), tx("Level"), tx("Status"), tx("Credit Hold"), tx("Priority"), tx("Next Action")].map((h) => (
                 <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {loading ? (
-              <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">Loading…</td></tr>
+              <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">{tx("Loading…")}</td></tr>
             ) : cases.length === 0 ? (
-              <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">No cases. Run overdue detection to generate cases.</td></tr>
+              <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">{tx("No cases. Run overdue detection to generate cases.")}</td></tr>
             ) : cases.map((c) => (
               <tr key={c.id} className="hover:bg-gray-50">
                 <td className="px-4 py-3 font-medium text-blue-700">

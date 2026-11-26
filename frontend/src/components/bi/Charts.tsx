@@ -5,6 +5,7 @@ import {
   XAxis, YAxis, Tooltip, CartesianGrid, Legend,
 } from "recharts";
 import { TrendPoint } from "@/lib/analytics";
+import { tx } from "@/lib/i18n/core";
 
 // ── Shared tooltip style ──────────────────────────────────────────────────────
 
@@ -57,7 +58,7 @@ interface LineChartProps {
 }
 
 export function TrendLineChart({ data, color = "#6366f1", label = "Value", height = 220, formatY, formatX }: LineChartProps) {
-  if (!data?.length) return <div className={`h-[${height}px] flex items-center justify-center text-slate-600 text-sm`}>No data</div>;
+  if (!data?.length) return <div className={`h-[${height}px] flex items-center justify-center text-slate-600 text-sm`}>{tx("No data")}</div>;
   return (
     <div style={{ height }} className="w-full">
       <ResponsiveContainer width="100%" height="100%">

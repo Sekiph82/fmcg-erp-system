@@ -5,6 +5,7 @@ import {
   customFieldsApi, FieldValueOut, EntityType,
   ENTITY_LABEL, FIELD_TYPE_LABEL,
 } from "@/lib/custom_fields";
+import { tx } from "@/lib/i18n/core";
 
 const ENTITY_TYPES: EntityType[] = [
   "customer", "supplier", "product", "sales_order", "purchase_order",
@@ -80,64 +81,64 @@ export default function ValuesBrowserPage() {
 
   return (
     <div className="p-6 space-y-5 max-w-3xl">
-      <h1 className="text-xl font-bold text-gray-900">Values Browser</h1>
+      <h1 className="text-xl font-bold text-gray-900">{tx("Values Browser")}</h1>
 
       <div className="bg-white border rounded-lg p-5 space-y-3 shadow-sm">
-        <h2 className="font-semibold text-gray-800 text-sm">Look Up Entity Values</h2>
+        <h2 className="font-semibold text-gray-800 text-sm">{tx("Look Up Entity Values")}</h2>
         <div className="grid grid-cols-3 gap-3">
           <div>
-            <label className="text-xs text-gray-500 block mb-1">Module</label>
+            <label className="text-xs text-gray-500 block mb-1">{tx("Module")}</label>
             <select className="w-full border rounded px-2 py-1.5 text-sm" value={entityType}
               onChange={e => { setEntityType(e.target.value as EntityType); setSearched(false); }}>
               {ENTITY_TYPES.map(t => <option key={t} value={t}>{ENTITY_LABEL[t]}</option>)}
             </select>
           </div>
           <div className="col-span-2">
-            <label className="text-xs text-gray-500 block mb-1">Record</label>
+            <label className="text-xs text-gray-500 block mb-1">{tx("Record")}</label>
             <div className="flex gap-2">
               {kindFor(entityType) ? (
-                <EntityPicker key={entityType} kind={kindFor(entityType)!} label="Record" className="flex-1" value={entityId} onChange={setEntityId} />
+                <EntityPicker key={entityType} kind={kindFor(entityType)!} label={tx("Record")} className="flex-1" value={entityId} onChange={setEntityId} />
               ) : (
-                <input className="flex-1 border rounded px-2 py-1.5 text-sm" placeholder="Record number"
+                <input className="flex-1 border rounded px-2 py-1.5 text-sm" placeholder={tx("Record number")}
                   value={entityId} onChange={e => setEntityId(e.target.value)}
                   onKeyDown={e => { if (e.key === "Enter") lookup(); }} />
               )}
               <button onClick={lookup} className="rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700">
-                Look Up
+                {tx("Look Up")}
               </button>
             </div>
           </div>
         </div>
         <button onClick={loadMissing} className="text-xs text-orange-600 hover:underline">
-          Show missing required values for {ENTITY_LABEL[entityType]}
+          {tx("Show missing required values for")} {ENTITY_LABEL[entityType]}
         </button>
       </div>
 
-      {loading && <p className="text-sm text-gray-500 text-center py-6">Loading…</p>}
+      {loading && <p className="text-sm text-gray-500 text-center py-6">{tx("Loading…")}</p>}
 
       {searched && !loading && entityId && values.length === 0 && (
         <div className="bg-white border rounded-lg p-5 text-center">
-          <p className="text-sm text-gray-400">No custom field values recorded for this entity. The entity may have custom fields defined but no values saved yet.</p>
+          <p className="text-sm text-gray-400">{tx("No custom field values recorded for this entity. The entity may have custom fields defined but no values saved yet.")}</p>
         </div>
       )}
 
       {searched && !loading && entityId && values.length > 0 && (
         <div className="bg-white border rounded-lg shadow-sm">
           <div className="px-4 py-3 border-b flex items-center justify-between">
-            <h2 className="font-semibold text-gray-800 text-sm">Custom Field Values</h2>
+            <h2 className="font-semibold text-gray-800 text-sm">{tx("Custom Field Values")}</h2>
             <div className="flex gap-2">
-              {saved && <span className="text-sm text-green-600">✓ Saved</span>}
+              {saved && <span className="text-sm text-green-600">{tx("✓ Saved")}</span>}
               {editMode
                 ? <>
                     <button onClick={saveEdit} disabled={saving}
                       className="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700 disabled:opacity-50">
-                      {saving ? "Saving…" : "Save"}
+                      {saving ? tx("Saving…") : tx("Save")}
                     </button>
                     <button onClick={() => setEditMode(false)}
-                      className="rounded border px-3 py-1 text-sm text-gray-600 hover:bg-gray-50">Cancel</button>
+                      className="rounded border px-3 py-1 text-sm text-gray-600 hover:bg-gray-50">{tx("Cancel")}</button>
                   </>
                 : <button onClick={() => setEditMode(true)}
-                    className="rounded border px-3 py-1 text-sm text-gray-600 hover:bg-gray-50">Edit</button>
+                    className="rounded border px-3 py-1 text-sm text-gray-600 hover:bg-gray-50">{tx("Edit")}</button>
               }
             </div>
           </div>
@@ -155,7 +156,7 @@ export default function ValuesBrowserPage() {
                 <div className="flex-1">
                   {editMode
                     ? renderEditInput(v)
-                    : <p className="text-sm text-gray-800">{v.display_value ?? <span className="text-gray-400 italic">no value</span>}</p>
+                    : <p className="text-sm text-gray-800">{v.display_value ?? <span className="text-gray-400 italic">{tx("no value")}</span>}</p>
                   }
                 </div>
                 <span className="text-xs text-gray-300 w-20 text-right">{FIELD_TYPE_LABEL[v.field_type]}</span>
@@ -169,14 +170,14 @@ export default function ValuesBrowserPage() {
         <div className="bg-white border rounded-lg shadow-sm">
           <div className="px-4 py-3 border-b">
             <h2 className="font-semibold text-gray-800 text-sm">
-              Missing Required Values ({missing.length} gaps found)
+              {tx("Missing Required Values (")}{missing.length} {tx("gaps found)")}
             </h2>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-gray-50 border-b">
                 <tr>
-                  {["Entity ID", "Field", "Field Code"].map(h => (
+                  {[tx("Entity ID"), tx("Field"), tx("Field Code")].map(h => (
                     <th key={h} className="px-4 py-2 text-left text-xs font-semibold text-gray-600">{h}</th>
                   ))}
                 </tr>

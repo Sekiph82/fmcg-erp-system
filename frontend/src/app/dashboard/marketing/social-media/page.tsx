@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { marketingApi, SocialMediaActivity, InfluencerPlatform } from "@/lib/marketingApi";
 import { RequirePermission } from "@/components/PermissionGuard";
+import { tx } from "@/lib/i18n/core";
 
 const PLATFORMS: InfluencerPlatform[] = ["INSTAGRAM", "TIKTOK", "YOUTUBE", "FACEBOOK", "X", "OTHER"];
 
@@ -45,13 +46,13 @@ export default function SocialMediaPage() {
       <div className="min-h-screen bg-[#0b1120] p-6 text-white">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold">Social Media Activity</h1>
-            <p className="text-slate-400 text-sm mt-1">{activities.length} posts tracked</p>
+            <h1 className="text-2xl font-bold">{tx("Social Media Activity")}</h1>
+            <p className="text-slate-400 text-sm mt-1">{activities.length} {tx("posts tracked")}</p>
           </div>
           <RequirePermission permission="social_media.edit">
             <Link href="/dashboard/marketing/social-media/new"
               className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-sm font-medium text-white">
-              + Log Activity
+              {tx("+ Log Activity")}
             </Link>
           </RequirePermission>
         </div>
@@ -59,10 +60,10 @@ export default function SocialMediaPage() {
         {/* Summary KPIs */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           {[
-            { label: "Reach",        value: fmt(totals.reach) },
-            { label: "Impressions",  value: fmt(totals.impressions) },
-            { label: "Engagements",  value: fmt(totals.engagements) },
-            { label: "Clicks",       value: fmt(totals.clicks) },
+            { label: tx("Reach"),        value: fmt(totals.reach) },
+            { label: tx("Impressions"),  value: fmt(totals.impressions) },
+            { label: tx("Engagements"),  value: fmt(totals.engagements) },
+            { label: tx("Clicks"),       value: fmt(totals.clicks) },
           ].map((k) => (
             <div key={k.label} className="rounded-xl bg-[#131c2e] border border-slate-700/50 p-4">
               <p className="text-xs text-slate-400 mb-1">{k.label}</p>
@@ -75,7 +76,7 @@ export default function SocialMediaPage() {
         <div className="flex gap-2 mb-6 flex-wrap">
           <button onClick={() => setPlatform("")}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${!platform ? "bg-blue-600 border-blue-600 text-white" : "border-slate-700 text-slate-400 hover:border-slate-500"}`}>
-            All
+            {tx("All")}
           </button>
           {PLATFORMS.map((p) => (
             <button key={p} onClick={() => setPlatform(p)}
@@ -86,13 +87,13 @@ export default function SocialMediaPage() {
         </div>
 
         {isLoading ? (
-          <p className="text-slate-400">Loading...</p>
+          <p className="text-slate-400">{tx("Loading...")}</p>
         ) : (
           <div className="overflow-x-auto rounded-xl border border-slate-700/50">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-700/50 bg-[#131c2e]">
-                  {["Platform", "Type", "Date", "Reach", "Impressions", "Engagements", "Clicks", "Saves", ""].map((h) => (
+                  {[tx("Platform"), tx("Type"), tx("Date"), tx("Reach"), tx("Impressions"), tx("Engagements"), tx("Clicks"), tx("Saves"), ""].map((h) => (
                     <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">{h}</th>
                   ))}
                 </tr>
@@ -113,7 +114,7 @@ export default function SocialMediaPage() {
                     <td className="px-4 py-3">
                       <Link href={`/dashboard/marketing/social-media/${a.id}`}
                         className="px-2 py-1 rounded bg-slate-700/50 hover:bg-slate-700 text-slate-300 text-xs">
-                        View
+                        {tx("View")}
                       </Link>
                     </td>
                   </tr>

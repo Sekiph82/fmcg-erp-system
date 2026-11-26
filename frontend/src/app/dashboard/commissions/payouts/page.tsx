@@ -3,6 +3,7 @@ import { EntityPicker } from "@/components/EntityPicker";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { commissionsApi, PAYOUT_STATUS_COLORS, PayoutStatus } from "@/lib/commissions";
+import { tx } from "@/lib/i18n/core";
 
 const STATUSES: PayoutStatus[] = ["DRAFT", "SUBMITTED", "APPROVED", "PAID", "CANCELLED"];
 
@@ -38,40 +39,40 @@ export default function PayoutsPage() {
   return (
     <div className="p-6 space-y-5 text-slate-200">
       <div>
-        <h1 className="text-xl font-bold text-white">Commission Payouts</h1>
-        <p className="text-slate-500 text-sm mt-0.5">Period close-out and payment tracking</p>
+        <h1 className="text-xl font-bold text-white">{tx("Commission Payouts")}</h1>
+        <p className="text-slate-500 text-sm mt-0.5">{tx("Period close-out and payment tracking")}</p>
       </div>
 
       {/* Create payout */}
       <div className="glow-card p-5 space-y-3">
-        <h2 className="text-sm font-semibold text-white">Generate Payout for Period</h2>
+        <h2 className="text-sm font-semibold text-white">{tx("Generate Payout for Period")}</h2>
         <div className="grid grid-cols-3 gap-3">
           <div>
-            <label className="text-[10px] text-slate-400 mb-1 block">{form.applies_to === "DISTRIBUTOR" ? "Distributor" : form.applies_to === "TEAM" ? "Team code" : "Sales rep"}</label>
+            <label className="text-[10px] text-slate-400 mb-1 block">{form.applies_to === "DISTRIBUTOR" ? tx("Distributor") : form.applies_to === "TEAM" ? tx("Team code") : tx("Sales rep")}</label>
             {form.applies_to === "TEAM" ? (
               <input value={form.entity_id} onChange={(e) => upd("entity_id", e.target.value)}
                 className="w-full bg-white/[0.04] border border-white/[0.08] rounded px-3 py-2 text-sm text-white focus:outline-none" />
             ) : (
-              <EntityPicker key={form.applies_to} kind={form.applies_to === "DISTRIBUTOR" ? "distributor" : "user"} label="Payee"
+              <EntityPicker key={form.applies_to} kind={form.applies_to === "DISTRIBUTOR" ? "distributor" : "user"} label={tx("Payee")}
                 value={form.entity_id} onChange={(id) => upd("entity_id", id)} />
             )}
           </div>
           <div>
-            <label className="text-[10px] text-slate-400 mb-1 block">Applies To</label>
+            <label className="text-[10px] text-slate-400 mb-1 block">{tx("Applies To")}</label>
             <select value={form.applies_to} onChange={(e) => upd("applies_to", e.target.value)}
               className="w-full bg-[#0d1829] border border-white/[0.08] rounded px-3 py-2 text-sm text-white focus:outline-none">
               {["SALES_REP","DISTRIBUTOR","TEAM"].map((a) => <option key={a} value={a}>{a.replace("_"," ")}</option>)}
             </select>
           </div>
           <div>
-            <label className="text-[10px] text-slate-400 mb-1 block">Period</label>
+            <label className="text-[10px] text-slate-400 mb-1 block">{tx("Period")}</label>
             <input value={form.period} onChange={(e) => upd("period", e.target.value)}
               className="w-full bg-white/[0.04] border border-white/[0.08] rounded px-3 py-2 text-sm text-white focus:outline-none" placeholder="YYYY-MM" />
           </div>
         </div>
         <button onClick={() => createMut.mutate(form)} disabled={!form.entity_id || createMut.isPending}
           className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium disabled:opacity-50">
-          {createMut.isPending ? "Generating…" : "Generate Payout"}
+          {createMut.isPending ? tx("Generating…") : tx("Generate Payout")}
         </button>
       </div>
 
@@ -80,14 +81,14 @@ export default function PayoutsPage() {
         {["", ...STATUSES].map((s) => (
           <button key={s} onClick={() => setStatusFilter(s)}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${statusFilter === s ? "bg-indigo-600 border-indigo-500 text-white" : "border-white/[0.08] text-slate-400 hover:border-white/20"}`}>
-            {s || "All"}
+            {s || tx("All")}
           </button>
         ))}
       </div>
 
       {/* Payouts */}
       <div className="space-y-3">
-        {isLoading && <p className="text-slate-500 text-sm">Loading…</p>}
+        {isLoading && <p className="text-slate-500 text-sm">{tx("Loading…")}</p>}
         {payouts.map((p) => (
           <div key={p.id} className="glow-card p-4">
             <div className="flex items-start justify-between gap-3">
@@ -98,28 +99,28 @@ export default function PayoutsPage() {
                 </div>
                 <p className="text-xs text-slate-400 font-mono mb-2">{p.entity_id.slice(0, 8)}…</p>
                 <div className="grid grid-cols-3 gap-4 text-xs">
-                  <div><p className="text-slate-500">Commission</p><p className="text-white font-medium">KES {Number(p.total_commission).toLocaleString()}</p></div>
-                  <div><p className="text-slate-500">Adjustments</p><p className={Number(p.adjustments_total) >= 0 ? "text-emerald-400" : "text-red-400"}>{Number(p.adjustments_total) >= 0 ? "+" : ""}KES {Number(p.adjustments_total).toLocaleString()}</p></div>
-                  <div><p className="text-slate-500">Net Payout</p><p className="text-emerald-400 font-bold">KES {Number(p.net_commission).toLocaleString()}</p></div>
+                  <div><p className="text-slate-500">{tx("Commission")}</p><p className="text-white font-medium">KES {Number(p.total_commission).toLocaleString()}</p></div>
+                  <div><p className="text-slate-500">{tx("Adjustments")}</p><p className={Number(p.adjustments_total) >= 0 ? "text-emerald-400" : "text-red-400"}>{Number(p.adjustments_total) >= 0 ? "+" : ""}KES {Number(p.adjustments_total).toLocaleString()}</p></div>
+                  <div><p className="text-slate-500">{tx("Net Payout")}</p><p className="text-emerald-400 font-bold">KES {Number(p.net_commission).toLocaleString()}</p></div>
                 </div>
-                {p.payment_date && <p className="text-xs text-slate-600 mt-1">Paid: {p.payment_date}</p>}
-                {p.txn_ids && <p className="text-[10px] text-slate-600 mt-0.5">{p.txn_ids.length} transactions included</p>}
+                {p.payment_date && <p className="text-xs text-slate-600 mt-1">{tx("Paid:")} {p.payment_date}</p>}
+                {p.txn_ids && <p className="text-[10px] text-slate-600 mt-0.5">{p.txn_ids.length} {tx("transactions included")}</p>}
               </div>
               <div className="flex gap-2 shrink-0">
                 {p.status === "DRAFT" && (
                   <button onClick={() => approveMut.mutate(p.id)} disabled={approveMut.isPending}
-                    className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs disabled:opacity-50">Approve</button>
+                    className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs disabled:opacity-50">{tx("Approve")}</button>
                 )}
                 {p.status === "APPROVED" && (
                   <button onClick={() => markPaidMut.mutate(p.id)} disabled={markPaidMut.isPending}
-                    className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs disabled:opacity-50">Mark Paid</button>
+                    className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs disabled:opacity-50">{tx("Mark Paid")}</button>
                 )}
               </div>
             </div>
           </div>
         ))}
         {!isLoading && payouts.length === 0 && (
-          <div className="glow-card p-8 text-center text-slate-600">No payouts</div>
+          <div className="glow-card p-8 text-center text-slate-600">{tx("No payouts")}</div>
         )}
       </div>
     </div>

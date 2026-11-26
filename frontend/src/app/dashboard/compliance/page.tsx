@@ -9,6 +9,7 @@ import { useDrawer } from "@/components/workspace/WorkspaceDrawer";
 // When Phase 2 conversion lands, swap these for inline content.
 
 import dynamic from "next/dynamic";
+import { tx } from "@/lib/i18n/core";
 
 const GS1Page       = dynamic(() => import("@/app/dashboard/gs1/page"),       { ssr: false });
 const QualityCerts  = dynamic(() => import("@/app/dashboard/quality/certificates/page"), { ssr: false });
@@ -20,13 +21,13 @@ export default function CompliancePage() {
   const tabs = [
     {
       key: "gs1",
-      label: "GS1 & Labels",
+      label: tx("GS1 & Labels"),
       permission: "gs1.view",
       content: <GS1Page />,
     },
     {
       key: "regulatory-certs",
-      label: "Regulatory Certs",
+      label: tx("Regulatory Certs"),
       permission: "quality.view",
       content: <QualityCerts />,
     },
@@ -34,7 +35,7 @@ export default function CompliancePage() {
 
   return (
     <ModuleWorkspace
-      title="Compliance"
+      title={tx("Compliance")}
       description="GS1 labels, barcodes, regulatory certificates"
       permission="gs1.view"
       tabs={tabs}

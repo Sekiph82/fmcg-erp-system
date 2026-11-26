@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { listTasks, updateTask, CycleCountTask, TaskStatus, TASK_STATUS_BADGE, ABC_BADGE } from "@/lib/cycleCount";
+import { tx } from "@/lib/i18n/core";
 
 const STATUSES: TaskStatus[] = ["pending", "in_progress", "completed", "approved", "rejected"];
 
@@ -35,8 +36,8 @@ export default function TasksPage() {
     <div className="max-w-6xl mx-auto py-8 px-4 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Count Tasks</h1>
-          <p className="text-sm text-gray-500 mt-1">{tasks.length} task(s)</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Count Tasks")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{tasks.length} {tx("task(s)")}</p>
         </div>
         <div className="flex gap-2 items-center">
           <input type="date" className="border border-gray-300 rounded-lg px-3 py-2 text-sm" value={dateFilter} onChange={(e) => setDateFilter(e.target.value)} />
@@ -48,12 +49,12 @@ export default function TasksPage() {
         </div>
       </div>
 
-      {loading ? <div className="text-gray-500 py-8 text-center">Loading...</div> : (
+      {loading ? <div className="text-gray-500 py-8 text-center">{tx("Loading...")}</div> : (
         <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                {["Task No.", "Date", "ABC", "Item", "Status", ""].map((h) => (
+                {[tx("Task No."), tx("Date"), "ABC", tx("Item"), tx("Status"), ""].map((h) => (
                   <th key={h} className="text-left px-4 py-3 font-medium text-gray-700">{h}</th>
                 ))}
               </tr>
@@ -71,7 +72,7 @@ export default function TasksPage() {
                       )}
                     </td>
                     <td className="px-4 py-3 text-gray-600 text-xs font-mono">
-                      {t.product_id ? t.product_id.slice(0, 8) + "..." : t.material_id ? t.material_id.slice(0, 8) + "..." : "All items"}
+                      {t.product_id ? t.product_id.slice(0, 8) + "..." : t.material_id ? t.material_id.slice(0, 8) + "..." : tx("All items")}
                     </td>
                     <td className="px-4 py-3">
                       <span className={`text-xs px-2 py-0.5 rounded font-medium capitalize ${TASK_STATUS_BADGE[t.status]}`}>
@@ -81,7 +82,7 @@ export default function TasksPage() {
                     <td className="px-4 py-3 flex gap-2">
                       {t.status === "pending" && (
                         <Link href={`/dashboard/cycle-count/entries?task_id=${t.id}`} className="text-xs text-indigo-600 hover:underline">
-                          Count
+                          {tx("Count")}
                         </Link>
                       )}
                       <select className="text-xs border border-gray-200 rounded px-2 py-0.5 capitalize" value={t.status} onChange={(e) => handleStatusChange(t.id, e.target.value as TaskStatus)}>
@@ -91,7 +92,7 @@ export default function TasksPage() {
                   </tr>
                 );
               })}
-              {tasks.length === 0 && <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">No tasks found for selected filters</td></tr>}
+              {tasks.length === 0 && <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">{tx("No tasks found for selected filters")}</td></tr>}
             </tbody>
           </table>
         </div>

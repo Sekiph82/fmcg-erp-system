@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { ToastContainer } from "@/components/ui/Toast";
 import { useToast } from "@/hooks/useToast";
+import { tx, lx } from "@/lib/i18n/core";
 
 const statusVariant = (s: PRStatus) =>
   s === "APPROVED" || s === "CONVERTED" ? "green"
@@ -23,15 +24,15 @@ const statusVariant = (s: PRStatus) =>
   : s === "REJECTED" || s === "CANCELLED" ? "red"
   : "blue";
 
-const STATUS_OPTS = [
-  { value: "", label: "All" },
-  { value: "DRAFT", label: "Draft" },
-  { value: "PENDING_APPROVAL", label: "Pending Approval" },
-  { value: "APPROVED", label: "Approved" },
-  { value: "CONVERTED", label: "Converted to PO" },
-  { value: "REJECTED", label: "Rejected" },
-  { value: "CANCELLED", label: "Cancelled" },
-];
+const STATUS_OPTS = lx(() => [
+  { value: "", label: tx("All") },
+  { value: "DRAFT", label: tx("Draft") },
+  { value: "PENDING_APPROVAL", label: tx("Pending Approval") },
+  { value: "APPROVED", label: tx("Approved") },
+  { value: "CONVERTED", label: tx("Converted to PO") },
+  { value: "REJECTED", label: tx("Rejected") },
+  { value: "CANCELLED", label: tx("Cancelled") },
+]);
 
 const UNIT_OPTS = ["KG", "G", "L", "ML", "PCS", "BOX", "CARTON", "PALLET"].map((u) => ({ value: u, label: u }));
 
@@ -67,9 +68,9 @@ function ProcurementPRsTab() {
       step === "submit" ? procurementApi.submitPR(id) : procurementApi.approvePR(id, step === "approve", reason),
     onSuccess: (pr, v) => {
       qc.invalidateQueries({ queryKey: ["prs"] });
-      toast("success", v.step === "submit" ? "Sent for approval" : v.step === "approve" ? "Approved" : "Rejected", pr.pr_no);
+      toast("success", v.step === "submit" ? tx("Sent for approval") : v.step === "approve" ? tx("Approved") : tx("Rejected"), pr.pr_no);
     },
-    onError: (e) => toast("error", "Failed", extractApiError(e)),
+    onError: (e) => toast("error", tx("Failed"), extractApiError(e)),
   });
   const convert = useMutation({
     mutationFn: () => procurementApi.convertPRToPO(convertPr!.id, conv),
@@ -77,9 +78,9 @@ function ProcurementPRsTab() {
       qc.invalidateQueries({ queryKey: ["prs"] });
       qc.invalidateQueries({ queryKey: ["pos"] });
       setConvertPr(null);
-      toast("success", "Purchase order created", `${po.po_no} is a draft in Purchase Orders, waiting for approval.`);
+      toast("success", tx("Purchase order created"), tx("{po_no} is a draft in Purchase Orders, waiting for approval.", { po_no: po.po_no }));
     },
-    onError: (e) => toast("error", "Failed", extractApiError(e)),
+    onError: (e) => toast("error", tx("Failed"), extractApiError(e)),
   });
 
   const { data: prs = [], isLoading } = useQuery({
@@ -99,8 +100,8 @@ function ProcurementPRsTab() {
     enabled: open || !!convertPr,
   });
 
-  const matOpts = [{ value: "", label: "Select material…" }, ...materials.map((m) => ({ value: m.id, label: `${m.code} — ${m.name}` }))];
-  const suppOpts = [{ value: "", label: "Any supplier" }, ...suppliers.map((s) => ({ value: s.id, label: s.name }))];
+  const matOpts = [{ value: "", label: tx("Select material…") }, ...materials.map((m) => ({ value: m.id, label: `${m.code} — ${m.name}` }))];
+  const suppOpts = [{ value: "", label: tx("Any supplier") }, ...suppliers.map((s) => ({ value: s.id, label: s.name }))];
 
   const create = useMutation({
     mutationFn: () =>
@@ -121,9 +122,9 @@ function ProcurementPRsTab() {
     onSuccess: (pr) => {
       qc.invalidateQueries({ queryKey: ["prs"] });
       setOpen(false);
-      toast("success", "PR created", `${pr.pr_no} created.`);
+      toast("success", tx("PR created"), tx("{pr_no} created.", { pr_no: pr.pr_no }));
     },
-    onError: (e) => toast("error", "Failed", extractApiError(e)),
+    onError: (e) => toast("error", tx("Failed"), extractApiError(e)),
   });
 
   const updateLine = (i: number, field: keyof LineForm, val: string) =>
@@ -135,10 +136,10 @@ function ProcurementPRsTab() {
 
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Purchase Requisitions</h1>
-          <p className="text-sm text-gray-500 mt-1">{prs.length} total</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Purchase Requisitions")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{prs.length} {tx("total")}</p>
         </div>
-        <Button onClick={() => setOpen(true)} data-testid="procurement-create-pr-button">+ New PR</Button>
+        <Button onClick={() => setOpen(true)} data-testid="procurement-create-pr-button">{tx("+ New PR")}</Button>
       </div>
 
       <div className="mb-4">
@@ -155,25 +156,25 @@ function ProcurementPRsTab() {
             emptyMessage="No purchase requisitions yet."
             columns={[
             {
-              header: "PR No",
+              header: tx("PR No"),
               accessor: (p) => (
                 <span className="font-mono text-xs font-medium text-gray-900">{p.pr_no}</span>
               ),
             },
-            { header: "Requester", accessor: (p) => p.requester_name ?? "—" },
-            { header: "Department", accessor: (p) => p.department ?? "—" },
-            { header: "Required By", accessor: (p) => new Date(p.required_date).toLocaleDateString() },
-            { header: "Lines", accessor: (p) => p.line_count },
-            { header: "Status", accessor: (p) => <Badge label={p.status.replace(/_/g, " ")} variant={statusVariant(p.status)} /> },
+            { header: tx("Requester"), accessor: (p) => p.requester_name ?? "—" },
+            { header: tx("Department"), accessor: (p) => p.department ?? "—" },
+            { header: tx("Required By"), accessor: (p) => new Date(p.required_date).toLocaleDateString() },
+            { header: tx("Lines"), accessor: (p) => p.line_count },
+            { header: tx("Status"), accessor: (p) => <Badge label={p.status.replace(/_/g, " ")} variant={statusVariant(p.status)} /> },
             {
-              header: "Access",
+              header: tx("Access"),
               accessor: (p) => (
                 p.access?.view_only ? (
-                  <span title={p.access.reason || "You can view this record but cannot modify it in this scope."}>
-                    <Badge label="View only" variant="gray" />
+                  <span title={p.access.reason || tx("You can view this record but cannot modify it in this scope.")}>
+                    <Badge label={tx("View only")} variant="gray" />
                   </span>
                 ) : (
-                  <Badge label="Actionable" variant="green" />
+                  <Badge label={tx("Actionable")} variant="green" />
                 )
               ),
             },
@@ -182,14 +183,14 @@ function ProcurementPRsTab() {
               accessor: (p) => (
                 <div className="flex gap-1.5 justify-end">
                   {p.status === "DRAFT" && p.access?.can_edit !== false && (
-                    <Button variant="secondary" loading={act.isPending} onClick={() => act.mutate({ id: p.id, step: "submit" })}>Submit</Button>
+                    <Button variant="secondary" loading={act.isPending} onClick={() => act.mutate({ id: p.id, step: "submit" })}>{tx("Submit")}</Button>
                   )}
                   {p.status === "PENDING_APPROVAL" && p.access?.can_approve && (<>
-                    <Button loading={act.isPending} onClick={() => act.mutate({ id: p.id, step: "approve" })}>Approve</Button>
-                    <Button variant="secondary" onClick={() => { const reason = window.prompt("Reason for rejecting"); if (reason) act.mutate({ id: p.id, step: "reject", reason }); }}>Reject</Button>
+                    <Button loading={act.isPending} onClick={() => act.mutate({ id: p.id, step: "approve" })}>{tx("Approve")}</Button>
+                    <Button variant="secondary" onClick={() => { const reason = window.prompt(tx("Reason for rejecting")); if (reason) act.mutate({ id: p.id, step: "reject", reason }); }}>{tx("Reject")}</Button>
                   </>)}
                   {p.status === "APPROVED" && p.access?.can_convert && (
-                    <Button variant="secondary" onClick={() => { setConv((c) => ({ ...c, po_no: `PO-${p.pr_no.replace(/^PR-?/, "")}` })); setConvertPr({ id: p.id, pr_no: p.pr_no }); }}>Create PO</Button>
+                    <Button variant="secondary" onClick={() => { setConv((c) => ({ ...c, po_no: `PO-${p.pr_no.replace(/^PR-?/, "")}` })); setConvertPr({ id: p.id, pr_no: p.pr_no }); }}>{tx("Create PO")}</Button>
                   )}
                 </div>
               ),
@@ -199,20 +200,20 @@ function ProcurementPRsTab() {
         </div>
       )}
 
-      <Modal open={open} onClose={() => setOpen(false)} title="New Purchase Requisition">
+      <Modal open={open} onClose={() => setOpen(false)} title={tx("New Purchase Requisition")}>
         <form onSubmit={(e) => { e.preventDefault(); create.mutate(); }} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <Input label="PR No *" value={form.pr_no} onChange={(e) => setForm((f) => ({ ...f, pr_no: e.target.value }))} placeholder="e.g. PR-2026-001" required />
-            <Input label="Department" value={form.department} onChange={(e) => setForm((f) => ({ ...f, department: e.target.value }))} />
+            <Input label={tx("PR No *")} value={form.pr_no} onChange={(e) => setForm((f) => ({ ...f, pr_no: e.target.value }))} placeholder={tx("e.g. PR-2026-001")} required />
+            <Input label={tx("Department")} value={form.department} onChange={(e) => setForm((f) => ({ ...f, department: e.target.value }))} />
           </div>
-          <Input label="Required Date *" type="date" onChange={(e) => setForm((f) => ({ ...f, required_date: e.target.value }))} required />
-          <Input label="Notes" value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
+          <Input label={tx("Required Date *")} type="date" onChange={(e) => setForm((f) => ({ ...f, required_date: e.target.value }))} required />
+          <Input label={tx("Notes")} value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
 
           <div>
             <div className="flex items-center justify-between mb-2">
-              <p className="text-sm font-semibold text-gray-700">Requested Items</p>
+              <p className="text-sm font-semibold text-gray-700">{tx("Requested Items")}</p>
               <button type="button" className="text-xs text-indigo-600 hover:underline" onClick={() => setLines((ls) => [...ls, emptyLine(ls.length + 1)])}>
-                + Add Line
+                {tx("+ Add Line")}
               </button>
             </div>
             <div className="space-y-2">
@@ -222,13 +223,13 @@ function ProcurementPRsTab() {
                     <Select options={matOpts} value={l.material_id} onChange={(e) => updateLine(i, "material_id", e.target.value)} />
                   </div>
                   <div className="col-span-2">
-                    <Input placeholder="Qty" value={l.quantity} onChange={(e) => updateLine(i, "quantity", e.target.value)} type="number" step="0.001" />
+                    <Input placeholder={tx("Qty")} value={l.quantity} onChange={(e) => updateLine(i, "quantity", e.target.value)} type="number" step="0.001" />
                   </div>
                   <div className="col-span-2">
                     <Select options={UNIT_OPTS} value={l.unit} onChange={(e) => updateLine(i, "unit", e.target.value)} />
                   </div>
                   <div className="col-span-2">
-                    <Input placeholder="Est. cost" value={l.estimated_unit_cost} onChange={(e) => updateLine(i, "estimated_unit_cost", e.target.value)} type="number" step="0.01" />
+                    <Input placeholder={tx("Est. cost")} value={l.estimated_unit_cost} onChange={(e) => updateLine(i, "estimated_unit_cost", e.target.value)} type="number" step="0.01" />
                   </div>
                   <div className="col-span-1">
                     <Select options={suppOpts} value={l.preferred_supplier_id} onChange={(e) => updateLine(i, "preferred_supplier_id", e.target.value)} />
@@ -244,8 +245,8 @@ function ProcurementPRsTab() {
           </div>
 
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" type="button" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button type="submit" loading={create.isPending} disabled={!form.pr_no || !form.required_date}>Create PR</Button>
+            <Button variant="secondary" type="button" onClick={() => setOpen(false)}>{tx("Cancel")}</Button>
+            <Button type="submit" loading={create.isPending} disabled={!form.pr_no || !form.required_date}>{tx("Create PR")}</Button>
           </div>
         </form>
       </Modal>
@@ -253,15 +254,15 @@ function ProcurementPRsTab() {
       <Modal open={!!convertPr} onClose={() => setConvertPr(null)} title={`Create purchase order from ${convertPr?.pr_no ?? ""}`}>
         <form onSubmit={(e) => { e.preventDefault(); convert.mutate(); }} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <Input label="PO No *" value={conv.po_no} onChange={(e) => setConv((c) => ({ ...c, po_no: e.target.value }))} required />
-            <Select label="Supplier *" options={suppOpts.map((o) => o.value ? o : { value: "", label: "Select supplier…" })} value={conv.supplier_id} onChange={(e) => setConv((c) => ({ ...c, supplier_id: e.target.value }))} />
-            <Input label="Order date *" type="date" value={conv.order_date} onChange={(e) => setConv((c) => ({ ...c, order_date: e.target.value }))} required />
-            <Input label="Expected delivery *" type="date" value={conv.expected_delivery_date} onChange={(e) => setConv((c) => ({ ...c, expected_delivery_date: e.target.value }))} required />
-            <Input label="Currency" value={conv.currency} onChange={(e) => setConv((c) => ({ ...c, currency: e.target.value.toUpperCase() }))} />
+            <Input label={tx("PO No *")} value={conv.po_no} onChange={(e) => setConv((c) => ({ ...c, po_no: e.target.value }))} required />
+            <Select label={tx("Supplier *")} options={suppOpts.map((o) => o.value ? o : { value: "", label: tx("Select supplier…") })} value={conv.supplier_id} onChange={(e) => setConv((c) => ({ ...c, supplier_id: e.target.value }))} />
+            <Input label={tx("Order date *")} type="date" value={conv.order_date} onChange={(e) => setConv((c) => ({ ...c, order_date: e.target.value }))} required />
+            <Input label={tx("Expected delivery *")} type="date" value={conv.expected_delivery_date} onChange={(e) => setConv((c) => ({ ...c, expected_delivery_date: e.target.value }))} required />
+            <Input label={tx("Currency")} value={conv.currency} onChange={(e) => setConv((c) => ({ ...c, currency: e.target.value.toUpperCase() }))} />
           </div>
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" type="button" onClick={() => setConvertPr(null)}>Cancel</Button>
-            <Button type="submit" loading={convert.isPending} disabled={!conv.po_no || !conv.supplier_id || !conv.expected_delivery_date}>Create PO</Button>
+            <Button variant="secondary" type="button" onClick={() => setConvertPr(null)}>{tx("Cancel")}</Button>
+            <Button type="submit" loading={convert.isPending} disabled={!conv.po_no || !conv.supplier_id || !conv.expected_delivery_date}>{tx("Create PO")}</Button>
           </div>
         </form>
       </Modal>
@@ -282,21 +283,21 @@ const SupplierPortalPage          = dynamic(() => import("@/app/dashboard/suppli
 
 export default function ProcurementPage() {
   const tabs = [
-    { key: "purchase-requests", label: "Purchase Requests", permission: "procurement.view", content: <ProcurementPRsTab /> },
-    { key: "orders",            label: "Purchase Orders",   permission: "procurement.view", content: <ProcurementOrdersPage /> },
+    { key: "purchase-requests", label: tx("Purchase Requests"), permission: "procurement.view", content: <ProcurementPRsTab /> },
+    { key: "orders",            label: tx("Purchase Orders"),   permission: "procurement.view", content: <ProcurementOrdersPage /> },
     { key: "rfq",               label: "RFQ",               permission: "procurement.view", content: <ProcurementRFQPage /> },
-    { key: "deliveries",        label: "Deliveries",        permission: "procurement.view", content: <ProcurementDeliveriesPage /> },
-    { key: "suppliers",         label: "Suppliers",         permission: "procurement.view", content: <ProcurementSuppliersPage /> },
-    { key: "blanket-agreements",label: "Blanket Agreements",permission: "procurement.view", content: <ProcurementBlanketPage /> },
-    { key: "reorder-policies",  label: "Reorder Policies",  permission: "procurement.view", content: <ProcurementReorderPage /> },
-    { key: "suggestions",       label: "Suggestions",       permission: "procurement.view", content: <SuggestionsPage /> },
-    { key: "subcontracting",    label: "Subcontracting",    permission: "procurement.view", exact: true, content: <SubcontractingPage /> },
-    { key: "landed-cost",       label: "Landed Cost",       permission: "procurement.view", content: <LandedCostPage /> },
-    { key: "supplier-portal",   label: "Supplier Portal",   permission: "procurement.view", exact: true, content: <SupplierPortalPage /> },
+    { key: "deliveries",        label: tx("Deliveries"),        permission: "procurement.view", content: <ProcurementDeliveriesPage /> },
+    { key: "suppliers",         label: tx("Suppliers"),         permission: "procurement.view", content: <ProcurementSuppliersPage /> },
+    { key: "blanket-agreements",label: tx("Blanket Agreements"),permission: "procurement.view", content: <ProcurementBlanketPage /> },
+    { key: "reorder-policies",  label: tx("Reorder Policies"),  permission: "procurement.view", content: <ProcurementReorderPage /> },
+    { key: "suggestions",       label: tx("Suggestions"),       permission: "procurement.view", content: <SuggestionsPage /> },
+    { key: "subcontracting",    label: tx("Subcontracting"),    permission: "procurement.view", exact: true, content: <SubcontractingPage /> },
+    { key: "landed-cost",       label: tx("Landed Cost"),       permission: "procurement.view", content: <LandedCostPage /> },
+    { key: "supplier-portal",   label: tx("Supplier Portal"),   permission: "procurement.view", exact: true, content: <SupplierPortalPage /> },
   ];
   return (
     <ModuleWorkspace
-      title="Procurement"
+      title={tx("Procurement")}
       description="Purchase requests, orders, RFQ, suppliers, subcontracting"
       permission="procurement.view"
       tabs={tabs}

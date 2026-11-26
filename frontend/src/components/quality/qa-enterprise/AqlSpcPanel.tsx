@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { type Notify, ReadOnlyNotice, Section, statusVariant, useAction, useQualityPermissions } from "./shared";
+import { tx } from "@/lib/i18n/core";
 
 const fmt = (v: number | null | undefined, digits = 3) => (v == null ? "—" : v.toFixed(digits));
 
@@ -28,7 +29,7 @@ function ControlChart({ analysis }: { analysis: SPCAnalysis }) {
     </g>
   );
   return (
-    <svg role="img" aria-label={`Individuals control chart, ${points.length} points, ${analysis.violations.length} rule hits`}
+    <svg role="img" aria-label={tx("Individuals control chart, {length} points, {length2} rule hits", { length: points.length, length2: analysis.violations.length })}
       viewBox={`0 0 ${W + 30} ${H}`} className="w-full max-w-3xl">
       {ref(analysis.limits.ucl, "UCL", "4 3", "stroke-red-400")}
       {ref(analysis.limits.center, "CL", "", "stroke-gray-400")}
@@ -68,49 +69,49 @@ export function AqlSpcPanel({ notify }: { notify: Notify }) {
   const escalate = useAction(() => qaEnterpriseApi.spcEvaluate(spcParams()), notify,
     (r) => (r.new_signals ? `${r.new_signals} new signal(s); deviation opened` : "No new out-of-control signals"), []);
 
-  if (!perms.canView) return <ReadOnlyNotice>AQL and SPC require quality.view.</ReadOnlyNotice>;
+  if (!perms.canView) return <ReadOnlyNotice>{tx("AQL and SPC require quality.view.")}</ReadOnlyNotice>;
 
   return (
     <div className="space-y-4">
-      <Section title="AQL lot decision" description="Picks the active sampling plan for the lot size (item-specific plans first) and applies its accept/reject numbers.">
+      <Section title={tx("AQL lot decision")} description="Picks the active sampling plan for the lot size (item-specific plans first) and applies its accept/reject numbers.">
         <form className="grid gap-3 md:grid-cols-5" onSubmit={(e) => { e.preventDefault(); evaluateAql.mutate(undefined, { onSuccess: setAqlResult }); }}>
-          <Input id="aql-lot-size" label="Lot size" type="number" min={1} required value={aql.lot_size}
+          <Input id="aql-lot-size" label={tx("Lot size")} type="number" min={1} required value={aql.lot_size}
             onChange={(e) => setAql((a) => ({ ...a, lot_size: e.target.value }))} />
-          <Select id="aql-applies" label="Inspection type" value={aql.applies_to}
+          <Select id="aql-applies" label={tx("Inspection type")} value={aql.applies_to}
             onChange={(e) => setAql((a) => ({ ...a, applies_to: e.target.value }))}
             options={["INCOMING", "IN_PROCESS", "FINISHED_GOODS"].map((v) => ({ value: v, label: v.replace("_", " ") }))} />
-          <Input id="aql-sample" label="Units inspected" type="number" min={0} required value={aql.sample_inspected}
+          <Input id="aql-sample" label={tx("Units inspected")} type="number" min={0} required value={aql.sample_inspected}
             onChange={(e) => setAql((a) => ({ ...a, sample_inspected: e.target.value }))} />
-          <Input id="aql-defects" label="Defects found" type="number" min={0} required value={aql.defects_found}
+          <Input id="aql-defects" label={tx("Defects found")} type="number" min={0} required value={aql.defects_found}
             onChange={(e) => setAql((a) => ({ ...a, defects_found: e.target.value }))} />
           <div className="flex items-end">
-            <Button type="submit" loading={evaluateAql.isPending}>Evaluate lot</Button>
+            <Button type="submit" loading={evaluateAql.isPending}>{tx("Evaluate lot")}</Button>
           </div>
         </form>
         {aqlResult && (
           <div data-testid="aql-result" className="flex flex-wrap items-center gap-3 text-sm">
             <Badge label={aqlResult.decision.replace("_", " ")} variant={statusVariant(aqlResult.decision)} />
-            <span>Plan {aqlResult.plan_code}: sample {aqlResult.sample_size}, Ac {aqlResult.acceptance_number ?? "—"}, Re {aqlResult.rejection_number ?? "—"}</span>
+            <span>{tx("Plan")} {aqlResult.plan_code}{tx(": sample")} {aqlResult.sample_size}{tx(", Ac")} {aqlResult.acceptance_number ?? "—"}{tx(", Re")} {aqlResult.rejection_number ?? "—"}</span>
             {aqlResult.reason && <span className="text-gray-500">{aqlResult.reason}</span>}
           </div>
         )}
       </Section>
 
-      <Section title="SPC control chart" description="Individuals chart from recorded numeric results with Western Electric rules 1–4. Pp/Ppk use overall sigma.">
+      <Section title={tx("SPC control chart")} description="Individuals chart from recorded numeric results with Western Electric rules 1–4. Pp/Ppk use overall sigma.">
         <form className="grid gap-3 md:grid-cols-4" onSubmit={(e) => { e.preventDefault(); loadChart.mutate(undefined, { onSuccess: setChart }); }}>
-          <Input id="spc-product" label="Product ID" required value={spc.product_id}
+          <Input id="spc-product" label={tx("Product ID")} required value={spc.product_id}
             onChange={(e) => setSpc((s) => ({ ...s, product_id: e.target.value }))} />
-          <Input id="spc-parameter" label="Parameter name" required value={spc.parameter_name}
+          <Input id="spc-parameter" label={tx("Parameter name")} required value={spc.parameter_name}
             onChange={(e) => setSpc((s) => ({ ...s, parameter_name: e.target.value }))} />
-          <Select id="spc-qc-type" label="Inspection type" value={spc.qc_type}
+          <Select id="spc-qc-type" label={tx("Inspection type")} value={spc.qc_type}
             onChange={(e) => setSpc((s) => ({ ...s, qc_type: e.target.value }))}
-            options={[{ value: "", label: "All" }, ...["INCOMING", "IN_PROCESS", "FINISHED_GOODS", "RETEST"].map((v) => ({ value: v, label: v.replace("_", " ") }))]} />
+            options={[{ value: "", label: tx("All") }, ...["INCOMING", "IN_PROCESS", "FINISHED_GOODS", "RETEST"].map((v) => ({ value: v, label: v.replace("_", " ") }))]} />
           <div className="flex items-end gap-2">
-            <Button type="submit" loading={loadChart.isPending} disabled={!spc.product_id || !spc.parameter_name}>Show chart</Button>
+            <Button type="submit" loading={loadChart.isPending} disabled={!spc.product_id || !spc.parameter_name}>{tx("Show chart")}</Button>
             {perms.canCreate && (
               <Button type="button" variant="secondary" loading={escalate.isPending} disabled={!spc.product_id || !spc.parameter_name}
                 onClick={() => escalate.mutate(undefined, { onSuccess: (r) => setChart((c) => c ? { ...r.analysis, points: c.points } : r.analysis) })}>
-                Record signals &amp; escalate
+                {tx("Record signals & escalate")}
               </Button>
             )}
           </div>
@@ -118,20 +119,20 @@ export function AqlSpcPanel({ notify }: { notify: Notify }) {
         {chart && (
           <div data-testid="spc-result" className="space-y-3">
             <dl className="grid grid-cols-2 gap-2 text-sm md:grid-cols-6">
-              <div><dt className="text-gray-500">Points</dt><dd>{chart.n}</dd></div>
-              <div><dt className="text-gray-500">Center</dt><dd>{fmt(chart.limits.center)}</dd></div>
+              <div><dt className="text-gray-500">{tx("Points")}</dt><dd>{chart.n}</dd></div>
+              <div><dt className="text-gray-500">{tx("Center")}</dt><dd>{fmt(chart.limits.center)}</dd></div>
               <div><dt className="text-gray-500">UCL</dt><dd>{fmt(chart.limits.ucl)}</dd></div>
               <div><dt className="text-gray-500">LCL</dt><dd>{fmt(chart.limits.lcl)}</dd></div>
-              <div><dt className="text-gray-500">Pp</dt><dd>{fmt(chart.capability.pp, 2)}</dd></div>
-              <div><dt className="text-gray-500">Ppk</dt><dd>{fmt(chart.capability.ppk, 2)}</dd></div>
+              <div><dt className="text-gray-500">{tx("Pp")}</dt><dd>{fmt(chart.capability.pp, 2)}</dd></div>
+              <div><dt className="text-gray-500">{tx("Ppk")}</dt><dd>{fmt(chart.capability.ppk, 2)}</dd></div>
             </dl>
             {chart.points && chart.points.length > 1 && <ControlChart analysis={chart} />}
             {chart.violations.length === 0 ? (
-              <p className="text-sm text-green-700">No Western Electric rule violations.</p>
+              <p className="text-sm text-green-700">{tx("No Western Electric rule violations.")}</p>
             ) : (
-              <ul className="space-y-1 text-sm" aria-label="Rule violations">
+              <ul className="space-y-1 text-sm" aria-label={tx("Rule violations")}>
                 {chart.violations.map((v) => (
-                  <li key={`${v.index}-${v.rule}`} className="text-red-700">Point {v.index + 1} ({v.value}): {v.rule.replaceAll("_", " ")}</li>
+                  <li key={`${v.index}-${v.rule}`} className="text-red-700">{tx("Point")} {v.index + 1} ({v.value}): {v.rule.replaceAll("_", " ")}</li>
                 ))}
               </ul>
             )}

@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { gs1Api, statusColor, BarcodeGenerateResponse, BarcodeType, LabelPrinter, PrintJob } from "@/lib/gs1";
 import { productsApi, Product } from "@/lib/products";
 import { PageHelpTooltip } from "@/components/help/PageHelpTooltip";
+import { tx, lx } from "@/lib/i18n/core";
 
 // ── Local types ────────────────────────────────────────────────────────────────
 
@@ -28,20 +29,20 @@ interface PrintConfig {
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
-const LABEL_SIZES: { value: LabelSize; label: string }[] = [
-  { value: "50x30",  label: "50×30 mm — Thermal Small" },
-  { value: "70x40",  label: "70×40 mm — Thermal Standard" },
-  { value: "100x50", label: "100×50 mm — Thermal Wide" },
-  { value: "a4",     label: "A4 — Office / Sheet Labels" },
-];
+const LABEL_SIZES: { value: LabelSize; label: string }[] = lx(() => [
+  { value: "50x30",  label: tx("50×30 mm — Thermal Small") },
+  { value: "70x40",  label: tx("70×40 mm — Thermal Standard") },
+  { value: "100x50", label: tx("100×50 mm — Thermal Wide") },
+  { value: "a4",     label: tx("A4 — Office / Sheet Labels") },
+]);
 
-const PRINTER_PRESETS: { value: PrinterPreset; label: string; hint: string }[] = [
-  { value: "browser",  label: "Browser Default",  hint: "System print dialog, any printer" },
-  { value: "zebra",    label: "Zebra Thermal",     hint: "Zebra ZD/ZT series via browser driver" },
-  { value: "tsc",      label: "TSC Thermal",       hint: "TSC TTP series via browser driver" },
-  { value: "godex",    label: "Godex Thermal",     hint: "Godex G/EZ series via browser driver" },
-  { value: "a4office", label: "A4 Office Printer", hint: "Standard A4 sheet, 4-up grid" },
-];
+const PRINTER_PRESETS: { value: PrinterPreset; label: string; hint: string }[] = lx(() => [
+  { value: "browser",  label: tx("Browser Default"),  hint: tx("System print dialog, any printer") },
+  { value: "zebra",    label: tx("Zebra Thermal"),     hint: tx("Zebra ZD/ZT series via browser driver") },
+  { value: "tsc",      label: tx("TSC Thermal"),       hint: tx("TSC TTP series via browser driver") },
+  { value: "godex",    label: tx("Godex Thermal"),     hint: tx("Godex G/EZ series via browser driver") },
+  { value: "a4office", label: tx("A4 Office Printer"), hint: tx("Standard A4 sheet, 4-up grid") },
+]);
 
 const A4_CELLS_PER_PAGE = 4;
 
@@ -124,7 +125,7 @@ body{margin:0;padding:0;font-family:monospace;font-size:${fs}px;background:#fff;
 <body>${body}</body></html>`;
 
   const win = window.open("", "_blank", `width=${isA4 ? 820 : 500},height=${isA4 ? 640 : 400}`);
-  if (!win) { alert("Popup blocked — allow popups for this site to print labels."); return; }
+  if (!win) { alert(tx("Popup blocked — allow popups for this site to print labels.")); return; }
   win.document.write(html);
   win.document.close();
   setTimeout(() => { win.focus(); win.print(); }, 400);
@@ -157,7 +158,7 @@ function NetworkPrintersSection() {
     mutationFn: () => gs1Api.createPrinter({ ...form, dpi: 203, label_width_mm: 100, label_height_mm: 150,
       location: null, is_active: true }),
     onSuccess: (p) => {
-      setMessage(`Printer ${p.name} registered.`);
+      setMessage(tx("Printer {name} registered.", { name: p.name }));
       setForm({ ...form, name: "", host: "" });
       qc.invalidateQueries({ queryKey: ["gs1-printers"] });
     },
@@ -165,17 +166,17 @@ function NetworkPrintersSection() {
   });
   const test = useMutation({
     mutationFn: (id: string) => gs1Api.testPrinter(id),
-    onSuccess: (r) => setMessage(`Test label sent to ${r.printer}.`),
+    onSuccess: (r) => setMessage(tx("Test label sent to {printer}.", { printer: r.printer })),
     onError: (e: Error) => setMessage(e.message),
   });
   if (isError) return null; // no gs1.view access
 
   return (
-    <section className="bg-white border rounded-lg overflow-hidden" aria-label="Network label printers">
+    <section className="bg-white border rounded-lg overflow-hidden" aria-label={tx("Network label printers")}>
       <div className="px-4 py-3 border-b">
-        <h2 className="text-sm font-medium text-gray-700">Network label printers</h2>
+        <h2 className="text-sm font-medium text-gray-700">{tx("Network label printers")}</h2>
         <p className="text-xs text-gray-400">
-          Zebra (ZPL) or TSC/Godex (TSPL) printers on the plant network, raw TCP port 9100. Private network addresses only.
+          {tx("Zebra (ZPL) or TSC/Godex (TSPL) printers on the plant network, raw TCP port 9100. Private network addresses only.")}
         </p>
       </div>
       {message && <p role="status" className="px-4 pt-3 text-xs text-gray-700">{message}</p>}
@@ -183,33 +184,33 @@ function NetworkPrintersSection() {
         {printers.map((p) => (
           <li key={p.id} className="px-4 py-2 flex items-center justify-between text-sm">
             <span>
-              {p.name} <span className="text-gray-400">· {p.protocol} · {p.host}:{p.port}{p.is_active ? "" : " · inactive"}</span>
+              {p.name} <span className="text-gray-400">· {p.protocol} · {p.host}:{p.port}{p.is_active ? "" : tx(" · inactive")}</span>
             </span>
             <button type="button" onClick={() => test.mutate(p.id)} disabled={test.isPending}
-              aria-label={`Test ${p.name}`} className="text-xs px-2 py-1 border rounded hover:bg-gray-50">
-              Test label
+              aria-label={tx("Test {name}", { name: p.name })} className="text-xs px-2 py-1 border rounded hover:bg-gray-50">
+              {tx("Test label")}
             </button>
           </li>
         ))}
-        {!printers.length && <li className="px-4 py-2 text-xs text-gray-400">No network printers registered.</li>}
+        {!printers.length && <li className="px-4 py-2 text-xs text-gray-400">{tx("No network printers registered.")}</li>}
       </ul>
       <form className="grid grid-cols-2 md:grid-cols-5 gap-2 p-4 border-t"
         onSubmit={(e) => { e.preventDefault(); setMessage(null); create.mutate(); }}>
-        <input aria-label="Printer name" placeholder="Name" required value={form.name}
+        <input aria-label={tx("Printer name")} placeholder={tx("Name")} required value={form.name}
           onChange={(e) => setForm({ ...form, name: e.target.value })} className="border rounded px-2 py-1.5 text-sm" />
-        <select aria-label="Printer protocol" value={form.protocol}
+        <select aria-label={tx("Printer protocol")} value={form.protocol}
           onChange={(e) => setForm({ ...form, protocol: e.target.value as LabelPrinter["protocol"] })}
           className="border rounded px-2 py-1.5 text-sm">
-          <option value="ZPL">ZPL (Zebra)</option>
-          <option value="TSPL">TSPL (TSC / Godex)</option>
+          <option value="ZPL">{tx("ZPL (Zebra)")}</option>
+          <option value="TSPL">{tx("TSPL (TSC / Godex)")}</option>
         </select>
-        <input aria-label="Printer host" placeholder="192.168.1.50" required value={form.host}
+        <input aria-label={tx("Printer host")} placeholder="192.168.1.50" required value={form.host}
           onChange={(e) => setForm({ ...form, host: e.target.value })} className="border rounded px-2 py-1.5 text-sm" />
-        <input aria-label="Printer port" type="number" min={1} max={65535} value={form.port}
+        <input aria-label={tx("Printer port")} type="number" min={1} max={65535} value={form.port}
           onChange={(e) => setForm({ ...form, port: Number(e.target.value) })} className="border rounded px-2 py-1.5 text-sm" />
         <button type="submit" disabled={create.isPending || !form.name || !form.host}
           className="text-sm bg-indigo-600 text-white rounded px-3 py-1.5 disabled:opacity-50">
-          Add printer
+          {tx("Add printer")}
         </button>
       </form>
     </section>
@@ -224,30 +225,30 @@ function PrintHistorySection() {
     queryFn: () => gs1Api.listPrintJobs(),
   });
 
-  if (isLoading) return <div className="p-4 text-gray-400 text-sm">Loading print history…</div>;
-  if (isError || !data) return <div className="p-4 text-red-400 text-sm">Failed to load print history</div>;
+  if (isLoading) return <div className="p-4 text-gray-400 text-sm">{tx("Loading print history…")}</div>;
+  if (isError || !data) return <div className="p-4 text-red-400 text-sm">{tx("Failed to load print history")}</div>;
 
   return (
     <div className="bg-white border rounded-lg overflow-hidden">
       <div className="px-4 py-3 border-b">
-        <h2 className="text-sm font-medium text-gray-700">Print Job History</h2>
+        <h2 className="text-sm font-medium text-gray-700">{tx("Print Job History")}</h2>
       </div>
       <table className="w-full text-sm">
         <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
           <tr>
-            <th className="px-4 py-2 text-left">Job No</th>
-            <th className="px-4 py-2 text-left">Trigger</th>
-            <th className="px-4 py-2 text-left">Status</th>
-            <th className="px-4 py-2 text-left">Items</th>
-            <th className="px-4 py-2 text-left">Printer</th>
-            <th className="px-4 py-2 text-left">Printed At</th>
-            <th className="px-4 py-2 text-left">Created</th>
+            <th className="px-4 py-2 text-left">{tx("Job No")}</th>
+            <th className="px-4 py-2 text-left">{tx("Trigger")}</th>
+            <th className="px-4 py-2 text-left">{tx("Status")}</th>
+            <th className="px-4 py-2 text-left">{tx("Items")}</th>
+            <th className="px-4 py-2 text-left">{tx("Printer")}</th>
+            <th className="px-4 py-2 text-left">{tx("Printed At")}</th>
+            <th className="px-4 py-2 text-left">{tx("Created")}</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100">
           {data.length === 0 && (
             <tr>
-              <td colSpan={7} className="px-4 py-6 text-center text-gray-400">No print jobs yet</td>
+              <td colSpan={7} className="px-4 py-6 text-center text-gray-400">{tx("No print jobs yet")}</td>
             </tr>
           )}
           {data.map((job: PrintJob) => (
@@ -386,7 +387,7 @@ export default function GS1DashboardPage() {
     mutationFn: gs1Api.runLabelValidator,
     onSuccess: (r) => {
       qc.invalidateQueries({ queryKey: ["gs1-dashboard"] });
-      alert(`Label Validator ran — ${r.generated} recommendation(s) generated`);
+      alert(tx("Label Validator ran — {generated} recommendation(s) generated", { generated: r.generated }));
     },
   });
 
@@ -394,16 +395,16 @@ export default function GS1DashboardPage() {
     mutationFn: gs1Api.runPackagingOptimizer,
     onSuccess: (r) => {
       qc.invalidateQueries({ queryKey: ["gs1-dashboard"] });
-      alert(`Packaging Optimizer ran — ${r.generated} recommendation(s) generated`);
+      alert(tx("Packaging Optimizer ran — {generated} recommendation(s) generated", { generated: r.generated }));
     },
   });
 
   const generateMut = useMutation({
     mutationFn: () => {
       setFormError("");
-      if (!gtin.trim()) { setFormError("GTIN is required."); throw new Error("validation"); }
-      if (!lotNo.trim()) { setFormError("Lot Number is required."); throw new Error("validation"); }
-      if (copies < 1 || copies > 100) { setFormError("Copies must be 1–100."); throw new Error("validation"); }
+      if (!gtin.trim()) { setFormError(tx("GTIN is required.")); throw new Error("validation"); }
+      if (!lotNo.trim()) { setFormError(tx("Lot Number is required.")); throw new Error("validation"); }
+      if (copies < 1 || copies > 100) { setFormError(tx("Copies must be 1–100.")); throw new Error("validation"); }
       return gs1Api.generateBarcode({
         product_id: selectedProductId || undefined,
         gtin: gtin.trim(),
@@ -440,7 +441,7 @@ export default function GS1DashboardPage() {
     },
     onSuccess: (barcode) => {
       if ("sentTo" in barcode) {
-        alert(`Sent ${copies} label(s) to ${barcode.sentTo}.`);
+        alert(tx("Sent {copies} label(s) to {sentTo}.", { copies, sentTo: barcode.sentTo }));
         qc.invalidateQueries({ queryKey: ["gs1-dashboard"] });
         qc.invalidateQueries({ queryKey: ["gs1-print-jobs"] });
         return;
@@ -458,19 +459,19 @@ export default function GS1DashboardPage() {
           copies,
         });
       } else {
-        alert("No barcode image — regenerate with save_record=true.");
+        alert(tx("No barcode image — regenerate with save_record=true."));
       }
       qc.invalidateQueries({ queryKey: ["gs1-dashboard"] });
       qc.invalidateQueries({ queryKey: ["gs1-print-jobs"] });
     },
-    onError: (err: Error) => alert(`Print failed: ${err.message}`),
+    onError: (err: Error) => alert(tx("Print failed: {message}", { message: err.message })),
   });
 
   // Form Print: includes full product fields + selected copies
   const printGeneratedMut = useMutation({
     mutationFn: async () => {
       if (!generated?.record_id || !generated.barcode_image_b64)
-        throw new Error("No saved barcode — regenerate first.");
+        throw new Error(tx("No saved barcode — regenerate first."));
       const job = await gs1Api.createPrintJob({
         trigger: "MANUAL",
         items: [{ lot_barcode_id: generated.record_id, copies }],
@@ -484,7 +485,7 @@ export default function GS1DashboardPage() {
     },
     onSuccess: (gen) => {
       if ("sentTo" in gen) {
-        alert(`Sent ${copies} label(s) to ${gen.sentTo}.`);
+        alert(tx("Sent {copies} label(s) to {sentTo}.", { copies, sentTo: gen.sentTo }));
         qc.invalidateQueries({ queryKey: ["gs1-print-jobs"] });
         return;
       }
@@ -506,15 +507,14 @@ export default function GS1DashboardPage() {
       qc.invalidateQueries({ queryKey: ["gs1-dashboard"] });
       qc.invalidateQueries({ queryKey: ["gs1-print-jobs"] });
     },
-    onError: (err: Error) => alert(`Print failed: ${err.message}`),
+    onError: (err: Error) => alert(tx("Print failed: {message}", { message: err.message })),
   });
 
-  if (isLoading) return <div className="p-8 text-gray-400">Loading GS1 dashboard…</div>;
+  if (isLoading) return <div className="p-8 text-gray-400">{tx("Loading GS1 dashboard…")}</div>;
   if (isError || !data)
     return (
       <div className="p-8 text-red-500">
-        Failed to load GS1 &amp; Label Printing dashboard. Ensure the database migration has been
-        run (<code>alembic upgrade head</code>).
+        {tx("Failed to load GS1 & Label Printing dashboard. Ensure the database migration has been run (")}<code>alembic upgrade head</code>).
       </div>
     );
 
@@ -527,9 +527,9 @@ export default function GS1DashboardPage() {
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900">GS1 Barcode &amp; Label Printing</h1>
+          <h1 className="text-xl font-semibold text-gray-900">{tx("GS1 Barcode & Label Printing")}</h1>
           <p className="text-sm text-gray-500">
-            Global product identification · SSCC pallet tracking · Label management
+            {tx("Global product identification · SSCC pallet tracking · Label management")}
           </p>
         </div>
         <div className="flex gap-2 flex-wrap items-center">
@@ -548,21 +548,21 @@ export default function GS1DashboardPage() {
             }}
             className="px-3 py-1.5 text-sm bg-green-600 text-white rounded hover:bg-green-700"
           >
-            {showForm ? "Close Form" : "Generate Label"}
+            {showForm ? tx("Close Form") : tx("Generate Label")}
           </button>
           <button
             onClick={() => validator.mutate()}
             disabled={validator.isPending}
             className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
           >
-            {validator.isPending ? "Running…" : "Run Label Validator"}
+            {validator.isPending ? tx("Running…") : tx("Run Label Validator")}
           </button>
           <button
             onClick={() => optimizer.mutate()}
             disabled={optimizer.isPending}
             className="px-3 py-1.5 text-sm bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50"
           >
-            {optimizer.isPending ? "Running…" : "Packaging Optimizer"}
+            {optimizer.isPending ? tx("Running…") : tx("Packaging Optimizer")}
           </button>
         </div>
       </div>
@@ -570,18 +570,18 @@ export default function GS1DashboardPage() {
       {/* ── Generate Label Form ─────────────────────────────────────────────── */}
       {showForm && (
         <div className="bg-white border rounded-lg p-5 space-y-4">
-          <h2 className="text-sm font-semibold text-gray-800">Generate Barcode Label</h2>
+          <h2 className="text-sm font-semibold text-gray-800">{tx("Generate Barcode Label")}</h2>
 
           {/* Product selector */}
           <div>
             <label className="block text-xs text-gray-500 mb-1">
-              Product <span className="text-gray-400">(optional — auto-fills GTIN, SKU, weight)</span>
+              {tx("Product")} <span className="text-gray-400">{tx("(optional — auto-fills GTIN, SKU, weight)")}</span>
             </label>
             <div className="flex gap-2">
               <input
                 value={productSearch}
                 onChange={(e) => setProductSearch(e.target.value)}
-                placeholder="Filter by name or SKU…"
+                placeholder={tx("Filter by name or SKU…")}
                 className="w-44 border rounded px-2 py-1.5 text-sm"
               />
               <select
@@ -590,18 +590,18 @@ export default function GS1DashboardPage() {
                 disabled={productLoading || !products}
                 className="flex-1 border rounded px-2 py-1.5 text-sm"
               >
-                <option value="">{products ? "— select product —" : "Loading products…"}</option>
+                <option value="">{products ? tx("— select product —") : tx("Loading products…")}</option>
                 {filteredProducts.map((p) => (
                   <option key={p.id} value={p.id}>{p.name} ({p.sku})</option>
                 ))}
               </select>
               {productLoading && (
-                <span className="text-xs text-gray-400 self-center whitespace-nowrap">Loading data…</span>
+                <span className="text-xs text-gray-400 self-center whitespace-nowrap">{tx("Loading data…")}</span>
               )}
             </div>
             {gtinWarning && (
               <p className="text-xs text-amber-600 mt-1">
-                Selected product has no GTIN — enter GTIN manually below.
+                {tx("Selected product has no GTIN — enter GTIN manually below.")}
               </p>
             )}
           </div>
@@ -615,23 +615,23 @@ export default function GS1DashboardPage() {
               <input
                 value={gtin}
                 onChange={(e) => setGtin(e.target.value)}
-                placeholder="e.g. 05901234123457"
+                placeholder={tx("e.g. 05901234123457")}
                 className="w-full border rounded px-2 py-1.5 text-sm"
               />
             </div>
             <div>
               <label className="block text-xs text-gray-500 mb-1">
-                Lot Number <span className="text-red-400">*</span>
+                {tx("Lot Number")} <span className="text-red-400">*</span>
               </label>
               <input
                 value={lotNo}
                 onChange={(e) => setLotNo(e.target.value)}
-                placeholder="e.g. LOT-2026-001"
+                placeholder={tx("e.g. LOT-2026-001")}
                 className="w-full border rounded px-2 py-1.5 text-sm"
               />
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Expiry Date</label>
+              <label className="block text-xs text-gray-500 mb-1">{tx("Expiry Date")}</label>
               <input
                 type="date"
                 value={expiry}
@@ -640,7 +640,7 @@ export default function GS1DashboardPage() {
               />
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Production Date</label>
+              <label className="block text-xs text-gray-500 mb-1">{tx("Production Date")}</label>
               <input
                 type="date"
                 value={productionDate}
@@ -653,11 +653,11 @@ export default function GS1DashboardPage() {
           {/* Row 2: Product fields (auto-filled if product selected; editable) */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Product Name</label>
+              <label className="block text-xs text-gray-500 mb-1">{tx("Product Name")}</label>
               <input
                 value={productName}
                 onChange={(e) => setProductName(e.target.value)}
-                placeholder="e.g. Shampoo 250ml"
+                placeholder={tx("e.g. Shampoo 250ml")}
                 className="w-full border rounded px-2 py-1.5 text-sm"
               />
             </div>
@@ -666,21 +666,21 @@ export default function GS1DashboardPage() {
               <input
                 value={sku}
                 onChange={(e) => setSku(e.target.value)}
-                placeholder="e.g. SKU-001"
+                placeholder={tx("e.g. SKU-001")}
                 className="w-full border rounded px-2 py-1.5 text-sm"
               />
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Net Weight / Volume</label>
+              <label className="block text-xs text-gray-500 mb-1">{tx("Net Weight / Volume")}</label>
               <input
                 value={netWeight}
                 onChange={(e) => setNetWeight(e.target.value)}
-                placeholder="e.g. 250g"
+                placeholder={tx("e.g. 250g")}
                 className="w-full border rounded px-2 py-1.5 text-sm"
               />
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Barcode Type</label>
+              <label className="block text-xs text-gray-500 mb-1">{tx("Barcode Type")}</label>
               <select
                 value={barcodeType}
                 onChange={(e) => setBarcodeType(e.target.value as BarcodeType)}
@@ -688,9 +688,9 @@ export default function GS1DashboardPage() {
               >
                 <option value="GS1_128">GS1-128</option>
                 <option value="EAN13">EAN-13</option>
-                <option value="QR_CODE">QR Code</option>
-                <option value="GS1_DATAMATRIX">GS1 DataMatrix</option>
-                <option value="CODE128">Code 128</option>
+                <option value="QR_CODE">{tx("QR Code")}</option>
+                <option value="GS1_DATAMATRIX">{tx("GS1 DataMatrix")}</option>
+                <option value="CODE128">{tx("Code 128")}</option>
               </select>
             </div>
           </div>
@@ -698,7 +698,7 @@ export default function GS1DashboardPage() {
           {/* Row 3: Print settings */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 border-t pt-4">
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Label Template</label>
+              <label className="block text-xs text-gray-500 mb-1">{tx("Label Template")}</label>
               <select
                 value={labelSize}
                 onChange={(e) => setLabelSize(e.target.value as LabelSize)}
@@ -710,7 +710,7 @@ export default function GS1DashboardPage() {
               </select>
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Printer Preset</label>
+              <label className="block text-xs text-gray-500 mb-1">{tx("Printer Preset")}</label>
               <select
                 value={printerPreset}
                 onChange={(e) => setPreset(e.target.value as PrinterPreset)}
@@ -722,21 +722,21 @@ export default function GS1DashboardPage() {
               </select>
             </div>
             <div>
-              <label htmlFor="gs1-send-to" className="block text-xs text-gray-500 mb-1">Send to</label>
+              <label htmlFor="gs1-send-to" className="block text-xs text-gray-500 mb-1">{tx("Send to")}</label>
               <select
                 id="gs1-send-to"
                 value={networkPrinterId}
                 onChange={(e) => setNetworkPrinterId(e.target.value)}
                 className="w-full border rounded px-2 py-1.5 text-sm"
               >
-                <option value="">Browser print dialog</option>
+                <option value="">{tx("Browser print dialog")}</option>
                 {activePrinters.map((p) => (
                   <option key={p.id} value={p.id}>{p.name} — {p.protocol} {p.host}:{p.port}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Copies (1–100)</label>
+              <label className="block text-xs text-gray-500 mb-1">{tx("Copies (1–100)")}</label>
               <input
                 type="number"
                 min={1}
@@ -758,7 +758,7 @@ export default function GS1DashboardPage() {
               disabled={!gtin || !lotNo || generateMut.isPending}
               className="px-4 py-1.5 text-sm bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
             >
-              {generateMut.isPending ? "Generating…" : "Generate Barcode"}
+              {generateMut.isPending ? tx("Generating…") : tx("Generate Barcode")}
             </button>
             {formError && <span className="text-sm text-red-500">{formError}</span>}
           </div>
@@ -769,31 +769,31 @@ export default function GS1DashboardPage() {
               {generated.barcode_image_b64 && (
                 <img
                   src={`data:image/svg+xml;base64,${generated.barcode_image_b64}`}
-                  alt="barcode"
+                  alt={tx("barcode")}
                   className="h-20 border rounded"
                 />
               )}
               {generated.qr_image_b64 && (
                 <img
                   src={`data:image/png;base64,${generated.qr_image_b64}`}
-                  alt="qr code"
+                  alt={tx("qr code")}
                   className="h-20 border rounded"
                 />
               )}
               <div className="space-y-1 text-sm flex-1">
                 <p>
-                  <span className="text-gray-500">GS1 AI String: </span>
+                  <span className="text-gray-500">{tx("GS1 AI String:")} </span>
                   <code className="font-mono text-xs">{generated.gs1_ai_string}</code>
                 </p>
                 <p><span className="text-gray-500">GTIN: </span>{generated.gtin}</p>
                 {generated.lot_number && (
-                  <p><span className="text-gray-500">Lot: </span>{generated.lot_number}</p>
+                  <p><span className="text-gray-500">{tx("Lot:")} </span>{generated.lot_number}</p>
                 )}
                 {generated.expiry_date && (
-                  <p><span className="text-gray-500">Expiry: </span>{generated.expiry_date}</p>
+                  <p><span className="text-gray-500">{tx("Expiry:")} </span>{generated.expiry_date}</p>
                 )}
                 {generated.production_date && (
-                  <p><span className="text-gray-500">Production: </span>{generated.production_date}</p>
+                  <p><span className="text-gray-500">{tx("Production:")} </span>{generated.production_date}</p>
                 )}
                 {generated.record_id ? (
                   <div className="flex gap-2 mt-2 flex-wrap">
@@ -803,12 +803,12 @@ export default function GS1DashboardPage() {
                       className="px-3 py-1 text-xs bg-gray-800 text-white rounded hover:bg-gray-700 disabled:opacity-50"
                     >
                       {printGeneratedMut.isPending
-                        ? "Printing…"
+                        ? tx("Printing…")
                         : `Print ${copies} Label${copies > 1 ? "s" : ""} (${sizeLabelShort})`}
                     </button>
                     <button
                       onClick={() => {
-                        if (!generated.barcode_image_b64) { alert("No barcode image available."); return; }
+                        if (!generated.barcode_image_b64) { alert(tx("No barcode image available.")); return; }
                         openPrintWindow({
                           b64: generated.barcode_image_b64,
                           aiString: generated.gs1_ai_string,
@@ -826,12 +826,12 @@ export default function GS1DashboardPage() {
                       }}
                       className="px-3 py-1 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-700"
                     >
-                      Preview / Export PDF
+                      {tx("Preview / Export PDF")}
                     </button>
                   </div>
                 ) : (
                   <p className="text-xs text-amber-600 mt-1">
-                    Barcode not saved — re-generate to enable printing.
+                    {tx("Barcode not saved — re-generate to enable printing.")}
                   </p>
                 )}
               </div>
@@ -842,38 +842,38 @@ export default function GS1DashboardPage() {
 
       {/* ── KPI Grid ────────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-        <StatCard label="Products Configured"  value={data.total_products_configured} />
-        <StatCard label="Total GTINs"          value={data.total_gtins} />
-        <StatCard label="Barcodes Generated"   value={data.total_barcodes_generated} />
-        <StatCard label="Labels Printed"       value={data.total_labels_printed} />
-        <StatCard label="SSCC Pallets"         value={data.total_sscc_pallets} sub={`${data.active_sscc_pallets} active`} />
-        <StatCard label="Print Jobs"           value={data.total_print_jobs} sub={`${data.pending_print_jobs} pending`} />
-        <StatCard label="Label Templates"      value={data.total_label_templates} />
-        <StatCard label="AI Alerts Pending"    value={data.ai_recommendations_pending} />
+        <StatCard label={tx("Products Configured")}  value={data.total_products_configured} />
+        <StatCard label={tx("Total GTINs")}          value={data.total_gtins} />
+        <StatCard label={tx("Barcodes Generated")}   value={data.total_barcodes_generated} />
+        <StatCard label={tx("Labels Printed")}       value={data.total_labels_printed} />
+        <StatCard label={tx("SSCC Pallets")}         value={data.total_sscc_pallets} sub={`${data.active_sscc_pallets} active`} />
+        <StatCard label={tx("Print Jobs")}           value={data.total_print_jobs} sub={`${data.pending_print_jobs} pending`} />
+        <StatCard label={tx("Label Templates")}      value={data.total_label_templates} />
+        <StatCard label={tx("AI Alerts Pending")}    value={data.ai_recommendations_pending} />
       </div>
 
       {/* ── Recent Barcodes ──────────────────────────────────────────────────── */}
       <div className="bg-white border rounded-lg overflow-hidden">
         <div className="px-4 py-3 border-b">
-          <h2 className="text-sm font-medium text-gray-700">Recent Barcodes Generated</h2>
+          <h2 className="text-sm font-medium text-gray-700">{tx("Recent Barcodes Generated")}</h2>
         </div>
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
             <tr>
               <th className="px-4 py-2 text-left">GTIN</th>
-              <th className="px-4 py-2 text-left">Lot Number</th>
-              <th className="px-4 py-2 text-left">Expiry</th>
-              <th className="px-4 py-2 text-left">Type</th>
-              <th className="px-4 py-2 text-left">GS1 AI String</th>
-              <th className="px-4 py-2 text-left">Printed</th>
-              <th className="px-4 py-2 text-left">Action</th>
+              <th className="px-4 py-2 text-left">{tx("Lot Number")}</th>
+              <th className="px-4 py-2 text-left">{tx("Expiry")}</th>
+              <th className="px-4 py-2 text-left">{tx("Type")}</th>
+              <th className="px-4 py-2 text-left">{tx("GS1 AI String")}</th>
+              <th className="px-4 py-2 text-left">{tx("Printed")}</th>
+              <th className="px-4 py-2 text-left">{tx("Action")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {data.recent_barcodes.length === 0 && (
               <tr>
                 <td colSpan={7} className="px-4 py-6 text-center text-gray-400">
-                  No barcodes generated yet — use &quot;Generate Label&quot; above
+                  {tx("No barcodes generated yet — use \"Generate Label\" above")}
                 </td>
               </tr>
             )}
@@ -901,7 +901,7 @@ export default function GS1DashboardPage() {
                     disabled={printMut.isPending && printMut.variables === b.id}
                     className="px-2 py-0.5 text-xs bg-gray-700 text-white rounded hover:bg-gray-600 disabled:opacity-50"
                   >
-                    {printMut.isPending && printMut.variables === b.id ? "…" : "Print"}
+                    {printMut.isPending && printMut.variables === b.id ? "…" : tx("Print")}
                   </button>
                 </td>
               </tr>
@@ -917,24 +917,24 @@ export default function GS1DashboardPage() {
       {/* ── Recent SSCC ─────────────────────────────────────────────────────── */}
       <div className="bg-white border rounded-lg overflow-hidden">
         <div className="px-4 py-3 border-b">
-          <h2 className="text-sm font-medium text-gray-700">Recent SSCC Pallets</h2>
+          <h2 className="text-sm font-medium text-gray-700">{tx("Recent SSCC Pallets")}</h2>
         </div>
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
             <tr>
-              <th className="px-4 py-2 text-left">SSCC Code</th>
-              <th className="px-4 py-2 text-left">Pallet ID</th>
-              <th className="px-4 py-2 text-left">Status</th>
-              <th className="px-4 py-2 text-left">Lots</th>
-              <th className="px-4 py-2 text-left">Location</th>
-              <th className="px-4 py-2 text-left">Created</th>
+              <th className="px-4 py-2 text-left">{tx("SSCC Code")}</th>
+              <th className="px-4 py-2 text-left">{tx("Pallet ID")}</th>
+              <th className="px-4 py-2 text-left">{tx("Status")}</th>
+              <th className="px-4 py-2 text-left">{tx("Lots")}</th>
+              <th className="px-4 py-2 text-left">{tx("Location")}</th>
+              <th className="px-4 py-2 text-left">{tx("Created")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {data.recent_sscc.length === 0 && (
               <tr>
                 <td colSpan={6} className="px-4 py-6 text-center text-gray-400">
-                  No SSCC pallets yet
+                  {tx("No SSCC pallets yet")}
                 </td>
               </tr>
             )}

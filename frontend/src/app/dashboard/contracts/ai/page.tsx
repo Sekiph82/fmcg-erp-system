@@ -1,6 +1,7 @@
 "use client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { contractsApi, SEVERITY_COLORS } from "@/lib/contracts";
+import { tx } from "@/lib/i18n/core";
 
 const AGENT_LABELS: Record<string, string> = {
   RISK_MONITOR:       "Contract Risk Monitor",
@@ -27,20 +28,20 @@ export default function ContractAIPage() {
     <div className="p-6 space-y-5 text-slate-200">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-white">AI Intelligence — Contracts</h1>
-          <p className="text-slate-500 text-sm mt-0.5">3 AI agents monitoring contract health, risk, and compliance</p>
+          <h1 className="text-xl font-bold text-white">{tx("AI Intelligence — Contracts")}</h1>
+          <p className="text-slate-500 text-sm mt-0.5">{tx("3 AI agents monitoring contract health, risk, and compliance")}</p>
         </div>
         <button onClick={() => runMut.mutate()} disabled={runMut.isPending}
           className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium disabled:opacity-50">
-          {runMut.isPending ? "Running…" : "Run AI Agents"}
+          {runMut.isPending ? tx("Running…") : tx("Run AI Agents")}
         </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {[
-          { key: "RISK_MONITOR", desc: "Detects underperforming contracts (<60% achievement), high rebate cost exposure, and missed volume targets." },
-          { key: "RENEWAL_ADVISOR", desc: "Flags contracts expiring within 45 days without auto-renew. Suggests commercial terms to review before renewal." },
-          { key: "COMPLIANCE_MONITOR", desc: "Detects large unsettled rebate balances, pricing violations, and deviation from contracted terms." },
+          { key: "RISK_MONITOR", desc: tx("Detects underperforming contracts (<60% achievement), high rebate cost exposure, and missed volume targets.") },
+          { key: "RENEWAL_ADVISOR", desc: tx("Flags contracts expiring within 45 days without auto-renew. Suggests commercial terms to review before renewal.") },
+          { key: "COMPLIANCE_MONITOR", desc: tx("Detects large unsettled rebate balances, pricing violations, and deviation from contracted terms.") },
         ].map((a) => (
           <div key={a.key} className="glow-card p-4">
             <p className="text-sm font-semibold text-indigo-300 mb-1">{AGENT_LABELS[a.key]}</p>
@@ -50,7 +51,7 @@ export default function ContractAIPage() {
       </div>
 
       <div className="space-y-3">
-        {isLoading && <p className="text-slate-500 text-sm">Loading…</p>}
+        {isLoading && <p className="text-slate-500 text-sm">{tx("Loading…")}</p>}
         {!isLoading && recs.length === 0 && (
           <div className="glow-card p-8 text-center text-slate-600">
             No recommendations — click &ldquo;Run AI Agents&rdquo; to generate insights.
@@ -71,9 +72,9 @@ export default function ContractAIPage() {
               {r.status === "PENDING" && (
                 <div className="flex gap-2 shrink-0">
                   <button onClick={() => ackMut.mutate({ id: r.id, status: "ACKNOWLEDGED" })}
-                    className="px-3 py-1.5 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-slate-300 text-xs">Ack</button>
+                    className="px-3 py-1.5 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-slate-300 text-xs">{tx("Ack")}</button>
                   <button onClick={() => ackMut.mutate({ id: r.id, status: "DISMISSED" })}
-                    className="px-3 py-1.5 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-slate-500 text-xs">Dismiss</button>
+                    className="px-3 py-1.5 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-slate-500 text-xs">{tx("Dismiss")}</button>
                 </div>
               )}
               {r.status !== "PENDING" && <span className="text-xs text-slate-600 shrink-0">{r.status}</span>}

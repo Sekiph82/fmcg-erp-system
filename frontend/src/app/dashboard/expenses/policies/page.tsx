@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { expensesApi, ExpensePolicy, ExpenseCategory } from "@/lib/expenses";
+import { tx } from "@/lib/i18n/core";
 
 const inputCls = "w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500";
 const selectCls = "w-full bg-[#0d1829] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none";
@@ -35,33 +36,33 @@ export default function PoliciesPage() {
     <div className="p-6 space-y-5 text-slate-200">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-white">Expense Policies</h1>
-          <p className="text-slate-500 text-sm mt-0.5">Spending limits and receipt requirements</p>
+          <h1 className="text-xl font-bold text-white">{tx("Expense Policies")}</h1>
+          <p className="text-slate-500 text-sm mt-0.5">{tx("Spending limits and receipt requirements")}</p>
         </div>
         <button onClick={() => setShowForm(!showForm)}
           className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium">
-          {showForm ? "Cancel" : "+ New Policy"}
+          {showForm ? tx("Cancel") : tx("+ New Policy")}
         </button>
       </div>
 
       {showForm && (
         <div className="glow-card p-5 space-y-3">
           <div className="grid grid-cols-3 gap-3">
-            <div><label className={labelCls}>Policy Name</label><input value={form.policy_name} onChange={(e) => setForm({ ...form, policy_name: e.target.value })} className={inputCls} /></div>
-            <div><label className={labelCls}>Category</label>
+            <div><label className={labelCls}>{tx("Policy Name")}</label><input value={form.policy_name} onChange={(e) => setForm({ ...form, policy_name: e.target.value })} className={inputCls} /></div>
+            <div><label className={labelCls}>{tx("Category")}</label>
               <select value={form.category_id} onChange={(e) => setForm({ ...form, category_id: e.target.value })} className={selectCls}>
-                <option value="">Select…</option>
+                <option value="">{tx("Select…")}</option>
                 {categories.map((c) => <option key={c.expense_category_id} value={c.expense_category_id}>{c.category_name}</option>)}
               </select>
             </div>
-            <div><label className={labelCls}>Max Per Line</label><input type="number" value={form.max_amount_per_line} onChange={(e) => setForm({ ...form, max_amount_per_line: e.target.value })} className={inputCls} /></div>
-            <div><label className={labelCls}>Max Per Day</label><input type="number" value={form.max_amount_per_day} onChange={(e) => setForm({ ...form, max_amount_per_day: e.target.value })} className={inputCls} /></div>
-            <div><label className={labelCls}>Max Per Month</label><input type="number" value={form.max_amount_per_month} onChange={(e) => setForm({ ...form, max_amount_per_month: e.target.value })} className={inputCls} /></div>
-            <div><label className={labelCls}>Receipt Required Above</label><input type="number" value={form.receipt_required_above_amount} onChange={(e) => setForm({ ...form, receipt_required_above_amount: e.target.value })} className={inputCls} /></div>
+            <div><label className={labelCls}>{tx("Max Per Line")}</label><input type="number" value={form.max_amount_per_line} onChange={(e) => setForm({ ...form, max_amount_per_line: e.target.value })} className={inputCls} /></div>
+            <div><label className={labelCls}>{tx("Max Per Day")}</label><input type="number" value={form.max_amount_per_day} onChange={(e) => setForm({ ...form, max_amount_per_day: e.target.value })} className={inputCls} /></div>
+            <div><label className={labelCls}>{tx("Max Per Month")}</label><input type="number" value={form.max_amount_per_month} onChange={(e) => setForm({ ...form, max_amount_per_month: e.target.value })} className={inputCls} /></div>
+            <div><label className={labelCls}>{tx("Receipt Required Above")}</label><input type="number" value={form.receipt_required_above_amount} onChange={(e) => setForm({ ...form, receipt_required_above_amount: e.target.value })} className={inputCls} /></div>
           </div>
           <button onClick={handleCreate} disabled={saving}
             className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm disabled:opacity-50">
-            {saving ? "Saving…" : "Create"}
+            {saving ? tx("Saving…") : tx("Create")}
           </button>
         </div>
       )}
@@ -70,7 +71,7 @@ export default function PoliciesPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-white/[0.07]">
-              {["Policy Name", "Category", "Max / Line", "Max / Day", "Max / Month", "Receipt Above", "Approval Level"].map((h) => (
+              {[tx("Policy Name"), tx("Category"), tx("Max / Line"), tx("Max / Day"), tx("Max / Month"), tx("Receipt Above"), tx("Approval Level")].map((h) => (
                 <th key={h} className="px-4 py-3 text-[10px] text-slate-500 uppercase tracking-widest text-left">{h}</th>
               ))}
             </tr>
@@ -86,7 +87,7 @@ export default function PoliciesPage() {
                 <td className="px-4 py-3 text-slate-400">{p.approval_level_required}</td>
               </tr>
             ))}
-            {policies.length === 0 && <tr><td colSpan={7} className="px-4 py-8 text-center text-slate-600">No policies</td></tr>}
+            {policies.length === 0 && <tr><td colSpan={7} className="px-4 py-8 text-center text-slate-600">{tx("No policies")}</td></tr>}
           </tbody>
         </table>
       </div>

@@ -1,19 +1,20 @@
 "use client";
 import { useEffect, useState } from "react";
 import { notificationsApi, NCNotifAIRec, NCNotifAIAgentType, NCNotifAIRecStatus } from "@/lib/notifications_center";
+import { tx, lx } from "@/lib/i18n/core";
 
-const AGENT_META: Record<NCNotifAIAgentType, { label: string; desc: string; color: string }> = {
+const AGENT_META: Record<NCNotifAIAgentType, { label: string; desc: string; color: string }> = lx(() => ({
   optimizer: {
-    label: "Notification Optimizer",
-    desc: "Detects users with high unread counts and channels with delivery failures, suggests noise reduction strategies.",
+    label: tx("Notification Optimizer"),
+    desc: tx("Detects users with high unread counts and channels with delivery failures, suggests noise reduction strategies."),
     color: "bg-blue-50 border-blue-200",
   },
   behavior_analyzer: {
-    label: "User Behavior Analyzer",
-    desc: "Identifies users with low notification read-rates (<10%) to surface relevance or channel preference issues.",
+    label: tx("User Behavior Analyzer"),
+    desc: tx("Identifies users with low notification read-rates (<10%) to surface relevance or channel preference issues."),
     color: "bg-purple-50 border-purple-200",
   },
-};
+}));
 
 const STATUS_COLOR: Record<NCNotifAIRecStatus, string> = {
   pending: "bg-yellow-100 text-yellow-700",
@@ -46,7 +47,7 @@ export default function NotificationAIPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-xl font-bold text-gray-900">Notification AI Insights</h1>
+      <h1 className="text-xl font-bold text-gray-900">{tx("Notification AI Insights")}</h1>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {(Object.entries(AGENT_META) as [NCNotifAIAgentType, typeof AGENT_META[NCNotifAIAgentType]][]).map(([type, meta]) => (
@@ -55,7 +56,7 @@ export default function NotificationAIPage() {
             <p className="text-xs text-gray-600 mt-1 mb-3">{meta.desc}</p>
             <button onClick={() => run(type)} disabled={running === type}
               className="w-full rounded bg-gray-800 px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-700 disabled:opacity-50">
-              {running === type ? "Running…" : "Run Agent"}
+              {running === type ? tx("Running…") : tx("Run Agent")}
             </button>
           </div>
         ))}
@@ -63,12 +64,12 @@ export default function NotificationAIPage() {
 
       <div className="bg-white border rounded-lg shadow-sm">
         <div className="px-4 py-3 border-b">
-          <h2 className="font-semibold text-gray-800 text-sm">AI Recommendations ({recs.filter(r => r.status === "pending").length} pending)</h2>
+          <h2 className="font-semibold text-gray-800 text-sm">{tx("AI Recommendations (")}{recs.filter(r => r.status === "pending").length} {tx("pending)")}</h2>
         </div>
         {loading ? (
-          <p className="text-gray-500 text-sm p-4">Loading…</p>
+          <p className="text-gray-500 text-sm p-4">{tx("Loading…")}</p>
         ) : recs.length === 0 ? (
-          <p className="text-gray-400 text-sm text-center py-8">No recommendations yet. Run an agent above.</p>
+          <p className="text-gray-400 text-sm text-center py-8">{tx("No recommendations yet. Run an agent above.")}</p>
         ) : (
           <div className="divide-y">
             {recs.map((r) => (
@@ -78,17 +79,17 @@ export default function NotificationAIPage() {
                     <div className="flex items-center gap-2 flex-wrap mb-1">
                       <span className="text-xs font-medium text-gray-500 uppercase">{AGENT_META[r.agent_type]?.label}</span>
                       <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLOR[r.status]}`}>{r.status}</span>
-                      {r.score != null && <span className="text-xs text-gray-400">Score: {r.score}</span>}
+                      {r.score != null && <span className="text-xs text-gray-400">{tx("Score:")} {r.score}</span>}
                     </div>
                     <p className="text-sm font-semibold text-gray-800">{r.title}</p>
                     <p className="text-sm text-gray-600">{r.body}</p>
-                    {r.user_id && <p className="text-xs text-gray-400 mt-1">User: {r.user_id}</p>}
+                    {r.user_id && <p className="text-xs text-gray-400 mt-1">{tx("User:")} {r.user_id}</p>}
                   </div>
                   {r.status === "pending" && (
                     <div className="flex flex-col gap-1 shrink-0">
-                      <button onClick={() => ack(r.rec_id, "acknowledged")} className="rounded border border-blue-300 px-2 py-0.5 text-xs text-blue-600 hover:bg-blue-50">Ack</button>
-                      <button onClick={() => ack(r.rec_id, "actioned")} className="rounded border border-green-300 px-2 py-0.5 text-xs text-green-600 hover:bg-green-50">Action</button>
-                      <button onClick={() => ack(r.rec_id, "dismissed")} className="rounded border border-gray-200 px-2 py-0.5 text-xs text-gray-500 hover:bg-gray-50">Dismiss</button>
+                      <button onClick={() => ack(r.rec_id, "acknowledged")} className="rounded border border-blue-300 px-2 py-0.5 text-xs text-blue-600 hover:bg-blue-50">{tx("Ack")}</button>
+                      <button onClick={() => ack(r.rec_id, "actioned")} className="rounded border border-green-300 px-2 py-0.5 text-xs text-green-600 hover:bg-green-50">{tx("Action")}</button>
+                      <button onClick={() => ack(r.rec_id, "dismissed")} className="rounded border border-gray-200 px-2 py-0.5 text-xs text-gray-500 hover:bg-gray-50">{tx("Dismiss")}</button>
                     </div>
                   )}
                 </div>

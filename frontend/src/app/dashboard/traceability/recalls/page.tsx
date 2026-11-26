@@ -5,6 +5,7 @@ import {
   traceApi, RecallHeader, RecallStatus, RecallType,
   RECALL_STATUS_BG, SEVERITY_BG,
 } from "@/lib/traceability";
+import { tx } from "@/lib/i18n/core";
 
 const STATUSES: RecallStatus[] = ["draft","under_review","active","contained","in_progress","completed","closed","cancelled"];
 
@@ -56,12 +57,12 @@ export default function RecallListPage() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Recall Management</h1>
-          <p className="text-sm text-gray-500">{recalls.length} recall records</p>
+          <h1 className="text-xl font-bold text-gray-900">{tx("Recall Management")}</h1>
+          <p className="text-sm text-gray-500">{recalls.length} {tx("recall records")}</p>
         </div>
         <button onClick={() => setShowCreate(true)}
           className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700">
-          + Initiate Recall
+          {tx("+ Initiate Recall")}
         </button>
       </div>
 
@@ -70,7 +71,7 @@ export default function RecallListPage() {
         {(["", ...STATUSES] as const).map(s => (
           <button key={s} onClick={() => { setFilterStatus(s as any); load(s ? s as RecallStatus : undefined); }}
             className={`px-3 py-1.5 rounded-lg text-sm border ${filterStatus === s ? "bg-red-600 text-white border-red-600" : "border-gray-200 text-gray-600 hover:bg-gray-50"}`}>
-            {s || "All"}
+            {s || tx("All")}
           </button>
         ))}
       </div>
@@ -79,16 +80,16 @@ export default function RecallListPage() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-xs uppercase text-gray-500">
             <tr>
-              {["Recall #","Type","Severity","Status","Trigger","Affected Qty","Customers","Recovery","Initiated"].map(h => (
+              {[tx("Recall #"),tx("Type"),tx("Severity"),tx("Status"),tx("Trigger"),tx("Affected Qty"),tx("Customers"),tx("Recovery"),tx("Initiated")].map(h => (
                 <th key={h} className="px-4 py-3 text-left font-medium">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {loading ? (
-              <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">Loading…</td></tr>
+              <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">{tx("Loading…")}</td></tr>
             ) : recalls.length === 0 ? (
-              <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">No recalls found</td></tr>
+              <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">{tx("No recalls found")}</td></tr>
             ) : recalls.map(r => (
               <tr key={r.id} className="hover:bg-gray-50">
                 <td className="px-4 py-3">
@@ -117,63 +118,63 @@ export default function RecallListPage() {
       {showCreate && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 space-y-4 max-h-[90vh] overflow-y-auto">
-            <h3 className="font-semibold text-gray-800 text-lg">Initiate Recall</h3>
+            <h3 className="font-semibold text-gray-800 text-lg">{tx("Initiate Recall")}</h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-xs font-medium text-gray-600">Recall Type</label>
+                <label className="text-xs font-medium text-gray-600">{tx("Recall Type")}</label>
                 <select className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
                   value={form.recall_type} onChange={e => setForm(f => ({ ...f, recall_type: e.target.value }))}>
-                  {["internal","customer","market","regulatory","mock_recall"].map(t => (
+                  {[tx("internal"),tx("customer"),tx("market"),tx("regulatory"),"mock_recall"].map(t => (
                     <option key={t} value={t}>{t.replace("_"," ")}</option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-600">Severity</label>
+                <label className="text-xs font-medium text-gray-600">{tx("Severity")}</label>
                 <select className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
                   value={form.severity_level} onChange={e => setForm(f => ({ ...f, severity_level: e.target.value }))}>
-                  {["low","medium","high","critical"].map(s => <option key={s} value={s}>{s}</option>)}
+                  {[tx("low"),tx("medium"),tx("high"),tx("critical")].map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-600">Trigger Source</label>
+                <label className="text-xs font-medium text-gray-600">{tx("Trigger Source")}</label>
                 <select className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
                   value={form.trigger_source} onChange={e => setForm(f => ({ ...f, trigger_source: e.target.value }))}>
-                  {["qc","complaint","supplier_notice","audit","regulatory","manual"].map(t => (
+                  {[tx("qc"),tx("complaint"),"supplier_notice",tx("audit"),tx("regulatory"),tx("manual")].map(t => (
                     <option key={t} value={t}>{t.replace("_"," ")}</option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-600">Source Lot</label>
-                <EntityPicker kind="lot" label="Source lot" value={form.source_lot_id} onChange={(id) => setForm(f => ({ ...f, source_lot_id: id }))} />
+                <label className="text-xs font-medium text-gray-600">{tx("Source Lot")}</label>
+                <EntityPicker kind="lot" label={tx("Source lot")} value={form.source_lot_id} onChange={(id) => setForm(f => ({ ...f, source_lot_id: id }))} />
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-600">Target Market</label>
+                <label className="text-xs font-medium text-gray-600">{tx("Target Market")}</label>
                 <input className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
                   value={form.target_market} onChange={e => setForm(f => ({ ...f, target_market: e.target.value }))} />
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-600">Country Scope</label>
-                <input className="mt-1 w-full border rounded-lg px-3 py-2 text-sm" placeholder="e.g. KE, UG, TZ"
+                <label className="text-xs font-medium text-gray-600">{tx("Country Scope")}</label>
+                <input className="mt-1 w-full border rounded-lg px-3 py-2 text-sm" placeholder={tx("e.g. KE, UG, TZ")}
                   value={form.country_scope} onChange={e => setForm(f => ({ ...f, country_scope: e.target.value }))} />
               </div>
               <div className="col-span-2">
-                <label className="text-xs font-medium text-gray-600">Recall Reason *</label>
+                <label className="text-xs font-medium text-gray-600">{tx("Recall Reason *")}</label>
                 <textarea rows={3} className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
                   value={form.recall_reason} onChange={e => setForm(f => ({ ...f, recall_reason: e.target.value }))} />
               </div>
               <div className="col-span-2">
-                <label className="text-xs font-medium text-gray-600">Notes</label>
+                <label className="text-xs font-medium text-gray-600">{tx("Notes")}</label>
                 <input className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
                   value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
               </div>
             </div>
             <div className="flex gap-2 justify-end pt-2">
-              <button onClick={() => setShowCreate(false)} className="px-4 py-2 text-sm border rounded-lg">Cancel</button>
+              <button onClick={() => setShowCreate(false)} className="px-4 py-2 text-sm border rounded-lg">{tx("Cancel")}</button>
               <button onClick={handleCreate} disabled={!form.recall_reason || saving}
                 className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50">
-                {saving ? "Creating…" : "Initiate Recall"}
+                {saving ? tx("Creating…") : tx("Initiate Recall")}
               </button>
             </div>
           </div>

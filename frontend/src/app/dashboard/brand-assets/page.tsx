@@ -2,6 +2,7 @@
 import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { tx } from "@/lib/i18n/core";
 
 interface BrandAsset {
   id: string; asset_ref: string; name: string; asset_type: string;
@@ -104,12 +105,12 @@ export default function BrandAssetsPage() {
     <div className="p-6 space-y-6 max-w-6xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Brand Asset Management</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Labels, artwork, packaging designs — version control and approval workflow</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Brand Asset Management")}</h1>
+          <p className="text-sm text-gray-500 mt-0.5">{tx("Labels, artwork, packaging designs — version control and approval workflow")}</p>
         </div>
         <button onClick={() => setShowForm(true)}
           className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded">
-          + Upload Asset
+          {tx("+ Upload Asset")}
         </button>
       </div>
 
@@ -119,9 +120,9 @@ export default function BrandAssetsPage() {
       {stats && (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {[
-            { label: "Total Assets", value: stats.total_assets, color: "text-gray-800" },
-            { label: "Print Ready", value: stats.by_status.PRINT_READY ?? 0, color: "text-green-600" },
-            { label: "In Review", value: stats.by_status.IN_REVIEW ?? 0, color: "text-blue-600" },
+            { label: tx("Total Assets"), value: stats.total_assets, color: "text-gray-800" },
+            { label: tx("Print Ready"), value: stats.by_status.PRINT_READY ?? 0, color: "text-green-600" },
+            { label: tx("In Review"), value: stats.by_status.IN_REVIEW ?? 0, color: "text-blue-600" },
             { label: "BOM Change Alerts", value: stats.bom_change_alerts, color: "text-red-600" },
           ].map((k) => (
             <div key={k.label} className={`bg-white border rounded-lg p-4 shadow-sm ${k.label === "BOM Change Alerts" && k.value > 0 ? "border-red-300 bg-red-50" : ""}`}>
@@ -135,54 +136,54 @@ export default function BrandAssetsPage() {
       {/* Filters */}
       <div className="flex flex-wrap gap-3 bg-white border rounded-lg p-3 shadow-sm items-end">
         <div>
-          <label className="text-xs text-gray-500 block mb-1">Type</label>
+          <label className="text-xs text-gray-500 block mb-1">{tx("Type")}</label>
           <select value={filterType} onChange={(e) => setFilterType(e.target.value)}
             className="border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none">
-            <option value="">All</option>
+            <option value="">{tx("All")}</option>
             {ASSET_TYPES.map((t) => <option key={t} value={t}>{t.replace(/_/g, " ")}</option>)}
           </select>
         </div>
         <div>
-          <label className="text-xs text-gray-500 block mb-1">Status</label>
+          <label className="text-xs text-gray-500 block mb-1">{tx("Status")}</label>
           <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}
             className="border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none">
-            <option value="">All</option>
+            <option value="">{tx("All")}</option>
             {STATUSES.map((s) => <option key={s} value={s}>{s.replace(/_/g, " ")}</option>)}
           </select>
         </div>
         <label className="flex items-center gap-1.5 text-sm text-gray-600 cursor-pointer">
           <input type="checkbox" checked={bomAlertOnly} onChange={(e) => setBomAlertOnly(e.target.checked)} className="h-3.5 w-3.5" />
-          BOM alerts only
+          {tx("BOM alerts only")}
         </label>
         <button onClick={() => { setFilterType(""); setFilterStatus(""); setBomAlertOnly(false); }}
-          className="text-xs text-gray-500 underline">Clear</button>
+          className="text-xs text-gray-500 underline">{tx("Clear")}</button>
       </div>
 
       {/* Upload form */}
       {showForm && (
         <div className="bg-white border rounded-lg p-5 shadow-sm space-y-3">
-          <h2 className="text-sm font-semibold text-gray-700">Upload Brand Asset</h2>
+          <h2 className="text-sm font-semibold text-gray-700">{tx("Upload Brand Asset")}</h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <div className="sm:col-span-2">
-              <label className="text-xs text-gray-500 block mb-1">Asset Name *</label>
-              <input type="text" value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} placeholder="e.g. AllClean Label v1 — 1 L Bottle"
+              <label className="text-xs text-gray-500 block mb-1">{tx("Asset Name *")}</label>
+              <input type="text" value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} placeholder={tx("e.g. AllClean Label v1 — 1 L Bottle")}
                 className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" />
             </div>
             <div>
-              <label className="text-xs text-gray-500 block mb-1">Type</label>
+              <label className="text-xs text-gray-500 block mb-1">{tx("Type")}</label>
               <select value={form.asset_type} onChange={(e) => setForm((p) => ({ ...p, asset_type: e.target.value }))}
                 className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none">
                 {ASSET_TYPES.map((t) => <option key={t} value={t}>{TYPE_ICON[t]} {t.replace(/_/g, " ")}</option>)}
               </select>
             </div>
             {[
-              { label: "Brand", key: "brand", ph: "e.g. POVU Naturals" },
-              { label: "Product Name", key: "product_name", ph: "e.g. POVU AllClean Multi-Purpose Cleaner 1 L Bottle" },
-              { label: "Product SKU", key: "product_sku", ph: "e.g. MJ-500" },
-              { label: "BOM Version", key: "bom_version", ph: "e.g. v2.1" },
-              { label: "File URL", key: "file_url", ph: "https://files.company.com/…" },
-              { label: "Thumbnail URL", key: "thumbnail_url", ph: "https://…/thumb.png" },
-              { label: "File Format", key: "file_format", ph: "PDF | AI | PSD | PNG" },
+              { label: tx("Brand"), key: "brand", ph: "e.g. POVU Naturals" },
+              { label: tx("Product Name"), key: "product_name", ph: "e.g. POVU AllClean Multi-Purpose Cleaner 1 L Bottle" },
+              { label: tx("Product SKU"), key: "product_sku", ph: "e.g. MJ-500" },
+              { label: tx("BOM Version"), key: "bom_version", ph: "e.g. v2.1" },
+              { label: tx("File URL"), key: "file_url", ph: "https://files.company.com/…" },
+              { label: tx("Thumbnail URL"), key: "thumbnail_url", ph: "https://…/thumb.png" },
+              { label: tx("File Format"), key: "file_format", ph: "PDF | AI | PSD | PNG" },
             ].map(({ label, key, ph }) => (
               <div key={key}>
                 <label className="text-xs text-gray-500 block mb-1">{label}</label>
@@ -195,14 +196,14 @@ export default function BrandAssetsPage() {
           </div>
           <div className="flex gap-2">
             <button onClick={save} disabled={saving || !form.name}
-              className="bg-blue-600 text-white text-sm px-4 py-2 rounded disabled:opacity-50">{saving ? "Uploading…" : "Create Asset"}</button>
-            <button onClick={() => setShowForm(false)} className="border border-gray-300 text-sm px-4 py-2 rounded hover:bg-gray-50">Cancel</button>
+              className="bg-blue-600 text-white text-sm px-4 py-2 rounded disabled:opacity-50">{saving ? tx("Uploading…") : tx("Create Asset")}</button>
+            <button onClick={() => setShowForm(false)} className="border border-gray-300 text-sm px-4 py-2 rounded hover:bg-gray-50">{tx("Cancel")}</button>
           </div>
         </div>
       )}
 
       {/* Asset grid */}
-      {loading ? <p className="text-gray-400 text-sm">Loading…</p> : (
+      {loading ? <p className="text-gray-400 text-sm">{tx("Loading…")}</p> : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {assets.map((a) => {
             const pct = compliancePct(a.compliance_checklist);
@@ -218,7 +219,7 @@ export default function BrandAssetsPage() {
                     <span className="text-4xl">{TYPE_ICON[a.asset_type] ?? "📄"}</span>
                   )}
                   {a.bom_change_flag && (
-                    <div className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold rounded px-2 py-0.5">BOM Changed</div>
+                    <div className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold rounded px-2 py-0.5">{tx("BOM Changed")}</div>
                   )}
                   {a.file_format && (
                     <div className="absolute bottom-2 left-2 bg-black/60 text-white text-xs rounded px-2 py-0.5">{a.file_format}</div>
@@ -228,7 +229,7 @@ export default function BrandAssetsPage() {
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <p className="font-semibold text-gray-900 text-sm truncate">{a.name}</p>
-                      <p className="text-xs text-gray-400 font-mono">{a.asset_ref} · v{a.version}</p>
+                      <p className="text-xs text-gray-400 font-mono">{a.asset_ref} {tx("· v")}{a.version}</p>
                     </div>
                     <span className={`text-xs rounded-full px-2 py-0.5 shrink-0 ${STATUS_COLOR[a.status] ?? "bg-gray-100 text-gray-600"}`}>
                       {a.status.replace(/_/g, " ")}
@@ -241,7 +242,7 @@ export default function BrandAssetsPage() {
                   {/* Compliance bar */}
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs text-gray-400">Label compliance</span>
+                      <span className="text-xs text-gray-400">{tx("Label compliance")}</span>
                       <span className="text-xs font-medium text-gray-600">{pct}%</span>
                     </div>
                     <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
@@ -255,7 +256,7 @@ export default function BrandAssetsPage() {
           })}
           {assets.length === 0 && (
             <div className="col-span-3 bg-gray-50 border rounded-xl p-8 text-center text-sm text-gray-400">
-              No brand assets yet. Upload your first label or artwork.
+              {tx("No brand assets yet. Upload your first label or artwork.")}
             </div>
           )}
         </div>

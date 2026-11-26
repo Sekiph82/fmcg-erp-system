@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { psApi, PSGroupOut, urgencyBadge, fmt } from "@/lib/procurement_suggestion";
+import { tx } from "@/lib/i18n/core";
 
 export default function GroupsPage() {
   const params = useSearchParams();
@@ -27,13 +28,13 @@ export default function GroupsPage() {
     onSuccess: (res) => {
       qc.invalidateQueries({ queryKey: ["ps-groups"] });
       setConverting(null);
-      alert(`Purchase Requisition created: ${res.pr_no}`);
+      alert(tx("Purchase Requisition created: {pr_no}", { pr_no: res.pr_no }));
     },
   });
 
   if (!runId) return (
     <div className="p-8 text-gray-400">
-      No run selected. <a href="/dashboard/procurement-suggestion" className="text-blue-600 underline">Go to dashboard</a>
+      {tx("No run selected.")} <a href="/dashboard/procurement-suggestion" className="text-blue-600 underline">{tx("Go to dashboard")}</a>
     </div>
   );
 
@@ -43,13 +44,13 @@ export default function GroupsPage() {
       {converting && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 w-96 space-y-4 shadow-xl">
-            <h2 className="font-semibold text-gray-900">Convert to Purchase Requisition</h2>
+            <h2 className="font-semibold text-gray-900">{tx("Convert to Purchase Requisition")}</h2>
             <p className="text-sm text-gray-500">
-              Supplier: <strong>{converting.supplier_name}</strong> · {converting.line_count} items ·{" "}
+              {tx("Supplier:")} <strong>{converting.supplier_name}</strong> · {converting.line_count} {tx("items ·")}{" "}
               {converting.currency} {fmt(converting.total_estimated_cost ?? 0, 0)}
             </p>
             <div>
-              <label className="text-sm text-gray-600">Required Date</label>
+              <label className="text-sm text-gray-600">{tx("Required Date")}</label>
               <input
                 type="date"
                 value={reqDate}
@@ -58,7 +59,7 @@ export default function GroupsPage() {
               />
             </div>
             <div>
-              <label className="text-sm text-gray-600">Notes (optional)</label>
+              <label className="text-sm text-gray-600">{tx("Notes (optional)")}</label>
               <textarea
                 value={prNotes}
                 onChange={(e) => setPrNotes(e.target.value)}
@@ -72,10 +73,10 @@ export default function GroupsPage() {
                 disabled={convertPR.isPending}
                 className="flex-1 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50"
               >
-                {convertPR.isPending ? "Creating PR…" : "Create Purchase Requisition"}
+                {convertPR.isPending ? tx("Creating PR…") : tx("Create Purchase Requisition")}
               </button>
               <button onClick={() => setConverting(null)} className="flex-1 py-2 border rounded text-sm hover:bg-gray-50">
-                Cancel
+                {tx("Cancel")}
               </button>
             </div>
           </div>
@@ -84,15 +85,15 @@ export default function GroupsPage() {
 
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900">Grouped Orders</h1>
-          <p className="text-sm text-gray-500 font-mono">Run: {runId}</p>
+          <h1 className="text-xl font-semibold text-gray-900">{tx("Grouped Orders")}</h1>
+          <p className="text-sm text-gray-500 font-mono">{tx("Run:")} {runId}</p>
         </div>
         <a href={`/dashboard/procurement-suggestion/suggestions?run_id=${runId}`} className="text-sm text-blue-600 hover:underline">
-          ← Suggestion List
+          {tx("← Suggestion List")}
         </a>
       </div>
 
-      {isLoading && <div className="text-gray-400">Loading groups…</div>}
+      {isLoading && <div className="text-gray-400">{tx("Loading groups…")}</div>}
 
       <div className="space-y-3">
         {(groups ?? []).map((g) => (
@@ -115,15 +116,15 @@ export default function GroupsPage() {
               </div>
               <div className="flex items-center gap-6 text-sm">
                 <div className="text-right">
-                  <p className="text-gray-500 text-xs">Items</p>
+                  <p className="text-gray-500 text-xs">{tx("Items")}</p>
                   <p className="font-semibold">{g.line_count}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-gray-500 text-xs">Est. Cost</p>
+                  <p className="text-gray-500 text-xs">{tx("Est. Cost")}</p>
                   <p className="font-semibold">{g.currency} {fmt(g.total_estimated_cost ?? 0, 0)}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-gray-500 text-xs">Target Delivery</p>
+                  <p className="text-gray-500 text-xs">{tx("Target Delivery")}</p>
                   <p className="font-semibold">{g.target_delivery_date ?? "—"}</p>
                 </div>
                 {g.status !== "CONVERTED" && (
@@ -131,11 +132,11 @@ export default function GroupsPage() {
                     onClick={(e) => { e.stopPropagation(); setConverting(g); }}
                     className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
                   >
-                    Create PR
+                    {tx("Create PR")}
                   </button>
                 )}
                 {g.status === "CONVERTED" && (
-                  <span className="text-xs text-purple-600">PR Created ✓</span>
+                  <span className="text-xs text-purple-600">{tx("PR Created ✓")}</span>
                 )}
                 <span className="text-gray-400">{expanded === g.id ? "▲" : "▼"}</span>
               </div>
@@ -147,13 +148,13 @@ export default function GroupsPage() {
                 <table className="w-full text-xs">
                   <thead className="bg-gray-50 text-gray-500 uppercase">
                     <tr>
-                      <th className="text-left px-4 py-2">Material</th>
-                      <th className="text-right px-4 py-2">Order Qty</th>
+                      <th className="text-left px-4 py-2">{tx("Material")}</th>
+                      <th className="text-right px-4 py-2">{tx("Order Qty")}</th>
                       <th className="text-left px-4 py-2">UOM</th>
-                      <th className="text-right px-4 py-2">Unit Price</th>
-                      <th className="text-right px-4 py-2">Total Cost</th>
-                      <th className="text-left px-4 py-2">Order Date</th>
-                      <th className="text-left px-4 py-2">Urgency</th>
+                      <th className="text-right px-4 py-2">{tx("Unit Price")}</th>
+                      <th className="text-right px-4 py-2">{tx("Total Cost")}</th>
+                      <th className="text-left px-4 py-2">{tx("Order Date")}</th>
+                      <th className="text-left px-4 py-2">{tx("Urgency")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -184,7 +185,7 @@ export default function GroupsPage() {
 
         {!isLoading && !groups?.length && (
           <div className="text-center py-12 text-gray-400">
-            No grouped orders found for this run.
+            {tx("No grouped orders found for this run.")}
           </div>
         )}
       </div>

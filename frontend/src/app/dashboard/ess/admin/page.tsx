@@ -2,6 +2,7 @@
 import { EntityPicker } from "@/components/EntityPicker";
 import { useEffect, useState } from "react";
 import { essApi, ESSLeaveRequest, ESSRequest, ESSAccount } from "@/lib/ess";
+import { tx } from "@/lib/i18n/core";
 
 const inputCls = "w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500";
 const labelCls = "block text-[10px] text-slate-400 mb-1";
@@ -30,17 +31,17 @@ export default function HRAdminPage() {
   const handleSeedLeaveTypes = async () => { await essApi.seedLeaveTypes(); flash("7 leave types seeded"); };
 
   const tabs = [
-    { id: "leave" as const, label: "Leave Approvals", badge: pendingLeave.length },
-    { id: "requests" as const, label: "Request Queue", badge: pendingReqs.length },
-    { id: "accounts" as const, label: "Accounts & Profiles", badge: 0 },
-    { id: "seed" as const, label: "Setup", badge: 0 },
+    { id: "leave" as const, label: tx("Leave Approvals"), badge: pendingLeave.length },
+    { id: "requests" as const, label: tx("Request Queue"), badge: pendingReqs.length },
+    { id: "accounts" as const, label: tx("Accounts & Profiles"), badge: 0 },
+    { id: "seed" as const, label: tx("Setup"), badge: 0 },
   ];
 
   return (
     <div className="p-6 space-y-5 text-slate-200">
       <div>
-        <h1 className="text-xl font-bold text-white">HR Administration</h1>
-        <p className="text-slate-500 text-sm mt-0.5">Leave approvals, request queue, and account management</p>
+        <h1 className="text-xl font-bold text-white">{tx("HR Administration")}</h1>
+        <p className="text-slate-500 text-sm mt-0.5">{tx("Leave approvals, request queue, and account management")}</p>
       </div>
       {msg && <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3 text-sm text-emerald-300">{msg}</div>}
 
@@ -58,7 +59,7 @@ export default function HRAdminPage() {
         <div className="glass-table">
           <table className="w-full text-sm">
             <thead><tr className="border-b border-white/[0.07]">
-              {["Ref", "Employee", "Dates", "Days", "Reason", "Actions"].map((h) => (
+              {[tx("Ref"), tx("Employee"), tx("Dates"), "Days", tx("Reason"), tx("Actions")].map((h) => (
                 <th key={h} className={`px-4 py-3 text-[10px] text-slate-500 uppercase tracking-widest ${h === "Days" ? "text-right" : "text-left"}`}>{h}</th>
               ))}
             </tr></thead>
@@ -71,12 +72,12 @@ export default function HRAdminPage() {
                   <td className="px-4 py-3 text-right text-white">{Number(r.days_requested)}</td>
                   <td className="px-4 py-3 text-slate-500 text-xs max-w-[160px] truncate">{r.reason || "—"}</td>
                   <td className="px-4 py-3 space-x-3">
-                    <button onClick={() => handleApproveLeave(r.leave_request_id)} className="text-xs text-emerald-400 hover:text-emerald-300">Approve</button>
-                    <button onClick={() => handleRejectLeave(r.leave_request_id)} className="text-xs text-red-400 hover:text-red-300">Reject</button>
+                    <button onClick={() => handleApproveLeave(r.leave_request_id)} className="text-xs text-emerald-400 hover:text-emerald-300">{tx("Approve")}</button>
+                    <button onClick={() => handleRejectLeave(r.leave_request_id)} className="text-xs text-red-400 hover:text-red-300">{tx("Reject")}</button>
                   </td>
                 </tr>
               ))}
-              {pendingLeave.length === 0 && <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-600">No pending leave requests</td></tr>}
+              {pendingLeave.length === 0 && <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-600">{tx("No pending leave requests")}</td></tr>}
             </tbody>
           </table>
         </div>
@@ -86,7 +87,7 @@ export default function HRAdminPage() {
         <div className="glass-table">
           <table className="w-full text-sm">
             <thead><tr className="border-b border-white/[0.07]">
-              {["Ref", "Type", "Subject", "Actions"].map((h) => (
+              {[tx("Ref"), tx("Type"), tx("Subject"), tx("Actions")].map((h) => (
                 <th key={h} className="px-4 py-3 text-[10px] text-slate-500 uppercase tracking-widest text-left">{h}</th>
               ))}
             </tr></thead>
@@ -97,12 +98,12 @@ export default function HRAdminPage() {
                   <td className="px-4 py-3 text-slate-400 capitalize text-xs">{r.request_type.replace("_", " ")}</td>
                   <td className="px-4 py-3 text-white">{r.subject}</td>
                   <td className="px-4 py-3 space-x-3">
-                    <button onClick={() => handleReviewReq(r.request_id, true)} className="text-xs text-emerald-400 hover:text-emerald-300">Approve</button>
-                    <button onClick={() => handleReviewReq(r.request_id, false)} className="text-xs text-red-400 hover:text-red-300">Reject</button>
+                    <button onClick={() => handleReviewReq(r.request_id, true)} className="text-xs text-emerald-400 hover:text-emerald-300">{tx("Approve")}</button>
+                    <button onClick={() => handleReviewReq(r.request_id, false)} className="text-xs text-red-400 hover:text-red-300">{tx("Reject")}</button>
                   </td>
                 </tr>
               ))}
-              {pendingReqs.length === 0 && <tr><td colSpan={4} className="px-4 py-8 text-center text-slate-600">No pending requests</td></tr>}
+              {pendingReqs.length === 0 && <tr><td colSpan={4} className="px-4 py-8 text-center text-slate-600">{tx("No pending requests")}</td></tr>}
             </tbody>
           </table>
         </div>
@@ -111,35 +112,35 @@ export default function HRAdminPage() {
       {tab === "accounts" && (
         <div className="space-y-4">
           <div className="glow-card p-5 space-y-3">
-            <h2 className="text-sm font-semibold text-white">Create ESS Account</h2>
+            <h2 className="text-sm font-semibold text-white">{tx("Create ESS Account")}</h2>
             <div className="grid grid-cols-3 gap-3">
-              <div><label className={labelCls}>Employee</label><EntityPicker kind="employee" label="Employee" value={newAcc.employee_id} onChange={(id) => setNewAcc({ ...newAcc, employee_id: id })} /></div>
-              <div><label className={labelCls}>Email</label><input value={newAcc.email} onChange={(e) => setNewAcc({ ...newAcc, email: e.target.value })} className={inputCls} /></div>
+              <div><label className={labelCls}>{tx("Employee")}</label><EntityPicker kind="employee" label={tx("Employee")} value={newAcc.employee_id} onChange={(id) => setNewAcc({ ...newAcc, employee_id: id })} /></div>
+              <div><label className={labelCls}>{tx("Email")}</label><input value={newAcc.email} onChange={(e) => setNewAcc({ ...newAcc, email: e.target.value })} className={inputCls} /></div>
             </div>
-            <button onClick={handleCreateAccount} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm">Create Account</button>
+            <button onClick={handleCreateAccount} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm">{tx("Create Account")}</button>
           </div>
           <div className="glow-card p-5 space-y-3">
-            <h2 className="text-sm font-semibold text-white">Create / Update Profile</h2>
+            <h2 className="text-sm font-semibold text-white">{tx("Create / Update Profile")}</h2>
             <div className="grid grid-cols-3 gap-3">
-              <div><label className={labelCls}>Employee</label><EntityPicker kind="employee" label="Employee for profile" value={newProfile.employee_id} onChange={(id) => setNewProfile({ ...newProfile, employee_id: id })} /></div>
+              <div><label className={labelCls}>{tx("Employee")}</label><EntityPicker kind="employee" label={tx("Employee for profile")} value={newProfile.employee_id} onChange={(id) => setNewProfile({ ...newProfile, employee_id: id })} /></div>
               {[["full_name", "Full Name"], ["email", "Work Email"], ["job_title", "Job Title"], ["department_name", "Department"], ["joining_date", "Joining Date"]].map(([k, l]) => (
                 <div key={k}><label className={labelCls}>{l}</label><input value={(newProfile as any)[k]} onChange={(e) => setNewProfile({ ...newProfile, [k]: e.target.value })} className={inputCls} /></div>
               ))}
             </div>
-            <button onClick={handleCreateProfile} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm">Save Profile</button>
+            <button onClick={handleCreateProfile} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm">{tx("Save Profile")}</button>
           </div>
         </div>
       )}
 
       {tab === "seed" && (
         <div className="glow-card p-5 space-y-4">
-          <h2 className="text-sm font-semibold text-white">Initial Setup</h2>
+          <h2 className="text-sm font-semibold text-white">{tx("Initial Setup")}</h2>
           <div className="flex items-center justify-between rounded-lg border border-white/[0.06] bg-white/[0.02] p-4">
             <div>
-              <p className="text-sm font-medium text-white">Seed Leave Types</p>
-              <p className="text-xs text-slate-500">Creates 7 defaults: Annual, Sick, Maternity, Paternity, Compassionate, Study, Unpaid</p>
+              <p className="text-sm font-medium text-white">{tx("Seed Leave Types")}</p>
+              <p className="text-xs text-slate-500">{tx("Creates 7 defaults: Annual, Sick, Maternity, Paternity, Compassionate, Study, Unpaid")}</p>
             </div>
-            <button onClick={handleSeedLeaveTypes} className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm">Seed</button>
+            <button onClick={handleSeedLeaveTypes} className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm">{tx("Seed")}</button>
           </div>
         </div>
       )}

@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { listEntries, createEntry, CountEntry } from "@/lib/cycleCount";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { tx } from "@/lib/i18n/core";
 
 function EntriesContent() {
   const searchParams = useSearchParams();
@@ -38,7 +39,7 @@ function EntriesContent() {
       setShowForm(false); await load();
     } catch (err: unknown) {
       const e2 = err as { response?: { data?: { detail?: string } } };
-      setError(e2?.response?.data?.detail || "Failed to record count");
+      setError(e2?.response?.data?.detail || tx("Failed to record count"));
     }
     setSaving(false);
   }
@@ -47,49 +48,49 @@ function EntriesContent() {
     <div className="max-w-5xl mx-auto py-8 px-4 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Count Entries</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Count Entries")}</h1>
           <p className="text-sm text-gray-500 mt-1">
-            {taskId ? `Task: ${taskId.slice(0, 8)}... · ` : ""}{entries.length} record(s)
+            {taskId ? `Task: ${taskId.slice(0, 8)}... · ` : ""}{entries.length} {tx("record(s)")}
           </p>
         </div>
-        <Button onClick={() => setShowForm(!showForm)}>{showForm ? "Cancel" : "Record Count"}</Button>
+        <Button onClick={() => setShowForm(!showForm)}>{showForm ? tx("Cancel") : tx("Record Count")}</Button>
       </div>
 
       {showForm && (
         <div className="bg-white rounded-2xl border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Record Physical Count</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">{tx("Record Physical Count")}</h2>
           <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Count task</label>
-              <EntityPicker kind="count_task" label="Count task" scan required value={form.task_id} onChange={(id) => setForm({ ...form, task_id: id })} />
+              <label className="block text-sm font-medium text-gray-700 mb-1">{tx("Count task")}</label>
+              <EntityPicker kind="count_task" label={tx("Count task")} scan required value={form.task_id} onChange={(id) => setForm({ ...form, task_id: id })} />
             </div>
-            <Input id="qty" label="Counted Quantity" type="number" step="0.001" value={form.counted_qty || ""} onChange={(e) => setForm({ ...form, counted_qty: e.target.value })} required autoFocus />
+            <Input id="qty" label={tx("Counted Quantity")} type="number" step="0.001" value={form.counted_qty || ""} onChange={(e) => setForm({ ...form, counted_qty: e.target.value })} required autoFocus />
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Unit</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{tx("Unit")}</label>
               <select className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })}>
                 {["KG", "L", "PCS", "BOX", "CARTON"].map((u) => <option key={u} value={u}>{u}</option>)}
               </select>
             </div>
-            <Input id="cost" label="Unit Cost (optional)" type="number" step="0.0001" value={form.unit_cost || ""} onChange={(e) => setForm({ ...form, unit_cost: e.target.value })} />
+            <Input id="cost" label={tx("Unit Cost (optional)")} type="number" step="0.0001" value={form.unit_cost || ""} onChange={(e) => setForm({ ...form, unit_cost: e.target.value })} />
             <div className="col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Root Cause (if variance expected)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{tx("Root Cause (if variance expected)")}</label>
               <textarea className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" rows={2} value={form.root_cause || ""} onChange={(e) => setForm({ ...form, root_cause: e.target.value })} />
             </div>
             {error && <div className="col-span-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">{error}</div>}
             <div className="col-span-2 flex justify-end gap-3">
-              <Button variant="secondary" type="button" onClick={() => setShowForm(false)}>Cancel</Button>
-              <Button type="submit" loading={saving}>Save Count</Button>
+              <Button variant="secondary" type="button" onClick={() => setShowForm(false)}>{tx("Cancel")}</Button>
+              <Button type="submit" loading={saving}>{tx("Save Count")}</Button>
             </div>
           </form>
         </div>
       )}
 
-      {loading ? <div className="text-gray-500 py-8 text-center">Loading...</div> : (
+      {loading ? <div className="text-gray-500 py-8 text-center">{tx("Loading...")}</div> : (
         <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                {["System Qty", "Counted Qty", "Variance", "Variance %", "Value Impact", "Tolerance", "Counted At"].map((h) => (
+                {[tx("System Qty"), tx("Counted Qty"), tx("Variance"), tx("Variance %"), tx("Value Impact"), tx("Tolerance"), tx("Counted At")].map((h) => (
                   <th key={h} className="text-left px-4 py-3 font-medium text-gray-700">{h}</th>
                 ))}
               </tr>
@@ -108,7 +109,7 @@ function EntriesContent() {
                   </td>
                   <td className="px-4 py-3">
                     <span className={`text-xs px-2 py-0.5 rounded font-medium ${e.within_tolerance ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
-                      {e.within_tolerance ? "Within" : "Variance"}
+                      {e.within_tolerance ? tx("Within") : tx("Variance")}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-gray-400 text-xs">
@@ -116,7 +117,7 @@ function EntriesContent() {
                   </td>
                 </tr>
               ))}
-              {entries.length === 0 && <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400">No count entries yet</td></tr>}
+              {entries.length === 0 && <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400">{tx("No count entries yet")}</td></tr>}
             </tbody>
           </table>
         </div>
@@ -127,7 +128,7 @@ function EntriesContent() {
 
 export default function EntriesPage() {
   return (
-    <Suspense fallback={<div className="p-8 text-gray-500">Loading...</div>}>
+    <Suspense fallback={<div className="p-8 text-gray-500">{tx("Loading...")}</div>}>
       <EntriesContent />
     </Suspense>
   );

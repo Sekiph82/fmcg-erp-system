@@ -13,6 +13,7 @@ import { RequirePermission } from "@/components/PermissionGuard";
 import { Badge } from "@/components/ui/Badge";
 import { PermissionGuard } from "@/components/PermissionGuard";
 import { PageHelpTooltip } from "@/components/help/PageHelpTooltip";
+import { tx } from "@/lib/i18n/core";
 
 const STATUS_VARIANT: Record<DocumentStatus, "yellow" | "green" | "gray" | "red"> = {
   DRAFT: "yellow",
@@ -80,9 +81,9 @@ function DocumentsContent() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Documents</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Documents")}</h1>
           <p className="text-sm text-gray-500 mt-1">
-            {stats ? `${stats.total} total · ${stats.latest_only_count} latest versions` : `${docs.length} shown`}
+            {stats ? tx("{total} total · {latest_only_count} latest versions", { total: stats.total, latest_only_count: stats.latest_only_count }) : tx("{length} shown", { length: docs.length })}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -92,7 +93,7 @@ function DocumentsContent() {
               onClick={() => router.push("/dashboard/documents?drawer=create")}
               className="px-4 py-2 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700"
             >
-              + New Document
+              {tx("+ New Document")}
             </button>
           </PermissionGuard>
         </div>
@@ -104,13 +105,13 @@ function DocumentsContent() {
           {stats.expired_count > 0 && (
             <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-xs text-red-700">
               <span className="w-2 h-2 rounded-full bg-red-500 inline-block" />
-              {stats.expired_count} document{stats.expired_count !== 1 ? "s" : ""} expired
+              {stats.expired_count} {tx("document")}{stats.expired_count !== 1 ? tx("s") : ""} {tx("expired")}
             </div>
           )}
           {stats.expiring_soon_count > 0 && (
             <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-700">
               <span className="w-2 h-2 rounded-full bg-amber-500 inline-block" />
-              {stats.expiring_soon_count} expiring within 30 days
+              {stats.expiring_soon_count} {tx("expiring within 30 days")}
             </div>
           )}
         </div>
@@ -133,21 +134,21 @@ function DocumentsContent() {
       {/* Filters */}
       <div className="flex flex-wrap gap-3 items-center">
         <input
-          placeholder="Search title..."
+          placeholder={tx("Search title...")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="border rounded px-3 py-2 text-sm w-48"
         />
         <select value={category} onChange={(e) => setCategory(e.target.value)} className="border rounded px-3 py-2 text-sm">
-          <option value="">All Categories</option>
+          <option value="">{tx("All Categories")}</option>
           {CATEGORIES.map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </select>
         <select value={status} onChange={(e) => setStatus(e.target.value)} className="border rounded px-3 py-2 text-sm">
-          <option value="">All Statuses</option>
+          <option value="">{tx("All Statuses")}</option>
           {["DRAFT", "APPROVED", "OBSOLETE", "ARCHIVED"].map((s) => <option key={s}>{s}</option>)}
         </select>
         <select value={entityType} onChange={(e) => setEntityType(e.target.value)} className="border rounded px-3 py-2 text-sm">
-          <option value="">All Entity Types</option>
+          <option value="">{tx("All Entity Types")}</option>
           {Object.entries(ENTITY_TYPE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </select>
         <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
@@ -157,27 +158,27 @@ function DocumentsContent() {
             onChange={(e) => setLatestOnly(e.target.checked)}
             className="rounded"
           />
-          Latest only
+          {tx("Latest only")}
         </label>
       </div>
 
       {/* Table */}
       <div className="bg-white border rounded-lg overflow-hidden">
         {isLoading ? (
-          <p className="p-6 text-sm text-gray-400 text-center">Loading...</p>
+          <p className="p-6 text-sm text-gray-400 text-center">{tx("Loading...")}</p>
         ) : docs.length === 0 ? (
-          <p className="p-6 text-sm text-gray-400 text-center">No documents found</p>
+          <p className="p-6 text-sm text-gray-400 text-center">{tx("No documents found")}</p>
         ) : (
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-gray-50 text-xs text-gray-500 uppercase">
-                <th className="px-4 py-2 text-left">Title</th>
-                <th className="px-4 py-2 text-left">Category</th>
-                <th className="px-4 py-2 text-left">Ver.</th>
-                <th className="px-4 py-2 text-left">Status</th>
-                <th className="px-4 py-2 text-left">Linked To</th>
-                <th className="px-4 py-2 text-left">File</th>
-                <th className="px-4 py-2 text-left">Created</th>
+                <th className="px-4 py-2 text-left">{tx("Title")}</th>
+                <th className="px-4 py-2 text-left">{tx("Category")}</th>
+                <th className="px-4 py-2 text-left">{tx("Ver.")}</th>
+                <th className="px-4 py-2 text-left">{tx("Status")}</th>
+                <th className="px-4 py-2 text-left">{tx("Linked To")}</th>
+                <th className="px-4 py-2 text-left">{tx("File")}</th>
+                <th className="px-4 py-2 text-left">{tx("Created")}</th>
                 <th className="px-4 py-2"></th>
               </tr>
             </thead>
@@ -198,7 +199,7 @@ function DocumentRow({ doc, onClick }: { doc: DocumentShort; onClick: () => void
     <tr className="hover:bg-gray-50 cursor-pointer" onClick={onClick}>
       <td className="px-4 py-3 font-medium text-gray-900 max-w-xs truncate">{doc.title}</td>
       <td className="px-4 py-3 text-gray-600 text-xs">{CATEGORY_LABELS[doc.category]}</td>
-      <td className="px-4 py-3 text-gray-500 text-center font-mono text-xs">v{doc.version}</td>
+      <td className="px-4 py-3 text-gray-500 text-center font-mono text-xs">{tx("v")}{doc.version}</td>
       <td className="px-4 py-3">
         <Badge label={doc.status} variant={STATUS_VARIANT[doc.status]} />
       </td>
@@ -218,7 +219,7 @@ function DocumentRow({ doc, onClick }: { doc: DocumentShort; onClick: () => void
         {doc.created_at ? new Date(doc.created_at).toLocaleDateString() : ""}
       </td>
       <td className="px-4 py-3 text-right">
-        <span className="text-xs text-indigo-600 hover:underline">View</span>
+        <span className="text-xs text-indigo-600 hover:underline">{tx("View")}</span>
       </td>
     </tr>
   );
@@ -231,15 +232,15 @@ const ESignPage          = dynamic(() => import("@/app/dashboard/esign/page"),  
 
 export default function DocumentsPage() {
   const tabs = [
-    { key: "documents",      label: "Documents",      permission: "documents.view", content: <DocumentsContent /> },
-    { key: "compliance",     label: "Compliance",     permission: "documents.view", content: <DocsCompliancePage /> },
-    { key: "expiring",       label: "Expiring",       permission: "documents.view", content: <DocsExpiringPage /> },
-    { key: "knowledge-base", label: "Knowledge Base", permission: "documents.view", content: <KnowledgeBasePage /> },
-    { key: "esign",          label: "E-Sign",         permission: "documents.view", content: <ESignPage /> },
+    { key: "documents",      label: tx("Documents"),      permission: "documents.view", content: <DocumentsContent /> },
+    { key: "compliance",     label: tx("Compliance"),     permission: "documents.view", content: <DocsCompliancePage /> },
+    { key: "expiring",       label: tx("Expiring"),       permission: "documents.view", content: <DocsExpiringPage /> },
+    { key: "knowledge-base", label: tx("Knowledge Base"), permission: "documents.view", content: <KnowledgeBasePage /> },
+    { key: "esign",          label: tx("E-Sign"),         permission: "documents.view", content: <ESignPage /> },
   ];
   return (
     <ModuleWorkspace
-      title="Documents"
+      title={tx("Documents")}
       description="Document library, compliance docs, expiring alerts, knowledge base, e-sign"
       permission="documents.view"
       tabs={tabs}

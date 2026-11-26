@@ -4,6 +4,7 @@ import {
   appraisalsApi, AppraisalPeriod, AppraisalPeriodStatus,
   PERIOD_STATUS_COLOR, PERIOD_TYPE_LABEL, AppraisalPeriodType,
 } from "@/lib/appraisals";
+import { tx } from "@/lib/i18n/core";
 
 const PERIOD_TYPES: AppraisalPeriodType[] = ["annual","semi_annual","quarterly","probation","project_based","custom"];
 
@@ -43,18 +44,18 @@ export default function AppraisalPeriodsPage() {
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-gray-900">Appraisal Periods</h1>
+        <h1 className="text-xl font-bold text-gray-900">{tx("Appraisal Periods")}</h1>
         <button
           onClick={() => setShowForm(true)}
           className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
         >
-          + New Period
+          {tx("+ New Period")}
         </button>
       </div>
 
       {showForm && (
         <div className="bg-white border rounded-lg p-4 shadow-sm space-y-3">
-          <h2 className="font-semibold text-gray-800">New Appraisal Period</h2>
+          <h2 className="font-semibold text-gray-800">{tx("New Appraisal Period")}</h2>
           <div className="grid grid-cols-2 gap-3">
             {(["period_code","period_name"] as const).map((f) => (
               <div key={f}>
@@ -67,7 +68,7 @@ export default function AppraisalPeriodsPage() {
               </div>
             ))}
             <div>
-              <label className="text-xs text-gray-500">Period Type</label>
+              <label className="text-xs text-gray-500">{tx("Period Type")}</label>
               <select
                 className="w-full border rounded px-2 py-1 text-sm mt-1"
                 value={form.period_type}
@@ -90,7 +91,7 @@ export default function AppraisalPeriodsPage() {
               </div>
             ))}
             <div className="col-span-2">
-              <label className="text-xs text-gray-500">Notes</label>
+              <label className="text-xs text-gray-500">{tx("Notes")}</label>
               <textarea
                 className="w-full border rounded px-2 py-1 text-sm mt-1"
                 rows={2}
@@ -100,20 +101,20 @@ export default function AppraisalPeriodsPage() {
             </div>
           </div>
           <div className="flex gap-2">
-            <button onClick={submit} className="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">Save</button>
-            <button onClick={() => setShowForm(false)} className="rounded border px-4 py-1.5 text-sm text-gray-600 hover:bg-gray-50">Cancel</button>
+            <button onClick={submit} className="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">{tx("Save")}</button>
+            <button onClick={() => setShowForm(false)} className="rounded border px-4 py-1.5 text-sm text-gray-600 hover:bg-gray-50">{tx("Cancel")}</button>
           </div>
         </div>
       )}
 
       {loading ? (
-        <p className="text-gray-500 text-sm">Loading…</p>
+        <p className="text-gray-500 text-sm">{tx("Loading…")}</p>
       ) : (
         <div className="bg-white border rounded-lg shadow-sm overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b">
               <tr>
-                {["Code","Name","Type","Start","End","Review Window","Status","Actions"].map((h) => (
+                {[tx("Code"),tx("Name"),tx("Type"),tx("Start"),tx("End"),tx("Review Window"),tx("Status"),tx("Actions")].map((h) => (
                   <th key={h} className="px-4 py-2 text-left text-xs font-semibold text-gray-600">{h}</th>
                 ))}
               </tr>
@@ -134,17 +135,17 @@ export default function AppraisalPeriodsPage() {
                   </td>
                   <td className="px-4 py-2">
                     {p.status === "draft" && (
-                      <button onClick={() => activate(p.appraisal_period_id)} className="text-xs text-green-600 hover:underline mr-2">Activate</button>
+                      <button onClick={() => activate(p.appraisal_period_id)} className="text-xs text-green-600 hover:underline mr-2">{tx("Activate")}</button>
                     )}
                     {p.status === "active" && (
-                      <button onClick={() => close(p.appraisal_period_id)} className="text-xs text-gray-600 hover:underline">Close</button>
+                      <button onClick={() => close(p.appraisal_period_id)} className="text-xs text-gray-600 hover:underline">{tx("Close")}</button>
                     )}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-          {periods.length === 0 && <p className="text-center text-gray-400 py-8 text-sm">No periods yet.</p>}
+          {periods.length === 0 && <p className="text-center text-gray-400 py-8 text-sm">{tx("No periods yet.")}</p>}
         </div>
       )}
     </div>

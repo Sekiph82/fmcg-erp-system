@@ -11,6 +11,7 @@ import { PermissionGuard } from "@/components/PermissionGuard";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
+import { tx } from "@/lib/i18n/core";
 
 const TYPE_LABELS: Record<MaterialType, string> = {
   RAW:          "Raw",
@@ -54,57 +55,57 @@ function MaterialForm({
 
   return (
     <div className="bg-white border rounded-xl p-6 space-y-4 shadow-sm">
-      <h3 className="font-semibold text-gray-900">{initial.code ? "Edit Material" : "New Material"}</h3>
+      <h3 className="font-semibold text-gray-900">{initial.code ? tx("Edit Material") : tx("New Material")}</h3>
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Code *</label>
+          <label className="block text-xs text-gray-500 mb-1">{tx("Code *")}</label>
           <input className="w-full border rounded-lg px-3 py-2 text-sm" placeholder="MAT001" {...f("code")} />
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Name *</label>
-          <input className="w-full border rounded-lg px-3 py-2 text-sm" placeholder="Tomato Paste" {...f("name")} />
+          <label className="block text-xs text-gray-500 mb-1">{tx("Name *")}</label>
+          <input className="w-full border rounded-lg px-3 py-2 text-sm" placeholder={tx("Tomato Paste")} {...f("name")} />
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Type *</label>
+          <label className="block text-xs text-gray-500 mb-1">{tx("Type *")}</label>
           <select className="w-full border rounded-lg px-3 py-2 text-sm" {...f("material_type")}>
             {TYPE_OPTIONS.map((t) => <option key={t} value={t}>{TYPE_LABELS[t]}</option>)}
           </select>
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Unit of Measure *</label>
+          <label className="block text-xs text-gray-500 mb-1">{tx("Unit of Measure *")}</label>
           <select className="w-full border rounded-lg px-3 py-2 text-sm" {...f("uom")}>
             {UOM_OPTIONS.map((u) => <option key={u} value={u}>{u}</option>)}
           </select>
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Standard Cost</label>
+          <label className="block text-xs text-gray-500 mb-1">{tx("Standard Cost")}</label>
           <input type="number" step="0.01" className="w-full border rounded-lg px-3 py-2 text-sm"
             value={form.standard_cost ?? ""}
             onChange={(e) => set("standard_cost", e.target.value ? Number(e.target.value) : undefined)} />
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Lead Time (days)</label>
+          <label className="block text-xs text-gray-500 mb-1">{tx("Lead Time (days)")}</label>
           <input type="number" min={0} className="w-full border rounded-lg px-3 py-2 text-sm"
             value={form.lead_time_days ?? ""}
             onChange={(e) => set("lead_time_days", Number(e.target.value))} />
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Reorder Point</label>
+          <label className="block text-xs text-gray-500 mb-1">{tx("Reorder Point")}</label>
           <input type="number" min={0} className="w-full border rounded-lg px-3 py-2 text-sm"
             value={form.reorder_point ?? ""}
             onChange={(e) => set("reorder_point", Number(e.target.value))} />
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Status</label>
+          <label className="block text-xs text-gray-500 mb-1">{tx("Status")}</label>
           <select className="w-full border rounded-lg px-3 py-2 text-sm"
             value={form.is_active ? "ACTIVE" : "INACTIVE"}
             onChange={(e) => set("is_active", e.target.value === "ACTIVE")}>
-            <option value="ACTIVE">Active</option>
-            <option value="INACTIVE">Inactive</option>
+            <option value="ACTIVE">{tx("Active")}</option>
+            <option value="INACTIVE">{tx("Inactive")}</option>
           </select>
         </div>
         <div className="col-span-2">
-          <label className="block text-xs text-gray-500 mb-1">Description</label>
+          <label className="block text-xs text-gray-500 mb-1">{tx("Description")}</label>
           <textarea className="w-full border rounded-lg px-3 py-2 text-sm" rows={2} {...f("description")} />
         </div>
       </div>
@@ -114,10 +115,10 @@ function MaterialForm({
           disabled={!form.code || !form.name || isPending}
           className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 disabled:opacity-50"
         >
-          {isPending ? "Saving…" : "Save Material"}
+          {isPending ? tx("Saving…") : tx("Save Material")}
         </button>
         <button onClick={onCancel} className="px-4 py-2 border rounded-lg text-sm hover:bg-gray-50">
-          Cancel
+          {tx("Cancel")}
         </button>
       </div>
     </div>
@@ -173,8 +174,8 @@ function MaterialsContent() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Materials</h1>
-          <p className="text-sm text-gray-500 mt-1">{materials.length} raw materials &amp; inputs</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Materials")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{materials.length} {tx("raw materials & inputs")}</p>
         </div>
         <div className="flex items-center gap-2">
           <ImportModal
@@ -186,7 +187,7 @@ function MaterialsContent() {
               onClick={() => { setShowForm(true); setEditing(null); }}
               className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700"
             >
-              + New Material
+              {tx("+ New Material")}
             </button>
           </PermissionGuard>
         </div>
@@ -238,7 +239,7 @@ function MaterialsContent() {
       {/* Filters */}
       <div className="flex gap-3">
         <input
-          placeholder="Search code or name…"
+          placeholder={tx("Search code or name…")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="border rounded-lg px-3 py-2 text-sm w-56"
@@ -248,7 +249,7 @@ function MaterialsContent() {
           onChange={(e) => setTypeFilter(e.target.value as MaterialType | "")}
           className="border rounded-lg px-3 py-2 text-sm"
         >
-          <option value="">All Types</option>
+          <option value="">{tx("All Types")}</option>
           {TYPE_OPTIONS.map((t) => <option key={t} value={t}>{TYPE_LABELS[t]}</option>)}
         </select>
         {(search || typeFilter) && (
@@ -256,7 +257,7 @@ function MaterialsContent() {
             onClick={() => { setSearch(""); setTypeFilter(""); }}
             className="text-xs text-gray-400 hover:text-gray-600"
           >
-            Clear
+            {tx("Clear")}
           </button>
         )}
       </div>
@@ -264,21 +265,21 @@ function MaterialsContent() {
       {/* Table */}
       <div className="bg-white border rounded-xl overflow-hidden">
         {isLoading ? (
-          <p className="p-6 text-sm text-gray-400 text-center">Loading…</p>
+          <p className="p-6 text-sm text-gray-400 text-center">{tx("Loading…")}</p>
         ) : filtered.length === 0 ? (
-          <p className="p-6 text-sm text-gray-400 text-center">No materials found</p>
+          <p className="p-6 text-sm text-gray-400 text-center">{tx("No materials found")}</p>
         ) : (
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-gray-50 text-xs text-gray-500 uppercase">
-                <th className="px-4 py-2 text-left">Code</th>
-                <th className="px-4 py-2 text-left">Name</th>
-                <th className="px-4 py-2 text-left">Type</th>
+                <th className="px-4 py-2 text-left">{tx("Code")}</th>
+                <th className="px-4 py-2 text-left">{tx("Name")}</th>
+                <th className="px-4 py-2 text-left">{tx("Type")}</th>
                 <th className="px-4 py-2 text-left">UOM</th>
-                <th className="px-4 py-2 text-right">Std Cost</th>
-                <th className="px-4 py-2 text-right">Lead Time</th>
-                <th className="px-4 py-2 text-right">Reorder Pt.</th>
-                <th className="px-4 py-2 text-left">Status</th>
+                <th className="px-4 py-2 text-right">{tx("Std Cost")}</th>
+                <th className="px-4 py-2 text-right">{tx("Lead Time")}</th>
+                <th className="px-4 py-2 text-right">{tx("Reorder Pt.")}</th>
+                <th className="px-4 py-2 text-left">{tx("Status")}</th>
                 <th className="px-4 py-2"></th>
               </tr>
             </thead>
@@ -294,12 +295,12 @@ function MaterialsContent() {
                   <td className="px-4 py-3 text-right font-mono text-gray-700">
                     {m.standard_cost != null ? m.standard_cost.toLocaleString() : <span className="text-gray-300">—</span>}
                   </td>
-                  <td className="px-4 py-3 text-right text-gray-500">{m.lead_time_days}d</td>
+                  <td className="px-4 py-3 text-right text-gray-500">{m.lead_time_days}{tx("d")}</td>
                   <td className="px-4 py-3 text-right text-gray-500">{m.reorder_point}</td>
                   <td className="px-4 py-3">
                     {m.is_active
-                      ? <span className="text-xs font-medium text-green-600">Active</span>
-                      : <span className="text-xs text-gray-400">Inactive</span>}
+                      ? <span className="text-xs font-medium text-green-600">{tx("Active")}</span>
+                      : <span className="text-xs text-gray-400">{tx("Inactive")}</span>}
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex justify-end gap-3">
@@ -308,7 +309,7 @@ function MaterialsContent() {
                           onClick={() => { setEditing(m); setShowForm(false); }}
                           className="text-xs text-indigo-600 hover:underline"
                         >
-                          Edit
+                          {tx("Edit")}
                         </button>
                       </PermissionGuard>
                       <PermissionGuard permission="materials.delete">
@@ -316,7 +317,7 @@ function MaterialsContent() {
                           onClick={() => setDeletingId(m.id)}
                           className="text-xs text-red-500 hover:text-red-700 hover:underline"
                         >
-                          Delete
+                          {tx("Delete")}
                         </button>
                       </PermissionGuard>
                     </div>
@@ -329,22 +330,21 @@ function MaterialsContent() {
       </div>
 
       {/* Delete Confirm Modal */}
-      <Modal open={!!deletingId} onClose={() => setDeletingId(null)} title="Delete Material">
+      <Modal open={!!deletingId} onClose={() => setDeletingId(null)} title={tx("Delete Material")}>
         <p className="text-sm text-gray-600 mb-4">
-          Are you sure you want to delete{" "}
+          {tx("Are you sure you want to delete")}{" "}
           <span className="font-semibold text-gray-900">{deletingMaterial?.name}</span>{" "}
-          <span className="font-mono text-xs text-gray-500">({deletingMaterial?.code})</span>?
-          This action cannot be undone.
+          <span className="font-mono text-xs text-gray-500">({deletingMaterial?.code})</span>{tx("? This action cannot be undone.")}
         </p>
-        {deleteMutation.error && <p className="text-sm text-red-600 mb-3">Failed to delete material.</p>}
+        {deleteMutation.error && <p className="text-sm text-red-600 mb-3">{tx("Failed to delete material.")}</p>}
         <div className="flex justify-end gap-3">
-          <Button variant="secondary" onClick={() => setDeletingId(null)}>Cancel</Button>
+          <Button variant="secondary" onClick={() => setDeletingId(null)}>{tx("Cancel")}</Button>
           <Button
             variant="danger"
             loading={deleteMutation.isPending}
             onClick={() => deletingId && deleteMutation.mutate(deletingId)}
           >
-            Delete
+            {tx("Delete")}
           </Button>
         </div>
       </Modal>
@@ -354,11 +354,11 @@ function MaterialsContent() {
 
 export default function MaterialsPage() {
   const tabs = [
-    { key: "materials", label: "Materials", permission: "materials.view", content: <MaterialsContent /> },
+    { key: "materials", label: tx("Materials"), permission: "materials.view", content: <MaterialsContent /> },
   ];
   return (
     <ModuleWorkspace
-      title="Materials"
+      title={tx("Materials")}
       description="Raw materials, packaging, Bill of Materials inputs"
       permission="materials.view"
       tabs={tabs}

@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { messagingApi, Channel, Message, timeAgo } from "@/lib/messaging";
 import { Button } from "@/components/ui/Button";
+import { tx } from "@/lib/i18n/core";
 
 const MODULE_COLORS: Record<string, string> = {
   sales:       "bg-blue-100 text-blue-700",
@@ -41,12 +42,12 @@ function MessageBubble({
       <Avatar initials={msg.sender_initials} />
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline gap-2">
-          <span className="text-sm font-semibold text-gray-900">{msg.sender_name ?? "Unknown"}</span>
+          <span className="text-sm font-semibold text-gray-900">{msg.sender_name ?? tx("Unknown")}</span>
           <span className="text-xs text-gray-400">{timeAgo(msg.created_at)}</span>
-          {msg.is_edited && <span className="text-xs text-gray-400 italic">(edited)</span>}
+          {msg.is_edited && <span className="text-xs text-gray-400 italic">{tx("(edited)")}</span>}
         </div>
         {msg.is_deleted ? (
-          <p className="text-sm text-gray-400 italic">[deleted]</p>
+          <p className="text-sm text-gray-400 italic">{tx("[deleted]")}</p>
         ) : (
           <>
             <p className="text-sm text-gray-800 whitespace-pre-wrap break-words">{msg.body}</p>
@@ -60,7 +61,7 @@ function MessageBubble({
                 className="mt-1 text-xs text-indigo-600 hover:underline"
                 onClick={() => onReply(msg)}
               >
-                {msg.reply_count} {msg.reply_count === 1 ? "reply" : "replies"}
+                {msg.reply_count} {msg.reply_count === 1 ? tx("reply") : tx("replies")}
               </button>
             )}
           </>
@@ -68,9 +69,9 @@ function MessageBubble({
       </div>
       {hover && !msg.is_deleted && (
         <div className="flex gap-1 shrink-0">
-          <button className="text-xs text-gray-400 hover:text-gray-700 px-1.5 py-0.5 rounded hover:bg-gray-200" onClick={() => onReply(msg)}>Reply</button>
-          <button className="text-xs text-gray-400 hover:text-gray-700 px-1.5 py-0.5 rounded hover:bg-gray-200" onClick={() => onEdit(msg)}>Edit</button>
-          <button className="text-xs text-red-400 hover:text-red-600 px-1.5 py-0.5 rounded hover:bg-red-50" onClick={() => onDelete(msg)}>Delete</button>
+          <button className="text-xs text-gray-400 hover:text-gray-700 px-1.5 py-0.5 rounded hover:bg-gray-200" onClick={() => onReply(msg)}>{tx("Reply")}</button>
+          <button className="text-xs text-gray-400 hover:text-gray-700 px-1.5 py-0.5 rounded hover:bg-gray-200" onClick={() => onEdit(msg)}>{tx("Edit")}</button>
+          <button className="text-xs text-red-400 hover:text-red-600 px-1.5 py-0.5 rounded hover:bg-red-50" onClick={() => onDelete(msg)}>{tx("Delete")}</button>
         </div>
       )}
     </div>
@@ -164,15 +165,15 @@ export default function MessagesPage() {
       {/* Sidebar */}
       <div className="w-64 border-r flex flex-col shrink-0">
         <div className="px-4 py-3 border-b flex items-center justify-between">
-          <span className="font-semibold text-gray-800">Messages</span>
-          <button className="text-indigo-600 hover:underline text-xs" onClick={() => setShowNewChannel(true)}>+ New</button>
+          <span className="font-semibold text-gray-800">{tx("Messages")}</span>
+          <button className="text-indigo-600 hover:underline text-xs" onClick={() => setShowNewChannel(true)}>{tx("+ New")}</button>
         </div>
 
         {/* Search */}
         <div className="px-3 py-2 border-b">
           <input
             className="w-full border rounded px-2 py-1.5 text-xs"
-            placeholder="Search messages…"
+            placeholder={tx("Search messages…")}
             value={searchQ}
             onChange={(e) => setSearchQ(e.target.value)}
           />
@@ -181,9 +182,9 @@ export default function MessagesPage() {
         {/* Channel list */}
         <div className="flex-1 overflow-y-auto py-2">
           {chLoading ? (
-            <p className="px-4 py-3 text-xs text-gray-400">Loading…</p>
+            <p className="px-4 py-3 text-xs text-gray-400">{tx("Loading…")}</p>
           ) : channels.length === 0 ? (
-            <p className="px-4 py-3 text-xs text-gray-400">No channels yet</p>
+            <p className="px-4 py-3 text-xs text-gray-400">{tx("No channels yet")}</p>
           ) : (
             channels.map((ch) => (
               <button
@@ -207,15 +208,15 @@ export default function MessagesPage() {
           <div className="px-3 py-3 border-t space-y-2">
             <input
               className="w-full border rounded px-2 py-1.5 text-xs"
-              placeholder="Channel name…"
+              placeholder={tx("Channel name…")}
               value={newChannelName}
               onChange={(e) => setNewChannelName(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && newChannelName.trim() && createChannel.mutate()}
               autoFocus
             />
             <div className="flex gap-1">
-              <button className="flex-1 text-xs bg-indigo-600 text-white rounded py-1 hover:bg-indigo-700" onClick={() => newChannelName.trim() && createChannel.mutate()}>Create</button>
-              <button className="flex-1 text-xs border rounded py-1" onClick={() => setShowNewChannel(false)}>Cancel</button>
+              <button className="flex-1 text-xs bg-indigo-600 text-white rounded py-1 hover:bg-indigo-700" onClick={() => newChannelName.trim() && createChannel.mutate()}>{tx("Create")}</button>
+              <button className="flex-1 text-xs border rounded py-1" onClick={() => setShowNewChannel(false)}>{tx("Cancel")}</button>
             </div>
           </div>
         )}
@@ -226,7 +227,7 @@ export default function MessagesPage() {
         <div className="flex-1 flex items-center justify-center text-gray-400">
           <div className="text-center">
             <p className="text-2xl mb-2">💬</p>
-            <p className="text-sm">Select a channel to start messaging</p>
+            <p className="text-sm">{tx("Select a channel to start messaging")}</p>
           </div>
         </div>
       ) : (
@@ -241,15 +242,15 @@ export default function MessagesPage() {
                 <p className="text-xs text-gray-500">{activeChannel.description}</p>
               )}
             </div>
-            <span className="text-xs text-gray-400">{activeChannel.member_count} members</span>
+            <span className="text-xs text-gray-400">{activeChannel.member_count} {tx("members")}</span>
           </div>
 
           {/* Search results overlay */}
           {searchQ.length >= 2 ? (
             <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
-              <p className="text-xs text-gray-500 font-medium">Search results for &quot;{searchQ}&quot;</p>
+              <p className="text-xs text-gray-500 font-medium">{tx("Search results for \"")}{searchQ}&quot;</p>
               {searchResults.length === 0 ? (
-                <p className="text-sm text-gray-400">No results</p>
+                <p className="text-sm text-gray-400">{tx("No results")}</p>
               ) : searchResults.map((m) => (
                 <div key={m.id} className="border rounded p-3 text-sm">
                   <div className="flex items-center gap-2 mb-1">
@@ -264,8 +265,8 @@ export default function MessagesPage() {
             /* Thread view */
             <div className="flex-1 overflow-y-auto">
               <div className="px-4 py-3 border-b bg-gray-50 flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700">Thread</span>
-                <button className="text-xs text-gray-500 hover:text-gray-700" onClick={() => setThreadMsg(null)}>← Back</button>
+                <span className="text-sm font-medium text-gray-700">{tx("Thread")}</span>
+                <button className="text-xs text-gray-500 hover:text-gray-700" onClick={() => setThreadMsg(null)}>{tx("← Back")}</button>
               </div>
               <div className="px-4 py-2 border-b bg-white">
                 <MessageBubble msg={threadMsg} onReply={() => {}} onEdit={() => {}} onDelete={() => {}} />
@@ -285,9 +286,9 @@ export default function MessagesPage() {
             /* Main messages */
             <div className="flex-1 overflow-y-auto">
               {msgsLoading ? (
-                <p className="px-5 py-8 text-center text-gray-400">Loading…</p>
+                <p className="px-5 py-8 text-center text-gray-400">{tx("Loading…")}</p>
               ) : messages.length === 0 ? (
-                <p className="px-5 py-12 text-center text-gray-400">No messages yet — be the first!</p>
+                <p className="px-5 py-12 text-center text-gray-400">{tx("No messages yet — be the first!")}</p>
               ) : (
                 <div className="py-2">
                   {messages.map((m) => (
@@ -307,13 +308,13 @@ export default function MessagesPage() {
           <div className="border-t p-3 space-y-2">
             {replyTo && !threadMsg && (
               <div className="flex items-center gap-2 text-xs text-gray-500 bg-gray-50 rounded px-3 py-1.5">
-                <span>↩ Replying to {replyTo.sender_name}</span>
+                <span>{tx("↩ Replying to")} {replyTo.sender_name}</span>
                 <button className="ml-auto text-gray-400 hover:text-gray-700" onClick={() => setReplyTo(null)}>✕</button>
               </div>
             )}
             {editMsg && (
               <div className="flex items-center gap-2 text-xs text-amber-600 bg-amber-50 rounded px-3 py-1.5">
-                <span>✏ Editing message</span>
+                <span>{tx("✏ Editing message")}</span>
                 <button className="ml-auto text-gray-400 hover:text-gray-700" onClick={() => { setEditMsg(null); setCompose(""); }}>✕</button>
               </div>
             )}
@@ -321,7 +322,7 @@ export default function MessagesPage() {
               <textarea
                 className="flex-1 border rounded px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-300"
                 rows={2}
-                placeholder={`Message #${activeChannel.name}… (use @username to mention)`}
+                placeholder={tx("Message #{name}… (use @username to mention)", { name: activeChannel.name })}
                 value={compose}
                 onChange={(e) => setCompose(e.target.value)}
                 onKeyDown={(e) => {
@@ -337,10 +338,10 @@ export default function MessagesPage() {
                 disabled={!compose.trim()}
                 className="shrink-0"
               >
-                {editMsg ? "Update" : "Send"}
+                {editMsg ? tx("Update") : tx("Send")}
               </Button>
             </div>
-            <p className="text-xs text-gray-400">Enter to send · Shift+Enter for newline</p>
+            <p className="text-xs text-gray-400">{tx("Enter to send · Shift+Enter for newline")}</p>
           </div>
         </div>
       )}

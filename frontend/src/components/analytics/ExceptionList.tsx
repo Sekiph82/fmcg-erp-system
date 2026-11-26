@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ExceptionRow } from "@/lib/analytics";
+import { tx } from "@/lib/i18n/core";
 
 const SEV_COLOR: Record<string, string> = {
   critical: "bg-red-50 text-red-700 border-red-200",
@@ -30,7 +31,7 @@ export function ExceptionList({ items, title = "Exceptions", maxItems = 8 }: Exc
     return (
       <div className="text-xs text-emerald-600 text-center py-4 flex items-center justify-center gap-1.5">
         <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
-        No exceptions
+        {tx("No exceptions")}
       </div>
     );
   }

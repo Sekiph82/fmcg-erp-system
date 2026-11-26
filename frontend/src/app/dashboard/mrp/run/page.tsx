@@ -7,6 +7,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
 import { mrpApi, STATUS_COLOR, fmtQty, MRPRun, MRPResult } from "@/lib/mrp";
+import { tx } from "@/lib/i18n/core";
 
 const StatusBadge = ({ s }: { s: string }) => (
   <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLOR[s] ?? "bg-gray-100 text-gray-600"}`}>{s}</span>
@@ -30,7 +31,7 @@ function RunResultsPanel({ runId }: { runId: string }) {
     <div className="space-y-5">
       {chartData.length > 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-          <h3 className="text-sm font-semibold mb-4">Demand vs Supply (Top 20 Products)</h3>
+          <h3 className="text-sm font-semibold mb-4">{tx("Demand vs Supply (Top 20 Products)")}</h3>
           <ResponsiveContainer width="100%" height={240}>
             <BarChart data={chartData} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -51,16 +52,16 @@ function RunResultsPanel({ runId }: { runId: string }) {
           <label className="flex items-center gap-2 text-sm cursor-pointer">
             <input type="checkbox" checked={shortageOnly} onChange={e => setShortageOnly(e.target.checked)}
               className="rounded" />
-            Show shortages only
+            {tx("Show shortages only")}
           </label>
-          <span className="text-xs text-gray-400">{results.length} products</span>
+          <span className="text-xs text-gray-400">{results.length} {tx("products")}</span>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 dark:bg-gray-700 text-xs uppercase text-gray-500">
               <tr>
-                {["SKU", "Product", "SO Demand", "Forecast", "Safety", "Gross Demand",
-                  "Stock", "Incoming PO", "Incoming Prod", "Total Supply", "Net Req.", "Status"].map(h => (
+                {["SKU", tx("Product"), tx("SO Demand"), tx("Forecast"), tx("Safety"), tx("Gross Demand"),
+                  tx("Stock"), tx("Incoming PO"), tx("Incoming Prod"), tx("Total Supply"), tx("Net Req."), tx("Status")].map(h => (
                   <th key={h} className="px-3 py-3 text-left font-medium whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -83,13 +84,13 @@ function RunResultsPanel({ runId }: { runId: string }) {
                   </td>
                   <td className="px-3 py-2">
                     {r.shortage_flag
-                      ? <span className="px-2 py-0.5 rounded-full text-xs bg-red-100 text-red-700">⚠ SHORT</span>
+                      ? <span className="px-2 py-0.5 rounded-full text-xs bg-red-100 text-red-700">{tx("⚠ SHORT")}</span>
                       : <span className="px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-700">OK</span>}
                   </td>
                 </tr>
               ))}
               {results.length === 0 && (
-                <tr><td colSpan={12} className="px-4 py-8 text-center text-gray-400">No results</td></tr>
+                <tr><td colSpan={12} className="px-4 py-8 text-center text-gray-400">{tx("No results")}</td></tr>
               )}
             </tbody>
           </table>
@@ -128,42 +129,42 @@ export default function MRPRunPage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6 space-y-6">
       <div className="flex items-center gap-3 mb-1">
-        <Link href="/dashboard/mrp" className="text-sm text-gray-500 hover:text-indigo-600">← MRP Dashboard</Link>
+        <Link href="/dashboard/mrp" className="text-sm text-gray-500 hover:text-indigo-600">{tx("← MRP Dashboard")}</Link>
       </div>
       <h1 className="text-2xl font-bold text-gray-900 dark:text-white" style={{ borderLeft: "4px solid #6366f1", paddingLeft: 12 }}>
-        MRP Runs
+        {tx("MRP Runs")}
       </h1>
 
       {/* Trigger form */}
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
-        <h3 className="text-sm font-semibold mb-4">Trigger New MRP Run</h3>
+        <h3 className="text-sm font-semibold mb-4">{tx("Trigger New MRP Run")}</h3>
         <div className="flex flex-wrap gap-4 items-end">
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Planning Horizon (days)</label>
+            <label className="block text-xs text-gray-500 mb-1">{tx("Planning Horizon (days)")}</label>
             <input type="number" className={sel} value={horizon} min={7} max={365}
               onChange={e => setHorizon(Number(e.target.value))} style={{ width: 120 }} />
           </div>
           <label className="flex items-center gap-2 text-sm cursor-pointer">
             <input type="checkbox" checked={incForecast} onChange={e => setIncForecast(e.target.checked)} className="rounded" />
-            Include Forecast Demand
+            {tx("Include Forecast Demand")}
           </label>
           <label className="flex items-center gap-2 text-sm cursor-pointer">
             <input type="checkbox" checked={incSafety} onChange={e => setIncSafety(e.target.checked)} className="rounded" />
-            Include Safety Stock
+            {tx("Include Safety Stock")}
           </label>
           <button
             onClick={() => runMutation.mutate()}
             disabled={runMutation.isPending}
             className="px-5 py-2 rounded-lg text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-60"
           >
-            {runMutation.isPending ? "⟳ Running..." : "▶ Run MRP"}
+            {runMutation.isPending ? tx("⟳ Running...") : tx("▶ Run MRP")}
           </button>
         </div>
         {runMutation.isSuccess && (
-          <p className="mt-3 text-sm text-green-600">✓ Run completed: {runMutation.data?.run_no}</p>
+          <p className="mt-3 text-sm text-green-600">{tx("✓ Run completed:")} {runMutation.data?.run_no}</p>
         )}
         {runMutation.isError && (
-          <p className="mt-3 text-sm text-red-600">✗ Run failed. Check server logs.</p>
+          <p className="mt-3 text-sm text-red-600">{tx("✗ Run failed. Check server logs.")}</p>
         )}
       </div>
 
@@ -172,7 +173,7 @@ export default function MRPRunPage() {
         <div className="lg:col-span-1">
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
             <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
-              <p className="text-sm font-semibold">Run History</p>
+              <p className="text-sm font-semibold">{tx("Run History")}</p>
             </div>
             <div className="divide-y divide-gray-100 dark:divide-gray-700">
               {runs.map(r => (
@@ -187,12 +188,12 @@ export default function MRPRunPage() {
                     <StatusBadge s={r.status} />
                   </div>
                   {r.shortage_count != null && r.shortage_count > 0 && (
-                    <p className="text-xs text-red-600 mt-0.5">⚠ {r.shortage_count} shortages</p>
+                    <p className="text-xs text-red-600 mt-0.5">⚠ {r.shortage_count} {tx("shortages")}</p>
                   )}
                 </Link>
               ))}
               {runs.length === 0 && (
-                <p className="px-4 py-6 text-center text-xs text-gray-400">No runs yet</p>
+                <p className="px-4 py-6 text-center text-xs text-gray-400">{tx("No runs yet")}</p>
               )}
             </div>
           </div>
@@ -204,27 +205,27 @@ export default function MRPRunPage() {
             <>
               <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 mb-5">
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
-                  <div><p className="text-xs text-gray-500">Run No</p><p className="font-mono font-bold">{selectedRun.run_no}</p></div>
-                  <div><p className="text-xs text-gray-500">Status</p><StatusBadge s={selectedRun.status} /></div>
-                  <div><p className="text-xs text-gray-500">Products</p><p className="font-bold">{selectedRun.product_count ?? "—"}</p></div>
-                  <div><p className="text-xs text-gray-500">Shortages</p><p className="font-bold text-red-600">{selectedRun.shortage_count ?? "—"}</p></div>
+                  <div><p className="text-xs text-gray-500">{tx("Run No")}</p><p className="font-mono font-bold">{selectedRun.run_no}</p></div>
+                  <div><p className="text-xs text-gray-500">{tx("Status")}</p><StatusBadge s={selectedRun.status} /></div>
+                  <div><p className="text-xs text-gray-500">{tx("Products")}</p><p className="font-bold">{selectedRun.product_count ?? "—"}</p></div>
+                  <div><p className="text-xs text-gray-500">{tx("Shortages")}</p><p className="font-bold text-red-600">{selectedRun.shortage_count ?? "—"}</p></div>
                 </div>
               </div>
               {selectedRun.status === "COMPLETED" && <RunResultsPanel runId={selectedRun.id} />}
               {selectedRun.status === "FAILED" && (
                 <div className="bg-red-50 dark:bg-red-950/20 rounded-xl p-4 text-sm text-red-700">
-                  Run failed: {selectedRun.error_message ?? "Unknown error"}
+                  {tx("Run failed:")} {selectedRun.error_message ?? tx("Unknown error")}
                 </div>
               )}
               {selectedRun.status === "RUNNING" && (
                 <div className="bg-blue-50 dark:bg-blue-950/20 rounded-xl p-4 text-sm text-blue-700 animate-pulse">
-                  ⟳ MRP run in progress…
+                  {tx("⟳ MRP run in progress…")}
                 </div>
               )}
             </>
           ) : (
             <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-8 text-center text-gray-400">
-              Select a run from the list or trigger a new one.
+              {tx("Select a run from the list or trigger a new one.")}
             </div>
           )}
         </div>

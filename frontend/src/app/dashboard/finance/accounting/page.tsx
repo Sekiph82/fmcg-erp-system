@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { financeApi, AccountingDashboard } from "@/lib/finance";
 import { useAuth } from "@/context/AuthContext";
+import { tx } from "@/lib/i18n/core";
 
 function fmt(n: number) {
   return n.toLocaleString(undefined, { maximumFractionDigits: 0 });
@@ -50,38 +51,38 @@ export default function AccountingDashboardPage() {
     <div className="max-w-5xl mx-auto space-y-6 pb-10">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Finance &amp; Accounting</h1>
-        <p className="text-sm text-gray-400 mt-0.5">Money movement summary — invoices, payments, balances</p>
+        <h1 className="text-2xl font-bold text-gray-900">{tx("Finance & Accounting")}</h1>
+        <p className="text-sm text-gray-400 mt-0.5">{tx("Money movement summary — invoices, payments, balances")}</p>
       </div>
 
       {/* KPI Row */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
         <KpiCard
-          label="Total Revenue"
+          label={tx("Total Revenue")}
           value={isLoading ? "—" : fmtCurrency(data?.total_revenue ?? 0)}
           sub="All issued invoices"
           color="text-indigo-700"
         />
         <KpiCard
-          label="Receivables"
+          label={tx("Receivables")}
           value={isLoading ? "—" : fmtCurrency(data?.total_receivables ?? 0)}
           sub={data ? `${data.overdue_sales_invoices} overdue` : undefined}
           color={(data?.total_receivables ?? 0) > 0 ? "text-orange-600" : "text-green-600"}
         />
         <KpiCard
-          label="Total Cost"
+          label={tx("Total Cost")}
           value={isLoading ? "—" : fmtCurrency(data?.total_cost ?? 0)}
           sub="Purchase invoices"
           color="text-gray-800"
         />
         <KpiCard
-          label="Payables"
+          label={tx("Payables")}
           value={isLoading ? "—" : fmtCurrency(data?.total_payables ?? 0)}
           sub={data ? `${data.overdue_purchase_invoices} overdue` : undefined}
           color={(data?.total_payables ?? 0) > 0 ? "text-red-600" : "text-green-600"}
         />
         <KpiCard
-          label="Net Cash Flow"
+          label={tx("Net Cash Flow")}
           value={isLoading ? "—" : fmtCurrency(data?.cash_flow ?? 0)}
           sub="Receivables − Payables"
           color={cashFlowPositive ? "text-green-600" : "text-red-600"}
@@ -91,12 +92,12 @@ export default function AccountingDashboardPage() {
       {/* Quick links */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         {[
-          { label: "Customers Ledger", href: "/dashboard/finance/accounting/customers-ledger", icon: "👥" },
-          { label: "Suppliers Ledger", href: "/dashboard/finance/accounting/suppliers-ledger", icon: "🏭" },
-          { label: "Sales Invoices",   href: "/dashboard/finance/accounting/sales-invoices",   icon: "📄" },
-          { label: "Purchase Invoices",href: "/dashboard/finance/accounting/purchase-invoices",icon: "📦" },
-          { label: "Payments",         href: "/dashboard/finance/accounting/payments",          icon: "💳" },
-          { label: "Accounting Controls", href: "/dashboard/finance?tab=accounting",             icon: "AC", permission: "finance.configure" },
+          { label: tx("Customers Ledger"), href: "/dashboard/finance/accounting/customers-ledger", icon: "👥" },
+          { label: tx("Suppliers Ledger"), href: "/dashboard/finance/accounting/suppliers-ledger", icon: "🏭" },
+          { label: tx("Sales Invoices"),   href: "/dashboard/finance/accounting/sales-invoices",   icon: "📄" },
+          { label: tx("Purchase Invoices"),href: "/dashboard/finance/accounting/purchase-invoices",icon: "📦" },
+          { label: tx("Payments"),         href: "/dashboard/finance/accounting/payments",          icon: "💳" },
+          { label: tx("Accounting Controls"), href: "/dashboard/finance?tab=accounting",             icon: "AC", permission: "finance.configure" },
         ].filter((item) => !item.permission || hasPermission(item.permission)).map((item) => (
           <Link
             key={item.href}
@@ -114,9 +115,9 @@ export default function AccountingDashboardPage() {
         {/* Recent Sales Invoices */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-gray-50">
-            <h2 className="font-semibold text-gray-800">Recent Sales Invoices</h2>
+            <h2 className="font-semibold text-gray-800">{tx("Recent Sales Invoices")}</h2>
             <Link href="/dashboard/finance/accounting/sales-invoices"
-              className="text-xs text-indigo-600 hover:underline">View all</Link>
+              className="text-xs text-indigo-600 hover:underline">{tx("View all")}</Link>
           </div>
           <div className="divide-y divide-gray-50">
             {isLoading && (
@@ -125,7 +126,7 @@ export default function AccountingDashboardPage() {
               </div>
             )}
             {!isLoading && (data?.recent_sales_invoices ?? []).length === 0 && (
-              <p className="text-sm text-gray-400 p-4">No sales invoices found.</p>
+              <p className="text-sm text-gray-400 p-4">{tx("No sales invoices found.")}</p>
             )}
             {(data?.recent_sales_invoices ?? []).map((inv) => (
               <div key={inv.id} className="flex items-center justify-between px-5 py-3 hover:bg-gray-50">
@@ -147,9 +148,9 @@ export default function AccountingDashboardPage() {
         {/* Recent Purchase Invoices */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-gray-50">
-            <h2 className="font-semibold text-gray-800">Recent Purchase Invoices</h2>
+            <h2 className="font-semibold text-gray-800">{tx("Recent Purchase Invoices")}</h2>
             <Link href="/dashboard/finance/accounting/purchase-invoices"
-              className="text-xs text-indigo-600 hover:underline">View all</Link>
+              className="text-xs text-indigo-600 hover:underline">{tx("View all")}</Link>
           </div>
           <div className="divide-y divide-gray-50">
             {isLoading && (
@@ -158,7 +159,7 @@ export default function AccountingDashboardPage() {
               </div>
             )}
             {!isLoading && (data?.recent_purchase_invoices ?? []).length === 0 && (
-              <p className="text-sm text-gray-400 p-4">No purchase invoices found.</p>
+              <p className="text-sm text-gray-400 p-4">{tx("No purchase invoices found.")}</p>
             )}
             {(data?.recent_purchase_invoices ?? []).map((inv) => (
               <div key={inv.id} className="flex items-center justify-between px-5 py-3 hover:bg-gray-50">

@@ -1,6 +1,7 @@
 "use client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { commissionsApi, SEVERITY_COLORS, AGENT_LABELS } from "@/lib/commissions";
+import { tx } from "@/lib/i18n/core";
 
 export default function CommissionsAIPage() {
   const qc = useQueryClient();
@@ -21,20 +22,20 @@ export default function CommissionsAIPage() {
     <div className="p-6 space-y-5 text-slate-200">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-white">AI Intelligence — Commissions</h1>
-          <p className="text-slate-500 text-sm mt-0.5">3 agents monitoring incentives, fraud, and performance</p>
+          <h1 className="text-xl font-bold text-white">{tx("AI Intelligence — Commissions")}</h1>
+          <p className="text-slate-500 text-sm mt-0.5">{tx("3 agents monitoring incentives, fraud, and performance")}</p>
         </div>
         <button onClick={() => runMut.mutate()} disabled={runMut.isPending}
           className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium disabled:opacity-50">
-          {runMut.isPending ? "Running…" : "Run AI Agents"}
+          {runMut.isPending ? tx("Running…") : tx("Run AI Agents")}
         </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {[
-          { key: "INCENTIVE_OPTIMIZER", desc: "Identifies gaps in commission coverage, underperforming reps, and suggests better commission structures to improve motivation." },
-          { key: "FRAUD_DETECTION", desc: "Flags commission spikes (>3× average), duplicate calculations, and manipulation patterns before they are approved and paid out." },
-          { key: "PERFORMANCE_ADVISOR", desc: "Identifies reps below 50% target achievement and suggests coaching actions, territory reviews, or target adjustments." },
+          { key: "INCENTIVE_OPTIMIZER", desc: tx("Identifies gaps in commission coverage, underperforming reps, and suggests better commission structures to improve motivation.") },
+          { key: "FRAUD_DETECTION", desc: tx("Flags commission spikes (>3× average), duplicate calculations, and manipulation patterns before they are approved and paid out.") },
+          { key: "PERFORMANCE_ADVISOR", desc: tx("Identifies reps below 50% target achievement and suggests coaching actions, territory reviews, or target adjustments.") },
         ].map((a) => (
           <div key={a.key} className="glow-card p-4">
             <p className="text-sm font-semibold text-indigo-300 mb-1">{AGENT_LABELS[a.key]}</p>
@@ -44,7 +45,7 @@ export default function CommissionsAIPage() {
       </div>
 
       <div className="space-y-3">
-        {isLoading && <p className="text-slate-500 text-sm">Loading…</p>}
+        {isLoading && <p className="text-slate-500 text-sm">{tx("Loading…")}</p>}
         {!isLoading && recs.length === 0 && (
           <div className="glow-card p-8 text-center text-slate-600">
             No recommendations — click &ldquo;Run AI Agents&rdquo; to generate insights.
@@ -65,9 +66,9 @@ export default function CommissionsAIPage() {
               {r.status === "PENDING" && (
                 <div className="flex gap-2 shrink-0">
                   <button onClick={() => ackMut.mutate({ id: r.id, status: "ACKNOWLEDGED" })}
-                    className="px-3 py-1.5 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-slate-300 text-xs">Ack</button>
+                    className="px-3 py-1.5 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-slate-300 text-xs">{tx("Ack")}</button>
                   <button onClick={() => ackMut.mutate({ id: r.id, status: "DISMISSED" })}
-                    className="px-3 py-1.5 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-slate-500 text-xs">Dismiss</button>
+                    className="px-3 py-1.5 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-slate-500 text-xs">{tx("Dismiss")}</button>
                 </div>
               )}
               {r.status !== "PENDING" && <span className="text-xs text-slate-600 shrink-0">{r.status}</span>}

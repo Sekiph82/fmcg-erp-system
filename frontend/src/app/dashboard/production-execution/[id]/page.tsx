@@ -8,6 +8,7 @@ import {
   ExecAIRecOut, WOExecStatus,
   STATUS_COLOR, WO_STATUS_COLOR, LIFECYCLE_NEXT, fmtKES, fmtMins,
 } from "@/lib/productionExecution";
+import { tx } from "@/lib/i18n/core";
 
 const TABS = ["Overview", "Work Orders", "Materials", "AI Recs", "Batch Record"] as const;
 type Tab = typeof TABS[number];
@@ -137,8 +138,8 @@ export default function ProdExecOrderDetailPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["exec-ai", id] }),
   });
 
-  if (isLoading) return <div className="p-8 text-center text-gray-400">Loading order…</div>;
-  if (!order) return <div className="p-8 text-center text-red-400">Order not found.</div>;
+  if (isLoading) return <div className="p-8 text-center text-gray-400">{tx("Loading order…")}</div>;
+  if (!order) return <div className="p-8 text-center text-red-400">{tx("Order not found.")}</div>;
 
   const progressPct = order.planned_qty > 0
     ? Math.min(100, Math.round((order.completed_qty / order.planned_qty) * 100))
@@ -153,62 +154,62 @@ export default function ProdExecOrderDetailPage() {
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <button onClick={() => router.push("/dashboard/production-execution")} className="text-sm text-gray-400 hover:text-gray-600">← Orders</button>
+            <button onClick={() => router.push("/dashboard/production-execution")} className="text-sm text-gray-400 hover:text-gray-600">{tx("← Orders")}</button>
             <span className="text-gray-300">/</span>
             <span className="text-sm text-gray-600 font-mono">{order.order_no}</span>
           </div>
           <h1 className="text-2xl font-bold text-gray-900">{order.product_name || order.order_no}</h1>
           <div className="flex items-center gap-2 mt-1 flex-wrap">
             <span className={`text-xs px-2 py-0.5 rounded ${STATUS_COLOR[order.status]}`}>{order.status}</span>
-            {order.batch_no && <span className="text-xs font-mono text-gray-400">Batch: {order.batch_no}</span>}
+            {order.batch_no && <span className="text-xs font-mono text-gray-400">{tx("Batch:")} {order.batch_no}</span>}
             {order.is_rework && <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded">REWORK</span>}
             {order.is_split && <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">SPLIT</span>}
-            <span className="text-xs text-gray-400">Priority: {order.priority}</span>
+            <span className="text-xs text-gray-400">{tx("Priority:")} {order.priority}</span>
           </div>
           {order.approved_by && order.approved_at && (
             <p className="text-xs text-gray-500 mt-1">
-              Approved by <span className="font-mono">{order.approved_by}</span> at {new Date(order.approved_at).toLocaleString()}
+              {tx("Approved by")} <span className="font-mono">{order.approved_by}</span> {tx("at")} {new Date(order.approved_at).toLocaleString()}
             </p>
           )}
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <a href={`/dashboard/production-execution/${id}/genealogy`} className="px-3 py-1.5 text-xs border rounded-lg text-gray-600 hover:bg-gray-50">Genealogy</a>
+          <a href={`/dashboard/production-execution/${id}/genealogy`} className="px-3 py-1.5 text-xs border rounded-lg text-gray-600 hover:bg-gray-50">{tx("Genealogy")}</a>
           {order.status === "PLANNED" && !order.created_by && !order.approved_by && !order.approved_at && (
-            <span className="text-xs text-amber-700">Creator attribution is required before approval</span>
+            <span className="text-xs text-amber-700">{tx("Creator attribution is required before approval")}</span>
           )}
           {order.status === "PLANNED" && order.created_by && !order.approved_by && !order.approved_at && (
             <button onClick={() => approveOrder.mutate()} disabled={approveOrder.isPending} className="px-3 py-1.5 text-xs border border-green-200 text-green-700 rounded-lg hover:bg-green-50 disabled:opacity-40">
-              {approveOrder.isPending ? "Approving…" : "Approve"}
+              {approveOrder.isPending ? tx("Approving…") : tx("Approve")}
             </button>
           )}
           {order.status === "PLANNED" && order.approved_by && order.approved_at && (
             <button onClick={() => advance.mutate()} disabled={advance.isPending} className="px-3 py-1.5 text-xs bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-40">
-              {advance.isPending ? "Releasing…" : "Release"}
+              {advance.isPending ? tx("Releasing…") : tx("Release")}
             </button>
           )}
           {order.status === "PLANNED" && Boolean(order.approved_by) !== Boolean(order.approved_at) && (
-            <span className="text-xs text-amber-700">Approval record needs administrator review</span>
+            <span className="text-xs text-amber-700">{tx("Approval record needs administrator review")}</span>
           )}
           <button onClick={() => runAI.mutate()} disabled={runAI.isPending} className="px-3 py-1.5 text-xs bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-40">
-            {runAI.isPending ? "Running AI…" : "Run AI"}
+            {runAI.isPending ? tx("Running AI…") : tx("Run AI")}
           </button>
           {order.status === "IN_PROGRESS" && (
-            <button onClick={() => pauseOrder.mutate()} disabled={pauseOrder.isPending} className="px-3 py-1.5 text-xs border border-orange-200 text-orange-600 rounded-lg hover:bg-orange-50 disabled:opacity-40">{pauseOrder.isPending ? "Pausing…" : "Pause"}</button>
+            <button onClick={() => pauseOrder.mutate()} disabled={pauseOrder.isPending} className="px-3 py-1.5 text-xs border border-orange-200 text-orange-600 rounded-lg hover:bg-orange-50 disabled:opacity-40">{pauseOrder.isPending ? tx("Pausing…") : tx("Pause")}</button>
           )}
           {order.status === "PAUSED" && (
-            <button onClick={() => resumeOrder.mutate()} disabled={resumeOrder.isPending} className="px-3 py-1.5 text-xs border border-green-200 text-green-700 rounded-lg hover:bg-green-50 disabled:opacity-40">{resumeOrder.isPending ? "Resuming…" : "Resume"}</button>
+            <button onClick={() => resumeOrder.mutate()} disabled={resumeOrder.isPending} className="px-3 py-1.5 text-xs border border-green-200 text-green-700 rounded-lg hover:bg-green-50 disabled:opacity-40">{resumeOrder.isPending ? tx("Resuming…") : tx("Resume")}</button>
           )}
           {order.status === "IN_PROGRESS" && (
-            <button onClick={() => { setCompleteForm({ ...completeForm, completed_qty: String(order.planned_qty) }); setShowComplete(true); }} className="px-3 py-1.5 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700">Complete</button>
+            <button onClick={() => { setCompleteForm({ ...completeForm, completed_qty: String(order.planned_qty) }); setShowComplete(true); }} className="px-3 py-1.5 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700">{tx("Complete")}</button>
           )}
           {order.status === "COMPLETED" && (
-            <button onClick={() => closeOrder.mutate()} className="px-3 py-1.5 text-xs bg-teal-600 text-white rounded-lg hover:bg-teal-700">Close</button>
+            <button onClick={() => closeOrder.mutate()} className="px-3 py-1.5 text-xs bg-teal-600 text-white rounded-lg hover:bg-teal-700">{tx("Close")}</button>
           )}
           {["COMPLETED", "CLOSED"].includes(order.status) && (
-            <button onClick={() => setShowRework(true)} className="px-3 py-1.5 text-xs border border-orange-200 text-orange-600 rounded-lg hover:bg-orange-50">Create Rework</button>
+            <button onClick={() => setShowRework(true)} className="px-3 py-1.5 text-xs border border-orange-200 text-orange-600 rounded-lg hover:bg-orange-50">{tx("Create Rework")}</button>
           )}
           {["DRAFT", "PLANNED", "RELEASED"].includes(order.status) && (
-            <button onClick={() => setShowSplit(true)} className="px-3 py-1.5 text-xs border rounded-lg text-gray-600 hover:bg-gray-50">Split</button>
+            <button onClick={() => setShowSplit(true)} className="px-3 py-1.5 text-xs border rounded-lg text-gray-600 hover:bg-gray-50">{tx("Split")}</button>
           )}
           {nextAction && !["COMPLETED", "IN_PROGRESS"].includes(order.status) && (
             <button onClick={() => advance.mutate()} disabled={advance.isPending} className="px-3 py-1.5 text-xs bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-40">
@@ -216,7 +217,7 @@ export default function ProdExecOrderDetailPage() {
             </button>
           )}
           {["DRAFT", "PLANNED", "RELEASED"].includes(order.status) && (
-            <button onClick={() => cancelOrder.mutate()} className="px-3 py-1.5 text-xs border border-red-200 text-red-500 rounded-lg hover:bg-red-50">Cancel</button>
+            <button onClick={() => cancelOrder.mutate()} className="px-3 py-1.5 text-xs border border-red-200 text-red-500 rounded-lg hover:bg-red-50">{tx("Cancel")}</button>
           )}
         </div>
       </div>
@@ -224,17 +225,17 @@ export default function ProdExecOrderDetailPage() {
       {/* Progress Bar */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
         <div className="flex items-center justify-between text-sm mb-2">
-          <span className="text-gray-500">Production Progress</span>
+          <span className="text-gray-500">{tx("Production Progress")}</span>
           <span className="font-medium">{Number(order.completed_qty).toLocaleString()} / {Number(order.planned_qty).toLocaleString()} {order.uom} ({progressPct}%)</span>
         </div>
         <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
           <div className={`h-full rounded-full ${progressPct >= 100 ? "bg-green-500" : "bg-indigo-500"}`} style={{ width: `${progressPct}%` }} />
         </div>
         <div className="flex items-center gap-6 mt-2 text-xs text-gray-400">
-          {order.scrap_qty > 0 && <span className="text-red-500">Scrap: {Number(order.scrap_qty)} {order.uom}</span>}
-          {order.rework_qty > 0 && <span className="text-orange-500">Rework: {Number(order.rework_qty)} {order.uom}</span>}
-          {order.actual_start && <span>Started: {new Date(order.actual_start).toLocaleString()}</span>}
-          {order.actual_end && <span>Ended: {new Date(order.actual_end).toLocaleString()}</span>}
+          {order.scrap_qty > 0 && <span className="text-red-500">{tx("Scrap:")} {Number(order.scrap_qty)} {order.uom}</span>}
+          {order.rework_qty > 0 && <span className="text-orange-500">{tx("Rework:")} {Number(order.rework_qty)} {order.uom}</span>}
+          {order.actual_start && <span>{tx("Started:")} {new Date(order.actual_start).toLocaleString()}</span>}
+          {order.actual_end && <span>{tx("Ended:")} {new Date(order.actual_end).toLocaleString()}</span>}
         </div>
       </div>
 
@@ -256,29 +257,29 @@ export default function ProdExecOrderDetailPage() {
       {tab === "Overview" && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-            <h3 className="font-semibold text-gray-800 mb-3">Order Details</h3>
+            <h3 className="font-semibold text-gray-800 mb-3">{tx("Order Details")}</h3>
             <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-              <dt className="text-gray-400">Order #</dt><dd className="font-mono">{order.order_no}</dd>
-              <dt className="text-gray-400">Product</dt><dd>{order.product_name || "—"}</dd>
+              <dt className="text-gray-400">{tx("Order #")}</dt><dd className="font-mono">{order.order_no}</dd>
+              <dt className="text-gray-400">{tx("Product")}</dt><dd>{order.product_name || "—"}</dd>
               <dt className="text-gray-400">BOM</dt><dd className="font-mono">{order.bom_code || "—"}</dd>
-              <dt className="text-gray-400">Source</dt><dd>{order.source_type}</dd>
-              <dt className="text-gray-400">Planned Start</dt><dd>{order.planned_start ? new Date(order.planned_start).toLocaleString() : "—"}</dd>
-              <dt className="text-gray-400">Planned End</dt><dd>{order.planned_end ? new Date(order.planned_end).toLocaleString() : "—"}</dd>
-              <dt className="text-gray-400">Plant</dt><dd>{order.plant_id || "—"}</dd>
-              <dt className="text-gray-400">Section</dt><dd>{order.section_id || "—"}</dd>
+              <dt className="text-gray-400">{tx("Source")}</dt><dd>{order.source_type}</dd>
+              <dt className="text-gray-400">{tx("Planned Start")}</dt><dd>{order.planned_start ? new Date(order.planned_start).toLocaleString() : "—"}</dd>
+              <dt className="text-gray-400">{tx("Planned End")}</dt><dd>{order.planned_end ? new Date(order.planned_end).toLocaleString() : "—"}</dd>
+              <dt className="text-gray-400">{tx("Plant")}</dt><dd>{order.plant_id || "—"}</dd>
+              <dt className="text-gray-400">{tx("Section")}</dt><dd>{order.section_id || "—"}</dd>
             </dl>
             {order.remarks && <p className="text-sm text-gray-500 border-t mt-3 pt-3">{order.remarks}</p>}
           </div>
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-            <h3 className="font-semibold text-gray-800 mb-3">Costing Summary</h3>
+            <h3 className="font-semibold text-gray-800 mb-3">{tx("Costing Summary")}</h3>
             <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-              <dt className="text-gray-400">Planned Mat. Cost</dt><dd>{fmtKES(Number(order.planned_material_cost))}</dd>
-              <dt className="text-gray-400">Actual Mat. Cost</dt><dd>{fmtKES(Number(order.actual_material_cost))}</dd>
-              <dt className="text-gray-400">Planned Labor</dt><dd>{fmtKES(Number(order.planned_labor_cost))}</dd>
-              <dt className="text-gray-400">Actual Labor</dt><dd>{fmtKES(Number(order.actual_labor_cost))}</dd>
-              <dt className="text-gray-400">Overhead</dt><dd>{fmtKES(Number(order.overhead_cost))}</dd>
-              <dt className="text-gray-400 font-medium">Total Cost</dt><dd className="font-bold text-green-700">{fmtKES(Number(order.total_actual_cost))}</dd>
-              <dt className="text-gray-400">Cost / UOM</dt><dd>{order.cost_per_uom ? fmtKES(Number(order.cost_per_uom)) : "—"}</dd>
+              <dt className="text-gray-400">{tx("Planned Mat. Cost")}</dt><dd>{fmtKES(Number(order.planned_material_cost))}</dd>
+              <dt className="text-gray-400">{tx("Actual Mat. Cost")}</dt><dd>{fmtKES(Number(order.actual_material_cost))}</dd>
+              <dt className="text-gray-400">{tx("Planned Labor")}</dt><dd>{fmtKES(Number(order.planned_labor_cost))}</dd>
+              <dt className="text-gray-400">{tx("Actual Labor")}</dt><dd>{fmtKES(Number(order.actual_labor_cost))}</dd>
+              <dt className="text-gray-400">{tx("Overhead")}</dt><dd>{fmtKES(Number(order.overhead_cost))}</dd>
+              <dt className="text-gray-400 font-medium">{tx("Total Cost")}</dt><dd className="font-bold text-green-700">{fmtKES(Number(order.total_actual_cost))}</dd>
+              <dt className="text-gray-400">{tx("Cost / UOM")}</dt><dd>{order.cost_per_uom ? fmtKES(Number(order.cost_per_uom)) : "—"}</dd>
             </dl>
           </div>
         </div>
@@ -289,7 +290,7 @@ export default function ProdExecOrderDetailPage() {
         <div className="space-y-3">
           {order.work_orders.length === 0 ? (
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-8 text-center text-sm text-gray-400">
-              No work orders. Attach a routing to auto-generate steps.
+              {tx("No work orders. Attach a routing to auto-generate steps.")}
             </div>
           ) : order.work_orders.map((wo) => (
             <div key={wo.id} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
@@ -305,22 +306,22 @@ export default function ProdExecOrderDetailPage() {
                       {wo.qc_required_flag && <span className="text-xs bg-blue-100 text-blue-700 px-1.5 rounded">QC</span>}
                     </div>
                     <div className="flex items-center gap-4 text-xs text-gray-400">
-                      <span>Planned: {fmtMins(Number(wo.run_time_planned))}</span>
-                      {wo.run_time_actual !== null && <span className="text-gray-600">Actual: {fmtMins(Number(wo.run_time_actual))}</span>}
-                      <span>Qty: {Number(wo.planned_qty).toLocaleString()}</span>
-                      {wo.completed_qty > 0 && <span className="text-green-600">Done: {Number(wo.completed_qty).toLocaleString()}</span>}
-                      {wo.scrap_qty > 0 && <span className="text-red-500">Scrap: {Number(wo.scrap_qty).toLocaleString()}</span>}
+                      <span>{tx("Planned:")} {fmtMins(Number(wo.run_time_planned))}</span>
+                      {wo.run_time_actual !== null && <span className="text-gray-600">{tx("Actual:")} {fmtMins(Number(wo.run_time_actual))}</span>}
+                      <span>{tx("Qty:")} {Number(wo.planned_qty).toLocaleString()}</span>
+                      {wo.completed_qty > 0 && <span className="text-green-600">{tx("Done:")} {Number(wo.completed_qty).toLocaleString()}</span>}
+                      {wo.scrap_qty > 0 && <span className="text-red-500">{tx("Scrap:")} {Number(wo.scrap_qty).toLocaleString()}</span>}
                     </div>
-                    {wo.started_at && <p className="text-xs text-gray-400 mt-0.5">Started: {new Date(wo.started_at).toLocaleString()}</p>}
-                    {wo.completed_at && <p className="text-xs text-green-600 mt-0.5">Completed: {new Date(wo.completed_at).toLocaleString()}</p>}
+                    {wo.started_at && <p className="text-xs text-gray-400 mt-0.5">{tx("Started:")} {new Date(wo.started_at).toLocaleString()}</p>}
+                    {wo.completed_at && <p className="text-xs text-green-600 mt-0.5">{tx("Completed:")} {new Date(wo.completed_at).toLocaleString()}</p>}
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   {wo.status === "READY" && (
-                    <button onClick={() => startWO.mutate(wo.id)} disabled={startWO.isPending} className="px-3 py-1 text-xs bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 disabled:opacity-40">Start</button>
+                    <button onClick={() => startWO.mutate(wo.id)} disabled={startWO.isPending} className="px-3 py-1 text-xs bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 disabled:opacity-40">{tx("Start")}</button>
                   )}
                   {wo.status === "IN_PROGRESS" && (
-                    <button onClick={() => { setCompleteWoId(wo.id); setWoCompleteForm({ ...woCompleteForm, completed_qty: String(wo.planned_qty) }); }} className="px-3 py-1 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700">Complete</button>
+                    <button onClick={() => { setCompleteWoId(wo.id); setWoCompleteForm({ ...woCompleteForm, completed_qty: String(wo.planned_qty) }); }} className="px-3 py-1 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700">{tx("Complete")}</button>
                   )}
                 </div>
               </div>
@@ -340,14 +341,14 @@ export default function ProdExecOrderDetailPage() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50">
               <tr>
-                {["Item", "Code", "Required", "Reserved", "Issued", "Consumed", "Returned", "Cost", "Status", ""].map((h) => (
+                {[tx("Item"), tx("Code"), tx("Required"), tx("Reserved"), tx("Issued"), tx("Consumed"), tx("Returned"), tx("Cost"), tx("Status"), ""].map((h) => (
                   <th key={h} className="px-3 py-2.5 text-left font-medium text-gray-400 text-xs">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {order.materials.length === 0 ? (
-                <tr><td colSpan={10} className="px-3 py-8 text-center text-gray-400 text-sm">No materials tracked yet.</td></tr>
+                <tr><td colSpan={10} className="px-3 py-8 text-center text-gray-400 text-sm">{tx("No materials tracked yet.")}</td></tr>
               ) : order.materials.map((m) => (
                 <tr key={m.id} className="hover:bg-gray-50">
                   <td className="px-3 py-2 font-medium">{m.item_name || "—"}</td>
@@ -361,7 +362,7 @@ export default function ProdExecOrderDetailPage() {
                   <td className="px-3 py-2"><span className="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">{m.status}</span></td>
                   <td className="px-3 py-2">
                     {["IN_PROGRESS", "RELEASED"].includes(order.status) && (
-                      <button onClick={() => { setIssueMat(m); setIssueQty(String(Number(m.required_qty) - Number(m.issued_qty))); }} className="text-xs text-indigo-600 hover:underline">Issue</button>
+                      <button onClick={() => { setIssueMat(m); setIssueQty(String(Number(m.required_qty) - Number(m.issued_qty))); }} className="text-xs text-indigo-600 hover:underline">{tx("Issue")}</button>
                     )}
                   </td>
                 </tr>
@@ -370,7 +371,7 @@ export default function ProdExecOrderDetailPage() {
           </table>
           {order.materials.some((m) => m.lot_numbers?.length) && (
             <div className="p-4 border-t border-gray-50">
-              <p className="text-xs font-medium text-gray-500 mb-2">Lot Traceability</p>
+              <p className="text-xs font-medium text-gray-500 mb-2">{tx("Lot Traceability")}</p>
               <div className="flex flex-wrap gap-2">
                 {order.materials.flatMap((m) => (m.lot_numbers || []).map((lot) => (
                   <span key={`${m.id}-${lot}`} className="text-xs bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded">
@@ -388,7 +389,7 @@ export default function ProdExecOrderDetailPage() {
         <div className="space-y-3">
           {aiRecs.length === 0 ? (
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-8 text-center text-sm text-gray-400">
-              No AI recommendations. Click &quot;Run AI&quot; to analyze this order.
+              {tx("No AI recommendations. Click \"Run AI\" to analyze this order.")}
             </div>
           ) : aiRecs.map((rec) => (
             <div key={rec.id} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
@@ -405,12 +406,12 @@ export default function ProdExecOrderDetailPage() {
                   </div>
                   <p className="font-medium text-gray-800 text-sm">{rec.title}</p>
                   {rec.explanation && <p className="text-xs text-gray-500 mt-1">{rec.explanation}</p>}
-                  {rec.impact_summary && <p className="text-xs text-indigo-600 mt-1">Impact: {rec.impact_summary}</p>}
+                  {rec.impact_summary && <p className="text-xs text-indigo-600 mt-1">{tx("Impact:")} {rec.impact_summary}</p>}
                 </div>
                 {rec.status === "PENDING" && (
                   <div className="flex gap-2">
-                    <button onClick={() => actionAI.mutate({ recId: rec.id, status: "ACCEPTED" })} className="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700">Accept</button>
-                    <button onClick={() => actionAI.mutate({ recId: rec.id, status: "REJECTED" })} className="px-2 py-1 text-xs border text-gray-600 rounded hover:bg-gray-50">Reject</button>
+                    <button onClick={() => actionAI.mutate({ recId: rec.id, status: "ACCEPTED" })} className="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700">{tx("Accept")}</button>
+                    <button onClick={() => actionAI.mutate({ recId: rec.id, status: "REJECTED" })} className="px-2 py-1 text-xs border text-gray-600 rounded hover:bg-gray-50">{tx("Reject")}</button>
                   </div>
                 )}
               </div>
@@ -424,12 +425,12 @@ export default function ProdExecOrderDetailPage() {
         <div className="space-y-6">
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-gray-800">Digital Batch Record</h3>
-              <span className="text-xs text-gray-400">Generated: {new Date().toLocaleString()}</span>
+              <h3 className="font-semibold text-gray-800">{tx("Digital Batch Record")}</h3>
+              <span className="text-xs text-gray-400">{tx("Generated:")} {new Date().toLocaleString()}</span>
             </div>
             <div className="space-y-4 text-sm">
               <div>
-                <p className="text-xs font-medium text-gray-400 uppercase mb-1">Order Information</p>
+                <p className="text-xs font-medium text-gray-400 uppercase mb-1">{tx("Order Information")}</p>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   {[
                     ["Order #", order.order_no],
@@ -449,12 +450,12 @@ export default function ProdExecOrderDetailPage() {
                 </div>
               </div>
               <div>
-                <p className="text-xs font-medium text-gray-400 uppercase mb-1">Operations Log</p>
+                <p className="text-xs font-medium text-gray-400 uppercase mb-1">{tx("Operations Log")}</p>
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
                     <thead className="bg-gray-50">
                       <tr>
-                        {["Step", "Operation", "Status", "Planned (min)", "Actual (min)", "Completed", "Scrap", "QC"].map((h) => (
+                        {[tx("Step"), tx("Operation"), tx("Status"), tx("Planned (min)"), tx("Actual (min)"), tx("Completed"), tx("Scrap"), "QC"].map((h) => (
                           <th key={h} className="px-2 py-1.5 text-left text-gray-400">{h}</th>
                         ))}
                       </tr>
@@ -469,7 +470,7 @@ export default function ProdExecOrderDetailPage() {
                           <td className="px-2 py-1.5 text-right">{wo.run_time_actual !== null ? Number(wo.run_time_actual).toFixed(0) : "—"}</td>
                           <td className="px-2 py-1.5 text-right">{Number(wo.completed_qty).toFixed(3)}</td>
                           <td className="px-2 py-1.5 text-right text-red-500">{Number(wo.scrap_qty) > 0 ? Number(wo.scrap_qty).toFixed(3) : "—"}</td>
-                          <td className="px-2 py-1.5">{wo.qc_passed === true ? "✓ PASS" : wo.qc_passed === false ? "✗ FAIL" : "—"}</td>
+                          <td className="px-2 py-1.5">{wo.qc_passed === true ? tx("✓ PASS") : wo.qc_passed === false ? tx("✗ FAIL") : "—"}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -477,12 +478,12 @@ export default function ProdExecOrderDetailPage() {
                 </div>
               </div>
               <div>
-                <p className="text-xs font-medium text-gray-400 uppercase mb-1">Materials Used</p>
+                <p className="text-xs font-medium text-gray-400 uppercase mb-1">{tx("Materials Used")}</p>
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
                     <thead className="bg-gray-50">
                       <tr>
-                        {["Material", "Code", "Required", "Issued", "UOM", "Lot Numbers"].map((h) => (
+                        {[tx("Material"), tx("Code"), tx("Required"), tx("Issued"), "UOM", tx("Lot Numbers")].map((h) => (
                           <th key={h} className="px-2 py-1.5 text-left text-gray-400">{h}</th>
                         ))}
                       </tr>
@@ -508,9 +509,9 @@ export default function ProdExecOrderDetailPage() {
       )}
 
       <section className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-        <h3 className="font-semibold text-gray-800 mb-3">Immutable transition history</h3>
-        {historyLoading ? <p className="text-sm text-gray-400">Loading history…</p> : transitionHistory.length === 0 ? (
-          <p className="text-sm text-gray-500">No recorded transitions yet. History starts with events created after the audit-history migration; earlier events are not backfilled.</p>
+        <h3 className="font-semibold text-gray-800 mb-3">{tx("Immutable transition history")}</h3>
+        {historyLoading ? <p className="text-sm text-gray-400">{tx("Loading history…")}</p> : transitionHistory.length === 0 ? (
+          <p className="text-sm text-gray-500">{tx("No recorded transitions yet. History starts with events created after the audit-history migration; earlier events are not backfilled.")}</p>
         ) : (
           <ol className="divide-y divide-gray-100">
             {transitionHistory.map((event) => (
@@ -520,11 +521,11 @@ export default function ProdExecOrderDetailPage() {
                   <p className="text-xs text-gray-500">
                     {event.entity_type.replace(/_/g, " ")} · {event.from_status || "—"} → {event.to_status || "—"}
                   </p>
-                  {event.entity_id !== event.parent_entity_id && <p className="text-xs font-mono text-gray-400">Operation: {event.entity_id}</p>}
+                  {event.entity_id !== event.parent_entity_id && <p className="text-xs font-mono text-gray-400">{tx("Operation:")} {event.entity_id}</p>}
                 </div>
                 <div className="text-xs text-gray-500 md:text-right">
                   <p>{new Date(event.created_at).toLocaleString()}</p>
-                  <p>Actor: {event.actor_label}</p>
+                  <p>{tx("Actor:")} {event.actor_label}</p>
                 </div>
               </li>
             ))}
@@ -536,19 +537,19 @@ export default function ProdExecOrderDetailPage() {
       {showComplete && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
-            <h2 className="text-lg font-semibold mb-3">Complete Production Order</h2>
+            <h2 className="text-lg font-semibold mb-3">{tx("Complete Production Order")}</h2>
             <div className="space-y-3">
-              <div><label className="text-xs text-gray-500 mb-1 block">Completed Qty ({order.uom})</label>
+              <div><label className="text-xs text-gray-500 mb-1 block">{tx("Completed Qty (")}{order.uom})</label>
                 <input type="number" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={completeForm.completed_qty} onChange={(e) => setCompleteForm({ ...completeForm, completed_qty: e.target.value })} /></div>
-              <div><label className="text-xs text-gray-500 mb-1 block">Scrap Qty ({order.uom})</label>
+              <div><label className="text-xs text-gray-500 mb-1 block">{tx("Scrap Qty (")}{order.uom})</label>
                 <input type="number" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={completeForm.scrap_qty} onChange={(e) => setCompleteForm({ ...completeForm, scrap_qty: e.target.value })} /></div>
-              <textarea className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" rows={2} placeholder="Remarks" value={completeForm.remarks} onChange={(e) => setCompleteForm({ ...completeForm, remarks: e.target.value })} />
+              <textarea className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" rows={2} placeholder={tx("Remarks")} value={completeForm.remarks} onChange={(e) => setCompleteForm({ ...completeForm, remarks: e.target.value })} />
             </div>
             <div className="flex gap-3 mt-4">
               <button onClick={() => completeOrder.mutate()} disabled={!completeForm.completed_qty || completeOrder.isPending} className="flex-1 bg-green-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-40">
-                {completeOrder.isPending ? "…" : "Mark Complete"}
+                {completeOrder.isPending ? "…" : tx("Mark Complete")}
               </button>
-              <button onClick={() => setShowComplete(false)} className="px-4 py-2 border rounded-lg text-sm text-gray-600">Cancel</button>
+              <button onClick={() => setShowComplete(false)} className="px-4 py-2 border rounded-lg text-sm text-gray-600">{tx("Cancel")}</button>
             </div>
           </div>
         </div>
@@ -558,40 +559,40 @@ export default function ProdExecOrderDetailPage() {
       {completeWoId && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
-            <h2 className="text-lg font-semibold mb-3">Complete Work Order</h2>
+            <h2 className="text-lg font-semibold mb-3">{tx("Complete Work Order")}</h2>
             <div className="space-y-3">
               <div className="grid grid-cols-3 gap-3">
-                <div><label className="text-xs text-gray-500 mb-1 block">Completed Qty</label>
+                <div><label className="text-xs text-gray-500 mb-1 block">{tx("Completed Qty")}</label>
                   <input type="number" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={woCompleteForm.completed_qty} onChange={(e) => setWoCompleteForm({ ...woCompleteForm, completed_qty: e.target.value })} /></div>
-                <div><label className="text-xs text-gray-500 mb-1 block">Scrap Qty</label>
+                <div><label className="text-xs text-gray-500 mb-1 block">{tx("Scrap Qty")}</label>
                   <input type="number" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={woCompleteForm.scrap_qty} onChange={(e) => setWoCompleteForm({ ...woCompleteForm, scrap_qty: e.target.value })} /></div>
-                <div><label className="text-xs text-gray-500 mb-1 block">Rework Qty</label>
+                <div><label className="text-xs text-gray-500 mb-1 block">{tx("Rework Qty")}</label>
                   <input type="number" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={woCompleteForm.rework_qty} onChange={(e) => setWoCompleteForm({ ...woCompleteForm, rework_qty: e.target.value })} /></div>
               </div>
-              <div><label className="text-xs text-gray-500 mb-1 block">Actual Run Time (min)</label>
+              <div><label className="text-xs text-gray-500 mb-1 block">{tx("Actual Run Time (min)")}</label>
                 <input type="number" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={woCompleteForm.run_time_actual} onChange={(e) => setWoCompleteForm({ ...woCompleteForm, run_time_actual: e.target.value })} /></div>
               <div className="grid grid-cols-2 gap-3">
-                <div><label className="text-xs text-gray-500 mb-1 block">Scrap Category</label>
+                <div><label className="text-xs text-gray-500 mb-1 block">{tx("Scrap Category")}</label>
                   <select className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={woCompleteForm.scrap_category} onChange={(e) => setWoCompleteForm({ ...woCompleteForm, scrap_category: e.target.value })}>
-                    <option value="">None</option>
+                    <option value="">{tx("None")}</option>
                     {SCRAP_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
-                <div><label className="text-xs text-gray-500 mb-1 block">QC Result</label>
+                <div><label className="text-xs text-gray-500 mb-1 block">{tx("QC Result")}</label>
                   <select className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={woCompleteForm.qc_passed} onChange={(e) => setWoCompleteForm({ ...woCompleteForm, qc_passed: e.target.value })}>
-                    <option value="">Not checked</option>
+                    <option value="">{tx("Not checked")}</option>
                     <option value="true">PASSED</option>
                     <option value="false">FAILED</option>
                   </select>
                 </div>
               </div>
-              <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="Scrap reason" value={woCompleteForm.scrap_reason} onChange={(e) => setWoCompleteForm({ ...woCompleteForm, scrap_reason: e.target.value })} />
+              <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder={tx("Scrap reason")} value={woCompleteForm.scrap_reason} onChange={(e) => setWoCompleteForm({ ...woCompleteForm, scrap_reason: e.target.value })} />
             </div>
             <div className="flex gap-3 mt-4">
               <button onClick={() => completeWO.mutate()} disabled={!woCompleteForm.completed_qty || completeWO.isPending} className="flex-1 bg-green-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-40">
-                {completeWO.isPending ? "…" : "Complete Step"}
+                {completeWO.isPending ? "…" : tx("Complete Step")}
               </button>
-              <button onClick={() => setCompleteWoId(null)} className="px-4 py-2 border rounded-lg text-sm text-gray-600">Cancel</button>
+              <button onClick={() => setCompleteWoId(null)} className="px-4 py-2 border rounded-lg text-sm text-gray-600">{tx("Cancel")}</button>
             </div>
           </div>
         </div>
@@ -601,17 +602,17 @@ export default function ProdExecOrderDetailPage() {
       {showSplit && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
-            <h2 className="text-lg font-semibold mb-1">Split Order</h2>
-            <p className="text-sm text-gray-500 mb-3">Total: {Number(order.planned_qty).toLocaleString()} {order.uom}. Comma-separated quantities must sum to total.</p>
+            <h2 className="text-lg font-semibold mb-1">{tx("Split Order")}</h2>
+            <p className="text-sm text-gray-500 mb-3">{tx("Total:")} {Number(order.planned_qty).toLocaleString()} {order.uom}{tx(". Comma-separated quantities must sum to total.")}</p>
             <div className="space-y-3">
-              <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono" placeholder="e.g. 500,500" value={splitQtys} onChange={(e) => setSplitQtys(e.target.value)} />
-              <textarea className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" rows={2} placeholder="Reason" value={splitReason} onChange={(e) => setSplitReason(e.target.value)} />
+              <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono" placeholder={tx("e.g. 500,500")} value={splitQtys} onChange={(e) => setSplitQtys(e.target.value)} />
+              <textarea className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" rows={2} placeholder={tx("Reason")} value={splitReason} onChange={(e) => setSplitReason(e.target.value)} />
             </div>
             <div className="flex gap-3 mt-4">
               <button onClick={() => doSplit.mutate()} disabled={!splitQtys || doSplit.isPending} className="flex-1 bg-blue-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-40">
-                {doSplit.isPending ? "Splitting…" : "Split Order"}
+                {doSplit.isPending ? tx("Splitting…") : tx("Split Order")}
               </button>
-              <button onClick={() => setShowSplit(false)} className="px-4 py-2 border rounded-lg text-sm text-gray-600">Cancel</button>
+              <button onClick={() => setShowSplit(false)} className="px-4 py-2 border rounded-lg text-sm text-gray-600">{tx("Cancel")}</button>
             </div>
           </div>
         </div>
@@ -621,17 +622,17 @@ export default function ProdExecOrderDetailPage() {
       {showRework && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
-            <h2 className="text-lg font-semibold mb-3">Create Rework Order</h2>
+            <h2 className="text-lg font-semibold mb-3">{tx("Create Rework Order")}</h2>
             <div className="space-y-3">
-              <div><label className="text-xs text-gray-500 mb-1 block">Rework Qty ({order.uom})</label>
+              <div><label className="text-xs text-gray-500 mb-1 block">{tx("Rework Qty (")}{order.uom})</label>
                 <input type="number" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={reworkForm.qty} onChange={(e) => setReworkForm({ ...reworkForm, qty: e.target.value })} /></div>
-              <textarea className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" rows={3} placeholder="Rework reason *" value={reworkForm.reason} onChange={(e) => setReworkForm({ ...reworkForm, reason: e.target.value })} />
+              <textarea className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" rows={3} placeholder={tx("Rework reason *")} value={reworkForm.reason} onChange={(e) => setReworkForm({ ...reworkForm, reason: e.target.value })} />
             </div>
             <div className="flex gap-3 mt-4">
               <button onClick={() => doRework.mutate()} disabled={!reworkForm.qty || !reworkForm.reason || doRework.isPending} className="flex-1 bg-orange-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-orange-700 disabled:opacity-40">
-                {doRework.isPending ? "…" : "Create Rework Order"}
+                {doRework.isPending ? "…" : tx("Create Rework Order")}
               </button>
-              <button onClick={() => setShowRework(false)} className="px-4 py-2 border rounded-lg text-sm text-gray-600">Cancel</button>
+              <button onClick={() => setShowRework(false)} className="px-4 py-2 border rounded-lg text-sm text-gray-600">{tx("Cancel")}</button>
             </div>
           </div>
         </div>
@@ -641,19 +642,19 @@ export default function ProdExecOrderDetailPage() {
       {issueMat && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
-            <h2 className="text-lg font-semibold mb-1">Issue Material</h2>
-            <p className="text-sm text-gray-500 mb-3">{issueMat.item_name} — Required: {Number(issueMat.required_qty).toFixed(3)} {issueMat.uom}</p>
+            <h2 className="text-lg font-semibold mb-1">{tx("Issue Material")}</h2>
+            <p className="text-sm text-gray-500 mb-3">{issueMat.item_name} {tx("— Required:")} {Number(issueMat.required_qty).toFixed(3)} {issueMat.uom}</p>
             <div className="space-y-3">
-              <div><label className="text-xs text-gray-500 mb-1 block">Qty to Issue</label>
+              <div><label className="text-xs text-gray-500 mb-1 block">{tx("Qty to Issue")}</label>
                 <input type="number" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={issueQty} onChange={(e) => setIssueQty(e.target.value)} /></div>
-              <div><label className="text-xs text-gray-500 mb-1 block">Lot Number (optional)</label>
-                <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="e.g. LOT-2026-001" value={issueLot} onChange={(e) => setIssueLot(e.target.value)} /></div>
+              <div><label className="text-xs text-gray-500 mb-1 block">{tx("Lot Number (optional)")}</label>
+                <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder={tx("e.g. LOT-2026-001")} value={issueLot} onChange={(e) => setIssueLot(e.target.value)} /></div>
             </div>
             <div className="flex gap-3 mt-4">
               <button onClick={() => doIssue.mutate()} disabled={!issueQty || doIssue.isPending} className="flex-1 bg-indigo-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-40">
-                {doIssue.isPending ? "…" : "Issue Material"}
+                {doIssue.isPending ? "…" : tx("Issue Material")}
               </button>
-              <button onClick={() => setIssueMat(null)} className="px-4 py-2 border rounded-lg text-sm text-gray-600">Cancel</button>
+              <button onClick={() => setIssueMat(null)} className="px-4 py-2 border rounded-lg text-sm text-gray-600">{tx("Cancel")}</button>
             </div>
           </div>
         </div>

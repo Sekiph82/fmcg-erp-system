@@ -10,6 +10,7 @@ import { NAV_CONFIG, NavSection, NavStandaloneLink } from "./nav-config";
 import { ACTION_REGISTRY, filterActions, PaletteAction } from "@/lib/actionRegistry";
 import { apiClient } from "@/lib/api";
 import { RecentItem } from "@/hooks/useCommandPalette";
+import { tx } from "@/lib/i18n/core";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -89,7 +90,7 @@ function buildNavResults(query: string, hasPermission: (c: string) => boolean): 
       const e = entry as NavStandaloneLink;
       if (e.permission && !hasPermission(e.permission)) continue;
       if (!q || fuzzyMatch(e.label, q)) {
-        results.push({ type: "nav", id: e.id, label: e.label, subtitle: "Dashboard", href: e.href });
+        results.push({ type: "nav", id: e.id, label: e.label, subtitle: tx("Dashboard"), href: e.href });
       }
       continue;
     }
@@ -302,11 +303,11 @@ export function CommandPalette({ open, onClose, onVisit, recent }: Props) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKey}
-            placeholder="Search modules, actions, records…"
+            placeholder={tx("Search modules, actions, records…")}
             className="flex-1 bg-transparent text-[14.5px] text-slate-100 placeholder:text-slate-500 outline-none"
             autoComplete="off"
             spellCheck={false}
-            aria-label="Search"
+            aria-label={tx("Search")}
           />
 
           {loading ? (
@@ -328,7 +329,7 @@ export function CommandPalette({ open, onClose, onVisit, recent }: Props) {
           {groups.length === 0 && query.trim() && !loading && (
             <div className="px-4 py-10 text-center">
               <p className="text-sm text-slate-500">
-                No results for{" "}
+                {tx("No results for")}{" "}
                 <span className="text-slate-300 font-medium">&quot;{query}&quot;</span>
               </p>
             </div>
@@ -336,8 +337,8 @@ export function CommandPalette({ open, onClose, onVisit, recent }: Props) {
 
           {groups.length === 0 && !query.trim() && (
             <div className="px-4 py-8 text-center">
-              <p className="text-sm text-slate-500">Type to search modules, actions, records…</p>
-              <p className="mt-2 text-xs text-slate-600">↑↓ navigate · Enter open · Esc close</p>
+              <p className="text-sm text-slate-500">{tx("Type to search modules, actions, records…")}</p>
+              <p className="mt-2 text-xs text-slate-600">{tx("↑↓ navigate · Enter open · Esc close")}</p>
             </div>
           )}
 
@@ -447,16 +448,16 @@ export function CommandPalette({ open, onClose, onVisit, recent }: Props) {
           <div className="flex items-center gap-3 text-[11px] text-slate-600">
             <span>
               <kbd className="font-mono text-[10px] bg-white/[0.04] border border-white/[0.07] rounded px-1 py-0.5">↑↓</kbd>
-              {" "}navigate
+              {" "}{tx("navigate")}
             </span>
             <span>
               <kbd className="font-mono text-[10px] bg-white/[0.04] border border-white/[0.07] rounded px-1 py-0.5">↵</kbd>
-              {" "}open
+              {" "}{tx("open")}
             </span>
           </div>
           <span className="text-[11px] text-slate-600">
             <kbd className="font-mono text-[10px] bg-white/[0.04] border border-white/[0.07] rounded px-1 py-0.5">Ctrl K</kbd>
-            {" "}toggle
+            {" "}{tx("toggle")}
           </span>
         </div>
       </div>

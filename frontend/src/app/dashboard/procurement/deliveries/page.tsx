@@ -8,6 +8,7 @@ import { Table } from "@/components/ui/Table";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { tx } from "@/lib/i18n/core";
 
 export default function DeliveryPlanningPage() {
   const router = useRouter();
@@ -32,14 +33,14 @@ export default function DeliveryPlanningPage() {
   return (
     <div className="space-y-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Delivery Planning</h1>
-        <p className="text-sm text-gray-500 mt-1">Inbound schedule, overdue POs, and shortage alerts</p>
+        <h1 className="text-2xl font-bold text-gray-900">{tx("Delivery Planning")}</h1>
+        <p className="text-sm text-gray-500 mt-1">{tx("Inbound schedule, overdue POs, and shortage alerts")}</p>
       </div>
 
       {/* Alert bar */}
       {alerts.length > 0 && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-          <p className="text-sm font-semibold text-amber-800 mb-2">{alerts.length} delivery alert(s)</p>
+          <p className="text-sm font-semibold text-amber-800 mb-2">{alerts.length} {tx("delivery alert(s)")}</p>
           <div className="space-y-1.5">
             {alerts.map((a, i) => (
               <div key={i} className="flex items-center gap-3">
@@ -52,7 +53,7 @@ export default function DeliveryPlanningPage() {
                   className="ml-auto text-xs text-indigo-600 hover:underline"
                   onClick={() => router.push(`/dashboard/procurement/orders/${a.po_id}`)}
                 >
-                  View PO
+                  {tx("View PO")}
                 </button>
               </div>
             ))}
@@ -63,15 +64,15 @@ export default function DeliveryPlanningPage() {
       {/* Stat cards */}
       <div className="grid grid-cols-3 gap-4">
         <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-          <p className="text-xs text-gray-500">Overdue POs</p>
+          <p className="text-xs text-gray-500">{tx("Overdue POs")}</p>
           <p className={`text-2xl font-bold ${overdue.length > 0 ? "text-red-600" : "text-gray-400"}`}>{overdue.length}</p>
         </div>
         <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-          <p className="text-xs text-gray-500">Expected (next {daysAhead}d)</p>
+          <p className="text-xs text-gray-500">{tx("Expected (next")} {daysAhead}{tx("d)")}</p>
           <p className="text-2xl font-bold text-gray-900">{upcoming.length}</p>
         </div>
         <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-          <p className="text-xs text-gray-500">Without Shipment</p>
+          <p className="text-xs text-gray-500">{tx("Without Shipment")}</p>
           <p className={`text-2xl font-bold ${schedule.filter((r) => !r.has_shipment).length > 0 ? "text-amber-600" : "text-gray-400"}`}>
             {schedule.filter((r) => !r.has_shipment).length}
           </p>
@@ -81,9 +82,9 @@ export default function DeliveryPlanningPage() {
       {/* Schedule */}
       <div>
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-800">Inbound Schedule</h2>
+          <h2 className="text-lg font-semibold text-gray-800">{tx("Inbound Schedule")}</h2>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-600">Days ahead:</span>
+            <span className="text-sm text-gray-600">{tx("Days ahead:")}</span>
             <Input
               type="number"
               value={daysAhead}
@@ -102,27 +103,27 @@ export default function DeliveryPlanningPage() {
             emptyMessage="No active POs due within this period."
             columns={[
               {
-                header: "PO No",
+                header: tx("PO No"),
                 accessor: (r) => (
                   <button className="font-mono text-xs font-medium text-indigo-600 hover:underline" onClick={() => router.push(`/dashboard/procurement/orders/${r.po_id}`)}>
                     {r.po_no}
                   </button>
                 ),
               },
-              { header: "Supplier", accessor: "supplier_name" },
+              { header: tx("Supplier"), accessor: "supplier_name" },
               {
-                header: "Expected Delivery",
+                header: tx("Expected Delivery"),
                 accessor: (r) => (
                   <span className={r.is_overdue ? "text-red-600 font-semibold" : r.days_until_delivery <= 7 ? "text-amber-600" : ""}>
                     {new Date(r.expected_delivery_date).toLocaleDateString()}
                     <span className="ml-1 text-xs text-gray-400">
-                      {r.is_overdue ? `(${Math.abs(r.days_until_delivery)}d overdue)` : `(in ${r.days_until_delivery}d)`}
+                      {r.is_overdue ? `(${Math.abs(r.days_until_delivery)}d overdue)` : tx("(in {days_until_delivery}d)", { days_until_delivery: r.days_until_delivery })}
                     </span>
                   </span>
                 ),
               },
               {
-                header: "Status",
+                header: tx("Status"),
                 accessor: (r) => (
                   <div className="flex items-center gap-2">
                     <Badge label={r.status.replace(/_/g, " ")} variant={r.is_overdue ? "red" : "blue"} />
@@ -131,20 +132,20 @@ export default function DeliveryPlanningPage() {
                 ),
               },
               {
-                header: "Shipment",
+                header: tx("Shipment"),
                 accessor: (r) => r.has_shipment
-                  ? <span className="text-green-600 text-xs font-medium">{r.shipment_eta ? `ETA ${new Date(r.shipment_eta).toLocaleDateString()}` : "Linked"}</span>
-                  : <span className="text-amber-600 text-xs">No shipment</span>,
+                  ? <span className="text-green-600 text-xs font-medium">{r.shipment_eta ? `ETA ${new Date(r.shipment_eta).toLocaleDateString()}` : tx("Linked")}</span>
+                  : <span className="text-amber-600 text-xs">{tx("No shipment")}</span>,
               },
               {
-                header: "Value",
+                header: tx("Value"),
                 accessor: (r) => r.total_value != null
                   ? Number(r.total_value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
                   : "—",
               },
               {
                 header: "",
-                accessor: (r) => <Button variant="secondary" onClick={() => router.push(`/dashboard/procurement/orders/${r.po_id}`)}>View</Button>,
+                accessor: (r) => <Button variant="secondary" onClick={() => router.push(`/dashboard/procurement/orders/${r.po_id}`)}>{tx("View")}</Button>,
               },
             ]}
           />

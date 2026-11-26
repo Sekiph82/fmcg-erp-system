@@ -5,6 +5,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { marketingApi, SegmentType } from "@/lib/marketingApi";
 import { RequirePermission } from "@/components/PermissionGuard";
+import { tx } from "@/lib/i18n/core";
 
 const SEGMENT_TYPES: SegmentType[] = [
   "RETAIL", "WHOLESALE", "KIOSK", "SUPERMARKET", "DISTRIBUTOR",
@@ -38,7 +39,7 @@ export default function NewSegmentPage() {
       router.push(`/dashboard/marketing/segments/${res.data.id}`);
     },
     onError: (err: unknown) => {
-      setError((err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ?? "Failed to create segment.");
+      setError((err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ?? tx("Failed to create segment."));
     },
   });
 
@@ -52,9 +53,9 @@ export default function NewSegmentPage() {
       <div className="min-h-screen bg-[#0b1120] p-6 text-white max-w-xl">
         <div className="mb-6">
           <a href="/dashboard/marketing/segments" className="text-sm text-slate-400 hover:text-white mb-2 inline-block">
-            ← Back to Segments
+            {tx("← Back to Segments")}
           </a>
-          <h1 className="text-2xl font-bold">New Segment</h1>
+          <h1 className="text-2xl font-bold">{tx("New Segment")}</h1>
         </div>
 
         {error && (
@@ -64,16 +65,16 @@ export default function NewSegmentPage() {
         <div className="rounded-xl bg-[#131c2e] border border-slate-700/50 p-6 space-y-5">
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2">
-              <label className="block text-xs text-slate-400 mb-1">Segment Name *</label>
+              <label className="block text-xs text-slate-400 mb-1">{tx("Segment Name *")}</label>
               <input
                 value={form.segment_name}
                 onChange={(e) => set("segment_name", e.target.value)}
-                placeholder="e.g. Nairobi Supermarkets"
+                placeholder={tx("e.g. Nairobi Supermarkets")}
                 className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600"
               />
             </div>
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Segment Type *</label>
+              <label className="block text-xs text-slate-400 mb-1">{tx("Segment Type *")}</label>
               <select
                 value={form.segment_type}
                 onChange={(e) => set("segment_type", e.target.value as SegmentType)}
@@ -85,23 +86,23 @@ export default function NewSegmentPage() {
               </select>
             </div>
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Region</label>
+              <label className="block text-xs text-slate-400 mb-1">{tx("Region")}</label>
               <input
                 value={form.region}
                 onChange={(e) => set("region", e.target.value)}
-                placeholder="e.g. Nairobi, Western Kenya"
+                placeholder={tx("e.g. Nairobi, Western Kenya")}
                 className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs text-slate-400 mb-1">Description</label>
+            <label className="block text-xs text-slate-400 mb-1">{tx("Description")}</label>
             <textarea
               value={form.description}
               onChange={(e) => set("description", e.target.value)}
               rows={3}
-              placeholder="Describe this segment..."
+              placeholder={tx("Describe this segment...")}
               className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600 resize-none"
             />
           </div>
@@ -114,7 +115,7 @@ export default function NewSegmentPage() {
               onChange={(e) => set("is_active", e.target.checked)}
               className="w-4 h-4 rounded border-slate-700"
             />
-            <label htmlFor="is_active" className="text-sm text-slate-300">Active</label>
+            <label htmlFor="is_active" className="text-sm text-slate-300">{tx("Active")}</label>
           </div>
 
           <div className="flex gap-3 pt-2">
@@ -123,11 +124,11 @@ export default function NewSegmentPage() {
               disabled={mut.isPending || !form.segment_name}
               className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-sm font-medium disabled:opacity-50 transition-colors"
             >
-              {mut.isPending ? "Creating..." : "Create Segment"}
+              {mut.isPending ? tx("Creating...") : tx("Create Segment")}
             </button>
             <a href="/dashboard/marketing/segments"
               className="px-5 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-sm font-medium transition-colors">
-              Cancel
+              {tx("Cancel")}
             </a>
           </div>
         </div>

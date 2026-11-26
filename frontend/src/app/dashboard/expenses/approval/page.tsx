@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { expensesApi, ExpenseClaim, ExpenseStatus, STATUS_LABEL, STATUS_COLOR, fmtCurrency } from "@/lib/expenses";
+import { tx } from "@/lib/i18n/core";
 
 export default function ApprovalQueuePage() {
   const [activeTab, setActiveTab] = useState<"manager" | "finance">("manager");
@@ -29,23 +30,23 @@ export default function ApprovalQueuePage() {
 
   return (
     <div className="p-6 space-y-5 text-slate-200">
-      <h1 className="text-xl font-bold text-white">Approval Queue</h1>
+      <h1 className="text-xl font-bold text-white">{tx("Approval Queue")}</h1>
 
       <div className="flex gap-2">
         {(["manager", "finance"] as const).map((t) => (
           <button key={t} onClick={() => setActiveTab(t)}
             className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${activeTab === t ? "bg-indigo-600 border-indigo-500 text-white" : "border-white/[0.08] text-slate-400 hover:border-white/20"}`}>
-            {t === "manager" ? "Manager Approval (Submitted)" : "Finance Approval (Manager Approved)"}
+            {t === "manager" ? tx("Manager Approval (Submitted)") : tx("Finance Approval (Manager Approved)")}
           </button>
         ))}
       </div>
 
-      {loading ? <p className="text-slate-500 text-sm">Loading…</p> : (
+      {loading ? <p className="text-slate-500 text-sm">{tx("Loading…")}</p> : (
         <div className="glass-table">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-white/[0.07]">
-                {["Claim No", "Date", "Status", "Claimed", "Violations", "Actions"].map((h) => (
+                {[tx("Claim No"), tx("Date"), tx("Status"), "Claimed", tx("Violations"), tx("Actions")].map((h) => (
                   <th key={h} className={`px-4 py-3 text-[10px] text-slate-500 uppercase tracking-widest ${h === "Claimed" ? "text-right" : "text-left"}`}>{h}</th>
                 ))}
               </tr>
@@ -62,17 +63,17 @@ export default function ApprovalQueuePage() {
                     <td className="px-4 py-3"><span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${STATUS_COLOR[c.status]}`}>{STATUS_LABEL[c.status]}</span></td>
                     <td className="px-4 py-3 text-right text-white font-medium">{fmtCurrency(c.total_claimed_amount)}</td>
                     <td className="px-4 py-3">
-                      {violations > 0 && <span className="text-[10px] bg-red-500/20 text-red-300 px-2 py-0.5 rounded-full">{violations} violation(s)</span>}
+                      {violations > 0 && <span className="text-[10px] bg-red-500/20 text-red-300 px-2 py-0.5 rounded-full">{violations} {tx("violation(s)")}</span>}
                     </td>
                     <td className="px-4 py-3 space-x-3">
-                      <button onClick={() => handleApprove(c.expense_claim_id)} className="text-xs text-emerald-400 hover:text-emerald-300">Approve</button>
-                      <button onClick={() => handleReject(c.expense_claim_id)} className="text-xs text-red-400 hover:text-red-300">Reject</button>
-                      <Link href={`/dashboard/expenses/claims/${c.expense_claim_id}`} className="text-xs text-slate-500 hover:text-slate-400">Detail</Link>
+                      <button onClick={() => handleApprove(c.expense_claim_id)} className="text-xs text-emerald-400 hover:text-emerald-300">{tx("Approve")}</button>
+                      <button onClick={() => handleReject(c.expense_claim_id)} className="text-xs text-red-400 hover:text-red-300">{tx("Reject")}</button>
+                      <Link href={`/dashboard/expenses/claims/${c.expense_claim_id}`} className="text-xs text-slate-500 hover:text-slate-400">{tx("Detail")}</Link>
                     </td>
                   </tr>
                 );
               })}
-              {claims.length === 0 && <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-600">No claims in queue</td></tr>}
+              {claims.length === 0 && <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-600">{tx("No claims in queue")}</td></tr>}
             </tbody>
           </table>
         </div>

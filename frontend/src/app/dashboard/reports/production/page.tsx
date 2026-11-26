@@ -8,6 +8,7 @@ import { DashboardShell, Section, ChartCard } from "@/components/bi/DashboardShe
 import { KpiCard } from "@/components/bi/KpiCard";
 import { PlanVsActualChart, TrendLineChart, HBarChart } from "@/components/bi/Charts";
 import { ExceptionList } from "@/components/bi/ExceptionList";
+import { tx } from "@/lib/i18n/core";
 
 function ProductionDashboard() {
   const [days, setDays] = useState(30);
@@ -18,30 +19,30 @@ function ProductionDashboard() {
 
   return (
     <DashboardShell
-      title="Production / MES Analytics"
+      title={tx("Production / MES Analytics")}
       subtitle="Plan vs actual, downtime, quality rejections"
       days={days}
       onDaysChange={setDays}
       backHref="/dashboard/reports"
       loading={isLoading}
     >
-      <Section title="Production KPIs">
+      <Section title={tx("Production KPIs")}>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <KpiCard label="Active Orders" value={data ? fmt(data.active_orders) : "—"} color="indigo" />
+          <KpiCard label={tx("Active Orders")} value={data ? fmt(data.active_orders) : "—"} color="indigo" />
           <KpiCard
-            label="Completion Rate"
+            label={tx("Completion Rate")}
             value={data ? `${data.completion_rate.toFixed(1)}%` : "—"}
             color={data && data.completion_rate >= 90 ? "green" : data && data.completion_rate >= 70 ? "amber" : "red"}
             trend={data && data.completion_rate >= 90 ? "up" : "down"}
           />
           <KpiCard
-            label="Avg Downtime (hrs)"
+            label={tx("Avg Downtime (hrs)")}
             value={data ? data.avg_downtime_hours.toFixed(1) : "—"}
             color={data && data.avg_downtime_hours < 10 ? "green" : "amber"}
             sub="Per breakdown"
           />
           <KpiCard
-            label="Delayed Orders"
+            label={tx("Delayed Orders")}
             value={data ? String(data.delayed_orders) : "—"}
             color={data && data.delayed_orders === 0 ? "green" : data && data.delayed_orders < 5 ? "amber" : "red"}
             trend={data && data.delayed_orders === 0 ? "up" : "down"}
@@ -49,8 +50,8 @@ function ProductionDashboard() {
         </div>
       </Section>
 
-      <Section title="Plan vs Actual Output">
-        <ChartCard title={`Units Planned vs Produced — Last ${days}d`}>
+      <Section title={tx("Plan vs Actual Output")}>
+        <ChartCard title={tx("Units Planned vs Produced — Last {days}d", { days })}>
           {data?.plan_vs_actual && data?.plan_vs_actual_actual ? (
             <PlanVsActualChart
               planned={data.plan_vs_actual}
@@ -59,30 +60,30 @@ function ProductionDashboard() {
               formatY={(v) => fmt(v)}
             />
           ) : (
-            <div className="h-[220px] flex items-center justify-center text-slate-600 text-sm">No data</div>
+            <div className="h-[220px] flex items-center justify-center text-slate-600 text-sm">{tx("No data")}</div>
           )}
         </ChartCard>
       </Section>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Section title="Downtime Trend">
-          <ChartCard title={`Downtime Hours — Last ${days}d`}>
+        <Section title={tx("Downtime Trend")}>
+          <ChartCard title={tx("Downtime Hours — Last {days}d", { days })}>
             {data?.downtime_trend ? (
               <TrendLineChart
                 data={data.downtime_trend}
                 color="#f59e0b"
-                label="Downtime (hrs)"
+                label={tx("Downtime (hrs)")}
                 height={180}
                 formatY={(v) => `${v.toFixed(1)}h`}
               />
             ) : (
-              <div className="h-[180px] flex items-center justify-center text-slate-600 text-sm">No data</div>
+              <div className="h-[180px] flex items-center justify-center text-slate-600 text-sm">{tx("No data")}</div>
             )}
           </ChartCard>
         </Section>
 
-        <Section title="Status Distribution">
-          <ChartCard title="Orders by Status">
+        <Section title={tx("Status Distribution")}>
+          <ChartCard title={tx("Orders by Status")}>
             {data?.by_status?.length ? (
               <HBarChart
                 data={data.by_status.map((s) => ({ label: s.label, value: s.count }))}
@@ -91,16 +92,16 @@ function ProductionDashboard() {
                 formatY={(v) => fmt(v)}
               />
             ) : (
-              <div className="h-[180px] flex items-center justify-center text-slate-600 text-sm">No data</div>
+              <div className="h-[180px] flex items-center justify-center text-slate-600 text-sm">{tx("No data")}</div>
             )}
           </ChartCard>
         </Section>
       </div>
 
-      <Section title="Production Exceptions">
+      <Section title={tx("Production Exceptions")}>
         <ExceptionList
           items={data?.exceptions ?? []}
-          title="Overdue Orders & Alerts"
+          title={tx("Overdue Orders & Alerts")}
         />
       </Section>
     </DashboardShell>

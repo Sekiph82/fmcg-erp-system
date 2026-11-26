@@ -6,6 +6,7 @@ import {
   planningApi, ScenarioSummary, ScenarioOut, OpQueueOut,
   SCENARIO_STATUS_COLOR, OP_STATUS_COLOR, fmtMins,
 } from "@/lib/planning";
+import { tx } from "@/lib/i18n/core";
 
 export default function SchedulePage() {
   const qc = useQueryClient();
@@ -61,8 +62,8 @@ export default function SchedulePage() {
   return (
     <div className="p-6 space-y-5">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-gray-900">Schedule Board</h1>
-        <a href="/dashboard/planning" className="text-xs text-blue-600 hover:underline">← Planning Dashboard</a>
+        <h1 className="text-xl font-semibold text-gray-900">{tx("Schedule Board")}</h1>
+        <a href="/dashboard/planning" className="text-xs text-blue-600 hover:underline">{tx("← Planning Dashboard")}</a>
       </div>
 
       {/* Scenario selector */}
@@ -72,7 +73,7 @@ export default function SchedulePage() {
           value={selectedId || ""}
           onChange={(e) => setSelectedId(e.target.value || null)}
         >
-          <option value="">-- select scenario --</option>
+          <option value="">{tx("-- select scenario --")}</option>
           {scenarios.map((s) => (
             <option key={s.id} value={s.id}>{s.scenario_no} — {s.scenario_name}</option>
           ))}
@@ -85,7 +86,7 @@ export default function SchedulePage() {
               disabled={calculate.isPending}
               className="px-3 py-1.5 text-xs font-medium bg-indigo-100 text-indigo-700 hover:bg-indigo-200 rounded-lg"
             >
-              {calculate.isPending ? "Scheduling…" : "Run Scheduling Engine"}
+              {calculate.isPending ? tx("Scheduling…") : tx("Run Scheduling Engine")}
             </button>
             {scenario?.status === "DRAFT" && (
               <button
@@ -93,7 +94,7 @@ export default function SchedulePage() {
                 disabled={activate.isPending}
                 className="px-3 py-1.5 text-xs font-medium bg-green-100 text-green-700 hover:bg-green-200 rounded-lg"
               >
-                Activate Scenario
+                {tx("Activate Scenario")}
               </button>
             )}
             {scenario && (
@@ -110,11 +111,11 @@ export default function SchedulePage() {
           {/* Summary KPIs */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             {[
-              { label: "Total Ops", value: scenario.total_ops },
-              { label: "Scheduled", value: statusCounts.SCHEDULED, color: "text-green-600" },
-              { label: "Blocked", value: statusCounts.BLOCKED, color: statusCounts.BLOCKED > 0 ? "text-red-600" : "text-gray-900" },
-              { label: "Avg Utilization", value: `${Number(scenario.avg_utilization_pct || 0).toFixed(1)}%` },
-              { label: "Changeover Hours", value: `${Number(scenario.total_changeover_hrs || 0).toFixed(1)}h`, color: "text-orange-600" },
+              { label: tx("Total Ops"), value: scenario.total_ops },
+              { label: tx("Scheduled"), value: statusCounts.SCHEDULED, color: "text-green-600" },
+              { label: tx("Blocked"), value: statusCounts.BLOCKED, color: statusCounts.BLOCKED > 0 ? "text-red-600" : "text-gray-900" },
+              { label: tx("Avg Utilization"), value: `${Number(scenario.avg_utilization_pct || 0).toFixed(1)}%` },
+              { label: tx("Changeover Hours"), value: `${Number(scenario.total_changeover_hrs || 0).toFixed(1)}h`, color: "text-orange-600" },
             ].map((k) => (
               <div key={k.label} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
                 <p className="text-xs text-gray-400 font-medium">{k.label}</p>
@@ -125,24 +126,24 @@ export default function SchedulePage() {
 
           {/* Status filter */}
           <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-500">Filter:</span>
+            <span className="text-xs text-gray-500">{tx("Filter:")}</span>
             {["", "SCHEDULED", "BLOCKED", "PENDING"].map((s) => (
               <button
                 key={s}
                 onClick={() => setStatusFilter(s)}
                 className={`px-2 py-1 text-xs rounded ${statusFilter === s ? "bg-indigo-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
               >
-                {s || "All"}
+                {s || tx("All")}
               </button>
             ))}
           </div>
 
           {/* Gantt-style table */}
           {opsLoading ? (
-            <div className="text-center text-gray-400 py-8">Loading schedule…</div>
+            <div className="text-center text-gray-400 py-8">{tx("Loading schedule…")}</div>
           ) : ops.length === 0 ? (
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-8 text-center text-sm text-gray-400">
-              No operations. Run the scheduling engine first.
+              {tx("No operations. Run the scheduling engine first.")}
             </div>
           ) : (
             <div className="space-y-4">
@@ -151,13 +152,13 @@ export default function SchedulePage() {
                   <div className="px-4 py-2 bg-gradient-to-r from-indigo-50 to-purple-50 border-b border-gray-100">
                     <div className="flex items-center justify-between">
                       <p className="text-sm font-semibold text-indigo-800">{wcName}</p>
-                      <span className="text-xs text-gray-400">{wcOps.length} ops</span>
+                      <span className="text-xs text-gray-400">{wcOps.length} {tx("ops")}</span>
                     </div>
                   </div>
                   <table className="w-full text-xs">
                     <thead className="bg-gray-50">
                       <tr>
-                        {["Op No", "Product", "Step", "Qty", "Setup", "Run", "CO", "Total", "Start", "End", "Status"].map((h) => (
+                        {[tx("Op No"), tx("Product"), tx("Step"), tx("Qty"), tx("Setup"), tx("Run"), "CO", tx("Total"), tx("Start"), tx("End"), tx("Status")].map((h) => (
                           <th key={h} className="px-2 py-2 text-left font-medium text-gray-400">{h}</th>
                         ))}
                       </tr>
@@ -231,7 +232,7 @@ export default function SchedulePage() {
             </div>
             {viewOp.block_reason && (
               <div className="mt-3 bg-red-50 border border-red-100 rounded-lg p-3">
-                <p className="text-xs font-semibold text-red-600">Block reason</p>
+                <p className="text-xs font-semibold text-red-600">{tx("Block reason")}</p>
                 <p className="text-sm text-red-700">{viewOp.block_reason}</p>
               </div>
             )}

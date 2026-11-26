@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { traceApi, TraceabilitySearchResult, TRACE_EVENT_LABEL, STAGE_COLOR } from "@/lib/traceability";
+import { tx } from "@/lib/i18n/core";
 
 export default function TraceSearchPage() {
   const [form, setForm] = useState({
@@ -34,22 +35,22 @@ export default function TraceSearchPage() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-xl font-bold text-gray-900">Traceability Search Console</h1>
-        <p className="text-sm text-gray-500">Search by lot, batch, product, material, supplier, or customer</p>
+        <h1 className="text-xl font-bold text-gray-900">{tx("Traceability Search Console")}</h1>
+        <p className="text-sm text-gray-500">{tx("Search by lot, batch, product, material, supplier, or customer")}</p>
       </div>
 
       {/* Search form */}
       <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { label: "Lot Number", key: "lot_number" },
-            { label: "Batch Number", key: "batch_number" },
-            { label: "Product ID", key: "product_id" },
-            { label: "Material ID", key: "material_id" },
-            { label: "Supplier ID", key: "supplier_id" },
-            { label: "Customer ID", key: "customer_id" },
-            { label: "Date From", key: "date_from", type: "date" },
-            { label: "Date To", key: "date_to", type: "date" },
+            { label: tx("Lot Number"), key: "lot_number" },
+            { label: tx("Batch Number"), key: "batch_number" },
+            { label: tx("Product ID"), key: "product_id" },
+            { label: tx("Material ID"), key: "material_id" },
+            { label: tx("Supplier ID"), key: "supplier_id" },
+            { label: tx("Customer ID"), key: "customer_id" },
+            { label: tx("Date From"), key: "date_from", type: "date" },
+            { label: tx("Date To"), key: "date_to", type: "date" },
           ].map(f => (
             <div key={f.key}>
               <label className="text-xs font-medium text-gray-600">{f.label}</label>
@@ -61,17 +62,17 @@ export default function TraceSearchPage() {
         </div>
         <button onClick={handleSearch} disabled={searching}
           className="px-6 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 disabled:opacity-50 font-medium">
-          {searching ? "Searching…" : "Search Traceability"}
+          {searching ? tx("Searching…") : tx("Search Traceability")}
         </button>
       </div>
 
       {/* Results */}
       {searched && (
         <div className="space-y-4">
-          <p className="text-sm text-gray-600">{results.length} result(s) found</p>
+          <p className="text-sm text-gray-600">{results.length} {tx("result(s) found")}</p>
           {results.length === 0 ? (
             <div className="bg-gray-50 rounded-xl border border-gray-200 p-8 text-center text-gray-400">
-              No lots found matching the search criteria
+              {tx("No lots found matching the search criteria")}
             </div>
           ) : results.map(r => (
             <div key={r.lot_id} className="bg-white rounded-xl border border-gray-200 p-5">
@@ -79,35 +80,35 @@ export default function TraceSearchPage() {
                 <div>
                   <p className="font-semibold text-gray-800 text-lg">{r.lot_number || "—"}</p>
                   <div className="flex gap-3 text-xs text-gray-500 mt-1">
-                    {r.batch_number && <span>Batch: {r.batch_number}</span>}
+                    {r.batch_number && <span>{tx("Batch:")} {r.batch_number}</span>}
                     {r.stage && (
                       <span className={`px-2 py-0.5 rounded border text-xs ${STAGE_COLOR[r.stage]}`}>
                         {r.stage}
                       </span>
                     )}
-                    <span>{r.genealogy_link_count} genealogy links</span>
-                    {r.has_recall && <span className="text-red-600 font-semibold">⚠ In Recall</span>}
+                    <span>{r.genealogy_link_count} {tx("genealogy links")}</span>
+                    {r.has_recall && <span className="text-red-600 font-semibold">{tx("⚠ In Recall")}</span>}
                   </div>
                 </div>
                 <div className="flex gap-2">
                   <a href={`/dashboard/traceability/backward?lot_id=${r.lot_id}`}
                     className="px-3 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-50">
-                    ← Backward Trace
+                    {tx("← Backward Trace")}
                   </a>
                   <a href={`/dashboard/traceability/forward?lot_id=${r.lot_id}`}
                     className="px-3 py-1.5 text-xs border border-indigo-200 text-indigo-700 rounded-lg hover:bg-indigo-50">
-                    Forward Trace →
+                    {tx("Forward Trace →")}
                   </a>
                   <a href={`/dashboard/traceability/genealogy?lot_id=${r.lot_id}`}
                     className="px-3 py-1.5 text-xs bg-purple-600 text-white rounded-lg hover:bg-purple-700">
-                    Genealogy
+                    {tx("Genealogy")}
                   </a>
                 </div>
               </div>
 
               {r.events.length > 0 && (
                 <div>
-                  <p className="text-xs font-medium text-gray-500 uppercase mb-2">Recent Events ({r.events.length})</p>
+                  <p className="text-xs font-medium text-gray-500 uppercase mb-2">{tx("Recent Events (")}{r.events.length})</p>
                   <div className="flex flex-wrap gap-2">
                     {r.events.slice(0, 8).map(e => (
                       <span key={e.id} className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">
@@ -115,7 +116,7 @@ export default function TraceSearchPage() {
                       </span>
                     ))}
                     {r.events.length > 8 && (
-                      <span className="px-2 py-1 text-gray-400 text-xs">+{r.events.length - 8} more</span>
+                      <span className="px-2 py-1 text-gray-400 text-xs">+{r.events.length - 8} {tx("more")}</span>
                     )}
                   </div>
                 </div>

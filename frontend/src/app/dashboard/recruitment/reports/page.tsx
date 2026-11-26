@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { recruitmentApi } from "@/lib/recruitment";
+import { tx } from "@/lib/i18n/core";
 
 type Tab = "pipeline" | "source" | "offers";
 
@@ -18,11 +19,11 @@ export default function RecruitmentReportsPage() {
   };
   useEffect(() => { load(); }, [tab]);
 
-  const tabs = [{ id: "pipeline" as Tab, label: "Pipeline by Stage" }, { id: "source" as Tab, label: "Source Effectiveness" }, { id: "offers" as Tab, label: "Offer Acceptance" }];
+  const tabs = [{ id: "pipeline" as Tab, label: tx("Pipeline by Stage") }, { id: "source" as Tab, label: tx("Source Effectiveness") }, { id: "offers" as Tab, label: tx("Offer Acceptance") }];
 
   return (
     <div className="p-6 space-y-5 text-slate-200">
-      <h1 className="text-xl font-bold text-white">Recruitment Reports</h1>
+      <h1 className="text-xl font-bold text-white">{tx("Recruitment Reports")}</h1>
 
       <div className="flex gap-2">
         {tabs.map((t) => (
@@ -33,12 +34,12 @@ export default function RecruitmentReportsPage() {
         ))}
       </div>
 
-      {loading ? <p className="text-slate-500 text-sm">Loading…</p> : (
+      {loading ? <p className="text-slate-500 text-sm">{tx("Loading…")}</p> : (
         <div className="glass-table">
           {tab === "pipeline" && Array.isArray(data) && (
             <table className="w-full text-sm">
               <thead><tr className="border-b border-white/[0.07]">
-                {["Stage", "Active Candidates", "Visual"].map((h) => <th key={h} className="px-4 py-3 text-[10px] text-slate-500 uppercase tracking-widest text-left">{h}</th>)}
+                {[tx("Stage"), tx("Active Candidates"), tx("Visual")].map((h) => <th key={h} className="px-4 py-3 text-[10px] text-slate-500 uppercase tracking-widest text-left">{h}</th>)}
               </tr></thead>
               <tbody>
                 {data.map((r: any, i: number) => {
@@ -51,14 +52,14 @@ export default function RecruitmentReportsPage() {
                     </tr>
                   );
                 })}
-                {data.length === 0 && <tr><td colSpan={3} className="px-4 py-8 text-center text-slate-600">No data</td></tr>}
+                {data.length === 0 && <tr><td colSpan={3} className="px-4 py-8 text-center text-slate-600">{tx("No data")}</td></tr>}
               </tbody>
             </table>
           )}
           {tab === "source" && Array.isArray(data) && (
             <table className="w-full text-sm">
               <thead><tr className="border-b border-white/[0.07]">
-                {["Source", "Candidates", "Applied"].map((h) => <th key={h} className="px-4 py-3 text-[10px] text-slate-500 uppercase tracking-widest text-left">{h}</th>)}
+                {[tx("Source"), tx("Candidates"), tx("Applied")].map((h) => <th key={h} className="px-4 py-3 text-[10px] text-slate-500 uppercase tracking-widest text-left">{h}</th>)}
               </tr></thead>
               <tbody>
                 {data.map((r: any, i: number) => (
@@ -68,17 +69,17 @@ export default function RecruitmentReportsPage() {
                     <td className="px-4 py-3 text-slate-400">{r.applied}</td>
                   </tr>
                 ))}
-                {data.length === 0 && <tr><td colSpan={3} className="px-4 py-8 text-center text-slate-600">No data</td></tr>}
+                {data.length === 0 && <tr><td colSpan={3} className="px-4 py-8 text-center text-slate-600">{tx("No data")}</td></tr>}
               </tbody>
             </table>
           )}
           {tab === "offers" && data && !Array.isArray(data) && (
             <div className="p-6 grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
-                { label: "Total Offers", value: data.total_offers, color: "text-white" },
-                { label: "Accepted", value: data.accepted, color: "text-emerald-400" },
-                { label: "Rejected", value: data.rejected, color: "text-red-400" },
-                { label: "Acceptance Rate", value: `${data.acceptance_rate_pct}%`, color: "text-indigo-400" },
+                { label: tx("Total Offers"), value: data.total_offers, color: "text-white" },
+                { label: tx("Accepted"), value: data.accepted, color: "text-emerald-400" },
+                { label: tx("Rejected"), value: data.rejected, color: "text-red-400" },
+                { label: tx("Acceptance Rate"), value: `${data.acceptance_rate_pct}%`, color: "text-indigo-400" },
               ].map((k) => (
                 <div key={k.label} className="rounded-xl border border-white/[0.07] bg-white/[0.03] p-4">
                   <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">{k.label}</p>

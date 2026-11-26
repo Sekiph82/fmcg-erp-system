@@ -4,6 +4,7 @@ import { EntityPicker } from "@/components/EntityPicker";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { mfApi, FlowTransaction, FlowType, FLOW_TYPE_LABELS, FLOW_STATUS_COLORS } from "@/lib/materialFlow";
+import { tx } from "@/lib/i18n/core";
 
 export default function FlowHistoryPage() {
   const [orderId, setOrderId] = useState("");
@@ -22,20 +23,20 @@ export default function FlowHistoryPage() {
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center gap-3">
-        <a href="/dashboard/material-flow" className="text-sm text-indigo-600 hover:underline">← Dashboard</a>
-        <h1 className="text-xl font-bold text-gray-900">Material Flow History</h1>
+        <a href="/dashboard/material-flow" className="text-sm text-indigo-600 hover:underline">{tx("← Dashboard")}</a>
+        <h1 className="text-xl font-bold text-gray-900">{tx("Material Flow History")}</h1>
       </div>
 
       {/* Filters */}
       <div className="bg-white rounded-lg border p-4 flex flex-wrap gap-4">
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Production order</label>
-          <EntityPicker kind="production_order" label="Production order" value={orderId} onChange={setOrderId} />
+          <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Production order")}</label>
+          <EntityPicker kind="production_order" label={tx("Production order")} value={orderId} onChange={setOrderId} />
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Flow Type</label>
+          <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Flow Type")}</label>
           <select value={flowType} onChange={(e) => setFlowType(e.target.value as FlowType)} className="border rounded px-3 py-2 text-sm">
-            <option value="">All Types</option>
+            <option value="">{tx("All Types")}</option>
             {Object.entries(FLOW_TYPE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </select>
         </div>
@@ -44,12 +45,12 @@ export default function FlowHistoryPage() {
       {/* History Table */}
       <div className="bg-white rounded-lg border overflow-x-auto">
         <div className="px-4 py-3 border-b flex items-center justify-between">
-          <h2 className="font-semibold text-gray-900">Transactions ({data?.length || 0})</h2>
+          <h2 className="font-semibold text-gray-900">{tx("Transactions (")}{data?.length || 0})</h2>
         </div>
-        {isLoading && <div className="p-6 text-gray-400 text-sm">Loading…</div>}
+        {isLoading && <div className="p-6 text-gray-400 text-sm">{tx("Loading…")}</div>}
         <table className="w-full text-sm">
           <thead className="bg-gray-50">
-            <tr>{["Flow No", "Type", "Mode", "Production Order", "Date/Time", "Lines", "Status", ""].map((h) => (
+            <tr>{[tx("Flow No"), tx("Type"), tx("Mode"), tx("Production Order"), tx("Date/Time"), tx("Lines"), tx("Status"), ""].map((h) => (
               <th key={h} className="px-4 py-2 text-left text-xs font-medium text-gray-600">{h}</th>
             ))}</tr>
           </thead>
@@ -67,13 +68,13 @@ export default function FlowHistoryPage() {
                 </td>
                 <td className="px-4 py-2.5">
                   <button onClick={() => setSelected(selected?.id === t.id ? null : t)} className="text-xs text-indigo-600 hover:underline">
-                    {selected?.id === t.id ? "Hide" : "Lines"}
+                    {selected?.id === t.id ? tx("Hide") : tx("Lines")}
                   </button>
                 </td>
               </tr>
             ))}
             {!isLoading && !(data?.length) && (
-              <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400 text-sm">No flow transactions found.</td></tr>
+              <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400 text-sm">{tx("No flow transactions found.")}</td></tr>
             )}
           </tbody>
         </table>
@@ -81,11 +82,11 @@ export default function FlowHistoryPage() {
         {/* Inline line detail */}
         {selected && (
           <div className="border-t bg-gray-50 p-4">
-            <h3 className="text-sm font-semibold text-gray-800 mb-2">Lines — {selected.flow_no}</h3>
+            <h3 className="text-sm font-semibold text-gray-800 mb-2">{tx("Lines —")} {selected.flow_no}</h3>
             <table className="w-full text-xs">
               <thead>
                 <tr className="bg-white">
-                  {["#", "Item", "Lot", "Qty", "UOM", "Src Stage", "Dst Stage", "Quality", "Flags"].map((h) => (
+                  {["#", tx("Item"), tx("Lot"), tx("Qty"), "UOM", tx("Src Stage"), tx("Dst Stage"), tx("Quality"), tx("Flags")].map((h) => (
                     <th key={h} className="px-2 py-1.5 text-left font-medium text-gray-600 border">{h}</th>
                   ))}
                 </tr>

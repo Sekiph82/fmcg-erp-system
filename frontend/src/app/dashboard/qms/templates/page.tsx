@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { qmsApi, QCTemplate } from "@/lib/qms";
+import { tx } from "@/lib/i18n/core";
 
 export default function QCTemplatesPage() {
   const [templates, setTemplates] = useState<QCTemplate[]>([]);
@@ -39,56 +40,56 @@ export default function QCTemplatesPage() {
     <div className="p-6 space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">QC Templates</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Reusable inspection templates per product/material/stage</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("QC Templates")}</h1>
+          <p className="text-sm text-gray-500 mt-0.5">{tx("Reusable inspection templates per product/material/stage")}</p>
         </div>
         <button
           onClick={() => setShowNew(true)}
           className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700"
         >
-          + New Template
+          {tx("+ New Template")}
         </button>
       </div>
 
       {showNew && (
         <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
-          <h3 className="font-semibold text-gray-800">Create QC Template</h3>
+          <h3 className="font-semibold text-gray-800">{tx("Create QC Template")}</h3>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs text-gray-500 block mb-1">Template Name *</label>
+              <label className="text-xs text-gray-500 block mb-1">{tx("Template Name *")}</label>
               <input className="border rounded-lg px-3 py-2 text-sm w-full"
                 value={form.name as string} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} />
             </div>
             <div>
-              <label className="text-xs text-gray-500 block mb-1">QC Type *</label>
+              <label className="text-xs text-gray-500 block mb-1">{tx("QC Type *")}</label>
               <select className="border rounded-lg px-3 py-2 text-sm w-full"
                 value={form.qc_type as string} onChange={e => setForm(p => ({ ...p, qc_type: e.target.value }))}>
-                <option value="INCOMING">Incoming (IQC)</option>
-                <option value="IN_PROCESS">In-Process (IPQC)</option>
-                <option value="FINISHED_GOODS">Final (FQC)</option>
-                <option value="RETEST">Retest</option>
+                <option value="INCOMING">{tx("Incoming (IQC)")}</option>
+                <option value="IN_PROCESS">{tx("In-Process (IPQC)")}</option>
+                <option value="FINISHED_GOODS">{tx("Final (FQC)")}</option>
+                <option value="RETEST">{tx("Retest")}</option>
               </select>
             </div>
             <div>
-              <label className="text-xs text-gray-500 block mb-1">Sub-Type (optional)</label>
-              <input className="border rounded-lg px-3 py-2 text-sm w-full" placeholder="MIXING / BULK / PACKAGING…"
+              <label className="text-xs text-gray-500 block mb-1">{tx("Sub-Type (optional)")}</label>
+              <input className="border rounded-lg px-3 py-2 text-sm w-full" placeholder={tx("MIXING / BULK / PACKAGING…")}
                 value={(form.qc_sub_type as string) || ""}
                 onChange={e => setForm(p => ({ ...p, qc_sub_type: e.target.value }))} />
             </div>
             <div>
-              <label className="text-xs text-gray-500 block mb-1">Sampling Method</label>
+              <label className="text-xs text-gray-500 block mb-1">{tx("Sampling Method")}</label>
               <select className="border rounded-lg px-3 py-2 text-sm w-full"
                 value={form.sampling_method as string}
                 onChange={e => setForm(p => ({ ...p, sampling_method: e.target.value }))}>
-                <option value="FIXED">Fixed Size</option>
-                <option value="PERCENTAGE">Percentage</option>
-                <option value="FREQUENCY">Frequency (every N batches)</option>
-                <option value="TIME_BASED">Time-Based</option>
-                <option value="CCP_TRIGGERED">CCP Triggered</option>
+                <option value="FIXED">{tx("Fixed Size")}</option>
+                <option value="PERCENTAGE">{tx("Percentage")}</option>
+                <option value="FREQUENCY">{tx("Frequency (every N batches)")}</option>
+                <option value="TIME_BASED">{tx("Time-Based")}</option>
+                <option value="CCP_TRIGGERED">{tx("CCP Triggered")}</option>
               </select>
             </div>
             <div>
-              <label className="text-xs text-gray-500 block mb-1">Sample Size / %</label>
+              <label className="text-xs text-gray-500 block mb-1">{tx("Sample Size / %")}</label>
               <input type="number" className="border rounded-lg px-3 py-2 text-sm w-full"
                 value={(form.sample_size as number) || ""}
                 onChange={e => setForm(p => ({ ...p, sample_size: parseFloat(e.target.value) }))} />
@@ -97,33 +98,33 @@ export default function QCTemplatesPage() {
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={form.is_mandatory as boolean}
                   onChange={e => setForm(p => ({ ...p, is_mandatory: e.target.checked }))} />
-                Mandatory
+                {tx("Mandatory")}
               </label>
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={form.blocks_progression as boolean}
                   onChange={e => setForm(p => ({ ...p, blocks_progression: e.target.checked }))} />
-                Blocks Progression
+                {tx("Blocks Progression")}
               </label>
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={form.release_required as boolean}
                   onChange={e => setForm(p => ({ ...p, release_required: e.target.checked }))} />
-                Release Required
+                {tx("Release Required")}
               </label>
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={form.is_ccp_template as boolean || false}
                   onChange={e => setForm(p => ({ ...p, is_ccp_template: e.target.checked }))} />
-                CCP Template
+                {tx("CCP Template")}
               </label>
             </div>
           </div>
           <div className="flex gap-3">
             <button onClick={handleCreate}
               className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700">
-              Create
+              {tx("Create")}
             </button>
             <button onClick={() => setShowNew(false)}
               className="px-4 py-2 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200">
-              Cancel
+              {tx("Cancel")}
             </button>
           </div>
         </div>
@@ -131,14 +132,14 @@ export default function QCTemplatesPage() {
 
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         {loading ? (
-          <p className="px-5 py-8 text-gray-400 text-sm">Loading…</p>
+          <p className="px-5 py-8 text-gray-400 text-sm">{tx("Loading…")}</p>
         ) : templates.length === 0 ? (
-          <p className="px-5 py-8 text-gray-400 text-sm">No templates defined yet</p>
+          <p className="px-5 py-8 text-gray-400 text-sm">{tx("No templates defined yet")}</p>
         ) : (
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-xs uppercase text-gray-500">
               <tr>
-                {["Name", "QC Type", "Sub-Type", "Sampling", "Parameters", "Flags", "Status"].map(h => (
+                {[tx("Name"), tx("QC Type"), tx("Sub-Type"), tx("Sampling"), tx("Parameters"), tx("Flags"), tx("Status")].map(h => (
                   <th key={h} className="px-4 py-3 text-left font-medium">{h}</th>
                 ))}
               </tr>
@@ -157,14 +158,14 @@ export default function QCTemplatesPage() {
                   <td className="px-4 py-3 text-gray-500">{t.parameters.length}</td>
                   <td className="px-4 py-3">
                     <div className="flex gap-1 flex-wrap">
-                      {t.is_mandatory && <span className="px-1.5 py-0.5 bg-red-50 text-red-700 text-xs rounded">Mandatory</span>}
-                      {t.blocks_progression && <span className="px-1.5 py-0.5 bg-orange-50 text-orange-700 text-xs rounded">Blocks</span>}
+                      {t.is_mandatory && <span className="px-1.5 py-0.5 bg-red-50 text-red-700 text-xs rounded">{tx("Mandatory")}</span>}
+                      {t.blocks_progression && <span className="px-1.5 py-0.5 bg-orange-50 text-orange-700 text-xs rounded">{tx("Blocks")}</span>}
                       {t.is_ccp_template && <span className="px-1.5 py-0.5 bg-teal-50 text-teal-700 text-xs rounded">CCP</span>}
                     </div>
                   </td>
                   <td className="px-4 py-3">
                     <span className={`px-2 py-0.5 rounded text-xs ${t.is_active ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-500"}`}>
-                      {t.is_active ? "Active" : "Inactive"}
+                      {t.is_active ? tx("Active") : tx("Inactive")}
                     </span>
                   </td>
                 </tr>
@@ -176,14 +177,14 @@ export default function QCTemplatesPage() {
 
       {selected && (
         <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <h3 className="font-semibold text-gray-800 mb-4">{selected.name} — Parameters</h3>
+          <h3 className="font-semibold text-gray-800 mb-4">{selected.name} {tx("— Parameters")}</h3>
           {selected.parameters.length === 0 ? (
-            <p className="text-gray-400 text-sm">No parameters defined for this template</p>
+            <p className="text-gray-400 text-sm">{tx("No parameters defined for this template")}</p>
           ) : (
             <table className="w-full text-sm">
               <thead className="bg-gray-50 text-xs uppercase text-gray-500">
                 <tr>
-                  {["#", "Parameter", "Type", "Unit", "Min", "Max", "Target", "Critical", "CCP"].map(h => (
+                  {["#", tx("Parameter"), tx("Type"), tx("Unit"), tx("Min"), tx("Max"), tx("Target"), tx("Critical"), "CCP"].map(h => (
                     <th key={h} className="px-3 py-2 text-left font-medium">{h}</th>
                   ))}
                 </tr>

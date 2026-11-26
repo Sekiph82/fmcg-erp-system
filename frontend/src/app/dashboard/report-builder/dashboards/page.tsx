@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { reportBuilderApi, Dashboard, Report, ChartType, CHART_TYPES, CHART_LABEL } from "@/lib/report_builder";
+import { tx } from "@/lib/i18n/core";
 
 export default function DashboardsPage() {
   const [dashboards, setDashboards] = useState<Dashboard[]>([]);
@@ -62,39 +63,39 @@ export default function DashboardsPage() {
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-gray-900">Dashboards</h1>
+        <h1 className="text-xl font-bold text-gray-900">{tx("Dashboards")}</h1>
         <button onClick={() => setShowForm(true)}
           className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
-          + New Dashboard
+          {tx("+ New Dashboard")}
         </button>
       </div>
 
       {showForm && (
         <div className="bg-white border rounded-lg p-4 shadow-sm space-y-3">
-          <h2 className="font-semibold text-gray-800">New Dashboard</h2>
+          <h2 className="font-semibold text-gray-800">{tx("New Dashboard")}</h2>
           <div className="grid grid-cols-2 gap-3">
             {(["dashboard_code","dashboard_name"] as const).map(f => (
               <div key={f}><label className="text-xs text-gray-500 capitalize">{f.replace(/_/g," ")}</label>
                 <input className="w-full border rounded px-2 py-1 text-sm mt-1" value={form[f]}
                   onChange={(e) => setForm({ ...form, [f]: e.target.value })} /></div>
             ))}
-            <div><label className="text-xs text-gray-500">Visibility</label>
+            <div><label className="text-xs text-gray-500">{tx("Visibility")}</label>
               <select className="w-full border rounded px-2 py-1 text-sm mt-1" value={form.visibility}
                 onChange={(e) => setForm({ ...form, visibility: e.target.value })}>
-                {["private","team","global"].map(v => <option key={v} value={v}>{v}</option>)}
+                {[tx("private"),tx("team"),tx("global")].map(v => <option key={v} value={v}>{v}</option>)}
               </select></div>
-            <div className="col-span-2"><label className="text-xs text-gray-500">Description</label>
+            <div className="col-span-2"><label className="text-xs text-gray-500">{tx("Description")}</label>
               <textarea className="w-full border rounded px-2 py-1 text-sm mt-1" rows={2} value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
           </div>
           <div className="flex gap-2">
-            <button onClick={createDash} className="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">Create</button>
-            <button onClick={() => setShowForm(false)} className="rounded border px-4 py-1.5 text-sm text-gray-600 hover:bg-gray-50">Cancel</button>
+            <button onClick={createDash} className="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">{tx("Create")}</button>
+            <button onClick={() => setShowForm(false)} className="rounded border px-4 py-1.5 text-sm text-gray-600 hover:bg-gray-50">{tx("Cancel")}</button>
           </div>
         </div>
       )}
 
-      {loading ? <p className="text-gray-500 text-sm">Loading…</p> : (
+      {loading ? <p className="text-gray-500 text-sm">{tx("Loading…")}</p> : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {dashboards.map(d => (
             <div key={d.dashboard_id} className="bg-white border rounded-lg p-4 shadow-sm cursor-pointer hover:shadow-md"
@@ -108,11 +109,11 @@ export default function DashboardsPage() {
                     {CHART_ICONS[w.chart_type]} {w.widget_title ?? CHART_LABEL[w.chart_type]}
                   </span>
                 ))}
-                {d.widgets.length === 0 && <span className="text-xs text-gray-400">No widgets</span>}
+                {d.widgets.length === 0 && <span className="text-xs text-gray-400">{tx("No widgets")}</span>}
               </div>
             </div>
           ))}
-          {dashboards.length === 0 && <p className="text-gray-400 text-sm col-span-3 text-center py-8">No dashboards yet.</p>}
+          {dashboards.length === 0 && <p className="text-gray-400 text-sm col-span-3 text-center py-8">{tx("No dashboards yet.")}</p>}
         </div>
       )}
 
@@ -126,42 +127,42 @@ export default function DashboardsPage() {
               </div>
               <div className="flex gap-2">
                 <button onClick={() => setShowWidgetForm(true)}
-                  className="rounded bg-blue-600 px-3 py-1.5 text-xs text-white hover:bg-blue-700">+ Add Widget</button>
+                  className="rounded bg-blue-600 px-3 py-1.5 text-xs text-white hover:bg-blue-700">{tx("+ Add Widget")}</button>
                 <button onClick={() => setSelected(null)} className="text-gray-400 hover:text-gray-700 text-xl">✕</button>
               </div>
             </div>
 
             {showWidgetForm && (
               <div className="bg-gray-50 border rounded-lg p-3 space-y-3">
-                <h3 className="text-sm font-semibold text-gray-800">Add Widget</h3>
+                <h3 className="text-sm font-semibold text-gray-800">{tx("Add Widget")}</h3>
                 <div className="grid grid-cols-2 gap-3">
-                  <div><label className="text-xs text-gray-500">Report</label>
+                  <div><label className="text-xs text-gray-500">{tx("Report")}</label>
                     <select className="w-full border rounded px-2 py-1 text-sm mt-1" value={widgetForm.report_id}
                       onChange={(e) => setWidgetForm({ ...widgetForm, report_id: e.target.value })}>
-                      <option value="">No report</option>
+                      <option value="">{tx("No report")}</option>
                       {reports.map(r => <option key={r.report_id} value={r.report_id}>{r.report_name}</option>)}
                     </select></div>
-                  <div><label className="text-xs text-gray-500">Chart Type</label>
+                  <div><label className="text-xs text-gray-500">{tx("Chart Type")}</label>
                     <select className="w-full border rounded px-2 py-1 text-sm mt-1" value={widgetForm.chart_type}
                       onChange={(e) => setWidgetForm({ ...widgetForm, chart_type: e.target.value as ChartType })}>
                       {CHART_TYPES.map(t => <option key={t} value={t}>{CHART_LABEL[t]}</option>)}
                     </select></div>
-                  <div><label className="text-xs text-gray-500">Widget Title</label>
+                  <div><label className="text-xs text-gray-500">{tx("Widget Title")}</label>
                     <input className="w-full border rounded px-2 py-1 text-sm mt-1" value={widgetForm.widget_title}
                       onChange={(e) => setWidgetForm({ ...widgetForm, widget_title: e.target.value })} /></div>
-                  <div><label className="text-xs text-gray-500">Width (1-12)</label>
+                  <div><label className="text-xs text-gray-500">{tx("Width (1-12)")}</label>
                     <input type="number" min={1} max={12} className="w-full border rounded px-2 py-1 text-sm mt-1"
                       value={widgetForm.width} onChange={(e) => setWidgetForm({ ...widgetForm, width: Number(e.target.value) })} /></div>
-                  <div><label className="text-xs text-gray-500">X Axis Field</label>
+                  <div><label className="text-xs text-gray-500">{tx("X Axis Field")}</label>
                     <input className="w-full border rounded px-2 py-1 text-sm mt-1" value={widgetForm.x_axis_field}
                       onChange={(e) => setWidgetForm({ ...widgetForm, x_axis_field: e.target.value })} /></div>
-                  <div><label className="text-xs text-gray-500">Y Axis Field</label>
+                  <div><label className="text-xs text-gray-500">{tx("Y Axis Field")}</label>
                     <input className="w-full border rounded px-2 py-1 text-sm mt-1" value={widgetForm.y_axis_field}
                       onChange={(e) => setWidgetForm({ ...widgetForm, y_axis_field: e.target.value })} /></div>
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={addWidget} className="rounded bg-blue-600 px-3 py-1.5 text-xs text-white hover:bg-blue-700">Add</button>
-                  <button onClick={() => setShowWidgetForm(false)} className="rounded border px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-50">Cancel</button>
+                  <button onClick={addWidget} className="rounded bg-blue-600 px-3 py-1.5 text-xs text-white hover:bg-blue-700">{tx("Add")}</button>
+                  <button onClick={() => setShowWidgetForm(false)} className="rounded border px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-50">{tx("Cancel")}</button>
                 </div>
               </div>
             )}
@@ -173,22 +174,22 @@ export default function DashboardsPage() {
                     <span className="font-medium text-gray-800 text-sm">
                       {CHART_ICONS[w.chart_type]} {w.widget_title ?? CHART_LABEL[w.chart_type]}
                     </span>
-                    <button onClick={() => removeWidget(w.widget_id)} className="text-red-400 hover:text-red-600 text-xs">Remove</button>
+                    <button onClick={() => removeWidget(w.widget_id)} className="text-red-400 hover:text-red-600 text-xs">{tx("Remove")}</button>
                   </div>
                   <div className="text-xs text-gray-500 space-y-0.5">
-                    <p>Type: {CHART_LABEL[w.chart_type]}</p>
-                    {w.report_id && <p>Report linked</p>}
-                    {w.x_axis_field && <p>X: {w.x_axis_field} · Y: {w.y_axis_field}</p>}
-                    <p>Width: {w.width} cols</p>
+                    <p>{tx("Type:")} {CHART_LABEL[w.chart_type]}</p>
+                    {w.report_id && <p>{tx("Report linked")}</p>}
+                    {w.x_axis_field && <p>X: {w.x_axis_field} {tx("· Y:")} {w.y_axis_field}</p>}
+                    <p>{tx("Width:")} {w.width} {tx("cols")}</p>
                   </div>
                   {w.report_id && (
                     <a href={`/dashboard/report-builder/viewer?id=${w.report_id}`}
-                      className="inline-block mt-2 text-xs text-blue-600 hover:underline">View Report →</a>
+                      className="inline-block mt-2 text-xs text-blue-600 hover:underline">{tx("View Report →")}</a>
                   )}
                 </div>
               ))}
             </div>
-            {selected.widgets.length === 0 && <p className="text-gray-400 text-sm text-center py-4">No widgets yet. Add one above.</p>}
+            {selected.widgets.length === 0 && <p className="text-gray-400 text-sm text-center py-4">{tx("No widgets yet. Add one above.")}</p>}
           </div>
         </div>
       )}

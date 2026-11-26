@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { listIncidents, createIncident, updateIncident, listVehicles, listDrivers, IncidentLog, IncidentStatus, IncidentType, Vehicle, FleetDriver, INCIDENT_STATUS_BADGE } from "@/lib/fleet";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { tx } from "@/lib/i18n/core";
 
 const TYPES: IncidentType[] = ["accident", "damage", "theft", "breakdown", "other"];
 const STATUSES: IncidentStatus[] = ["open", "under_review", "resolved", "closed"];
@@ -40,7 +41,7 @@ export default function IncidentsPage() {
       setShowForm(false); await load();
     } catch (err: unknown) {
       const e2 = err as { response?: { data?: { detail?: string } } };
-      setError(e2?.response?.data?.detail || "Failed to log incident");
+      setError(e2?.response?.data?.detail || tx("Failed to log incident"));
     }
     setSaving(false);
   }
@@ -54,8 +55,8 @@ export default function IncidentsPage() {
     <div className="max-w-5xl mx-auto py-8 px-4 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Incident Log</h1>
-          <p className="text-sm text-gray-500 mt-1">{incidents.length} incident(s)</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Incident Log")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{incidents.length} {tx("incident(s)")}</p>
         </div>
         <div className="flex gap-2">
           {(["all", ...STATUSES] as const).map((s) => (
@@ -63,7 +64,7 @@ export default function IncidentsPage() {
               {s.replace("_", " ")}
             </button>
           ))}
-          <Button onClick={() => setShowForm(!showForm)}>{showForm ? "Cancel" : "Log Incident"}</Button>
+          <Button onClick={() => setShowForm(!showForm)}>{showForm ? tx("Cancel") : tx("Log Incident")}</Button>
         </div>
       </div>
 
@@ -71,42 +72,42 @@ export default function IncidentsPage() {
         <div className="bg-white rounded-2xl border border-red-200 p-6">
           <form onSubmit={handleCreate} className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Vehicle</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{tx("Vehicle")}</label>
               <select required className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" value={form.vehicle_id || ""} onChange={(e) => setForm({ ...form, vehicle_id: e.target.value })}>
-                <option value="">Select vehicle</option>
+                <option value="">{tx("Select vehicle")}</option>
                 {vehicles.map((v) => <option key={v.id} value={v.id}>{v.vehicle_code} — {v.plate_number}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Driver</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{tx("Driver")}</label>
               <select className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" value={form.driver_id || ""} onChange={(e) => setForm({ ...form, driver_id: e.target.value })}>
-                <option value="">No driver</option>
+                <option value="">{tx("No driver")}</option>
                 {drivers.map((d) => <option key={d.id} value={d.id}>{d.full_name}</option>)}
               </select>
             </div>
-            <Input id="date" label="Incident Date" type="date" value={form.incident_date} onChange={(e) => setForm({ ...form, incident_date: e.target.value })} required />
+            <Input id="date" label={tx("Incident Date")} type="date" value={form.incident_date} onChange={(e) => setForm({ ...form, incident_date: e.target.value })} required />
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{tx("Type")}</label>
               <select className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm capitalize" value={form.incident_type} onChange={(e) => setForm({ ...form, incident_type: e.target.value })}>
                 {TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
-            <Input id="loc" label="Location" value={form.location || ""} onChange={(e) => setForm({ ...form, location: e.target.value })} />
-            <Input id="cost" label="Cost Estimate (KES)" type="number" step="0.01" value={form.cost_estimate || ""} onChange={(e) => setForm({ ...form, cost_estimate: e.target.value })} />
+            <Input id="loc" label={tx("Location")} value={form.location || ""} onChange={(e) => setForm({ ...form, location: e.target.value })} />
+            <Input id="cost" label={tx("Cost Estimate (KES)")} type="number" step="0.01" value={form.cost_estimate || ""} onChange={(e) => setForm({ ...form, cost_estimate: e.target.value })} />
             <div className="col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{tx("Description")}</label>
               <textarea className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" rows={2} value={form.description || ""} onChange={(e) => setForm({ ...form, description: e.target.value })} />
             </div>
             {error && <div className="col-span-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">{error}</div>}
             <div className="col-span-2 flex justify-end gap-3">
-              <Button variant="secondary" type="button" onClick={() => setShowForm(false)}>Cancel</Button>
-              <Button type="submit" loading={saving}>Log Incident</Button>
+              <Button variant="secondary" type="button" onClick={() => setShowForm(false)}>{tx("Cancel")}</Button>
+              <Button type="submit" loading={saving}>{tx("Log Incident")}</Button>
             </div>
           </form>
         </div>
       )}
 
-      {loading ? <div className="text-gray-500 py-8 text-center">Loading...</div> : (
+      {loading ? <div className="text-gray-500 py-8 text-center">{tx("Loading...")}</div> : (
         <div className="space-y-3">
           {incidents.map((inc) => {
             const v = vehicles.find((x) => x.id === inc.vehicle_id);
@@ -122,12 +123,12 @@ export default function IncidentsPage() {
                       </span>
                       <span className="text-xs bg-red-50 text-red-700 px-2 py-0.5 rounded capitalize">{inc.incident_type}</span>
                     </div>
-                    <div className="text-sm text-gray-700">{inc.description || "No description"}</div>
+                    <div className="text-sm text-gray-700">{inc.description || tx("No description")}</div>
                     <div className="flex gap-4 text-xs text-gray-500 mt-1">
                       <span>{inc.incident_date}</span>
                       {inc.location && <span>📍 {inc.location}</span>}
                       {inc.cost_estimate && <span>KES {Number(inc.cost_estimate).toLocaleString()}</span>}
-                      {d && <span>Driver: {d.full_name}</span>}
+                      {d && <span>{tx("Driver:")} {d.full_name}</span>}
                     </div>
                   </div>
                   <select className="text-xs border border-gray-200 rounded px-2 py-1 capitalize" value={inc.status} onChange={(e) => handleStatusChange(inc.id, e.target.value as IncidentStatus)}>
@@ -137,7 +138,7 @@ export default function IncidentsPage() {
               </div>
             );
           })}
-          {incidents.length === 0 && <div className="text-center py-12 text-gray-400">No incidents found</div>}
+          {incidents.length === 0 && <div className="text-center py-12 text-gray-400">{tx("No incidents found")}</div>}
         </div>
       )}
     </div>

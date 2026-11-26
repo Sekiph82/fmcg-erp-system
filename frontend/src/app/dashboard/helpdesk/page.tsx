@@ -11,6 +11,7 @@ import {
 import { salesApi } from "@/lib/sales";
 import { Button } from "@/components/ui/Button";
 import { apiClient, API_ORIGIN } from "@/lib/api";
+import { tx } from "@/lib/i18n/core";
 
 interface TicketFile { id: string; file_name: string; size: number; from_customer: boolean; customer_visible: boolean; downloadable: boolean; scan_status: string }
 
@@ -26,20 +27,20 @@ function TicketFiles({ ticketId }: { ticketId: string }) {
   if (files.isError) return null;  // no quality access: the section is hidden
   return (
     <div className="border-t pt-3 space-y-2">
-      <p className="text-xs font-semibold text-gray-500">FILES ({files.data?.length ?? 0})</p>
+      <p className="text-xs font-semibold text-gray-500">{tx("FILES (")}{files.data?.length ?? 0})</p>
       {(files.data ?? []).map((f) => (
         <div key={f.id} className="flex flex-wrap items-center gap-2 text-xs">
           {f.downloadable
             ? <a className="text-indigo-600 underline break-all" href={`${API_ORIGIN}/api/v1/helpdesk/attachments/${f.id}/download`}>{f.file_name}</a>
-            : <span className="break-all" title={`Malware scan: ${f.scan_status}`}>{f.file_name} (quarantined: {f.scan_status.toLowerCase().replace("_", " ")})</span>}
-          <span className="text-gray-400">{f.from_customer ? "from customer" : "ours"} · {Math.max(1, Math.round(f.size / 1024))} KB</span>
+            : <span className="break-all" title={tx("Malware scan: {scan_status}", { scan_status: f.scan_status })}>{f.file_name} {tx("(quarantined:")} {f.scan_status.toLowerCase().replace("_", " ")})</span>}
+          <span className="text-gray-400">{f.from_customer ? tx("from customer") : tx("ours")} · {Math.max(1, Math.round(f.size / 1024))} KB</span>
           {!f.from_customer && (
             <label className="flex items-center gap-1">
               <input type="checkbox" checked={f.customer_visible} onChange={async (e) => {
                 try { await apiClient.post(`/api/v1/helpdesk/attachments/${f.id}/share`, { share_with_customer: e.target.checked }); refresh(); }
                 catch (x) { setErr(msg(x)); }
               }} />
-              shared with customer
+              {tx("shared with customer")}
             </label>
           )}
         </div>
@@ -52,9 +53,9 @@ function TicketFiles({ ticketId }: { ticketId: string }) {
             try { await apiClient.post(`/api/v1/helpdesk/tickets/${ticketId}/attachments`, fd); setErr(null); refresh(); }
             catch (x) { setErr(msg(x)); }
           }} />
-          + Attach file
+          {tx("+ Attach file")}
         </label>
-        <label className="flex items-center gap-1"><input type="checkbox" checked={shareNew} onChange={(e) => setShareNew(e.target.checked)} /> share with customer</label>
+        <label className="flex items-center gap-1"><input type="checkbox" checked={shareNew} onChange={(e) => setShareNew(e.target.checked)} /> {tx("share with customer")}</label>
       </div>
       {err && <p role="alert" className="text-xs text-red-600">{err}</p>}
     </div>
@@ -107,35 +108,35 @@ function CreateModal({ onClose }: { onClose: () => void }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 space-y-4">
         <div className="flex justify-between items-center">
-          <h2 className="text-lg font-bold">New Support Ticket</h2>
+          <h2 className="text-lg font-bold">{tx("New Support Ticket")}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl">✕</button>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="text-sm font-medium text-gray-700">Customer</label>
+            <label className="text-sm font-medium text-gray-700">{tx("Customer")}</label>
             <select className="w-full border rounded px-3 py-2 text-sm mt-1"
               value={form.customer_id ?? ""} onChange={e => setForm({ ...form, customer_id: e.target.value || undefined })}>
-              <option value="">— None / Anonymous —</option>
+              <option value="">{tx("— None / Anonymous —")}</option>
               {customers.map(c => <option key={c.id} value={c.id}>{c.name} ({c.code})</option>)}
             </select>
           </div>
           <div>
-            <label className="text-sm font-medium text-gray-700">Source</label>
+            <label className="text-sm font-medium text-gray-700">{tx("Source")}</label>
             <select className="w-full border rounded px-3 py-2 text-sm mt-1"
               value={form.source} onChange={e => setForm({ ...form, source: e.target.value as TicketCreate["source"] })}>
               {["PHONE", "EMAIL", "PORTAL", "WHATSAPP", "MANUAL"].map(s => <option key={s}>{s}</option>)}
             </select>
           </div>
           <div>
-            <label className="text-sm font-medium text-gray-700">Category *</label>
+            <label className="text-sm font-medium text-gray-700">{tx("Category *")}</label>
             <select className="w-full border rounded px-3 py-2 text-sm mt-1"
               value={form.category} onChange={e => setForm({ ...form, category: e.target.value as TicketCategory })}>
               {categories.map(c => <option key={c}>{c}</option>)}
             </select>
           </div>
           <div>
-            <label className="text-sm font-medium text-gray-700">Priority *</label>
+            <label className="text-sm font-medium text-gray-700">{tx("Priority *")}</label>
             <select className="w-full border rounded px-3 py-2 text-sm mt-1"
               value={form.priority} onChange={e => setForm({ ...form, priority: e.target.value as TicketPriority })}>
               {priorities.map(p => <option key={p}>{p}</option>)}
@@ -144,21 +145,21 @@ function CreateModal({ onClose }: { onClose: () => void }) {
         </div>
 
         <div>
-          <label className="text-sm font-medium text-gray-700">Subject *</label>
+          <label className="text-sm font-medium text-gray-700">{tx("Subject *")}</label>
           <input className="w-full border rounded px-3 py-2 text-sm mt-1" value={form.subject}
-            onChange={e => setForm({ ...form, subject: e.target.value })} placeholder="Describe the issue briefly" />
+            onChange={e => setForm({ ...form, subject: e.target.value })} placeholder={tx("Describe the issue briefly")} />
         </div>
         <div>
-          <label className="text-sm font-medium text-gray-700">Description</label>
+          <label className="text-sm font-medium text-gray-700">{tx("Description")}</label>
           <textarea className="w-full border rounded px-3 py-2 text-sm mt-1" rows={3}
             value={form.description ?? ""} onChange={e => setForm({ ...form, description: e.target.value })}
-            placeholder="Full details, product batch, order reference…" />
+            placeholder={tx("Full details, product batch, order reference…")} />
         </div>
 
         <div className="flex gap-2 justify-end pt-2">
-          <Button variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button variant="secondary" onClick={onClose}>{tx("Cancel")}</Button>
           <Button onClick={() => mut.mutate()} disabled={!form.subject || mut.isPending}>
-            {mut.isPending ? "Creating…" : "Create Ticket"}
+            {mut.isPending ? tx("Creating…") : tx("Create Ticket")}
           </Button>
         </div>
         {mut.isError && <p className="text-xs text-red-600">{(mut.error as Error).message}</p>}
@@ -189,8 +190,8 @@ function TicketDetail({ ticket, onClose }: { ticket: Ticket; onClose: () => void
   const busy = escalateM.isPending || resolveM.isPending || closeM.isPending || reopenM.isPending || commentM.isPending;
 
   const slaLabel = ticket.sla_breached
-    ? <span className="text-xs text-red-600 font-semibold">SLA BREACHED</span>
-    : <span className="text-xs text-green-600">Within SLA</span>;
+    ? <span className="text-xs text-red-600 font-semibold">{tx("SLA BREACHED")}</span>
+    : <span className="text-xs text-green-600">{tx("Within SLA")}</span>;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
@@ -208,15 +209,15 @@ function TicketDetail({ ticket, onClose }: { ticket: Ticket; onClose: () => void
         </div>
 
         <div className="grid grid-cols-2 gap-3 text-sm text-gray-600 bg-gray-50 rounded-lg p-3">
-          <div><span className="font-medium">Customer:</span> {ticket.customer_name ?? "—"}</div>
-          <div><span className="font-medium">Category:</span> {ticket.category}</div>
-          <div><span className="font-medium">Source:</span> {ticket.source}</div>
-          <div><span className="font-medium">SLA:</span> {ticket.sla_hours}h</div>
-          <div><span className="font-medium">Assigned to:</span> {ticket.assigned_to_name ?? "Unassigned"}</div>
-          <div><span className="font-medium">Lot #:</span> {ticket.lot_number ?? "—"}</div>
-          <div><span className="font-medium">Opened:</span> {fmtDate(ticket.created_at)}</div>
-          <div><span className="font-medium">First response:</span> {fmtDate(ticket.first_response_at)}</div>
-          {ticket.resolved_at && <div><span className="font-medium">Resolved:</span> {fmtDate(ticket.resolved_at)}</div>}
+          <div><span className="font-medium">{tx("Customer:")}</span> {ticket.customer_name ?? "—"}</div>
+          <div><span className="font-medium">{tx("Category:")}</span> {ticket.category}</div>
+          <div><span className="font-medium">{tx("Source:")}</span> {ticket.source}</div>
+          <div><span className="font-medium">SLA:</span> {ticket.sla_hours}{tx("h")}</div>
+          <div><span className="font-medium">{tx("Assigned to:")}</span> {ticket.assigned_to_name ?? tx("Unassigned")}</div>
+          <div><span className="font-medium">{tx("Lot #:")}</span> {ticket.lot_number ?? "—"}</div>
+          <div><span className="font-medium">{tx("Opened:")}</span> {fmtDate(ticket.created_at)}</div>
+          <div><span className="font-medium">{tx("First response:")}</span> {fmtDate(ticket.first_response_at)}</div>
+          {ticket.resolved_at && <div><span className="font-medium">{tx("Resolved:")}</span> {fmtDate(ticket.resolved_at)}</div>}
           {ticket.customer_satisfaction && (
             <div><span className="font-medium">CSAT:</span> {"★".repeat(ticket.customer_satisfaction)}{"☆".repeat(5 - ticket.customer_satisfaction)}</div>
           )}
@@ -235,34 +236,34 @@ function TicketDetail({ ticket, onClose }: { ticket: Ticket; onClose: () => void
             {ticket.status !== "ESCALATED" && ticket.status !== "RESOLVED" && (
               <button disabled={busy} onClick={() => escalateM.mutate()}
                 className="text-xs px-3 py-1.5 rounded bg-orange-50 text-orange-700 border border-orange-200 hover:bg-orange-100">
-                Escalate
+                {tx("Escalate")}
               </button>
             )}
             {ticket.status !== "RESOLVED" && (
               <div className="flex gap-1">
-                <input className="border rounded px-2 py-1 text-xs w-40" placeholder="Resolution notes…"
+                <input className="border rounded px-2 py-1 text-xs w-40" placeholder={tx("Resolution notes…")}
                   value={resNotes} onChange={e => setResNotes(e.target.value)} />
                 <button disabled={busy} onClick={() => resolveM.mutate()}
                   className="text-xs px-3 py-1.5 rounded bg-green-50 text-green-700 border border-green-200 hover:bg-green-100">
-                  Resolve
+                  {tx("Resolve")}
                 </button>
               </div>
             )}
             {!showClose ? (
               <button disabled={busy} onClick={() => setShowClose(true)}
                 className="text-xs px-3 py-1.5 rounded bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200">
-                Close
+                {tx("Close")}
               </button>
             ) : (
               <div className="flex gap-1 items-center">
-                <span className="text-xs text-gray-500">CSAT (1-5):</span>
+                <span className="text-xs text-gray-500">{tx("CSAT (1-5):")}</span>
                 <select className="border rounded px-2 py-1 text-xs" value={satScore}
                   onChange={e => setSatScore(Number(e.target.value))}>
                   {[1, 2, 3, 4, 5].map(n => <option key={n}>{n}</option>)}
                 </select>
                 <button disabled={busy} onClick={() => closeM.mutate()}
                   className="text-xs px-3 py-1.5 rounded bg-gray-200 text-gray-800 hover:bg-gray-300">
-                  Confirm Close
+                  {tx("Confirm Close")}
                 </button>
                 <button onClick={() => setShowClose(false)} className="text-xs text-gray-400 hover:text-gray-600">✕</button>
               </div>
@@ -273,7 +274,7 @@ function TicketDetail({ ticket, onClose }: { ticket: Ticket; onClose: () => void
         {(ticket.status === "RESOLVED" || ticket.status === "CLOSED") && (
           <button disabled={busy} onClick={() => reopenM.mutate()}
             className="text-xs px-3 py-1.5 rounded bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100">
-            Reopen
+            {tx("Reopen")}
           </button>
         )}
 
@@ -281,33 +282,33 @@ function TicketDetail({ ticket, onClose }: { ticket: Ticket; onClose: () => void
 
         {/* Comments */}
         <div className="border-t pt-3 space-y-2">
-          <p className="text-xs font-semibold text-gray-500">COMMENTS & ACTIVITY ({ticket.comments.length})</p>
+          <p className="text-xs font-semibold text-gray-500">{tx("COMMENTS & ACTIVITY (")}{ticket.comments.length})</p>
           <div className="space-y-2 max-h-48 overflow-y-auto">
             {ticket.comments.map(c => (
               <div key={c.id} className={`rounded-lg p-2.5 text-sm ${c.is_internal ? "bg-yellow-50 border border-yellow-100" : "bg-gray-50"}`}>
                 <div className="flex gap-2 items-center mb-1">
-                  <span className="font-medium text-gray-700 text-xs">{c.created_by_name ?? "User"}</span>
+                  <span className="font-medium text-gray-700 text-xs">{c.created_by_name ?? tx("User")}</span>
                   {c.is_internal && <span className="text-xs text-yellow-600 font-semibold">INTERNAL</span>}
                   <span className="text-xs text-gray-400 ml-auto">{fmtDate(c.created_at)}</span>
                 </div>
                 <p className="text-gray-700 whitespace-pre-wrap">{c.body}</p>
               </div>
             ))}
-            {ticket.comments.length === 0 && <p className="text-xs text-gray-400">No comments yet.</p>}
+            {ticket.comments.length === 0 && <p className="text-xs text-gray-400">{tx("No comments yet.")}</p>}
           </div>
 
           {ticket.status !== "CLOSED" && (
             <div className="flex gap-2 pt-1">
               <textarea className="flex-1 border rounded px-3 py-2 text-sm" rows={2}
-                placeholder="Add comment…" value={comment} onChange={e => setComment(e.target.value)} />
+                placeholder={tx("Add comment…")} value={comment} onChange={e => setComment(e.target.value)} />
               <div className="flex flex-col gap-1">
                 <label className="flex items-center gap-1 text-xs text-gray-600">
                   <input type="checkbox" checked={isInternal} onChange={e => setIsInternal(e.target.checked)} />
-                  Internal
+                  {tx("Internal")}
                 </label>
                 <button disabled={!comment || busy} onClick={() => commentM.mutate()}
                   className="text-xs px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50">
-                  Send
+                  {tx("Send")}
                 </button>
               </div>
             </div>
@@ -315,7 +316,7 @@ function TicketDetail({ ticket, onClose }: { ticket: Ticket; onClose: () => void
         </div>
 
         {(escalateM.isError || resolveM.isError || closeM.isError || commentM.isError) && (
-          <p className="text-xs text-red-600">Action failed — please try again.</p>
+          <p className="text-xs text-red-600">{tx("Action failed — please try again.")}</p>
         )}
       </div>
     </div>
@@ -350,23 +351,23 @@ export function HelpdeskAllTab({ defaultStatus }: { defaultStatus?: TicketStatus
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Helpdesk & Complaints</h1>
-          <p className="text-sm text-gray-500">Customer complaints, quality issues, and support tickets</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Helpdesk & Complaints")}</h1>
+          <p className="text-sm text-gray-500">{tx("Customer complaints, quality issues, and support tickets")}</p>
         </div>
-        <Button onClick={() => setShowCreate(true)}>+ New Ticket</Button>
+        <Button onClick={() => setShowCreate(true)}>{tx("+ New Ticket")}</Button>
       </div>
 
       {/* KPI cards */}
       {dash && (
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
-          <KpiCard label="Total" value={dash.total_tickets} />
-          <KpiCard label="Open" value={dash.open_count} />
-          <KpiCard label="In Progress" value={dash.in_progress_count} />
-          <KpiCard label="Escalated" value={dash.escalated_count} />
-          <KpiCard label="Resolved" value={dash.resolved_count} />
-          <KpiCard label="Closed" value={dash.closed_count} />
-          <KpiCard label="SLA Breached" value={dash.sla_breached_count} accent={dash.sla_breached_count > 0 ? "border-red-300" : ""} />
-          <KpiCard label="Avg Resolution" value={dash.avg_resolution_hours != null ? `${dash.avg_resolution_hours}h` : "—"} />
+          <KpiCard label={tx("Total")} value={dash.total_tickets} />
+          <KpiCard label={tx("Open")} value={dash.open_count} />
+          <KpiCard label={tx("In Progress")} value={dash.in_progress_count} />
+          <KpiCard label={tx("Escalated")} value={dash.escalated_count} />
+          <KpiCard label={tx("Resolved")} value={dash.resolved_count} />
+          <KpiCard label={tx("Closed")} value={dash.closed_count} />
+          <KpiCard label={tx("SLA Breached")} value={dash.sla_breached_count} accent={dash.sla_breached_count > 0 ? "border-red-300" : ""} />
+          <KpiCard label={tx("Avg Resolution")} value={dash.avg_resolution_hours != null ? `${dash.avg_resolution_hours}h` : "—"} />
         </div>
       )}
 
@@ -376,7 +377,7 @@ export function HelpdeskAllTab({ defaultStatus }: { defaultStatus?: TicketStatus
         <div className="flex gap-1 flex-wrap">
           <button onClick={() => setStatusFilter("")}
             className={`text-xs px-3 py-1.5 rounded-full border font-medium ${statusFilter === "" ? "bg-gray-900 text-white" : "bg-white text-gray-600 border-gray-200"}`}>
-            All Status
+            {tx("All Status")}
           </button>
           {statuses.map(s => (
             <button key={s} onClick={() => setStatusFilter(s)}
@@ -392,7 +393,7 @@ export function HelpdeskAllTab({ defaultStatus }: { defaultStatus?: TicketStatus
         <div className="flex gap-1 flex-wrap">
           <button onClick={() => setCatFilter("")}
             className={`text-xs px-3 py-1.5 rounded-full border font-medium ${catFilter === "" ? "bg-blue-600 text-white" : "bg-white text-gray-600 border-gray-200"}`}>
-            All Cat
+            {tx("All Cat")}
           </button>
           {categories.map(c => (
             <button key={c} onClick={() => setCatFilter(c)}
@@ -418,15 +419,15 @@ export function HelpdeskAllTab({ defaultStatus }: { defaultStatus?: TicketStatus
       {/* Table */}
       <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
         {isLoading ? (
-          <div className="p-8 text-center text-gray-400">Loading tickets…</div>
+          <div className="p-8 text-center text-gray-400">{tx("Loading tickets…")}</div>
         ) : tickets.length === 0 ? (
-          <div className="p-8 text-center text-gray-400">No tickets found. Create the first support ticket.</div>
+          <div className="p-8 text-center text-gray-400">{tx("No tickets found. Create the first support ticket.")}</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-gray-50 border-b">
                 <tr>
-                  {["Ticket #", "Customer", "Subject", "Category", "Priority", "Status", "SLA", "Assigned", "Opened", "Actions"].map(h => (
+                  {[tx("Ticket #"), tx("Customer"), tx("Subject"), tx("Category"), tx("Priority"), tx("Status"), "SLA", tx("Assigned"), tx("Opened"), tx("Actions")].map(h => (
                     <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{h}</th>
                   ))}
                 </tr>
@@ -440,7 +441,7 @@ export function HelpdeskAllTab({ defaultStatus }: { defaultStatus?: TicketStatus
                     </td>
                     <td className="px-4 py-3">
                       <div className="truncate max-w-[180px] text-gray-800">{t.subject}</div>
-                      {t.lot_number && <div className="text-xs text-gray-400">Lot: {t.lot_number}</div>}
+                      {t.lot_number && <div className="text-xs text-gray-400">{tx("Lot:")} {t.lot_number}</div>}
                     </td>
                     <td className="px-4 py-3">
                       <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">{t.category}</span>
@@ -450,14 +451,14 @@ export function HelpdeskAllTab({ defaultStatus }: { defaultStatus?: TicketStatus
                     <td className="px-4 py-3">
                       {t.sla_breached
                         ? <span className="text-xs text-red-600 font-semibold">BREACHED</span>
-                        : <span className="text-xs text-green-600">{t.sla_hours}h SLA</span>}
+                        : <span className="text-xs text-green-600">{t.sla_hours}{tx("h SLA")}</span>}
                     </td>
                     <td className="px-4 py-3 text-xs text-gray-500">{t.assigned_to_name ?? "—"}</td>
                     <td className="px-4 py-3 text-xs text-gray-500">{fmtDate(t.created_at)}</td>
                     <td className="px-4 py-3">
                       <button onClick={e => { e.stopPropagation(); setSelected(t); }}
                         className="text-xs px-2 py-1 rounded bg-blue-50 text-blue-700 hover:bg-blue-100">
-                        Open
+                        {tx("Open")}
                       </button>
                     </td>
                   </tr>
@@ -485,18 +486,18 @@ const HelpdeskTicketsPage   = dynamic(() => import("@/app/dashboard/helpdesk/tic
 
 export default function HelpdeskPage() {
   const tabs = [
-    { key: "all",       label: "All Tickets", permission: "crm.view|sales.view|quality.view|consumer_complaints.view", content: <HelpdeskAllTab /> },
-    { key: "open",      label: "Open",        permission: "crm.view|sales.view|quality.view|consumer_complaints.view", content: <HelpdeskOpenPage /> },
-    { key: "escalated", label: "Escalated",   permission: "crm.view|sales.view|quality.view|consumer_complaints.view", content: <HelpdeskEscalatedPage /> },
+    { key: "all",       label: tx("All Tickets"), permission: "crm.view|sales.view|quality.view|consumer_complaints.view", content: <HelpdeskAllTab /> },
+    { key: "open",      label: tx("Open"),        permission: "crm.view|sales.view|quality.view|consumer_complaints.view", content: <HelpdeskOpenPage /> },
+    { key: "escalated", label: tx("Escalated"),   permission: "crm.view|sales.view|quality.view|consumer_complaints.view", content: <HelpdeskEscalatedPage /> },
     { key: "sla",       label: "SLA",         permission: "crm.view|sales.view|quality.view|consumer_complaints.view", content: <HelpdeskSLAPage /> },
-    { key: "tickets",   label: "Tickets",     permission: "crm.view|sales.view|quality.view|consumer_complaints.view", content: <HelpdeskTicketsPage /> },
-    { key: "service",   label: "Service desk", permission: "crm.view|sales.view|quality.view|consumer_complaints.view", content: <ServiceDeskPage /> },
-    { key: "pipelines", label: "Pipelines",    permission: "crm.view|sales.view|quality.view|consumer_complaints.view", content: <HelpdeskPipelinesPage /> },
-    { key: "service-agent", label: "AI service agent", permission: "crm.view|sales.view|quality.view|consumer_complaints.view", content: <ServiceAgentPage /> },
+    { key: "tickets",   label: tx("Tickets"),     permission: "crm.view|sales.view|quality.view|consumer_complaints.view", content: <HelpdeskTicketsPage /> },
+    { key: "service",   label: tx("Service desk"), permission: "crm.view|sales.view|quality.view|consumer_complaints.view", content: <ServiceDeskPage /> },
+    { key: "pipelines", label: tx("Pipelines"),    permission: "crm.view|sales.view|quality.view|consumer_complaints.view", content: <HelpdeskPipelinesPage /> },
+    { key: "service-agent", label: tx("AI service agent"), permission: "crm.view|sales.view|quality.view|consumer_complaints.view", content: <ServiceAgentPage /> },
   ];
   return (
     <ModuleWorkspace
-      title="Helpdesk"
+      title={tx("Helpdesk")}
       description="Support tickets, escalations, SLA tracking"
       permission="crm.view|sales.view|quality.view|consumer_complaints.view"
       tabs={tabs}

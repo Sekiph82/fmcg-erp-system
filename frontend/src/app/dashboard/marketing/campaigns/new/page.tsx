@@ -5,6 +5,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { marketingApi, CampaignType, CampaignStatus } from "@/lib/marketingApi";
 import { RequirePermission } from "@/components/PermissionGuard";
+import { tx } from "@/lib/i18n/core";
 
 const CAMPAIGN_TYPES: CampaignType[] = [
   "TRADE", "DIGITAL", "RETAIL", "DISTRIBUTOR", "LAUNCH",
@@ -56,7 +57,7 @@ export default function NewCampaignPage() {
       router.push(`/dashboard/marketing/campaigns/${res.data.id}`);
     },
     onError: (err: unknown) => {
-      setError((err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ?? "Failed to create campaign.");
+      setError((err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ?? tx("Failed to create campaign."));
     },
   });
 
@@ -70,9 +71,9 @@ export default function NewCampaignPage() {
       <div className="min-h-screen bg-[#0b1120] p-6 text-white max-w-2xl">
         <div className="mb-6">
           <a href="/dashboard/marketing/campaigns" className="text-sm text-slate-400 hover:text-white mb-2 inline-block">
-            ← Back to Campaigns
+            {tx("← Back to Campaigns")}
           </a>
-          <h1 className="text-2xl font-bold">New Campaign</h1>
+          <h1 className="text-2xl font-bold">{tx("New Campaign")}</h1>
         </div>
 
         {error && (
@@ -85,15 +86,15 @@ export default function NewCampaignPage() {
           {/* Code & Name */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Campaign Code *</label>
+              <label className="block text-xs text-slate-400 mb-1">{tx("Campaign Code *")}</label>
               <input value={form.campaign_code} onChange={(e) => set("campaign_code", e.target.value)}
-                placeholder="e.g. CAM-2026-001"
+                placeholder={tx("e.g. CAM-2026-001")}
                 className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600" />
             </div>
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Campaign Name *</label>
+              <label className="block text-xs text-slate-400 mb-1">{tx("Campaign Name *")}</label>
               <input value={form.campaign_name} onChange={(e) => set("campaign_name", e.target.value)}
-                placeholder="e.g. Ramadan 2026 Push"
+                placeholder={tx("e.g. Ramadan 2026 Push")}
                 className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600" />
             </div>
           </div>
@@ -101,14 +102,14 @@ export default function NewCampaignPage() {
           {/* Type */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Campaign Type *</label>
+              <label className="block text-xs text-slate-400 mb-1">{tx("Campaign Type *")}</label>
               <select value={form.campaign_type} onChange={(e) => set("campaign_type", e.target.value as CampaignType)}
                 className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
                 {CAMPAIGN_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Initial Status</label>
+              <label className="block text-xs text-slate-400 mb-1">{tx("Initial Status")}</label>
               <select value={form.status} onChange={(e) => set("status", e.target.value as CampaignStatus)}
                 className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
                 {CAMPAIGN_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
@@ -119,15 +120,15 @@ export default function NewCampaignPage() {
           {/* Region & Country */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Region</label>
+              <label className="block text-xs text-slate-400 mb-1">{tx("Region")}</label>
               <input value={form.region} onChange={(e) => set("region", e.target.value)}
-                placeholder="e.g. Nairobi, Istanbul"
+                placeholder={tx("e.g. Nairobi, Istanbul")}
                 className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600" />
             </div>
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Country</label>
+              <label className="block text-xs text-slate-400 mb-1">{tx("Country")}</label>
               <input value={form.country} onChange={(e) => set("country", e.target.value)}
-                placeholder="e.g. Kenya"
+                placeholder={tx("e.g. Kenya")}
                 className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600" />
             </div>
           </div>
@@ -135,12 +136,12 @@ export default function NewCampaignPage() {
           {/* Dates */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Start Date *</label>
+              <label className="block text-xs text-slate-400 mb-1">{tx("Start Date *")}</label>
               <input type="date" value={form.start_date} onChange={(e) => set("start_date", e.target.value)}
                 className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white" />
             </div>
             <div>
-              <label className="block text-xs text-slate-400 mb-1">End Date *</label>
+              <label className="block text-xs text-slate-400 mb-1">{tx("End Date *")}</label>
               <input type="date" value={form.end_date} onChange={(e) => set("end_date", e.target.value)}
                 className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white" />
             </div>
@@ -149,13 +150,13 @@ export default function NewCampaignPage() {
           {/* Budget & Expected Revenue */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Budget (KES)</label>
+              <label className="block text-xs text-slate-400 mb-1">{tx("Budget (KES)")}</label>
               <input type="number" value={form.budget} onChange={(e) => set("budget", e.target.value)}
                 placeholder="0.00"
                 className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600" />
             </div>
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Expected Revenue (KES)</label>
+              <label className="block text-xs text-slate-400 mb-1">{tx("Expected Revenue (KES)")}</label>
               <input type="number" value={form.expected_revenue} onChange={(e) => set("expected_revenue", e.target.value)}
                 placeholder="0.00"
                 className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600" />
@@ -164,17 +165,17 @@ export default function NewCampaignPage() {
 
           {/* Objective */}
           <div>
-            <label className="block text-xs text-slate-400 mb-1">Objective</label>
+            <label className="block text-xs text-slate-400 mb-1">{tx("Objective")}</label>
             <textarea value={form.objective} onChange={(e) => set("objective", e.target.value)}
-              rows={2} placeholder="Campaign objective and goals..."
+              rows={2} placeholder={tx("Campaign objective and goals...")}
               className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600 resize-none" />
           </div>
 
           {/* Notes */}
           <div>
-            <label className="block text-xs text-slate-400 mb-1">Notes</label>
+            <label className="block text-xs text-slate-400 mb-1">{tx("Notes")}</label>
             <textarea value={form.notes} onChange={(e) => set("notes", e.target.value)}
-              rows={2} placeholder="Internal notes..."
+              rows={2} placeholder={tx("Internal notes...")}
               className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600 resize-none" />
           </div>
 
@@ -185,11 +186,11 @@ export default function NewCampaignPage() {
               disabled={mut.isPending || !form.campaign_code || !form.campaign_name || !form.start_date || !form.end_date}
               className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-sm font-medium disabled:opacity-50 transition-colors"
             >
-              {mut.isPending ? "Creating..." : "Create Campaign"}
+              {mut.isPending ? tx("Creating...") : tx("Create Campaign")}
             </button>
             <a href="/dashboard/marketing/campaigns"
               className="px-5 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-sm font-medium transition-colors">
-              Cancel
+              {tx("Cancel")}
             </a>
           </div>
         </div>

@@ -7,6 +7,7 @@ import { EntityPicker } from "@/components/EntityPicker";
 import { SendApprovalsPanel } from "@/components/SendApprovalsPanel";
 import { getActiveCompanyId } from "@/lib/company";
 import { sendApprovalsApi, type SendPolicy } from "@/lib/send_approvals";
+import { tx } from "@/lib/i18n/core";
 
 interface Group { id: string; name: string; description: string | null; accounts: number; campaign_started_at: string | null }
 interface Account { customer_id: string; name: string; code: string; tier: number; contacts: number; contacts_engaged: number;
@@ -41,42 +42,42 @@ export default function ABMPage() {
   const act = async (fn: () => Promise<unknown>, ok: string) => { try { await fn(); say(true, ok); loadGroups(); if (sel) loadOv(sel); } catch (e) { say(false, err(e)); setApprovalsKey((k) => k + 1); } };
   return (
     <div className="p-4 sm:p-6 space-y-4">
-      <div><h1 className="text-xl font-bold text-gray-900">Key accounts</h1>
-        <p className="text-xs text-gray-500">Target-account groups, buying committees and what has really happened with each account.</p></div>
+      <div><h1 className="text-xl font-bold text-gray-900">{tx("Key accounts")}</h1>
+        <p className="text-xs text-gray-500">{tx("Target-account groups, buying committees and what has really happened with each account.")}</p></div>
       {msg && <p role="status" className={`text-sm rounded px-3 py-2 ${msg.ok ? "bg-emerald-50 text-emerald-800" : "bg-red-50 text-red-700"}`}>{msg.text}</p>}
       <div className="flex flex-wrap gap-2 items-end">
-        <select aria-label="Account group" value={sel ?? ""} onChange={(e) => setSel(e.target.value || null)} className="border rounded px-3 py-2 text-sm">
-          <option value="">Choose a group…</option>
+        <select aria-label={tx("Account group")} value={sel ?? ""} onChange={(e) => setSel(e.target.value || null)} className="border rounded px-3 py-2 text-sm">
+          <option value="">{tx("Choose a group…")}</option>
           {groups.map((g) => <option key={g.id} value={g.id}>{g.name} ({g.accounts})</option>)}
         </select>
-        <input aria-label="New group name" placeholder="New group name" value={name} onChange={(e) => setName(e.target.value)} className="border rounded px-3 py-2 text-sm" />
+        <input aria-label={tx("New group name")} placeholder={tx("New group name")} value={name} onChange={(e) => setName(e.target.value)} className="border rounded px-3 py-2 text-sm" />
         <button disabled={name.trim().length < 2} onClick={() => act(async () => { const r = await apiClient.post<{ id: string }>("/api/v1/abm/groups", { name }); setSel(r.data.id); setName(""); }, "Group created.")}
-          className="rounded bg-blue-600 px-3 py-2 text-sm text-white disabled:opacity-50">Create group</button>
+          className="rounded bg-blue-600 px-3 py-2 text-sm text-white disabled:opacity-50">{tx("Create group")}</button>
       </div>
 
       {ov && (<>
         <div className="bg-white border rounded-xl p-3 flex flex-wrap gap-2 items-end">
-          <div className="min-w-[240px] flex-1"><label className="block text-xs text-gray-500 mb-1">Add account</label>
-            <EntityPicker kind="customer" label="Account to add" value={member.customer_id} onChange={(id) => setMember({ ...member, customer_id: id })} /></div>
-          <select aria-label="Tier" value={member.tier} onChange={(e) => setMember({ ...member, tier: e.target.value })} className="border rounded px-2 py-2 text-sm">
-            <option value="1">Tier 1 — strategic</option><option value="2">Tier 2 — core</option><option value="3">Tier 3 — watch</option></select>
+          <div className="min-w-[240px] flex-1"><label className="block text-xs text-gray-500 mb-1">{tx("Add account")}</label>
+            <EntityPicker kind="customer" label={tx("Account to add")} value={member.customer_id} onChange={(id) => setMember({ ...member, customer_id: id })} /></div>
+          <select aria-label={tx("Tier")} value={member.tier} onChange={(e) => setMember({ ...member, tier: e.target.value })} className="border rounded px-2 py-2 text-sm">
+            <option value="1">{tx("Tier 1 — strategic")}</option><option value="2">{tx("Tier 2 — core")}</option><option value="3">{tx("Tier 3 — watch")}</option></select>
           <button disabled={!member.customer_id} onClick={() => act(() => apiClient.post(`/api/v1/abm/groups/${ov.id}/members`, { customer_id: member.customer_id, tier: Number(member.tier) }).then(() => setMember({ customer_id: "", tier: "2" })), "Account added.")}
-            className="rounded bg-blue-600 px-3 py-2 text-sm text-white disabled:opacity-50">Add</button>
+            className="rounded bg-blue-600 px-3 py-2 text-sm text-white disabled:opacity-50">{tx("Add")}</button>
         </div>
 
         <div className="bg-white border rounded-xl overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-xs text-gray-600"><tr>{["Account", "Tier", "Committee", "Activities", "Meetings", "E-mails out / in", "Tickets", "Orders (90 d)", ""].map((h) => <th key={h} className="px-3 py-2 text-left">{h}</th>)}</tr></thead>
+            <thead className="bg-gray-50 text-xs text-gray-600"><tr>{[tx("Account"), tx("Tier"), tx("Committee"), tx("Activities"), tx("Meetings"), tx("E-mails out / in"), tx("Tickets"), tx("Orders (90 d)"), ""].map((h) => <th key={h} className="px-3 py-2 text-left">{h}</th>)}</tr></thead>
             <tbody className="divide-y">
-              {ov.accounts.length === 0 ? <tr><td colSpan={9} className="px-3 py-6 text-center text-gray-400">No accounts in this group yet.</td></tr> : ov.accounts.map((a) => (<Fragment key={a.customer_id}>
+              {ov.accounts.length === 0 ? <tr><td colSpan={9} className="px-3 py-6 text-center text-gray-400">{tx("No accounts in this group yet.")}</td></tr> : ov.accounts.map((a) => (<Fragment key={a.customer_id}>
                 <tr key={a.customer_id}>
                   <td className="px-3 py-2"><button onClick={() => setOpen(open === a.customer_id ? null : a.customer_id)} className="text-blue-700 underline text-left">{a.name}</button><span className="block text-xs text-gray-500">{a.code}</span></td>
                   <td className="px-3 py-2">{a.tier}</td>
-                  <td className="px-3 py-2">{a.contacts} ({a.contacts_engaged} replied){a.key_roles_missing.length > 0 && <span className="block text-xs text-amber-700">missing: {a.key_roles_missing.join(", ").toLowerCase().replace(/_/g, " ")}</span>}</td>
+                  <td className="px-3 py-2">{a.contacts} ({a.contacts_engaged} {tx("replied)")}{a.key_roles_missing.length > 0 && <span className="block text-xs text-amber-700">{tx("missing:")} {a.key_roles_missing.join(", ").toLowerCase().replace(/_/g, " ")}</span>}</td>
                   <td className="px-3 py-2">{a.activities}</td><td className="px-3 py-2">{a.meetings}</td>
                   <td className="px-3 py-2">{a.emails_sent} / {a.emails_received}</td><td className="px-3 py-2">{a.tickets}</td>
                   <td className="px-3 py-2">{a.orders} · {kes(a.order_value)}</td>
-                  <td className="px-3 py-2"><button onClick={() => act(() => apiClient.delete(`/api/v1/abm/groups/${ov.id}/members/${a.customer_id}`), "Account removed.")} className="text-xs text-red-700">Remove</button></td>
+                  <td className="px-3 py-2"><button onClick={() => act(() => apiClient.delete(`/api/v1/abm/groups/${ov.id}/members/${a.customer_id}`), "Account removed.")} className="text-xs text-red-700">{tx("Remove")}</button></td>
                 </tr>
                 {open === a.customer_id && <tr key={a.customer_id + "-c"}><td colSpan={9} className="bg-gray-50 px-3 py-3"><Committee customerId={a.customer_id} onChange={() => loadOv(ov.id)} say={say} /></td></tr>}
               </Fragment>))}
@@ -84,13 +85,13 @@ export default function ABMPage() {
           </table>
         </div>
 
-        {ov.attribution && <p className="text-sm text-gray-700">Since the campaign started ({ov.attribution.since}): {ov.attribution.orders} orders · {kes(ov.attribution.order_value)} <span className="text-xs text-gray-500">— {ov.attribution.note}</span></p>}
+        {ov.attribution && <p className="text-sm text-gray-700">{tx("Since the campaign started (")}{ov.attribution.since}): {ov.attribution.orders} {tx("orders ·")} {kes(ov.attribution.order_value)} <span className="text-xs text-gray-500">— {ov.attribution.note}</span></p>}
 
         <div className="bg-white border rounded-xl p-3 space-y-2">
-          <p className="font-medium text-sm">Coordinated campaign to every committee member</p>
-          <p className="text-xs text-gray-500">Sent through the outbox: people without marketing consent are suppressed automatically. Placeholders: {"{contact_name}"}, {"{company_name}"}.</p>
-          <input aria-label="Campaign subject" placeholder="Subject" value={camp.subject} onChange={(e) => setCamp({ ...camp, subject: e.target.value })} className="w-full border rounded px-3 py-2 text-sm" />
-          <textarea aria-label="Campaign message" rows={4} value={camp.body} onChange={(e) => setCamp({ ...camp, body: e.target.value })} className="w-full border rounded px-3 py-2 text-sm" />
+          <p className="font-medium text-sm">{tx("Coordinated campaign to every committee member")}</p>
+          <p className="text-xs text-gray-500">{tx("Sent through the outbox: people without marketing consent are suppressed automatically. Placeholders:")} {tx("{contact_name}")}, {tx("{company_name}")}.</p>
+          <input aria-label={tx("Campaign subject")} placeholder={tx("Subject")} value={camp.subject} onChange={(e) => setCamp({ ...camp, subject: e.target.value })} className="w-full border rounded px-3 py-2 text-sm" />
+          <textarea aria-label={tx("Campaign message")} rows={4} value={camp.body} onChange={(e) => setCamp({ ...camp, body: e.target.value })} className="w-full border rounded px-3 py-2 text-sm" />
           {(() => {
             const activeCompany = getActiveCompanyId();
             const payload = { ...camp, company_id: useActiveCompany ? activeCompany : null };
@@ -103,7 +104,7 @@ export default function ABMPage() {
             return (<>
               <label className="flex items-center gap-2 text-xs text-gray-600">
                 <input type="checkbox" checked={useActiveCompany} onChange={(e) => { setUseActiveCompany(e.target.checked); setApprovalId(null); }} />
-                Send only to accounts of the active company (needed when the group has accounts of several companies)</label>
+                {tx("Send only to accounts of the active company (needed when the group has accounts of several companies)")}</label>
               <div className="flex flex-wrap gap-2 items-center">
                 <button disabled={!!sendReason} title={sendReason ?? undefined}
                   onClick={async () => {
@@ -112,10 +113,10 @@ export default function ABMPage() {
                     catch (e) { say(false, err(e)); }
                     setApprovalId(null); setApprovalsKey((k) => k + 1);
                   }}
-                  className="rounded bg-indigo-600 px-3 py-2 text-sm text-white disabled:opacity-50">{approvalId ? "Queue campaign with approval" : "Queue campaign"}</button>
+                  className="rounded bg-indigo-600 px-3 py-2 text-sm text-white disabled:opacity-50">{approvalId ? tx("Queue campaign with approval") : tx("Queue campaign")}</button>
                 <button disabled={!!requestReason} title={requestReason ?? undefined}
                   onClick={() => act(async () => { await sendApprovalsApi.requestAbm(ov.id, payload); setApprovalsKey((k) => k + 1); }, "Approval requested; another editor must approve it.")}
-                  className="rounded border px-3 py-2 text-sm disabled:opacity-50">Request approval</button>
+                  className="rounded border px-3 py-2 text-sm disabled:opacity-50">{tx("Request approval")}</button>
                 {sendReason && <span className="text-xs text-amber-700">{sendReason}</span>}
               </div>
             </>);
@@ -138,15 +139,15 @@ function Committee({ customerId, onChange, say }: { customerId: string; onChange
   };
   return (
     <div className="space-y-2 text-sm">
-      <p className="font-medium">Buying committee</p>
+      <p className="font-medium">{tx("Buying committee")}</p>
       <ul className="divide-y">{rows.map((c) => <li key={c.id} className="py-1 flex justify-between gap-2"><span>{c.full_name}{c.title ? ` — ${c.title}` : ""} <span className="text-xs text-gray-500">{c.email}</span></span>
         <span className="text-xs">{c.committee_role.toLowerCase().replace("_", " ")} <button onClick={async () => { await apiClient.delete(`/api/v1/abm/contacts/${c.id}`); load(); onChange(); }} className="ml-2 text-red-700">×</button></span></li>)}</ul>
       <div className="grid gap-2 sm:grid-cols-5">
-        <input aria-label="Contact name" placeholder="Name" value={f.full_name} onChange={(e) => setF({ ...f, full_name: e.target.value })} className="border rounded px-2 py-1.5" />
-        <input aria-label="Contact title" placeholder="Title" value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} className="border rounded px-2 py-1.5" />
-        <input aria-label="Contact e-mail" placeholder="E-mail" type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} className="border rounded px-2 py-1.5" />
-        <select aria-label="Committee role" value={f.committee_role} onChange={(e) => setF({ ...f, committee_role: e.target.value })} className="border rounded px-2 py-1.5">{ROLES.map((r) => <option key={r} value={r}>{r.toLowerCase().replace("_", " ")}</option>)}</select>
-        <button disabled={f.full_name.length < 2} onClick={add} className="rounded bg-blue-600 text-white disabled:opacity-50">Add</button>
+        <input aria-label={tx("Contact name")} placeholder={tx("Name")} value={f.full_name} onChange={(e) => setF({ ...f, full_name: e.target.value })} className="border rounded px-2 py-1.5" />
+        <input aria-label={tx("Contact title")} placeholder={tx("Title")} value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} className="border rounded px-2 py-1.5" />
+        <input aria-label={tx("Contact e-mail")} placeholder={tx("E-mail")} type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} className="border rounded px-2 py-1.5" />
+        <select aria-label={tx("Committee role")} value={f.committee_role} onChange={(e) => setF({ ...f, committee_role: e.target.value })} className="border rounded px-2 py-1.5">{ROLES.map((r) => <option key={r} value={r}>{r.toLowerCase().replace("_", " ")}</option>)}</select>
+        <button disabled={f.full_name.length < 2} onClick={add} className="rounded bg-blue-600 text-white disabled:opacity-50">{tx("Add")}</button>
       </div>
     </div>
   );

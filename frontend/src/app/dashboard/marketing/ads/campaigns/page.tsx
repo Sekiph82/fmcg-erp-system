@@ -7,20 +7,21 @@ import { useAuth } from "@/context/AuthContext";
 import {
   adCampaignsApi, AdAccountControls, AdAccountInfo, AdCampaignTree, AdMutationRow, AdProvider, AdProviderInfo, AdTreeAction,
 } from "@/lib/marketingApi";
+import { tx, lx } from "@/lib/i18n/core";
 
 const LABEL: Record<AdProvider, string> = { meta: "Meta", google: "Google Ads", linkedin: "LinkedIn", tiktok: "TikTok" };
 type Field = { k: string; label: string; list?: boolean; lines?: boolean; def?: string; type?: string };
-const FIELDS: Record<AdProvider, Field[]> = {
-  meta: [{ k: "page_id", label: "Facebook Page id" }, { k: "link", label: "Link (https)" }, { k: "message", label: "Ad text" },
-    { k: "headline", label: "Headline" }, { k: "country", label: "Country (2 letters)", def: "KE" }],
-  google: [{ k: "final_url", label: "Final URL (https)" }, { k: "headlines", label: "Headlines (3–15, one per line, ≤30 chars)", list: true, lines: true },
-    { k: "descriptions", label: "Descriptions (2–4, one per line, ≤90 chars)", list: true, lines: true },
-    { k: "cpc_bid", label: "Max CPC bid", type: "number" }],
-  linkedin: [{ k: "share_urn", label: "Post URN (urn:li:share:…)" }, { k: "geo_urn", label: "Location URN (urn:li:geo:…)" },
-    { k: "unit_cost", label: "Bid (unit cost)", type: "number" }],
-  tiktok: [{ k: "location_ids", label: "Location ids (comma separated)", list: true }, { k: "video_id", label: "Uploaded video_id" },
-    { k: "identity_id", label: "Identity id" }, { k: "ad_text", label: "Ad text (≤100)" }, { k: "landing_page_url", label: "Landing page (https)" }],
-};
+const FIELDS: Record<AdProvider, Field[]> = lx(() => ({
+  meta: [{ k: "page_id", label: tx("Facebook Page id") }, { k: "link", label: tx("Link (https)") }, { k: "message", label: tx("Ad text") },
+    { k: "headline", label: tx("Headline") }, { k: "country", label: tx("Country (2 letters)"), def: "KE" }],
+  google: [{ k: "final_url", label: tx("Final URL (https)") }, { k: "headlines", label: tx("Headlines (3–15, one per line, ≤30 chars)"), list: true, lines: true },
+    { k: "descriptions", label: tx("Descriptions (2–4, one per line, ≤90 chars)"), list: true, lines: true },
+    { k: "cpc_bid", label: tx("Max CPC bid"), type: "number" }],
+  linkedin: [{ k: "share_urn", label: tx("Post URN (urn:li:share:…)") }, { k: "geo_urn", label: tx("Location URN (urn:li:geo:…)") },
+    { k: "unit_cost", label: tx("Bid (unit cost)"), type: "number" }],
+  tiktok: [{ k: "location_ids", label: tx("Location ids (comma separated)"), list: true }, { k: "video_id", label: tx("Uploaded video_id") },
+    { k: "identity_id", label: tx("Identity id") }, { k: "ad_text", label: tx("Ad text (≤100)") }, { k: "landing_page_url", label: tx("Landing page (https)") }],
+}));
 const ACTION_LABEL: Partial<Record<AdTreeAction, string>> = {
   validate: "Validate", request_submit: "Request approval", submit: "Submit (paused)", request_resume: "Request resume approval",
   resume: "Resume", pause: "Pause", request_budget: "Request budget approval", reconcile: "Reconcile",
@@ -72,35 +73,33 @@ export default function AdCampaignBuilder() {
   return (
     <div className="p-4 space-y-4 text-sm">
       <div className="flex flex-wrap items-center gap-2">
-        <h2 className="text-lg font-semibold">Ad campaign builder</h2>
-        <Link href="/dashboard/crm/ads" className="text-xs underline">Ads reporting</Link>
-        <Link href="/dashboard/marketing/ads/lifecycle" className="text-xs underline">All accounts: lifecycle, edits and reporting</Link>
+        <h2 className="text-lg font-semibold">{tx("Ad campaign builder")}</h2>
+        <Link href="/dashboard/crm/ads" className="text-xs underline">{tx("Ads reporting")}</Link>
+        <Link href="/dashboard/marketing/ads/lifecycle" className="text-xs underline">{tx("All accounts: lifecycle, edits and reporting")}</Link>
       </div>
-      <p className="text-xs text-gray-500">Campaigns are created on the platform paused (Meta/Google PAUSED, LinkedIn DRAFT, TikTok DISABLE) after a
-        second person approves the exact version. Going live needs a separate resume approval. Changes run in SIMULATED mode unless provider
-        traffic is live, ADS_LIVE_MUTATIONS is on, an admin activated the account and credentials are set.</p>
+      <p className="text-xs text-gray-500">{tx("Campaigns are created on the platform paused (Meta/Google PAUSED, LinkedIn DRAFT, TikTok DISABLE) after a second person approves the exact version. Going live needs a separate resume approval. Changes run in SIMULATED mode unless provider traffic is live, ADS_LIVE_MUTATIONS is on, an admin activated the account and credentials are set.")}</p>
       {msg && <p role="status" className="text-xs border rounded p-2 bg-gray-50 text-gray-900">{msg}</p>}
 
       <section className="border rounded p-3 bg-white text-gray-900 space-y-2">
         <div className="flex flex-wrap items-center gap-2">
-          <label className="text-xs" htmlFor="acct">Ad account</label>
+          <label className="text-xs" htmlFor="acct">{tx("Ad account")}</label>
           <select id="acct" className={input} value={aid} onChange={(e) => setAid(e.target.value)}>
-            {accounts.length === 0 && <option value="">No ad accounts — add one under Ads reporting</option>}
+            {accounts.length === 0 && <option value="">{tx("No ad accounts — add one under Ads reporting")}</option>}
             {accounts.map((a) => <option key={a.id} value={a.id}>{LABEL[a.provider]} · {a.name} ({a.currency})</option>)}
           </select>
           {ctrl && <ModeBadge mode={ctrl.mode} />}
-          {ctrl && <span className="text-xs text-gray-500">{ctrl.transport === "http" ? "Adapter calls the configured endpoint" : "Nothing is sent (offline simulation)"}</span>}
+          {ctrl && <span className="text-xs text-gray-500">{ctrl.transport === "http" ? tx("Adapter calls the configured endpoint") : tx("Nothing is sent (offline simulation)")}</span>}
         </div>
         {ctrl && ctrl.live_blockers.length > 0 && <ul className="text-xs text-amber-800 list-disc ml-5">{ctrl.live_blockers.map((b) => <li key={b}>{b}</li>)}</ul>}
-        {ctrl && <p className="text-xs">Caps: {ctrl.daily_cap ?? "not set"} / day, {ctrl.monthly_cap ?? "not set"} / month · Members: {ctrl.members.join(", ") || "none"} · Activation: {ctrl.activated ? `on (by ${ctrl.activated_by})` : "off"}</p>}
+        {ctrl && <p className="text-xs">{tx("Caps:")} {ctrl.daily_cap ?? tx("not set")} {tx("/ day,")} {ctrl.monthly_cap ?? tx("not set")} {tx("/ month · Members:")} {ctrl.members.join(", ") || tx("none")} {tx("· Activation:")} {ctrl.activated ? tx("on (by {activated_by})", { activated_by: ctrl.activated_by }) : tx("off")}</p>}
         {ctrl && acct && <AdminControls ctrl={ctrl} isAdmin={isAdmin} busy={busy} run={run} aid={acct.id} />}
       </section>
 
       {acct && prov && <Wizard key={acct.id} acct={acct} prov={prov} busy={busy} run={run} />}
 
       <section className="space-y-3">
-        <h3 className="font-semibold">Campaigns</h3>
-        {trees.length === 0 && <p className="text-xs text-gray-500">No campaigns on this account yet.</p>}
+        <h3 className="font-semibold">{tx("Campaigns")}</h3>
+        {trees.length === 0 && <p className="text-xs text-gray-500">{tx("No campaigns on this account yet.")}</p>}
         {trees.map((t) => <TreeCard key={t.id} t={t} busy={busy} run={run} />)}
       </section>
     </div>
@@ -116,13 +115,13 @@ function AdminControls({ ctrl, isAdmin, busy, run, aid }: { ctrl: AdAccountContr
   return (
     <form className="flex flex-wrap gap-2 items-end" onSubmit={(e) => { e.preventDefault();
       run(() => adCampaignsApi.setControls(aid, { daily_cap: daily, monthly_cap: monthly, members: members.split(",").map((m) => m.trim()).filter(Boolean) }), "Controls saved."); }}>
-      <label className="text-xs">Daily cap<input aria-label="Daily cap" type="number" min="0.01" step="0.01" className={`${input} w-24 block`} value={daily} onChange={(e) => setDaily(e.target.value)} disabled={!isAdmin} /></label>
-      <label className="text-xs">Monthly cap<input aria-label="Monthly cap" type="number" min="0.01" step="0.01" className={`${input} w-28 block`} value={monthly} onChange={(e) => setMonthly(e.target.value)} disabled={!isAdmin} /></label>
-      <label className="text-xs">Members (usernames)<input aria-label="Members" className={`${input} w-64 block`} value={members} onChange={(e) => setMembers(e.target.value)} disabled={!isAdmin} /></label>
-      <button className="border rounded px-3 py-1 text-xs disabled:opacity-50" disabled={!isAdmin || busy} title={why ?? ""}>Save controls</button>
+      <label className="text-xs">{tx("Daily cap")}<input aria-label={tx("Daily cap")} type="number" min="0.01" step="0.01" className={`${input} w-24 block`} value={daily} onChange={(e) => setDaily(e.target.value)} disabled={!isAdmin} /></label>
+      <label className="text-xs">{tx("Monthly cap")}<input aria-label={tx("Monthly cap")} type="number" min="0.01" step="0.01" className={`${input} w-28 block`} value={monthly} onChange={(e) => setMonthly(e.target.value)} disabled={!isAdmin} /></label>
+      <label className="text-xs">{tx("Members (usernames)")}<input aria-label={tx("Members")} className={`${input} w-64 block`} value={members} onChange={(e) => setMembers(e.target.value)} disabled={!isAdmin} /></label>
+      <button className="border rounded px-3 py-1 text-xs disabled:opacity-50" disabled={!isAdmin || busy} title={why ?? ""}>{tx("Save controls")}</button>
       <button type="button" className="border rounded px-3 py-1 text-xs disabled:opacity-50" disabled={!isAdmin || busy} title={why ?? ""}
         onClick={() => run(() => adCampaignsApi.activate(aid, !ctrl.activated), ctrl.activated ? "Account deactivated." : "Account activated (live still needs the global switches).")}>
-        {ctrl.activated ? "Deactivate live changes" : "Activate live changes"}</button>
+        {ctrl.activated ? tx("Deactivate live changes") : tx("Activate live changes")}</button>
       {why && <span className="text-xs text-gray-500">{why}</span>}
     </form>
   );
@@ -150,29 +149,27 @@ function Wizard({ acct, prov, busy, run }: { acct: AdAccountInfo; prov: AdProvid
   };
   return (
     <section className="border rounded p-3 bg-white text-gray-900 space-y-2">
-      <h3 className="font-semibold">New {LABEL[acct.provider]} campaign</h3>
-      <p className="text-xs text-gray-500">Creates: {prov.levels.map((l) => l.label).join(" → ")}. Only objectives this builder can complete from documented fields are offered.
-        {!prov.write_tier_ok && " LinkedIn Development tier: provider writes are refused until Standard tier."}</p>
-      {minApplies && <p className="text-xs text-gray-700">Minimum daily budget: {prov.min_daily_budget} {acct.currency}
-        {prov.min_budget_currency ? "" : ` (${LABEL[acct.provider]} documents ${prov.min_daily_budget} USD; applied as ${prov.min_daily_budget} ${acct.currency} because the local-currency minimum is not verified)`}.
-        Global guardrail: {prov.guardrail} {acct.currency}/day.</p>}
-      {minApplies && (prov.min_daily_budget ?? 0) > prov.guardrail && <p role="alert" className="text-xs text-red-700">The provider minimum is above the
-        global guardrail ADS_MAX_DAILY_BUDGET ({prov.guardrail}): no {LABEL[acct.provider]} campaign can be valid until the owner raises the guardrail.</p>}
+      <h3 className="font-semibold">{tx("New")} {LABEL[acct.provider]} {tx("campaign")}</h3>
+      <p className="text-xs text-gray-500">{tx("Creates:")} {prov.levels.map((l) => l.label).join(" → ")}{tx(". Only objectives this builder can complete from documented fields are offered.")}
+        {!prov.write_tier_ok && tx(" LinkedIn Development tier: provider writes are refused until Standard tier.")}</p>
+      {minApplies && <p className="text-xs text-gray-700">{tx("Minimum daily budget:")} {prov.min_daily_budget} {acct.currency}
+        {prov.min_budget_currency ? "" : ` (${LABEL[acct.provider]} documents ${prov.min_daily_budget} USD; applied as ${prov.min_daily_budget} ${acct.currency} because the local-currency minimum is not verified)`}{tx(". Global guardrail:")} {prov.guardrail} {acct.currency}/day.</p>}
+      {minApplies && (prov.min_daily_budget ?? 0) > prov.guardrail && <p role="alert" className="text-xs text-red-700">{tx("The provider minimum is above the global guardrail ADS_MAX_DAILY_BUDGET (")}{prov.guardrail}{tx("): no")} {LABEL[acct.provider]} {tx("campaign can be valid until the owner raises the guardrail.")}</p>}
       <form className="grid grid-cols-1 md:grid-cols-3 gap-2" onSubmit={(e) => { e.preventDefault();
         run(() => adCampaignsApi.create({ account_id: acct.id, idempotency_key: key, name, objective, daily_budget: budget, spec: toSpec() })
           .then(() => { setName(""); setSpec(blank); setKey(newKey()); }), "Campaign draft created (paused, not sent).");
       }}>
-        <label className="text-xs">Campaign name<input required maxLength={150} className={`${input} w-full block`} value={name} onChange={(e) => setName(e.target.value)} /></label>
-        <label className="text-xs">Objective<select className={`${input} w-full block`} value={objective} onChange={(e) => setObjective(e.target.value)}>
+        <label className="text-xs">{tx("Campaign name")}<input required maxLength={150} className={`${input} w-full block`} value={name} onChange={(e) => setName(e.target.value)} /></label>
+        <label className="text-xs">{tx("Objective")}<select className={`${input} w-full block`} value={objective} onChange={(e) => setObjective(e.target.value)}>
           {prov.objectives.map((o) => <option key={o} value={o}>{o}</option>)}</select></label>
-        <label className="text-xs">Daily budget ({acct.currency})<input required type="number" min="0.01" step="0.01" className={`${input} w-full block`} value={budget} onChange={(e) => setBudget(e.target.value)} /></label>
-        <label className="text-xs">Start date<input type="date" className={`${input} w-full block`} value={start} onChange={(e) => setStart(e.target.value)} /></label>
+        <label className="text-xs">{tx("Daily budget (")}{acct.currency})<input required type="number" min="0.01" step="0.01" className={`${input} w-full block`} value={budget} onChange={(e) => setBudget(e.target.value)} /></label>
+        <label className="text-xs">{tx("Start date")}<input type="date" className={`${input} w-full block`} value={start} onChange={(e) => setStart(e.target.value)} /></label>
         {fields.map((f) => (
           <label key={f.k} className="text-xs">{f.label}
             {f.lines ? <textarea rows={3} className={`${input} w-full block`} value={spec[f.k] ?? ""} onChange={(e) => setSpec({ ...spec, [f.k]: e.target.value })} />
               : <input type={f.type ?? "text"} step={f.type === "number" ? "0.01" : undefined} className={`${input} w-full block`} value={spec[f.k] ?? ""} onChange={(e) => setSpec({ ...spec, [f.k]: e.target.value })} />}
           </label>))}
-        <div className="md:col-span-3"><button className="border rounded px-3 py-1 text-xs bg-indigo-600 text-white disabled:opacity-50" disabled={busy || !name}>Create paused draft</button></div>
+        <div className="md:col-span-3"><button className="border rounded px-3 py-1 text-xs bg-indigo-600 text-white disabled:opacity-50" disabled={busy || !name}>{tx("Create paused draft")}</button></div>
       </form>
     </section>
   );
@@ -194,19 +191,19 @@ function TreeCard({ t, busy, run }: { t: AdCampaignTree; busy: boolean; run: (fn
       <header className="flex flex-wrap items-center gap-2">
         <b>{t.name}</b><ModeBadge mode={t.mode} />
         <span className="text-xs border rounded px-1">{t.status}</span>
-        <span className="text-xs text-gray-500">{LABEL[t.provider]} · {t.objective} · {t.daily_budget} {t.currency}/day · budget v{t.budget_version} (sent v{t.budget_pushed})</span>
+        <span className="text-xs text-gray-500">{LABEL[t.provider]} · {t.objective} · {t.daily_budget} {t.currency}{tx("/day · budget v")}{t.budget_version} {tx("(sent v")}{t.budget_pushed})</span>
       </header>
       {t.last_error && <p className="text-xs text-red-700">{t.last_error}</p>}
-      {t.pending_unknown > 0 && <p className="text-xs text-red-700">{t.pending_unknown} provider call(s) with unknown outcome — reconcile before anything else.</p>}
+      {t.pending_unknown > 0 && <p className="text-xs text-red-700">{t.pending_unknown} {tx("provider call(s) with unknown outcome — reconcile before anything else.")}</p>}
       {t.validation && <p className={`text-xs ${t.validation.ok ? "text-emerald-700" : "text-red-700"}`}>
-        {t.validation.ok ? (t.validation.provider_checked ? "Checked by the platform's validate-only call." : "Passed local checks (no platform validate-only for this provider).")
+        {t.validation.ok ? (t.validation.provider_checked ? tx("Checked by the platform's validate-only call.") : tx("Passed local checks (no platform validate-only for this provider)."))
           : `Not valid: ${t.validation.problems.join(" ")}`}</p>}
 
-      <ul className="text-xs space-y-1" aria-label="Campaign tree">
+      <ul className="text-xs space-y-1" aria-label={tx("Campaign tree")}>
         {t.nodes.map((n, i) => (
           <li key={n.id} style={{ paddingLeft: `${i * 16}px` }} className="flex flex-wrap gap-2">
             <span className="text-gray-400">{i === 0 ? "■" : "└"}</span><b>{n.label}</b><span>{n.provider_name}</span>
-            <span className="text-gray-500">{n.provider_id ? `id ${n.provider_id}` : "not created"}</span>
+            <span className="text-gray-500">{n.provider_id ? tx("id {provider_id}", { provider_id: n.provider_id }) : tx("not created")}</span>
             {n.provider_status && <span className="border rounded px-1">{n.provider_status}</span>}
             {n.last_error && <span className="text-red-700">{n.last_error}</span>}
           </li>))}
@@ -225,22 +222,22 @@ function TreeCard({ t, busy, run }: { t: AdCampaignTree; busy: boolean; run: (fn
 
       <form className="flex flex-wrap gap-2 items-center" onSubmit={(e) => { e.preventDefault();
         run(() => adCampaignsApi.budget(t.id, budget), "New budget version saved; it needs approval."); }}>
-        <label className="text-xs">Daily budget<input aria-label={`Daily budget for ${t.name}`} type="number" min="0.01" step="0.01" className={`${input} w-24 ml-1`} value={budget} onChange={(e) => setBudget(e.target.value)} /></label>
-        <button className="border rounded px-2 py-1 text-xs disabled:opacity-40" disabled={busy || t.actions.edit_budget !== null} title={t.actions.edit_budget ?? ""}>Edit budget (new version)</button>
+        <label className="text-xs">{tx("Daily budget")}<input aria-label={tx("Daily budget for {name}", { name: t.name })} type="number" min="0.01" step="0.01" className={`${input} w-24 ml-1`} value={budget} onChange={(e) => setBudget(e.target.value)} /></label>
+        <button className="border rounded px-2 py-1 text-xs disabled:opacity-40" disabled={busy || t.actions.edit_budget !== null} title={t.actions.edit_budget ?? ""}>{tx("Edit budget (new version)")}</button>
         {t.actions.edit_budget && <span className="text-[10px] text-gray-500">{t.actions.edit_budget}</span>}
       </form>
 
-      {t.approvals.length > 0 && <table className="text-xs min-w-full"><thead><tr className="text-left text-gray-500"><th>Approval</th><th>Version</th><th>Budget</th><th>Hash</th><th>Status</th><th>By</th><th /></tr></thead>
+      {t.approvals.length > 0 && <table className="text-xs min-w-full"><thead><tr className="text-left text-gray-500"><th>{tx("Approval")}</th><th>{tx("Version")}</th><th>{tx("Budget")}</th><th>{tx("Hash")}</th><th>{tx("Status")}</th><th>{tx("By")}</th><th /></tr></thead>
         <tbody>{t.approvals.map((a) => (
-          <tr key={a.id} className="border-t"><td>{a.action}</td><td>v{a.budget_version}</td><td>{a.daily_budget}</td><td className="font-mono">{a.hash}</td>
+          <tr key={a.id} className="border-t"><td>{a.action}</td><td>{tx("v")}{a.budget_version}</td><td>{a.daily_budget}</td><td className="font-mono">{a.hash}</td>
             <td>{a.status}</td><td>{a.requested_by}{a.decided_by ? ` → ${a.decided_by}` : ""}</td>
             <td className="text-right">{a.status === "PENDING" && <>
-              <button className="underline mr-2 disabled:opacity-40" disabled={busy || t.actions.approve !== null} title={t.actions.approve ?? ""} onClick={() => run(() => adCampaignsApi.decide(a.id, true), "Approved.")}>Approve</button>
-              <button className="underline disabled:opacity-40" disabled={busy || t.actions.approve !== null} title={t.actions.approve ?? ""} onClick={() => run(() => adCampaignsApi.decide(a.id, false), "Rejected.")}>Reject</button>
+              <button className="underline mr-2 disabled:opacity-40" disabled={busy || t.actions.approve !== null} title={t.actions.approve ?? ""} onClick={() => run(() => adCampaignsApi.decide(a.id, true), "Approved.")}>{tx("Approve")}</button>
+              <button className="underline disabled:opacity-40" disabled={busy || t.actions.approve !== null} title={t.actions.approve ?? ""} onClick={() => run(() => adCampaignsApi.decide(a.id, false), "Rejected.")}>{tx("Reject")}</button>
               {t.actions.approve && <div className="text-[10px] text-gray-500">{t.actions.approve}</div>}</>}</td></tr>))}</tbody></table>}
 
-      <button className="text-xs underline" onClick={async () => setLedger(ledger ? null : (await adCampaignsApi.mutations(t.id)).data)}>{ledger ? "Hide" : "Show"} provider call ledger</button>
-      {ledger && <table className="text-xs min-w-full"><thead><tr className="text-left text-gray-500"><th>Operation</th><th>Mode</th><th>State</th><th>Provider id</th><th>Attempts</th><th>Error</th></tr></thead>
+      <button className="text-xs underline" onClick={async () => setLedger(ledger ? null : (await adCampaignsApi.mutations(t.id)).data)}>{ledger ? tx("Hide") : tx("Show")} {tx("provider call ledger")}</button>
+      {ledger && <table className="text-xs min-w-full"><thead><tr className="text-left text-gray-500"><th>{tx("Operation")}</th><th>{tx("Mode")}</th><th>{tx("State")}</th><th>{tx("Provider id")}</th><th>{tx("Attempts")}</th><th>{tx("Error")}</th></tr></thead>
         <tbody>{ledger.map((m) => <tr key={m.id} className="border-t"><td>{m.operation}</td><td>{m.mode}</td><td>{m.state}</td><td>{m.provider_id ?? "—"}</td><td>{m.attempts}</td><td className="text-red-700">{m.error ?? ""}</td></tr>)}</tbody></table>}
     </article>
   );

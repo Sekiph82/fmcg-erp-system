@@ -9,6 +9,7 @@ import {
   STATUS_COLORS,
   type ImportHistoryEntry,
 } from "@/lib/importApi";
+import { tx } from "@/lib/i18n/core";
 
 const ALL_MODULES = Object.keys(MODULE_LABELS);
 
@@ -41,8 +42,8 @@ export default function ImportHistoryPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-semibold text-white">Import History</h1>
-        <p className="text-sm text-slate-500 mt-1">Audit trail of all bulk import runs.</p>
+        <h1 className="text-xl font-semibold text-white">{tx("Import History")}</h1>
+        <p className="text-sm text-slate-500 mt-1">{tx("Audit trail of all bulk import runs.")}</p>
       </div>
 
       {/* Filters */}
@@ -52,7 +53,7 @@ export default function ImportHistoryPage() {
           onChange={e => setModule(e.target.value)}
           className="rounded-lg border border-white/[0.07] bg-white/[0.03] px-3 py-1.5 text-xs text-slate-300 outline-none focus:border-indigo-500/50"
         >
-          <option value="">All modules</option>
+          <option value="">{tx("All modules")}</option>
           {ALL_MODULES.map(m => (
             <option key={m} value={m}>{MODULE_LABELS[m]}</option>
           ))}
@@ -61,7 +62,7 @@ export default function ImportHistoryPage() {
         <input
           value={username}
           onChange={e => setUsername(e.target.value)}
-          placeholder="Filter by user…"
+          placeholder={tx("Filter by user…")}
           className="rounded-lg border border-white/[0.07] bg-white/[0.03] px-3 py-1.5 text-xs text-slate-300 placeholder-slate-600 outline-none focus:border-indigo-500/50"
         />
 
@@ -71,7 +72,7 @@ export default function ImportHistoryPage() {
           onChange={e => setDateFrom(e.target.value)}
           className="rounded-lg border border-white/[0.07] bg-white/[0.03] px-3 py-1.5 text-xs text-slate-300 outline-none focus:border-indigo-500/50"
         />
-        <span className="self-center text-slate-600 text-xs">to</span>
+        <span className="self-center text-slate-600 text-xs">{tx("to")}</span>
         <input
           type="date"
           value={dateTo}
@@ -83,7 +84,7 @@ export default function ImportHistoryPage() {
           onClick={() => { setModule(""); setUsername(""); setDateFrom(""); setDateTo(""); }}
           className="text-[11px] text-slate-500 hover:text-slate-300 transition-colors"
         >
-          Clear
+          {tx("Clear")}
         </button>
       </div>
 
@@ -96,14 +97,14 @@ export default function ImportHistoryPage() {
         </div>
       ) : !data?.length ? (
         <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-10 text-center">
-          <p className="text-slate-500 text-sm">No import history found.</p>
+          <p className="text-slate-500 text-sm">{tx("No import history found.")}</p>
         </div>
       ) : (
         <div className="rounded-xl border border-white/[0.06] overflow-hidden">
           <table className="w-full text-left text-[13px]">
             <thead className="border-b border-white/[0.06]">
               <tr>
-                {["Module", "File", "Mode", "Total", "Success", "Failed", "Status", "User", "When", ""].map(h => (
+                {[tx("Module"), tx("File"), tx("Mode"), tx("Total"), "Success", tx("Failed"), tx("Status"), tx("User"), tx("When"), ""].map(h => (
                   <th key={h} className="px-4 py-3 text-[10px] font-semibold uppercase tracking-widest text-slate-500">
                     {h}
                   </th>
@@ -160,7 +161,7 @@ function HistoryRow({ row }: { row: ImportHistoryEntry }) {
             onClick={() => importApi.downloadErrors(row.id)}
             className="text-[11px] text-indigo-400 hover:text-indigo-300 transition-colors whitespace-nowrap"
           >
-            ↓ Errors
+            {tx("↓ Errors")}
           </button>
         )}
       </td>

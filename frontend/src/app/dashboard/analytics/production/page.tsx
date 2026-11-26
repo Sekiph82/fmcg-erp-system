@@ -10,6 +10,7 @@ import { ExceptionList } from "@/components/analytics/ExceptionList";
 import { ChartCard } from "@/components/analytics/ChartCard";
 import { DaysSelector } from "@/components/analytics/DaysSelector";
 import { RequirePermission } from "@/components/PermissionGuard";
+import { tx } from "@/lib/i18n/core";
 
 export default function ProductionAnalyticsPage() {
   const [days, setDays] = useState(30);
@@ -24,15 +25,15 @@ export default function ProductionAnalyticsPage() {
       <div className="max-w-2xl mx-auto space-y-5 pb-10">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Production Dashboard</h1>
-            <p className="text-xs text-gray-400 mt-0.5">Output, downtime &amp; QC rejections</p>
+            <h1 className="text-xl font-bold text-gray-900">{tx("Production Dashboard")}</h1>
+            <p className="text-xs text-gray-400 mt-0.5">{tx("Output, downtime & QC rejections")}</p>
           </div>
           <DaysSelector value={days} onChange={setDays} />
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <KPICard
-            label="Completion Rate"
+            label={tx("Completion Rate")}
             value={`${fmt(data?.completion_rate ?? 0, 1)}%`}
             subtext={`${data?.active_orders ?? 0} active orders`}
             status={
@@ -42,7 +43,7 @@ export default function ProductionAnalyticsPage() {
             loading={isLoading}
           />
           <KPICard
-            label="Delayed Orders"
+            label={tx("Delayed Orders")}
             value={data?.delayed_orders ?? 0}
             subtext="Past scheduled end"
             status={(data?.delayed_orders ?? 0) > 0 ? "critical" : "ok"}
@@ -50,7 +51,7 @@ export default function ProductionAnalyticsPage() {
             loading={isLoading}
           />
           <KPICard
-            label="Machines Down"
+            label={tx("Machines Down")}
             value={data?.machines_down ?? 0}
             subtext={`${data?.open_breakdowns ?? 0} open breakdowns`}
             status={
@@ -61,7 +62,7 @@ export default function ProductionAnalyticsPage() {
             loading={isLoading}
           />
           <KPICard
-            label="Avg Downtime"
+            label={tx("Avg Downtime")}
             value={`${fmt(data?.avg_downtime_hours ?? 0, 1)}h`}
             subtext="Per downtime day"
             status={
@@ -73,7 +74,7 @@ export default function ProductionAnalyticsPage() {
         </div>
 
         {/* Plan vs Actual */}
-        <ChartCard title="Plan vs Actual Production" subtitle={`Last ${days} days`}>
+        <ChartCard title={tx("Plan vs Actual Production")} subtitle={`Last ${days} days`}>
           <LineChart
             series={[
               { name: "Planned", color: "#6366f1", data: data?.plan_vs_actual ?? [], dashed: true },
@@ -84,7 +85,7 @@ export default function ProductionAnalyticsPage() {
         </ChartCard>
 
         {/* Downtime trend */}
-        <ChartCard title="Downtime Trend" subtitle="Hours per day">
+        <ChartCard title={tx("Downtime Trend")} subtitle="Hours per day">
           <LineChart
             series={[{ name: "Downtime (h)", color: "#ef4444", data: data?.downtime_trend ?? [] }]}
             formatY={(v) => `${fmt(v, 1)}h`}
@@ -93,7 +94,7 @@ export default function ProductionAnalyticsPage() {
         </ChartCard>
 
         {/* QC Rejection trend */}
-        <ChartCard title="QC Rejection Trend" subtitle="Failed inspections per day">
+        <ChartCard title={tx("QC Rejection Trend")} subtitle="Failed inspections per day">
           <LineChart
             series={[{ name: "Rejections", color: "#f59e0b", data: data?.rejection_trend ?? [] }]}
             formatY={(v) => fmt(v, 0)}
@@ -102,12 +103,12 @@ export default function ProductionAnalyticsPage() {
         </ChartCard>
 
         {/* Status distribution */}
-        <ChartCard title="Order Status Distribution">
+        <ChartCard title={tx("Order Status Distribution")}>
           <DistributionBar data={data?.by_status ?? []} />
         </ChartCard>
 
         {/* Exceptions */}
-        <ChartCard title="Exceptions">
+        <ChartCard title={tx("Exceptions")}>
           <ExceptionList items={data?.exceptions ?? []} title="" />
         </ChartCard>
       </div>

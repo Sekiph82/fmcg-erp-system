@@ -13,6 +13,7 @@ import {
   fmtMoney,
 } from "@/lib/bank_api";
 import { Button } from "@/components/ui/Button";
+import { tx } from "@/lib/i18n/core";
 
 function KpiCard({ label, value, tone }: { label: string; value: string | number; tone?: string }) {
   return (
@@ -68,34 +69,34 @@ function CreateConnectionPanel() {
   return (
     <div className="bg-white rounded-xl border p-4 flex flex-col gap-3">
       <div>
-        <h2 className="text-sm font-semibold text-gray-800">New Bank Connection</h2>
-        <p className="text-xs text-gray-500 mt-0.5">Use MOCK for demo sync; DIRECT is reserved for bank adapters.</p>
+        <h2 className="text-sm font-semibold text-gray-800">{tx("New Bank Connection")}</h2>
+        <p className="text-xs text-gray-500 mt-0.5">{tx("Use MOCK for demo sync; DIRECT is reserved for bank adapters.")}</p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <label className="flex flex-col gap-1 text-xs font-medium text-gray-600">
-          Bank Name
+          {tx("Bank Name")}
           <input className="border rounded-lg px-3 py-2 text-sm font-normal" value={form.bank_name} onChange={(e) => setForm({ ...form, bank_name: e.target.value })} />
         </label>
         <label className="flex flex-col gap-1 text-xs font-medium text-gray-600">
-          Account Name
+          {tx("Account Name")}
           <input className="border rounded-lg px-3 py-2 text-sm font-normal" value={form.account_name} onChange={(e) => setForm({ ...form, account_name: e.target.value })} />
         </label>
         <label className="flex flex-col gap-1 text-xs font-medium text-gray-600">
-          Account Number
-          <input className="border rounded-lg px-3 py-2 text-sm font-normal" placeholder="e.g. 0123456789" value={form.account_number} onChange={(e) => setForm({ ...form, account_number: e.target.value })} />
+          {tx("Account Number")}
+          <input className="border rounded-lg px-3 py-2 text-sm font-normal" placeholder={tx("e.g. 0123456789")} value={form.account_number} onChange={(e) => setForm({ ...form, account_number: e.target.value })} />
         </label>
         <label className="flex flex-col gap-1 text-xs font-medium text-gray-600">
-          Bank Code
+          {tx("Bank Code")}
           <input className="border rounded-lg px-3 py-2 text-sm font-normal" value={form.bank_code} onChange={(e) => setForm({ ...form, bank_code: e.target.value })} />
         </label>
         <label className="flex flex-col gap-1 text-xs font-medium text-gray-600">
-          Currency
+          {tx("Currency")}
           <select className="border rounded-lg px-3 py-2 text-sm font-normal bg-white" value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value })}>
             {["KES", "USD", "EUR", "GBP"].map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
         </label>
         <label className="flex flex-col gap-1 text-xs font-medium text-gray-600">
-          API Type
+          {tx("API Type")}
           <select className="border rounded-lg px-3 py-2 text-sm font-normal bg-white" value={form.api_type} onChange={(e) => setForm({ ...form, api_type: e.target.value as "MOCK" })}>
             <option value="MOCK">MOCK</option>
             <option value="DIRECT">DIRECT</option>
@@ -105,12 +106,12 @@ function CreateConnectionPanel() {
       <div className="flex items-center justify-between gap-3">
         <input
           className="border rounded-lg px-3 py-2 text-sm flex-1"
-          placeholder="Credentials ref or vault key (optional)"
+          placeholder={tx("Credentials ref or vault key (optional)")}
           value={form.credentials_ref}
           onChange={(e) => setForm({ ...form, credentials_ref: e.target.value })}
         />
         <Button loading={mut.isPending} disabled={!form.bank_name || !form.account_name || !form.account_number} onClick={() => mut.mutate()}>
-          Add Connection
+          {tx("Add Connection")}
         </Button>
       </div>
       {mut.isError && <p className="text-sm text-red-600">{String((mut.error as Error).message)}</p>}
@@ -132,8 +133,8 @@ function ConnectionsPanel({ connections }: { connections: BankConnection[] }) {
   return (
     <div className="bg-white rounded-xl border overflow-hidden">
       <div className="px-4 py-3 border-b flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-800">Connections</h2>
-        <span className="text-xs text-gray-400">{connections.length} configured</span>
+        <h2 className="text-sm font-semibold text-gray-800">{tx("Connections")}</h2>
+        <span className="text-xs text-gray-400">{connections.length} {tx("configured")}</span>
       </div>
       <div className="divide-y">
         {connections.map((c) => (
@@ -145,12 +146,12 @@ function ConnectionsPanel({ connections }: { connections: BankConnection[] }) {
                 <span className="px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-medium">{c.status}</span>
               </div>
               <p className="text-xs text-gray-500 mt-1">{c.bank_name} | {c.account_number} | {c.currency}</p>
-              <p className="text-xs text-gray-400 mt-0.5">Last sync: {fmtDate(c.last_synced_at)}</p>
+              <p className="text-xs text-gray-400 mt-0.5">{tx("Last sync:")} {fmtDate(c.last_synced_at)}</p>
             </div>
-            <Button loading={syncMut.isPending} onClick={() => syncMut.mutate(c.id)}>Sync Now</Button>
+            <Button loading={syncMut.isPending} onClick={() => syncMut.mutate(c.id)}>{tx("Sync Now")}</Button>
           </div>
         ))}
-        {connections.length === 0 && <div className="p-8 text-center text-sm text-gray-400">No bank connections configured.</div>}
+        {connections.length === 0 && <div className="p-8 text-center text-sm text-gray-400">{tx("No bank connections configured.")}</div>}
       </div>
       {syncMut.isError && <p className="p-4 text-sm text-red-600">{String((syncMut.error as Error).message)}</p>}
     </div>
@@ -175,22 +176,22 @@ function TransactionsTable({ transactions, selectedConnection }: { transactions:
   return (
     <div className="bg-white rounded-xl border overflow-hidden">
       <div className="px-4 py-3 border-b flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-800">Synced Transactions</h2>
-        <span className="text-xs text-gray-400">{transactions.length} rows</span>
+        <h2 className="text-sm font-semibold text-gray-800">{tx("Synced Transactions")}</h2>
+        <span className="text-xs text-gray-400">{transactions.length} {tx("rows")}</span>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
             <tr>
-              <th className="px-4 py-3 text-left">Date</th>
-              <th className="px-4 py-3 text-left">Description</th>
-              <th className="px-4 py-3 text-left">Direction</th>
-              <th className="px-4 py-3 text-right">Amount</th>
-              <th className="px-4 py-3 text-right">Balance</th>
-              <th className="px-4 py-3 text-left">Classification</th>
-              <th className="px-4 py-3 text-left">Reference</th>
-              <th className="px-4 py-3 text-left">Status</th>
-              <th className="px-4 py-3 text-left">Action</th>
+              <th className="px-4 py-3 text-left">{tx("Date")}</th>
+              <th className="px-4 py-3 text-left">{tx("Description")}</th>
+              <th className="px-4 py-3 text-left">{tx("Direction")}</th>
+              <th className="px-4 py-3 text-right">{tx("Amount")}</th>
+              <th className="px-4 py-3 text-right">{tx("Balance")}</th>
+              <th className="px-4 py-3 text-left">{tx("Classification")}</th>
+              <th className="px-4 py-3 text-left">{tx("Reference")}</th>
+              <th className="px-4 py-3 text-left">{tx("Status")}</th>
+              <th className="px-4 py-3 text-left">{tx("Action")}</th>
             </tr>
           </thead>
           <tbody className="divide-y">
@@ -199,7 +200,7 @@ function TransactionsTable({ transactions, selectedConnection }: { transactions:
                 <td className="px-4 py-3 text-gray-600">{t.txn_date}</td>
                 <td className="px-4 py-3 min-w-[240px]">
                   <p className="font-medium text-gray-800">{t.description}</p>
-                  <p className="text-xs text-gray-400">Value date: {t.value_date ?? "-"}</p>
+                  <p className="text-xs text-gray-400">{tx("Value date:")} {t.value_date ?? "-"}</p>
                 </td>
                 <td className="px-4 py-3"><DirectionBadge direction={t.direction} /></td>
                 <td className="px-4 py-3 text-right font-semibold">{fmtMoney(t.amount, selectedConnection?.currency ?? "KES")}</td>
@@ -225,7 +226,7 @@ function TransactionsTable({ transactions, selectedConnection }: { transactions:
                       className="text-xs text-blue-600 hover:underline"
                       onClick={() => reconcileMut.mutate(t.id)}
                     >
-                      Mark reconciled
+                      {tx("Mark reconciled")}
                     </button>
                   )}
                 </td>
@@ -233,7 +234,7 @@ function TransactionsTable({ transactions, selectedConnection }: { transactions:
             ))}
             {transactions.length === 0 && (
               <tr>
-                <td colSpan={9} className="px-4 py-10 text-center text-gray-400">No synced transactions yet.</td>
+                <td colSpan={9} className="px-4 py-10 text-center text-gray-400">{tx("No synced transactions yet.")}</td>
               </tr>
             )}
           </tbody>
@@ -267,22 +268,22 @@ export default function BankApiPage() {
   return (
     <div className="p-6 flex flex-col gap-6 min-h-screen bg-gray-50">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Open Banking</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Bank API connections, mock sync, classification, and reconciliation staging</p>
+        <h1 className="text-2xl font-bold text-gray-900">{tx("Open Banking")}</h1>
+        <p className="text-sm text-gray-500 mt-0.5">{tx("Bank API connections, mock sync, classification, and reconciliation staging")}</p>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        <KpiCard label="Connections" value={dashboard?.total_connections ?? 0} tone="text-blue-700" />
-        <KpiCard label="Active" value={dashboard?.active_connections ?? 0} tone="text-green-700" />
-        <KpiCard label="Bank Balance" value={fmtMoney(dashboard?.total_balance ?? 0)} tone="text-gray-900" />
-        <KpiCard label="Unreconciled" value={dashboard?.unreconciled_count ?? 0} tone="text-yellow-700" />
-        <KpiCard label="Open Amount" value={fmtMoney(dashboard?.unreconciled_amount ?? 0)} tone="text-red-700" />
+        <KpiCard label={tx("Connections")} value={dashboard?.total_connections ?? 0} tone="text-blue-700" />
+        <KpiCard label={tx("Active")} value={dashboard?.active_connections ?? 0} tone="text-green-700" />
+        <KpiCard label={tx("Bank Balance")} value={fmtMoney(dashboard?.total_balance ?? 0)} tone="text-gray-900" />
+        <KpiCard label={tx("Unreconciled")} value={dashboard?.unreconciled_count ?? 0} tone="text-yellow-700" />
+        <KpiCard label={tx("Open Amount")} value={fmtMoney(dashboard?.unreconciled_amount ?? 0)} tone="text-red-700" />
       </div>
 
       <CreateConnectionPanel />
 
       {loadingConnections ? (
-        <div className="p-8 text-sm text-gray-400">Loading connections...</div>
+        <div className="p-8 text-sm text-gray-400">{tx("Loading connections...")}</div>
       ) : (
         <ConnectionsPanel connections={connections} />
       )}
@@ -293,7 +294,7 @@ export default function BankApiPage() {
           value={connectionFilter}
           onChange={(e) => setConnectionFilter(e.target.value)}
         >
-          <option value="">All connections</option>
+          <option value="">{tx("All connections")}</option>
           {connections.map((c) => (
             <option key={c.id} value={c.id}>{c.account_name} - {c.bank_name}</option>
           ))}
@@ -303,15 +304,15 @@ export default function BankApiPage() {
           value={reconciledFilter}
           onChange={(e) => setReconciledFilter(e.target.value as "open" | "all" | "reconciled")}
         >
-          <option value="open">Open only</option>
-          <option value="reconciled">Reconciled only</option>
-          <option value="all">All transactions</option>
+          <option value="open">{tx("Open only")}</option>
+          <option value="reconciled">{tx("Reconciled only")}</option>
+          <option value="all">{tx("All transactions")}</option>
         </select>
-        {dashboard?.last_sync_at && <span className="text-xs text-gray-400">Last sync: {fmtDate(dashboard.last_sync_at)}</span>}
+        {dashboard?.last_sync_at && <span className="text-xs text-gray-400">{tx("Last sync:")} {fmtDate(dashboard.last_sync_at)}</span>}
       </div>
 
       {loadingTransactions ? (
-        <div className="p-8 text-sm text-gray-400">Loading transactions...</div>
+        <div className="p-8 text-sm text-gray-400">{tx("Loading transactions...")}</div>
       ) : (
         <TransactionsTable transactions={transactions} selectedConnection={selectedConnection} />
       )}

@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { posApi, POSSession, POSSessionStatus, fmtKES } from "@/lib/pos";
+import { tx } from "@/lib/i18n/core";
 
 function fmtDate(d: string | null) {
   if (!d) return "—";
@@ -26,36 +27,36 @@ export default function POSSessionsPage() {
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">POS Sessions</h1>
-        <p className="text-sm text-gray-500">Register open/close history</p>
+        <h1 className="text-2xl font-bold text-gray-900">{tx("POS Sessions")}</h1>
+        <p className="text-sm text-gray-500">{tx("Register open/close history")}</p>
       </div>
 
       <div className="grid grid-cols-3 gap-4">
         <div className="bg-white rounded-xl border p-4">
-          <div className="text-xs text-gray-500 font-medium">Total Sessions</div>
+          <div className="text-xs text-gray-500 font-medium">{tx("Total Sessions")}</div>
           <div className="text-2xl font-bold text-gray-900">{sessions.length}</div>
         </div>
         <div className="bg-white rounded-xl border p-4">
-          <div className="text-xs text-gray-500 font-medium">Open</div>
+          <div className="text-xs text-gray-500 font-medium">{tx("Open")}</div>
           <div className="text-2xl font-bold text-green-600">{open}</div>
         </div>
         <div className="bg-white rounded-xl border p-4">
-          <div className="text-xs text-gray-500 font-medium">Closed</div>
+          <div className="text-xs text-gray-500 font-medium">{tx("Closed")}</div>
           <div className="text-2xl font-bold text-gray-600">{closed}</div>
         </div>
       </div>
 
       <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
         {isLoading ? (
-          <div className="p-8 text-center text-gray-400">Loading sessions…</div>
+          <div className="p-8 text-center text-gray-400">{tx("Loading sessions…")}</div>
         ) : sessions.length === 0 ? (
-          <div className="p-8 text-center text-gray-400">No sessions recorded.</div>
+          <div className="p-8 text-center text-gray-400">{tx("No sessions recorded.")}</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-gray-50 border-b">
                 <tr>
-                  {["Session #", "Register", "Cashier", "Status", "Opening Float", "Total Sales", "Transactions", "Opened", "Closed"].map(h => (
+                  {[tx("Session #"), tx("Register"), tx("Cashier"), tx("Status"), tx("Opening Float"), tx("Total Sales"), tx("Transactions"), tx("Opened"), tx("Closed")].map(h => (
                     <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{h}</th>
                   ))}
                 </tr>

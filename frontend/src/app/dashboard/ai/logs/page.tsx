@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { aiApi, AILog } from "@/lib/aiApi";
 import { RequirePermission } from "@/components/PermissionGuard";
+import { tx } from "@/lib/i18n/core";
 
 const STATUS_PILL: Record<string, string> = {
   COMPLETED: "bg-green-100 text-green-700",
@@ -28,17 +29,17 @@ export default function AILogsPage() {
     <RequirePermission permission="ai.view">
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">AI Request Logs</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Audit trail of all AI API calls and responses</p>
+        <h1 className="text-2xl font-bold text-gray-900">{tx("AI Request Logs")}</h1>
+        <p className="text-sm text-gray-500 mt-0.5">{tx("Audit trail of all AI API calls and responses")}</p>
       </div>
 
       {/* Summary */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: "Total Requests", value: data.length, color: "text-gray-900" },
-          { label: "Total Tokens", value: totalTokens.toLocaleString(), color: "text-indigo-600" },
-          { label: "Avg Latency", value: `${avgLatency} ms`, color: "text-teal-600" },
-          { label: "Failed", value: failCount, color: failCount > 0 ? "text-red-600" : "text-gray-400" },
+          { label: tx("Total Requests"), value: data.length, color: "text-gray-900" },
+          { label: tx("Total Tokens"), value: totalTokens.toLocaleString(), color: "text-indigo-600" },
+          { label: tx("Avg Latency"), value: `${avgLatency} ms`, color: "text-teal-600" },
+          { label: tx("Failed"), value: failCount, color: failCount > 0 ? "text-red-600" : "text-gray-400" },
         ].map((s) => (
           <div key={s.label} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1">{s.label}</p>
@@ -50,22 +51,22 @@ export default function AILogsPage() {
       {/* Table */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
         {isLoading ? (
-          <p className="p-8 text-center text-gray-400">Loading logs…</p>
+          <p className="p-8 text-center text-gray-400">{tx("Loading logs…")}</p>
         ) : data.length === 0 ? (
-          <p className="p-8 text-center text-gray-400">No AI requests logged yet.</p>
+          <p className="p-8 text-center text-gray-400">{tx("No AI requests logged yet.")}</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-gray-50 border-b border-gray-100">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Time</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Type</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Provider</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Model</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase">Status</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Prompt tkns</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Compl. tkns</th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Latency</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{tx("Time")}</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{tx("Type")}</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{tx("Provider")}</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{tx("Model")}</th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase">{tx("Status")}</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">{tx("Prompt tkns")}</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">{tx("Compl. tkns")}</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">{tx("Latency")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -91,7 +92,7 @@ export default function AILogsPage() {
                       {log.completion_tokens?.toLocaleString() ?? "—"}
                     </td>
                     <td className="px-4 py-2 text-right font-mono text-xs text-gray-600">
-                      {log.latency_ms != null ? `${log.latency_ms}ms` : "—"}
+                      {log.latency_ms != null ? tx("{latency_ms}ms", { latency_ms: log.latency_ms }) : "—"}
                     </td>
                   </tr>
                 ))}

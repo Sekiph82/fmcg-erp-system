@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { kanbanApi, KanbanCard, CardPriority, CardStatus, PRIORITY_COLOR, STATUS_COLOR, PRIORITIES } from "@/lib/kanban";
+import { tx } from "@/lib/i18n/core";
 
 const STATUSES: CardStatus[] = ["active","blocked","done","archived"];
 
@@ -24,35 +25,35 @@ export default function AllCardsPage() {
 
   return (
     <div className="p-6 space-y-4">
-      <h1 className="text-xl font-bold text-gray-900">All Kanban Cards</h1>
+      <h1 className="text-xl font-bold text-gray-900">{tx("All Kanban Cards")}</h1>
 
       <div className="flex gap-3 flex-wrap">
         <select className="border rounded px-2 py-1 text-sm" value={filters.priority}
           onChange={(e) => setFilters({ ...filters, priority: e.target.value })}>
-          <option value="">All Priorities</option>
+          <option value="">{tx("All Priorities")}</option>
           {PRIORITIES.map(p => <option key={p} value={p}>{p}</option>)}
         </select>
         <select className="border rounded px-2 py-1 text-sm" value={filters.status}
           onChange={(e) => setFilters({ ...filters, status: e.target.value })}>
-          <option value="">All Statuses</option>
+          <option value="">{tx("All Statuses")}</option>
           {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
         </select>
-        <input className="border rounded px-2 py-1 text-sm w-36" placeholder="Assigned user ID…"
+        <input className="border rounded px-2 py-1 text-sm w-36" placeholder={tx("Assigned user ID…")}
           value={filters.assigned_user_id} onChange={(e) => setFilters({ ...filters, assigned_user_id: e.target.value })} />
         <label className="flex items-center gap-2 text-sm text-gray-600">
           <input type="checkbox" checked={filters.overdue_only}
             onChange={(e) => setFilters({ ...filters, overdue_only: e.target.checked })} />
-          Overdue only
+          {tx("Overdue only")}
         </label>
-        <span className="text-xs text-gray-400 self-center">{cards.length} cards</span>
+        <span className="text-xs text-gray-400 self-center">{cards.length} {tx("cards")}</span>
       </div>
 
-      {loading ? <p className="text-gray-500 text-sm">Loading…</p> : (
+      {loading ? <p className="text-gray-500 text-sm">{tx("Loading…")}</p> : (
         <div className="bg-white border rounded-lg shadow-sm overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b">
               <tr>
-                {["#","Title","Assigned","Due","Priority","Status","Tags","Comments"].map(h=>(
+                {["#",tx("Title"),tx("Assigned"),tx("Due"),tx("Priority"),tx("Status"),tx("Tags"),tx("Comments")].map(h=>(
                   <th key={h} className="px-3 py-2 text-left text-xs font-semibold text-gray-600">{h}</th>
                 ))}
               </tr>
@@ -73,7 +74,7 @@ export default function AllCardsPage() {
               ))}
             </tbody>
           </table>
-          {cards.length === 0 && <p className="text-center text-gray-400 py-8 text-sm">No cards found.</p>}
+          {cards.length === 0 && <p className="text-center text-gray-400 py-8 text-sm">{tx("No cards found.")}</p>}
         </div>
       )}
 
@@ -91,17 +92,17 @@ export default function AllCardsPage() {
             <h2 className="font-bold text-gray-900">{selected.title}</h2>
             {selected.description && <p className="text-sm text-gray-600">{selected.description}</p>}
             <div className="grid grid-cols-2 gap-2 text-xs text-gray-500">
-              {selected.assigned_user_name && <div><strong>Assigned:</strong> {selected.assigned_user_name}</div>}
-              {selected.due_date && <div><strong>Due:</strong> {selected.due_date}</div>}
-              {selected.tags && <div className="col-span-2"><strong>Tags:</strong> {selected.tags}</div>}
-              {selected.reference_type && <div className="col-span-2"><strong>Ref:</strong> {selected.reference_type} #{selected.reference_id}</div>}
+              {selected.assigned_user_name && <div><strong>{tx("Assigned:")}</strong> {selected.assigned_user_name}</div>}
+              {selected.due_date && <div><strong>{tx("Due:")}</strong> {selected.due_date}</div>}
+              {selected.tags && <div className="col-span-2"><strong>{tx("Tags:")}</strong> {selected.tags}</div>}
+              {selected.reference_type && <div className="col-span-2"><strong>{tx("Ref:")}</strong> {selected.reference_type} #{selected.reference_id}</div>}
             </div>
             {selected.comments.length > 0 && (
               <div>
-                <h3 className="text-xs font-semibold text-gray-600 mb-1">Comments</h3>
+                <h3 className="text-xs font-semibold text-gray-600 mb-1">{tx("Comments")}</h3>
                 {selected.comments.slice(0,5).map(c => (
                   <div key={c.comment_id} className="text-xs bg-gray-50 rounded p-2 mb-1">
-                    <span className="font-medium text-gray-700">{c.author_name ?? "Anonymous"}:</span> {c.body}
+                    <span className="font-medium text-gray-700">{c.author_name ?? tx("Anonymous")}:</span> {c.body}
                   </div>
                 ))}
               </div>

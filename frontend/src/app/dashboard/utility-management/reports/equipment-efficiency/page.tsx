@@ -8,6 +8,7 @@ import {
   Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
 import { reportsApi } from "@/lib/utilitiesReports";
+import { tx } from "@/lib/i18n/core";
 
 const today = new Date().toISOString().slice(0, 10);
 const mtdStart = today.slice(0, 8) + "01";
@@ -37,7 +38,7 @@ function DateFilter({ from, to, onFrom, onTo }: { from: string; to: string; onFr
   return (
     <div className="flex gap-3 items-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3">
       <input type="date" className={ic} value={from} onChange={e => onFrom(e.target.value)} />
-      <span className="text-gray-400 text-xs">to</span>
+      <span className="text-gray-400 text-xs">{tx("to")}</span>
       <input type="date" className={ic} value={to} onChange={e => onTo(e.target.value)} />
     </div>
   );
@@ -51,17 +52,17 @@ function BoilerTab({ dateFrom, dateTo }: { dateFrom: string; dateTo: string }) {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-        <KpiCard label="Avg Efficiency" value={pct(d?.avg_efficiency_pct)} ok={(d?.avg_efficiency_pct ?? 0) >= 80} warn={(d?.avg_efficiency_pct ?? 100) < 70} />
-        <KpiCard label="Total Steam" value={fmt(d?.total_steam_kg, 0)} unit="kg" />
-        <KpiCard label="Total Fuel" value={fmt(d?.total_fuel)} />
-        <KpiCard label="Avg Load" value={pct(d?.avg_load_pct)} />
-        <KpiCard label="Condensate Recovery" value={pct(d?.condensate_recovery_pct)} ok={(d?.condensate_recovery_pct ?? 0) >= 70} />
+        <KpiCard label={tx("Avg Efficiency")} value={pct(d?.avg_efficiency_pct)} ok={(d?.avg_efficiency_pct ?? 0) >= 80} warn={(d?.avg_efficiency_pct ?? 100) < 70} />
+        <KpiCard label={tx("Total Steam")} value={fmt(d?.total_steam_kg, 0)} unit="kg" />
+        <KpiCard label={tx("Total Fuel")} value={fmt(d?.total_fuel)} />
+        <KpiCard label={tx("Avg Load")} value={pct(d?.avg_load_pct)} />
+        <KpiCard label={tx("Condensate Recovery")} value={pct(d?.condensate_recovery_pct)} ok={(d?.condensate_recovery_pct ?? 0) >= 70} />
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-sm font-semibold">Boiler Efficiency Trend</h3>
-          <button onClick={() => reportsApi.exportBoilerEfficiency(params)} className="px-3 py-1.5 text-xs bg-orange-600 text-white rounded-lg hover:bg-orange-700">Export CSV</button>
+          <h3 className="text-sm font-semibold">{tx("Boiler Efficiency Trend")}</h3>
+          <button onClick={() => reportsApi.exportBoilerEfficiency(params)} className="px-3 py-1.5 text-xs bg-orange-600 text-white rounded-lg hover:bg-orange-700">{tx("Export CSV")}</button>
         </div>
         <ResponsiveContainer width="100%" height={240}>
           <LineChart data={d?.trend ?? []} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
@@ -81,7 +82,7 @@ function BoilerTab({ dateFrom, dateTo }: { dateFrom: string; dateTo: string }) {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 dark:bg-gray-700 text-xs uppercase text-gray-500">
               <tr>
-                {["Record", "Asset", "DateTime", "Shift", "Steam (kg)", "Fuel", "Efficiency %", "Load %", "Blowdown %", "Anomaly"].map(h => (
+                {[tx("Record"), tx("Asset"), tx("DateTime"), tx("Shift"), tx("Steam (kg)"), tx("Fuel"), tx("Efficiency %"), tx("Load %"), tx("Blowdown %"), tx("Anomaly")].map(h => (
                   <th key={h} className="px-3 py-3 text-left font-medium whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -101,7 +102,7 @@ function BoilerTab({ dateFrom, dateTo }: { dateFrom: string; dateTo: string }) {
                   <td className="px-3 py-2 text-center">{row.is_anomaly ? <span className="text-red-500 font-bold">⚠</span> : "—"}</td>
                 </tr>
               ))}
-              {!d?.rows.length && <tr><td colSpan={10} className="px-4 py-8 text-center text-gray-400">No records</td></tr>}
+              {!d?.rows.length && <tr><td colSpan={10} className="px-4 py-8 text-center text-gray-400">{tx("No records")}</td></tr>}
             </tbody>
           </table>
         </div>
@@ -118,18 +119,18 @@ function CompressorTab({ dateFrom, dateTo }: { dateFrom: string; dateTo: string 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-        <KpiCard label="Total Air" value={fmt(d?.total_air_nm3, 0)} unit="Nm³" />
-        <KpiCard label="Total kWh" value={fmt(d?.total_kwh, 0)} unit="kWh" />
-        <KpiCard label="Specific Energy" value={fmt(d?.avg_specific_energy, 3)} unit="kWh/Nm³" />
-        <KpiCard label="Avg Load" value={pct(d?.avg_load_pct)} />
-        <KpiCard label="Avg Leak" value={pct(d?.avg_leak_pct)} warn={(d?.avg_leak_pct ?? 0) > 10} />
-        <KpiCard label="Total Leak Vol" value={fmt(d?.total_leak_nm3, 0)} unit="Nm³" warn={(d?.total_leak_nm3 ?? 0) > 0} />
+        <KpiCard label={tx("Total Air")} value={fmt(d?.total_air_nm3, 0)} unit="Nm³" />
+        <KpiCard label={tx("Total kWh")} value={fmt(d?.total_kwh, 0)} unit="kWh" />
+        <KpiCard label={tx("Specific Energy")} value={fmt(d?.avg_specific_energy, 3)} unit="kWh/Nm³" />
+        <KpiCard label={tx("Avg Load")} value={pct(d?.avg_load_pct)} />
+        <KpiCard label={tx("Avg Leak")} value={pct(d?.avg_leak_pct)} warn={(d?.avg_leak_pct ?? 0) > 10} />
+        <KpiCard label={tx("Total Leak Vol")} value={fmt(d?.total_leak_nm3, 0)} unit="Nm³" warn={(d?.total_leak_nm3 ?? 0) > 0} />
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-sm font-semibold">Compressor Performance Trend</h3>
-          <button onClick={() => reportsApi.exportCompressorPerformance(params)} className="px-3 py-1.5 text-xs bg-cyan-600 text-white rounded-lg hover:bg-cyan-700">Export CSV</button>
+          <h3 className="text-sm font-semibold">{tx("Compressor Performance Trend")}</h3>
+          <button onClick={() => reportsApi.exportCompressorPerformance(params)} className="px-3 py-1.5 text-xs bg-cyan-600 text-white rounded-lg hover:bg-cyan-700">{tx("Export CSV")}</button>
         </div>
         <ResponsiveContainer width="100%" height={220}>
           <LineChart data={d?.trend ?? []} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
@@ -149,7 +150,7 @@ function CompressorTab({ dateFrom, dateTo }: { dateFrom: string; dateTo: string 
           <table className="w-full text-sm">
             <thead className="bg-gray-50 dark:bg-gray-700 text-xs uppercase text-gray-500">
               <tr>
-                {["Record", "Asset", "DateTime", "Air (Nm³)", "kWh", "Spec Energy", "Load %", "Leak %", "Leak Vol", "Night Idle", "Anomaly"].map(h => (
+                {[tx("Record"), tx("Asset"), tx("DateTime"), tx("Air (Nm³)"), "kWh", tx("Spec Energy"), tx("Load %"), tx("Leak %"), tx("Leak Vol"), tx("Night Idle"), tx("Anomaly")].map(h => (
                   <th key={h} className="px-3 py-3 text-left font-medium whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -170,7 +171,7 @@ function CompressorTab({ dateFrom, dateTo }: { dateFrom: string; dateTo: string 
                   <td className="px-3 py-2 text-center">{row.is_anomaly ? <span className="text-red-500 font-bold">⚠</span> : "—"}</td>
                 </tr>
               ))}
-              {!d?.rows.length && <tr><td colSpan={11} className="px-4 py-8 text-center text-gray-400">No records</td></tr>}
+              {!d?.rows.length && <tr><td colSpan={11} className="px-4 py-8 text-center text-gray-400">{tx("No records")}</td></tr>}
             </tbody>
           </table>
         </div>
@@ -187,18 +188,18 @@ function SoftWaterTab({ dateFrom, dateTo }: { dateFrom: string; dateTo: string }
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-        <KpiCard label="Treated Volume" value={fmt(d?.total_volume_treated_m3)} unit="m³" />
-        <KpiCard label="Raw Water Input" value={fmt(d?.total_raw_water_m3)} unit="m³" />
-        <KpiCard label="Salt Used" value={fmt(d?.total_salt_kg, 0)} unit="kg" />
-        <KpiCard label="Salt per m³" value={fmt(d?.avg_salt_per_m3, 2)} unit="kg/m³" />
-        <KpiCard label="Avg Efficiency" value={pct(d?.avg_efficiency_pct)} ok={(d?.avg_efficiency_pct ?? 0) >= 85} />
-        <KpiCard label="Conversion %" value={pct(d?.conversion_pct)} ok={(d?.conversion_pct ?? 0) >= 90} />
+        <KpiCard label={tx("Treated Volume")} value={fmt(d?.total_volume_treated_m3)} unit="m³" />
+        <KpiCard label={tx("Raw Water Input")} value={fmt(d?.total_raw_water_m3)} unit="m³" />
+        <KpiCard label={tx("Salt Used")} value={fmt(d?.total_salt_kg, 0)} unit="kg" />
+        <KpiCard label={tx("Salt per m³")} value={fmt(d?.avg_salt_per_m3, 2)} unit="kg/m³" />
+        <KpiCard label={tx("Avg Efficiency")} value={pct(d?.avg_efficiency_pct)} ok={(d?.avg_efficiency_pct ?? 0) >= 85} />
+        <KpiCard label={tx("Conversion %")} value={pct(d?.conversion_pct)} ok={(d?.conversion_pct ?? 0) >= 90} />
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-sm font-semibold">Soft Water Trend</h3>
-          <button onClick={() => reportsApi.exportSoftWater(params)} className="px-3 py-1.5 text-xs bg-purple-600 text-white rounded-lg hover:bg-purple-700">Export CSV</button>
+          <h3 className="text-sm font-semibold">{tx("Soft Water Trend")}</h3>
+          <button onClick={() => reportsApi.exportSoftWater(params)} className="px-3 py-1.5 text-xs bg-purple-600 text-white rounded-lg hover:bg-purple-700">{tx("Export CSV")}</button>
         </div>
         <ResponsiveContainer width="100%" height={220}>
           <BarChart data={d?.trend ?? []} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
@@ -218,7 +219,7 @@ function SoftWaterTab({ dateFrom, dateTo }: { dateFrom: string; dateTo: string }
           <table className="w-full text-sm">
             <thead className="bg-gray-50 dark:bg-gray-700 text-xs uppercase text-gray-500">
               <tr>
-                {["Record", "Asset", "DateTime", "Treated (m³)", "Raw (m³)", "Salt (kg)", "Salt/m³", "Eff %", "Feed HDN", "Prod HDN", "Regens"].map(h => (
+                {[tx("Record"), tx("Asset"), tx("DateTime"), tx("Treated (m³)"), tx("Raw (m³)"), tx("Salt (kg)"), tx("Salt/m³"), tx("Eff %"), tx("Feed HDN"), tx("Prod HDN"), tx("Regens")].map(h => (
                   <th key={h} className="px-3 py-3 text-left font-medium whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -239,7 +240,7 @@ function SoftWaterTab({ dateFrom, dateTo }: { dateFrom: string; dateTo: string }
                   <td className="px-3 py-2 text-right">{row.regeneration_count ?? "—"}</td>
                 </tr>
               ))}
-              {!d?.rows.length && <tr><td colSpan={11} className="px-4 py-8 text-center text-gray-400">No records</td></tr>}
+              {!d?.rows.length && <tr><td colSpan={11} className="px-4 py-8 text-center text-gray-400">{tx("No records")}</td></tr>}
             </tbody>
           </table>
         </div>
@@ -256,9 +257,9 @@ export default function EquipmentEfficiencyPage() {
   const [tab, setTab] = useState<Tab>("boiler");
 
   const tabs: { id: Tab; label: string; color: string }[] = [
-    { id: "boiler", label: "Boiler & Steam", color: "#f97316" },
-    { id: "compressor", label: "Compressor", color: "#22d3ee" },
-    { id: "softwater", label: "Soft Water", color: "#a78bfa" },
+    { id: "boiler", label: tx("Boiler & Steam"), color: "#f97316" },
+    { id: "compressor", label: tx("Compressor"), color: "#22d3ee" },
+    { id: "softwater", label: tx("Soft Water"), color: "#a78bfa" },
   ];
 
   return (
@@ -266,10 +267,10 @@ export default function EquipmentEfficiencyPage() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <div className="flex items-center gap-3 mb-1">
-            <Link href="/dashboard/utility-management/reports" className="text-sm text-gray-500 hover:text-blue-600">← Reports</Link>
+            <Link href="/dashboard/utility-management/reports" className="text-sm text-gray-500 hover:text-blue-600">{tx("← Reports")}</Link>
           </div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white" style={{ borderLeft: "4px solid #f97316", paddingLeft: 12 }}>
-            Equipment Efficiency
+            {tx("Equipment Efficiency")}
           </h1>
         </div>
         <DateFilter from={dateFrom} to={dateTo} onFrom={setDateFrom} onTo={setDateTo} />

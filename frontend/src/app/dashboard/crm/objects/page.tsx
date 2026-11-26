@@ -2,6 +2,7 @@
 // M45.S01.T015 custom objects: define types (admin), records list/detail, associations, CSV import/export, report.
 import { useCallback, useEffect, useState } from "react";
 import { apiClient } from "@/lib/api";
+import { tx } from "@/lib/i18n/core";
 
 type FieldDef = { key: string; label: string; type: string; required: boolean; unique: boolean; options?: string[] };
 type OType = { key: string; label: string; label_plural: string; fields: FieldDef[]; display_field: string };
@@ -35,48 +36,48 @@ export default function CustomObjectsPage() {
 
   return (
     <div className="p-4 space-y-4 text-sm">
-      <h2 className="text-lg font-semibold">Custom objects</h2>
+      <h2 className="text-lg font-semibold">{tx("Custom objects")}</h2>
       {msg && <p role="status" className="text-xs">{msg}</p>}
       <div className="flex flex-wrap gap-2">{types.map((t) => <button key={t.key} className={`border rounded px-2 py-1 text-xs ${cur?.key === t.key ? "bg-indigo-50" : "bg-white"}`} onClick={() => { setOpen(null); setRep(null); loadRecs(t); }}>{t.label_plural}</button>)}</div>
-      <details className="border rounded p-3 bg-white"><summary className="cursor-pointer font-semibold">Define a new object type (CRM administrators)</summary>
+      <details className="border rounded p-3 bg-white"><summary className="cursor-pointer font-semibold">{tx("Define a new object type (CRM administrators)")}</summary>
         <div className="space-y-2 mt-2">
-          <div className="flex flex-wrap gap-2"><input aria-label="Type key" className={inp} placeholder="key (e.g. freezer)" value={def.key} onChange={(e) => setDef({ ...def, key: e.target.value })} />
-            <input aria-label="Type label" className={inp} placeholder="Label (e.g. Freezer)" value={def.label} onChange={(e) => setDef({ ...def, label: e.target.value })} /></div>
+          <div className="flex flex-wrap gap-2"><input aria-label={tx("Type key")} className={inp} placeholder={tx("key (e.g. freezer)")} value={def.key} onChange={(e) => setDef({ ...def, key: e.target.value })} />
+            <input aria-label={tx("Type label")} className={inp} placeholder={tx("Label (e.g. Freezer)")} value={def.label} onChange={(e) => setDef({ ...def, label: e.target.value })} /></div>
           {def.fields.map((f, i) => <div key={i} className="flex flex-wrap gap-2 items-center text-xs">
-            <input aria-label="Field key" className={inp} value={f.key} onChange={(e) => setField(i, { key: e.target.value })} />
-            <input aria-label="Field label" className={inp} value={f.label} onChange={(e) => setField(i, { label: e.target.value })} />
-            <select aria-label="Field type" className={inp} value={f.type} onChange={(e) => setField(i, { type: e.target.value })}>{TYPES.map((t) => <option key={t}>{t}</option>)}</select>
-            {f.type === "select" && <input aria-label="Options" className={inp} placeholder="options, comma separated" value={(f.options ?? []).join(",")} onChange={(e) => setField(i, { options: e.target.value.split(",").map((x) => x.trim()).filter(Boolean) })} />}
-            <label><input type="checkbox" checked={f.required} onChange={(e) => setField(i, { required: e.target.checked })} /> required</label>
-            <label><input type="checkbox" checked={f.unique} onChange={(e) => setField(i, { unique: e.target.checked })} /> unique</label></div>)}
-          <div className="flex gap-2"><button className="border rounded px-2 text-xs" onClick={() => setDef({ ...def, fields: [...def.fields, { key: "", label: "", type: "text", required: false, unique: false }] })}>+ Field</button>
-            <button className="bg-indigo-600 text-white rounded px-3 py-1 text-xs" onClick={() => act(apiClient.post("/api/v1/custom-objects/types", { ...def, label_plural: def.label + "s" }), "Object type created.", loadTypes)}>Create type</button></div>
+            <input aria-label={tx("Field key")} className={inp} value={f.key} onChange={(e) => setField(i, { key: e.target.value })} />
+            <input aria-label={tx("Field label")} className={inp} value={f.label} onChange={(e) => setField(i, { label: e.target.value })} />
+            <select aria-label={tx("Field type")} className={inp} value={f.type} onChange={(e) => setField(i, { type: e.target.value })}>{TYPES.map((t) => <option key={t}>{t}</option>)}</select>
+            {f.type === "select" && <input aria-label={tx("Options")} className={inp} placeholder={tx("options, comma separated")} value={(f.options ?? []).join(",")} onChange={(e) => setField(i, { options: e.target.value.split(",").map((x) => x.trim()).filter(Boolean) })} />}
+            <label><input type="checkbox" checked={f.required} onChange={(e) => setField(i, { required: e.target.checked })} /> {tx("required")}</label>
+            <label><input type="checkbox" checked={f.unique} onChange={(e) => setField(i, { unique: e.target.checked })} /> {tx("unique")}</label></div>)}
+          <div className="flex gap-2"><button className="border rounded px-2 text-xs" onClick={() => setDef({ ...def, fields: [...def.fields, { key: "", label: "", type: "text", required: false, unique: false }] })}>{tx("+ Field")}</button>
+            <button className="bg-indigo-600 text-white rounded px-3 py-1 text-xs" onClick={() => act(apiClient.post("/api/v1/custom-objects/types", { ...def, label_plural: def.label + "s" }), "Object type created.", loadTypes)}>{tx("Create type")}</button></div>
         </div></details>
       {cur && <section className="space-y-2">
         <div className="flex flex-wrap gap-2 items-center"><h3 className="font-semibold">{cur.label_plural}</h3>
-          <button className="border rounded px-2 text-xs" onClick={() => { setOpen(null); setForm({}); }}>+ New {cur.label}</button>
-          <a className="underline text-xs" href={`${process.env.NEXT_PUBLIC_API_URL ?? ""}/api/v1/custom-objects/${cur.key}/export.csv`}>Export CSV</a>
-          <select aria-label="Report by field" className={inp} defaultValue="" onChange={(e) => e.target.value && apiClient.get(`/api/v1/custom-objects/${cur.key}/report`, { params: { group_by: e.target.value } }).then((r) => setRep(r.data)).catch((x) => setMsg(err(x)))}>
-            <option value="">Report: count by…</option>{cur.fields.map((f) => <option key={f.key} value={f.key}>{f.label}</option>)}</select></div>
-        {rep && <ul className="text-xs border rounded p-2 bg-white">{rep.map((r, i) => <li key={i}>{r.value ?? "(empty)"}: {r.count}</li>)}</ul>}
+          <button className="border rounded px-2 text-xs" onClick={() => { setOpen(null); setForm({}); }}>{tx("+ New")} {cur.label}</button>
+          <a className="underline text-xs" href={`${process.env.NEXT_PUBLIC_API_URL ?? ""}/api/v1/custom-objects/${cur.key}/export.csv`}>{tx("Export CSV")}</a>
+          <select aria-label={tx("Report by field")} className={inp} defaultValue="" onChange={(e) => e.target.value && apiClient.get(`/api/v1/custom-objects/${cur.key}/report`, { params: { group_by: e.target.value } }).then((r) => setRep(r.data)).catch((x) => setMsg(err(x)))}>
+            <option value="">{tx("Report: count by…")}</option>{cur.fields.map((f) => <option key={f.key} value={f.key}>{f.label}</option>)}</select></div>
+        {rep && <ul className="text-xs border rounded p-2 bg-white">{rep.map((r, i) => <li key={i}>{r.value ?? tx("(empty)")}: {r.count}</li>)}</ul>}
         <div className="overflow-x-auto"><table className="text-xs bg-white border w-full"><thead><tr className="bg-gray-50 text-left">{cur.fields.slice(0, 5).map((f) => <th key={f.key} className="p-1">{f.label}</th>)}</tr></thead>
           <tbody>{recs.map((r) => <tr key={r.id} className="border-t cursor-pointer hover:bg-gray-50" onClick={() => openRec(r)}>{cur.fields.slice(0, 5).map((f) => <td key={f.key} className="p-1">{String(r.data[f.key] ?? "")}</td>)}</tr>)}</tbody></table></div>
-        <div className="border rounded p-3 bg-white space-y-2"><h4 className="font-semibold text-xs">{open ? `Edit ${open.display}` : `New ${cur.label}`}</h4>
+        <div className="border rounded p-3 bg-white space-y-2"><h4 className="font-semibold text-xs">{open ? tx("Edit {display}", { display: open.display }) : tx("New {label}", { label: cur.label })}</h4>
           <div className="grid sm:grid-cols-2 gap-2">{cur.fields.map((f) => <label key={f.key} className="text-xs">{f.label}{f.required ? " *" : ""}
             {f.type === "select" ? <select aria-label={f.label} className={`${inp} w-full`} value={form[f.key] ?? ""} onChange={(e) => setForm({ ...form, [f.key]: e.target.value })}><option value=""></option>{(f.options ?? []).map((o) => <option key={o}>{o}</option>)}</select>
               : <input aria-label={f.label} type={f.type === "number" ? "number" : f.type === "date" ? "date" : "text"} className={`${inp} w-full`} value={form[f.key] ?? ""} onChange={(e) => setForm({ ...form, [f.key]: e.target.value })} />}</label>)}</div>
-          <div className="flex gap-2"><button className="bg-indigo-600 text-white rounded px-3 py-1 text-xs" onClick={save}>Save</button>
-            {open && <button className="text-red-600 underline text-xs" onClick={() => act(apiClient.delete(`/api/v1/custom-objects/${cur.key}/records/${open.id}`), "Deleted.", () => { setOpen(null); loadRecs(cur); })}>Delete</button>}</div>
-          {open && <div className="text-xs space-y-1"><b>Associations</b>
-            <ul>{(open.associations ?? []).map((a) => <li key={a.id}>{a.target_type} {a.target_id} ({a.label}) <button className="underline" onClick={() => act(apiClient.delete(`/api/v1/custom-objects/${cur.key}/records/${open.id}/associations/${a.id}`), "Removed.", () => openRec(open))}>remove</button></li>)}</ul>
-            <div className="flex flex-wrap gap-2"><select aria-label="Associate with" className={inp} value={assoc.target_type} onChange={(e) => setAssoc({ ...assoc, target_type: e.target.value })}>{["customer", "crm_record", "product", "sales_order", "co_record"].map((t) => <option key={t}>{t}</option>)}</select>
-              <input aria-label="Target id" className={inp} placeholder="record id" value={assoc.target_id} onChange={(e) => setAssoc({ ...assoc, target_id: e.target.value })} />
-              <input aria-label="Association label" className={inp} value={assoc.label} onChange={(e) => setAssoc({ ...assoc, label: e.target.value })} />
-              <button className="border rounded px-2" onClick={() => act(apiClient.post(`/api/v1/custom-objects/${cur.key}/records/${open.id}/associations`, assoc), "Associated.", () => openRec(open))}>Add</button></div></div>}
+          <div className="flex gap-2"><button className="bg-indigo-600 text-white rounded px-3 py-1 text-xs" onClick={save}>{tx("Save")}</button>
+            {open && <button className="text-red-600 underline text-xs" onClick={() => act(apiClient.delete(`/api/v1/custom-objects/${cur.key}/records/${open.id}`), "Deleted.", () => { setOpen(null); loadRecs(cur); })}>{tx("Delete")}</button>}</div>
+          {open && <div className="text-xs space-y-1"><b>{tx("Associations")}</b>
+            <ul>{(open.associations ?? []).map((a) => <li key={a.id}>{a.target_type} {a.target_id} ({a.label}) <button className="underline" onClick={() => act(apiClient.delete(`/api/v1/custom-objects/${cur.key}/records/${open.id}/associations/${a.id}`), "Removed.", () => openRec(open))}>{tx("remove")}</button></li>)}</ul>
+            <div className="flex flex-wrap gap-2"><select aria-label={tx("Associate with")} className={inp} value={assoc.target_type} onChange={(e) => setAssoc({ ...assoc, target_type: e.target.value })}>{[tx("customer"), "crm_record", tx("product"), "sales_order", "co_record"].map((t) => <option key={t}>{t}</option>)}</select>
+              <input aria-label={tx("Target id")} className={inp} placeholder={tx("record id")} value={assoc.target_id} onChange={(e) => setAssoc({ ...assoc, target_id: e.target.value })} />
+              <input aria-label={tx("Association label")} className={inp} value={assoc.label} onChange={(e) => setAssoc({ ...assoc, label: e.target.value })} />
+              <button className="border rounded px-2" onClick={() => act(apiClient.post(`/api/v1/custom-objects/${cur.key}/records/${open.id}/associations`, assoc), "Associated.", () => openRec(open))}>{tx("Add")}</button></div></div>}
         </div>
-        <details className="text-xs"><summary className="cursor-pointer">Import CSV</summary>
-          <textarea aria-label="CSV to import" className={`${inp} w-full font-mono`} rows={4} placeholder={cur.fields.map((f) => f.key).join(",")} value={csvText} onChange={(e) => setCsvText(e.target.value)} />
-          <button className="border rounded px-2 py-1" onClick={() => apiClient.post(`/api/v1/custom-objects/${cur.key}/import`, { csv: csvText }).then((r) => { setMsg(`Imported ${r.data.created}; ${r.data.errors.length} rows refused.`); loadRecs(cur); }).catch((e) => setMsg(err(e)))}>Import</button></details>
+        <details className="text-xs"><summary className="cursor-pointer">{tx("Import CSV")}</summary>
+          <textarea aria-label={tx("CSV to import")} className={`${inp} w-full font-mono`} rows={4} placeholder={cur.fields.map((f) => f.key).join(",")} value={csvText} onChange={(e) => setCsvText(e.target.value)} />
+          <button className="border rounded px-2 py-1" onClick={() => apiClient.post(`/api/v1/custom-objects/${cur.key}/import`, { csv: csvText }).then((r) => { setMsg(tx("Imported {created}; {length} rows refused.", { created: r.data.created, length: r.data.errors.length })); loadRecs(cur); }).catch((e) => setMsg(err(e)))}>{tx("Import")}</button></details>
       </section>}
     </div>
   );

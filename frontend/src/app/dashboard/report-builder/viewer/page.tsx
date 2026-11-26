@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { reportBuilderApi, Report, RunResult } from "@/lib/report_builder";
+import { tx } from "@/lib/i18n/core";
 
 export default function ReportViewerPage() {
   const searchParams = useSearchParams();
@@ -34,7 +35,7 @@ export default function ReportViewerPage() {
       const r = await reportBuilderApi.runReport(selectedId, { limit, offset });
       setResult(r);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Error running report");
+      setError(e instanceof Error ? e.message : tx("Error running report"));
     } finally {
       setRunning(false);
     }
@@ -51,19 +52,19 @@ export default function ReportViewerPage() {
 
   return (
     <div className="p-6 space-y-4">
-      <h1 className="text-xl font-bold text-gray-900">Report Viewer</h1>
+      <h1 className="text-xl font-bold text-gray-900">{tx("Report Viewer")}</h1>
 
       <div className="flex gap-3 items-end flex-wrap">
         <div>
-          <label className="text-xs text-gray-500">Report</label>
+          <label className="text-xs text-gray-500">{tx("Report")}</label>
           <select className="block border rounded px-2 py-1 text-sm mt-1 w-64" value={selectedId}
             onChange={(e) => setSelectedId(e.target.value)}>
-            <option value="">Select report…</option>
+            <option value="">{tx("Select report…")}</option>
             {reports.map(r => <option key={r.report_id} value={r.report_id}>{r.report_name}</option>)}
           </select>
         </div>
         <div>
-          <label className="text-xs text-gray-500">Page Size</label>
+          <label className="text-xs text-gray-500">{tx("Page Size")}</label>
           <select className="block border rounded px-2 py-1 text-sm mt-1" value={limit}
             onChange={(e) => setLimit(Number(e.target.value))}>
             {[25,50,100,250].map(v => <option key={v} value={v}>{v}</option>)}
@@ -71,11 +72,11 @@ export default function ReportViewerPage() {
         </div>
         <button onClick={run} disabled={running || !selectedId}
           className="rounded bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">
-          {running ? "Running…" : "Run"}
+          {running ? tx("Running…") : tx("Run")}
         </button>
         <button onClick={exportCsv} disabled={!selectedId}
           className="rounded border border-green-200 px-4 py-2 text-sm text-green-700 hover:bg-green-50 disabled:opacity-50">
-          Export CSV
+          {tx("Export CSV")}
         </button>
       </div>
 
@@ -84,10 +85,10 @@ export default function ReportViewerPage() {
       {result && (
         <div className="space-y-3">
           <div className="flex items-center gap-4 text-xs text-gray-500">
-            <span>Total: <strong>{result.total_count.toLocaleString()}</strong> rows</span>
-            <span>Showing: <strong>{result.rows.length}</strong></span>
-            <span>Executed in: <strong>{result.execution_ms}ms</strong></span>
-            <span>Source: <strong>{result.data_source}</strong></span>
+            <span>{tx("Total:")} <strong>{result.total_count.toLocaleString()}</strong> {tx("rows")}</span>
+            <span>{tx("Showing:")} <strong>{result.rows.length}</strong></span>
+            <span>{tx("Executed in:")} <strong>{result.execution_ms}{tx("ms")}</strong></span>
+            <span>{tx("Source:")} <strong>{result.data_source}</strong></span>
           </div>
 
           {report && (
@@ -118,23 +119,23 @@ export default function ReportViewerPage() {
                   <tr key={i} className="hover:bg-gray-50">
                     {result.columns.map(c => (
                       <td key={c.path} className="px-3 py-2 text-gray-700 max-w-[200px] truncate whitespace-nowrap">
-                        {row[c.path] ?? <span className="text-gray-300">null</span>}
+                        {row[c.path] ?? <span className="text-gray-300">{tx("null")}</span>}
                       </td>
                     ))}
                   </tr>
                 ))}
               </tbody>
             </table>
-            {result.rows.length === 0 && <p className="text-center text-gray-400 py-8 text-sm">No data returned.</p>}
+            {result.rows.length === 0 && <p className="text-center text-gray-400 py-8 text-sm">{tx("No data returned.")}</p>}
           </div>
 
           {result.total_count > limit && (
             <div className="flex items-center gap-3">
               <button disabled={offset === 0} onClick={() => { setOffset(Math.max(0, offset - limit)); run(); }}
-                className="rounded border px-3 py-1 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-40">← Prev</button>
-              <span className="text-sm text-gray-500">Page {result.page} · {result.total_count.toLocaleString()} total</span>
+                className="rounded border px-3 py-1 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-40">{tx("← Prev")}</button>
+              <span className="text-sm text-gray-500">{tx("Page")} {result.page} · {result.total_count.toLocaleString()} {tx("total")}</span>
               <button disabled={offset + limit >= result.total_count} onClick={() => { setOffset(offset + limit); run(); }}
-                className="rounded border px-3 py-1 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-40">Next →</button>
+                className="rounded border px-3 py-1 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-40">{tx("Next →")}</button>
             </div>
           )}
         </div>

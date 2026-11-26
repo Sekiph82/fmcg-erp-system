@@ -4,6 +4,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { apiClient } from "@/lib/api";
 import { BarcodeScanButton } from "@/components/BarcodeScanButton";
+import { tx } from "@/lib/i18n/core";
 
 type Row = Record<string, unknown>;
 interface Kind { url: string; label: (r: Row) => string; sub?: (r: Row) => string }
@@ -93,16 +94,16 @@ export function EntityPicker({ kind, value, onChange, placeholder, required, lab
         className="w-full border rounded px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none" />
       {scan && (
         <div className="absolute right-7 top-1/2 -translate-y-1/2">
-          <BarcodeScanButton label="Scan" onScan={(code) => { pendingScan.current = code.trim(); setOpen(true); setQ(code.trim()); }} />
+          <BarcodeScanButton label={tx("Scan")} onScan={(code) => { pendingScan.current = code.trim(); setOpen(true); setQ(code.trim()); }} />
         </div>
       )}
       {value && !open && (
-        <button type="button" aria-label="Clear" onClick={() => { onChange(""); setChosen(""); }}
+        <button type="button" aria-label={tx("Clear")} onClick={() => { onChange(""); setChosen(""); }}
           className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 text-sm">×</button>
       )}
       {open && (
         <ul id={listId} role="listbox" className="absolute z-50 mt-1 w-full max-h-60 overflow-auto rounded border bg-white shadow-lg text-sm">
-          {shown.length === 0 ? <li className="px-3 py-2 text-gray-400">No matches</li> : shown.map((r) => (
+          {shown.length === 0 ? <li className="px-3 py-2 text-gray-400">{tx("No matches")}</li> : shown.map((r) => (
             <li key={s(r.id)} role="option" aria-selected={s(r.id) === value}
               onMouseDown={(e) => { e.preventDefault(); pick(r); }}
               className="px-3 py-2 cursor-pointer hover:bg-blue-50">

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { aiApi, AIPrediction } from "@/lib/aiApi";
 import { RequirePermission } from "@/components/PermissionGuard";
+import { tx } from "@/lib/i18n/core";
 
 const RISK_PILL: Record<string, string> = {
   low: "bg-green-100 text-green-700",
@@ -57,15 +58,15 @@ export default function PredictionsPage() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Predictions</h1>
-          <p className="text-sm text-gray-500 mt-0.5">AI-generated forecasts from live ERP data</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Predictions")}</h1>
+          <p className="text-sm text-gray-500 mt-0.5">{tx("AI-generated forecasts from live ERP data")}</p>
         </div>
         <button
           onClick={() => generate.mutate()}
           disabled={generate.isPending}
           className="px-4 py-2 text-sm font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
         >
-          {generate.isPending ? "Generating…" : "Generate New Predictions"}
+          {generate.isPending ? tx("Generating…") : tx("Generate New Predictions")}
         </button>
       </div>
 
@@ -76,18 +77,18 @@ export default function PredictionsPage() {
           onChange={(e) => setRiskFilter(e.target.value)}
           className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300"
         >
-          <option value="">All Risk Levels</option>
-          <option value="low">Low</option>
-          <option value="medium">Medium</option>
-          <option value="high">High</option>
-          <option value="critical">Critical</option>
+          <option value="">{tx("All Risk Levels")}</option>
+          <option value="low">{tx("Low")}</option>
+          <option value="medium">{tx("Medium")}</option>
+          <option value="high">{tx("High")}</option>
+          <option value="critical">{tx("Critical")}</option>
         </select>
         <select
           value={typeFilter}
           onChange={(e) => setTypeFilter(e.target.value)}
           className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300"
         >
-          <option value="">All Types</option>
+          <option value="">{tx("All Types")}</option>
           {PREDICTION_TYPES.map((t) => (
             <option key={t} value={t}>{t.replace(/_/g, " ")}</option>
           ))}
@@ -97,30 +98,30 @@ export default function PredictionsPage() {
       {/* Table */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
         {isLoading ? (
-          <p className="p-8 text-center text-gray-400">Loading predictions…</p>
+          <p className="p-8 text-center text-gray-400">{tx("Loading predictions…")}</p>
         ) : data.length === 0 ? (
           <div className="p-12 text-center">
-            <p className="text-gray-400 mb-4">No predictions found. Generate predictions to get started.</p>
+            <p className="text-gray-400 mb-4">{tx("No predictions found. Generate predictions to get started.")}</p>
             <button
               onClick={() => generate.mutate()}
               disabled={generate.isPending}
               className="px-4 py-2 text-sm font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
             >
-              {generate.isPending ? "Generating…" : "Generate Predictions"}
+              {generate.isPending ? tx("Generating…") : tx("Generate Predictions")}
             </button>
           </div>
         ) : (
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Type</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Subject</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Period</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Forecast</th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase">Confidence</th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase">Risk</th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase">Trend</th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase">Actions</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{tx("Type")}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{tx("Subject")}</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{tx("Period")}</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">{tx("Forecast")}</th>
+                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase">{tx("Confidence")}</th>
+                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase">{tx("Risk")}</th>
+                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase">{tx("Trend")}</th>
+                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase">{tx("Actions")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -167,7 +168,7 @@ export default function PredictionsPage() {
                         onClick={(e) => { e.stopPropagation(); archive.mutate(p.id); }}
                         className="text-xs text-gray-400 hover:text-red-500"
                       >
-                        Archive
+                        {tx("Archive")}
                       </button>
                     </td>
                   </tr>
@@ -186,7 +187,7 @@ export default function PredictionsPage() {
                               ))}
                             </div>
                           )}
-                          <p className="text-xs text-gray-400">Created: {new Date(p.created_at).toLocaleString()}</p>
+                          <p className="text-xs text-gray-400">{tx("Created:")} {new Date(p.created_at).toLocaleString()}</p>
                         </div>
                       </td>
                     </tr>

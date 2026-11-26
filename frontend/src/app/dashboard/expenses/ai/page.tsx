@@ -1,12 +1,13 @@
 "use client";
 import { useEffect, useState } from "react";
 import { expensesApi, ExpAIRecommendation, ExpAIAgentType, ExpAIRecStatus, AI_AGENT_LABEL } from "@/lib/expenses";
+import { tx, lx } from "@/lib/i18n/core";
 
-const AGENTS: { type: ExpAIAgentType; desc: string; fn: () => Promise<{ generated: number }> }[] = [
-  { type: "risk_monitor", desc: "Detects duplicate receipts, unusually high claims, and repeated policy violations.", fn: () => expensesApi.runRiskMonitor() },
-  { type: "policy_optimizer", desc: "Identifies categories with frequent violations and suggests limit adjustments.", fn: () => expensesApi.runPolicyOptimizer() },
-  { type: "reimbursement_assistant", desc: "Highlights claims ready for payment and overdue employee advances.", fn: () => expensesApi.runReimbursementAssistant() },
-];
+const AGENTS: { type: ExpAIAgentType; desc: string; fn: () => Promise<{ generated: number }> }[] = lx(() => [
+  { type: "risk_monitor", desc: tx("Detects duplicate receipts, unusually high claims, and repeated policy violations."), fn: () => expensesApi.runRiskMonitor() },
+  { type: "policy_optimizer", desc: tx("Identifies categories with frequent violations and suggests limit adjustments."), fn: () => expensesApi.runPolicyOptimizer() },
+  { type: "reimbursement_assistant", desc: tx("Highlights claims ready for payment and overdue employee advances."), fn: () => expensesApi.runReimbursementAssistant() },
+]);
 
 export default function ExpenseAIPage() {
   const [recs, setRecs] = useState<ExpAIRecommendation[]>([]);
@@ -30,8 +31,8 @@ export default function ExpenseAIPage() {
   return (
     <div className="p-6 space-y-6 text-slate-200">
       <div>
-        <h1 className="text-xl font-bold text-white">AI Expense Insights</h1>
-        <p className="text-slate-500 text-sm mt-0.5">3 agents monitoring risk, policy, and reimbursement</p>
+        <h1 className="text-xl font-bold text-white">{tx("AI Expense Insights")}</h1>
+        <p className="text-slate-500 text-sm mt-0.5">{tx("3 agents monitoring risk, policy, and reimbursement")}</p>
       </div>
 
       {msg && <div className="rounded-xl border border-indigo-500/20 bg-indigo-500/10 p-3 text-sm text-indigo-300">{msg}</div>}
@@ -43,14 +44,14 @@ export default function ExpenseAIPage() {
             <p className="text-xs text-slate-500">{a.desc}</p>
             <button onClick={() => runAgent(a)} disabled={running === a.type}
               className="w-full px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm disabled:opacity-50">
-              {running === a.type ? "Running…" : "Run Agent"}
+              {running === a.type ? tx("Running…") : tx("Run Agent")}
             </button>
           </div>
         ))}
       </div>
 
       <div>
-        <h2 className="text-sm font-semibold text-white mb-3">Pending Recommendations ({pendingRecs.length})</h2>
+        <h2 className="text-sm font-semibold text-white mb-3">{tx("Pending Recommendations (")}{pendingRecs.length})</h2>
         <div className="space-y-3">
           {pendingRecs.map((r) => (
             <div key={r.rec_id} className="glow-card p-4 space-y-2">
@@ -63,13 +64,13 @@ export default function ExpenseAIPage() {
               </div>
               <p className="text-xs text-slate-400">{r.body}</p>
               <div className="flex gap-2">
-                <button onClick={() => ack(r.rec_id, "acknowledged")} className="px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 text-xs">Acknowledge</button>
-                <button onClick={() => ack(r.rec_id, "actioned")} className="px-3 py-1.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 text-xs">Actioned</button>
-                <button onClick={() => ack(r.rec_id, "dismissed")} className="px-3 py-1.5 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-slate-400 text-xs">Dismiss</button>
+                <button onClick={() => ack(r.rec_id, "acknowledged")} className="px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 text-xs">{tx("Acknowledge")}</button>
+                <button onClick={() => ack(r.rec_id, "actioned")} className="px-3 py-1.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 text-xs">{tx("Actioned")}</button>
+                <button onClick={() => ack(r.rec_id, "dismissed")} className="px-3 py-1.5 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-slate-400 text-xs">{tx("Dismiss")}</button>
               </div>
             </div>
           ))}
-          {pendingRecs.length === 0 && <div className="glow-card p-8 text-center text-slate-600">No pending recommendations — run an agent above.</div>}
+          {pendingRecs.length === 0 && <div className="glow-card p-8 text-center text-slate-600">{tx("No pending recommendations — run an agent above.")}</div>}
         </div>
       </div>
     </div>

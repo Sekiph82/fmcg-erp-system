@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { portalApi, PortalAccount, ACCOUNT_TYPE_LABELS, ACCOUNT_STATUS_COLORS } from "@/lib/portal";
 import { SignupRequestsPanel } from "@/components/SignupRequestsPanel";
+import { tx } from "@/lib/i18n/core";
 
 export default function PortalAdminPage() {
   const [accounts, setAccounts] = useState<PortalAccount[]>([]);
@@ -57,36 +58,36 @@ export default function PortalAdminPage() {
   };
 
   const adoptionKpis = report ? [
-    { label: "Total Accounts", value: report.total_accounts as number },
-    { label: "Active Accounts", value: report.active_accounts as number },
-    { label: "Activation Rate", value: `${report.activation_rate_pct}%` },
-    { label: "Total Portal Users", value: report.total_users as number },
-    { label: "Active Users", value: report.active_users as number },
-    { label: "Logins (30d)", value: report.logins_last_30_days as number },
-    { label: "Orders Submitted (30d)", value: report.orders_submitted_last_30_days as number },
-    { label: "Claims (30d)", value: report.claims_submitted_last_30_days as number },
+    { label: tx("Total Accounts"), value: report.total_accounts as number },
+    { label: tx("Active Accounts"), value: report.active_accounts as number },
+    { label: tx("Activation Rate"), value: `${report.activation_rate_pct}%` },
+    { label: tx("Total Portal Users"), value: report.total_users as number },
+    { label: tx("Active Users"), value: report.active_users as number },
+    { label: tx("Logins (30d)"), value: report.logins_last_30_days as number },
+    { label: tx("Orders Submitted (30d)"), value: report.orders_submitted_last_30_days as number },
+    { label: tx("Claims (30d)"), value: report.claims_submitted_last_30_days as number },
   ] : [];
 
   const quickLinks = [
-    { href: "/dashboard/portal/accounts", label: "All Accounts" },
-    { href: "/dashboard/portal/drafts", label: "Draft Orders Queue" },
-    { href: "/dashboard/portal/claims", label: "Claims Review" },
-    { href: "/dashboard/portal/users", label: "Portal Users" },
-    { href: "/dashboard/portal/activity", label: "Activity Log" },
-    { href: "/dashboard/portal/ai", label: "AI Agents" },
-    { href: "/dashboard/portal/reports", label: "Reports" },
+    { href: "/dashboard/portal/accounts", label: tx("All Accounts") },
+    { href: "/dashboard/portal/drafts", label: tx("Draft Orders Queue") },
+    { href: "/dashboard/portal/claims", label: tx("Claims Review") },
+    { href: "/dashboard/portal/users", label: tx("Portal Users") },
+    { href: "/dashboard/portal/activity", label: tx("Activity Log") },
+    { href: "/dashboard/portal/ai", label: tx("AI Agents") },
+    { href: "/dashboard/portal/reports", label: tx("Reports") },
   ];
 
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Customer / Distributor Portal</h1>
-          <p className="text-gray-500 text-sm mt-0.5">B2B self-service portal management</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Customer / Distributor Portal")}</h1>
+          <p className="text-gray-500 text-sm mt-0.5">{tx("B2B self-service portal management")}</p>
         </div>
         <button onClick={() => setShowCreate(true)}
           className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-          + New Portal Account
+          {tx("+ New Portal Account")}
         </button>
       </div>
 
@@ -106,7 +107,7 @@ export default function PortalAdminPage() {
 
       {/* Quick Links */}
       <div className="bg-white rounded-xl border shadow-sm p-4">
-        <h2 className="font-semibold text-gray-800 mb-3">Quick Links</h2>
+        <h2 className="font-semibold text-gray-800 mb-3">{tx("Quick Links")}</h2>
         <div className="flex flex-wrap gap-2">
           {quickLinks.map(l => (
             <Link key={l.href} href={l.href}
@@ -120,32 +121,32 @@ export default function PortalAdminPage() {
       {/* Accounts Table */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="font-semibold text-gray-800">Portal Accounts</h2>
+          <h2 className="font-semibold text-gray-800">{tx("Portal Accounts")}</h2>
           <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
             className="text-sm border rounded-lg px-2 py-1.5">
-            <option value="">All Statuses</option>
-            <option value="PENDING">Pending</option>
-            <option value="ACTIVE">Active</option>
-            <option value="SUSPENDED">Suspended</option>
-            <option value="CLOSED">Closed</option>
+            <option value="">{tx("All Statuses")}</option>
+            <option value="PENDING">{tx("Pending")}</option>
+            <option value="ACTIVE">{tx("Active")}</option>
+            <option value="SUSPENDED">{tx("Suspended")}</option>
+            <option value="CLOSED">{tx("Closed")}</option>
           </select>
         </div>
         <div className="bg-white rounded-xl border shadow-sm overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-gray-50 text-xs text-gray-600">
-                <th className="px-3 py-2 text-left">Code</th>
-                <th className="px-3 py-2 text-left">Type</th>
-                <th className="px-3 py-2 text-left">Contact</th>
-                <th className="px-3 py-2 text-left">Linked ID</th>
-                <th className="px-3 py-2 text-left">Status</th>
-                <th className="px-3 py-2 text-left">Order Mode</th>
-                <th className="px-3 py-2 text-left">Actions</th>
+                <th className="px-3 py-2 text-left">{tx("Code")}</th>
+                <th className="px-3 py-2 text-left">{tx("Type")}</th>
+                <th className="px-3 py-2 text-left">{tx("Contact")}</th>
+                <th className="px-3 py-2 text-left">{tx("Linked ID")}</th>
+                <th className="px-3 py-2 text-left">{tx("Status")}</th>
+                <th className="px-3 py-2 text-left">{tx("Order Mode")}</th>
+                <th className="px-3 py-2 text-left">{tx("Actions")}</th>
               </tr>
             </thead>
             <tbody>
-              {loading && <tr><td colSpan={7} className="px-3 py-6 text-center text-gray-400">Loading…</td></tr>}
-              {!loading && accounts.length === 0 && <tr><td colSpan={7} className="px-3 py-6 text-center text-gray-400">No portal accounts</td></tr>}
+              {loading && <tr><td colSpan={7} className="px-3 py-6 text-center text-gray-400">{tx("Loading…")}</td></tr>}
+              {!loading && accounts.length === 0 && <tr><td colSpan={7} className="px-3 py-6 text-center text-gray-400">{tx("No portal accounts")}</td></tr>}
               {accounts.map(acc => (
                 <tr key={acc.id} className="border-b hover:bg-gray-50">
                   <td className="px-3 py-2 font-mono text-xs text-gray-600">{acc.account_code}</td>
@@ -166,14 +167,14 @@ export default function PortalAdminPage() {
                   <td className="px-3 py-2 text-xs text-gray-500">{acc.order_mode}</td>
                   <td className="px-3 py-2 flex items-center gap-2">
                     <Link href={`/dashboard/portal/accounts/${acc.id}`}
-                      className="text-xs text-blue-600 hover:underline">Manage</Link>
+                      className="text-xs text-blue-600 hover:underline">{tx("Manage")}</Link>
                     {acc.portal_status === "PENDING" && (
                       <button onClick={() => handleActivate(acc.id)}
-                        className="text-xs text-green-600 hover:underline">Activate</button>
+                        className="text-xs text-green-600 hover:underline">{tx("Activate")}</button>
                     )}
                     {acc.portal_status === "ACTIVE" && (
                       <button onClick={() => handleSuspend(acc.id)}
-                        className="text-xs text-red-600 hover:underline">Suspend</button>
+                        className="text-xs text-red-600 hover:underline">{tx("Suspend")}</button>
                     )}
                   </td>
                 </tr>
@@ -187,36 +188,36 @@ export default function PortalAdminPage() {
       {showCreate && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md space-y-3 max-h-screen overflow-y-auto">
-            <h2 className="font-semibold text-lg">New Portal Account</h2>
+            <h2 className="font-semibold text-lg">{tx("New Portal Account")}</h2>
             <select value={form.account_type} onChange={e => setForm(f => ({ ...f, account_type: e.target.value }))}
               className="w-full border rounded-lg px-3 py-2 text-sm">
               {Object.entries(ACCOUNT_TYPE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
-            <EntityPicker kind="customer" label="Linked customer" value={form.linked_customer_id} onChange={(id) => setForm(f => ({ ...f, linked_customer_id: id }))} />
-            <EntityPicker kind="distributor" label="Linked distributor" value={form.linked_distributor_id} onChange={(id) => setForm(f => ({ ...f, linked_distributor_id: id }))} />
-            <input placeholder="Primary Contact Name" value={form.primary_contact_name}
+            <EntityPicker kind="customer" label={tx("Linked customer")} value={form.linked_customer_id} onChange={(id) => setForm(f => ({ ...f, linked_customer_id: id }))} />
+            <EntityPicker kind="distributor" label={tx("Linked distributor")} value={form.linked_distributor_id} onChange={(id) => setForm(f => ({ ...f, linked_distributor_id: id }))} />
+            <input placeholder={tx("Primary Contact Name")} value={form.primary_contact_name}
               onChange={e => setForm(f => ({ ...f, primary_contact_name: e.target.value }))}
               className="w-full border rounded-lg px-3 py-2 text-sm" />
-            <input placeholder="Primary Contact Email" value={form.primary_contact_email}
+            <input placeholder={tx("Primary Contact Email")} value={form.primary_contact_email}
               onChange={e => setForm(f => ({ ...f, primary_contact_email: e.target.value }))}
               className="w-full border rounded-lg px-3 py-2 text-sm" />
             <select value={form.order_mode} onChange={e => setForm(f => ({ ...f, order_mode: e.target.value }))}
               className="w-full border rounded-lg px-3 py-2 text-sm">
-              <option value="DRAFT_REQUEST">Draft Request (requires approval)</option>
-              <option value="DIRECT_SUBMIT">Direct Submit</option>
-              <option value="REORDER_ONLY">Reorder Only</option>
+              <option value="DRAFT_REQUEST">{tx("Draft Request (requires approval)")}</option>
+              <option value="DIRECT_SUBMIT">{tx("Direct Submit")}</option>
+              <option value="REORDER_ONLY">{tx("Reorder Only")}</option>
             </select>
             <div className="flex flex-col gap-2 text-sm">
-              <label className="flex items-center gap-2"><input type="checkbox" checked={form.can_view_prices} onChange={e => setForm(f => ({ ...f, can_view_prices: e.target.checked }))} /> Can View Prices</label>
-              <label className="flex items-center gap-2"><input type="checkbox" checked={form.can_view_promotions} onChange={e => setForm(f => ({ ...f, can_view_promotions: e.target.checked }))} /> Can View Promotions</label>
-              <label className="flex items-center gap-2"><input type="checkbox" checked={form.can_initiate_payment} onChange={e => setForm(f => ({ ...f, can_initiate_payment: e.target.checked }))} /> Can Initiate Payment</label>
+              <label className="flex items-center gap-2"><input type="checkbox" checked={form.can_view_prices} onChange={e => setForm(f => ({ ...f, can_view_prices: e.target.checked }))} /> {tx("Can View Prices")}</label>
+              <label className="flex items-center gap-2"><input type="checkbox" checked={form.can_view_promotions} onChange={e => setForm(f => ({ ...f, can_view_promotions: e.target.checked }))} /> {tx("Can View Promotions")}</label>
+              <label className="flex items-center gap-2"><input type="checkbox" checked={form.can_initiate_payment} onChange={e => setForm(f => ({ ...f, can_initiate_payment: e.target.checked }))} /> {tx("Can Initiate Payment")}</label>
             </div>
             <div className="flex gap-2 pt-1">
               <button onClick={handleCreate} disabled={saving}
                 className="flex-1 bg-blue-600 text-white py-2 rounded-lg text-sm disabled:opacity-50">
-                {saving ? "Creating…" : "Create"}
+                {saving ? tx("Creating…") : tx("Create")}
               </button>
-              <button onClick={() => setShowCreate(false)} className="flex-1 border rounded-lg py-2 text-sm">Cancel</button>
+              <button onClick={() => setShowCreate(false)} className="flex-1 border rounded-lg py-2 text-sm">{tx("Cancel")}</button>
             </div>
           </div>
         </div>

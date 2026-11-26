@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { tpmApi, fmtCurrency } from "@/lib/tpm";
 import Link from "next/link";
+import { tx } from "@/lib/i18n/core";
 
 export default function TPMBudgetPage() {
   const [fiscalYear, setFiscalYear] = useState(new Date().getFullYear());
@@ -26,8 +27,8 @@ export default function TPMBudgetPage() {
     <div className="p-6 space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Budget vs Actual Spend</h1>
-          <p className="text-sm text-gray-500">Track promotion budget utilization and remaining headroom.</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Budget vs Actual Spend")}</h1>
+          <p className="text-sm text-gray-500">{tx("Track promotion budget utilization and remaining headroom.")}</p>
         </div>
         <div className="flex items-center gap-2">
           <label className="text-sm text-gray-400">FY:</label>
@@ -39,10 +40,10 @@ export default function TPMBudgetPage() {
       {/* Summary KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: "Total Planned",  value: fmtCurrency(totals.planned),  color: "text-indigo-400" },
-          { label: "Total Approved", value: fmtCurrency(totals.approved), color: "text-blue-400" },
-          { label: "Total Actual",   value: fmtCurrency(totals.actual),   color: "text-orange-400" },
-          { label: "Total Accrued",  value: fmtCurrency(totals.accrued),  color: "text-yellow-400" },
+          { label: tx("Total Planned"),  value: fmtCurrency(totals.planned),  color: "text-indigo-400" },
+          { label: tx("Total Approved"), value: fmtCurrency(totals.approved), color: "text-blue-400" },
+          { label: tx("Total Actual"),   value: fmtCurrency(totals.actual),   color: "text-orange-400" },
+          { label: tx("Total Accrued"),  value: fmtCurrency(totals.accrued),  color: "text-yellow-400" },
         ].map((k) => (
           <div key={k.label} className="glow-card p-4 text-center">
             <p className="text-xs text-gray-500">{k.label}</p>
@@ -55,21 +56,21 @@ export default function TPMBudgetPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-blue-900/30">
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Promotion</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Type</th>
-              <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Planned</th>
-              <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Approved</th>
-              <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Actual</th>
-              <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Accrued</th>
-              <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Variance</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Utilization</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Promotion")}</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Type")}</th>
+              <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Planned")}</th>
+              <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Approved")}</th>
+              <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Actual")}</th>
+              <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Accrued")}</th>
+              <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Variance")}</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Utilization")}</th>
             </tr>
           </thead>
           <tbody>
             {isLoading ? (
-              <tr><td colSpan={8} className="text-center py-10 text-gray-400">Loading…</td></tr>
+              <tr><td colSpan={8} className="text-center py-10 text-gray-400">{tx("Loading…")}</td></tr>
             ) : rows.length === 0 ? (
-              <tr><td colSpan={8} className="text-center py-10 text-gray-400">No budget data for FY{fiscalYear}.</td></tr>
+              <tr><td colSpan={8} className="text-center py-10 text-gray-400">{tx("No budget data for FY")}{fiscalYear}.</td></tr>
             ) : rows.map((r: any) => {
               const pct = Number(r.utilization_pct);
               return (

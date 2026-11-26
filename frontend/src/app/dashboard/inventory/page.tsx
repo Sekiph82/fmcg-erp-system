@@ -28,6 +28,7 @@ import { RequirePermission } from "@/components/PermissionGuard";
 import { ImportModal } from "@/components/import/ImportModal";
 import { useAuth } from "@/context/AuthContext";
 import { PageHelpTooltip } from "@/components/help/PageHelpTooltip";
+import { tx, lx } from "@/lib/i18n/core";
 
 type Tab = "stock" | "entry" | "issue" | "transfer";
 
@@ -42,12 +43,12 @@ function FormSection({ title, children }: { title: string; children: React.React
   );
 }
 
-const TABS: { key: Tab; label: string; color?: string }[] = [
-  { key: "stock", label: "Current Stock" },
-  { key: "entry", label: "Stock Entry (IN)", color: "text-green-700" },
-  { key: "issue", label: "Stock Issue (OUT)", color: "text-red-700" },
-  { key: "transfer", label: "Transfer", color: "text-blue-700" },
-];
+const TABS: { key: Tab; label: string; color?: string }[] = lx(() => [
+  { key: "stock", label: tx("Current Stock") },
+  { key: "entry", label: tx("Stock Entry (IN)"), color: "text-green-700" },
+  { key: "issue", label: tx("Stock Issue (OUT)"), color: "text-red-700" },
+  { key: "transfer", label: tx("Transfer"), color: "text-blue-700" },
+]);
 
 function InventoryContent() {
   const qc = useQueryClient();
@@ -71,11 +72,11 @@ function InventoryContent() {
   });
 
   const productOptions = [
-    { value: "", label: "— Select product —" },
+    { value: "", label: tx("— Select product —") },
     ...products.map((p) => ({ value: p.id, label: `${p.sku} — ${p.name}` })),
   ];
   const warehouseOptions = [
-    { value: "", label: "— Select warehouse —" },
+    { value: "", label: tx("— Select warehouse —") },
     ...warehouses.map((w) => ({ value: w.id, label: `${w.code} — ${w.name}` })),
   ];
   const canAdjustStock = (stock: StockSummary) =>
@@ -94,10 +95,10 @@ function InventoryContent() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["stock-summary"] });
       setEntry({ reference: `GR-${today}` });
-      toast("success", "Stock received", "Inventory updated successfully.");
+      toast("success", tx("Stock received"), tx("Inventory updated successfully."));
       setTab("stock");
     },
-    onError: (err) => toast("error", "Entry failed", extractApiError(err)),
+    onError: (err) => toast("error", tx("Entry failed"), extractApiError(err)),
   });
 
   // ── Stock Issue ──────────────────────────────────────────────────────────────
@@ -109,15 +110,15 @@ function InventoryContent() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["stock-summary"] });
       setIssue({ reference: `SO-${today}` });
-      toast("success", "Stock issued", "Inventory updated successfully.");
+      toast("success", tx("Stock issued"), tx("Inventory updated successfully."));
       setTab("stock");
     },
     onError: (err) => {
       const insuf = isInsufficientStock(err);
       if (insuf) {
-        toast("error", "Insufficient Stock", insuf.message);
+        toast("error", tx("Insufficient Stock"), insuf.message);
       } else {
-        toast("error", "Issue failed", extractApiError(err));
+        toast("error", tx("Issue failed"), extractApiError(err));
       }
     },
   });
@@ -147,15 +148,15 @@ function InventoryContent() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["stock-summary"] });
       setTransfer(newTransfer());
-      toast("success", "Transfer complete", "Stock moved between warehouses.");
+      toast("success", tx("Transfer complete"), tx("Stock moved between warehouses."));
       setTab("stock");
     },
     onError: (err) => {
       const insuf = isInsufficientStock(err);
       if (insuf) {
-        toast("error", "Insufficient Stock", insuf.message);
+        toast("error", tx("Insufficient Stock"), insuf.message);
       } else {
-        toast("error", "Transfer failed", extractApiError(err));
+        toast("error", tx("Transfer failed"), extractApiError(err));
       }
     },
   });
@@ -169,9 +170,9 @@ function InventoryContent() {
       setAdjustingStock(null);
       setAdjustQty("");
       setAdjustReason("");
-      toast("success", "Stock adjusted", "Adjustment movement created and inventory updated.");
+      toast("success", tx("Stock adjusted"), tx("Adjustment movement created and inventory updated."));
     },
-    onError: (err) => toast("error", "Adjustment failed", extractApiError(err)),
+    onError: (err) => toast("error", tx("Adjustment failed"), extractApiError(err)),
   });
 
   // ── Delete Stock ─────────────────────────────────────────────────────────────
@@ -182,7 +183,7 @@ function InventoryContent() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["stock-summary"] });
       setDeletingStockId(null);
-      toast("success", "Stock record deleted", "The stock position has been removed.");
+      toast("success", tx("Stock record deleted"), tx("The stock position has been removed."));
     },
     onError: (err: unknown) => {
       const status = (err as { response?: { status?: number } })?.response?.status;
@@ -191,10 +192,10 @@ function InventoryContent() {
         setDeletingStockId(null);
         setDeleteBlockedError(structured);
       } else if (status === 403) {
-        toast("error", "Permission denied", "You do not have permission to delete stock records.");
+        toast("error", tx("Permission denied"), tx("You do not have permission to delete stock records."));
         setDeletingStockId(null);
       } else {
-        toast("error", "Delete failed", extractApiError(err));
+        toast("error", tx("Delete failed"), extractApiError(err));
         setDeletingStockId(null);
       }
     },
@@ -206,8 +207,8 @@ function InventoryContent() {
 
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Inventory</h1>
-          <p className="text-sm text-gray-500 mt-1">{summary.length} stock positions</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Inventory")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{summary.length} {tx("stock positions")}</p>
         </div>
         <div className="flex items-center gap-2">
           <PageHelpTooltip topic="inventory-stock" />
@@ -215,7 +216,7 @@ function InventoryContent() {
             module="inventory_stock"
             onSuccess={() => refetchSummary()}
           />
-          <Button variant="secondary" onClick={() => refetchSummary()}>Refresh</Button>
+          <Button variant="secondary" onClick={() => refetchSummary()}>{tx("Refresh")}</Button>
         </div>
       </div>
 
@@ -249,26 +250,26 @@ function InventoryContent() {
             emptyMessage="No stock records. Use Stock Entry to receive goods."
             columns={[
               { header: "SKU", accessor: (r) => <span className="font-mono text-xs">{r.product_sku ?? "—"}</span> },
-              { header: "Product", accessor: (r) => r.product_name ?? "—" },
-              { header: "Warehouse", accessor: (r) => `${r.warehouse_code} — ${r.warehouse_name}` },
-              { header: "Lot", accessor: (r) => r.lot_number ?? <span className="text-gray-400">no lot</span> },
-              { header: "Expiry", accessor: (r) => r.expiry_date ?? "—" },
+              { header: tx("Product"), accessor: (r) => r.product_name ?? "—" },
+              { header: tx("Warehouse"), accessor: (r) => `${r.warehouse_code} — ${r.warehouse_name}` },
+              { header: tx("Lot"), accessor: (r) => r.lot_number ?? <span className="text-gray-400">{tx("no lot")}</span> },
+              { header: tx("Expiry"), accessor: (r) => r.expiry_date ?? "—" },
               {
-                header: "On Hand",
+                header: tx("On Hand"),
                 accessor: (r) => (
                   <span className={r.is_below_reorder ? "font-bold text-red-600" : "font-semibold"}>
                     {Number(r.quantity_on_hand).toLocaleString()}
-                    {r.is_below_reorder && <span className="ml-1 text-xs">⚠ low</span>}
+                    {r.is_below_reorder && <span className="ml-1 text-xs">{tx("⚠ low")}</span>}
                   </span>
                 ),
               },
               {
-                header: "Available",
+                header: tx("Available"),
                 accessor: (r) => <span className="text-emerald-700 font-medium">{Number(r.quantity_available).toLocaleString()}</span>,
               },
-              { header: "Reserved", accessor: (r) => Number(r.quantity_reserved).toLocaleString() },
+              { header: tx("Reserved"), accessor: (r) => Number(r.quantity_reserved).toLocaleString() },
               {
-                header: "Actions",
+                header: tx("Actions"),
                 accessor: (r) => (
                   <div className="flex items-center gap-2">
                     {canAdjustStock(r) ? (
@@ -281,11 +282,11 @@ function InventoryContent() {
                         data-testid="inventory-adjust-button"
                         className="text-xs text-indigo-600 hover:text-indigo-800 hover:underline"
                       >
-                        Adjust
+                        {tx("Adjust")}
                       </button>
                     ) : (
                       <span data-testid="inventory-view-only-badge">
-                        <Badge label="View only" variant="gray" />
+                        <Badge label={tx("View only")} variant="gray" />
                       </span>
                     )}
                     {canDeleteStock(r) && (
@@ -294,7 +295,7 @@ function InventoryContent() {
                         data-testid="inventory-delete-button"
                         className="text-xs text-red-500 hover:text-red-700 hover:underline"
                       >
-                        Delete
+                        {tx("Delete")}
                       </button>
                     )}
                   </div>
@@ -308,7 +309,7 @@ function InventoryContent() {
 
       {/* ── Stock Entry (IN) ── */}
       {tab === "entry" && (
-        <FormSection title="Receive Stock into Warehouse">
+        <FormSection title={tx("Receive Stock into Warehouse")}>
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -317,40 +318,40 @@ function InventoryContent() {
             className="space-y-4 max-w-lg"
           >
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Product * <span className="text-xs text-gray-500">(scan the barcode or search)</span></label>
-              <EntityPicker kind="product" label="Product" scan required value={entry.product_id ?? ""} onChange={(id) => setE("product_id", id || undefined)} />
+              <label className="block text-sm font-medium text-gray-700 mb-1">{tx("Product *")} <span className="text-xs text-gray-500">{tx("(scan the barcode or search)")}</span></label>
+              <EntityPicker kind="product" label={tx("Product")} scan required value={entry.product_id ?? ""} onChange={(id) => setE("product_id", id || undefined)} />
             </div>
-            <Select label="Warehouse *" options={warehouseOptions} value={entry.warehouse_id ?? ""}
+            <Select label={tx("Warehouse *")} options={warehouseOptions} value={entry.warehouse_id ?? ""}
               onChange={(e) => setE("warehouse_id", e.target.value || undefined)} />
             <div className="grid grid-cols-2 gap-4">
-              <Input label="Quantity *" type="number" step="0.001" min="0.001"
+              <Input label={tx("Quantity *")} type="number" step="0.001" min="0.001"
                 value={entry.quantity ?? ""}
                 onChange={(e) => setE("quantity", parseFloat(e.target.value))} required />
-              <Input label="Unit Cost (Rp)" type="number" step="0.01"
+              <Input label={tx("Unit Cost (Rp)")} type="number" step="0.01"
                 value={entry.unit_cost ?? ""}
                 onChange={(e) => setE("unit_cost", parseFloat(e.target.value) || undefined)} />
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <Input label="Lot Number" placeholder="LOT-2026-001"
+              <Input label={tx("Lot Number")} placeholder="LOT-2026-001"
                 value={entry.lot_number ?? ""}
                 onChange={(e) => setE("lot_number", e.target.value || undefined)} />
-              <Input label="Expiry Date" type="date"
+              <Input label={tx("Expiry Date")} type="date"
                 value={entry.expiry_date ?? ""}
                 onChange={(e) => setE("expiry_date", e.target.value || undefined)} />
             </div>
-            <Input label="Reference # *" placeholder="PO-001" value={entry.reference ?? ""}
+            <Input label={tx("Reference # *")} placeholder="PO-001" value={entry.reference ?? ""}
               onChange={(e) => setE("reference", e.target.value)} required />
-            <Input label="Notes" onChange={(e) => setE("notes", e.target.value || undefined)} />
+            <Input label={tx("Notes")} onChange={(e) => setE("notes", e.target.value || undefined)} />
             <div className="flex gap-3 pt-2">
               <Button
                 type="submit"
                 loading={entryMut.isPending}
                 disabled={!canReceiveTarget}
-                title={!canReceiveTarget ? "You can view this warehouse but cannot receive stock in this scope." : undefined}
+                title={!canReceiveTarget ? tx("You can view this warehouse but cannot receive stock in this scope.") : undefined}
               >
-                Receive Stock
+                {tx("Receive Stock")}
               </Button>
-              <Button variant="secondary" type="button" onClick={() => setEntry({ reference: `GR-${today}` })}>Reset</Button>
+              <Button variant="secondary" type="button" onClick={() => setEntry({ reference: `GR-${today}` })}>{tx("Reset")}</Button>
             </div>
           </form>
         </FormSection>
@@ -358,7 +359,7 @@ function InventoryContent() {
 
       {/* ── Stock Issue (OUT) ── */}
       {tab === "issue" && (
-        <FormSection title="Issue Stock from Warehouse">
+        <FormSection title={tx("Issue Stock from Warehouse")}>
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -367,35 +368,35 @@ function InventoryContent() {
             className="space-y-4 max-w-lg"
           >
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Product * <span className="text-xs text-gray-500">(scan the barcode or search)</span></label>
-              <EntityPicker kind="product" label="Product" scan required value={issue.product_id ?? ""} onChange={(id) => setI("product_id", id || undefined)} />
+              <label className="block text-sm font-medium text-gray-700 mb-1">{tx("Product *")} <span className="text-xs text-gray-500">{tx("(scan the barcode or search)")}</span></label>
+              <EntityPicker kind="product" label={tx("Product")} scan required value={issue.product_id ?? ""} onChange={(id) => setI("product_id", id || undefined)} />
             </div>
-            <Select label="Warehouse *" options={warehouseOptions} value={issue.warehouse_id ?? ""}
+            <Select label={tx("Warehouse *")} options={warehouseOptions} value={issue.warehouse_id ?? ""}
               onChange={(e) => setI("warehouse_id", e.target.value || undefined)} />
             <div className="grid grid-cols-2 gap-4">
-              <Input label="Quantity *" type="number" step="0.001" min="0.001"
+              <Input label={tx("Quantity *")} type="number" step="0.001" min="0.001"
                 value={issue.quantity ?? ""}
                 onChange={(e) => setI("quantity", parseFloat(e.target.value))} required />
-              <Input label="Lot Number (optional)" placeholder="LOT-2026-001"
+              <Input label={tx("Lot Number (optional)")} placeholder="LOT-2026-001"
                 value={issue.lot_number ?? ""}
                 onChange={(e) => setI("lot_number", e.target.value || undefined)} />
             </div>
-            <Input label="Reference # *" placeholder="SO-001" value={issue.reference ?? ""}
+            <Input label={tx("Reference # *")} placeholder="SO-001" value={issue.reference ?? ""}
               onChange={(e) => setI("reference", e.target.value)} required />
-            <Input label="Notes" onChange={(e) => setI("notes", e.target.value || undefined)} />
+            <Input label={tx("Notes")} onChange={(e) => setI("notes", e.target.value || undefined)} />
             <div className="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800">
-              The system will reject this if available stock is insufficient.
+              {tx("The system will reject this if available stock is insufficient.")}
             </div>
             <div className="flex gap-3 pt-2">
               <Button
                 type="submit"
                 loading={issueMut.isPending}
                 disabled={!canDispatchTarget}
-                title={!canDispatchTarget ? "You can view this warehouse but cannot dispatch stock in this scope." : undefined}
+                title={!canDispatchTarget ? tx("You can view this warehouse but cannot dispatch stock in this scope.") : undefined}
               >
-                Issue Stock
+                {tx("Issue Stock")}
               </Button>
-              <Button variant="secondary" type="button" onClick={() => setIssue({ reference: `SO-${today}` })}>Reset</Button>
+              <Button variant="secondary" type="button" onClick={() => setIssue({ reference: `SO-${today}` })}>{tx("Reset")}</Button>
             </div>
           </form>
         </FormSection>
@@ -403,7 +404,7 @@ function InventoryContent() {
 
       {/* ── Transfer ── */}
       {tab === "transfer" && (
-        <FormSection title="Transfer Stock Between Warehouses">
+        <FormSection title={tx("Transfer Stock Between Warehouses")}>
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -412,36 +413,36 @@ function InventoryContent() {
             className="space-y-4 max-w-lg"
           >
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Product * <span className="text-xs text-gray-500">(scan the barcode or search)</span></label>
-              <EntityPicker kind="product" label="Product" scan required value={transfer.product_id ?? ""} onChange={(id) => setT("product_id", id || undefined)} />
+              <label className="block text-sm font-medium text-gray-700 mb-1">{tx("Product *")} <span className="text-xs text-gray-500">{tx("(scan the barcode or search)")}</span></label>
+              <EntityPicker kind="product" label={tx("Product")} scan required value={transfer.product_id ?? ""} onChange={(id) => setT("product_id", id || undefined)} />
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <Select label="From Warehouse *" options={warehouseOptions} value={transfer.from_warehouse_id ?? ""}
+              <Select label={tx("From Warehouse *")} options={warehouseOptions} value={transfer.from_warehouse_id ?? ""}
                 onChange={(e) => setT("from_warehouse_id", e.target.value || undefined)} />
-              <Select label="To Warehouse *" options={warehouseOptions} value={transfer.to_warehouse_id ?? ""}
+              <Select label={tx("To Warehouse *")} options={warehouseOptions} value={transfer.to_warehouse_id ?? ""}
                 onChange={(e) => setT("to_warehouse_id", e.target.value || undefined)} />
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <Input label="Quantity *" type="number" step="0.001" min="0.001"
+              <Input label={tx("Quantity *")} type="number" step="0.001" min="0.001"
                 value={transfer.quantity ?? ""}
                 onChange={(e) => setT("quantity", parseFloat(e.target.value))} required />
-              <Input label="Lot Number (optional)"
+              <Input label={tx("Lot Number (optional)")}
                 value={transfer.lot_number ?? ""}
                 onChange={(e) => setT("lot_number", e.target.value || undefined)} />
             </div>
-            <Input label="Reference # *" placeholder="TRF-001" value={transfer.reference ?? ""}
+            <Input label={tx("Reference # *")} placeholder="TRF-001" value={transfer.reference ?? ""}
               onChange={(e) => setT("reference", e.target.value)} required />
-            <Input label="Notes" onChange={(e) => setT("notes", e.target.value || undefined)} />
+            <Input label={tx("Notes")} onChange={(e) => setT("notes", e.target.value || undefined)} />
             <div className="flex gap-3 pt-2">
               <Button
                 type="submit"
                 loading={transferMut.isPending}
                 disabled={!canTransferTarget}
-                title={!canTransferTarget ? "You can view this stock but cannot transfer it in this scope." : undefined}
+                title={!canTransferTarget ? tx("You can view this stock but cannot transfer it in this scope.") : undefined}
               >
-                Transfer Stock
+                {tx("Transfer Stock")}
               </Button>
-              <Button variant="secondary" type="button" onClick={() => setTransfer({ reference: `TRF-${today}` })}>Reset</Button>
+              <Button variant="secondary" type="button" onClick={() => setTransfer({ reference: `TRF-${today}` })}>{tx("Reset")}</Button>
             </div>
           </form>
         </FormSection>
@@ -451,18 +452,18 @@ function InventoryContent() {
       <Modal
         open={!!adjustingStock}
         onClose={() => { setAdjustingStock(null); setAdjustQty(""); setAdjustReason(""); }}
-        title="Adjust Stock"
+        title={tx("Adjust Stock")}
       >
         {adjustingStock && (
           <div className="space-y-4">
             <div className="rounded-lg bg-blue-50 border border-blue-200 px-4 py-3 text-sm text-blue-800">
               <p className="font-semibold">{adjustingStock.product_name} ({adjustingStock.product_sku})</p>
               <p className="text-xs mt-1">
-                Warehouse: {adjustingStock.warehouse_name} &nbsp;|&nbsp;
+                {tx("Warehouse:")} {adjustingStock.warehouse_name} &nbsp;|&nbsp;
                 Current on-hand: <strong>{Number(adjustingStock.quantity_on_hand).toLocaleString()}</strong>
               </p>
               <p className="text-xs mt-1 text-blue-600">
-                This will create an ADJUSTMENT movement recording the change.
+                {tx("This will create an ADJUSTMENT movement recording the change.")}
               </p>
             </div>
             <form
@@ -475,7 +476,7 @@ function InventoryContent() {
               className="space-y-3"
             >
               <Input
-                label="New Quantity *"
+                label={tx("New Quantity *")}
                 type="number"
                 step="0.001"
                 min="0"
@@ -484,15 +485,15 @@ function InventoryContent() {
                 required
               />
               <Input
-                label="Reason *"
-                placeholder="e.g. Physical count correction, damaged goods write-off…"
+                label={tx("Reason *")}
+                placeholder={tx("e.g. Physical count correction, damaged goods write-off…")}
                 value={adjustReason}
                 onChange={(e) => setAdjustReason(e.target.value)}
                 required
               />
               {adjustQty !== "" && !isNaN(parseFloat(adjustQty)) && (
                 <div className="text-xs text-gray-500">
-                  Delta:{" "}
+                  {tx("Delta:")}{" "}
                   <span className={parseFloat(adjustQty) - Number(adjustingStock.quantity_on_hand) >= 0 ? "text-green-700 font-semibold" : "text-red-700 font-semibold"}>
                     {(parseFloat(adjustQty) - Number(adjustingStock.quantity_on_hand) >= 0 ? "+" : "") +
                       (parseFloat(adjustQty) - Number(adjustingStock.quantity_on_hand)).toLocaleString()}
@@ -501,9 +502,9 @@ function InventoryContent() {
               )}
               <div className="flex justify-end gap-3 pt-2">
                 <Button variant="secondary" type="button" onClick={() => { setAdjustingStock(null); setAdjustQty(""); setAdjustReason(""); }}>
-                  Cancel
+                  {tx("Cancel")}
                 </Button>
-                <Button type="submit" loading={adjustMut.isPending}>Apply Adjustment</Button>
+                <Button type="submit" loading={adjustMut.isPending}>{tx("Apply Adjustment")}</Button>
               </div>
             </form>
           </div>
@@ -514,36 +515,35 @@ function InventoryContent() {
       <Modal
         open={!!deletingStockId}
         onClose={() => setDeletingStockId(null)}
-        title="Delete Stock Record"
+        title={tx("Delete Stock Record")}
       >
         <div className="space-y-4">
           {deletingStockRecord && (
             <div className="rounded-lg bg-gray-50 border border-gray-200 px-4 py-3 text-sm">
-              <p><span className="font-semibold">Product:</span> {deletingStockRecord.product_name} ({deletingStockRecord.product_sku})</p>
-              <p><span className="font-semibold">Warehouse:</span> {deletingStockRecord.warehouse_name}</p>
-              <p><span className="font-semibold">On Hand:</span> {Number(deletingStockRecord.quantity_on_hand).toLocaleString()}</p>
+              <p><span className="font-semibold">{tx("Product:")}</span> {deletingStockRecord.product_name} ({deletingStockRecord.product_sku})</p>
+              <p><span className="font-semibold">{tx("Warehouse:")}</span> {deletingStockRecord.warehouse_name}</p>
+              <p><span className="font-semibold">{tx("On Hand:")}</span> {Number(deletingStockRecord.quantity_on_hand).toLocaleString()}</p>
             </div>
           )}
           {deletingStockRecord && Number(deletingStockRecord.quantity_on_hand) !== 0 ? (
             <div className="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800">
-              <strong>Warning:</strong> This stock record still has{" "}
-              <strong>{Number(deletingStockRecord.quantity_on_hand).toLocaleString()}</strong> units on hand.
-              You must adjust the quantity to zero before deleting this record.
+              <strong>{tx("Warning:")}</strong> {tx("This stock record still has")}{" "}
+              <strong>{Number(deletingStockRecord.quantity_on_hand).toLocaleString()}</strong> {tx("units on hand. You must adjust the quantity to zero before deleting this record.")}
             </div>
           ) : (
             <p className="text-sm text-gray-600">
-              This will permanently delete this stock position. This action cannot be undone.
+              {tx("This will permanently delete this stock position. This action cannot be undone.")}
             </p>
           )}
           <div className="flex justify-end gap-3">
-            <Button variant="secondary" onClick={() => setDeletingStockId(null)}>Cancel</Button>
+            <Button variant="secondary" onClick={() => setDeletingStockId(null)}>{tx("Cancel")}</Button>
             <Button
               variant="danger"
               loading={deleteStockMut.isPending}
               onClick={() => deletingStockId && deleteStockMut.mutate(deletingStockId)}
               disabled={!!deletingStockRecord && Number(deletingStockRecord.quantity_on_hand) !== 0}
             >
-              Delete
+              {tx("Delete")}
             </Button>
           </div>
         </div>
@@ -553,7 +553,7 @@ function InventoryContent() {
       <Modal
         open={!!deleteBlockedError}
         onClose={() => setDeleteBlockedError(null)}
-        title="Cannot Delete Stock Record"
+        title={tx("Cannot Delete Stock Record")}
       >
         {deleteBlockedError && (
           <div className="space-y-4">
@@ -572,7 +572,7 @@ function InventoryContent() {
               </ul>
             )}
             <div className="flex justify-end">
-              <Button variant="secondary" onClick={() => setDeleteBlockedError(null)}>Close</Button>
+              <Button variant="secondary" onClick={() => setDeleteBlockedError(null)}>{tx("Close")}</Button>
             </div>
           </div>
         )}
@@ -590,17 +590,17 @@ const InventoryValuationPage = dynamic(() => import("@/app/dashboard/inventory/v
 
 export default function InventoryPage() {
   const tabs = [
-    { key: "stock",       label: "Stock Ledger",    permission: "inventory.view", content: <InventoryContent /> },
-    { key: "movements",   label: "Movements",       permission: "inventory.view", content: <MovementsPage /> },
-    { key: "cycle-count", label: "Cycle Count",     permission: "inventory.view", content: <CycleCountPage /> },
-    { key: "shelf-life",  label: "Shelf Life",      permission: "inventory.view", content: <ShelfLifePage /> },
-    { key: "traceability",label: "Traceability",    permission: "traceability.view", content: <TraceabilityPage /> },
-    { key: "serials",     label: "Serials",         permission: "inventory.view", exact: true, content: <InventorySerialsPage /> },
-    { key: "valuation",   label: "Valuation",       permission: "inventory.view", content: <InventoryValuationPage /> },
+    { key: "stock",       label: tx("Stock Ledger"),    permission: "inventory.view", content: <InventoryContent /> },
+    { key: "movements",   label: tx("Movements"),       permission: "inventory.view", content: <MovementsPage /> },
+    { key: "cycle-count", label: tx("Cycle Count"),     permission: "inventory.view", content: <CycleCountPage /> },
+    { key: "shelf-life",  label: tx("Shelf Life"),      permission: "inventory.view", content: <ShelfLifePage /> },
+    { key: "traceability",label: tx("Traceability"),    permission: "traceability.view", content: <TraceabilityPage /> },
+    { key: "serials",     label: tx("Serials"),         permission: "inventory.view", exact: true, content: <InventorySerialsPage /> },
+    { key: "valuation",   label: tx("Valuation"),       permission: "inventory.view", content: <InventoryValuationPage /> },
   ];
   return (
     <ModuleWorkspace
-      title="Inventory"
+      title={tx("Inventory")}
       description="Stock ledger, movements, cycle counts, shelf life, traceability"
       permission="inventory.view"
       tabs={tabs}

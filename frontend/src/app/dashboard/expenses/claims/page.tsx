@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { expensesApi, ExpenseClaim, ExpenseStatus, STATUS_LABEL, STATUS_COLOR, fmtCurrency } from "@/lib/expenses";
+import { tx } from "@/lib/i18n/core";
 
 const STATUSES: ExpenseStatus[] = ["draft", "submitted", "manager_approved", "finance_approved", "rejected", "paid", "cancelled"];
 
@@ -27,16 +28,16 @@ export default function ClaimsPage() {
     <div className="p-6 space-y-5 text-slate-200">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-white">Expense Claims</h1>
-          <p className="text-slate-500 text-sm mt-0.5">{claims.length} claims</p>
+          <h1 className="text-xl font-bold text-white">{tx("Expense Claims")}</h1>
+          <p className="text-slate-500 text-sm mt-0.5">{claims.length} {tx("claims")}</p>
         </div>
         <Link href="/dashboard/expenses/claims/new"
-          className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium">+ New Claim</Link>
+          className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium">{tx("+ New Claim")}</Link>
       </div>
 
       <div className="flex gap-2 flex-wrap">
         <button onClick={() => setFilter("")}
-          className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${filter === "" ? "bg-indigo-600 border-indigo-500 text-white" : "border-white/[0.08] text-slate-400 hover:border-white/20"}`}>All</button>
+          className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${filter === "" ? "bg-indigo-600 border-indigo-500 text-white" : "border-white/[0.08] text-slate-400 hover:border-white/20"}`}>{tx("All")}</button>
         {STATUSES.map((s) => (
           <button key={s} onClick={() => setFilter(s)}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${filter === s ? "bg-indigo-600 border-indigo-500 text-white" : "border-white/[0.08] text-slate-400 hover:border-white/20"}`}>
@@ -45,12 +46,12 @@ export default function ClaimsPage() {
         ))}
       </div>
 
-      {loading ? <p className="text-slate-500 text-sm">Loading…</p> : (
+      {loading ? <p className="text-slate-500 text-sm">{tx("Loading…")}</p> : (
         <div className="glass-table">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-white/[0.07]">
-                {["Claim No", "Date", "Status", "Claimed", "Approved", "Method", "Actions"].map((h) => (
+                {[tx("Claim No"), tx("Date"), tx("Status"), "Claimed", "Approved", tx("Method"), tx("Actions")].map((h) => (
                   <th key={h} className={`px-4 py-3 text-[10px] text-slate-500 uppercase tracking-widest ${h === "Claimed" || h === "Approved" ? "text-right" : "text-left"}`}>{h}</th>
                 ))}
               </tr>
@@ -70,14 +71,14 @@ export default function ClaimsPage() {
                   <td className="px-4 py-3 text-slate-400 capitalize">{c.reimbursement_method}</td>
                   <td className="px-4 py-3 space-x-3">
                     {c.status === "draft" && (
-                      <button onClick={() => handleSubmit(c.expense_claim_id)} className="text-xs text-blue-400 hover:text-blue-300">Submit</button>
+                      <button onClick={() => handleSubmit(c.expense_claim_id)} className="text-xs text-blue-400 hover:text-blue-300">{tx("Submit")}</button>
                     )}
-                    <Link href={`/dashboard/expenses/claims/${c.expense_claim_id}`} className="text-xs text-slate-500 hover:text-slate-400">View</Link>
+                    <Link href={`/dashboard/expenses/claims/${c.expense_claim_id}`} className="text-xs text-slate-500 hover:text-slate-400">{tx("View")}</Link>
                   </td>
                 </tr>
               ))}
               {claims.length === 0 && (
-                <tr><td colSpan={7} className="px-4 py-8 text-center text-slate-600">No claims found</td></tr>
+                <tr><td colSpan={7} className="px-4 py-8 text-center text-slate-600">{tx("No claims found")}</td></tr>
               )}
             </tbody>
           </table>

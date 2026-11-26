@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { financeApi, CombinedPayment } from "@/lib/finance";
+import { tx } from "@/lib/i18n/core";
 
 function fmtKES(n: number) {
   return `KES ${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -53,24 +54,24 @@ export default function PaymentsPage() {
   return (
     <div className="max-w-7xl mx-auto space-y-6 pb-10">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Payments</h1>
-        <p className="text-sm text-gray-400 mt-0.5">All customer and supplier payments in one view</p>
+        <h1 className="text-2xl font-bold text-gray-900">{tx("Payments")}</h1>
+        <p className="text-sm text-gray-400 mt-0.5">{tx("All customer and supplier payments in one view")}</p>
       </div>
 
       {/* Summary */}
       <div className="grid grid-cols-3 gap-4">
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-          <p className="text-xs text-gray-400 font-semibold uppercase tracking-widest">Customer Receipts</p>
+          <p className="text-xs text-gray-400 font-semibold uppercase tracking-widest">{tx("Customer Receipts")}</p>
           <p className="text-lg font-bold text-indigo-700">{fmtKES(customerTotal)}</p>
         </div>
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-          <p className="text-xs text-gray-400 font-semibold uppercase tracking-widest">Supplier Payments</p>
+          <p className="text-xs text-gray-400 font-semibold uppercase tracking-widest">{tx("Supplier Payments")}</p>
           <p className="text-lg font-bold text-orange-600">{fmtKES(supplierTotal)}</p>
         </div>
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-          <p className="text-xs text-gray-400 font-semibold uppercase tracking-widest">Total Volume</p>
+          <p className="text-xs text-gray-400 font-semibold uppercase tracking-widest">{tx("Total Volume")}</p>
           <p className="text-lg font-bold text-gray-800">{fmtKES(grandTotal)}</p>
-          <p className="text-xs text-gray-400">{filtered.length} transactions</p>
+          <p className="text-xs text-gray-400">{filtered.length} {tx("transactions")}</p>
         </div>
       </div>
 
@@ -78,7 +79,7 @@ export default function PaymentsPage() {
       <div className="flex flex-wrap gap-3">
         <input
           type="text"
-          placeholder="Search invoice, party, reference..."
+          placeholder={tx("Search invoice, party, reference...")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 w-64"
@@ -88,19 +89,19 @@ export default function PaymentsPage() {
           onChange={(e) => setTypeFilter(e.target.value as "" | "customer" | "supplier")}
           className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
         >
-          <option value="">All Types</option>
-          <option value="customer">Customer</option>
-          <option value="supplier">Supplier</option>
+          <option value="">{tx("All Types")}</option>
+          <option value="customer">{tx("Customer")}</option>
+          <option value="supplier">{tx("Supplier")}</option>
         </select>
         <select
           value={methodFilter}
           onChange={(e) => setMethodFilter(e.target.value)}
           className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
         >
-          <option value="">All Methods</option>
-          <option value="cash">Cash</option>
-          <option value="bank">Bank</option>
-          <option value="mpesa">M-Pesa</option>
+          <option value="">{tx("All Methods")}</option>
+          <option value="cash">{tx("Cash")}</option>
+          <option value="bank">{tx("Bank")}</option>
+          <option value="mpesa">{tx("M-Pesa")}</option>
         </select>
       </div>
 
@@ -126,13 +127,13 @@ export default function PaymentsPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 text-xs text-gray-500 uppercase tracking-widest">
-                <th className="px-5 py-3 text-center font-semibold">Type</th>
-                <th className="px-5 py-3 text-center font-semibold">Date</th>
-                <th className="px-5 py-3 text-left font-semibold">Party</th>
-                <th className="px-5 py-3 text-left font-semibold">Invoice</th>
-                <th className="px-5 py-3 text-right font-semibold">Amount</th>
-                <th className="px-5 py-3 text-center font-semibold">Method</th>
-                <th className="px-5 py-3 text-left font-semibold">Reference</th>
+                <th className="px-5 py-3 text-center font-semibold">{tx("Type")}</th>
+                <th className="px-5 py-3 text-center font-semibold">{tx("Date")}</th>
+                <th className="px-5 py-3 text-left font-semibold">{tx("Party")}</th>
+                <th className="px-5 py-3 text-left font-semibold">{tx("Invoice")}</th>
+                <th className="px-5 py-3 text-right font-semibold">{tx("Amount")}</th>
+                <th className="px-5 py-3 text-center font-semibold">{tx("Method")}</th>
+                <th className="px-5 py-3 text-left font-semibold">{tx("Reference")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -150,7 +151,7 @@ export default function PaymentsPage() {
               {!isLoading && filtered.length === 0 && (
                 <tr>
                   <td colSpan={7} className="px-5 py-8 text-center text-gray-400">
-                    No payment records found.
+                    {tx("No payment records found.")}
                   </td>
                 </tr>
               )}

@@ -1,12 +1,13 @@
 "use client";
 import { useEffect, useState } from "react";
 import { recruitmentApi, RTAIRecommendation, RTAIAgentType, RTAIRecStatus, AI_AGENT_LABEL } from "@/lib/recruitment";
+import { tx, lx } from "@/lib/i18n/core";
 
-const AGENTS: { type: RTAIAgentType; desc: string; fn: () => Promise<{ generated: number }> }[] = [
-  { type: "candidate_matcher", desc: "Identifies open requisitions with too few active candidates in pipeline and suggests sourcing actions.", fn: () => recruitmentApi.runCandidateMatcher() },
-  { type: "hiring_risk_detector", desc: "Flags offers pending too long and candidates with repeated interview failures.", fn: () => recruitmentApi.runHiringRiskDetector() },
-  { type: "pipeline_optimizer", desc: "Detects stage bottlenecks and requisitions open 60+ days without a hire.", fn: () => recruitmentApi.runPipelineOptimizer() },
-];
+const AGENTS: { type: RTAIAgentType; desc: string; fn: () => Promise<{ generated: number }> }[] = lx(() => [
+  { type: "candidate_matcher", desc: tx("Identifies open requisitions with too few active candidates in pipeline and suggests sourcing actions."), fn: () => recruitmentApi.runCandidateMatcher() },
+  { type: "hiring_risk_detector", desc: tx("Flags offers pending too long and candidates with repeated interview failures."), fn: () => recruitmentApi.runHiringRiskDetector() },
+  { type: "pipeline_optimizer", desc: tx("Detects stage bottlenecks and requisitions open 60+ days without a hire."), fn: () => recruitmentApi.runPipelineOptimizer() },
+]);
 
 const agentColor: Record<RTAIAgentType, string> = {
   candidate_matcher: "bg-blue-500/20 text-blue-300",
@@ -34,8 +35,8 @@ export default function RecruitmentAIPage() {
   return (
     <div className="p-6 space-y-6 text-slate-200">
       <div>
-        <h1 className="text-xl font-bold text-white">AI Recruitment Insights</h1>
-        <p className="text-slate-500 text-sm mt-0.5">3 agents monitoring pipeline, risks, and bottlenecks</p>
+        <h1 className="text-xl font-bold text-white">{tx("AI Recruitment Insights")}</h1>
+        <p className="text-slate-500 text-sm mt-0.5">{tx("3 agents monitoring pipeline, risks, and bottlenecks")}</p>
       </div>
       {msg && <div className="rounded-xl border border-indigo-500/20 bg-indigo-500/10 p-3 text-sm text-indigo-300">{msg}</div>}
 
@@ -46,14 +47,14 @@ export default function RecruitmentAIPage() {
             <p className="text-xs text-slate-500">{a.desc}</p>
             <button onClick={() => runAgent(a)} disabled={running === a.type}
               className="w-full px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm disabled:opacity-50">
-              {running === a.type ? "Running…" : "Run Agent"}
+              {running === a.type ? tx("Running…") : tx("Run Agent")}
             </button>
           </div>
         ))}
       </div>
 
       <div>
-        <h2 className="text-sm font-semibold text-white mb-3">Pending Recommendations ({pendingRecs.length})</h2>
+        <h2 className="text-sm font-semibold text-white mb-3">{tx("Pending Recommendations (")}{pendingRecs.length})</h2>
         <div className="space-y-3">
           {pendingRecs.map((r) => (
             <div key={r.rec_id} className="glow-card p-4 space-y-2">
@@ -66,13 +67,13 @@ export default function RecruitmentAIPage() {
               </div>
               <p className="text-xs text-slate-400">{r.body}</p>
               <div className="flex gap-2">
-                <button onClick={() => ack(r.rec_id, "acknowledged")} className="px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 text-xs">Acknowledge</button>
-                <button onClick={() => ack(r.rec_id, "actioned")} className="px-3 py-1.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 text-xs">Actioned</button>
-                <button onClick={() => ack(r.rec_id, "dismissed")} className="px-3 py-1.5 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-slate-400 text-xs">Dismiss</button>
+                <button onClick={() => ack(r.rec_id, "acknowledged")} className="px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 text-xs">{tx("Acknowledge")}</button>
+                <button onClick={() => ack(r.rec_id, "actioned")} className="px-3 py-1.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-300 text-xs">{tx("Actioned")}</button>
+                <button onClick={() => ack(r.rec_id, "dismissed")} className="px-3 py-1.5 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-slate-400 text-xs">{tx("Dismiss")}</button>
               </div>
             </div>
           ))}
-          {pendingRecs.length === 0 && <div className="glow-card p-8 text-center text-slate-600">No pending recommendations — run an agent above.</div>}
+          {pendingRecs.length === 0 && <div className="glow-card p-8 text-center text-slate-600">{tx("No pending recommendations — run an agent above.")}</div>}
         </div>
       </div>
     </div>

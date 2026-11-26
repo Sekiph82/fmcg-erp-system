@@ -7,6 +7,7 @@ import {
   Tooltip, ResponsiveContainer, Legend, ReferenceLine,
 } from "recharts";
 import { reportsApi } from "@/lib/utilitiesReports";
+import { tx } from "@/lib/i18n/core";
 
 const today = new Date().toISOString().slice(0, 10);
 const d30 = new Date(Date.now() - 30 * 86400_000).toISOString().slice(0, 10);
@@ -21,7 +22,7 @@ function DateFilter({ from, to, onFrom, onTo }: { from: string; to: string; onFr
   return (
     <div className="flex gap-3 items-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3">
       <input type="date" className={ic} value={from} onChange={e => onFrom(e.target.value)} />
-      <span className="text-gray-400 text-xs">to</span>
+      <span className="text-gray-400 text-xs">{tx("to")}</span>
       <input type="date" className={ic} value={to} onChange={e => onTo(e.target.value)} />
     </div>
   );
@@ -43,8 +44,8 @@ function BaseLoadTab({ dateFrom, dateTo, utilityType }: { dateFrom: string; date
     <div className="space-y-6">
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-sm font-semibold">Daily Consumption Distribution (by utility type)</h3>
-          <button onClick={() => reportsApi.exportBaseLoad(params)} className="px-3 py-1.5 text-xs bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Export CSV</button>
+          <h3 className="text-sm font-semibold">{tx("Daily Consumption Distribution (by utility type)")}</h3>
+          <button onClick={() => reportsApi.exportBaseLoad(params)} className="px-3 py-1.5 text-xs bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">{tx("Export CSV")}</button>
         </div>
         <ResponsiveContainer width="100%" height={280}>
           <BarChart data={chartData} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
@@ -68,7 +69,7 @@ function BaseLoadTab({ dateFrom, dateTo, utilityType }: { dateFrom: string; date
           <table className="w-full text-sm">
             <thead className="bg-gray-50 dark:bg-gray-700 text-xs uppercase text-gray-500">
               <tr>
-                {["Utility", "Unit", "Min", "P10", "P25", "Median", "Mean", "P75", "P90", "Max", "Base Load Est.", "Base Load %", "Base Cost"].map(h => (
+                {[tx("Utility"), tx("Unit"), tx("Min"), "P10", "P25", tx("Median"), tx("Mean"), "P75", "P90", tx("Max"), tx("Base Load Est."), tx("Base Load %"), tx("Base Cost")].map(h => (
                   <th key={h} className="px-3 py-3 text-left font-medium whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -91,7 +92,7 @@ function BaseLoadTab({ dateFrom, dateTo, utilityType }: { dateFrom: string; date
                   <td className="px-3 py-2 text-right">${fmt(row.cost_base_load, 2)}</td>
                 </tr>
               ))}
-              {!d?.rows.length && <tr><td colSpan={13} className="px-4 py-8 text-center text-gray-400">No data for selected range</td></tr>}
+              {!d?.rows.length && <tr><td colSpan={13} className="px-4 py-8 text-center text-gray-400">{tx("No data for selected range")}</td></tr>}
             </tbody>
           </table>
         </div>
@@ -110,26 +111,26 @@ function PeakDemandTab({ dateFrom, dateTo, utilityType }: { dateFrom: string; da
     <div className="space-y-6">
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="rounded-xl border-2 border-orange-400 bg-orange-50 dark:bg-orange-950/20 p-4">
-          <p className="text-xs font-medium text-gray-500">Peak Date</p>
+          <p className="text-xs font-medium text-gray-500">{tx("Peak Date")}</p>
           <p className="text-lg font-bold text-gray-900 dark:text-white mt-1">{d?.peak_date ?? "—"}</p>
         </div>
         <div className="rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
-          <p className="text-xs font-medium text-gray-500">Peak Value</p>
+          <p className="text-xs font-medium text-gray-500">{tx("Peak Value")}</p>
           <p className="text-xl font-bold text-gray-900 dark:text-white mt-1">
             {d?.peak_value == null ? "—" : fmt(d.peak_value)}
             {d?.peak_unit && <span className="text-sm font-normal text-gray-500 ml-1">{d.peak_unit}</span>}
           </p>
         </div>
         <div className="rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 col-span-2">
-          <p className="text-xs font-medium text-gray-500">Utility</p>
+          <p className="text-xs font-medium text-gray-500">{tx("Utility")}</p>
           <p className="text-xl font-bold text-gray-900 dark:text-white mt-1">{d?.utility_type ?? "ALL"}</p>
         </div>
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-sm font-semibold">Peak Demand Trend</h3>
-          <button onClick={() => reportsApi.exportPeakDemand(params)} className="px-3 py-1.5 text-xs bg-orange-600 text-white rounded-lg hover:bg-orange-700">Export CSV</button>
+          <h3 className="text-sm font-semibold">{tx("Peak Demand Trend")}</h3>
+          <button onClick={() => reportsApi.exportPeakDemand(params)} className="px-3 py-1.5 text-xs bg-orange-600 text-white rounded-lg hover:bg-orange-700">{tx("Export CSV")}</button>
         </div>
         <ResponsiveContainer width="100%" height={220}>
           <LineChart data={d?.trend ?? []} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
@@ -144,17 +145,17 @@ function PeakDemandTab({ dateFrom, dateTo, utilityType }: { dateFrom: string; da
 
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div className="px-4 py-3 flex justify-between border-b border-gray-100 dark:border-gray-700">
-          <span className="text-xs text-gray-500">Top {topN} peak days</span>
+          <span className="text-xs text-gray-500">{tx("Top")} {topN} {tx("peak days")}</span>
           <select value={topN} onChange={e => setTopN(Number(e.target.value))}
             className="text-xs rounded border border-gray-300 px-2 py-1">
-            {[10, 20, 30, 50].map(n => <option key={n} value={n}>Top {n}</option>)}
+            {[10, 20, 30, 50].map(n => <option key={n} value={n}>{tx("Top")} {n}</option>)}
           </select>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 dark:bg-gray-700 text-xs uppercase text-gray-500">
               <tr>
-                {["Rank", "Date", "Utility", "Department", "Quantity", "Unit", "Cost", "Anomaly"].map(h => (
+                {[tx("Rank"), tx("Date"), tx("Utility"), tx("Department"), tx("Quantity"), tx("Unit"), tx("Cost"), tx("Anomaly")].map(h => (
                   <th key={h} className="px-4 py-3 text-left font-medium">{h}</th>
                 ))}
               </tr>
@@ -172,7 +173,7 @@ function PeakDemandTab({ dateFrom, dateTo, utilityType }: { dateFrom: string; da
                   <td className="px-4 py-3 text-center">{row.is_anomaly ? <span className="text-red-500 font-bold">⚠</span> : "—"}</td>
                 </tr>
               ))}
-              {!d?.top_days.length && <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">No data</td></tr>}
+              {!d?.top_days.length && <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">{tx("No data")}</td></tr>}
             </tbody>
           </table>
         </div>
@@ -196,24 +197,24 @@ export default function LoadAnalysisPage() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <div className="flex items-center gap-3 mb-1">
-            <Link href="/dashboard/utility-management/reports" className="text-sm text-gray-500 hover:text-blue-600">← Reports</Link>
+            <Link href="/dashboard/utility-management/reports" className="text-sm text-gray-500 hover:text-blue-600">{tx("← Reports")}</Link>
           </div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white" style={{ borderLeft: "4px solid #818cf8", paddingLeft: 12 }}>
-            Demand & Load Analysis
+            {tx("Demand & Load Analysis")}
           </h1>
         </div>
         <div className="flex gap-3 flex-wrap items-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3">
           <input type="date" className={sel} value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
-          <span className="text-gray-400 text-xs">to</span>
+          <span className="text-gray-400 text-xs">{tx("to")}</span>
           <input type="date" className={sel} value={dateTo} onChange={e => setDateTo(e.target.value)} />
           <select className={sel} value={utilityType} onChange={e => setUtilityType(e.target.value)}>
-            {UTILITY_TYPES.map(t => <option key={t} value={t}>{t || "All Utilities"}</option>)}
+            {UTILITY_TYPES.map(t => <option key={t} value={t}>{t || tx("All Utilities")}</option>)}
           </select>
         </div>
       </div>
 
       <div className="flex gap-2">
-        {[{ id: "base" as Tab, label: "Base Load Analysis", color: "#818cf8" }, { id: "peak" as Tab, label: "Peak Demand", color: "#f97316" }].map(t => (
+        {[{ id: "base" as Tab, label: tx("Base Load Analysis"), color: "#818cf8" }, { id: "peak" as Tab, label: tx("Peak Demand"), color: "#f97316" }].map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === t.id ? "text-white" : "bg-white dark:bg-gray-800 text-gray-600 border border-gray-200 dark:border-gray-700"}`}
             style={tab === t.id ? { backgroundColor: t.color } : {}}

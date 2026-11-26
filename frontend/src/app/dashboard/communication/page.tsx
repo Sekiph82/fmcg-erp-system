@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { ModuleWorkspace } from "@/components/workspace";
+import { tx } from "@/lib/i18n/core";
 
 const ChatterPage       = dynamic(() => import("@/app/dashboard/chatter/page"),              { ssr: false });
 const CalendarPage      = dynamic(() => import("@/app/dashboard/calendar/page"),             { ssr: false });
@@ -14,19 +15,19 @@ const NotifPage         = dynamic(() => import("@/app/dashboard/notification-cen
 
 export default function CommunicationPage() {
   const tabs = [
-    { key: "messages",      label: "Messages",      permission: "hr.view",                content: <MessagesPage /> },
-    { key: "chatter",       label: "Chatter",       permission: "hr.view",                content: <ChatterPage /> },
-    { key: "email",         label: "Email",         permission: "integrations.view",       content: <EmailPage /> },
-    { key: "whatsapp",      label: "WhatsApp",      permission: "integrations.view",       content: <WhatsAppPage /> },
-    { key: "calls",         label: "Calls",         permission: "sales.view",              content: <CallsPage /> },
-    { key: "meetings",      label: "Meetings",      permission: "sales.view",              content: <MeetingsPage /> },
-    { key: "calendar",      label: "Calendar",      permission: "hr.view",                content: <CalendarPage /> },
-    { key: "notifications", label: "Notifications", permission: "notifications.view",      content: <NotifPage /> },
+    { key: "messages",      label: tx("Messages"),      permission: "hr.view",                content: <MessagesPage /> },
+    { key: "chatter",       label: tx("Chatter"),       permission: "hr.view",                content: <ChatterPage /> },
+    { key: "email",         label: tx("Email"),         permission: "integrations.view",       content: <EmailPage /> },
+    { key: "whatsapp",      label: tx("WhatsApp"),      permission: "integrations.view",       content: <WhatsAppPage /> },
+    { key: "calls",         label: tx("Calls"),         permission: "sales.view",              content: <CallsPage /> },
+    { key: "meetings",      label: tx("Meetings"),      permission: "sales.view",              content: <MeetingsPage /> },
+    { key: "calendar",      label: tx("Calendar"),      permission: "hr.view",                content: <CalendarPage /> },
+    { key: "notifications", label: tx("Notifications"), permission: "notifications.view",      content: <NotifPage /> },
   ];
 
   return (
     <ModuleWorkspace
-      title="Communication"
+      title={tx("Communication")}
       description="Messages, chatter, email, calls, calendar, notifications"
       tabs={tabs}
       defaultTab="messages"

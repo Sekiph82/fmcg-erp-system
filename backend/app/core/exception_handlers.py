@@ -9,6 +9,7 @@ Register in main.py via:
 from __future__ import annotations
 
 import logging
+import re
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
@@ -30,6 +31,7 @@ def register_handlers(app: FastAPI) -> None:
             status_code=exc.status_code,
             content={
                 "error": _status_label(exc.status_code),
+                "code": _error_code(exc.detail, exc.status_code),  # M51.S01.T008 stable machine code for localization
                 "detail": exc.detail,
                 "path": request.url.path,
             },
@@ -46,6 +48,7 @@ def register_handlers(app: FastAPI) -> None:
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             content={
                 "error": "validation_error",
+                "code": "validation_error",
                 "detail": "Request validation failed.",
                 "fields": errors,
                 "path": request.url.path,
@@ -72,6 +75,7 @@ def register_handlers(app: FastAPI) -> None:
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={
                 "error": "internal_server_error",
+                "code": "internal_server_error",
                 "detail": "An unexpected error occurred. Please try again later.",
                 "path": request.url.path,
             },
@@ -138,6 +142,19 @@ def _constraint_name(exc: BaseException, attr: str = "constraint_name") -> str |
             if isinstance(nested, BaseException):
                 pending.append(nested)
     return None
+
+
+def _error_code(detail, status_code: int) -> str:
+    """A dict detail keeps its own code; a string detail becomes a stable slug ("Not authenticated" -> not_authenticated)."""
+    if isinstance(detail, dict):
+        own = detail.get("code") or detail.get("error")
+        if isinstance(own, str) and own:
+            return own[:80]
+    if isinstance(detail, str):
+        slug = re.sub(r"[^a-z0-9]+", "_", detail.lower()).strip("_")[:80]
+        if slug:
+            return slug
+    return _status_label(status_code)
 
 
 def _status_label(code: int) -> str:

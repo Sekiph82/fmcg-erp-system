@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { kbApi, KBArticleDetail, KBRevision } from "@/lib/knowledge_base";
+import { tx } from "@/lib/i18n/core";
 
 function renderMarkdown(md: string): string {
   // Basic markdown rendering without external lib; escape first so article text can never inject HTML
@@ -38,8 +39,8 @@ export default function ArticleViewPage() {
     setShowRevisions(s => !s);
   };
 
-  if (loading) return <div className="p-6 text-sm text-gray-500">Loading…</div>;
-  if (!article) return <div className="p-6 text-sm text-red-500">Article not found.</div>;
+  if (loading) return <div className="p-6 text-sm text-gray-500">{tx("Loading…")}</div>;
+  if (!article) return <div className="p-6 text-sm text-red-500">{tx("Article not found.")}</div>;
 
   return (
     <div className="p-6 max-w-4xl">
@@ -55,7 +56,7 @@ export default function ArticleViewPage() {
                 </a>
               )}
               {article.is_featured && (
-                <span className="text-xs bg-amber-100 text-amber-700 rounded px-2 py-0.5">★ Featured</span>
+                <span className="text-xs bg-amber-100 text-amber-700 rounded px-2 py-0.5">{tx("★ Featured")}</span>
               )}
               <span className={`text-xs rounded-full px-2 py-0.5 ${
                 article.status === "PUBLISHED" ? "bg-green-100 text-green-700" :
@@ -70,21 +71,21 @@ export default function ArticleViewPage() {
           <div className="flex gap-2 flex-shrink-0">
             <a href={`/dashboard/knowledge-base/${id}/edit`}
               className="rounded border px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-50">
-              Edit
+              {tx("Edit")}
             </a>
             <button onClick={loadRevisions}
               className="rounded border px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-50">
-              History ({article.version})
+              {tx("History (")}{article.version})
             </button>
           </div>
         </div>
 
         <div className="flex gap-4 text-xs text-gray-400 mt-3">
-          {article.author_name && <span>By {article.author_name}</span>}
-          {article.published_at && <span>Published {new Date(article.published_at).toLocaleDateString()}</span>}
-          {article.updated_at && <span>Updated {new Date(article.updated_at).toLocaleDateString()}</span>}
-          <span>{article.view_count} views</span>
-          <span>v{article.version}</span>
+          {article.author_name && <span>{tx("By")} {article.author_name}</span>}
+          {article.published_at && <span>{tx("Published")} {new Date(article.published_at).toLocaleDateString()}</span>}
+          {article.updated_at && <span>{tx("Updated")} {new Date(article.updated_at).toLocaleDateString()}</span>}
+          <span>{article.view_count} {tx("views")}</span>
+          <span>{tx("v")}{article.version}</span>
         </div>
 
         {(article.tags ?? []).length > 0 && (
@@ -98,12 +99,12 @@ export default function ArticleViewPage() {
 
       {showRevisions && revisions.length > 0 && (
         <div className="mb-5 bg-gray-50 border rounded-lg p-4">
-          <h3 className="text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide">Version History</h3>
+          <h3 className="text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide">{tx("Version History")}</h3>
           <div className="space-y-2">
             {revisions.map(r => (
               <div key={r.id} className="flex items-center justify-between text-xs text-gray-600">
-                <span className="font-mono">v{r.version_no}</span>
-                <span className="flex-1 mx-3 text-gray-500">{r.change_summary ?? "Updated"}</span>
+                <span className="font-mono">{tx("v")}{r.version_no}</span>
+                <span className="flex-1 mx-3 text-gray-500">{r.change_summary ?? tx("Updated")}</span>
                 <span className="text-gray-400">{r.changed_by_name ?? "—"}</span>
                 <span className="text-gray-400 ml-3">{r.created_at ? new Date(r.created_at).toLocaleDateString() : "—"}</span>
               </div>
@@ -119,14 +120,14 @@ export default function ArticleViewPage() {
             className="space-y-2"
           />
         ) : (
-          <p className="text-gray-400 text-sm italic">No content yet.</p>
+          <p className="text-gray-400 text-sm italic">{tx("No content yet.")}</p>
         )}
       </div>
 
       <div className="mt-4 flex gap-3 text-xs">
-        <a href="/dashboard/knowledge-base" className="text-blue-600 hover:underline">← Knowledge Base</a>
+        <a href="/dashboard/knowledge-base" className="text-blue-600 hover:underline">{tx("← Knowledge Base")}</a>
         <span className="text-gray-300">|</span>
-        <a href="/dashboard/knowledge-base/articles" className="text-blue-600 hover:underline">All Articles</a>
+        <a href="/dashboard/knowledge-base/articles" className="text-blue-600 hover:underline">{tx("All Articles")}</a>
       </div>
     </div>
   );
@@ -151,21 +152,21 @@ function EditorialBar({ article, onChanged }: { article: KBArticleDetail; onChan
   }
   const btn = "px-2.5 py-1 text-xs border rounded-lg";
   return (
-    <div className="mb-4 rounded-lg border p-3 text-sm space-y-2" aria-label="Editorial workflow">
+    <div className="mb-4 rounded-lg border p-3 text-sm space-y-2" aria-label={tx("Editorial workflow")}>
       <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs text-gray-500">Status: <b>{article.status}</b> · {article.is_internal_only === false ? "Public help centre" : "Internal only"}</span>
-        {article.status === "DRAFT" && <button className={btn} onClick={() => act({ status: "IN_REVIEW" })}>Submit for review</button>}
-        {(article.status === "DRAFT" || article.status === "IN_REVIEW") && <button className={btn} onClick={() => act({ status: "PUBLISHED" })}>Publish</button>}
-        {article.status === "IN_REVIEW" && <button className={btn} onClick={() => act({ status: "DRAFT" })}>Send back to draft</button>}
+        <span className="text-xs text-gray-500">{tx("Status:")} <b>{article.status}</b> · {article.is_internal_only === false ? tx("Public help centre") : tx("Internal only")}</span>
+        {article.status === "DRAFT" && <button className={btn} onClick={() => act({ status: "IN_REVIEW" })}>{tx("Submit for review")}</button>}
+        {(article.status === "DRAFT" || article.status === "IN_REVIEW") && <button className={btn} onClick={() => act({ status: "PUBLISHED" })}>{tx("Publish")}</button>}
+        {article.status === "IN_REVIEW" && <button className={btn} onClick={() => act({ status: "DRAFT" })}>{tx("Send back to draft")}</button>}
         {article.is_internal_only !== false
-          ? <button className={btn} onClick={() => act({ is_internal_only: false })}>Show in public help centre</button>
-          : <button className={btn} onClick={() => act({ is_internal_only: true })}>Make internal only</button>}
+          ? <button className={btn} onClick={() => act({ is_internal_only: false })}>{tx("Show in public help centre")}</button>
+          : <button className={btn} onClick={() => act({ is_internal_only: true })}>{tx("Make internal only")}</button>}
         {article.feedback && <span className="text-xs text-gray-500">👍 {article.feedback.helpful} · 👎 {article.feedback.not_helpful}</span>}
       </div>
       {article.status === "PUBLISHED" && !voted && (
-        <div className="flex items-center gap-2 text-xs">Was this helpful?
-          <button className={btn} onClick={async () => { await kbApi.sendFeedback(article.id, true).catch(() => null); setVoted(true); onChanged(); }}>Yes</button>
-          <button className={btn} onClick={async () => { await kbApi.sendFeedback(article.id, false).catch(() => null); setVoted(true); onChanged(); }}>No</button>
+        <div className="flex items-center gap-2 text-xs">{tx("Was this helpful?")}
+          <button className={btn} onClick={async () => { await kbApi.sendFeedback(article.id, true).catch(() => null); setVoted(true); onChanged(); }}>{tx("Yes")}</button>
+          <button className={btn} onClick={async () => { await kbApi.sendFeedback(article.id, false).catch(() => null); setVoted(true); onChanged(); }}>{tx("No")}</button>
         </div>
       )}
       {error && <p role="alert" className="text-xs text-red-600">{error}</p>}

@@ -7,6 +7,7 @@ import { financeApi, MpesaReconciliation, ReconciliationStatus } from "@/lib/fin
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { RequirePermission } from "@/components/PermissionGuard";
+import { tx } from "@/lib/i18n/core";
 
 const statusBadge = (s: ReconciliationStatus) =>
   s === "MATCHED" ? "green" : s === "EXCEPTION" ? "red" : s === "MANUAL" ? "blue" : "yellow";
@@ -27,7 +28,7 @@ function MpesaReconciliationContent() {
     mutationFn: () => financeApi.autoMatchMpesa(),
     onSuccess: (res) => {
       qc.invalidateQueries({ queryKey: ["finance-reconciliations"] });
-      alert(`Auto-match complete: ${res.matched} matched, ${res.skipped} skipped`);
+      alert(tx("Auto-match complete: {matched} matched, {skipped} skipped", { matched: res.matched, skipped: res.skipped }));
     },
   });
 
@@ -63,11 +64,11 @@ function MpesaReconciliationContent() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">M-Pesa Reconciliation</h1>
-          <p className="text-sm text-gray-500 mt-1">Match M-Pesa receipts to invoices and sales orders</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("M-Pesa Reconciliation")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{tx("Match M-Pesa receipts to invoices and sales orders")}</p>
         </div>
         <Button onClick={() => autoMatch.mutate()} loading={autoMatch.isPending}>
-          Run Auto-Match
+          {tx("Run Auto-Match")}
         </Button>
       </div>
 
@@ -89,18 +90,18 @@ function MpesaReconciliationContent() {
       {/* Reconciliation table */}
       <div className="bg-white rounded-lg border">
         {isLoading ? (
-          <p className="px-5 py-8 text-center text-gray-400">Loading…</p>
+          <p className="px-5 py-8 text-center text-gray-400">{tx("Loading…")}</p>
         ) : (
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-gray-50 text-xs text-gray-500 uppercase">
-                <th className="px-5 py-2 text-left">Date</th>
-                <th className="px-5 py-2 text-left">M-Pesa Receipt</th>
-                <th className="px-5 py-2 text-left">Phone</th>
-                <th className="px-5 py-2 text-left">Name</th>
-                <th className="px-5 py-2 text-right">Amount</th>
-                <th className="px-5 py-2 text-left">Matched To</th>
-                <th className="px-5 py-2 text-left">Status</th>
+                <th className="px-5 py-2 text-left">{tx("Date")}</th>
+                <th className="px-5 py-2 text-left">{tx("M-Pesa Receipt")}</th>
+                <th className="px-5 py-2 text-left">{tx("Phone")}</th>
+                <th className="px-5 py-2 text-left">{tx("Name")}</th>
+                <th className="px-5 py-2 text-right">{tx("Amount")}</th>
+                <th className="px-5 py-2 text-left">{tx("Matched To")}</th>
+                <th className="px-5 py-2 text-left">{tx("Status")}</th>
                 <th className="px-5 py-2" />
               </tr>
             </thead>
@@ -116,13 +117,13 @@ function MpesaReconciliationContent() {
                   </td>
                   <td className="px-5 py-3">
                     {r.invoice_no ? (
-                      <span className="text-green-700">Invoice: {r.invoice_no}</span>
+                      <span className="text-green-700">{tx("Invoice:")} {r.invoice_no}</span>
                     ) : r.so_no ? (
                       <span className="text-blue-700">SO: {r.so_no}</span>
                     ) : r.exception_reason ? (
                       <span className="text-red-600 text-xs">{r.exception_reason}</span>
                     ) : (
-                      <span className="text-gray-400">Unmatched</span>
+                      <span className="text-gray-400">{tx("Unmatched")}</span>
                     )}
                   </td>
                   <td className="px-5 py-3">
@@ -135,13 +136,13 @@ function MpesaReconciliationContent() {
                           className="text-xs text-indigo-600 hover:underline"
                           onClick={() => { setSelected(r); setShowMatch(true); }}
                         >
-                          Match
+                          {tx("Match")}
                         </button>
                         <button
                           className="text-xs text-red-500 hover:underline"
                           onClick={() => { setSelected(r); setShowException(true); }}
                         >
-                          Exception
+                          {tx("Exception")}
                         </button>
                       </div>
                     )}
@@ -149,7 +150,7 @@ function MpesaReconciliationContent() {
                 </tr>
               ))}
               {recons.length === 0 && (
-                <tr><td colSpan={8} className="px-5 py-8 text-center text-gray-400">No records</td></tr>
+                <tr><td colSpan={8} className="px-5 py-8 text-center text-gray-400">{tx("No records")}</td></tr>
               )}
             </tbody>
           </table>
@@ -195,37 +196,37 @@ function ManualMatchModal({ recon, onClose, onSubmit, loading }: { recon: MpesaR
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4">
         <div>
-          <h2 className="font-semibold text-lg">Manual Match</h2>
+          <h2 className="font-semibold text-lg">{tx("Manual Match")}</h2>
           <p className="text-xs text-gray-500 mt-1">
-            Receipt: <span className="font-mono">{recon.mpesa_receipt}</span> · Amount: KES {Number(recon.tx_amount).toLocaleString()}
+            {tx("Receipt:")} <span className="font-mono">{recon.mpesa_receipt}</span> {tx("· Amount: KES")} {Number(recon.tx_amount).toLocaleString()}
           </p>
         </div>
         <div className="space-y-3">
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Invoice (or choose a sales order)</label>
-            <EntityPicker kind="invoice" label="Invoice" value={form.invoice_id} onChange={(id) => set("invoice_id", id)} />
+            <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Invoice (or choose a sales order)")}</label>
+            <EntityPicker kind="invoice" label={tx("Invoice")} value={form.invoice_id} onChange={(id) => set("invoice_id", id)} />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Sales order (or choose an invoice)</label>
-            <EntityPicker kind="sales_order" label="Sales order" value={form.so_id} onChange={(id) => set("so_id", id)} />
+            <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Sales order (or choose an invoice)")}</label>
+            <EntityPicker kind="sales_order" label={tx("Sales order")} value={form.so_id} onChange={(id) => set("so_id", id)} />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Matched Amount</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Matched Amount")}</label>
             <input className="w-full border rounded px-3 py-2 text-sm" type="number" value={form.matched_amount} onChange={(e) => set("matched_amount", e.target.value)} />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Notes")}</label>
             <textarea className="w-full border rounded px-3 py-2 text-sm" rows={2} value={form.notes} onChange={(e) => set("notes", e.target.value)} />
           </div>
         </div>
         <div className="flex gap-2 justify-end">
-          <Button variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button variant="secondary" onClick={onClose}>{tx("Cancel")}</Button>
           <Button loading={loading} onClick={() => onSubmit({
             invoice_id: form.invoice_id || undefined,
             so_id: form.so_id || undefined,
             matched_amount: parseFloat(form.matched_amount) || undefined,
             notes: form.notes || undefined,
-          })}>Confirm Match</Button>
+          })}>{tx("Confirm Match")}</Button>
         </div>
       </div>
     </div>
@@ -237,15 +238,15 @@ function ExceptionModal({ recon, onClose, onSubmit, loading }: { recon: MpesaRec
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4">
-        <h2 className="font-semibold text-lg">Mark as Exception</h2>
-        <p className="text-xs text-gray-500">Receipt: <span className="font-mono">{recon.mpesa_receipt}</span></p>
+        <h2 className="font-semibold text-lg">{tx("Mark as Exception")}</h2>
+        <p className="text-xs text-gray-500">{tx("Receipt:")} <span className="font-mono">{recon.mpesa_receipt}</span></p>
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Exception Reason</label>
-          <textarea className="w-full border rounded px-3 py-2 text-sm" rows={3} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Describe why this cannot be matched…" />
+          <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Exception Reason")}</label>
+          <textarea className="w-full border rounded px-3 py-2 text-sm" rows={3} value={reason} onChange={(e) => setReason(e.target.value)} placeholder={tx("Describe why this cannot be matched…")} />
         </div>
         <div className="flex gap-2 justify-end">
-          <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button variant="danger" loading={loading} onClick={() => onSubmit(reason)}>Mark Exception</Button>
+          <Button variant="secondary" onClick={onClose}>{tx("Cancel")}</Button>
+          <Button variant="danger" loading={loading} onClick={() => onSubmit(reason)}>{tx("Mark Exception")}</Button>
         </div>
       </div>
     </div>

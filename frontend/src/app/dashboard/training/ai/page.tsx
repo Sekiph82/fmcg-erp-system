@@ -1,24 +1,25 @@
 "use client";
 import { useEffect, useState } from "react";
 import { trainingApi, TRAIRec, TRAIAgentType, TRAIRecStatus } from "@/lib/training";
+import { tx, lx } from "@/lib/i18n/core";
 
-const AGENT_META: Record<TRAIAgentType, { label: string; desc: string; color: string }> = {
+const AGENT_META: Record<TRAIAgentType, { label: string; desc: string; color: string }> = lx(() => ({
   skill_gap_advisor: {
-    label: "Skill Gap Advisor",
-    desc: "Identifies employees with skill gaps and recommends relevant training programs to close them.",
+    label: tx("Skill Gap Advisor"),
+    desc: tx("Identifies employees with skill gaps and recommends relevant training programs to close them."),
     color: "bg-blue-50 border-blue-200",
   },
   effectiveness_analyzer: {
-    label: "Training Effectiveness Analyzer",
-    desc: "Detects training programs with low feedback ratings (< 3/5) from multiple participants.",
+    label: tx("Training Effectiveness Analyzer"),
+    desc: tx("Detects training programs with low feedback ratings (< 3/5) from multiple participants."),
     color: "bg-orange-50 border-orange-200",
   },
   compliance_risk: {
-    label: "Compliance Risk Monitor",
-    desc: "Alerts on expiring or expired certifications that require immediate renewal for compliance.",
+    label: tx("Compliance Risk Monitor"),
+    desc: tx("Alerts on expiring or expired certifications that require immediate renewal for compliance."),
     color: "bg-red-50 border-red-200",
   },
-};
+}));
 
 const STATUS_COLOR: Record<TRAIRecStatus, string> = {
   pending: "bg-yellow-100 text-yellow-700",
@@ -54,7 +55,7 @@ export default function TrainingAIPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-xl font-bold text-gray-900">Training AI Insights</h1>
+      <h1 className="text-xl font-bold text-gray-900">{tx("Training AI Insights")}</h1>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         {(Object.entries(AGENT_META) as [TRAIAgentType, typeof AGENT_META[TRAIAgentType]][]).map(([type, meta]) => (
@@ -66,7 +67,7 @@ export default function TrainingAIPage() {
               disabled={running === type}
               className="w-full rounded bg-gray-800 px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-700 disabled:opacity-50"
             >
-              {running === type ? "Running…" : "Run Agent"}
+              {running === type ? tx("Running…") : tx("Run Agent")}
             </button>
           </div>
         ))}
@@ -74,12 +75,12 @@ export default function TrainingAIPage() {
 
       <div className="bg-white border rounded-lg shadow-sm">
         <div className="px-4 py-3 border-b flex items-center justify-between">
-          <h2 className="font-semibold text-gray-800 text-sm">AI Recommendations ({recs.filter(r=>r.status==="pending").length} pending)</h2>
+          <h2 className="font-semibold text-gray-800 text-sm">{tx("AI Recommendations (")}{recs.filter(r=>r.status==="pending").length} {tx("pending)")}</h2>
         </div>
         {loading ? (
-          <p className="text-gray-500 text-sm p-4">Loading…</p>
+          <p className="text-gray-500 text-sm p-4">{tx("Loading…")}</p>
         ) : recs.length === 0 ? (
-          <p className="text-gray-400 text-sm text-center py-8">No recommendations yet. Run an agent above.</p>
+          <p className="text-gray-400 text-sm text-center py-8">{tx("No recommendations yet. Run an agent above.")}</p>
         ) : (
           <div className="divide-y">
             {recs.map((r) => (
@@ -93,14 +94,14 @@ export default function TrainingAIPage() {
                       <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLOR[r.status]}`}>
                         {r.status}
                       </span>
-                      {r.score != null && <span className="text-xs text-gray-400">Score: {r.score}</span>}
+                      {r.score != null && <span className="text-xs text-gray-400">{tx("Score:")} {r.score}</span>}
                     </div>
                     <p className="text-sm font-semibold text-gray-800">{r.title}</p>
                     <p className="text-sm text-gray-600">{r.body}</p>
                     {(r.employee_id || r.department_id) && (
                       <p className="text-xs text-gray-400 mt-1">
-                        {r.employee_id && `Employee: ${r.employee_id}`}
-                        {r.department_id && ` · Dept: ${r.department_id}`}
+                        {r.employee_id && tx("Employee: {employee_id}", { employee_id: r.employee_id })}
+                        {r.department_id && tx(" · Dept: {department_id}", { department_id: r.department_id })}
                       </p>
                     )}
                   </div>
@@ -108,15 +109,15 @@ export default function TrainingAIPage() {
                     <div className="flex flex-col gap-1 shrink-0">
                       <button onClick={() => ack(r.rec_id, "acknowledged")}
                         className="rounded border border-blue-300 px-2 py-0.5 text-xs text-blue-600 hover:bg-blue-50">
-                        Acknowledge
+                        {tx("Acknowledge")}
                       </button>
                       <button onClick={() => ack(r.rec_id, "actioned")}
                         className="rounded border border-green-300 px-2 py-0.5 text-xs text-green-600 hover:bg-green-50">
-                        Action
+                        {tx("Action")}
                       </button>
                       <button onClick={() => ack(r.rec_id, "dismissed")}
                         className="rounded border border-gray-200 px-2 py-0.5 text-xs text-gray-500 hover:bg-gray-50">
-                        Dismiss
+                        {tx("Dismiss")}
                       </button>
                     </div>
                   )}

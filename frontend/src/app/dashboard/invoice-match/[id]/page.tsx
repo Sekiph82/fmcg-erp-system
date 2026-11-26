@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   imApi, MATCH_STATUS_COLOR, LINE_STATUS_COLOR, MatchHeaderOut, varColor, fmtVar,
 } from "@/lib/invoice_match";
+import { tx } from "@/lib/i18n/core";
 
 export default function MatchDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -34,8 +35,8 @@ export default function MatchDetailPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["im-match", id] }),
   });
 
-  if (isLoading) return <div className="p-8 text-gray-500">Loading…</div>;
-  if (error || !match) return <div className="p-8 text-red-500">Match record not found.</div>;
+  if (isLoading) return <div className="p-8 text-gray-500">{tx("Loading…")}</div>;
+  if (error || !match) return <div className="p-8 text-red-500">{tx("Match record not found.")}</div>;
 
   const matchLines = match.match_lines ?? [];
   const reviews    = match.reviews     ?? [];
@@ -49,7 +50,7 @@ export default function MatchDetailPage() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">{match.match_no}</h1>
           <p className="text-sm text-gray-500">
-            Invoice: {match.invoice_no ?? "—"} · {match.invoice_date ?? "—"} · {match.currency}
+            {tx("Invoice:")} {match.invoice_no ?? "—"} · {match.invoice_date ?? "—"} · {match.currency}
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -57,19 +58,19 @@ export default function MatchDetailPage() {
             {match.overall_status.replace(/_/g, " ")}
           </span>
           <span className={`px-3 py-1 rounded-full text-xs font-semibold ${match.is_payable ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
-            {match.is_payable ? "✓ Payable" : "✗ Payment Hold"}
+            {match.is_payable ? tx("✓ Payable") : tx("✗ Payment Hold")}
           </span>
           {match.duplicate_flag && (
-            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-700">⚠ Duplicate Suspected</span>
+            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-700">{tx("⚠ Duplicate Suspected")}</span>
           )}
           <button onClick={() => runAI.mutate()} disabled={runAI.isPending}
             className="px-3 py-1.5 text-xs border rounded-lg text-purple-600 hover:bg-purple-50 disabled:opacity-50">
-            {runAI.isPending ? "…" : "Run AI"}
+            {runAI.isPending ? "…" : tx("Run AI")}
           </button>
           {canReview && (
             <button onClick={() => setShowReviewForm((v) => !v)}
               className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-              Review / Approve
+              {tx("Review / Approve")}
             </button>
           )}
         </div>
@@ -78,17 +79,17 @@ export default function MatchDetailPage() {
       {/* Payment hold reason */}
       {match.payment_hold_reason && (
         <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-700">
-          <span className="font-medium">Payment Hold: </span>{match.payment_hold_reason}
+          <span className="font-medium">{tx("Payment Hold:")} </span>{match.payment_hold_reason}
         </div>
       )}
 
       {/* Review form */}
       {showReviewForm && (
         <div className="bg-white border rounded-xl p-5 space-y-3">
-          <h2 className="font-semibold text-gray-700">Exception Review</h2>
+          <h2 className="font-semibold text-gray-700">{tx("Exception Review")}</h2>
           <div className="grid grid-cols-1 gap-3">
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Justification</label>
+              <label className="block text-xs text-gray-500 mb-1">{tx("Justification")}</label>
               <input className="border rounded-lg px-3 py-2 text-sm w-full"
                 value={justification} onChange={(e) => setJustification(e.target.value)} />
             </div>
@@ -96,15 +97,15 @@ export default function MatchDetailPage() {
           <div className="flex gap-2">
             <button onClick={() => approve.mutate()} disabled={!match.run_at || approve.isPending}
               className="px-4 py-1.5 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 disabled:opacity-50">
-              Approve Exception
+              {tx("Approve Exception")}
             </button>
             <button onClick={() => reject.mutate()} disabled={!match.run_at || reject.isPending}
               className="px-4 py-1.5 border border-red-400 text-red-600 text-sm rounded-lg hover:bg-red-50 disabled:opacity-50">
-              Reject Invoice
+              {tx("Reject Invoice")}
             </button>
             <button onClick={() => setShowReviewForm(false)}
               className="px-3 py-1.5 border text-sm rounded-lg hover:bg-gray-50">
-              Cancel
+              {tx("Cancel")}
             </button>
           </div>
         </div>
@@ -113,13 +114,13 @@ export default function MatchDetailPage() {
       {/* Line-by-line comparison */}
       <div className="bg-white border rounded-xl overflow-hidden">
         <div className="px-5 py-3 border-b bg-gray-50">
-          <h2 className="text-sm font-semibold text-gray-700">Line Comparison ({matchLines.length} lines)</h2>
+          <h2 className="text-sm font-semibold text-gray-700">{tx("Line Comparison (")}{matchLines.length} {tx("lines)")}</h2>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm min-w-max">
             <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
               <tr>
-                {["Item", "PO Qty", "PO Price", "Recv'd", "Accepted", "Prev Billed", "Billable", "Inv Qty", "Inv Price", "Qty Var%", "Price Var%", "Status"].map((h) => (
+                {[tx("Item"), tx("PO Qty"), tx("PO Price"), tx("Recv'd"), tx("Accepted"), tx("Prev Billed"), tx("Billable"), tx("Inv Qty"), tx("Inv Price"), tx("Qty Var%"), tx("Price Var%"), tx("Status")].map((h) => (
                   <th key={h} className="px-3 py-2 text-left font-medium whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -157,14 +158,14 @@ export default function MatchDetailPage() {
       {/* GRN links for each line */}
       {matchLines.filter((ml) => (ml.grn_links ?? []).length > 0).length > 0 && (
         <div className="bg-white border rounded-xl p-5 space-y-4">
-          <h2 className="text-sm font-semibold text-gray-700">GRN Links</h2>
+          <h2 className="text-sm font-semibold text-gray-700">{tx("GRN Links")}</h2>
           {matchLines.filter((ml) => (ml.grn_links ?? []).length > 0).map((ml) => (
             <div key={ml.id}>
-              <p className="text-xs font-medium text-gray-600 mb-1">{ml.material_name || "Line"}</p>
+              <p className="text-xs font-medium text-gray-600 mb-1">{ml.material_name || tx("Line")}</p>
               <table className="w-full text-xs border rounded">
                 <thead className="bg-gray-50">
                   <tr>
-                    {["GRN No", "Received", "Accepted", "Rejected", "Date"].map((h) => (
+                    {[tx("GRN No"), tx("Received"), tx("Accepted"), tx("Rejected"), tx("Date")].map((h) => (
                       <th key={h} className="px-3 py-1.5 text-left text-gray-500">{h}</th>
                     ))}
                   </tr>
@@ -190,7 +191,7 @@ export default function MatchDetailPage() {
       {reviews.length > 0 && (
         <div className="bg-white border rounded-xl overflow-hidden">
           <div className="px-5 py-3 border-b bg-gray-50">
-            <h2 className="text-sm font-semibold text-gray-700">Review History</h2>
+            <h2 className="text-sm font-semibold text-gray-700">{tx("Review History")}</h2>
           </div>
           <div className="divide-y">
             {reviews.map((r) => (

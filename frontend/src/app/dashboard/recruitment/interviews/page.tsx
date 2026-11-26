@@ -2,6 +2,7 @@
 import { EntityPicker } from "@/components/EntityPicker";
 import { useEffect, useState } from "react";
 import { recruitmentApi, Interview, JobRequisition, INTERVIEW_DECISION_COLOR, InterviewDecision } from "@/lib/recruitment";
+import { tx } from "@/lib/i18n/core";
 
 const inputCls = "w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500";
 const selectCls = "w-full bg-[#0d1829] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none";
@@ -25,7 +26,7 @@ export default function InterviewsPage() {
   const handleSchedule = async () => {
     await recruitmentApi.scheduleInterview({ ...form, interview_date: new Date(form.interview_date).toISOString() });
     await load(); setShowSchedule(false);
-    setMsg("Interview scheduled"); setTimeout(() => setMsg(""), 2000);
+    setMsg(tx("Interview scheduled")); setTimeout(() => setMsg(""), 2000);
   };
   const handleFeedback = async () => {
     if (!feedbackTarget) return;
@@ -37,12 +38,12 @@ export default function InterviewsPage() {
     <div className="p-6 space-y-5 text-slate-200">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-white">Interviews</h1>
-          <p className="text-slate-500 text-sm mt-0.5">{interviews.length} scheduled</p>
+          <h1 className="text-xl font-bold text-white">{tx("Interviews")}</h1>
+          <p className="text-slate-500 text-sm mt-0.5">{interviews.length} {tx("scheduled")}</p>
         </div>
         <button onClick={() => setShowSchedule(!showSchedule)}
           className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium">
-          {showSchedule ? "Cancel" : "+ Schedule Interview"}
+          {showSchedule ? tx("Cancel") : tx("+ Schedule Interview")}
         </button>
       </div>
 
@@ -50,44 +51,44 @@ export default function InterviewsPage() {
 
       {showSchedule && (
         <div className="glow-card p-5 space-y-3">
-          <h2 className="text-sm font-semibold text-white">Schedule Interview</h2>
+          <h2 className="text-sm font-semibold text-white">{tx("Schedule Interview")}</h2>
           <div className="grid grid-cols-3 gap-3">
-            <div><label className={labelCls}>Candidate</label><EntityPicker kind="candidate" label="Candidate" value={form.candidate_id} onChange={(id) => setForm({ ...form, candidate_id: id })} /></div>
-            <div><label className={labelCls}>Requisition</label>
+            <div><label className={labelCls}>{tx("Candidate")}</label><EntityPicker kind="candidate" label={tx("Candidate")} value={form.candidate_id} onChange={(id) => setForm({ ...form, candidate_id: id })} /></div>
+            <div><label className={labelCls}>{tx("Requisition")}</label>
               <select value={form.requisition_id} onChange={(e) => setForm({ ...form, requisition_id: e.target.value })} className={selectCls}>
-                <option value="">Select…</option>
+                <option value="">{tx("Select…")}</option>
                 {reqs.map((r) => <option key={r.requisition_id} value={r.requisition_id}>{r.requisition_code} — {r.job_title}</option>)}
               </select>
             </div>
-            <div><label className={labelCls}>Date & Time</label><input type="datetime-local" value={form.interview_date} onChange={(e) => setForm({ ...form, interview_date: e.target.value })} className={inputCls} /></div>
-            <div><label className={labelCls}>Type</label>
+            <div><label className={labelCls}>{tx("Date & Time")}</label><input type="datetime-local" value={form.interview_date} onChange={(e) => setForm({ ...form, interview_date: e.target.value })} className={inputCls} /></div>
+            <div><label className={labelCls}>{tx("Type")}</label>
               <select value={form.interview_type} onChange={(e) => setForm({ ...form, interview_type: e.target.value })} className={selectCls}>
-                {["onsite", "online", "phone", "panel"].map((t) => <option key={t} value={t}>{t}</option>)}
+                {[tx("onsite"), tx("online"), tx("phone"), tx("panel")].map((t) => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
-            <div className="col-span-2"><label className={labelCls}>Location / Link</label><input value={form.location_or_link} onChange={(e) => setForm({ ...form, location_or_link: e.target.value })} className={inputCls} /></div>
+            <div className="col-span-2"><label className={labelCls}>{tx("Location / Link")}</label><input value={form.location_or_link} onChange={(e) => setForm({ ...form, location_or_link: e.target.value })} className={inputCls} /></div>
           </div>
-          <button onClick={handleSchedule} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm">Schedule</button>
+          <button onClick={handleSchedule} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm">{tx("Schedule")}</button>
         </div>
       )}
 
       {feedbackTarget && (
         <div className="glow-card border-indigo-500/20 p-5 space-y-3">
-          <h2 className="text-sm font-semibold text-white">Record Feedback</h2>
+          <h2 className="text-sm font-semibold text-white">{tx("Record Feedback")}</h2>
           <div className="grid grid-cols-3 gap-3">
-            <div><label className={labelCls}>Overall Score (/100)</label><input type="number" max={100} value={feedback.score} onChange={(e) => setFeedback({ ...feedback, score: e.target.value })} className={inputCls} /></div>
-            <div><label className={labelCls}>Technical Score</label><input type="number" max={100} value={feedback.technical_score} onChange={(e) => setFeedback({ ...feedback, technical_score: e.target.value })} className={inputCls} /></div>
-            <div><label className={labelCls}>Cultural Score</label><input type="number" max={100} value={feedback.cultural_score} onChange={(e) => setFeedback({ ...feedback, cultural_score: e.target.value })} className={inputCls} /></div>
-            <div><label className={labelCls}>Decision</label>
+            <div><label className={labelCls}>{tx("Overall Score (/100)")}</label><input type="number" max={100} value={feedback.score} onChange={(e) => setFeedback({ ...feedback, score: e.target.value })} className={inputCls} /></div>
+            <div><label className={labelCls}>{tx("Technical Score")}</label><input type="number" max={100} value={feedback.technical_score} onChange={(e) => setFeedback({ ...feedback, technical_score: e.target.value })} className={inputCls} /></div>
+            <div><label className={labelCls}>{tx("Cultural Score")}</label><input type="number" max={100} value={feedback.cultural_score} onChange={(e) => setFeedback({ ...feedback, cultural_score: e.target.value })} className={inputCls} /></div>
+            <div><label className={labelCls}>{tx("Decision")}</label>
               <select value={feedback.decision} onChange={(e) => setFeedback({ ...feedback, decision: e.target.value as InterviewDecision })} className={selectCls}>
-                {["pass", "fail", "hold", "pending"].map((d) => <option key={d} value={d}>{d}</option>)}
+                {[tx("pass"), tx("fail"), tx("hold"), "pending"].map((d) => <option key={d} value={d}>{d}</option>)}
               </select>
             </div>
-            <div className="col-span-2"><label className={labelCls}>Feedback Notes</label><textarea value={feedback.feedback} onChange={(e) => setFeedback({ ...feedback, feedback: e.target.value })} rows={2} className={inputCls} /></div>
+            <div className="col-span-2"><label className={labelCls}>{tx("Feedback Notes")}</label><textarea value={feedback.feedback} onChange={(e) => setFeedback({ ...feedback, feedback: e.target.value })} rows={2} className={inputCls} /></div>
           </div>
           <div className="flex gap-2">
-            <button onClick={handleFeedback} className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm">Save Feedback</button>
-            <button onClick={() => setFeedbackTarget(null)} className="px-4 py-2 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-slate-400 text-sm">Cancel</button>
+            <button onClick={handleFeedback} className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm">{tx("Save Feedback")}</button>
+            <button onClick={() => setFeedbackTarget(null)} className="px-4 py-2 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-slate-400 text-sm">{tx("Cancel")}</button>
           </div>
         </div>
       )}
@@ -95,7 +96,7 @@ export default function InterviewsPage() {
       <div className="glass-table">
         <table className="w-full text-sm">
           <thead><tr className="border-b border-white/[0.07]">
-            {["Date", "Candidate", "Type", "Location", "Score", "Decision", "Actions"].map((h) => (
+            {[tx("Date"), tx("Candidate"), tx("Type"), tx("Location"), "Score", tx("Decision"), tx("Actions")].map((h) => (
               <th key={h} className={`px-4 py-3 text-[10px] text-slate-500 uppercase tracking-widest ${h === "Score" ? "text-right" : "text-left"}`}>{h}</th>
             ))}
           </tr></thead>
@@ -111,12 +112,12 @@ export default function InterviewsPage() {
                 <td className="px-4 py-3">
                   {iv.decision === "pending" && (
                     <button onClick={() => { setFeedbackTarget(iv.interview_id); setFeedback({ ...feedback, feedback: "" }); }}
-                      className="text-xs text-indigo-400 hover:text-indigo-300">Record Feedback</button>
+                      className="text-xs text-indigo-400 hover:text-indigo-300">{tx("Record Feedback")}</button>
                   )}
                 </td>
               </tr>
             ))}
-            {interviews.length === 0 && <tr><td colSpan={7} className="px-4 py-8 text-center text-slate-600">No interviews</td></tr>}
+            {interviews.length === 0 && <tr><td colSpan={7} className="px-4 py-8 text-center text-slate-600">{tx("No interviews")}</td></tr>}
           </tbody>
         </table>
       </div>

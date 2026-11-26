@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { apiError, sendApprovalsApi, type SendApproval, type SendKind, type SendPolicy } from "@/lib/send_approvals";
+import { tx } from "@/lib/i18n/core";
 
 const summary = (p: Record<string, unknown>) =>
   Object.entries(p).filter(([k]) => k !== "body" && k !== "group_id" && k !== "design_id")
@@ -37,29 +38,29 @@ export function SendApprovalsPanel({ kind, targetId, picked, onPick, refresh, on
 
   return (
     <div className="border rounded p-2 space-y-1 text-xs bg-gray-50">
-      <p className="font-medium">Send approvals</p>
+      <p className="font-medium">{tx("Send approvals")}</p>
       {policy && <p className="text-gray-600">
-        {policy.approval_required ? "A second editor must approve this exact content before it is sent." : "Approval is not switched on; you can send directly."}
-        {" "}Your direct marketing sends today: {policy.used_today} of {policy.daily_cap}.</p>}
+        {policy.approval_required ? tx("A second editor must approve this exact content before it is sent.") : tx("Approval is not switched on; you can send directly.")}
+        {" "}{tx("Your direct marketing sends today:")} {policy.used_today} {tx("of")} {policy.daily_cap}.</p>}
       {msg && <p role="status" className={msg.ok ? "text-emerald-700" : "text-red-700"}>{msg.text}</p>}
-      {rows.length === 0 ? <p className="text-gray-500">No open approval requests for this {kind === "abm" ? "group" : "design"}.</p> :
+      {rows.length === 0 ? <p className="text-gray-500">{tx("No open approval requests for this")} {kind === "abm" ? tx("group") : tx("design")}.</p> :
         <ul className="divide-y">{rows.map((r) => {
           const own = !!user && r.requested_by === user.username;
           return (
             <li key={r.id} className="py-1 space-y-0.5">
-              <div><b>{r.status.toLowerCase()}</b> · requested by {r.requested_by}{r.decided_by ? ` · decided by ${r.decided_by}` : ""}</div>
+              <div><b>{r.status.toLowerCase()}</b> {tx("· requested by")} {r.requested_by}{r.decided_by ? tx(" · decided by {decided_by}", { decided_by: r.decided_by }) : ""}</div>
               <div className="text-gray-700 break-words">{summary(r.payload)}</div>
-              <div className="font-mono text-[10px] text-gray-500 break-all" title="SHA-256 of the exact payload">sha256 {r.content_hash}</div>
+              <div className="font-mono text-[10px] text-gray-500 break-all" title={tx("SHA-256 of the exact payload")}>{tx("sha256")} {r.content_hash}</div>
               {r.status === "PENDING" && <div className="flex flex-wrap gap-2 items-center">
-                <button disabled={own} title={own ? "You requested this send; another editor must approve it." : undefined}
-                  onClick={() => decide(r, "approve")} className="rounded bg-emerald-600 px-2 py-0.5 text-white disabled:opacity-50">Approve</button>
-                <button disabled={own} title={own ? "You requested this send; another editor decides." : undefined}
-                  onClick={() => decide(r, "reject")} className="rounded border px-2 py-0.5 disabled:opacity-50">Reject</button>
-                {own && <span className="text-gray-500">You requested this; another editor must approve or reject it.</span>}
+                <button disabled={own} title={own ? tx("You requested this send; another editor must approve it.") : undefined}
+                  onClick={() => decide(r, "approve")} className="rounded bg-emerald-600 px-2 py-0.5 text-white disabled:opacity-50">{tx("Approve")}</button>
+                <button disabled={own} title={own ? tx("You requested this send; another editor decides.") : undefined}
+                  onClick={() => decide(r, "reject")} className="rounded border px-2 py-0.5 disabled:opacity-50">{tx("Reject")}</button>
+                {own && <span className="text-gray-500">{tx("You requested this; another editor must approve or reject it.")}</span>}
               </div>}
               {r.status === "APPROVED" && <label className="flex items-center gap-1">
                 <input type="radio" name={`approval-${kind}-${targetId}`} checked={picked === r.id} onChange={() => onPick(r.id)} />
-                Send with this approval (the content and recipients must match exactly)</label>}
+                {tx("Send with this approval (the content and recipients must match exactly)")}</label>}
             </li>);
         })}</ul>}
     </div>

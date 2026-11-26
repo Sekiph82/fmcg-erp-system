@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { TrendPoint } from "@/lib/dashboard";
 import { Sparkline, TrendBadge } from "./Sparkline";
+import { tx } from "@/lib/i18n/core";
 
 export type KPIStatus = "ok" | "warning" | "critical";
 
@@ -93,7 +94,7 @@ export function KPICard({
       )}
 
       {href && (
-        <span className="text-xs text-blue-400 font-medium mt-0.5">View details →</span>
+        <span className="text-xs text-blue-400 font-medium mt-0.5">{tx("View details →")}</span>
       )}
     </div>
   );

@@ -4,6 +4,7 @@ import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { bomApi, CostingResult, fmtKES } from "@/lib/bom";
 import { RequirePermission } from "@/components/PermissionGuard";
+import { tx } from "@/lib/i18n/core";
 
 function CostBar({ label, value, total, color }: { label: string; value: number; total: number; color: string }) {
   const pct = total > 0 ? (value / total) * 100 : 0;
@@ -28,7 +29,7 @@ export default function CostingPage() {
     queryFn: () => bomApi.costing(id),
   });
 
-  if (isLoading) return <div className="p-8 text-center text-gray-400">Calculating costs…</div>;
+  if (isLoading) return <div className="p-8 text-center text-gray-400">{tx("Calculating costs…")}</div>;
   if (!data) return null;
 
   const gross = data.raw_material_cost + data.intermediate_cost + data.packaging_cost + data.utility_cost;
@@ -37,18 +38,18 @@ export default function CostingPage() {
     <RequirePermission permission="bom.cost">
     <div className="p-6 space-y-6">
       <div className="flex items-center gap-3">
-        <a href={`/dashboard/bom/${id}`} className="text-sm text-gray-400 hover:text-gray-600">← BOM Detail</a>
-        <h1 className="text-xl font-bold text-gray-900">Cost Roll-Up</h1>
+        <a href={`/dashboard/bom/${id}`} className="text-sm text-gray-400 hover:text-gray-600">{tx("← BOM Detail")}</a>
+        <h1 className="text-xl font-bold text-gray-900">{tx("Cost Roll-Up")}</h1>
       </div>
 
       {/* Summary KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {[
-          { label: "Total Batch Cost", value: fmtKES(data.total_batch_cost), color: "text-gray-900" },
-          { label: "Cost per UOM", value: fmtKES(data.cost_per_uom), color: "text-indigo-700" },
-          { label: "Co-Product Lines", value: String(data.co_product_outputs.length), color: "text-blue-700" },
-          { label: "By-Product Lines", value: String(data.by_product_outputs.length), color: "text-amber-700" },
-          { label: "Batch Size", value: `${data.base_qty.toLocaleString()} ${data.base_uom}`, color: "text-gray-600" },
+          { label: tx("Total Batch Cost"), value: fmtKES(data.total_batch_cost), color: "text-gray-900" },
+          { label: tx("Cost per UOM"), value: fmtKES(data.cost_per_uom), color: "text-indigo-700" },
+          { label: tx("Co-Product Lines"), value: String(data.co_product_outputs.length), color: "text-blue-700" },
+          { label: tx("By-Product Lines"), value: String(data.by_product_outputs.length), color: "text-amber-700" },
+          { label: tx("Batch Size"), value: `${data.base_qty.toLocaleString()} ${data.base_uom}`, color: "text-gray-600" },
         ].map((k) => (
           <div key={k.label} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
             <p className="text-xs text-gray-400">{k.label}</p>
@@ -60,25 +61,25 @@ export default function CostingPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Cost Breakdown */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-4">
-          <h3 className="font-semibold text-gray-800">Cost Breakdown</h3>
-          <CostBar label="Raw Materials" value={data.raw_material_cost} total={gross} color="bg-blue-500" />
-          <CostBar label="Intermediates" value={data.intermediate_cost} total={gross} color="bg-purple-500" />
-          <CostBar label="Packaging" value={data.packaging_cost} total={gross} color="bg-teal-500" />
-          <CostBar label="Utilities" value={data.utility_cost} total={gross} color="bg-orange-500" />
+          <h3 className="font-semibold text-gray-800">{tx("Cost Breakdown")}</h3>
+          <CostBar label={tx("Raw Materials")} value={data.raw_material_cost} total={gross} color="bg-blue-500" />
+          <CostBar label={tx("Intermediates")} value={data.intermediate_cost} total={gross} color="bg-purple-500" />
+          <CostBar label={tx("Packaging")} value={data.packaging_cost} total={gross} color="bg-teal-500" />
+          <CostBar label={tx("Utilities")} value={data.utility_cost} total={gross} color="bg-orange-500" />
           <div className="pt-2 border-t border-gray-200 flex justify-between text-sm font-semibold">
-            <span>Total Batch Cost</span>
+            <span>{tx("Total Batch Cost")}</span>
             <span>{fmtKES(data.total_batch_cost)}</span>
           </div>
         </div>
 
         {/* Line Details */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-          <h3 className="font-semibold text-gray-800 mb-3">Cost-Bearing BOM Lines</h3>
+          <h3 className="font-semibold text-gray-800 mb-3">{tx("Cost-Bearing BOM Lines")}</h3>
           <div className="overflow-y-auto max-h-72">
             <table className="w-full text-xs">
               <thead className="sticky top-0 bg-white">
                 <tr className="text-gray-400">
-                  {["#", "Item", "Type", "Qty", "Unit Cost", "Extended"].map((h) => (
+                  {["#", tx("Item"), tx("Type"), tx("Qty"), tx("Unit Cost"), tx("Extended")].map((h) => (
                     <th key={h} className="text-left pb-2 pr-3">{h}</th>
                   ))}
                 </tr>
@@ -105,8 +106,8 @@ export default function CostingPage() {
       {(data.co_product_outputs.length > 0 || data.by_product_outputs.length > 0) && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {[
-            { title: "Co-Product Outputs", outputs: data.co_product_outputs, color: "text-blue-700" },
-            { title: "By-Product Outputs", outputs: data.by_product_outputs, color: "text-amber-700" },
+            { title: tx("Co-Product Outputs"), outputs: data.co_product_outputs, color: "text-blue-700" },
+            { title: tx("By-Product Outputs"), outputs: data.by_product_outputs, color: "text-amber-700" },
           ].map(({ title, outputs, color }) => (
             <section key={title} className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
               <h3 className={`font-semibold mb-3 ${color}`}>{title}</h3>
@@ -114,7 +115,7 @@ export default function CostingPage() {
                 <table className="w-full text-xs">
                   <thead className="sticky top-0 bg-white">
                     <tr className="text-gray-400">
-                      {["#", "Item", "Master Type", "Expected Output"].map((heading) => (
+                      {["#", tx("Item"), tx("Master Type"), tx("Expected Output")].map((heading) => (
                         <th key={heading} className="text-left pb-2 pr-3">{heading}</th>
                       ))}
                     </tr>
@@ -131,7 +132,7 @@ export default function CostingPage() {
                   </tbody>
                 </table>
               </div>
-              <p className="text-xs text-gray-500 mt-3">Tracked separately; these outputs do not reduce BOM cost totals.</p>
+              <p className="text-xs text-gray-500 mt-3">{tx("Tracked separately; these outputs do not reduce BOM cost totals.")}</p>
             </section>
           ))}
         </div>

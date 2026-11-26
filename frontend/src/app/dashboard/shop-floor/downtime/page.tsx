@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { describeShopFloorError, sfApi, SFDowntimeLog, DOWNTIME_CAT_LABEL, IMPACT_COLOR } from "@/lib/shopFloor";
 import { ShopFloorConnectionNotice, useShopFloorConnectionState } from "@/components/shop-floor/ShopFloorConnectionNotice";
 import { useAuth } from "@/context/AuthContext";
+import { tx } from "@/lib/i18n/core";
 
 const DOWNTIME_CATS = [
   "MACHINE_BREAKDOWN", "MATERIAL_SHORTAGE", "PACKAGING_SHORTAGE", "QC_WAITING",
@@ -97,23 +98,23 @@ export default function DowntimeBoardPage() {
       <div className="flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <a href="/dashboard/shop-floor" className="text-sm text-gray-400 hover:text-gray-600">← Dashboard</a>
+            <a href="/dashboard/shop-floor" className="text-sm text-gray-400 hover:text-gray-600">{tx("← Dashboard")}</a>
           </div>
-          <h1 className="text-xl font-bold text-gray-900">Downtime Board</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Track production interruptions</p>
+          <h1 className="text-xl font-bold text-gray-900">{tx("Downtime Board")}</h1>
+          <p className="text-sm text-gray-500 mt-0.5">{tx("Track production interruptions")}</p>
         </div>
         <div className="flex gap-2">
           <button
             onClick={() => setShowClosed(!showClosed)}
             className={`px-3 py-1.5 text-sm rounded-lg border ${showClosed ? "bg-gray-100 border-gray-300" : "border-gray-200"}`}
           >
-            {showClosed ? "Active Only" : "Show Closed"}
+            {showClosed ? tx("Active Only") : tx("Show Closed")}
           </button>
           <button
             onClick={() => setShowModal(true)}
             className="px-3 py-1.5 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700"
           >
-            + Log Downtime
+            {tx("+ Log Downtime")}
           </button>
         </div>
       </div>
@@ -132,23 +133,23 @@ export default function DowntimeBoardPage() {
           <p>{requestError.message}</p>
           {requestError.requiresRefresh && (
             <button type="button" onClick={() => void refreshShopFloorState()} disabled={refreshingState} className="mt-2 min-h-11 rounded-md border border-red-500 px-3 font-semibold disabled:opacity-50">
-              {refreshingState ? "Refreshing Shop Floor state…" : "Refresh Shop Floor state"}
+              {refreshingState ? tx("Refreshing Shop Floor state…") : tx("Refresh Shop Floor state")}
             </button>
           )}
         </div>
       )}
 
       <div className="max-w-sm">
-        <label htmlFor="shop-floor-downtime-line-filter" className="text-xs text-gray-500">Production line filter</label>
-        <input id="shop-floor-downtime-line-filter" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mt-0.5" value={filterLineId} onChange={(event) => setFilterLineId(event.target.value)} placeholder="Enter an assigned line for scoped access" />
+        <label htmlFor="shop-floor-downtime-line-filter" className="text-xs text-gray-500">{tx("Production line filter")}</label>
+        <input id="shop-floor-downtime-line-filter" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mt-0.5" value={filterLineId} onChange={(event) => setFilterLineId(event.target.value)} placeholder={tx("Enter an assigned line for scoped access")} />
       </div>
 
       {/* Active KPIs */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: "Active Events", value: active.length, color: "text-red-600" },
-          { label: "Avg Duration (min)", value: active.length ? Math.round(active.reduce((s, l) => s + (Date.now() - new Date(l.start_time).getTime()) / 60000, 0) / active.length) : 0, color: "text-orange-600" },
-          { label: "Closed Today", value: closed.length, color: "text-gray-600" },
+          { label: tx("Active Events"), value: active.length, color: "text-red-600" },
+          { label: tx("Avg Duration (min)"), value: active.length ? Math.round(active.reduce((s, l) => s + (Date.now() - new Date(l.start_time).getTime()) / 60000, 0) / active.length) : 0, color: "text-orange-600" },
+          { label: tx("Closed Today"), value: closed.length, color: "text-gray-600" },
         ].map((k) => (
           <div key={k.label} className="bg-white rounded-xl border border-gray-100 shadow-sm p-3 text-center">
             <p className="text-xs text-gray-400">{k.label}</p>
@@ -161,7 +162,7 @@ export default function DowntimeBoardPage() {
       {active.length > 0 && (
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="px-4 py-3 bg-red-50 border-b border-red-100">
-            <h2 className="text-sm font-semibold text-red-700">Active Downtime ({active.length})</h2>
+            <h2 className="text-sm font-semibold text-red-700">{tx("Active Downtime (")}{active.length})</h2>
           </div>
           <div className="divide-y divide-gray-50">
             {active.map((dt) => (
@@ -172,7 +173,7 @@ export default function DowntimeBoardPage() {
                     <span className={`text-xs px-1.5 py-0.5 rounded ${IMPACT_COLOR[dt.impact_level]}`}>{dt.impact_level}</span>
                   </div>
                   <p className="text-xs text-gray-400 mt-0.5">
-                    {dt.line_id || "No line"} · {dt.machine_name || ""} · {dt.operator_name || ""}
+                    {dt.line_id || tx("No line")} · {dt.machine_name || ""} · {dt.operator_name || ""}
                   </p>
                   {dt.root_reason && <p className="text-xs text-gray-500 mt-0.5 italic">{dt.root_reason}</p>}
                 </div>
@@ -183,7 +184,7 @@ export default function DowntimeBoardPage() {
                     disabled={stopMut.isPending || writesBlocked}
                     className="mt-1 text-xs px-2 py-1 bg-gray-800 text-white rounded hover:bg-gray-900 disabled:opacity-40"
                   >
-                    Stop
+                    {tx("Stop")}
                   </button>
                 </div>
               </div>
@@ -195,28 +196,28 @@ export default function DowntimeBoardPage() {
       {/* Log List */}
       {isError ? (
         <div role="alert" className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-          <p>Downtime records could not be loaded. If your access is line-scoped, enter an assigned line in the filter above.</p>
+          <p>{tx("Downtime records could not be loaded. If your access is line-scoped, enter an assigned line in the filter above.")}</p>
           <button type="button" onClick={() => void refreshShopFloorState()} disabled={refreshingState} className="mt-2 min-h-11 rounded-md border border-amber-500 px-3 font-semibold disabled:opacity-50">
-            {refreshingState ? "Refreshing Shop Floor state…" : "Refresh Shop Floor state"}
+            {refreshingState ? tx("Refreshing Shop Floor state…") : tx("Refresh Shop Floor state")}
           </button>
         </div>
       ) : isLoading ? (
-        <div className="text-center text-gray-400 py-8">Loading…</div>
+        <div className="text-center text-gray-400 py-8">{tx("Loading…")}</div>
       ) : (
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="px-4 py-3 border-b border-gray-100">
             <h2 className="text-sm font-semibold text-gray-700">
-              {showClosed ? "All Records" : "Open Records"} ({logs.length})
+              {showClosed ? tx("All Records") : tx("Open Records")} ({logs.length})
             </h2>
           </div>
           {logs.length === 0 ? (
-            <p className="text-sm text-gray-400 text-center py-8">No downtime records</p>
+            <p className="text-sm text-gray-400 text-center py-8">{tx("No downtime records")}</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full min-w-[42rem] text-sm">
               <thead className="bg-gray-50 text-xs text-gray-400">
                 <tr>
-                  {["Category", "Line", "Machine", "Start", "Duration", "Impact", "Status"].map((h) => (
+                  {[tx("Category"), tx("Line"), tx("Machine"), tx("Start"), tx("Duration"), tx("Impact"), tx("Status")].map((h) => (
                     <th key={h} className="px-3 py-2.5 text-left font-medium">{h}</th>
                   ))}
                 </tr>
@@ -238,7 +239,7 @@ export default function DowntimeBoardPage() {
                     </td>
                     <td className="px-3 py-2">
                       <span className={`text-xs px-1.5 py-0.5 rounded ${dt.is_closed ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
-                        {dt.is_closed ? "Closed" : "Active"}
+                        {dt.is_closed ? tx("Closed") : tx("Active")}
                       </span>
                     </td>
                   </tr>
@@ -254,7 +255,7 @@ export default function DowntimeBoardPage() {
       {showModal && (
         <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50 p-2 sm:p-4">
           <div role="dialog" aria-modal="true" aria-labelledby="shop-floor-downtime-create-title" className="bg-white rounded-2xl p-4 sm:p-6 w-full max-w-md max-h-[calc(100dvh-1rem)] overflow-y-auto shadow-xl space-y-4">
-            <h2 id="shop-floor-downtime-create-title" className="text-lg font-bold text-gray-900">Log Downtime Event</h2>
+            <h2 id="shop-floor-downtime-create-title" className="text-lg font-bold text-gray-900">{tx("Log Downtime Event")}</h2>
             <ShopFloorConnectionNotice
               state={connection.state}
               onRefresh={() => void refreshShopFloorState()}
@@ -263,39 +264,39 @@ export default function DowntimeBoardPage() {
             />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label htmlFor="shop-floor-downtime-create-line" className="text-xs text-gray-500">Line ID</label>
-                <input id="shop-floor-downtime-create-line" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mt-0.5" value={lineId} onChange={(e) => setLineId(e.target.value)} placeholder="e.g. LINE-1" />
-                <p className="mt-1 text-xs text-gray-500">Scoped users must enter a line in their edit scope.</p>
+                <label htmlFor="shop-floor-downtime-create-line" className="text-xs text-gray-500">{tx("Line ID")}</label>
+                <input id="shop-floor-downtime-create-line" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mt-0.5" value={lineId} onChange={(e) => setLineId(e.target.value)} placeholder={tx("e.g. LINE-1")} />
+                <p className="mt-1 text-xs text-gray-500">{tx("Scoped users must enter a line in their edit scope.")}</p>
               </div>
               <div>
-                <label className="text-xs text-gray-500">Machine Name</label>
-                <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mt-0.5" value={machineName} onChange={(e) => setMachineName(e.target.value)} placeholder="Optional" />
+                <label className="text-xs text-gray-500">{tx("Machine Name")}</label>
+                <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mt-0.5" value={machineName} onChange={(e) => setMachineName(e.target.value)} placeholder={tx("Optional")} />
               </div>
               <div>
-                <label className="text-xs text-gray-500">Operator label (context only)</label>
+                <label className="text-xs text-gray-500">{tx("Operator label (context only)")}</label>
                 <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mt-0.5" value={operatorName} onChange={(e) => setOperatorName(e.target.value)} />
               </div>
               <div>
-                <label className="text-xs text-gray-500">Impact Level</label>
+                <label className="text-xs text-gray-500">{tx("Impact Level")}</label>
                 <select className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mt-0.5" value={impactLevel} onChange={(e) => setImpactLevel(e.target.value as any)}>
                   {["LOW", "MEDIUM", "HIGH", "CRITICAL"].map((l) => <option key={l} value={l}>{l}</option>)}
                 </select>
               </div>
             </div>
             <div>
-              <label className="text-xs text-gray-500">Category</label>
+              <label className="text-xs text-gray-500">{tx("Category")}</label>
               <select className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mt-0.5" value={category} onChange={(e) => setCategory(e.target.value)}>
                 {DOWNTIME_CATS.map((c) => <option key={c} value={c}>{DOWNTIME_CAT_LABEL[c as keyof typeof DOWNTIME_CAT_LABEL] || c}</option>)}
               </select>
             </div>
             <div>
-              <label htmlFor="shop-floor-downtime-create-reason" className="text-xs text-gray-500">Root Reason</label>
+              <label htmlFor="shop-floor-downtime-create-reason" className="text-xs text-gray-500">{tx("Root Reason")}</label>
               <textarea id="shop-floor-downtime-create-reason" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mt-0.5" rows={2} value={reason} onChange={(e) => setReason(e.target.value)} />
             </div>
             <div className="flex gap-2">
-              <button onClick={() => setShowModal(false)} className="flex-1 min-h-12 py-2 border border-gray-200 rounded-lg text-sm">Cancel</button>
+              <button onClick={() => setShowModal(false)} className="flex-1 min-h-12 py-2 border border-gray-200 rounded-lg text-sm">{tx("Cancel")}</button>
             <button onClick={() => createMut.mutate()} disabled={createMut.isPending || writesBlocked} className="flex-1 min-h-12 py-2 bg-red-600 text-white rounded-lg text-sm font-medium disabled:opacity-40">
-                Start Downtime
+                {tx("Start Downtime")}
               </button>
             </div>
           </div>

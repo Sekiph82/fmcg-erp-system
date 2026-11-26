@@ -2,6 +2,7 @@
 import { EntityPicker, type EntityKind } from "@/components/EntityPicker";
 import { useCallback, useEffect, useState } from "react";
 import { procurementApi, BlanketAgreement, BlanketAgreementPriceBreakInput, BlanketAgreementReleaseInput, PODetail, BPAStatus } from "@/lib/procurement";
+import { tx } from "@/lib/i18n/core";
 
 const STATUS_COLORS: Record<BPAStatus, string> = {
   ACTIVE: "bg-green-100 text-green-700",
@@ -79,10 +80,10 @@ export default function BlanketAgreementsPage() {
 
   const save = async () => {
     if (!form.bpa_no || !form.supplier_id || !form.agreed_unit_price || !form.valid_from || !form.valid_to) {
-      setError("BPA No., Supplier, Price, and validity dates required"); return;
+      setError(tx("BPA No., Supplier, Price, and validity dates required")); return;
     }
     if (Boolean(form.material_id.trim()) === Boolean(form.product_id.trim())) {
-      setError("Choose exactly one material ID or product ID for a releasable agreement."); return;
+      setError(tx("Choose exactly one material ID or product ID for a releasable agreement.")); return;
     }
     setSaving(true); setError("");
     try {
@@ -109,20 +110,20 @@ export default function BlanketAgreementsPage() {
       setShowModal(false);
       await load();
     } catch {
-      setError("Failed to save agreement");
+      setError(tx("Failed to save agreement"));
     } finally {
       setSaving(false);
     }
   };
 
   const cancel = async (b: BlanketAgreement) => {
-    if (!confirm(`Cancel agreement ${b.bpa_no}?`)) return;
+    if (!confirm(tx("Cancel agreement {bpa_no}?", { bpa_no: b.bpa_no }))) return;
     setError("");
     try {
       await procurementApi.updateBPA(b.id, { status: "CANCELLED" });
       await load();
     } catch {
-      setError(`Could not cancel ${b.bpa_no}. It may be expired, fully consumed, or outside your procurement scope.`);
+      setError(tx("Could not cancel {bpa_no}. It may be expired, fully consumed, or outside your procurement scope.", { bpa_no: b.bpa_no }));
     }
   };
 
@@ -144,7 +145,7 @@ export default function BlanketAgreementsPage() {
     } catch {
       setPriceBreakRows([]);
       setPriceBreakLoadFailed(true);
-      setPriceBreakError("Could not load price breaks for this agreement.");
+      setPriceBreakError(tx("Could not load price breaks for this agreement."));
     } finally {
       setPriceBreakLoading(false);
     }
@@ -159,7 +160,7 @@ export default function BlanketAgreementsPage() {
       setPriceBreakAgreement(null);
       await load();
     } catch {
-      setPriceBreakError("Price breaks could not be saved. Check quantity thresholds and validity windows.");
+      setPriceBreakError(tx("Price breaks could not be saved. Check quantity thresholds and validity windows."));
     } finally {
       setPriceBreakSaving(false);
     }
@@ -181,7 +182,7 @@ export default function BlanketAgreementsPage() {
     try {
       setReleaseOrders(await procurementApi.listBPAReleaseOrders(agreement.id));
     } catch {
-      setReleaseError("Could not load release orders for this agreement.");
+      setReleaseError(tx("Could not load release orders for this agreement."));
     } finally {
       setReleaseLoading(false);
     }
@@ -189,7 +190,7 @@ export default function BlanketAgreementsPage() {
 
   const createReleaseOrder = async () => {
     if (!releaseAgreement || !releaseForm.po_no.trim() || !releaseForm.quantity || !releaseForm.release_date || !releaseForm.expected_delivery_date) {
-      setReleaseError("Purchase order number, quantity, release date, and expected delivery date are required.");
+      setReleaseError(tx("Purchase order number, quantity, release date, and expected delivery date are required."));
       return;
     }
     setReleaseSaving(true);
@@ -202,7 +203,7 @@ export default function BlanketAgreementsPage() {
       setReleaseOrders(rows => [created, ...rows]);
       setReleaseForm(formState => ({ ...formState, po_no: "", quantity: "", notes: "" }));
     } catch {
-      setReleaseError("Release order was not created. Check agreement dates, commitment remaining, and your create access.");
+      setReleaseError(tx("Release order was not created. Check agreement dates, commitment remaining, and your create access."));
     } finally {
       setReleaseSaving(false);
     }
@@ -226,21 +227,21 @@ export default function BlanketAgreementsPage() {
     <div className="p-6 space-y-5">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Blanket Purchase Agreements</h1>
-          <p className="text-xs text-gray-500 mt-0.5">Long-term price agreements with suppliers for materials and products.</p>
+          <h1 className="text-xl font-bold text-gray-900">{tx("Blanket Purchase Agreements")}</h1>
+          <p className="text-xs text-gray-500 mt-0.5">{tx("Long-term price agreements with suppliers for materials and products.")}</p>
         </div>
         <button onClick={openCreate}
           className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
-          + New Agreement
+          {tx("+ New Agreement")}
         </button>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: "Active Agreements", value: active, color: "text-green-600" },
-          { label: "Scheduled", value: scheduled, color: "text-blue-600" },
-          { label: "Expired / Cancelled", value: expired, color: "text-gray-500" },
-          { label: "Bounded Active Value", value: totalValue, color: "text-blue-600" },
+          { label: tx("Active Agreements"), value: active, color: "text-green-600" },
+          { label: tx("Scheduled"), value: scheduled, color: "text-blue-600" },
+          { label: tx("Expired / Cancelled"), value: expired, color: "text-gray-500" },
+          { label: tx("Bounded Active Value"), value: totalValue, color: "text-blue-600" },
         ].map(s => (
           <div key={s.label} className="bg-white border rounded-lg p-4 shadow-sm">
             <p className="text-xs text-gray-500">{s.label}</p>
@@ -252,27 +253,27 @@ export default function BlanketAgreementsPage() {
       <div className="flex gap-3 flex-wrap items-center">
         <select className="border rounded px-2 py-1.5 text-sm" value={filterStatus}
           onChange={e => setFilterStatus(e.target.value as BPAStatus | "")}>
-          <option value="">All Status</option>
-          <option value="ACTIVE">Active</option>
-          <option value="EXPIRED">Expired</option>
-          <option value="CANCELLED">Cancelled</option>
+          <option value="">{tx("All Status")}</option>
+          <option value="ACTIVE">{tx("Active")}</option>
+          <option value="EXPIRED">{tx("Expired")}</option>
+          <option value="CANCELLED">{tx("Cancelled")}</option>
         </select>
-        <span className="text-xs text-gray-500">{bpas.length} agreements</span>
+        <span className="text-xs text-gray-500">{bpas.length} {tx("agreements")}</span>
       </div>
 
       {loading ? (
-        <p className="text-sm text-gray-500">Loading…</p>
+        <p className="text-sm text-gray-500">{tx("Loading…")}</p>
       ) : bpas.length === 0 ? (
         <div className="bg-white border rounded-lg p-10 text-center text-gray-400">
           <p className="text-2xl mb-2">🤝</p>
-          <p className="text-sm">No blanket agreements found.</p>
+          <p className="text-sm">{tx("No blanket agreements found.")}</p>
         </div>
       ) : (
         <div className="bg-white border rounded-lg shadow-sm overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b">
               <tr>
-                {["BPA No.", "Supplier", "Description", "Price", "Qty", "Consumed", "Valid To", "Status", "Actions"].map(h => (
+                {[tx("BPA No."), tx("Supplier"), tx("Description"), tx("Price"), tx("Qty"), tx("Consumed"), tx("Valid To"), tx("Status"), tx("Actions")].map(h => (
                   <th key={h} className="px-4 py-2 text-left text-xs font-semibold text-gray-600">{h}</th>
                 ))}
               </tr>
@@ -295,12 +296,12 @@ export default function BlanketAgreementsPage() {
                       {b.currency} {Number(b.agreed_unit_price).toLocaleString()} /{b.unit}
                     </td>
                     <td className="px-4 py-3 text-xs text-gray-600">
-                      {b.agreed_quantity != null ? `${Number(b.agreed_quantity).toLocaleString()} ${b.unit}` : "Open"}
+                      {b.agreed_quantity != null ? `${Number(b.agreed_quantity).toLocaleString()} ${b.unit}` : tx("Open")}
                     </td>
                     <td className="px-4 py-3 text-xs text-gray-600">
                       {Number(b.consumed_quantity).toLocaleString()}
                       {b.remaining_quantity != null && (
-                        <span className="text-gray-400"> ({Number(b.remaining_quantity).toLocaleString()} left)</span>
+                        <span className="text-gray-400"> ({Number(b.remaining_quantity).toLocaleString()} {tx("left)")}</span>
                       )}
                     </td>
                     <td className="px-4 py-3 text-xs">
@@ -317,20 +318,20 @@ export default function BlanketAgreementsPage() {
                     <td className="px-4 py-3">
                       <div className="flex gap-2">
                         {canEdit && !hasConsumption && (
-                          <button onClick={() => openEdit(b)} className="text-xs text-blue-600 hover:underline">Edit</button>
+                          <button onClick={() => openEdit(b)} className="text-xs text-blue-600 hover:underline">{tx("Edit")}</button>
                         )}
                         {canEdit && !hasConsumption && (
-                          <button onClick={() => void openPriceBreaks(b)} className="text-xs text-indigo-600 hover:underline">Price breaks</button>
+                          <button onClick={() => void openPriceBreaks(b)} className="text-xs text-indigo-600 hover:underline">{tx("Price breaks")}</button>
                         )}
                         {canCancel && (
-                          <button onClick={() => cancel(b)} className="text-xs text-red-500 hover:underline">Cancel</button>
+                          <button onClick={() => cancel(b)} className="text-xs text-red-500 hover:underline">{tx("Cancel")}</button>
                         )}
                         {canCreateRelease && (
-                          <button onClick={() => void openReleaseOrders(b)} className="text-xs text-emerald-700 hover:underline">Call off</button>
+                          <button onClick={() => void openReleaseOrders(b)} className="text-xs text-emerald-700 hover:underline">{tx("Call off")}</button>
                         )}
-                        {!canEdit && !canCancel && <span className="text-[11px] text-gray-400">View only</span>}
+                        {!canEdit && !canCancel && <span className="text-[11px] text-gray-400">{tx("View only")}</span>}
                         {canEdit && hasConsumption && (
-                          <span className="text-[11px] text-gray-400">Commercial terms locked</span>
+                          <span className="text-[11px] text-gray-400">{tx("Commercial terms locked")}</span>
                         )}
                       </div>
                     </td>
@@ -346,26 +347,26 @@ export default function BlanketAgreementsPage() {
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="px-6 py-4 border-b flex items-center justify-between">
-              <h2 className="text-base font-semibold">{editId ? "Edit Agreement" : "New Blanket Agreement"}</h2>
+              <h2 className="text-base font-semibold">{editId ? tx("Edit Agreement") : tx("New Blanket Agreement")}</h2>
               <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
             </div>
             <div className="p-6 space-y-4">
               {error && <p className="text-xs text-red-500 bg-red-50 border border-red-200 rounded px-3 py-2">{error}</p>}
               <div className="grid grid-cols-2 gap-4">
                 {[
-                  { label: "BPA No. *", key: "bpa_no", placeholder: "BPA-2026-001", col: 1 },
-                  { label: "Supplier *", key: "supplier_id", placeholder: "", col: 1 },
-                  { label: "Material (choose one target)", key: "material_id", placeholder: "", col: 1 },
-                  { label: "Product (choose one target)", key: "product_id", placeholder: "", col: 1 },
-                  { label: "Description", key: "description", placeholder: "e.g. Palm Oil FY2026", col: 2 },
-                  { label: "Agreed Unit Price *", key: "agreed_unit_price", type: "number", placeholder: "0.00", col: 1 },
-                  { label: "Currency", key: "currency", placeholder: "KES", col: 1 },
-                  { label: "Agreed Quantity (blank = open)", key: "agreed_quantity", type: "number", placeholder: "", col: 1 },
-                  { label: "Unit", key: "unit", placeholder: "KG", col: 1 },
-                  { label: "Valid From *", key: "valid_from", type: "date", col: 1 },
-                  { label: "Valid To *", key: "valid_to", type: "date", col: 1 },
-                  { label: "Payment Terms", key: "payment_terms", placeholder: "Net 30", col: 2 },
-                  { label: "Notes", key: "notes", placeholder: "", col: 2 },
+                  { label: tx("BPA No. *"), key: "bpa_no", placeholder: "BPA-2026-001", col: 1 },
+                  { label: tx("Supplier *"), key: "supplier_id", placeholder: "", col: 1 },
+                  { label: tx("Material (choose one target)"), key: "material_id", placeholder: "", col: 1 },
+                  { label: tx("Product (choose one target)"), key: "product_id", placeholder: "", col: 1 },
+                  { label: tx("Description"), key: "description", placeholder: tx("e.g. Palm Oil FY2026"), col: 2 },
+                  { label: tx("Agreed Unit Price *"), key: "agreed_unit_price", type: "number", placeholder: "0.00", col: 1 },
+                  { label: tx("Currency"), key: "currency", placeholder: "KES", col: 1 },
+                  { label: tx("Agreed Quantity (blank = open)"), key: "agreed_quantity", type: "number", placeholder: "", col: 1 },
+                  { label: tx("Unit"), key: "unit", placeholder: "KG", col: 1 },
+                  { label: tx("Valid From *"), key: "valid_from", type: "date", col: 1 },
+                  { label: tx("Valid To *"), key: "valid_to", type: "date", col: 1 },
+                  { label: tx("Payment Terms"), key: "payment_terms", placeholder: tx("Net 30"), col: 2 },
+                  { label: tx("Notes"), key: "notes", placeholder: "", col: 2 },
                 ].map(f => (
                   <div key={f.key} className={f.col === 2 ? "col-span-2" : ""}>
                     <label className="block text-xs font-medium text-gray-600 mb-1">{f.label}</label>
@@ -381,11 +382,11 @@ export default function BlanketAgreementsPage() {
             <div className="px-6 pb-5 flex gap-3">
               <button onClick={save} disabled={saving}
                 className="flex-1 rounded bg-blue-600 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">
-                {saving ? "Saving…" : editId ? "Update" : "Create"}
+                {saving ? tx("Saving…") : editId ? tx("Update") : tx("Create")}
               </button>
               <button onClick={() => setShowModal(false)}
                 className="flex-1 rounded border py-2 text-sm text-gray-600 hover:bg-gray-50">
-                Cancel
+                {tx("Cancel")}
               </button>
             </div>
           </div>
@@ -397,32 +398,32 @@ export default function BlanketAgreementsPage() {
           <div className="bg-white border rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
             <div className="px-6 py-4 border-b flex items-center justify-between">
               <div>
-                <h2 className="text-base font-semibold">Price breaks · {priceBreakAgreement.bpa_no}</h2>
-                <p className="text-xs text-gray-500 mt-1">The highest eligible quantity threshold sets the all-units price. The agreement price applies when no break is eligible.</p>
+                <h2 className="text-base font-semibold">{tx("Price breaks ·")} {priceBreakAgreement.bpa_no}</h2>
+                <p className="text-xs text-gray-500 mt-1">{tx("The highest eligible quantity threshold sets the all-units price. The agreement price applies when no break is eligible.")}</p>
               </div>
-              <button onClick={() => setPriceBreakAgreement(null)} className="text-gray-400 hover:text-gray-600 text-xl" aria-label="Close price breaks">×</button>
+              <button onClick={() => setPriceBreakAgreement(null)} className="text-gray-400 hover:text-gray-600 text-xl" aria-label={tx("Close price breaks")}>×</button>
             </div>
             <div className="p-6 space-y-4">
               {priceBreakError && <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">{priceBreakError}</p>}
-              {priceBreakLoading ? <p className="text-sm text-gray-500">Loading price breaks…</p> : (
+              {priceBreakLoading ? <p className="text-sm text-gray-500">{tx("Loading price breaks…")}</p> : (
                 <>
-                  {priceBreakRows.length === 0 && <p className="text-sm text-gray-500">No price breaks. The agreement unit price applies to every release.</p>}
+                  {priceBreakRows.length === 0 && <p className="text-sm text-gray-500">{tx("No price breaks. The agreement unit price applies to every release.")}</p>}
                   <div className="space-y-3">
                     {priceBreakRows.map((row, index) => (
                       <div key={`${index}-${row.min_quantity}`} className="grid grid-cols-1 md:grid-cols-5 gap-2 items-end border rounded p-3">
-                        <label className="text-xs text-gray-600">Minimum quantity
+                        <label className="text-xs text-gray-600">{tx("Minimum quantity")}
                           <input type="number" min="0.001" step="0.001" value={row.min_quantity} onChange={event => setPriceBreakRows(rows => rows.map((item, i) => i === index ? { ...item, min_quantity: event.target.value } : item))} className="mt-1 w-full border rounded px-2 py-1.5" />
                         </label>
-                        <label className="text-xs text-gray-600">Unit price ({priceBreakAgreement.currency})
+                        <label className="text-xs text-gray-600">{tx("Unit price (")}{priceBreakAgreement.currency})
                           <input type="number" min="0.0001" step="0.0001" value={row.unit_price} onChange={event => setPriceBreakRows(rows => rows.map((item, i) => i === index ? { ...item, unit_price: event.target.value } : item))} className="mt-1 w-full border rounded px-2 py-1.5" />
                         </label>
-                        <label className="text-xs text-gray-600">Effective from
+                        <label className="text-xs text-gray-600">{tx("Effective from")}
                           <input type="date" min={priceBreakAgreement.valid_from} max={priceBreakAgreement.valid_to} value={row.effective_from} onChange={event => setPriceBreakRows(rows => rows.map((item, i) => i === index ? { ...item, effective_from: event.target.value } : item))} className="mt-1 w-full border rounded px-2 py-1.5" />
                         </label>
-                        <label className="text-xs text-gray-600">Effective to
+                        <label className="text-xs text-gray-600">{tx("Effective to")}
                           <input type="date" min={priceBreakAgreement.valid_from} max={priceBreakAgreement.valid_to} value={row.effective_to} onChange={event => setPriceBreakRows(rows => rows.map((item, i) => i === index ? { ...item, effective_to: event.target.value } : item))} className="mt-1 w-full border rounded px-2 py-1.5" />
                         </label>
-                        <button onClick={() => setPriceBreakRows(rows => rows.filter((_, i) => i !== index))} className="text-xs text-red-600 hover:underline">Remove</button>
+                        <button onClick={() => setPriceBreakRows(rows => rows.filter((_, i) => i !== index))} className="text-xs text-red-600 hover:underline">{tx("Remove")}</button>
                       </div>
                     ))}
                   </div>
@@ -430,11 +431,11 @@ export default function BlanketAgreementsPage() {
                     <button disabled={priceBreakLoading || priceBreakLoadFailed} onClick={() => setPriceBreakRows(rows => [...rows, {
                       min_quantity: "", unit_price: "", effective_from: priceBreakAgreement.valid_from,
                       effective_to: priceBreakAgreement.valid_to, notes: "",
-                    }])} className="text-sm text-indigo-700 border border-indigo-200 rounded px-3 py-2 disabled:opacity-50">+ Add threshold</button>
+                    }])} className="text-sm text-indigo-700 border border-indigo-200 rounded px-3 py-2 disabled:opacity-50">{tx("+ Add threshold")}</button>
                     <div className="flex gap-2">
-                      <button onClick={() => setPriceBreakAgreement(null)} className="border rounded px-4 py-2 text-sm">Close</button>
+                      <button onClick={() => setPriceBreakAgreement(null)} className="border rounded px-4 py-2 text-sm">{tx("Close")}</button>
                       <button onClick={() => void savePriceBreaks()} disabled={priceBreakSaving || priceBreakLoading || priceBreakLoadFailed} className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white rounded px-4 py-2 text-sm">
-                        {priceBreakSaving ? "Saving…" : "Save price breaks"}
+                        {priceBreakSaving ? tx("Saving…") : tx("Save price breaks")}
                       </button>
                     </div>
                   </div>
@@ -450,41 +451,41 @@ export default function BlanketAgreementsPage() {
           <div className="bg-white border rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
             <div className="px-6 py-4 border-b flex items-center justify-between">
               <div>
-                <h2 className="text-base font-semibold">Call-off orders · {releaseAgreement.bpa_no}</h2>
-                <p className="text-xs text-gray-500 mt-1">A call-off creates a draft purchase order at the agreement price. Normal purchase-order approval and ordering are still required.</p>
+                <h2 className="text-base font-semibold">{tx("Call-off orders ·")} {releaseAgreement.bpa_no}</h2>
+                <p className="text-xs text-gray-500 mt-1">{tx("A call-off creates a draft purchase order at the agreement price. Normal purchase-order approval and ordering are still required.")}</p>
               </div>
-              <button onClick={() => setReleaseAgreement(null)} className="text-gray-400 hover:text-gray-600 text-xl" aria-label="Close call-off orders">×</button>
+              <button onClick={() => setReleaseAgreement(null)} className="text-gray-400 hover:text-gray-600 text-xl" aria-label={tx("Close call-off orders")}>×</button>
             </div>
             <div className="p-6 space-y-5">
               {releaseError && <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">{releaseError}</p>}
               <div className="grid grid-cols-1 md:grid-cols-5 gap-3 items-end border rounded-lg p-4">
-                <label className="text-xs text-gray-600">Purchase order number
+                <label className="text-xs text-gray-600">{tx("Purchase order number")}
                   <input value={releaseForm.po_no} onChange={event => setReleaseForm(state => ({ ...state, po_no: event.target.value }))} className="mt-1 w-full border rounded px-2 py-2" maxLength={50} />
                 </label>
-                <label className="text-xs text-gray-600">Release quantity ({releaseAgreement.unit})
+                <label className="text-xs text-gray-600">{tx("Release quantity (")}{releaseAgreement.unit})
                   <input type="number" min="0.001" step="0.001" value={releaseForm.quantity} onChange={event => setReleaseForm(state => ({ ...state, quantity: event.target.value }))} className="mt-1 w-full border rounded px-2 py-2" />
                 </label>
-                <label className="text-xs text-gray-600">Release date
+                <label className="text-xs text-gray-600">{tx("Release date")}
                   <input type="date" min={releaseAgreement.valid_from} max={releaseAgreement.valid_to} value={releaseForm.release_date} onChange={event => setReleaseForm(state => ({ ...state, release_date: event.target.value, expected_delivery_date: state.expected_delivery_date < event.target.value ? event.target.value : state.expected_delivery_date }))} className="mt-1 w-full border rounded px-2 py-2" />
                 </label>
-                <label className="text-xs text-gray-600">Expected delivery
+                <label className="text-xs text-gray-600">{tx("Expected delivery")}
                   <input type="date" min={releaseForm.release_date} value={releaseForm.expected_delivery_date} onChange={event => setReleaseForm(state => ({ ...state, expected_delivery_date: event.target.value }))} className="mt-1 w-full border rounded px-2 py-2" />
                 </label>
                 <button onClick={() => void createReleaseOrder()} disabled={releaseSaving || releaseLoading} className="bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white rounded px-3 py-2 text-sm">
-                  {releaseSaving ? "Creating…" : "Create draft PO"}
+                  {releaseSaving ? tx("Creating…") : tx("Create draft PO")}
                 </button>
-                <label className="md:col-span-5 text-xs text-gray-600">Notes
+                <label className="md:col-span-5 text-xs text-gray-600">{tx("Notes")}
                   <input value={releaseForm.notes ?? ""} onChange={event => setReleaseForm(state => ({ ...state, notes: event.target.value }))} className="mt-1 w-full border rounded px-2 py-2" maxLength={1000} />
                 </label>
               </div>
               <div>
-                <h3 className="text-sm font-semibold mb-2">Existing call-off orders</h3>
-                {releaseLoading ? <p className="text-sm text-gray-500">Loading call-off orders…</p> : releaseOrders.length === 0 ? (
-                  <p className="text-sm text-gray-500">No call-off orders yet.</p>
+                <h3 className="text-sm font-semibold mb-2">{tx("Existing call-off orders")}</h3>
+                {releaseLoading ? <p className="text-sm text-gray-500">{tx("Loading call-off orders…")}</p> : releaseOrders.length === 0 ? (
+                  <p className="text-sm text-gray-500">{tx("No call-off orders yet.")}</p>
                 ) : (
                   <div className="overflow-x-auto border rounded-lg">
                     <table className="w-full text-sm">
-                      <thead className="bg-gray-50"><tr>{["PO No.", "Qty", "Unit Price", "Delivery", "Status"].map(header => <th key={header} className="px-3 py-2 text-left text-xs text-gray-600">{header}</th>)}</tr></thead>
+                      <thead className="bg-gray-50"><tr>{[tx("PO No."), tx("Qty"), tx("Unit Price"), tx("Delivery"), tx("Status")].map(header => <th key={header} className="px-3 py-2 text-left text-xs text-gray-600">{header}</th>)}</tr></thead>
                       <tbody className="divide-y">{releaseOrders.map(order => (
                         <tr key={order.id}>
                           <td className="px-3 py-2 font-mono text-xs">{order.po_no}</td>
@@ -498,7 +499,7 @@ export default function BlanketAgreementsPage() {
                   </div>
                 )}
               </div>
-              <div className="flex justify-end"><button onClick={() => setReleaseAgreement(null)} className="border rounded px-4 py-2 text-sm">Close</button></div>
+              <div className="flex justify-end"><button onClick={() => setReleaseAgreement(null)} className="border rounded px-4 py-2 text-sm">{tx("Close")}</button></div>
             </div>
           </div>
         </div>

@@ -4,21 +4,22 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { subscriptionApi } from "@/lib/subscription";
 import { useRouter } from "next/navigation";
+import { tx, lx } from "@/lib/i18n/core";
 
-const RECURRENCE_TYPES = [
-  { value: "WEEKLY", label: "Weekly" },
-  { value: "BIWEEKLY", label: "Every 2 weeks" },
-  { value: "MONTHLY_DATE", label: "Monthly (fixed date)" },
-  { value: "MONTHLY_DAY", label: "Monthly (weekday)" },
-  { value: "CUSTOM_DAYS", label: "Custom interval (days)" },
-  { value: "ROUTE_BASED", label: "Route-based" },
-];
+const RECURRENCE_TYPES = lx(() => [
+  { value: "WEEKLY", label: tx("Weekly") },
+  { value: "BIWEEKLY", label: tx("Every 2 weeks") },
+  { value: "MONTHLY_DATE", label: tx("Monthly (fixed date)") },
+  { value: "MONTHLY_DAY", label: tx("Monthly (weekday)") },
+  { value: "CUSTOM_DAYS", label: tx("Custom interval (days)") },
+  { value: "ROUTE_BASED", label: tx("Route-based") },
+]);
 
-const GENERATION_MODES = [
-  { value: "DRAFT_ONLY", label: "Draft only (manual review)" },
-  { value: "APPROVAL_REQUIRED", label: "Pending approval" },
-  { value: "AUTO_CONFIRM", label: "Auto-confirm" },
-];
+const GENERATION_MODES = lx(() => [
+  { value: "DRAFT_ONLY", label: tx("Draft only (manual review)") },
+  { value: "APPROVAL_REQUIRED", label: tx("Pending approval") },
+  { value: "AUTO_CONFIRM", label: tx("Auto-confirm") },
+]);
 
 export default function NewTemplatePage() {
   const router = useRouter();
@@ -44,7 +45,7 @@ export default function NewTemplatePage() {
       qc.invalidateQueries({ queryKey: ["sub-templates"] });
       router.push(`/dashboard/recurring-orders/templates/${t.id}`);
     },
-    onError: (e: any) => setError(e?.message ?? "Failed to create"),
+    onError: (e: any) => setError(e?.message ?? tx("Failed to create")),
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -72,23 +73,23 @@ export default function NewTemplatePage() {
   return (
     <div className="p-6 max-w-2xl mx-auto space-y-6 text-slate-200">
       <div>
-        <h1 className="text-xl font-bold text-white">New Recurring Template</h1>
-        <p className="text-slate-500 text-sm mt-0.5">Create a recurring order contract</p>
+        <h1 className="text-xl font-bold text-white">{tx("New Recurring Template")}</h1>
+        <p className="text-slate-500 text-sm mt-0.5">{tx("Create a recurring order contract")}</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <div className="glow-card p-5 space-y-4">
-          <h2 className="text-sm font-semibold text-white">Template Info</h2>
+          <h2 className="text-sm font-semibold text-white">{tx("Template Info")}</h2>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs text-slate-400 mb-1 block">Template Code *</label>
+              <label className="text-xs text-slate-400 mb-1 block">{tx("Template Code *")}</label>
               <input value={form.template_code} onChange={(e) => upd("template_code", e.target.value)} required
                 className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
                 placeholder="SUB-001" />
             </div>
             <div>
-              <label className="text-xs text-slate-400 mb-1 block">Currency</label>
+              <label className="text-xs text-slate-400 mb-1 block">{tx("Currency")}</label>
               <input value={form.currency} onChange={(e) => upd("currency", e.target.value)}
                 className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
                 placeholder="KES" maxLength={3} />
@@ -96,24 +97,24 @@ export default function NewTemplatePage() {
           </div>
 
           <div>
-            <label className="text-xs text-slate-400 mb-1 block">Template Name *</label>
+            <label className="text-xs text-slate-400 mb-1 block">{tx("Template Name *")}</label>
             <input value={form.template_name} onChange={(e) => upd("template_name", e.target.value)} required
               className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
-              placeholder="Weekly delivery for Nairobi branch" />
+              placeholder={tx("Weekly delivery for Nairobi branch")} />
           </div>
 
           <div>
-            <label className="text-xs text-slate-400 mb-1 block">Customer *</label>
-            <EntityPicker kind="customer" label="Customer" required value={form.customer_id} onChange={(id) => upd("customer_id", id)} />
+            <label className="text-xs text-slate-400 mb-1 block">{tx("Customer *")}</label>
+            <EntityPicker kind="customer" label={tx("Customer")} required value={form.customer_id} onChange={(id) => upd("customer_id", id)} />
           </div>
         </div>
 
         <div className="glow-card p-5 space-y-4">
-          <h2 className="text-sm font-semibold text-white">Recurrence Settings</h2>
+          <h2 className="text-sm font-semibold text-white">{tx("Recurrence Settings")}</h2>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs text-slate-400 mb-1 block">Recurrence Type *</label>
+              <label className="text-xs text-slate-400 mb-1 block">{tx("Recurrence Type *")}</label>
               <select value={form.recurrence_type} onChange={(e) => upd("recurrence_type", e.target.value)}
                 className="w-full bg-[#0d1829] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500">
                 {RECURRENCE_TYPES.map((r) => (
@@ -122,16 +123,16 @@ export default function NewTemplatePage() {
               </select>
             </div>
             <div>
-              <label className="text-xs text-slate-400 mb-1 block">Interval (days, for custom)</label>
+              <label className="text-xs text-slate-400 mb-1 block">{tx("Interval (days, for custom)")}</label>
               <input type="number" value={form.recurrence_interval} onChange={(e) => upd("recurrence_interval", e.target.value)}
                 className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
-                min={1} placeholder="e.g. 14" />
+                min={1} placeholder={tx("e.g. 14")} />
             </div>
           </div>
 
           {form.recurrence_type === "MONTHLY_DATE" && (
             <div>
-              <label className="text-xs text-slate-400 mb-1 block">Day of month</label>
+              <label className="text-xs text-slate-400 mb-1 block">{tx("Day of month")}</label>
               <input type="number" value={form.recurrence_day_of_month} onChange={(e) => upd("recurrence_day_of_month", e.target.value)}
                 className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
                 min={1} max={31} />
@@ -140,12 +141,12 @@ export default function NewTemplatePage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs text-slate-400 mb-1 block">Start Date *</label>
+              <label className="text-xs text-slate-400 mb-1 block">{tx("Start Date *")}</label>
               <input type="date" value={form.start_date} onChange={(e) => upd("start_date", e.target.value)} required
                 className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500" />
             </div>
             <div>
-              <label className="text-xs text-slate-400 mb-1 block">End Date (optional)</label>
+              <label className="text-xs text-slate-400 mb-1 block">{tx("End Date (optional)")}</label>
               <input type="date" value={form.end_date} onChange={(e) => upd("end_date", e.target.value)}
                 className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500" />
             </div>
@@ -153,9 +154,9 @@ export default function NewTemplatePage() {
         </div>
 
         <div className="glow-card p-5 space-y-4">
-          <h2 className="text-sm font-semibold text-white">Generation Settings</h2>
+          <h2 className="text-sm font-semibold text-white">{tx("Generation Settings")}</h2>
           <div>
-            <label className="text-xs text-slate-400 mb-1 block">Generation Mode</label>
+            <label className="text-xs text-slate-400 mb-1 block">{tx("Generation Mode")}</label>
             <select value={form.generation_mode} onChange={(e) => upd("generation_mode", e.target.value)}
               className="w-full bg-[#0d1829] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500">
               {GENERATION_MODES.map((m) => (
@@ -164,7 +165,7 @@ export default function NewTemplatePage() {
             </select>
           </div>
           <div>
-            <label className="text-xs text-slate-400 mb-1 block">Notes</label>
+            <label className="text-xs text-slate-400 mb-1 block">{tx("Notes")}</label>
             <textarea value={form.notes} onChange={(e) => upd("notes", e.target.value)} rows={3}
               className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 resize-none" />
           </div>
@@ -177,11 +178,11 @@ export default function NewTemplatePage() {
         <div className="flex justify-end gap-3">
           <button type="button" onClick={() => router.back()}
             className="px-4 py-2 rounded-lg border border-white/[0.08] text-slate-400 text-sm hover:border-white/20">
-            Cancel
+            {tx("Cancel")}
           </button>
           <button type="submit" disabled={mut.isPending}
             className="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium disabled:opacity-50">
-            {mut.isPending ? "Creating..." : "Create Template"}
+            {mut.isPending ? tx("Creating...") : tx("Create Template")}
           </button>
         </div>
       </form>

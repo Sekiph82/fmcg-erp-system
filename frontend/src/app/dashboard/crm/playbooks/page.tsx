@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { apiClient } from "@/lib/api";
 import { EntityPicker } from "@/components/EntityPicker";
+import { tx } from "@/lib/i18n/core";
 
 interface Q { key: string; text: string; type: "text" | "yesno" | "number" | "choice"; required: boolean; choices: string[];
   maps_to: string | null; show_if: { key: string; equals: unknown } | null; help: string | null }
@@ -33,45 +34,45 @@ export default function CRMPlaybooksPage() {
 
   return (
     <div className="p-4 space-y-4">
-      <h2 className="text-lg font-semibold">Playbooks &amp; guided selling</h2>
+      <h2 className="text-lg font-semibold">{tx("Playbooks & guided selling")}</h2>
       {msg && <p role="status" className="text-sm text-gray-700">{msg}</p>}
       <div className="grid lg:grid-cols-2 gap-4">
         <section className="space-y-2">
-          <h3 className="text-sm font-semibold">Library</h3>
-          {items.length === 0 && <p className="text-xs text-gray-500">No playbooks yet.</p>}
+          <h3 className="text-sm font-semibold">{tx("Library")}</h3>
+          {items.length === 0 && <p className="text-xs text-gray-500">{tx("No playbooks yet.")}</p>}
           {items.map((p) => (
             <div key={p.id} className="border rounded p-2 text-xs bg-white space-y-1">
-              <div className="flex justify-between gap-2"><span className="font-medium">{p.name} · v{p.version}</span><span>{p.purpose} · {p.status}{p.blocks_stage_exit && " · stage gate"}</span></div>
+              <div className="flex justify-between gap-2"><span className="font-medium">{p.name} {tx("· v")}{p.version}</span><span>{p.purpose} · {p.status}{p.blocks_stage_exit && tx(" · stage gate")}</span></div>
               {p.guidance && <p className="text-gray-600">{p.guidance}</p>}
               <div className="flex flex-wrap gap-2">
-                {p.status === "DRAFT" && <button className="underline" onClick={() => act(() => apiClient.post(`/api/v1/crm-playbooks/${p.id}/lifecycle/submit`), "Sent for approval.")}>Submit</button>}
+                {p.status === "DRAFT" && <button className="underline" onClick={() => act(() => apiClient.post(`/api/v1/crm-playbooks/${p.id}/lifecycle/submit`), "Sent for approval.")}>{tx("Submit")}</button>}
                 {p.status === "PENDING_APPROVAL" && <>
-                  <button className="underline text-green-700" onClick={() => act(() => apiClient.post(`/api/v1/crm-playbooks/${p.id}/lifecycle/approve`), "Published.")}>Approve</button>
-                  <button className="underline" onClick={() => act(() => apiClient.post(`/api/v1/crm-playbooks/${p.id}/lifecycle/reject`), "Back to draft.")}>Reject</button></>}
-                {p.status === "PUBLISHED" && <button className="underline" onClick={() => act(() => apiClient.post(`/api/v1/crm-playbooks/${p.id}/lifecycle/new-version`), "New draft version created.")}>New version</button>}
+                  <button className="underline text-green-700" onClick={() => act(() => apiClient.post(`/api/v1/crm-playbooks/${p.id}/lifecycle/approve`), "Published.")}>{tx("Approve")}</button>
+                  <button className="underline" onClick={() => act(() => apiClient.post(`/api/v1/crm-playbooks/${p.id}/lifecycle/reject`), "Back to draft.")}>{tx("Reject")}</button></>}
+                {p.status === "PUBLISHED" && <button className="underline" onClick={() => act(() => apiClient.post(`/api/v1/crm-playbooks/${p.id}/lifecycle/new-version`), "New draft version created.")}>{tx("New version")}</button>}
                 <button className="underline" onClick={async () => { try { const r = (await apiClient.get(`/api/v1/crm-playbooks/${p.family_id}/report`)).data;
-                  setMsg(`${p.name}: ${r.completed}/${r.runs} runs completed · win rate with ${r.with_playbook.win_rate ?? "—"} vs without ${r.without_playbook.win_rate ?? "—"} (${r.note})`); } catch (e) { setMsg(err(e, "Managers only.")); } }}>Report</button>
+                  setMsg(`${p.name}: ${r.completed}/${r.runs} runs completed · win rate with ${r.with_playbook.win_rate ?? "—"} vs without ${r.without_playbook.win_rate ?? "—"} (${r.note})`); } catch (e) { setMsg(err(e, "Managers only.")); } }}>{tx("Report")}</button>
               </div>
             </div>
           ))}
           <form className="border rounded p-2 bg-white space-y-1 text-xs" onSubmit={(e) => { e.preventDefault();
-            let questions; try { questions = JSON.parse(draft.questions); } catch { setMsg("Questions must be valid JSON."); return; }
+            let questions; try { questions = JSON.parse(draft.questions); } catch { setMsg(tx("Questions must be valid JSON.")); return; }
             act(() => apiClient.post("/api/v1/crm-playbooks", { ...draft, stage_id: draft.stage_id || null, questions }), "Draft saved."); }}>
-            <div className="font-semibold">New playbook (CRM managers)</div>
-            <input className="border rounded px-2 py-1 w-full" required placeholder="Name" value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
+            <div className="font-semibold">{tx("New playbook (CRM managers)")}</div>
+            <input className="border rounded px-2 py-1 w-full" required placeholder={tx("Name")} value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
             <select className="border rounded px-2 py-1" value={draft.purpose} onChange={(e) => setDraft({ ...draft, purpose: e.target.value })}>
               {["CALL", "VISIT", "QUALIFICATION", "STAGE"].map((x) => <option key={x}>{x}</option>)}</select>
             {draft.purpose === "STAGE" && <>
-              <input className="border rounded px-2 py-1 w-full" placeholder="Pipeline stage id" value={draft.stage_id} onChange={(e) => setDraft({ ...draft, stage_id: e.target.value })} />
-              <label className="flex gap-1 items-center"><input type="checkbox" checked={draft.blocks_stage_exit} onChange={(e) => setDraft({ ...draft, blocks_stage_exit: e.target.checked })} /> Must be completed before the deal leaves this stage</label></>}
-            <textarea className="border rounded px-2 py-1 w-full" rows={2} placeholder="Stage guidance" value={draft.guidance} onChange={(e) => setDraft({ ...draft, guidance: e.target.value })} />
-            <textarea aria-label="Questions (JSON)" className="border rounded px-2 py-1 w-full font-mono" rows={8} value={draft.questions} onChange={(e) => setDraft({ ...draft, questions: e.target.value })} />
-            <button className="bg-indigo-600 text-white rounded px-3 py-1">Save draft</button>
+              <input className="border rounded px-2 py-1 w-full" placeholder={tx("Pipeline stage id")} value={draft.stage_id} onChange={(e) => setDraft({ ...draft, stage_id: e.target.value })} />
+              <label className="flex gap-1 items-center"><input type="checkbox" checked={draft.blocks_stage_exit} onChange={(e) => setDraft({ ...draft, blocks_stage_exit: e.target.checked })} /> {tx("Must be completed before the deal leaves this stage")}</label></>}
+            <textarea className="border rounded px-2 py-1 w-full" rows={2} placeholder={tx("Stage guidance")} value={draft.guidance} onChange={(e) => setDraft({ ...draft, guidance: e.target.value })} />
+            <textarea aria-label={tx("Questions (JSON)")} className="border rounded px-2 py-1 w-full font-mono" rows={8} value={draft.questions} onChange={(e) => setDraft({ ...draft, questions: e.target.value })} />
+            <button className="bg-indigo-600 text-white rounded px-3 py-1">{tx("Save draft")}</button>
           </form>
         </section>
         <section className="space-y-2">
-          <h3 className="text-sm font-semibold">Run on a deal</h3>
-          <EntityPicker kind="crm_record" value={recordId} onChange={setRecordId} placeholder="Choose a lead or deal…" />
+          <h3 className="text-sm font-semibold">{tx("Run on a deal")}</h3>
+          <EntityPicker kind="crm_record" value={recordId} onChange={setRecordId} placeholder={tx("Choose a lead or deal…")} />
           {recordId && <DealScore recordId={recordId} />}
           {recordId && <Guide recordId={recordId} onMsg={setMsg} />}
           {recordId && <DealPlan recordId={recordId} onMsg={setMsg} />}
@@ -101,7 +102,7 @@ function Guide({ recordId, onMsg }: { recordId: string; onMsg: (m: string) => vo
   if (!g) return null;
   return (
     <div className="border rounded p-2 bg-white text-xs space-y-2">
-      {g.playbooks.length === 0 && <p className="text-gray-500">No published playbook applies to this record.</p>}
+      {g.playbooks.length === 0 && <p className="text-gray-500">{tx("No published playbook applies to this record.")}</p>}
       <div className="flex flex-wrap gap-2">{g.playbooks.map((p) => (
         <button key={p.id} className={`border rounded px-2 py-1 ${active?.id === p.id ? "bg-indigo-600 text-white" : ""}`}
                 onClick={() => { setActive(p); setAnswers({}); setRunId(null); }}>{p.name}{g.runs.some((r) => r.playbook_id === p.id && r.completed) ? " ✓" : ""}</button>
@@ -114,7 +115,7 @@ function Guide({ recordId, onMsg }: { recordId: string; onMsg: (m: string) => vo
               <span>{q.text}{q.required && " *"}</span>
               {q.type === "yesno" ? (
                 <span className="flex gap-3 mt-1">{[true, false].map((v) => (
-                  <label key={String(v)} className="flex gap-1 items-center"><input type="radio" name={q.key} checked={answers[q.key] === v} onChange={() => setAnswers({ ...answers, [q.key]: v })} />{v ? "Yes" : "No"}</label>))}</span>
+                  <label key={String(v)} className="flex gap-1 items-center"><input type="radio" name={q.key} checked={answers[q.key] === v} onChange={() => setAnswers({ ...answers, [q.key]: v })} />{v ? tx("Yes") : tx("No")}</label>))}</span>
               ) : q.type === "choice" ? (
                 <select className="border rounded px-2 py-1 w-full mt-1" value={String(answers[q.key] ?? "")} onChange={(e) => setAnswers({ ...answers, [q.key]: e.target.value })}>
                   <option value="">—</option>{q.choices.map((c) => <option key={c}>{c}</option>)}</select>
@@ -125,8 +126,8 @@ function Guide({ recordId, onMsg }: { recordId: string; onMsg: (m: string) => vo
               {q.help && <span className="text-gray-500">{q.help}</span>}
             </label>
           ))}
-          <div className="flex gap-2"><button className="border rounded px-2 py-1" onClick={() => save(false)}>Save progress</button>
-            <button className="bg-green-600 text-white rounded px-2 py-1" onClick={() => save(true)}>Complete</button></div>
+          <div className="flex gap-2"><button className="border rounded px-2 py-1" onClick={() => save(false)}>{tx("Save progress")}</button>
+            <button className="bg-green-600 text-white rounded px-2 py-1" onClick={() => save(true)}>{tx("Complete")}</button></div>
         </div>
       )}
     </div>
@@ -146,24 +147,24 @@ function DealPlan({ recordId, onMsg }: { recordId: string; onMsg: (m: string) =>
   const save = async () => { try { await apiClient.put(`/api/v1/crm-playbooks/records/${recordId}/plan`, { title, steps }); onMsg("Deal plan saved."); } catch (e) { onMsg(err(e, "Check the steps.")); } };
   return (
     <div className="border rounded p-2 bg-white text-xs space-y-1">
-      <div className="font-semibold">Deal plan (shared with the customer)</div>
+      <div className="font-semibold">{tx("Deal plan (shared with the customer)")}</div>
       <input className="border rounded px-2 py-1 w-full" value={title} onChange={(e) => setTitle(e.target.value)} />
       {steps.map((s, i) => (
         <div key={s.id ?? i} className="flex flex-wrap gap-1 items-center">
-          <input type="checkbox" checked={s.done} onChange={(e) => setSteps(steps.map((x, j) => j === i ? { ...x, done: e.target.checked } : x))} aria-label="Done" />
+          <input type="checkbox" checked={s.done} onChange={(e) => setSteps(steps.map((x, j) => j === i ? { ...x, done: e.target.checked } : x))} aria-label={tx("Done")} />
           <input className="border rounded px-1 flex-1 min-w-[8rem]" value={s.title} onChange={(e) => setSteps(steps.map((x, j) => j === i ? { ...x, title: e.target.value } : x))} />
           <select className="border rounded" value={s.owner} onChange={(e) => setSteps(steps.map((x, j) => j === i ? { ...x, owner: e.target.value as Step["owner"] } : x))}>
-            <option value="us">POVU</option><option value="customer">Customer</option></select>
+            <option value="us">POVU</option><option value="customer">{tx("Customer")}</option></select>
           <input type="date" className="border rounded" value={s.due_date ?? ""} onChange={(e) => setSteps(steps.map((x, j) => j === i ? { ...x, due_date: e.target.value || null } : x))} />
         </div>
       ))}
       <div className="flex flex-wrap gap-2">
-        <button className="underline" onClick={() => setSteps([...steps, { title: "", owner: "us", due_date: null, done: false }])}>+ Step</button>
-        <button className="bg-indigo-600 text-white rounded px-2 py-0.5" onClick={save}>Save</button>
-        <button className="underline" onClick={async () => { try { const r = (await apiClient.post(`/api/v1/crm-playbooks/records/${recordId}/plan/share`, null, { params: { on: true } })).data; setLink(r.share_url); } catch (e) { onMsg(err(e, "Save the plan first.")); } }}>Share link</button>
-        <button className="underline text-red-600" onClick={async () => { await apiClient.post(`/api/v1/crm-playbooks/records/${recordId}/plan/share`, null, { params: { on: false } }).catch(() => null); setLink(null); onMsg("Sharing stopped."); }}>Stop sharing</button>
+        <button className="underline" onClick={() => setSteps([...steps, { title: "", owner: "us", due_date: null, done: false }])}>{tx("+ Step")}</button>
+        <button className="bg-indigo-600 text-white rounded px-2 py-0.5" onClick={save}>{tx("Save")}</button>
+        <button className="underline" onClick={async () => { try { const r = (await apiClient.post(`/api/v1/crm-playbooks/records/${recordId}/plan/share`, null, { params: { on: true } })).data; setLink(r.share_url); } catch (e) { onMsg(err(e, "Save the plan first.")); } }}>{tx("Share link")}</button>
+        <button className="underline text-red-600" onClick={async () => { await apiClient.post(`/api/v1/crm-playbooks/records/${recordId}/plan/share`, null, { params: { on: false } }).catch(() => null); setLink(null); onMsg("Sharing stopped."); }}>{tx("Stop sharing")}</button>
       </div>
-      {link && <p className="break-all">Send this to the customer: <a className="text-indigo-600 underline" href={link}>{link}</a></p>}
+      {link && <p className="break-all">{tx("Send this to the customer:")} <a className="text-indigo-600 underline" href={link}>{link}</a></p>}
     </div>
   );
 }
@@ -178,12 +179,12 @@ function DealScore({ recordId }: { recordId: string }) {
   if (!d) return null;
   return (
     <div className="border rounded p-2 bg-white text-xs space-y-1">
-      <div className="flex justify-between"><span className="font-semibold">Deal score {d.score}/100</span>
+      <div className="flex justify-between"><span className="font-semibold">{tx("Deal score")} {d.score}/100</span>
         <span className="text-gray-500">{d.trend.length > 1 ? `was ${d.trend[d.trend.length - 2].score}` : ""}</span></div>
       {d.factors.map((f) => <div key={f.factor} className="flex justify-between gap-2"><span>{f.reason}</span><span className="text-gray-500">{Math.round(f.value * 100)}% × {f.weight}</span></div>)}
-      {d.missing.length > 0 && <p className="text-gray-500">No data yet (left out): {d.missing.join(", ")}.</p>}
-      {d.buying_group.missing.length > 0 && <p className="text-amber-700">Buying group: add {d.buying_group.missing.join(", ")} (link contacts with these roles).</p>}
-      {d.buying_group.blockers > 0 && <p className="text-red-600">{d.buying_group.blockers} known blocker(s) on this deal.</p>}
+      {d.missing.length > 0 && <p className="text-gray-500">{tx("No data yet (left out):")} {d.missing.join(", ")}.</p>}
+      {d.buying_group.missing.length > 0 && <p className="text-amber-700">{tx("Buying group: add")} {d.buying_group.missing.join(", ")} {tx("(link contacts with these roles).")}</p>}
+      {d.buying_group.blockers > 0 && <p className="text-red-600">{d.buying_group.blockers} {tx("known blocker(s) on this deal.")}</p>}
       <p className="text-gray-400">{d.method}</p>
     </div>
   );
@@ -197,17 +198,17 @@ function Splits({ recordId, onMsg }: { recordId: string; onMsg: (m: string) => v
   const total = rows.reduce((a, r) => a + (+r.share_pct || 0), 0);
   return (
     <div className="border rounded p-2 bg-white text-xs space-y-1">
-      <div className="font-semibold">Deal split (credit sharing)</div>
+      <div className="font-semibold">{tx("Deal split (credit sharing)")}</div>
       {rows.map((r, i) => (
         <div key={r.user_id} className="flex gap-2 items-center"><span className="flex-1">{r.user_id.slice(0, 8)}…</span>
           <input type="number" min={1} max={100} className="border rounded w-16 px-1" value={r.share_pct} onChange={(e) => setRows(rows.map((x, j) => j === i ? { ...x, share_pct: +e.target.value } : x))} />%
           <button className="text-red-600" onClick={() => setRows(rows.filter((_, j) => j !== i))}>×</button></div>))}
-      <EntityPicker kind="user" value={pick} onChange={(id) => { if (id && !rows.some((r) => r.user_id === id)) setRows([...rows, { user_id: id, share_pct: 0 }]); setPick(""); }} placeholder="Add a person…" />
-      <div className={total === 100 || rows.length === 0 ? "text-gray-500" : "text-red-600"}>Total {total}%</div>
+      <EntityPicker kind="user" value={pick} onChange={(id) => { if (id && !rows.some((r) => r.user_id === id)) setRows([...rows, { user_id: id, share_pct: 0 }]); setPick(""); }} placeholder={tx("Add a person…")} />
+      <div className={total === 100 || rows.length === 0 ? "text-gray-500" : "text-red-600"}>{tx("Total")} {total}%</div>
       <button className="border rounded px-2 py-0.5" onClick={async () => {
         try { await apiClient.put(`/api/v1/crm-routing/records/${recordId}/splits`, rows); onMsg("Split saved."); }
         catch (e) { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; onMsg(typeof d === "string" ? d : "Shares must total 100%."); }
-      }}>Save split</button>
+      }}>{tx("Save split")}</button>
     </div>
   );
 }

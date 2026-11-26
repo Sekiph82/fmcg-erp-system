@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { marketingApi, PromotionType, DiscountType } from "@/lib/marketingApi";
 import { RequirePermission } from "@/components/PermissionGuard";
+import { tx } from "@/lib/i18n/core";
 
 const PROMOTION_TYPES: PromotionType[] = [
   "DISCOUNT", "BUNDLE", "FREE_ITEM", "REBATE", "BUY_X_GET_Y",
@@ -56,7 +57,7 @@ export default function NewPromotionPage() {
       router.push(`/dashboard/marketing/promotions/${res.data.id}`);
     },
     onError: (err: unknown) => {
-      setError((err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ?? "Failed to create promotion.");
+      setError((err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ?? tx("Failed to create promotion."));
     },
   });
 
@@ -70,9 +71,9 @@ export default function NewPromotionPage() {
       <div className="min-h-screen bg-[#0b1120] p-6 text-white max-w-2xl">
         <div className="mb-6">
           <a href="/dashboard/marketing/promotions" className="text-sm text-slate-400 hover:text-white mb-2 inline-block">
-            ← Back to Promotions
+            {tx("← Back to Promotions")}
           </a>
-          <h1 className="text-2xl font-bold">New Promotion</h1>
+          <h1 className="text-2xl font-bold">{tx("New Promotion")}</h1>
         </div>
 
         {error && (
@@ -83,15 +84,15 @@ export default function NewPromotionPage() {
           {/* Name & Code */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Promotion Name *</label>
+              <label className="block text-xs text-slate-400 mb-1">{tx("Promotion Name *")}</label>
               <input value={form.promotion_name} onChange={(e) => set("promotion_name", e.target.value)}
-                placeholder="e.g. Buy 2 Get 1 Free"
+                placeholder={tx("e.g. Buy 2 Get 1 Free")}
                 className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600" />
             </div>
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Promotion Code</label>
+              <label className="block text-xs text-slate-400 mb-1">{tx("Promotion Code")}</label>
               <input value={form.promotion_code} onChange={(e) => set("promotion_code", e.target.value)}
-                placeholder="e.g. PROMO-2026-01"
+                placeholder={tx("e.g. PROMO-2026-01")}
                 className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600" />
             </div>
           </div>
@@ -99,17 +100,17 @@ export default function NewPromotionPage() {
           {/* Type & Campaign */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Promotion Type *</label>
+              <label className="block text-xs text-slate-400 mb-1">{tx("Promotion Type *")}</label>
               <select value={form.promotion_type} onChange={(e) => set("promotion_type", e.target.value as PromotionType)}
                 className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
                 {PROMOTION_TYPES.map((t) => <option key={t} value={t}>{t.replace(/_/g, " ")}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Link to Campaign</label>
+              <label className="block text-xs text-slate-400 mb-1">{tx("Link to Campaign")}</label>
               <select value={form.campaign_id} onChange={(e) => set("campaign_id", e.target.value)}
                 className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
-                <option value="">No campaign</option>
+                <option value="">{tx("No campaign")}</option>
                 {campaigns.map((c) => <option key={c.id} value={c.id}>{c.campaign_name}</option>)}
               </select>
             </div>
@@ -117,21 +118,21 @@ export default function NewPromotionPage() {
 
           {/* Region */}
           <div>
-            <label className="block text-xs text-slate-400 mb-1">Region</label>
+            <label className="block text-xs text-slate-400 mb-1">{tx("Region")}</label>
             <input value={form.region} onChange={(e) => set("region", e.target.value)}
-              placeholder="e.g. Nairobi, Western Kenya"
+              placeholder={tx("e.g. Nairobi, Western Kenya")}
               className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600" />
           </div>
 
           {/* Dates */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Start Date *</label>
+              <label className="block text-xs text-slate-400 mb-1">{tx("Start Date *")}</label>
               <input type="date" value={form.start_date} onChange={(e) => set("start_date", e.target.value)}
                 className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white" />
             </div>
             <div>
-              <label className="block text-xs text-slate-400 mb-1">End Date *</label>
+              <label className="block text-xs text-slate-400 mb-1">{tx("End Date *")}</label>
               <input type="date" value={form.end_date} onChange={(e) => set("end_date", e.target.value)}
                 className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white" />
             </div>
@@ -140,33 +141,33 @@ export default function NewPromotionPage() {
           {/* Discount */}
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Discount Type</label>
+              <label className="block text-xs text-slate-400 mb-1">{tx("Discount Type")}</label>
               <select value={form.discount_type} onChange={(e) => set("discount_type", e.target.value as DiscountType)}
                 className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
-                <option value="">None</option>
-                <option value="PERCENTAGE">Percentage (%)</option>
-                <option value="FIXED">Fixed Amount</option>
+                <option value="">{tx("None")}</option>
+                <option value="PERCENTAGE">{tx("Percentage (%)")}</option>
+                <option value="FIXED">{tx("Fixed Amount")}</option>
               </select>
             </div>
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Discount Value</label>
+              <label className="block text-xs text-slate-400 mb-1">{tx("Discount Value")}</label>
               <input type="number" value={form.discount_value} onChange={(e) => set("discount_value", e.target.value)}
-                placeholder="e.g. 10 or 500"
+                placeholder={tx("e.g. 10 or 500")}
                 className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600" />
             </div>
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Min. Quantity</label>
+              <label className="block text-xs text-slate-400 mb-1">{tx("Min. Quantity")}</label>
               <input type="number" value={form.minimum_quantity} onChange={(e) => set("minimum_quantity", e.target.value)}
-                placeholder="e.g. 2"
+                placeholder={tx("e.g. 2")}
                 className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600" />
             </div>
           </div>
 
           {/* Notes */}
           <div>
-            <label className="block text-xs text-slate-400 mb-1">Notes</label>
+            <label className="block text-xs text-slate-400 mb-1">{tx("Notes")}</label>
             <textarea value={form.notes} onChange={(e) => set("notes", e.target.value)}
-              rows={2} placeholder="Internal notes..."
+              rows={2} placeholder={tx("Internal notes...")}
               className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600 resize-none" />
           </div>
 
@@ -176,11 +177,11 @@ export default function NewPromotionPage() {
               disabled={mut.isPending || !form.promotion_name || !form.start_date || !form.end_date}
               className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-sm font-medium disabled:opacity-50 transition-colors"
             >
-              {mut.isPending ? "Creating..." : "Create Promotion"}
+              {mut.isPending ? tx("Creating...") : tx("Create Promotion")}
             </button>
             <a href="/dashboard/marketing/promotions"
               className="px-5 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-sm font-medium transition-colors">
-              Cancel
+              {tx("Cancel")}
             </a>
           </div>
         </div>

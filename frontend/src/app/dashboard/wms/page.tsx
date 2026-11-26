@@ -14,15 +14,16 @@ import { Select } from "@/components/ui/Select";
 import { ToastContainer } from "@/components/ui/Toast";
 import { useToast } from "@/hooks/useToast";
 import { PageHelpTooltip } from "@/components/help/PageHelpTooltip";
+import { tx, lx } from "@/lib/i18n/core";
 
-const ZONE_TYPES: { value: ZoneType; label: string }[] = [
-  { value: "RAW_MATERIAL", label: "Raw Material" },
-  { value: "SEMI_FINISHED", label: "Semi-Finished" },
-  { value: "FINISHED_GOODS", label: "Finished Goods" },
-  { value: "QUARANTINE", label: "Quarantine" },
-  { value: "RETURNS", label: "Returns" },
-  { value: "STAGING", label: "Staging" },
-];
+const ZONE_TYPES: { value: ZoneType; label: string }[] = lx(() => [
+  { value: "RAW_MATERIAL", label: tx("Raw Material") },
+  { value: "SEMI_FINISHED", label: tx("Semi-Finished") },
+  { value: "FINISHED_GOODS", label: tx("Finished Goods") },
+  { value: "QUARANTINE", label: tx("Quarantine") },
+  { value: "RETURNS", label: tx("Returns") },
+  { value: "STAGING", label: tx("Staging") },
+]);
 
 const zoneVariant = (t: ZoneType) =>
   t === "QUARANTINE" ? "red"
@@ -37,7 +38,7 @@ const statusVariant = (status: string): "green" | "red" | "yellow" | "blue" | "g
   : "gray";
 
 function AccessBadge({ canEdit }: { canEdit?: boolean }) {
-  return canEdit ? <Badge label="Editable" variant="green" /> : <Badge label="View Only" variant="gray" />;
+  return canEdit ? <Badge label={tx("Editable")} variant="green" /> : <Badge label={tx("View Only")} variant="gray" />;
 }
 
 type Tab = "zones" | "locations" | "handlingUnits" | "pickWaves" | "quarantine";
@@ -75,39 +76,39 @@ export default function WMSPage() {
     queryFn: () => wmsApi.listPickWaves(warehouseFilter ? { warehouse_id: warehouseFilter } : undefined),
   });
 
-  const whOpts = [{ value: "", label: "All Warehouses" }, ...warehouses.map((w) => ({ value: w.id, label: w.name }))];
-  const zoneOpts = [{ value: "", label: "Select zone…" }, ...zones.map((z) => ({ value: z.id, label: `${z.code} — ${z.name}` }))];
+  const whOpts = [{ value: "", label: tx("All Warehouses") }, ...warehouses.map((w) => ({ value: w.id, label: w.name }))];
+  const zoneOpts = [{ value: "", label: tx("Select zone…") }, ...zones.map((z) => ({ value: z.id, label: `${z.code} — ${z.name}` }))];
 
   const createZone = useMutation({
     mutationFn: () => wmsApi.createZone({ ...zoneForm }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["wms-zones"] }); setZoneModal(false); toast("success", "Zone created", ""); },
-    onError: (e) => toast("error", "Failed", extractApiError(e)),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["wms-zones"] }); setZoneModal(false); toast("success", tx("Zone created"), ""); },
+    onError: (e) => toast("error", tx("Failed"), extractApiError(e)),
   });
 
   const createLoc = useMutation({
     mutationFn: () => wmsApi.createLocation({ ...locForm, barcode: locForm.barcode || undefined }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["wms-locations"] }); setLocModal(false); toast("success", "Location created", ""); },
-    onError: (e) => toast("error", "Failed", extractApiError(e)),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["wms-locations"] }); setLocModal(false); toast("success", tx("Location created"), ""); },
+    onError: (e) => toast("error", tx("Failed"), extractApiError(e)),
   });
 
   const quarantine = useMutation({
     mutationFn: () => wmsApi.quarantine({ warehouse_id: quarForm.warehouse_id, lot_number: quarForm.lot_number || undefined, reason: quarForm.reason, notes: quarForm.notes || undefined }),
-    onSuccess: (r: { blocked_rows: number }) => { setQuarModal(false); toast("success", "Quarantined", `${r.blocked_rows} stock row(s) blocked.`); },
-    onError: (e) => toast("error", "Failed", extractApiError(e)),
+    onSuccess: (r: { blocked_rows: number }) => { setQuarModal(false); toast("success", tx("Quarantined"), tx("{blocked_rows} stock row(s) blocked.", { blocked_rows: r.blocked_rows })); },
+    onError: (e) => toast("error", tx("Failed"), extractApiError(e)),
   });
 
   const releaseQuar = useMutation({
     mutationFn: () => wmsApi.releaseQuarantine({ warehouse_id: releaseForm.warehouse_id, lot_number: releaseForm.lot_number || undefined, notes: releaseForm.notes || undefined }),
-    onSuccess: (r: { released_rows: number }) => { setReleaseModal(false); toast("success", "Released", `${r.released_rows} stock row(s) unblocked.`); },
-    onError: (e) => toast("error", "Failed", extractApiError(e)),
+    onSuccess: (r: { released_rows: number }) => { setReleaseModal(false); toast("success", tx("Released"), tx("{released_rows} stock row(s) unblocked.", { released_rows: r.released_rows })); },
+    onError: (e) => toast("error", tx("Failed"), extractApiError(e)),
   });
 
   const TABS = [
-    { key: "zones" as Tab, label: "Zones" },
-    { key: "locations" as Tab, label: "Locations / Bins" },
-    { key: "handlingUnits" as Tab, label: "Handling Units" },
-    { key: "pickWaves" as Tab, label: "Pick Waves" },
-    { key: "quarantine" as Tab, label: "Quarantine" },
+    { key: "zones" as Tab, label: tx("Zones") },
+    { key: "locations" as Tab, label: tx("Locations / Bins") },
+    { key: "handlingUnits" as Tab, label: tx("Handling Units") },
+    { key: "pickWaves" as Tab, label: tx("Pick Waves") },
+    { key: "quarantine" as Tab, label: tx("Quarantine") },
   ];
 
   return (
@@ -116,19 +117,19 @@ export default function WMSPage() {
 
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Warehouse Management</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Warehouse Management")}</h1>
           <p className="text-sm text-gray-500 mt-1">
-            {zones.length} zones · {locations.length} locations · {handlingUnits.length} handling units · {pickWaves.length} waves
+            {zones.length} {tx("zones ·")} {locations.length} {tx("locations ·")} {handlingUnits.length} {tx("handling units ·")} {pickWaves.length} {tx("waves")}
           </p>
         </div>
         <div className="flex gap-2 items-center">
           <PageHelpTooltip topic="wms" />
-          {tab === "zones" && <Button onClick={() => setZoneModal(true)}>+ New Zone</Button>}
-          {tab === "locations" && <Button onClick={() => setLocModal(true)}>+ New Location</Button>}
+          {tab === "zones" && <Button onClick={() => setZoneModal(true)}>{tx("+ New Zone")}</Button>}
+          {tab === "locations" && <Button onClick={() => setLocModal(true)}>{tx("+ New Location")}</Button>}
           {tab === "quarantine" && (
             <>
-              <Button variant="secondary" onClick={() => setReleaseModal(true)}>Release</Button>
-              <Button onClick={() => setQuarModal(true)}>Quarantine Stock</Button>
+              <Button variant="secondary" onClick={() => setReleaseModal(true)}>{tx("Release")}</Button>
+              <Button onClick={() => setQuarModal(true)}>{tx("Quarantine Stock")}</Button>
             </>
           )}
         </div>
@@ -155,13 +156,13 @@ export default function WMSPage() {
           data={zones}
           emptyMessage="No zones yet. Create zones to organise your warehouse."
           columns={[
-            { header: "Code", accessor: "code", className: "font-mono text-xs font-medium" },
-            { header: "Name", accessor: "name" },
-            { header: "Type", accessor: (z) => <Badge label={z.zone_type.replace(/_/g, " ")} variant={zoneVariant(z.zone_type)} /> },
-            { header: "Warehouse", accessor: (z) => z.warehouse_name ?? "—" },
-            { header: "Locations", accessor: (z) => z.location_count },
-            { header: "Status", accessor: (z) => <Badge label={z.is_active ? "Active" : "Inactive"} variant={z.is_active ? "green" : "red"} /> },
-            { header: "Access", accessor: (z) => <AccessBadge canEdit={z.access?.can_edit} /> },
+            { header: tx("Code"), accessor: "code", className: "font-mono text-xs font-medium" },
+            { header: tx("Name"), accessor: "name" },
+            { header: tx("Type"), accessor: (z) => <Badge label={z.zone_type.replace(/_/g, " ")} variant={zoneVariant(z.zone_type)} /> },
+            { header: tx("Warehouse"), accessor: (z) => z.warehouse_name ?? "—" },
+            { header: tx("Locations"), accessor: (z) => z.location_count },
+            { header: tx("Status"), accessor: (z) => <Badge label={z.is_active ? tx("Active") : tx("Inactive")} variant={z.is_active ? "green" : "red"} /> },
+            { header: tx("Access"), accessor: (z) => <AccessBadge canEdit={z.access?.can_edit} /> },
           ]}
         />
       )}
@@ -174,19 +175,19 @@ export default function WMSPage() {
           data={locations}
           emptyMessage="No locations yet."
           columns={[
-            { header: "Code", accessor: "code", className: "font-mono text-xs font-medium" },
-            { header: "Name", accessor: "name" },
-            { header: "Zone", accessor: (l) => l.zone_name ? `${l.zone_code} — ${l.zone_name}` : "—" },
-            { header: "Type", accessor: (l) => l.zone_type ? <Badge label={l.zone_type.replace(/_/g, " ")} variant={zoneVariant(l.zone_type)} /> : null },
-            { header: "Warehouse", accessor: (l) => l.warehouse_name ?? "—" },
-            { header: "Barcode", accessor: (l) => l.barcode ? <span className="font-mono text-xs">{l.barcode}</span> : "—" },
-            { header: "Access", accessor: (l) => <AccessBadge canEdit={l.access?.can_edit} /> },
+            { header: tx("Code"), accessor: "code", className: "font-mono text-xs font-medium" },
+            { header: tx("Name"), accessor: "name" },
+            { header: tx("Zone"), accessor: (l) => l.zone_name ? `${l.zone_code} — ${l.zone_name}` : "—" },
+            { header: tx("Type"), accessor: (l) => l.zone_type ? <Badge label={l.zone_type.replace(/_/g, " ")} variant={zoneVariant(l.zone_type)} /> : null },
+            { header: tx("Warehouse"), accessor: (l) => l.warehouse_name ?? "—" },
+            { header: tx("Barcode"), accessor: (l) => l.barcode ? <span className="font-mono text-xs">{l.barcode}</span> : "—" },
+            { header: tx("Access"), accessor: (l) => <AccessBadge canEdit={l.access?.can_edit} /> },
             {
-              header: "Status",
+              header: tx("Status"),
               accessor: (l) => (
                 <div className="flex gap-1">
-                  {l.is_blocked && <Badge label="Blocked" variant="red" />}
-                  {!l.is_blocked && <Badge label={l.is_active ? "Active" : "Inactive"} variant={l.is_active ? "green" : "red"} />}
+                  {l.is_blocked && <Badge label={tx("Blocked")} variant="red" />}
+                  {!l.is_blocked && <Badge label={l.is_active ? tx("Active") : tx("Inactive")} variant={l.is_active ? "green" : "red"} />}
                 </div>
               ),
             },
@@ -201,13 +202,13 @@ export default function WMSPage() {
           data={handlingUnits}
           emptyMessage="No handling units yet."
           columns={[
-            { header: "License Plate", accessor: "license_plate", className: "font-mono text-xs font-medium" },
-            { header: "Type", accessor: (hu) => <Badge label={hu.hu_type.replace(/_/g, " ")} variant="blue" /> },
-            { header: "Warehouse", accessor: (hu) => hu.warehouse_name ?? "—" },
-            { header: "Location", accessor: (hu) => hu.location_code ?? "—" },
-            { header: "Items", accessor: (hu) => hu.items?.length ?? 0 },
-            { header: "Status", accessor: (hu) => <Badge label={hu.status.replace(/_/g, " ")} variant={statusVariant(hu.status)} /> },
-            { header: "Access", accessor: (hu) => <AccessBadge canEdit={hu.access?.can_edit || hu.access?.can_putaway} /> },
+            { header: tx("License Plate"), accessor: "license_plate", className: "font-mono text-xs font-medium" },
+            { header: tx("Type"), accessor: (hu) => <Badge label={hu.hu_type.replace(/_/g, " ")} variant="blue" /> },
+            { header: tx("Warehouse"), accessor: (hu) => hu.warehouse_name ?? "—" },
+            { header: tx("Location"), accessor: (hu) => hu.location_code ?? "—" },
+            { header: tx("Items"), accessor: (hu) => hu.items?.length ?? 0 },
+            { header: tx("Status"), accessor: (hu) => <Badge label={hu.status.replace(/_/g, " ")} variant={statusVariant(hu.status)} /> },
+            { header: tx("Access"), accessor: (hu) => <AccessBadge canEdit={hu.access?.can_edit || hu.access?.can_putaway} /> },
           ]}
         />
       )}
@@ -219,12 +220,12 @@ export default function WMSPage() {
           data={pickWaves}
           emptyMessage="No pick waves yet."
           columns={[
-            { header: "Wave", accessor: "wave_no", className: "font-mono text-xs font-medium" },
-            { header: "Warehouse", accessor: (w) => w.warehouse_name ?? "—" },
-            { header: "Priority", accessor: "priority" },
-            { header: "Tasks", accessor: "task_count" },
-            { header: "Status", accessor: (w) => <Badge label={w.status.replace(/_/g, " ")} variant={statusVariant(w.status)} /> },
-            { header: "Access", accessor: (w) => <AccessBadge canEdit={w.access?.can_pick} /> },
+            { header: tx("Wave"), accessor: "wave_no", className: "font-mono text-xs font-medium" },
+            { header: tx("Warehouse"), accessor: (w) => w.warehouse_name ?? "—" },
+            { header: tx("Priority"), accessor: "priority" },
+            { header: tx("Tasks"), accessor: "task_count" },
+            { header: tx("Status"), accessor: (w) => <Badge label={w.status.replace(/_/g, " ")} variant={statusVariant(w.status)} /> },
+            { header: tx("Access"), accessor: (w) => <AccessBadge canEdit={w.access?.can_pick} /> },
           ]}
         />
       )}
@@ -232,79 +233,78 @@ export default function WMSPage() {
       {/* Quarantine tab */}
       {tab === "quarantine" && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-6">
-          <h2 className="font-semibold text-amber-900 mb-2">Quarantine / Blocked Stock</h2>
+          <h2 className="font-semibold text-amber-900 mb-2">{tx("Quarantine / Blocked Stock")}</h2>
           <p className="text-sm text-amber-700 mb-4">
-            Quarantined stock is blocked from issue and transfer. Use &quot;Quarantine Stock&quot; to block a lot, and &quot;Release&quot; to unblock it after inspection.
+            {tx("Quarantined stock is blocked from issue and transfer. Use \"Quarantine Stock\" to block a lot, and \"Release\" to unblock it after inspection.")}
           </p>
           <p className="text-sm text-gray-600">
-            Blocked stock rows appear in the Inventory summary with <strong>is_blocked = true</strong> and zero available quantity.
-            All quarantine/release actions are audited as ADJUSTMENT movements in the ledger.
+            {tx("Blocked stock rows appear in the Inventory summary with")} <strong>{tx("is_blocked = true")}</strong> {tx("and zero available quantity. All quarantine/release actions are audited as ADJUSTMENT movements in the ledger.")}
           </p>
         </div>
       )}
 
       {/* Zone Modal */}
-      <Modal open={zoneModal} onClose={() => setZoneModal(false)} title="New Warehouse Zone">
+      <Modal open={zoneModal} onClose={() => setZoneModal(false)} title={tx("New Warehouse Zone")}>
         <form onSubmit={(e) => { e.preventDefault(); createZone.mutate(); }} className="space-y-4">
-          <Select label="Warehouse *" options={[{ value: "", label: "Select…" }, ...warehouses.map((w) => ({ value: w.id, label: w.name }))]}
+          <Select label={tx("Warehouse *")} options={[{ value: "", label: tx("Select…") }, ...warehouses.map((w) => ({ value: w.id, label: w.name }))]}
             value={zoneForm.warehouse_id} onChange={(e) => setZoneForm((f) => ({ ...f, warehouse_id: e.target.value }))} />
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Code *" value={zoneForm.code} onChange={(e) => setZoneForm((f) => ({ ...f, code: e.target.value }))} placeholder="e.g. RM-A" required />
-            <Input label="Name *" value={zoneForm.name} onChange={(e) => setZoneForm((f) => ({ ...f, name: e.target.value }))} required />
+            <Input label={tx("Code *")} value={zoneForm.code} onChange={(e) => setZoneForm((f) => ({ ...f, code: e.target.value }))} placeholder={tx("e.g. RM-A")} required />
+            <Input label={tx("Name *")} value={zoneForm.name} onChange={(e) => setZoneForm((f) => ({ ...f, name: e.target.value }))} required />
           </div>
-          <Select label="Zone Type *" options={ZONE_TYPES} value={zoneForm.zone_type}
+          <Select label={tx("Zone Type *")} options={ZONE_TYPES} value={zoneForm.zone_type}
             onChange={(e) => setZoneForm((f) => ({ ...f, zone_type: e.target.value as ZoneType }))} />
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" type="button" onClick={() => setZoneModal(false)}>Cancel</Button>
-            <Button type="submit" loading={createZone.isPending} disabled={!zoneForm.warehouse_id || !zoneForm.code || !zoneForm.name}>Create Zone</Button>
+            <Button variant="secondary" type="button" onClick={() => setZoneModal(false)}>{tx("Cancel")}</Button>
+            <Button type="submit" loading={createZone.isPending} disabled={!zoneForm.warehouse_id || !zoneForm.code || !zoneForm.name}>{tx("Create Zone")}</Button>
           </div>
         </form>
       </Modal>
 
       {/* Location Modal */}
-      <Modal open={locModal} onClose={() => setLocModal(false)} title="New Storage Location">
+      <Modal open={locModal} onClose={() => setLocModal(false)} title={tx("New Storage Location")}>
         <form onSubmit={(e) => { e.preventDefault(); createLoc.mutate(); }} className="space-y-4">
-          <Select label="Zone *" options={zoneOpts} value={locForm.zone_id} onChange={(e) => setLocForm((f) => ({ ...f, zone_id: e.target.value }))} />
+          <Select label={tx("Zone *")} options={zoneOpts} value={locForm.zone_id} onChange={(e) => setLocForm((f) => ({ ...f, zone_id: e.target.value }))} />
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Code *" value={locForm.code} onChange={(e) => setLocForm((f) => ({ ...f, code: e.target.value }))} placeholder="e.g. A-01-01" required />
-            <Input label="Name *" value={locForm.name} onChange={(e) => setLocForm((f) => ({ ...f, name: e.target.value }))} required />
+            <Input label={tx("Code *")} value={locForm.code} onChange={(e) => setLocForm((f) => ({ ...f, code: e.target.value }))} placeholder={tx("e.g. A-01-01")} required />
+            <Input label={tx("Name *")} value={locForm.name} onChange={(e) => setLocForm((f) => ({ ...f, name: e.target.value }))} required />
           </div>
-          <Input label="Barcode (for scanning)" value={locForm.barcode} onChange={(e) => setLocForm((f) => ({ ...f, barcode: e.target.value }))} placeholder="e.g. LOC-A0101" />
+          <Input label={tx("Barcode (for scanning)")} value={locForm.barcode} onChange={(e) => setLocForm((f) => ({ ...f, barcode: e.target.value }))} placeholder={tx("e.g. LOC-A0101")} />
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" type="button" onClick={() => setLocModal(false)}>Cancel</Button>
-            <Button type="submit" loading={createLoc.isPending} disabled={!locForm.zone_id || !locForm.code || !locForm.name}>Create Location</Button>
+            <Button variant="secondary" type="button" onClick={() => setLocModal(false)}>{tx("Cancel")}</Button>
+            <Button type="submit" loading={createLoc.isPending} disabled={!locForm.zone_id || !locForm.code || !locForm.name}>{tx("Create Location")}</Button>
           </div>
         </form>
       </Modal>
 
       {/* Quarantine Modal */}
-      <Modal open={quarModal} onClose={() => setQuarModal(false)} title="Quarantine Stock">
+      <Modal open={quarModal} onClose={() => setQuarModal(false)} title={tx("Quarantine Stock")}>
         <form onSubmit={(e) => { e.preventDefault(); quarantine.mutate(); }} className="space-y-4">
-          <Select label="Warehouse *" options={[{ value: "", label: "Select…" }, ...warehouses.map((w) => ({ value: w.id, label: w.name }))]}
+          <Select label={tx("Warehouse *")} options={[{ value: "", label: tx("Select…") }, ...warehouses.map((w) => ({ value: w.id, label: w.name }))]}
             value={quarForm.warehouse_id} onChange={(e) => setQuarForm((f) => ({ ...f, warehouse_id: e.target.value }))} />
-          <Input label="Lot Number (optional)" value={quarForm.lot_number} onChange={(e) => setQuarForm((f) => ({ ...f, lot_number: e.target.value }))} placeholder="Leave blank to block all stock in warehouse" />
-          <Input label="Reason *" value={quarForm.reason} onChange={(e) => setQuarForm((f) => ({ ...f, reason: e.target.value }))} placeholder="e.g. Failed QC, Contamination suspected" required />
-          <Input label="Notes" value={quarForm.notes} onChange={(e) => setQuarForm((f) => ({ ...f, notes: e.target.value }))} />
+          <Input label={tx("Lot Number (optional)")} value={quarForm.lot_number} onChange={(e) => setQuarForm((f) => ({ ...f, lot_number: e.target.value }))} placeholder={tx("Leave blank to block all stock in warehouse")} />
+          <Input label={tx("Reason *")} value={quarForm.reason} onChange={(e) => setQuarForm((f) => ({ ...f, reason: e.target.value }))} placeholder={tx("e.g. Failed QC, Contamination suspected")} required />
+          <Input label={tx("Notes")} value={quarForm.notes} onChange={(e) => setQuarForm((f) => ({ ...f, notes: e.target.value }))} />
           <div className="rounded-lg bg-red-50 border border-red-200 p-3 text-xs text-red-700">
-            This will block the stock from issue and transfer. An audit trail movement will be recorded.
+            {tx("This will block the stock from issue and transfer. An audit trail movement will be recorded.")}
           </div>
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" type="button" onClick={() => setQuarModal(false)}>Cancel</Button>
-            <Button type="submit" loading={quarantine.isPending} disabled={!quarForm.warehouse_id || !quarForm.reason}>Quarantine</Button>
+            <Button variant="secondary" type="button" onClick={() => setQuarModal(false)}>{tx("Cancel")}</Button>
+            <Button type="submit" loading={quarantine.isPending} disabled={!quarForm.warehouse_id || !quarForm.reason}>{tx("Quarantine")}</Button>
           </div>
         </form>
       </Modal>
 
       {/* Release Modal */}
-      <Modal open={releaseModal} onClose={() => setReleaseModal(false)} title="Release from Quarantine">
+      <Modal open={releaseModal} onClose={() => setReleaseModal(false)} title={tx("Release from Quarantine")}>
         <form onSubmit={(e) => { e.preventDefault(); releaseQuar.mutate(); }} className="space-y-4">
-          <Select label="Warehouse *" options={[{ value: "", label: "Select…" }, ...warehouses.map((w) => ({ value: w.id, label: w.name }))]}
+          <Select label={tx("Warehouse *")} options={[{ value: "", label: tx("Select…") }, ...warehouses.map((w) => ({ value: w.id, label: w.name }))]}
             value={releaseForm.warehouse_id} onChange={(e) => setReleaseForm((f) => ({ ...f, warehouse_id: e.target.value }))} />
-          <Input label="Lot Number (optional)" value={releaseForm.lot_number} onChange={(e) => setReleaseForm((f) => ({ ...f, lot_number: e.target.value }))} />
-          <Input label="Release Notes" value={releaseForm.notes} onChange={(e) => setReleaseForm((f) => ({ ...f, notes: e.target.value }))} placeholder="e.g. QC passed, cleared for use" />
+          <Input label={tx("Lot Number (optional)")} value={releaseForm.lot_number} onChange={(e) => setReleaseForm((f) => ({ ...f, lot_number: e.target.value }))} />
+          <Input label={tx("Release Notes")} value={releaseForm.notes} onChange={(e) => setReleaseForm((f) => ({ ...f, notes: e.target.value }))} placeholder={tx("e.g. QC passed, cleared for use")} />
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" type="button" onClick={() => setReleaseModal(false)}>Cancel</Button>
-            <Button type="submit" loading={releaseQuar.isPending} disabled={!releaseForm.warehouse_id}>Release</Button>
+            <Button variant="secondary" type="button" onClick={() => setReleaseModal(false)}>{tx("Cancel")}</Button>
+            <Button type="submit" loading={releaseQuar.isPending} disabled={!releaseForm.warehouse_id}>{tx("Release")}</Button>
           </div>
         </form>
       </Modal>

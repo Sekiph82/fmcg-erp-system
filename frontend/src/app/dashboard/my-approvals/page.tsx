@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { apiClient } from "@/lib/api";
 import { approvalsApi } from "@/lib/approvals";
 import { useAuth } from "@/context/AuthContext";
+import { tx } from "@/lib/i18n/core";
 
 interface Item { id: string; ref: string; since: string | null; rfq_id?: string; asset_id?: string; entry_id?: string }
 interface Group { key: string; label: string; count: number; link: string; items: Item[] }
@@ -80,7 +81,7 @@ export default function MyApprovals() {
 
   const decide = async (key: string, i: Item, ok: boolean) => {
     const d = DECIDE[key];
-    const note = ok ? "" : (window.prompt("Reason for rejecting") ?? "").trim();
+    const note = ok ? "" : (window.prompt(tx("Reason for rejecting")) ?? "").trim();
     if (!d || (!ok && !note)) return;
     setBusy(i.id);
     try {
@@ -94,32 +95,32 @@ export default function MyApprovals() {
   return (
     <div className="p-4 sm:p-6 max-w-4xl mx-auto space-y-4">
       <div>
-        <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">My Approvals</h1>
-        <p className="text-sm text-gray-500">Everything waiting for your decision. You also get a notification when something new arrives.</p>
+        <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">{tx("My Approvals")}</h1>
+        <p className="text-sm text-gray-500">{tx("Everything waiting for your decision. You also get a notification when something new arrives.")}</p>
       </div>
       {msg && <div role="status" className={`rounded-lg px-3 py-2 text-sm ${msg.ok ? "bg-green-50 text-green-800" : "bg-red-50 text-red-700"}`}>{msg.text}</div>}
-      {!data ? <p className="text-sm text-gray-500">Loading…</p> : data.total === 0 ? (
-        <div className="rounded-xl border border-dashed border-gray-300 p-8 text-center text-sm text-gray-500">Nothing is waiting for you.</div>
+      {!data ? <p className="text-sm text-gray-500">{tx("Loading…")}</p> : data.total === 0 ? (
+        <div className="rounded-xl border border-dashed border-gray-300 p-8 text-center text-sm text-gray-500">{tx("Nothing is waiting for you.")}</div>
       ) : data.groups.map((g) => (
         <section key={g.key} className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
           <header className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800">
             <h2 className="font-semibold text-gray-900 dark:text-gray-100">{g.label} <span className="ml-1 rounded-full bg-amber-100 text-amber-800 px-2 py-0.5 text-xs">{g.count}</span></h2>
-            {g.key !== "approval_engine" && <Link href={g.link} className="text-sm text-indigo-600 hover:underline">{DECIDE[g.key] ? "Open screen →" : "Open to decide →"}</Link>}
+            {g.key !== "approval_engine" && <Link href={g.link} className="text-sm text-indigo-600 hover:underline">{DECIDE[g.key] ? tx("Open screen →") : tx("Open to decide →")}</Link>}
           </header>
           <ul className="divide-y divide-gray-100 dark:divide-gray-800">
             {g.items.map((i) => (
               <li key={i.id} className="flex items-center justify-between gap-3 px-4 py-2 text-sm">
                 <span className="font-mono text-gray-800 dark:text-gray-200">{i.ref}</span>
                 <span className="flex items-center gap-2">
-                  <span className="text-xs text-gray-500">waiting {age(i.since)}</span>
+                  <span className="text-xs text-gray-500">{tx("waiting")} {age(i.since)}</span>
                   {DECIDE[g.key] && <>
-                    <button disabled={busy === i.id} onClick={() => decide(g.key, i, true)} className="rounded-md bg-green-600 px-2.5 py-1 text-xs font-medium text-white disabled:opacity-50">Approve</button>
-                    {DECIDE[g.key].reject && <button disabled={busy === i.id} onClick={() => decide(g.key, i, false)} className="rounded-md border border-red-300 px-2.5 py-1 text-xs font-medium text-red-700 disabled:opacity-50">Reject</button>}
+                    <button disabled={busy === i.id} onClick={() => decide(g.key, i, true)} className="rounded-md bg-green-600 px-2.5 py-1 text-xs font-medium text-white disabled:opacity-50">{tx("Approve")}</button>
+                    {DECIDE[g.key].reject && <button disabled={busy === i.id} onClick={() => decide(g.key, i, false)} className="rounded-md border border-red-300 px-2.5 py-1 text-xs font-medium text-red-700 disabled:opacity-50">{tx("Reject")}</button>}
                   </>}
                 </span>
               </li>
             ))}
-            {g.count > g.items.length && <li className="px-4 py-2 text-xs text-gray-500">…and {g.count - g.items.length} more on the screen.</li>}
+            {g.count > g.items.length && <li className="px-4 py-2 text-xs text-gray-500">{tx("…and")} {g.count - g.items.length} {tx("more on the screen.")}</li>}
           </ul>
         </section>
       ))}

@@ -2,6 +2,7 @@
 // M45.S01.T001–T003: authorized data sources, prospecting with evidence, company research/enrichment, business cards.
 import { useCallback, useEffect, useState } from "react";
 import { apiClient } from "@/lib/api";
+import { tx } from "@/lib/i18n/core";
 
 type Ev = { criterion: string; value: string; citation: string };
 type Result = { kind: string; id: string; company_name: string; city: string | null; channel: string | null; email: string | null; score: number; confidence: number; unknown: string[]; evidence: Ev[]; can_email: boolean; source_age_days: number | null };
@@ -37,7 +38,7 @@ export default function DataHubPage() {
 
   const importSrc = () => {
     const mapping = Object.fromEntries(src.mapping.split(",").map((x) => x.split("=").map((y) => y.trim())).filter((x) => x.length === 2 && x[1]));
-    go(apiClient.post("/api/v1/customer-data/sources", { name: src.name, license_note: src.license_note, csv: src.csv, mapping }).then((r) => { setMsg(`Imported ${r.data.stored} rows; ${r.data.errors.length} notes.`); load(); }));
+    go(apiClient.post("/api/v1/customer-data/sources", { name: src.name, license_note: src.license_note, csv: src.csv, mapping }).then((r) => { setMsg(tx("Imported {stored} rows; {length} notes.", { stored: r.data.stored, length: r.data.errors.length })); load(); }));
   };
   const search = () => {
     const body: Record<string, unknown> = {};
@@ -49,64 +50,64 @@ export default function DataHubPage() {
   const showDraft = (r: Result) => go(apiClient.post(`/api/v1/customer-data/prospect/runs/${run!.run_id}/draft`, { result_id: r.id }).then((x) => setPreview({ id: r.id, ...x.data })));
   const findCust = () => apiClient.get("/api/v1/customer-intel/customers", { params: { q, limit: 10 } }).then((r) => setCusts(r.data)).catch((e) => setMsg(err(e)));
   const doResearch = (id: string) => go(apiClient.post(`/api/v1/customer-data/research/${id}`).then((r) => setResearch(r.data)));
-  const apply = (c: Cand, overwrite = false) => apiClient.post(`/api/v1/customer-data/facts/${c.id}/apply`, { overwrite }).then(() => { setMsg("Applied."); doResearch(research!.customer_id); })
-    .catch((e) => { const m = err(e); if (m.includes("confirm the overwrite") && window.confirm(`${m} Overwrite?`)) apply(c, true); else setMsg(m); });
+  const apply = (c: Cand, overwrite = false) => apiClient.post(`/api/v1/customer-data/facts/${c.id}/apply`, { overwrite }).then(() => { setMsg(tx("Applied.")); doResearch(research!.customer_id); })
+    .catch((e) => { const m = err(e); if (m.includes("confirm the overwrite") && window.confirm(tx("{m} Overwrite?", { m }))) apply(c, true); else setMsg(m); });
 
   return (
     <div className="p-4 space-y-4 text-sm">
-      <h2 className="text-lg font-semibold">Prospecting &amp; customer data</h2>
-      {provider && <p className="text-xs text-gray-500">External data provider: {provider.enrichment_provider.toLowerCase().replace("_", " ")}. {provider.note}</p>}
+      <h2 className="text-lg font-semibold">{tx("Prospecting & customer data")}</h2>
+      {provider && <p className="text-xs text-gray-500">{tx("External data provider:")} {provider.enrichment_provider.toLowerCase().replace("_", " ")}. {provider.note}</p>}
       {msg && <p role="status" className="text-xs">{msg}</p>}
 
       <section className={box}>
-        <h3 className="font-semibold">Authorized data sources</h3>
+        <h3 className="font-semibold">{tx("Authorized data sources")}</h3>
         <div className="grid md:grid-cols-2 gap-2">
-          <input aria-label="Source name" className={inp} placeholder="Name (e.g. Trade fair list 2026)" value={src.name} onChange={(e) => setSrc({ ...src, name: e.target.value })} />
-          <input aria-label="Licence note" className={inp} placeholder="Why we may use it" value={src.license_note} onChange={(e) => setSrc({ ...src, license_note: e.target.value })} />
+          <input aria-label={tx("Source name")} className={inp} placeholder={tx("Name (e.g. Trade fair list 2026)")} value={src.name} onChange={(e) => setSrc({ ...src, name: e.target.value })} />
+          <input aria-label={tx("Licence note")} className={inp} placeholder={tx("Why we may use it")} value={src.license_note} onChange={(e) => setSrc({ ...src, license_note: e.target.value })} />
         </div>
         <textarea aria-label="CSV" className={`${inp} w-full font-mono text-xs`} rows={4} value={src.csv} onChange={(e) => setSrc({ ...src, csv: e.target.value })} />
-        <input aria-label="Column mapping" className={`${inp} w-full text-xs`} value={src.mapping} onChange={(e) => setSrc({ ...src, mapping: e.target.value })} />
-        <button className="bg-indigo-600 text-white rounded px-3 py-1 text-xs" onClick={importSrc}>Import</button>
-        <ul className="text-xs">{sources.map((s) => <li key={s.id}>{s.name} · {s.rows} rows · {s.license_note} · deleted on {new Date(s.expires_at).toLocaleDateString()}
-          <button className="ml-2 text-red-600 underline" onClick={() => go(apiClient.delete(`/api/v1/customer-data/sources/${s.id}`).then(load), "Source deleted.")}>Delete</button></li>)}</ul>
+        <input aria-label={tx("Column mapping")} className={`${inp} w-full text-xs`} value={src.mapping} onChange={(e) => setSrc({ ...src, mapping: e.target.value })} />
+        <button className="bg-indigo-600 text-white rounded px-3 py-1 text-xs" onClick={importSrc}>{tx("Import")}</button>
+        <ul className="text-xs">{sources.map((s) => <li key={s.id}>{s.name} · {s.rows} {tx("rows ·")} {s.license_note} {tx("· deleted on")} {new Date(s.expires_at).toLocaleDateString()}
+          <button className="ml-2 text-red-600 underline" onClick={() => go(apiClient.delete(`/api/v1/customer-data/sources/${s.id}`).then(load), "Source deleted.")}>{tx("Delete")}</button></li>)}</ul>
       </section>
 
       <section className={box}>
-        <h3 className="font-semibold">Find prospects</h3>
+        <h3 className="font-semibold">{tx("Find prospects")}</h3>
         <div className="flex flex-wrap gap-2">{(["city", "channel", "segment", "keywords"] as const).map((k) =>
-          <input key={k} aria-label={k} className={inp} placeholder={k === "keywords" ? "keywords, comma separated" : k} value={crit[k]} onChange={(e) => setCrit({ ...crit, [k]: e.target.value })} />)}
-          <button className="border rounded px-3 py-1" onClick={search}>Search</button></div>
-        <p className="text-xs text-gray-500">Existing customers are left out. Nothing is contacted automatically.</p>
-        {run && (run.results.length === 0 ? <p className="text-xs text-gray-500">No matches.</p> :
+          <input key={k} aria-label={k} className={inp} placeholder={k === "keywords" ? tx("keywords, comma separated") : k} value={crit[k]} onChange={(e) => setCrit({ ...crit, [k]: e.target.value })} />)}
+          <button className="border rounded px-3 py-1" onClick={search}>{tx("Search")}</button></div>
+        <p className="text-xs text-gray-500">{tx("Existing customers are left out. Nothing is contacted automatically.")}</p>
+        {run && (run.results.length === 0 ? <p className="text-xs text-gray-500">{tx("No matches.")}</p> :
           <ul className="text-xs divide-y">{run.results.map((r) => <li key={r.id} className="py-1 space-y-0.5">
-            <div className="flex flex-wrap justify-between gap-2"><b>{r.company_name}</b><span>match {Math.round(r.score * 100)}% · known data {Math.round(r.confidence * 100)}%</span></div>
+            <div className="flex flex-wrap justify-between gap-2"><b>{r.company_name}</b><span>{tx("match")} {Math.round(r.score * 100)}{tx("% · known data")} {Math.round(r.confidence * 100)}%</span></div>
             <div className="text-gray-600">{r.evidence.map((e) => `${e.criterion}: ${e.value} (${e.citation})`).join(" · ")}</div>
-            {r.unknown.length > 0 && <div className="text-gray-400">unknown: {r.unknown.join(", ")}</div>}
-            <div className="flex gap-3"><button className="underline" onClick={() => showDraft(r)}>Preview draft</button>
-              {r.can_email ? <button className="underline" onClick={() => outreach(r)}>Propose first e-mail</button> : <span className="text-gray-400">no e-mail on file</span>}</div>
+            {r.unknown.length > 0 && <div className="text-gray-400">{tx("unknown:")} {r.unknown.join(", ")}</div>}
+            <div className="flex gap-3"><button className="underline" onClick={() => showDraft(r)}>{tx("Preview draft")}</button>
+              {r.can_email ? <button className="underline" onClick={() => outreach(r)}>{tx("Propose first e-mail")}</button> : <span className="text-gray-400">{tx("no e-mail on file")}</span>}</div>
             {preview?.id === r.id && <div className="border rounded p-2 bg-gray-50 space-y-1" data-testid="draft-preview">
               <div><b>{preview.subject}</b></div><pre className="whitespace-pre-wrap font-sans">{preview.body}</pre>
-              <div className="text-gray-600">Sources: {preview.sources.length ? preview.sources.join(" · ") : "none"}</div>
-              {preview.catalogue_empty && <div className="text-amber-700">No active products in the catalogue: the draft names no products.</div>}</div>}</li>)}</ul>)}
+              <div className="text-gray-600">{tx("Sources:")} {preview.sources.length ? preview.sources.join(" · ") : tx("none")}</div>
+              {preview.catalogue_empty && <div className="text-amber-700">{tx("No active products in the catalogue: the draft names no products.")}</div>}</div>}</li>)}</ul>)}
       </section>
 
       <section className={box}>
-        <h3 className="font-semibold">Research &amp; enrich a customer</h3>
-        <div className="flex gap-2"><input aria-label="Customer search" className={inp} placeholder="Customer name" value={q} onChange={(e) => setQ(e.target.value)} /><button className="border rounded px-3" onClick={findCust}>Find</button></div>
+        <h3 className="font-semibold">{tx("Research & enrich a customer")}</h3>
+        <div className="flex gap-2"><input aria-label={tx("Customer search")} className={inp} placeholder={tx("Customer name")} value={q} onChange={(e) => setQ(e.target.value)} /><button className="border rounded px-3" onClick={findCust}>{tx("Find")}</button></div>
         <div className="flex flex-wrap gap-2 text-xs">{custs.map((c) => <button key={c.id} className="border rounded px-2" onClick={() => doResearch(c.id)}>{c.name}</button>)}</div>
-        {research && <table className="text-xs w-full"><thead><tr className="text-left bg-gray-50"><th className="p-1">Field</th><th>Now</th><th>Sourced values</th></tr></thead>
-          <tbody>{research.fields.map((f) => <tr key={f.field} className="border-t align-top"><td className="p-1">{f.field}{f.verified ? " ✓ verified" : ""}{f.conflict ? " · conflict" : ""}</td>
-            <td>{f.current ?? "—"} {f.applicable && <button className="underline ml-1" onClick={() => go(apiClient.put(`/api/v1/customer-data/customers/${research.customer_id}/verified/${f.field}`, { verified: !f.verified }).then(() => doResearch(research.customer_id)))}>{f.verified ? "unverify" : "verify"}</button>}</td>
-            <td>{f.unknown ? <span className="text-gray-400">unknown</span> : f.candidates.map((c) => <div key={c.id}>{c.value} <span className="text-gray-500">({c.citation}; {c.age_days} days old; confidence {c.confidence})</span>
-              {c.status === "PROPOSED" && f.applicable && <><button className="underline ml-1" onClick={() => apply(c)}>apply</button><button className="underline ml-1" onClick={() => go(apiClient.post(`/api/v1/customer-data/facts/${c.id}/reject`).then(() => doResearch(research.customer_id)))}>reject</button></>}
+        {research && <table className="text-xs w-full"><thead><tr className="text-left bg-gray-50"><th className="p-1">{tx("Field")}</th><th>{tx("Now")}</th><th>{tx("Sourced values")}</th></tr></thead>
+          <tbody>{research.fields.map((f) => <tr key={f.field} className="border-t align-top"><td className="p-1">{f.field}{f.verified ? tx(" ✓ verified") : ""}{f.conflict ? tx(" · conflict") : ""}</td>
+            <td>{f.current ?? "—"} {f.applicable && <button className="underline ml-1" onClick={() => go(apiClient.put(`/api/v1/customer-data/customers/${research.customer_id}/verified/${f.field}`, { verified: !f.verified }).then(() => doResearch(research.customer_id)))}>{f.verified ? tx("unverify") : tx("verify")}</button>}</td>
+            <td>{f.unknown ? <span className="text-gray-400">{tx("unknown")}</span> : f.candidates.map((c) => <div key={c.id}>{c.value} <span className="text-gray-500">({c.citation}; {c.age_days} {tx("days old; confidence")} {c.confidence})</span>
+              {c.status === "PROPOSED" && f.applicable && <><button className="underline ml-1" onClick={() => apply(c)}>{tx("apply")}</button><button className="underline ml-1" onClick={() => go(apiClient.post(`/api/v1/customer-data/facts/${c.id}/reject`).then(() => doResearch(research.customer_id)))}>{tx("reject")}</button></>}
               {c.status !== "PROPOSED" && <span className="ml-1">{c.status.toLowerCase()}</span>}</div>)}</td></tr>)}</tbody></table>}
       </section>
 
       <section className={box}>
-        <h3 className="font-semibold">Business card to contact</h3>
-        <textarea aria-label="Card text" className={`${inp} w-full`} rows={4} placeholder="Paste the card text (from your phone's text recognition) or type it" value={card} onChange={(e) => setCard(e.target.value)} />
-        <label className="block text-xs">Or scan a picture of the card (JPEG/PNG, up to 4 MB; the picture is not kept, only the text)
-          <input aria-label="Card picture" type="file" accept="image/jpeg,image/png" disabled={scanBusy} className="block mt-1" onChange={(e) => {
+        <h3 className="font-semibold">{tx("Business card to contact")}</h3>
+        <textarea aria-label={tx("Card text")} className={`${inp} w-full`} rows={4} placeholder={tx("Paste the card text (from your phone's text recognition) or type it")} value={card} onChange={(e) => setCard(e.target.value)} />
+        <label className="block text-xs">{tx("Or scan a picture of the card (JPEG/PNG, up to 4 MB; the picture is not kept, only the text)")}
+          <input aria-label={tx("Card picture")} type="file" accept="image/jpeg,image/png" disabled={scanBusy} className="block mt-1" onChange={(e) => {
             const file = e.target.files?.[0]; if (!file) return; const fd = new FormData(); fd.append("file", file); setScanBusy(true);
             go(apiClient.post("/api/v1/crm/card-ocr/scan", fd, { headers: { "Content-Type": "multipart/form-data" } }).then((r) => {
               setDraft(r.data.id); setCard(r.data.text);
@@ -114,13 +115,13 @@ export default function DataHubPage() {
             }).finally(() => setScanBusy(false)), "Card read. Check every field below.");
           }} /></label>
         <button className="border rounded px-3 py-1 text-xs" onClick={() => go(apiClient.post("/api/v1/customer-data/business-card/parse", { text: card }).then((r) => {
-          setCardFields(Object.fromEntries(["full_name", "job_title", "company", "email", "phone"].map((k) => [k, r.data.fields[k]?.value ?? ""]))); setConfirmed(false); }))}>Read fields</button>
+          setCardFields(Object.fromEntries(["full_name", "job_title", "company", "email", "phone"].map((k) => [k, r.data.fields[k]?.value ?? ""]))); setConfirmed(false); }))}>{tx("Read fields")}</button>
         {cardFields && <div className="grid sm:grid-cols-2 gap-2 text-xs">{Object.keys(cardFields).map((k) => <label key={k}>{k.replace("_", " ")}<input aria-label={k} className={`${inp} w-full`} value={cardFields[k]} onChange={(e) => setCardFields({ ...cardFields, [k]: e.target.value })} /></label>)}
-          <label className="flex items-center gap-2 sm:col-span-2"><input type="checkbox" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} />{draft ? "I checked every field, and the card holder gave me their card for business contact so I may keep these details" : "I checked every field"}</label>
+          <label className="flex items-center gap-2 sm:col-span-2"><input type="checkbox" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} />{draft ? tx("I checked every field, and the card holder gave me their card for business contact so I may keep these details") : tx("I checked every field")}</label>
           <button className="bg-indigo-600 text-white rounded px-3 py-1" disabled={!confirmed} onClick={() => go((draft
             ? apiClient.post(`/api/v1/crm/card-ocr/${draft}/confirm`, { ...cardFields, email: cardFields.email || null, phone: cardFields.phone || null, consent: confirmed })
-            : apiClient.post("/api/v1/customer-data/business-card/save", { ...cardFields, email: cardFields.email || null, phone: cardFields.phone || null, confirmed })).then(() => { setCardFields(null); setCard(""); setDraft(null); }), "Contact created.")}>Create contact</button>
-          {draft && <button className="border rounded px-3 py-1" onClick={() => go(apiClient.post(`/api/v1/crm/card-ocr/${draft}/discard`).then(() => { setCardFields(null); setCard(""); setDraft(null); }), "Scan discarded.")}>Discard scan</button>}</div>}
+            : apiClient.post("/api/v1/customer-data/business-card/save", { ...cardFields, email: cardFields.email || null, phone: cardFields.phone || null, confirmed })).then(() => { setCardFields(null); setCard(""); setDraft(null); }), "Contact created.")}>{tx("Create contact")}</button>
+          {draft && <button className="border rounded px-3 py-1" onClick={() => go(apiClient.post(`/api/v1/crm/card-ocr/${draft}/discard`).then(() => { setCardFields(null); setCard(""); setDraft(null); }), "Scan discarded.")}>{tx("Discard scan")}</button>}</div>}
       </section>
     </div>
   );

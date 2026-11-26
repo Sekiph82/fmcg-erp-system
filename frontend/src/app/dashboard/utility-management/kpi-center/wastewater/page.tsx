@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from "recharts";
 import { kpiApi } from "@/lib/utilityKpi";
+import { tx } from "@/lib/i18n/core";
 
 const today = new Date().toISOString().slice(0, 10);
 const mtdStart = today.slice(0, 8) + "01";
@@ -37,7 +38,7 @@ function DateFilter({ from, to, onFrom, onTo }: { from: string; to: string; onFr
   return (
     <div className="flex gap-3 items-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3">
       <input type="date" className={ic} value={from} onChange={e => onFrom(e.target.value)} />
-      <span className="text-gray-400 text-xs">to</span>
+      <span className="text-gray-400 text-xs">{tx("to")}</span>
       <input type="date" className={ic} value={to} onChange={e => onTo(e.target.value)} />
     </div>
   );
@@ -81,15 +82,15 @@ export default function WastewaterKpiPage() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <div className="flex items-center gap-3 mb-1">
-            <Link href="/dashboard/utility-management/kpi-center" className="text-sm text-gray-500 hover:text-blue-600">← KPI Center</Link>
+            <Link href="/dashboard/utility-management/kpi-center" className="text-sm text-gray-500 hover:text-blue-600">{tx("← KPI Center")}</Link>
             <span className="text-gray-300">|</span>
-            <Link href="/dashboard/utility-management/wastewater" className="text-sm text-blue-600 hover:underline">Operational Records →</Link>
+            <Link href="/dashboard/utility-management/wastewater" className="text-sm text-blue-600 hover:underline">{tx("Operational Records →")}</Link>
           </div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white" style={{ borderLeft: "4px solid #6ee7b7", paddingLeft: 12 }}>
-            Wastewater Treatment KPI Dashboard
+            {tx("Wastewater Treatment KPI Dashboard")}
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Monitor effluent quality, treatment efficiency, regulatory compliance, and WWTP energy use.
+            {tx("Monitor effluent quality, treatment efficiency, regulatory compliance, and WWTP energy use.")}
           </p>
         </div>
         <DateFilter from={dateFrom} to={dateTo} onFrom={setDateFrom} onTo={setDateTo} />
@@ -100,9 +101,9 @@ export default function WastewaterKpiPage() {
         <div className="rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-300 dark:border-red-700 p-4 flex items-center gap-3">
           <span className="text-red-500 text-xl">⚠</span>
           <div>
-            <p className="font-semibold text-red-800 dark:text-red-300">Compliance Alert</p>
+            <p className="font-semibold text-red-800 dark:text-red-300">{tx("Compliance Alert")}</p>
             <p className="text-sm text-red-700 dark:text-red-400">
-              {kpi?.non_compliant_count} non-compliant record(s) in the selected period. Review effluent parameters immediately.
+              {kpi?.non_compliant_count} {tx("non-compliant record(s) in the selected period. Review effluent parameters immediately.")}
             </p>
           </div>
         </div>
@@ -111,7 +112,7 @@ export default function WastewaterKpiPage() {
       {/* KPI cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         <KpiCard
-          label="COD Removal"
+          label={tx("COD Removal")}
           value={pct(kpi?.cod_removal_pct)}
           sub="Chemical oxygen demand"
           highlight={(kpi?.cod_removal_pct ?? 0) >= 90}
@@ -119,7 +120,7 @@ export default function WastewaterKpiPage() {
           critical={(kpi?.cod_removal_pct ?? 0) < 70 && (kpi?.cod_removal_pct ?? 0) > 0}
         />
         <KpiCard
-          label="BOD Removal"
+          label={tx("BOD Removal")}
           value={pct(kpi?.bod_removal_pct)}
           sub="Biological oxygen demand"
           highlight={(kpi?.bod_removal_pct ?? 0) >= 90}
@@ -127,7 +128,7 @@ export default function WastewaterKpiPage() {
           critical={(kpi?.bod_removal_pct ?? 0) < 70 && (kpi?.bod_removal_pct ?? 0) > 0}
         />
         <KpiCard
-          label="Avg Dissolved O₂"
+          label={tx("Avg Dissolved O₂")}
           value={fmt(kpi?.avg_do_mgl, 2)}
           unit="mg/L"
           highlight={(kpi?.avg_do_mgl ?? 0) >= 2}
@@ -135,43 +136,43 @@ export default function WastewaterKpiPage() {
           critical={(kpi?.avg_do_mgl ?? 0) < 1 && (kpi?.avg_do_mgl ?? 0) > 0}
         />
         <KpiCard
-          label="Avg Effluent pH"
+          label={tx("Avg Effluent pH")}
           value={fmt(kpi?.avg_effluent_ph, 2)}
           highlight={(kpi?.avg_effluent_ph ?? 0) >= 6.5 && (kpi?.avg_effluent_ph ?? 0) <= 8.5}
           warn={!!kpi?.avg_effluent_ph && ((kpi.avg_effluent_ph < 6 || kpi.avg_effluent_ph > 9))}
           critical={!!kpi?.avg_effluent_ph && ((kpi.avg_effluent_ph < 5.5 || kpi.avg_effluent_ph > 9.5))}
         />
         <KpiCard
-          label="Sludge Produced"
+          label={tx("Sludge Produced")}
           value={fmt(kpi?.sludge_kg_total, 1)}
           unit="kg"
           sub={`${dateFrom} – ${dateTo}`}
         />
         <KpiCard
-          label="WWTP Power Used"
+          label={tx("WWTP Power Used")}
           value={fmt(kpi?.power_kwh_total, 1)}
           unit="kWh"
         />
         <KpiCard
-          label="Power per m³"
+          label={tx("Power per m³")}
           value={fmt(kpi?.power_per_m3, 4)}
           unit="kWh/m³"
           warn={(kpi?.power_per_m3 ?? 0) > 1.5}
         />
         <KpiCard
-          label="Compliance Rate"
+          label={tx("Compliance Rate")}
           value={pct(kpi?.compliant_pct)}
           highlight={(kpi?.compliant_pct ?? 0) >= 95}
           warn={(kpi?.compliant_pct ?? 0) < 80 && (kpi?.compliant_pct ?? 0) > 0}
           critical={(kpi?.compliant_pct ?? 0) < 70 && (kpi?.compliant_pct ?? 0) > 0}
         />
         <KpiCard
-          label="Non-Compliant Records"
+          label={tx("Non-Compliant Records")}
           value={kpi?.non_compliant_count == null ? "—" : String(kpi.non_compliant_count)}
           critical={(kpi?.non_compliant_count ?? 0) > 0}
         />
         <KpiCard
-          label="Anomaly Count"
+          label={tx("Anomaly Count")}
           value={kpi?.anomaly_count == null ? "—" : String(kpi.anomaly_count)}
           warn={(kpi?.anomaly_count ?? 0) > 0}
         />
@@ -180,7 +181,7 @@ export default function WastewaterKpiPage() {
       {/* Treatment efficiency bar chart */}
       {paramData.length > 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Treatment Efficiency vs Target</h3>
+          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">{tx("Treatment Efficiency vs Target")}</h3>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={paramData} layout="vertical" margin={{ top: 4, right: 40, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" horizontal={false} />
@@ -197,28 +198,28 @@ export default function WastewaterKpiPage() {
       {/* pH and DO status */}
       {kpi && (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Effluent Quality Parameters</h3>
+          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">{tx("Effluent Quality Parameters")}</h3>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
             <div className="text-center p-3 rounded-lg bg-gray-50 dark:bg-gray-700">
-              <p className="text-xs text-gray-500 mb-1">pH (Target: 6.5–8.5)</p>
+              <p className="text-xs text-gray-500 mb-1">{tx("pH (Target: 6.5–8.5)")}</p>
               <p className={`text-lg font-bold ${(kpi.avg_effluent_ph ?? 0) >= 6.5 && (kpi.avg_effluent_ph ?? 0) <= 8.5 ? "text-green-600" : "text-red-600"}`}>
                 {fmt(kpi.avg_effluent_ph, 2)}
               </p>
             </div>
             <div className="text-center p-3 rounded-lg bg-gray-50 dark:bg-gray-700">
-              <p className="text-xs text-gray-500 mb-1">DO mg/L (Target: ≥2)</p>
+              <p className="text-xs text-gray-500 mb-1">{tx("DO mg/L (Target: ≥2)")}</p>
               <p className={`text-lg font-bold ${(kpi.avg_do_mgl ?? 0) >= 2 ? "text-green-600" : "text-amber-600"}`}>
                 {fmt(kpi.avg_do_mgl, 2)}
               </p>
             </div>
             <div className="text-center p-3 rounded-lg bg-gray-50 dark:bg-gray-700">
-              <p className="text-xs text-gray-500 mb-1">COD Removal (Target: ≥90%)</p>
+              <p className="text-xs text-gray-500 mb-1">{tx("COD Removal (Target: ≥90%)")}</p>
               <p className={`text-lg font-bold ${(kpi.cod_removal_pct ?? 0) >= 90 ? "text-green-600" : "text-red-600"}`}>
                 {pct(kpi.cod_removal_pct)}
               </p>
             </div>
             <div className="text-center p-3 rounded-lg bg-gray-50 dark:bg-gray-700">
-              <p className="text-xs text-gray-500 mb-1">Compliance Rate</p>
+              <p className="text-xs text-gray-500 mb-1">{tx("Compliance Rate")}</p>
               <p className={`text-lg font-bold ${(kpi.compliant_pct ?? 0) >= 95 ? "text-green-600" : (kpi.compliant_pct ?? 0) >= 80 ? "text-amber-600" : "text-red-600"}`}>
                 {pct(kpi.compliant_pct)}
               </p>

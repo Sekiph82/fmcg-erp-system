@@ -4,6 +4,7 @@ import {
   appraisalsApi, AppraisalRecord, FinalRating,
   APPRAISAL_STATUS_COLOR, APPRAISAL_STATUS_LABEL, RATING_COLOR, RATING_LABEL,
 } from "@/lib/appraisals";
+import { tx } from "@/lib/i18n/core";
 
 const RATINGS: FinalRating[] = ["excellent","good","meets_expectations","improvement_needed"];
 
@@ -73,31 +74,31 @@ export default function HRReviewPage() {
 
   return (
     <div className="p-6 space-y-4">
-      <h1 className="text-xl font-bold text-gray-900">HR Review & Calibration</h1>
+      <h1 className="text-xl font-bold text-gray-900">{tx("HR Review & Calibration")}</h1>
 
       <div className="flex gap-2">
         <button
           onClick={() => setTab("hr_review")}
           className={`px-4 py-2 text-sm rounded font-medium ${tab === "hr_review" ? "bg-purple-600 text-white" : "border text-gray-600 hover:bg-gray-50"}`}
         >
-          HR Review ({hrRecords.length})
+          {tx("HR Review (")}{hrRecords.length})
         </button>
         <button
           onClick={() => setTab("calibration")}
           className={`px-4 py-2 text-sm rounded font-medium ${tab === "calibration" ? "bg-indigo-600 text-white" : "border text-gray-600 hover:bg-gray-50"}`}
         >
-          Calibration ({calRecords.length})
+          {tx("Calibration (")}{calRecords.length})
         </button>
       </div>
 
       {loading ? (
-        <p className="text-gray-500 text-sm">Loading…</p>
+        <p className="text-gray-500 text-sm">{tx("Loading…")}</p>
       ) : (
         <div className="bg-white border rounded-lg shadow-sm overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b">
               <tr>
-                {["Employee","Dept","Self","Manager","Final","Rating","Promo","Actions"].map((h) => (
+                {[tx("Employee"),tx("Dept"),tx("Self"),tx("Manager"),tx("Final"),tx("Rating"),tx("Promo"),tx("Actions")].map((h) => (
                   <th key={h} className="px-4 py-2 text-left text-xs font-semibold text-gray-600">{h}</th>
                 ))}
               </tr>
@@ -121,20 +122,20 @@ export default function HRReviewPage() {
                   <td className="px-4 py-2 flex gap-2">
                     {tab === "hr_review" && (
                       <button onClick={() => openRecord(r, "hr_review")}
-                        className="text-xs text-purple-600 hover:underline">Review</button>
+                        className="text-xs text-purple-600 hover:underline">{tx("Review")}</button>
                     )}
                     {tab === "calibration" && (
                       <button onClick={() => openRecord(r, "finalize")}
-                        className="text-xs text-green-600 hover:underline">Finalize</button>
+                        className="text-xs text-green-600 hover:underline">{tx("Finalize")}</button>
                     )}
                     <button onClick={() => { setSelected(r); setAction("reject"); setHrNotes(""); }}
-                      className="text-xs text-red-500 hover:underline">Reject</button>
+                      className="text-xs text-red-500 hover:underline">{tx("Reject")}</button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-          {records.length === 0 && <p className="text-center text-gray-400 py-8 text-sm">No records in this stage.</p>}
+          {records.length === 0 && <p className="text-center text-gray-400 py-8 text-sm">{tx("No records in this stage.")}</p>}
         </div>
       )}
 
@@ -143,7 +144,7 @@ export default function HRReviewPage() {
           <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl p-6 space-y-4 my-4">
             <div className="flex justify-between">
               <h2 className="text-lg font-bold text-gray-900">
-                {action === "reject" ? "Reject Appraisal" : action === "finalize" ? "Finalize Appraisal" : "HR Review"} — {selected.employee_name ?? selected.employee_id}
+                {action === "reject" ? tx("Reject Appraisal") : action === "finalize" ? tx("Finalize Appraisal") : tx("HR Review")} — {selected.employee_name ?? selected.employee_id}
               </h2>
               <button onClick={() => setSelected(null)} className="text-gray-400 hover:text-gray-700 text-xl">✕</button>
             </div>
@@ -151,34 +152,34 @@ export default function HRReviewPage() {
             {action !== "reject" && (
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-gray-500">Final Score (0–100)</label>
+                  <label className="text-xs text-gray-500">{tx("Final Score (0–100)")}</label>
                   <input type="number" min={0} max={100} className="w-full border rounded px-2 py-1 text-sm mt-1"
                     value={finalScore} onChange={(e) => setFinalScore(e.target.value)} />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500">Final Rating</label>
+                  <label className="text-xs text-gray-500">{tx("Final Rating")}</label>
                   <select className="w-full border rounded px-2 py-1 text-sm mt-1"
                     value={finalRating} onChange={(e) => setFinalRating(e.target.value as FinalRating)}>
-                    <option value="">Auto from score</option>
+                    <option value="">{tx("Auto from score")}</option>
                     {RATINGS.map(r => <option key={r} value={r}>{RATING_LABEL[r]}</option>)}
                   </select>
                 </div>
                 {action === "finalize" && (
                   <>
                     <div>
-                      <label className="text-xs text-gray-500">Increment % Recommendation</label>
+                      <label className="text-xs text-gray-500">{tx("Increment % Recommendation")}</label>
                       <input type="number" className="w-full border rounded px-2 py-1 text-sm mt-1"
                         value={increment} onChange={(e) => setIncrement(e.target.value)} />
                     </div>
                     <div className="flex items-center gap-2 mt-4">
                       <input type="checkbox" checked={promotion} onChange={(e) => setPromotion(e.target.checked)} />
-                      <label className="text-sm text-gray-700">Recommend promotion</label>
+                      <label className="text-sm text-gray-700">{tx("Recommend promotion")}</label>
                     </div>
                   </>
                 )}
                 {action === "hr_review" && (
                   <div className="col-span-2">
-                    <label className="text-xs text-gray-500">Calibration Notes</label>
+                    <label className="text-xs text-gray-500">{tx("Calibration Notes")}</label>
                     <textarea className="w-full border rounded px-2 py-1 text-sm mt-1" rows={2}
                       value={calNotes} onChange={(e) => setCalNotes(e.target.value)} />
                   </div>
@@ -187,7 +188,7 @@ export default function HRReviewPage() {
             )}
 
             <div>
-              <label className="text-xs text-gray-500">HR Notes {action === "reject" ? "(reason)" : ""}</label>
+              <label className="text-xs text-gray-500">{tx("HR Notes")} {action === "reject" ? tx("(reason)") : ""}</label>
               <textarea className="w-full border rounded px-2 py-1 text-sm mt-1" rows={3}
                 value={hrNotes} onChange={(e) => setHrNotes(e.target.value)} />
             </div>
@@ -198,9 +199,9 @@ export default function HRReviewPage() {
                 disabled={saving}
                 className={`rounded px-6 py-2 text-sm font-medium text-white disabled:opacity-50 ${action === "reject" ? "bg-red-600 hover:bg-red-700" : action === "finalize" ? "bg-green-600 hover:bg-green-700" : "bg-purple-600 hover:bg-purple-700"}`}
               >
-                {saving ? "Saving…" : action === "reject" ? "Reject" : action === "finalize" ? "Finalize" : "Send to Calibration"}
+                {saving ? tx("Saving…") : action === "reject" ? tx("Reject") : action === "finalize" ? tx("Finalize") : tx("Send to Calibration")}
               </button>
-              <button onClick={() => setSelected(null)} className="rounded border px-4 py-2 text-sm text-gray-600 hover:bg-gray-50">Cancel</button>
+              <button onClick={() => setSelected(null)} className="rounded border px-4 py-2 text-sm text-gray-600 hover:bg-gray-50">{tx("Cancel")}</button>
             </div>
           </div>
         </div>

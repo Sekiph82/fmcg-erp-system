@@ -3,19 +3,20 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { financeApi, OperationalPostingEvent, PurchaseInvoice, PurchaseInvoiceStatus } from "@/lib/finance";
+import { tx, lx } from "@/lib/i18n/core";
 
 function fmtKES(n: number) {
   return `KES ${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-const STATUS_CONFIG: Record<PurchaseInvoiceStatus, { label: string; cls: string }> = {
-  DRAFT:          { label: "Draft",     cls: "bg-gray-100 text-gray-500" },
-  RECEIVED:       { label: "Received",  cls: "bg-blue-100 text-blue-700" },
-  PARTIALLY_PAID: { label: "Partial",   cls: "bg-yellow-100 text-yellow-700" },
-  PAID:           { label: "Paid",      cls: "bg-green-100 text-green-700" },
-  OVERDUE:        { label: "Overdue",   cls: "bg-red-100 text-red-700" },
-  CANCELLED:      { label: "Cancelled", cls: "bg-gray-100 text-gray-400" },
-};
+const STATUS_CONFIG: Record<PurchaseInvoiceStatus, { label: string; cls: string }> = lx(() => ({
+  DRAFT:          { label: tx("Draft"),     cls: "bg-gray-100 text-gray-500" },
+  RECEIVED:       { label: tx("Received"),  cls: "bg-blue-100 text-blue-700" },
+  PARTIALLY_PAID: { label: tx("Partial"),   cls: "bg-yellow-100 text-yellow-700" },
+  PAID:           { label: tx("Paid"),      cls: "bg-green-100 text-green-700" },
+  OVERDUE:        { label: tx("Overdue"),   cls: "bg-red-100 text-red-700" },
+  CANCELLED:      { label: tx("Cancelled"), cls: "bg-gray-100 text-gray-400" },
+}));
 
 const STATUSES: Array<PurchaseInvoiceStatus | ""> = [
   "", "RECEIVED", "PARTIALLY_PAID", "PAID", "OVERDUE", "DRAFT", "CANCELLED",
@@ -50,7 +51,7 @@ function PaymentModal({
         notes: form.notes || undefined,
       }),
     onSuccess: () => { onSuccess(); onClose(); },
-    onError: (e: any) => setError(e?.response?.data?.detail ?? "Failed to record payment"),
+    onError: (e: any) => setError(e?.response?.data?.detail ?? tx("Failed to record payment")),
   });
 
   const outstanding = invoice.total_amount - invoice.paid_amount;
@@ -58,36 +59,36 @@ function PaymentModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4">
-        <h3 className="text-lg font-bold text-gray-900">Record Payment</h3>
+        <h3 className="text-lg font-bold text-gray-900">{tx("Record Payment")}</h3>
         <p className="text-sm text-gray-500">
-          Invoice <strong>{invoice.invoice_no}</strong> · Outstanding: <strong>{fmtKES(outstanding)}</strong>
+          {tx("Invoice")} <strong>{invoice.invoice_no}</strong> {tx("· Outstanding:")} <strong>{fmtKES(outstanding)}</strong>
         </p>
         {error && <p className="text-sm text-red-500">{error}</p>}
         <div className="space-y-3">
           <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1">Payment Date</label>
+            <label className="block text-xs font-semibold text-gray-500 mb-1">{tx("Payment Date")}</label>
             <input type="date" value={form.payment_date}
               onChange={(e) => setForm(f => ({ ...f, payment_date: e.target.value }))}
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1">Amount (KES)</label>
+            <label className="block text-xs font-semibold text-gray-500 mb-1">{tx("Amount (KES)")}</label>
             <input type="number" step="0.01" value={form.amount} placeholder={`Max: ${outstanding.toFixed(2)}`}
               onChange={(e) => setForm(f => ({ ...f, amount: e.target.value }))}
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1">Method</label>
+            <label className="block text-xs font-semibold text-gray-500 mb-1">{tx("Method")}</label>
             <select value={form.method} onChange={(e) => setForm(f => ({ ...f, method: e.target.value }))}
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
-              <option value="cash">Cash</option>
-              <option value="bank">Bank Transfer</option>
-              <option value="mpesa">M-Pesa</option>
+              <option value="cash">{tx("Cash")}</option>
+              <option value="bank">{tx("Bank Transfer")}</option>
+              <option value="mpesa">{tx("M-Pesa")}</option>
             </select>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1">Reference</label>
-            <input type="text" value={form.reference} placeholder="Bank ref / M-Pesa receipt"
+            <label className="block text-xs font-semibold text-gray-500 mb-1">{tx("Reference")}</label>
+            <input type="text" value={form.reference} placeholder={tx("Bank ref / M-Pesa receipt")}
               onChange={(e) => setForm(f => ({ ...f, reference: e.target.value }))}
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
           </div>
@@ -95,13 +96,13 @@ function PaymentModal({
         <div className="flex justify-end gap-3 pt-2">
           <button onClick={onClose}
             className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-            Cancel
+            {tx("Cancel")}
           </button>
           <button
             disabled={mutation.isPending || !form.amount}
             onClick={() => mutation.mutate()}
             className="px-4 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors">
-            {mutation.isPending ? "Saving…" : "Record Payment"}
+            {mutation.isPending ? tx("Saving…") : tx("Record Payment")}
           </button>
         </div>
       </div>
@@ -143,7 +144,7 @@ export default function PurchaseInvoicesPage() {
         qc.invalidateQueries({ queryKey: ["purchase-invoice-posting-events"] }),
       ]);
     },
-    onError: (e: any) => setPostingError(e?.response?.data?.detail ?? "Failed to post supplier invoice"),
+    onError: (e: any) => setPostingError(e?.response?.data?.detail ?? tx("Failed to post supplier invoice")),
   });
 
   const filtered = search
@@ -169,28 +170,28 @@ export default function PurchaseInvoicesPage() {
       )}
 
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Purchase Invoices</h1>
-        <p className="text-sm text-gray-400 mt-0.5">Supplier invoices for materials and goods received</p>
+        <h1 className="text-2xl font-bold text-gray-900">{tx("Purchase Invoices")}</h1>
+        <p className="text-sm text-gray-400 mt-0.5">{tx("Supplier invoices for materials and goods received")}</p>
       </div>
       {postingError && (
         <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {postingError}
-          <button onClick={() => setPostingError("")} className="ml-3 font-semibold underline">Dismiss</button>
+          <button onClick={() => setPostingError("")} className="ml-3 font-semibold underline">{tx("Dismiss")}</button>
         </div>
       )}
 
       {/* Summary */}
       <div className="grid grid-cols-3 gap-4">
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-          <p className="text-xs text-gray-400 font-semibold uppercase tracking-widest">Total Purchases</p>
+          <p className="text-xs text-gray-400 font-semibold uppercase tracking-widest">{tx("Total Purchases")}</p>
           <p className="text-lg font-bold text-indigo-700">{fmtKES(totalPurchases)}</p>
         </div>
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-          <p className="text-xs text-gray-400 font-semibold uppercase tracking-widest">Paid</p>
+          <p className="text-xs text-gray-400 font-semibold uppercase tracking-widest">{tx("Paid")}</p>
           <p className="text-lg font-bold text-green-600">{fmtKES(totalPaid)}</p>
         </div>
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-          <p className="text-xs text-gray-400 font-semibold uppercase tracking-widest">Outstanding Payable</p>
+          <p className="text-xs text-gray-400 font-semibold uppercase tracking-widest">{tx("Outstanding Payable")}</p>
           <p className={`text-lg font-bold ${totalPayable > 0 ? "text-red-600" : "text-green-600"}`}>
             {fmtKES(totalPayable)}
           </p>
@@ -201,7 +202,7 @@ export default function PurchaseInvoicesPage() {
       <div className="flex flex-wrap gap-3">
         <input
           type="text"
-          placeholder="Search invoice # or supplier..."
+          placeholder={tx("Search invoice # or supplier...")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 w-64"
@@ -213,7 +214,7 @@ export default function PurchaseInvoicesPage() {
         >
           {STATUSES.map((s) => (
             <option key={s} value={s}>
-              {s === "" ? "All Statuses" : STATUS_CONFIG[s as PurchaseInvoiceStatus]?.label ?? s}
+              {s === "" ? tx("All Statuses") : STATUS_CONFIG[s as PurchaseInvoiceStatus]?.label ?? s}
             </option>
           ))}
         </select>
@@ -225,15 +226,15 @@ export default function PurchaseInvoicesPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 text-xs text-gray-500 uppercase tracking-widest">
-                <th className="px-5 py-3 text-left font-semibold">Invoice #</th>
-                <th className="px-5 py-3 text-left font-semibold">Supplier</th>
-                <th className="px-5 py-3 text-center font-semibold">Date</th>
-                <th className="px-5 py-3 text-center font-semibold">Due</th>
-                <th className="px-5 py-3 text-right font-semibold">Total</th>
-                <th className="px-5 py-3 text-right font-semibold">Paid</th>
-                <th className="px-5 py-3 text-right font-semibold">Payable</th>
-                <th className="px-5 py-3 text-center font-semibold">Status</th>
-                <th className="px-5 py-3 text-center font-semibold">Action</th>
+                <th className="px-5 py-3 text-left font-semibold">{tx("Invoice #")}</th>
+                <th className="px-5 py-3 text-left font-semibold">{tx("Supplier")}</th>
+                <th className="px-5 py-3 text-center font-semibold">{tx("Date")}</th>
+                <th className="px-5 py-3 text-center font-semibold">{tx("Due")}</th>
+                <th className="px-5 py-3 text-right font-semibold">{tx("Total")}</th>
+                <th className="px-5 py-3 text-right font-semibold">{tx("Paid")}</th>
+                <th className="px-5 py-3 text-right font-semibold">{tx("Payable")}</th>
+                <th className="px-5 py-3 text-center font-semibold">{tx("Status")}</th>
+                <th className="px-5 py-3 text-center font-semibold">{tx("Action")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -251,7 +252,7 @@ export default function PurchaseInvoicesPage() {
               {!isLoading && filtered.length === 0 && (
                 <tr>
                   <td colSpan={9} className="px-5 py-8 text-center text-gray-400">
-                    No purchase invoices found.
+                    {tx("No purchase invoices found.")}
                   </td>
                 </tr>
               )}
@@ -295,7 +296,7 @@ export default function PurchaseInvoicesPage() {
                             onClick={() => postMutation.mutate(inv.id)}
                             className="text-xs font-semibold text-emerald-700 hover:text-emerald-900 hover:underline disabled:opacity-50"
                           >
-                            {postMutation.isPending && postMutation.variables === inv.id ? "Posting…" : "Post to GL"}
+                            {postMutation.isPending && postMutation.variables === inv.id ? tx("Posting…") : tx("Post to GL")}
                           </button>
                         )}
                         {canPay && (
@@ -303,7 +304,7 @@ export default function PurchaseInvoicesPage() {
                             onClick={() => setPayingInvoice(inv)}
                             className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 hover:underline"
                           >
-                            Pay
+                            {tx("Pay")}
                           </button>
                         )}
                       </div>
@@ -315,7 +316,7 @@ export default function PurchaseInvoicesPage() {
             {filtered.length > 0 && (
               <tfoot>
                 <tr className="bg-gray-50 font-semibold text-sm border-t-2 border-gray-200">
-                  <td className="px-5 py-3" colSpan={4}>Total ({filtered.length})</td>
+                  <td className="px-5 py-3" colSpan={4}>{tx("Total (")}{filtered.length})</td>
                   <td className="px-5 py-3 text-right text-indigo-700">{fmtKES(totalPurchases)}</td>
                   <td className="px-5 py-3 text-right text-green-600">{fmtKES(totalPaid)}</td>
                   <td className={`px-5 py-3 text-right ${totalPayable > 0 ? "text-red-600" : "text-green-600"}`}>

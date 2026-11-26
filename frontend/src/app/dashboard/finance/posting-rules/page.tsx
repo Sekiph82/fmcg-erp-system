@@ -3,6 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import { tx, lx } from "@/lib/i18n/core";
 
 interface Acc { id: string; code: string; name: string }
 interface RuleRow {
@@ -12,9 +13,9 @@ interface RuleRow {
 interface Catalog { mandatory: boolean; rules: RuleRow[]; accounts: (Acc & { type: string })[] }
 
 const BASE = "/api/v1/finance/accounting/posting-rules";
-const SIDES: { key: "debit" | "credit" | "tax" | "clearing"; label: string }[] = [
-  { key: "debit", label: "Debit" }, { key: "credit", label: "Credit" }, { key: "tax", label: "Tax" }, { key: "clearing", label: "Cash/bank" },
-];
+const SIDES: { key: "debit" | "credit" | "tax" | "clearing"; label: string }[] = lx(() => [
+  { key: "debit", label: tx("Debit") }, { key: "credit", label: tx("Credit") }, { key: "tax", label: tx("Tax") }, { key: "clearing", label: tx("Cash/bank") },
+]);
 const STATUS: Record<RuleRow["status"], string> = {
   missing: "bg-red-100 text-red-700", inactive: "bg-gray-100 text-gray-600", proposed: "bg-amber-100 text-amber-800", active: "bg-green-100 text-green-700",
 };
@@ -33,7 +34,7 @@ export default function PostingRulesPage() {
     onSuccess: set,
   });
   const approve = useMutation({ mutationFn: async () => (await apiClient.post(`${BASE}/approve`)).data, onSuccess: set });
-  if (!data) return <div className="p-6 text-sm text-gray-500">Loading…</div>;
+  if (!data) return <div className="p-6 text-sm text-gray-500">{tx("Loading…")}</div>;
   const missing = data.rules.filter((r) => r.status === "missing").length;
   const proposed = data.rules.filter((r) => r.status === "proposed").length;
   const err = (propose.error || edit.error || approve.error) as { response?: { data?: { detail?: unknown } } } | null;
@@ -41,32 +42,30 @@ export default function PostingRulesPage() {
   return (
     <div className="p-4 md:p-6 space-y-4">
       <div>
-        <h2 className="text-lg font-semibold">Accounting posting rules</h2>
+        <h2 className="text-lg font-semibold">{tx("Accounting posting rules")}</h2>
         <p className="text-sm text-gray-500 max-w-3xl">
-          Which accounts each business event is booked to. The system proposed a complete set from the chart of accounts; change any
-          account, then approve. After approval the rules are mandatory: an event without a rule is refused instead of being saved
-          without a ledger entry.
+          {tx("Which accounts each business event is booked to. The system proposed a complete set from the chart of accounts; change any account, then approve. After approval the rules are mandatory: an event without a rule is refused instead of being saved without a ledger entry.")}
         </p>
         <p className={`mt-2 text-sm font-medium ${data.mandatory ? "text-green-700" : "text-amber-700"}`}>
-          {data.mandatory ? "Rules are mandatory (approved by finance)." : "Not approved yet: events without a rule are saved without a ledger entry."}
+          {data.mandatory ? tx("Rules are mandatory (approved by finance).") : tx("Not approved yet: events without a rule are saved without a ledger entry.")}
         </p>
       </div>
       <div className="flex flex-wrap gap-2">
         {canEdit && missing > 0 && (
           <button type="button" onClick={() => propose.mutate()} disabled={propose.isPending}
-            className="px-3 py-2 text-sm border rounded-lg disabled:opacity-50">Propose the missing {missing} rules</button>
+            className="px-3 py-2 text-sm border rounded-lg disabled:opacity-50">{tx("Propose the missing")} {missing} {tx("rules")}</button>
         )}
         {canApprove && proposed > 0 && (
           <button type="button" disabled={approve.isPending}
-            onClick={() => { if (confirm(`Approve ${proposed} proposed rules? From now on events without a rule are refused.`)) approve.mutate(); }}
-            className="px-3 py-2 text-sm bg-green-600 text-white rounded-lg disabled:opacity-50">Approve the rule set ({proposed})</button>
+            onClick={() => { if (confirm(tx("Approve {proposed} proposed rules? From now on events without a rule are refused.", { proposed }))) approve.mutate(); }}
+            className="px-3 py-2 text-sm bg-green-600 text-white rounded-lg disabled:opacity-50">{tx("Approve the rule set (")}{proposed})</button>
         )}
       </div>
       {typeof err?.response?.data?.detail === "string" && <p className="text-sm text-red-600">{err.response.data.detail}</p>}
       <div className="border rounded-lg bg-white overflow-x-auto">
         <table className="min-w-full text-sm">
           <thead className="bg-gray-50 text-xs text-gray-500"><tr>
-            <th className="px-3 py-2 text-left">Event</th><th className="px-3 py-2 text-left">Status</th>
+            <th className="px-3 py-2 text-left">{tx("Event")}</th><th className="px-3 py-2 text-left">{tx("Status")}</th>
             {SIDES.map((s) => <th key={s.key} className="px-3 py-2 text-left">{s.label}</th>)}
           </tr></thead>
           <tbody>{data.rules.map((r) => (

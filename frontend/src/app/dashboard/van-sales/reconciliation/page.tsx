@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { vanSalesApi, RECON_STATUS_COLORS } from "@/lib/van_sales";
+import { tx } from "@/lib/i18n/core";
 
 export default function ReconciliationPage() {
   const qc = useQueryClient();
@@ -30,16 +31,16 @@ export default function ReconciliationPage() {
   return (
     <div className="p-6 space-y-5 text-slate-200">
       <div>
-        <h1 className="text-xl font-bold text-white">Daily Reconciliation</h1>
-        <p className="text-slate-500 text-sm mt-0.5">End-of-day stock and payment close-out</p>
+        <h1 className="text-xl font-bold text-white">{tx("Daily Reconciliation")}</h1>
+        <p className="text-slate-500 text-sm mt-0.5">{tx("End-of-day stock and payment close-out")}</p>
       </div>
 
       <div>
-        <label className="text-xs text-slate-400 mb-1 block">Select Van</label>
+        <label className="text-xs text-slate-400 mb-1 block">{tx("Select Van")}</label>
         <select value={selectedVanId} onChange={(e) => setSelectedVanId(e.target.value)}
           className="bg-[#0d1829] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 w-64">
-          <option value="">Select van…</option>
-          {vans.map((v) => <option key={v.id} value={v.id}>{v.van_code} — {v.plate_number ?? "no plate"}</option>)}
+          <option value="">{tx("Select van…")}</option>
+          {vans.map((v) => <option key={v.id} value={v.id}>{v.van_code} — {v.plate_number ?? tx("no plate")}</option>)}
         </select>
       </div>
 
@@ -48,17 +49,17 @@ export default function ReconciliationPage() {
           {/* Today's reconciliation */}
           <div className="glow-card p-5">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-semibold text-white">Today — {today}</h2>
+              <h2 className="text-sm font-semibold text-white">{tx("Today —")} {today}</h2>
               {!todayRecon && (
                 <button onClick={() => submitMut.mutate()} disabled={submitMut.isPending}
                   className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium disabled:opacity-50">
-                  {submitMut.isPending ? "Submitting…" : "Submit Close-Out"}
+                  {submitMut.isPending ? tx("Submitting…") : tx("Submit Close-Out")}
                 </button>
               )}
               {todayRecon && todayRecon.status === "SUBMITTED" && (
                 <button onClick={() => approveMut.mutate(todayRecon.id)} disabled={approveMut.isPending}
                   className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium disabled:opacity-50">
-                  {approveMut.isPending ? "Approving…" : "Approve"}
+                  {approveMut.isPending ? tx("Approving…") : tx("Approve")}
                 </button>
               )}
             </div>
@@ -70,10 +71,10 @@ export default function ReconciliationPage() {
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   {[
-                    { label: "Total Sales", value: todayRecon.total_sales, color: "text-emerald-400" },
-                    { label: "Cash", value: todayRecon.total_cash, color: "text-white" },
-                    { label: "M-Pesa", value: todayRecon.total_mpesa, color: "text-blue-400" },
-                    { label: "Returns", value: todayRecon.total_returns, color: "text-red-400" },
+                    { label: tx("Total Sales"), value: todayRecon.total_sales, color: "text-emerald-400" },
+                    { label: tx("Cash"), value: todayRecon.total_cash, color: "text-white" },
+                    { label: tx("M-Pesa"), value: todayRecon.total_mpesa, color: "text-blue-400" },
+                    { label: tx("Returns"), value: todayRecon.total_returns, color: "text-red-400" },
                   ].map((c) => (
                     <div key={c.label} className="rounded-lg bg-white/[0.03] p-3">
                       <p className="text-[10px] text-slate-500 mb-1">{c.label}</p>
@@ -83,24 +84,24 @@ export default function ReconciliationPage() {
                 </div>
               </div>
             ) : (
-              <p className="text-slate-600 text-sm">No reconciliation submitted yet for today</p>
+              <p className="text-slate-600 text-sm">{tx("No reconciliation submitted yet for today")}</p>
             )}
           </div>
 
           {/* History */}
           <div className="glow-card p-5">
-            <h2 className="text-sm font-semibold text-white mb-4">History</h2>
+            <h2 className="text-sm font-semibold text-white mb-4">{tx("History")}</h2>
             <div className="space-y-2">
               {recons.map((r) => (
                 <div key={r.id} className="flex items-center justify-between p-3 rounded-lg bg-white/[0.025]">
                   <div>
                     <p className="text-sm text-white">{r.route_date}</p>
-                    <p className="text-xs text-slate-500">Sales: KES {(r.total_sales ?? 0).toLocaleString()} · Cash: KES {(r.total_cash ?? 0).toLocaleString()}</p>
+                    <p className="text-xs text-slate-500">{tx("Sales: KES")} {(r.total_sales ?? 0).toLocaleString()} {tx("· Cash: KES")} {(r.total_cash ?? 0).toLocaleString()}</p>
                   </div>
                   <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${RECON_STATUS_COLORS[r.status]}`}>{r.status}</span>
                 </div>
               ))}
-              {recons.length === 0 && <p className="text-slate-600 text-sm text-center py-4">No reconciliation history</p>}
+              {recons.length === 0 && <p className="text-slate-600 text-sm text-center py-4">{tx("No reconciliation history")}</p>}
             </div>
           </div>
         </>

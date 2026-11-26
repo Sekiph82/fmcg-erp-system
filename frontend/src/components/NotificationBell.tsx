@@ -4,6 +4,7 @@ import { disablePush, enablePush, pushState } from "@/lib/webPush";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { apiClient } from "@/lib/api";
+import { tx } from "@/lib/i18n/core";
 
 interface NCNotif {
   notification_id: string;
@@ -114,14 +115,14 @@ export function NotificationBell({ compact = false }: Props) {
     <div className="relative" ref={ref}>
       <button
         onClick={toggle}
-        title="Notifications"
+        title={tx("Notifications")}
         className={[
           "relative flex items-center justify-center rounded-md transition-colors",
           compact
             ? "h-7 w-7 text-slate-500 hover:bg-white/[0.07] hover:text-slate-300"
             : "h-8 w-8 text-slate-400 hover:bg-white/10",
         ].join(" ")}
-        aria-label="Notifications"
+        aria-label={tx("Notifications")}
       >
         <svg
           className={compact ? "h-[14px] w-[14px]" : "h-[17px] w-[17px]"}
@@ -152,10 +153,10 @@ export function NotificationBell({ compact = false }: Props) {
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.08]">
             <span className="text-[13px] font-semibold text-slate-100">
-              Notifications
+              {tx("Notifications")}
               {count > 0 && (
                 <span className="ml-2 bg-red-500/20 text-red-400 text-[10px] font-bold rounded-full px-1.5 py-0.5">
-                  {count} unread
+                  {count} {tx("unread")}
                 </span>
               )}
             </span>
@@ -166,7 +167,7 @@ export function NotificationBell({ compact = false }: Props) {
                   disabled={marking}
                   className="text-[11px] text-cyan-400 hover:text-cyan-300 disabled:opacity-50"
                 >
-                  {marking ? "Clearing…" : "Mark all read"}
+                  {marking ? tx("Clearing…") : tx("Mark all read")}
                 </button>
               )}
             </div>
@@ -175,11 +176,11 @@ export function NotificationBell({ compact = false }: Props) {
           {/* Body */}
           <div className="max-h-[320px] overflow-y-auto">
             {loading ? (
-              <div className="px-4 py-6 text-center text-slate-500 text-xs">Loading…</div>
+              <div className="px-4 py-6 text-center text-slate-500 text-xs">{tx("Loading…")}</div>
             ) : notifs.length === 0 ? (
               <div className="px-4 py-6 text-center">
-                <p className="text-slate-400 text-sm">All caught up!</p>
-                <p className="text-slate-600 text-xs mt-1">No unread notifications</p>
+                <p className="text-slate-400 text-sm">{tx("All caught up!")}</p>
+                <p className="text-slate-600 text-xs mt-1">{tx("No unread notifications")}</p>
               </div>
             ) : (
               <div className="divide-y divide-white/[0.05]">
@@ -194,7 +195,7 @@ export function NotificationBell({ compact = false }: Props) {
                     <button
                       onClick={() => markOne(n.notification_id)}
                       className="shrink-0 text-[10px] text-slate-600 hover:text-cyan-400 mt-0.5"
-                      title="Mark as read"
+                      title={tx("Mark as read")}
                     >
                       ✓
                     </button>
@@ -212,7 +213,7 @@ export function NotificationBell({ compact = false }: Props) {
               onClick={() => setOpen(false)}
               className="block text-center text-[11px] text-cyan-400 hover:text-cyan-300"
             >
-              View all notifications →
+              {tx("View all notifications →")}
             </Link>
           </div>
         </div>
@@ -236,9 +237,9 @@ function PushToggle() {
   };
   return (
     <div className="px-4 py-2 border-t border-white/[0.08] text-[11px]">
-      {state === "denied" ? <p className="text-slate-400">Phone notifications are blocked in this browser&apos;s settings.</p> : (
+      {state === "denied" ? <p className="text-slate-400">{tx("Phone notifications are blocked in this browser's settings.")}</p> : (
         <button onClick={flip} disabled={state === "busy"} className="text-cyan-400 hover:text-cyan-300 disabled:opacity-50">
-          {state === "on" ? "Stop notifications on this device" : "Notify me on this device"}
+          {state === "on" ? tx("Stop notifications on this device") : tx("Notify me on this device")}
         </button>)}
       {err && <p className="text-red-400 mt-1">{err}</p>}
     </div>

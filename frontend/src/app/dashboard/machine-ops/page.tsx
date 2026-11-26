@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { moApi, MODashboard, MOAIRec, DowntimeIntel, MACHINE_STATUS_COLORS, AI_AGENT_LABELS, SEVERITY_COLORS, DOWNTIME_CLASS_LABELS } from "@/lib/machineOperator";
+import { tx } from "@/lib/i18n/core";
 
 function KPI({ label, value, sub, color }: { label: string; value: string | number; sub?: string; color?: string }) {
   return (
@@ -29,7 +30,7 @@ function OEEGauge({ oee }: { oee: number }) {
           transform="rotate(-90 48 48)" />
         <text x="48" y="53" textAnchor="middle" className={`text-sm font-bold ${color}`} fontSize="14" fill="currentColor">{pct.toFixed(1)}%</text>
       </svg>
-      <p className="text-xs text-gray-500 mt-1">OEE Today</p>
+      <p className="text-xs text-gray-500 mt-1">{tx("OEE Today")}</p>
     </div>
   );
 }
@@ -53,9 +54,9 @@ export default function MachineOpsDashboard() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["mo-dashboard"] }),
   });
 
-  if (isLoading) return <div className="p-8 text-gray-500">Loading Machine & Operator Intelligence…</div>;
-  if (isError) return <div className="p-8 text-red-500">Failed to load dashboard: {(error as Error)?.message ?? "Unknown error"}</div>;
-  if (!data) return <div className="p-8 text-red-500">Failed to load Machine & Operator dashboard. Ensure the backend is running.</div>;
+  if (isLoading) return <div className="p-8 text-gray-500">{tx("Loading Machine & Operator Intelligence…")}</div>;
+  if (isError) return <div className="p-8 text-red-500">{tx("Failed to load dashboard:")} {(error as Error)?.message ?? tx("Unknown error")}</div>;
+  if (!data) return <div className="p-8 text-red-500">{tx("Failed to load Machine & Operator dashboard. Ensure the backend is running.")}</div>;
   const d = data;
   const oeeValue = d.avg_oee_today ? Number(d.avg_oee_today) : null;
 
@@ -63,28 +64,28 @@ export default function MachineOpsDashboard() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Machine + Operator Intelligence</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Runtime · Labor · OEE · Cost · Anomaly Detection</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Machine + Operator Intelligence")}</h1>
+          <p className="text-sm text-gray-500 mt-0.5">{tx("Runtime · Labor · OEE · Cost · Anomaly Detection")}</p>
         </div>
         <button
           onClick={() => runAI.mutate()}
           disabled={runAI.isPending}
           className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-indigo-700 disabled:opacity-50"
         >
-          {runAI.isPending ? "Running AI…" : "Run AI Analysis"}
+          {runAI.isPending ? tx("Running AI…") : tx("Run AI Analysis")}
         </button>
       </div>
 
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <KPI label="Total Machines" value={d.total_machines} />
-        <KPI label="Active" value={d.machines_active} color="text-green-700" />
-        <KPI label="In Maintenance" value={d.machines_maintenance} color={d.machines_maintenance > 0 ? "text-orange-600" : "text-gray-700"} />
-        <KPI label="Operators" value={d.total_operators} color="text-blue-700" />
-        <KPI label="Teams" value={d.total_teams} color="text-purple-700" />
-        <KPI label="Expiring Certs" value={d.expiring_certs} color={d.expiring_certs > 0 ? "text-red-600" : "text-gray-700"} sub="within 30 days" />
-        <KPI label="Downtime Today" value={`${Number(d.total_downtime_today_min).toFixed(0)} min`} color={Number(d.total_downtime_today_min) > 60 ? "text-red-600" : "text-gray-700"} />
-        <KPI label="Pending AI Recs" value={d.pending_ai_recs} color={d.pending_ai_recs > 0 ? "text-orange-600" : "text-gray-700"} />
+        <KPI label={tx("Total Machines")} value={d.total_machines} />
+        <KPI label={tx("Active")} value={d.machines_active} color="text-green-700" />
+        <KPI label={tx("In Maintenance")} value={d.machines_maintenance} color={d.machines_maintenance > 0 ? "text-orange-600" : "text-gray-700"} />
+        <KPI label={tx("Operators")} value={d.total_operators} color="text-blue-700" />
+        <KPI label={tx("Teams")} value={d.total_teams} color="text-purple-700" />
+        <KPI label={tx("Expiring Certs")} value={d.expiring_certs} color={d.expiring_certs > 0 ? "text-red-600" : "text-gray-700"} sub="within 30 days" />
+        <KPI label={tx("Downtime Today")} value={`${Number(d.total_downtime_today_min).toFixed(0)} min`} color={Number(d.total_downtime_today_min) > 60 ? "text-red-600" : "text-gray-700"} />
+        <KPI label={tx("Pending AI Recs")} value={d.pending_ai_recs} color={d.pending_ai_recs > 0 ? "text-orange-600" : "text-gray-700"} />
       </div>
 
       {/* OEE + Quick Actions */}
@@ -96,15 +97,15 @@ export default function MachineOpsDashboard() {
         )}
         <div className={`${oeeValue !== null ? "lg:col-span-2" : "lg:col-span-3"} grid grid-cols-2 md:grid-cols-3 gap-3`}>
           {[
-            { label: "Machine Master", href: "/dashboard/machine-ops/machines", color: "bg-blue-50 text-blue-700 border-blue-200" },
-            { label: "Operators", href: "/dashboard/machine-ops/operators", color: "bg-green-50 text-green-700 border-green-200" },
-            { label: "Teams", href: "/dashboard/machine-ops/teams", color: "bg-purple-50 text-purple-700 border-purple-200" },
-            { label: "Runtime Logs", href: "/dashboard/machine-ops/runtime", color: "bg-cyan-50 text-cyan-700 border-cyan-200" },
-            { label: "Performance", href: "/dashboard/machine-ops/performance", color: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-            { label: "Downtime Board", href: "/dashboard/machine-ops/downtime", color: "bg-red-50 text-red-700 border-red-200" },
-            { label: "Cost Contribution", href: "/dashboard/machine-ops/costing", color: "bg-orange-50 text-orange-700 border-orange-200" },
-            { label: "Cert Monitor", href: "/dashboard/machine-ops/certs", color: "bg-yellow-50 text-yellow-700 border-yellow-200" },
-            { label: "Assignment Board", href: "/dashboard/machine-ops/assignment", color: "bg-teal-50 text-teal-700 border-teal-200" },
+            { label: tx("Machine Master"), href: "/dashboard/machine-ops/machines", color: "bg-blue-50 text-blue-700 border-blue-200" },
+            { label: tx("Operators"), href: "/dashboard/machine-ops/operators", color: "bg-green-50 text-green-700 border-green-200" },
+            { label: tx("Teams"), href: "/dashboard/machine-ops/teams", color: "bg-purple-50 text-purple-700 border-purple-200" },
+            { label: tx("Runtime Logs"), href: "/dashboard/machine-ops/runtime", color: "bg-cyan-50 text-cyan-700 border-cyan-200" },
+            { label: tx("Performance"), href: "/dashboard/machine-ops/performance", color: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+            { label: tx("Downtime Board"), href: "/dashboard/machine-ops/downtime", color: "bg-red-50 text-red-700 border-red-200" },
+            { label: tx("Cost Contribution"), href: "/dashboard/machine-ops/costing", color: "bg-orange-50 text-orange-700 border-orange-200" },
+            { label: tx("Cert Monitor"), href: "/dashboard/machine-ops/certs", color: "bg-yellow-50 text-yellow-700 border-yellow-200" },
+            { label: tx("Assignment Board"), href: "/dashboard/machine-ops/assignment", color: "bg-teal-50 text-teal-700 border-teal-200" },
           ].map((q) => (
             <a key={q.href} href={q.href} className={`border rounded-lg p-3 text-sm font-medium text-center hover:opacity-80 ${q.color}`}>
               {q.label}
@@ -117,17 +118,17 @@ export default function MachineOpsDashboard() {
         {/* Recent Downtime */}
         <div className="bg-white rounded-lg border">
           <div className="px-4 py-3 border-b flex items-center justify-between">
-            <h2 className="font-semibold text-gray-900">Recent Downtime Events</h2>
-            <a href="/dashboard/machine-ops/downtime" className="text-xs text-indigo-600 hover:underline">View all</a>
+            <h2 className="font-semibold text-gray-900">{tx("Recent Downtime Events")}</h2>
+            <a href="/dashboard/machine-ops/downtime" className="text-xs text-indigo-600 hover:underline">{tx("View all")}</a>
           </div>
           <div className="divide-y">
-            {d.recent_downtime.length === 0 && <p className="p-4 text-sm text-gray-400">No downtime events today.</p>}
+            {d.recent_downtime.length === 0 && <p className="p-4 text-sm text-gray-400">{tx("No downtime events today.")}</p>}
             {d.recent_downtime.map((dt: DowntimeIntel) => (
               <div key={dt.id} className="px-4 py-2.5">
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-medium text-gray-900">
                     {DOWNTIME_CLASS_LABELS[dt.downtime_class] || dt.downtime_class}
-                    {dt.repeat_occurrence && <span className="ml-2 text-xs bg-red-100 text-red-700 px-1.5 py-0.5 rounded-full">Repeat</span>}
+                    {dt.repeat_occurrence && <span className="ml-2 text-xs bg-red-100 text-red-700 px-1.5 py-0.5 rounded-full">{tx("Repeat")}</span>}
                   </p>
                   <span className="text-xs text-gray-500">{dt.duration_minutes ? `${Number(dt.duration_minutes).toFixed(0)} min` : "–"}</span>
                 </div>
@@ -141,10 +142,10 @@ export default function MachineOpsDashboard() {
         {/* AI Recommendations */}
         <div className="bg-white rounded-lg border">
           <div className="px-4 py-3 border-b">
-            <h2 className="font-semibold text-gray-900">AI Recommendations</h2>
+            <h2 className="font-semibold text-gray-900">{tx("AI Recommendations")}</h2>
           </div>
           <div className="divide-y">
-            {d.ai_recommendations.length === 0 && <p className="p-4 text-sm text-gray-400">No pending AI recommendations.</p>}
+            {d.ai_recommendations.length === 0 && <p className="p-4 text-sm text-gray-400">{tx("No pending AI recommendations.")}</p>}
             {d.ai_recommendations.map((r: MOAIRec) => (
               <div key={r.id} className="p-3">
                 <div className="flex items-start justify-between gap-2">
@@ -158,8 +159,8 @@ export default function MachineOpsDashboard() {
                   </div>
                   {r.status === "PENDING" && (
                     <div className="flex gap-1 shrink-0 mt-1">
-                      <button onClick={() => actionRec.mutate({ id: r.id, status: "ACCEPTED" })} className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200">Accept</button>
-                      <button onClick={() => actionRec.mutate({ id: r.id, status: "REJECTED" })} className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded hover:bg-red-200">Reject</button>
+                      <button onClick={() => actionRec.mutate({ id: r.id, status: "ACCEPTED" })} className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200">{tx("Accept")}</button>
+                      <button onClick={() => actionRec.mutate({ id: r.id, status: "REJECTED" })} className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded hover:bg-red-200">{tx("Reject")}</button>
                     </div>
                   )}
                 </div>

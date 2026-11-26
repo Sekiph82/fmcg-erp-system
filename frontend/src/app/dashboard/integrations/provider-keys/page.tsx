@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api";
+import { tx } from "@/lib/i18n/core";
 
 interface ProviderField { field: string; label: string; secret: boolean; is_set: boolean; value: string | null }
 interface Provider { provider: string; label: string; configured: boolean; fields: ProviderField[] }
@@ -21,13 +22,13 @@ export default function ProviderKeysPage() {
   });
   const [open, setOpen] = useState<Provider | null>(null);
 
-  if (isError) return <div className="p-6 text-sm text-red-600">Only a system administrator can manage provider keys.</div>;
+  if (isError) return <div className="p-6 text-sm text-red-600">{tx("Only a system administrator can manage provider keys.")}</div>;
   return (
     <div className="p-4 md:p-6 space-y-4 max-w-4xl">
       <div>
-        <h2 className="text-lg font-semibold">Provider keys</h2>
+        <h2 className="text-lg font-semibold">{tx("Provider keys")}</h2>
         <p className="text-sm text-gray-500">
-          Enter the keys you receive from each provider. They are stored encrypted and take effect within a minute; secrets are never shown again.
+          {tx("Enter the keys you receive from each provider. They are stored encrypted and take effect within a minute; secrets are never shown again.")}
         </p>
       </div>
       <div className="grid md:grid-cols-2 gap-3">
@@ -36,12 +37,12 @@ export default function ProviderKeysPage() {
             <div className="flex items-center justify-between gap-2">
               <span className="font-medium text-sm">{p.label}</span>
               <span className={`text-xs px-2 py-0.5 rounded ${p.configured ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-800"}`}>
-                {p.configured ? "Set up" : "Waiting for keys"}
+                {p.configured ? tx("Set up") : tx("Waiting for keys")}
               </span>
             </div>
             <p className="text-xs text-gray-500">{WHAT_FOR[p.provider]}</p>
             <button type="button" onClick={() => setOpen(p)} className="px-3 py-1.5 text-sm border rounded-lg hover:bg-gray-50">
-              {p.configured ? "Change keys" : "Enter keys"}
+              {p.configured ? tx("Change keys") : tx("Enter keys")}
             </button>
           </div>
         ))}
@@ -72,7 +73,7 @@ function KeysDialog({ provider, onClose }: { provider: Provider; onClose: () => 
             <span className="text-gray-700">{f.label}</span>
             <input
               type={f.secret ? "password" : "text"} autoComplete="off" value={form[f.field] ?? ""}
-              placeholder={f.secret && f.is_set ? "•••••• (stored — leave blank to keep)" : ""}
+              placeholder={f.secret && f.is_set ? tx("•••••• (stored — leave blank to keep)") : ""}
               onChange={(e) => setForm((s) => ({ ...s, [f.field]: e.target.value }))}
               className="mt-1 w-full border rounded-lg px-3 py-2"
             />
@@ -80,9 +81,9 @@ function KeysDialog({ provider, onClose }: { provider: Provider; onClose: () => 
         ))}
         {typeof err === "string" && <p className="text-sm text-red-600">{err}</p>}
         <div className="flex gap-2 pt-1">
-          <button type="button" onClick={onClose} className="flex-1 py-2 border rounded-lg text-sm">Cancel</button>
+          <button type="button" onClick={onClose} className="flex-1 py-2 border rounded-lg text-sm">{tx("Cancel")}</button>
           <button type="submit" disabled={save.isPending} className="flex-1 py-2 bg-blue-600 text-white rounded-lg text-sm disabled:opacity-50">
-            {save.isPending ? "Saving…" : "Save keys"}
+            {save.isPending ? tx("Saving…") : tx("Save keys")}
           </button>
         </div>
       </form>

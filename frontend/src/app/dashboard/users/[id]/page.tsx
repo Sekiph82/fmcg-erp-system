@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
+import { tx } from "@/lib/i18n/core";
 
 export default function UserDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -88,7 +89,7 @@ export default function UserDetailPage() {
   }
 
   if (!user) {
-    return <p className="text-gray-500">User not found.</p>;
+    return <p className="text-gray-500">{tx("User not found.")}</p>;
   }
 
   return (
@@ -100,17 +101,17 @@ export default function UserDetailPage() {
             onClick={() => router.back()}
             className="mb-2 text-xs text-gray-400 hover:text-indigo-600"
           >
-            ← Back
+            {tx("← Back")}
           </button>
           <h1 className="text-2xl font-bold text-gray-900">{user.full_name}</h1>
           <p className="text-sm text-gray-500">@{user.username} · {user.email}</p>
         </div>
         <div className="flex gap-2">
           <Badge
-            label={user.is_active ? "Active" : "Inactive"}
+            label={user.is_active ? tx("Active") : tx("Inactive")}
             variant={user.is_active ? "green" : "red"}
           />
-          {user.is_superuser && <Badge label="Superuser" variant="blue" />}
+          {user.is_superuser && <Badge label={tx("Superuser")} variant="blue" />}
         </div>
       </div>
 
@@ -122,29 +123,29 @@ export default function UserDetailPage() {
             onClick={() => deactivateMutation.mutate()}
             loading={deactivateMutation.isPending}
           >
-            Deactivate
+            {tx("Deactivate")}
           </Button>
         ) : (
           <Button
             onClick={() => activateMutation.mutate()}
             loading={activateMutation.isPending}
           >
-            Activate
+            {tx("Activate")}
           </Button>
         )}
         <Button variant="secondary" onClick={() => setResetOpen(true)}>
-          Reset Password
+          {tx("Reset Password")}
         </Button>
         <Button variant="secondary" onClick={openRolesModal}>
-          Assign Roles
+          {tx("Assign Roles")}
         </Button>
       </div>
 
       {/* Roles */}
       <section className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
-        <h2 className="mb-3 text-sm font-semibold text-gray-700">Assigned Roles</h2>
+        <h2 className="mb-3 text-sm font-semibold text-gray-700">{tx("Assigned Roles")}</h2>
         {user.roles.length === 0 ? (
-          <p className="text-sm text-gray-400">No roles assigned.</p>
+          <p className="text-sm text-gray-400">{tx("No roles assigned.")}</p>
         ) : (
           <div className="space-y-2">
             {user.roles.map((role) => (
@@ -159,7 +160,7 @@ export default function UserDetailPage() {
                   )}
                 </div>
                 <Badge
-                  label={role.is_active ? "Active" : "Inactive"}
+                  label={role.is_active ? tx("Active") : tx("Inactive")}
                   variant={role.is_active ? "green" : "red"}
                 />
               </div>
@@ -170,10 +171,10 @@ export default function UserDetailPage() {
 
       {/* Permissions Summary */}
       <section className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
-        <h2 className="mb-3 text-sm font-semibold text-gray-700">Effective Permissions</h2>
+        <h2 className="mb-3 text-sm font-semibold text-gray-700">{tx("Effective Permissions")}</h2>
         {user.is_superuser ? (
           <p className="text-sm text-indigo-600 font-medium">
-            Superuser — full access to all modules
+            {tx("Superuser — full access to all modules")}
           </p>
         ) : (
           <div className="flex flex-wrap gap-1.5">
@@ -191,7 +192,7 @@ export default function UserDetailPage() {
                 </span>
               ))}
             {user.roles.filter((r) => r.is_active).flatMap((r) => r.permissions).length === 0 && (
-              <p className="text-sm text-gray-400">No permissions via active roles.</p>
+              <p className="text-sm text-gray-400">{tx("No permissions via active roles.")}</p>
             )}
           </div>
         )}
@@ -199,9 +200,9 @@ export default function UserDetailPage() {
 
       {/* Audit History */}
       <section className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
-        <h2 className="mb-3 text-sm font-semibold text-gray-700">Activity History</h2>
+        <h2 className="mb-3 text-sm font-semibold text-gray-700">{tx("Activity History")}</h2>
         {auditLogs.length === 0 ? (
-          <p className="text-sm text-gray-400">No activity recorded.</p>
+          <p className="text-sm text-gray-400">{tx("No activity recorded.")}</p>
         ) : (
           <div className="space-y-2">
             {auditLogs.map((log) => (
@@ -226,7 +227,7 @@ export default function UserDetailPage() {
       </section>
 
       {/* Reset Password Modal */}
-      <Modal open={resetOpen} onClose={() => setResetOpen(false)} title="Reset Password">
+      <Modal open={resetOpen} onClose={() => setResetOpen(false)} title={tx("Reset Password")}>
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -235,28 +236,28 @@ export default function UserDetailPage() {
           className="space-y-4"
         >
           <Input
-            label="New Password *"
+            label={tx("New Password *")}
             type="password"
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
             required
           />
           {resetMutation.error && (
-            <p className="text-sm text-red-600">Failed to reset password.</p>
+            <p className="text-sm text-red-600">{tx("Failed to reset password.")}</p>
           )}
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" type="button" onClick={() => setResetOpen(false)}>
-              Cancel
+              {tx("Cancel")}
             </Button>
             <Button type="submit" loading={resetMutation.isPending}>
-              Reset
+              {tx("Reset")}
             </Button>
           </div>
         </form>
       </Modal>
 
       {/* Assign Roles Modal */}
-      <Modal open={rolesOpen} onClose={() => setRolesOpen(false)} title="Assign Roles">
+      <Modal open={rolesOpen} onClose={() => setRolesOpen(false)} title={tx("Assign Roles")}>
         <div className="space-y-4">
           <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
             {allRoles.map((role) => (
@@ -277,24 +278,24 @@ export default function UserDetailPage() {
                   )}
                 </div>
                 <Badge
-                  label={role.is_active ? "Active" : "Inactive"}
+                  label={role.is_active ? tx("Active") : tx("Inactive")}
                   variant={role.is_active ? "green" : "red"}
                 />
               </label>
             ))}
           </div>
           {assignRolesMutation.error && (
-            <p className="text-sm text-red-600">Failed to assign roles.</p>
+            <p className="text-sm text-red-600">{tx("Failed to assign roles.")}</p>
           )}
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" type="button" onClick={() => setRolesOpen(false)}>
-              Cancel
+              {tx("Cancel")}
             </Button>
             <Button
               onClick={() => assignRolesMutation.mutate()}
               loading={assignRolesMutation.isPending}
             >
-              Save Roles
+              {tx("Save Roles")}
             </Button>
           </div>
         </div>

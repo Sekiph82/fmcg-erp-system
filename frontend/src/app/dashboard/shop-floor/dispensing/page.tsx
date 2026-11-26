@@ -7,6 +7,7 @@ import { ScanInput } from "@/components/ScanInput";
 import {
   describeShopFloorError, sfApi, type BarcodeResolution, type DispensingOrder, type PreparedLotLabel,
 } from "@/lib/shopFloor";
+import { tx } from "@/lib/i18n/core";
 
 type Line = DispensingOrder["materials"][number];
 
@@ -61,29 +62,29 @@ function DispenseForm({ line, onDone }: { line: Line; onDone: (label: PreparedLo
 
   return (
     <div className="mt-2 space-y-2 rounded-lg border border-gray-200 bg-gray-50 p-3">
-      <ScanInput id={`source-lot-${line.id}`} label="1. Scan warehouse source lot" onScan={(code) => resolve.mutate(code)} disabled={resolve.isPending} />
+      <ScanInput id={`source-lot-${line.id}`} label={tx("1. Scan warehouse source lot")} onScan={(code) => resolve.mutate(code)} disabled={resolve.isPending} />
       {source && (
         <p className="text-sm text-gray-800" data-testid="dispense-source">
-          ✓ {source.data.material_name} · lot <b>{source.data.lot_number}</b>
-          {source.data.expiry_date ? ` · exp ${source.data.expiry_date}` : ""}
-          {source.data.is_quarantine ? " · QUARANTINE" : ""}{source.data.is_expired ? " · EXPIRED" : ""}
+          ✓ {source.data.material_name} {tx("· lot")} <b>{source.data.lot_number}</b>
+          {source.data.expiry_date ? tx(" · exp {expiry_date}", { expiry_date: source.data.expiry_date }) : ""}
+          {source.data.is_quarantine ? tx(" · QUARANTINE") : ""}{source.data.is_expired ? tx(" · EXPIRED") : ""}
         </p>
       )}
       <div className="grid grid-cols-3 gap-2">
-        <label className="text-xs text-gray-600">Target ({line.uom})
+        <label className="text-xs text-gray-600">{tx("Target (")}{line.uom})
           <input type="number" inputMode="decimal" value={target} placeholder={remaining ? `≤ ${remaining}` : ""} onChange={(e) => setTarget(e.target.value)} className="w-full min-h-11 rounded-lg border px-2 text-base" />
         </label>
-        <label className="text-xs text-gray-600">2. Weighed ({line.uom})
+        <label className="text-xs text-gray-600">{tx("2. Weighed (")}{line.uom})
           <input type="number" inputMode="decimal" value={actual} onChange={(e) => setActual(e.target.value)} className="w-full min-h-11 rounded-lg border px-2 text-base" data-testid={`dispense-actual-${line.id}`} />
         </label>
-        <label className="text-xs text-gray-600">Tolerance %
+        <label className="text-xs text-gray-600">{tx("Tolerance %")}
           <input type="number" inputMode="decimal" value={tolerance} onChange={(e) => setTolerance(e.target.value)} className="w-full min-h-11 rounded-lg border px-2 text-base" />
         </label>
       </div>
       {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
       <button type="button" onClick={() => dispense.mutate()} disabled={!source || !(Number(actual) > 0) || dispense.isPending}
               className="min-h-12 w-full rounded-lg bg-indigo-700 font-semibold text-white disabled:opacity-40">
-        {dispense.isPending ? "Issuing…" : "3. Issue to order & print label"}
+        {dispense.isPending ? tx("Issuing…") : tx("3. Issue to order & print label")}
       </button>
     </div>
   );
@@ -99,20 +100,20 @@ export default function DispensingPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-4 px-4 pb-10">
-      <Link href="/dashboard/shop-floor" className="text-sm text-indigo-700">← Shop Floor</Link>
+      <Link href="/dashboard/shop-floor" className="text-sm text-indigo-700">{tx("← Shop Floor")}</Link>
       <div>
-        <h1 className="text-xl font-bold text-gray-900">Material Dispensing</h1>
-        <p className="text-sm text-gray-600">Weigh raw material from a warehouse lot, issue it to the order and print the label the operator scans at the machine.</p>
+        <h1 className="text-xl font-bold text-gray-900">{tx("Material Dispensing")}</h1>
+        <p className="text-sm text-gray-600">{tx("Weigh raw material from a warehouse lot, issue it to the order and print the label the operator scans at the machine.")}</p>
       </div>
       {lastLabel && (
         <div role="status" className="rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-900">
-          Prepared lot <b className="font-mono">{lastLabel.prepared_lot_no}</b> issued: {lastLabel.material_name}, lot {lastLabel.lot_number}, {lastLabel.quantity} {lastLabel.uom}.{" "}
-          <button type="button" className="underline" onClick={() => printLabel(lastLabel)}>Print again</button>
+          {tx("Prepared lot")} <b className="font-mono">{lastLabel.prepared_lot_no}</b> {tx("issued:")} {lastLabel.material_name}{tx(", lot")} {lastLabel.lot_number}, {lastLabel.quantity} {lastLabel.uom}.{" "}
+          <button type="button" className="underline" onClick={() => printLabel(lastLabel)}>{tx("Print again")}</button>
         </div>
       )}
-      {orders.isLoading ? <p className="text-sm text-gray-600">Loading orders…</p>
+      {orders.isLoading ? <p className="text-sm text-gray-600">{tx("Loading orders…")}</p>
         : orders.isError ? <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-800">{describeShopFloorError(orders.error).message}</p>
-        : !orders.data?.length ? <p className="rounded-lg bg-gray-50 p-3 text-sm text-gray-700">No released or in-progress orders with raw materials assigned to operations.</p>
+        : !orders.data?.length ? <p className="rounded-lg bg-gray-50 p-3 text-sm text-gray-700">{tx("No released or in-progress orders with raw materials assigned to operations.")}</p>
         : orders.data.map((order) => (
           <section key={order.id} className="rounded-xl border border-gray-200 bg-white p-3 space-y-2">
             <h2 className="font-semibold text-gray-900">{order.order_no} · {order.product_name ?? "—"} <span className="text-xs text-gray-500">{order.status}</span></h2>
@@ -122,18 +123,18 @@ export default function DispensingPage() {
                   <p className="font-medium text-gray-900">{line.item_name} <span className="text-xs text-gray-500">{line.item_code} · {line.operation}</span></p>
                   <button type="button" onClick={() => setOpenLine(openLine === line.id ? null : line.id)}
                           className="min-h-11 rounded-lg border border-indigo-300 px-3 text-sm font-semibold text-indigo-800">
-                    {openLine === line.id ? "Close" : "Dispense"}
+                    {openLine === line.id ? tx("Close") : tx("Dispense")}
                   </button>
                 </div>
-                <p className="text-sm text-gray-700">Required {line.required_qty} · Issued {line.issued_qty} · Consumed {line.consumed_qty} {line.uom}</p>
+                <p className="text-sm text-gray-700">{tx("Required")} {line.required_qty} {tx("· Issued")} {line.issued_qty} {tx("· Consumed")} {line.consumed_qty} {line.uom}</p>
                 {line.prepared_lots.length > 0 && (
                   <ul className="mt-1 space-y-1 text-xs text-gray-700">
                     {line.prepared_lots.map((pl) => (
                       <li key={pl.prepared_lot_no} className="flex flex-wrap items-center gap-2">
-                        <span className="font-mono">{pl.prepared_lot_no}</span> · lot {pl.lot_no} · {pl.qty} {line.uom}
+                        <span className="font-mono">{pl.prepared_lot_no}</span> {tx("· lot")} {pl.lot_no} · {pl.qty} {line.uom}
                         · {pl.dispensed_at?.slice(0, 16).replace("T", " ")}
-                        <span className={pl.consumed ? "text-green-700" : "text-amber-700"}>{pl.consumed ? "consumed" : "at machine"}</span>
-                        <button type="button" className="underline" onClick={() => void reprint(pl.prepared_lot_no)}>label</button>
+                        <span className={pl.consumed ? "text-green-700" : "text-amber-700"}>{pl.consumed ? tx("consumed") : tx("at machine")}</span>
+                        <button type="button" className="underline" onClick={() => void reprint(pl.prepared_lot_no)}>{tx("label")}</button>
                       </li>
                     ))}
                   </ul>

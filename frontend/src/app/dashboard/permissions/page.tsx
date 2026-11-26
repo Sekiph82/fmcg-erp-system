@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { rolesApi, groupByModule, STANDARD_ACTIONS } from "@/lib/roles";
 import { getPermissionCoverage } from "@/lib/modules";
+import { tx } from "@/lib/i18n/core";
 
 const MODULE_ORDER = [
   "users", "roles", "audit",
@@ -62,9 +63,9 @@ export default function PermissionsPage() {
   return (
     <div>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Permission Matrix</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{tx("Permission Matrix")}</h1>
         <p className="text-sm text-gray-500 mt-1">
-          {allPerms.length} permissions · {roles.length} roles
+          {allPerms.length} {tx("permissions ·")} {roles.length} {tx("roles")}
         </p>
       </div>
 
@@ -72,43 +73,43 @@ export default function PermissionsPage() {
         <div className="mb-6 rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="text-sm font-semibold text-gray-800">Registry Coverage</h2>
+              <h2 className="text-sm font-semibold text-gray-800">{tx("Registry Coverage")}</h2>
               <p className="mt-1 text-xs text-gray-500">
-                Backend registry permissions compared with database permissions.
+                {tx("Backend registry permissions compared with database permissions.")}
               </p>
             </div>
             {coverage.missing_registry_permissions.length === 0 ? (
               <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">
-                In sync
+                {tx("In sync")}
               </span>
             ) : (
               <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
-                Review needed
+                {tx("Review needed")}
               </span>
             )}
           </div>
 
           <div className="grid gap-3 md:grid-cols-4">
             <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
-              <div className="text-xs font-medium text-gray-500">Registry</div>
+              <div className="text-xs font-medium text-gray-500">{tx("Registry")}</div>
               <div className="mt-1 text-xl font-semibold text-gray-900">
                 {coverage.registry_permission_count}
               </div>
             </div>
             <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
-              <div className="text-xs font-medium text-gray-500">Database</div>
+              <div className="text-xs font-medium text-gray-500">{tx("Database")}</div>
               <div className="mt-1 text-xl font-semibold text-gray-900">
                 {coverage.database_permission_count}
               </div>
             </div>
             <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
-              <div className="text-xs font-medium text-gray-500">Covered</div>
+              <div className="text-xs font-medium text-gray-500">{tx("Covered")}</div>
               <div className="mt-1 text-xl font-semibold text-green-700">
                 {coverage.covered_registry_permissions.length}
               </div>
             </div>
             <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
-              <div className="text-xs font-medium text-gray-500">Missing</div>
+              <div className="text-xs font-medium text-gray-500">{tx("Missing")}</div>
               <div className="mt-1 text-xl font-semibold text-amber-700">
                 {coverage.missing_registry_permissions.length}
               </div>
@@ -120,7 +121,7 @@ export default function PermissionsPage() {
             <div className="mt-4 grid gap-4 lg:grid-cols-2">
               <div>
                 <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                  Missing Registry Permissions
+                  {tx("Missing Registry Permissions")}
                 </h3>
                 <div className="flex max-h-36 flex-wrap gap-1.5 overflow-auto rounded-lg border border-gray-100 bg-gray-50 p-3">
                   {coverage.missing_registry_permissions.slice(0, 24).map((code) => (
@@ -129,13 +130,13 @@ export default function PermissionsPage() {
                     </span>
                   ))}
                   {coverage.missing_registry_permissions.length === 0 && (
-                    <span className="text-xs text-gray-400">None</span>
+                    <span className="text-xs text-gray-400">{tx("None")}</span>
                   )}
                 </div>
               </div>
               <div>
                 <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
-                  Database-Only Permissions
+                  {tx("Database-Only Permissions")}
                 </h3>
                 <div className="flex max-h-36 flex-wrap gap-1.5 overflow-auto rounded-lg border border-gray-100 bg-gray-50 p-3">
                   {coverage.database_only_permissions.slice(0, 24).map((code) => (
@@ -144,7 +145,7 @@ export default function PermissionsPage() {
                     </span>
                   ))}
                   {coverage.database_only_permissions.length === 0 && (
-                    <span className="text-xs text-gray-400">None</span>
+                    <span className="text-xs text-gray-400">{tx("None")}</span>
                   )}
                 </div>
               </div>
@@ -155,7 +156,7 @@ export default function PermissionsPage() {
 
       {coverageLoading && (
         <div className="mb-6 rounded-xl border border-gray-100 bg-white p-5 text-sm text-gray-500 shadow-sm">
-          Loading permission coverage...
+          {tx("Loading permission coverage...")}
         </div>
       )}
 
@@ -172,7 +173,7 @@ export default function PermissionsPage() {
                 <h2 className="text-sm font-bold text-gray-800 uppercase tracking-wide flex-1">
                   {module}
                 </h2>
-                <span className="text-xs text-gray-400">{perms.length} permissions</span>
+                <span className="text-xs text-gray-400">{perms.length} {tx("permissions")}</span>
               </div>
 
               <div className="overflow-x-auto">
@@ -180,7 +181,7 @@ export default function PermissionsPage() {
                   <thead>
                     <tr className="border-b border-gray-50">
                       <th className="px-5 py-2.5 text-left text-xs font-semibold text-gray-500 w-40">
-                        Role
+                        {tx("Role")}
                       </th>
                       {actions.map((action) => (
                         <th
@@ -203,7 +204,7 @@ export default function PermissionsPage() {
                           <td className="px-5 py-2 font-medium text-gray-700 whitespace-nowrap">
                             <span>{role.name}</span>
                             {!role.is_active && (
-                              <span className="ml-2 text-xs text-gray-400">(inactive)</span>
+                              <span className="ml-2 text-xs text-gray-400">{tx("(inactive)")}</span>
                             )}
                           </td>
                           {perms.map((perm) => {
@@ -247,9 +248,9 @@ export default function PermissionsPage() {
 
       {/* Mobile visibility legend */}
       <div className="mt-8 rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
-        <h2 className="mb-3 text-sm font-semibold text-gray-700">Mobile-Visible Permissions</h2>
+        <h2 className="mb-3 text-sm font-semibold text-gray-700">{tx("Mobile-Visible Permissions")}</h2>
         <p className="text-xs text-gray-500 mb-3">
-          Permissions marked as mobile-visible are surfaced in the mobile executive dashboard.
+          {tx("Permissions marked as mobile-visible are surfaced in the mobile executive dashboard.")}
         </p>
         <div className="flex flex-wrap gap-1.5">
           {allPerms

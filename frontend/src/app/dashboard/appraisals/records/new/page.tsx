@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { appraisalsApi, AppraisalPeriod, AppraisalTemplate } from "@/lib/appraisals";
+import { tx } from "@/lib/i18n/core";
 
 const DEFAULT_COMPETENCIES = [
   "Teamwork","Leadership","Communication","Problem Solving",
@@ -32,7 +33,7 @@ export default function NewAppraisalPage() {
 
   const submit = async () => {
     if (!form.appraisal_period_id || !form.employee_id) {
-      alert("Period and Employee ID are required");
+      alert(tx("Period and Employee ID are required"));
       return;
     }
     setSaving(true);
@@ -66,30 +67,30 @@ export default function NewAppraisalPage() {
 
   return (
     <div className="p-6 space-y-6 max-w-4xl">
-      <h1 className="text-xl font-bold text-gray-900">New Appraisal</h1>
+      <h1 className="text-xl font-bold text-gray-900">{tx("New Appraisal")}</h1>
 
       <div className="bg-white border rounded-lg p-4 shadow-sm space-y-3">
-        <h2 className="font-semibold text-gray-800">Employee & Period</h2>
+        <h2 className="font-semibold text-gray-800">{tx("Employee & Period")}</h2>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="text-xs text-gray-500">Appraisal Period *</label>
+            <label className="text-xs text-gray-500">{tx("Appraisal Period *")}</label>
             <select
               className="w-full border rounded px-2 py-1 text-sm mt-1"
               value={form.appraisal_period_id}
               onChange={(e) => setForm({ ...form, appraisal_period_id: e.target.value })}
             >
-              <option value="">Select period…</option>
+              <option value="">{tx("Select period…")}</option>
               {periods.map((p) => <option key={p.appraisal_period_id} value={p.appraisal_period_id}>{p.period_name}</option>)}
             </select>
           </div>
           <div>
-            <label className="text-xs text-gray-500">Template</label>
+            <label className="text-xs text-gray-500">{tx("Template")}</label>
             <select
               className="w-full border rounded px-2 py-1 text-sm mt-1"
               value={form.template_id}
               onChange={(e) => setForm({ ...form, template_id: e.target.value })}
             >
-              <option value="">No template</option>
+              <option value="">{tx("No template")}</option>
               {templates.map((t) => <option key={t.template_id} value={t.template_id}>{t.template_name}</option>)}
             </select>
           </div>
@@ -104,7 +105,7 @@ export default function NewAppraisalPage() {
             </div>
           ))}
           <div className="col-span-2">
-            <label className="text-xs text-gray-500">Notes</label>
+            <label className="text-xs text-gray-500">{tx("Notes")}</label>
             <textarea className="w-full border rounded px-2 py-1 text-sm mt-1" rows={2}
               value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
           </div>
@@ -113,38 +114,38 @@ export default function NewAppraisalPage() {
 
       <div className="bg-white border rounded-lg p-4 shadow-sm space-y-3">
         <div className="flex justify-between items-center">
-          <h2 className="font-semibold text-gray-800">KPI Lines</h2>
+          <h2 className="font-semibold text-gray-800">{tx("KPI Lines")}</h2>
           <button
             onClick={() => setKpiLines([...kpiLines, { kpi_name: "", target_value: "", unit: "", weight_pct: "" }])}
             className="text-xs text-blue-600 hover:underline"
           >
-            + Add KPI
+            {tx("+ Add KPI")}
           </button>
         </div>
         {kpiLines.map((l, i) => (
           <div key={i} className="grid grid-cols-4 gap-2">
-            <input placeholder="KPI Name *" className="border rounded px-2 py-1 text-sm col-span-2"
+            <input placeholder={tx("KPI Name *")} className="border rounded px-2 py-1 text-sm col-span-2"
               value={l.kpi_name} onChange={(e) => { const n=[...kpiLines]; n[i].kpi_name=e.target.value; setKpiLines(n); }} />
-            <input placeholder="Target" type="number" className="border rounded px-2 py-1 text-sm"
+            <input placeholder={tx("Target")} type="number" className="border rounded px-2 py-1 text-sm"
               value={l.target_value} onChange={(e) => { const n=[...kpiLines]; n[i].target_value=e.target.value; setKpiLines(n); }} />
-            <input placeholder="Weight %" type="number" className="border rounded px-2 py-1 text-sm"
+            <input placeholder={tx("Weight %")} type="number" className="border rounded px-2 py-1 text-sm"
               value={l.weight_pct} onChange={(e) => { const n=[...kpiLines]; n[i].weight_pct=e.target.value; setKpiLines(n); }} />
           </div>
         ))}
-        <p className="text-xs text-gray-400">Total KPI weight: {kpiLines.reduce((s,l)=>s+Number(l.weight_pct||0),0)}%</p>
+        <p className="text-xs text-gray-400">{tx("Total KPI weight:")} {kpiLines.reduce((s,l)=>s+Number(l.weight_pct||0),0)}%</p>
       </div>
 
       <div className="bg-white border rounded-lg p-4 shadow-sm space-y-3">
-        <h2 className="font-semibold text-gray-800">Competency Lines</h2>
+        <h2 className="font-semibold text-gray-800">{tx("Competency Lines")}</h2>
         {compLines.map((l, i) => (
           <div key={i} className="grid grid-cols-4 gap-2">
-            <input placeholder="Competency *" className="border rounded px-2 py-1 text-sm col-span-3"
+            <input placeholder={tx("Competency *")} className="border rounded px-2 py-1 text-sm col-span-3"
               value={l.competency_name} onChange={(e) => { const n=[...compLines]; n[i].competency_name=e.target.value; setCompLines(n); }} />
-            <input placeholder="Weight %" type="number" className="border rounded px-2 py-1 text-sm"
+            <input placeholder={tx("Weight %")} type="number" className="border rounded px-2 py-1 text-sm"
               value={l.weight_pct} onChange={(e) => { const n=[...compLines]; n[i].weight_pct=e.target.value; setCompLines(n); }} />
           </div>
         ))}
-        <p className="text-xs text-gray-400">Total competency weight: {compLines.reduce((s,l)=>s+Number(l.weight_pct||0),0).toFixed(1)}%</p>
+        <p className="text-xs text-gray-400">{tx("Total competency weight:")} {compLines.reduce((s,l)=>s+Number(l.weight_pct||0),0).toFixed(1)}%</p>
       </div>
 
       <div className="flex gap-2">
@@ -153,10 +154,10 @@ export default function NewAppraisalPage() {
           disabled={saving}
           className="rounded bg-blue-600 px-6 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
         >
-          {saving ? "Saving…" : "Create Appraisal"}
+          {saving ? tx("Saving…") : tx("Create Appraisal")}
         </button>
         <button onClick={() => router.back()} className="rounded border px-6 py-2 text-sm text-gray-600 hover:bg-gray-50">
-          Cancel
+          {tx("Cancel")}
         </button>
       </div>
     </div>

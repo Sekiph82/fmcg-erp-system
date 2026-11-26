@@ -18,6 +18,7 @@ import {
 import { NotificationBell } from "./NotificationBell";
 import LanguageSwitcher from "./LanguageSwitcher";
 import { MESSAGES, useI18n } from "@/lib/i18n";
+import { tx } from "@/lib/i18n/core";
 
 // ── Storage keys ──────────────────────────────────────────────────────────────
 
@@ -654,7 +655,7 @@ export function Sidebar({ mobileOpen, onMobileClose, onOpenSearch }: SidebarProp
                 />
               </div>
               <div className="min-w-0 leading-none">
-                <p className="text-[13px] font-semibold text-white tracking-tight truncate">POVU ERP</p>
+                <p className="text-[13px] font-semibold text-white tracking-tight truncate">{tx("POVU ERP")}</p>
                 <p className="text-[10px] text-slate-500 tracking-wide mt-[3px] truncate">{t("staff.shell.tagline")}</p>
               </div>
             </div>

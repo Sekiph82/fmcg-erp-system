@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { ToastContainer } from "@/components/ui/Toast";
 import { useToast } from "@/hooks/useToast";
+import { tx } from "@/lib/i18n/core";
 
 const CHANNEL_OPTS = ["RETAIL", "WHOLESALE", "DISTRIBUTOR", "DIRECT", "EXPORT", "ONLINE"].map((c) => ({ value: c, label: c }));
 const CURRENCY_OPTS = ["USD", "EUR", "GBP", "JPY", "CNY", "SGD"].map((c) => ({ value: c, label: c }));
@@ -98,7 +99,7 @@ export default function CustomersPage() {
       setShowCreate(false);
       setForm(defaultForm());
       setCodeField("");
-      toast("success", "Customer created");
+      toast("success", tx("Customer created"));
     },
     onError: (e) => toast("error", extractApiError(e)),
   });
@@ -119,7 +120,7 @@ export default function CustomersPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["sales-customers"] });
       setEditId(null);
-      toast("success", "Customer updated");
+      toast("success", tx("Customer updated"));
     },
     onError: (e) => toast("error", extractApiError(e)),
   });
@@ -147,25 +148,25 @@ export default function CustomersPage() {
   };
 
   const columns = [
-    { header: "Code", accessor: (r: typeof customers[0]) => r.code },
-    { header: "Name", accessor: (r: typeof customers[0]) => (
-      <Link href={`/dashboard/crm/customers/${r.id}`} className="font-medium text-indigo-600 hover:underline" title="Customer timeline">{r.name}</Link>
+    { header: tx("Code"), accessor: (r: typeof customers[0]) => r.code },
+    { header: tx("Name"), accessor: (r: typeof customers[0]) => (
+      <Link href={`/dashboard/crm/customers/${r.id}`} className="font-medium text-indigo-600 hover:underline" title={tx("Customer timeline")}>{r.name}</Link>
     ) },
-    { header: "Channel", accessor: (r: typeof customers[0]) => (
+    { header: tx("Channel"), accessor: (r: typeof customers[0]) => (
       <Badge label={r.channel} variant={channelVariant(r.channel)} />
     )},
-    { header: "Contact", accessor: (r: typeof customers[0]) => r.contact_person || "—" },
-    { header: "Email", accessor: (r: typeof customers[0]) => r.email || "—" },
-    { header: "Payment Terms", accessor: (r: typeof customers[0]) => `Net ${r.payment_terms_days}` },
-    { header: "Credit Limit", accessor: (r: typeof customers[0]) =>
+    { header: tx("Contact"), accessor: (r: typeof customers[0]) => r.contact_person || "—" },
+    { header: tx("Email"), accessor: (r: typeof customers[0]) => r.email || "—" },
+    { header: tx("Payment Terms"), accessor: (r: typeof customers[0]) => `Net ${r.payment_terms_days}` },
+    { header: tx("Credit Limit"), accessor: (r: typeof customers[0]) =>
       r.credit_limit != null ? `${r.currency} ${Number(r.credit_limit).toLocaleString()}` : "—"
     },
-    { header: "Status", accessor: (r: typeof customers[0]) => (
+    { header: tx("Status"), accessor: (r: typeof customers[0]) => (
       <div className="flex flex-col gap-1">
-        <Badge label={r.is_active ? "Active" : "Inactive"} variant={r.is_active ? "green" : "red"} />
+        <Badge label={r.is_active ? tx("Active") : tx("Inactive")} variant={r.is_active ? "green" : "red"} />
         {r.access?.view_only && (
-          <span title={r.access.reason ?? "You can view this record but cannot modify it in this scope."} className="text-xs text-gray-500">
-            View only
+          <span title={r.access.reason ?? tx("You can view this record but cannot modify it in this scope.")} className="text-xs text-gray-500">
+            {tx("View only")}
           </span>
         )}
       </div>
@@ -175,9 +176,9 @@ export default function CustomersPage() {
         variant="secondary"
         onClick={() => openEdit(r)}
         disabled={r.access?.can_edit === false}
-        title={r.access?.can_edit === false ? (r.access.reason ?? "You can view this record but cannot modify it in this scope.") : undefined}
+        title={r.access?.can_edit === false ? (r.access.reason ?? tx("You can view this record but cannot modify it in this scope.")) : undefined}
       >
-        Edit
+        {tx("Edit")}
       </Button>
     )},
   ];
@@ -185,20 +186,20 @@ export default function CustomersPage() {
   const FormFields = () => (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
-        <Input label="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
-        <Input label="Contact Person" value={form.contact_person} onChange={(e) => setForm({ ...form, contact_person: e.target.value })} />
+        <Input label={tx("Name")} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+        <Input label={tx("Contact Person")} value={form.contact_person} onChange={(e) => setForm({ ...form, contact_person: e.target.value })} />
       </div>
       <div className="grid grid-cols-2 gap-4">
-        <Input label="Email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-        <Input label="Phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+        <Input label={tx("Email")} type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+        <Input label={tx("Phone")} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
       </div>
       <div className="grid grid-cols-3 gap-4">
-        <Select label="Channel" options={CHANNEL_OPTS} value={form.channel} onChange={(e) => setForm({ ...form, channel: e.target.value })} />
-        <Select label="Payment Terms" options={TERMS_OPTS} value={form.payment_terms_days} onChange={(e) => setForm({ ...form, payment_terms_days: e.target.value })} />
-        <Select label="Currency" options={CURRENCY_OPTS} value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value })} />
+        <Select label={tx("Channel")} options={CHANNEL_OPTS} value={form.channel} onChange={(e) => setForm({ ...form, channel: e.target.value })} />
+        <Select label={tx("Payment Terms")} options={TERMS_OPTS} value={form.payment_terms_days} onChange={(e) => setForm({ ...form, payment_terms_days: e.target.value })} />
+        <Select label={tx("Currency")} options={CURRENCY_OPTS} value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value })} />
       </div>
-      <Input label="Credit Limit (optional)" type="number" value={form.credit_limit} onChange={(e) => setForm({ ...form, credit_limit: e.target.value })} />
-      <Input label="Notes" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
+      <Input label={tx("Credit Limit (optional)")} type="number" value={form.credit_limit} onChange={(e) => setForm({ ...form, credit_limit: e.target.value })} />
+      <Input label={tx("Notes")} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
     </div>
   );
 
@@ -208,14 +209,14 @@ export default function CustomersPage() {
 
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Customers</h1>
-          <p className="text-sm text-gray-500 mt-1">{customers.length} customers</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Customers")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{customers.length} {tx("customers")}</p>
         </div>
-        <Button onClick={() => setShowCreate(true)} data-testid="sales-create-customer-button">+ Add Customer</Button>
+        <Button onClick={() => setShowCreate(true)} data-testid="sales-create-customer-button">{tx("+ Add Customer")}</Button>
       </div>
 
       {isLoading ? (
-        <div className="text-center py-12 text-gray-500">Loading...</div>
+        <div className="text-center py-12 text-gray-500">{tx("Loading...")}</div>
       ) : (
         <div data-testid="sales-customers-list">
           <Table columns={columns} data={customers} keyField="id" emptyMessage="No customers found." />
@@ -223,27 +224,27 @@ export default function CustomersPage() {
       )}
 
       {/* Create Modal */}
-      <Modal open={showCreate} onClose={() => { setShowCreate(false); setForm(defaultForm()); setCodeField(""); }} title="New Customer">
+      <Modal open={showCreate} onClose={() => { setShowCreate(false); setForm(defaultForm()); setCodeField(""); }} title={tx("New Customer")}>
         <div className="space-y-4">
-          <Input label="Customer Code" value={codeField} onChange={(e) => setCodeField(e.target.value)} required />
+          <Input label={tx("Customer Code")} value={codeField} onChange={(e) => setCodeField(e.target.value)} required />
           <FormFields />
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" onClick={() => { setShowCreate(false); setForm(defaultForm()); setCodeField(""); }}>Cancel</Button>
+            <Button variant="secondary" onClick={() => { setShowCreate(false); setForm(defaultForm()); setCodeField(""); }}>{tx("Cancel")}</Button>
             <Button onClick={() => createMut.mutate()} disabled={createMut.isPending || !codeField || !form.name}>
-              {createMut.isPending ? "Creating..." : "Create"}
+              {createMut.isPending ? tx("Creating...") : tx("Create")}
             </Button>
           </div>
         </div>
       </Modal>
 
       {/* Edit Modal */}
-      <Modal open={!!editId} onClose={() => setEditId(null)} title="Edit Customer">
+      <Modal open={!!editId} onClose={() => setEditId(null)} title={tx("Edit Customer")}>
         <div className="space-y-4">
           <FormFields />
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" onClick={() => setEditId(null)}>Cancel</Button>
+            <Button variant="secondary" onClick={() => setEditId(null)}>{tx("Cancel")}</Button>
             <Button onClick={() => updateMut.mutate()} disabled={updateMut.isPending || !form.name}>
-              {updateMut.isPending ? "Saving..." : "Save"}
+              {updateMut.isPending ? tx("Saving...") : tx("Save")}
             </Button>
           </div>
         </div>

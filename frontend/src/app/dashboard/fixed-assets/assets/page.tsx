@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { faApi, FAAssetStatus, STATUS_BADGE, DEPR_METHOD_LABEL, fmtCurrency } from "@/lib/fixed_assets";
+import { tx } from "@/lib/i18n/core";
 
 export default function FAAssetListPage() {
   const [search, setSearch]       = useState("");
@@ -22,15 +23,15 @@ export default function FAAssetListPage() {
     <div className="p-6 space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Asset Register</h1>
-        <Link href="/dashboard/fixed-assets/assets/new" className="glow-button">+ New Asset</Link>
+        <h1 className="text-2xl font-bold text-gray-900">{tx("Asset Register")}</h1>
+        <Link href="/dashboard/fixed-assets/assets/new" className="glow-button">{tx("+ New Asset")}</Link>
       </div>
 
       {/* Filters */}
       <div className="glass-panel p-4 flex flex-wrap gap-3">
         <input
           type="text"
-          placeholder="Search assets…"
+          placeholder={tx("Search assets…")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="rounded-lg border border-gray-300 px-3 py-2 text-sm flex-1 min-w-[180px]"
@@ -40,14 +41,14 @@ export default function FAAssetListPage() {
           onChange={(e) => setStatus(e.target.value as FAAssetStatus | "")}
           className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
         >
-          <option value="">All Statuses</option>
+          <option value="">{tx("All Statuses")}</option>
           {(["DRAFT","ACTIVE","SUSPENDED","IMPAIRED","DISPOSED","RETIRED","ARCHIVED"] as FAAssetStatus[]).map(s => (
             <option key={s} value={s}>{s}</option>
           ))}
         </select>
         <input
           type="text"
-          placeholder="Cost Center"
+          placeholder={tx("Cost Center")}
           value={costCenter}
           onChange={(e) => setCostCenter(e.target.value)}
           className="rounded-lg border border-gray-300 px-3 py-2 text-sm w-36"
@@ -59,16 +60,16 @@ export default function FAAssetListPage() {
         <table className="min-w-full text-sm">
           <thead>
             <tr>
-              {["Code","Name","Category","Method","Cost (KES)","Acc. Depr.","NBV","Status",""].map(h => (
+              {[tx("Code"),tx("Name"),tx("Category"),tx("Method"),tx("Cost (KES)"),tx("Acc. Depr."),"NBV",tx("Status"),""].map(h => (
                 <th key={h} className="px-4 py-3 text-left">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {isLoading ? (
-              <tr><td colSpan={9} className="px-4 py-10 text-center text-gray-400">Loading…</td></tr>
+              <tr><td colSpan={9} className="px-4 py-10 text-center text-gray-400">{tx("Loading…")}</td></tr>
             ) : data.length === 0 ? (
-              <tr><td colSpan={9} className="px-4 py-10 text-center text-gray-400">No assets found.</td></tr>
+              <tr><td colSpan={9} className="px-4 py-10 text-center text-gray-400">{tx("No assets found.")}</td></tr>
             ) : data.map((a) => (
               <tr key={a.id}>
                 <td className="px-4 py-3 font-mono text-xs font-medium">{a.asset_code}</td>
@@ -85,7 +86,7 @@ export default function FAAssetListPage() {
                 </td>
                 <td className="px-4 py-3">
                   <Link href={`/dashboard/fixed-assets/assets/${a.id}`} className="text-blue-600 hover:underline text-xs">
-                    Open
+                    {tx("Open")}
                   </Link>
                 </td>
               </tr>
@@ -94,7 +95,7 @@ export default function FAAssetListPage() {
         </table>
       </div>
 
-      <p className="text-xs text-gray-400">{data.length} assets</p>
+      <p className="text-xs text-gray-400">{data.length} {tx("assets")}</p>
     </div>
   );
 }

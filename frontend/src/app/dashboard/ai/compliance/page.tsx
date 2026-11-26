@@ -2,59 +2,60 @@
 
 import Link from "next/link";
 import { RequirePermission } from "@/components/PermissionGuard";
+import { tx } from "@/lib/i18n/core";
 
 export default function CompliancePage() {
   return (
     <RequirePermission permission="ai.view">
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Compliance & Documents</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Regulatory compliance, SDS sheets, and document management</p>
+        <h1 className="text-2xl font-bold text-gray-900">{tx("Compliance & Documents")}</h1>
+        <p className="text-sm text-gray-500 mt-0.5">{tx("Regulatory compliance, SDS sheets, and document management")}</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {[
           {
-            title: "Safety Data Sheets",
-            description: "AI-generated SDS for your formulations, compliant with GHS/UN standards",
+            title: tx("Safety Data Sheets"),
+            description: tx("AI-generated SDS for your formulations, compliant with GHS/UN standards"),
             icon: "🛡️",
             href: "/dashboard/documents",
-            badge: "Via Documents",
+            badge: tx("Via Documents"),
           },
           {
-            title: "Regulatory Labels",
-            description: "Generate compliant product labels for Kenya Bureau of Standards (KEBS) and regional markets",
+            title: tx("Regulatory Labels"),
+            description: tx("Generate compliant product labels for Kenya Bureau of Standards (KEBS) and regional markets"),
             icon: "🏷️",
             href: "/dashboard/documents",
-            badge: "Via Documents",
+            badge: tx("Via Documents"),
           },
           {
-            title: "AI Formulations",
-            description: "All approved formulations with safety notes and regulatory compliance guidance",
+            title: tx("AI Formulations"),
+            description: tx("All approved formulations with safety notes and regulatory compliance guidance"),
             icon: "🧪",
             href: "/dashboard/ai/formulations",
-            badge: "Formulation Engine",
+            badge: tx("Formulation Engine"),
           },
           {
-            title: "Tax & Regulatory",
-            description: "Country-specific tax rules, excise duties, and import/export compliance",
+            title: tx("Tax & Regulatory"),
+            description: tx("Country-specific tax rules, excise duties, and import/export compliance"),
             icon: "⚖️",
             href: "/dashboard/tax",
-            badge: "Tax Module",
+            badge: tx("Tax Module"),
           },
           {
-            title: "Quality Control",
-            description: "QC parameters, inspection records, and CoA (Certificate of Analysis) management",
+            title: tx("Quality Control"),
+            description: tx("QC parameters, inspection records, and CoA (Certificate of Analysis) management"),
             icon: "✅",
             href: "/dashboard/production/quality-control",
-            badge: "Quality Module",
+            badge: tx("Quality Module"),
           },
           {
-            title: "Audit Logs",
-            description: "Complete audit trail of all system actions for compliance reporting",
+            title: tx("Audit Logs"),
+            description: tx("Complete audit trail of all system actions for compliance reporting"),
             icon: "📋",
             href: "/dashboard/ai/logs",
-            badge: "AI Logs",
+            badge: tx("AI Logs"),
           },
         ].map((item) => (
           <Link
@@ -73,11 +74,9 @@ export default function CompliancePage() {
       </div>
 
       <div className="bg-amber-50 border border-amber-200 rounded-xl p-5">
-        <h3 className="font-semibold text-amber-800 mb-1">⚠️ Regulatory Context</h3>
+        <h3 className="font-semibold text-amber-800 mb-1">{tx("⚠️ Regulatory Context")}</h3>
         <p className="text-sm text-amber-700">
-          This ERP is configured for the East African market (Kenya primary, with export to Uganda, Tanzania, Rwanda).
-          AI formulations include KEBS compliance notes. For export to EU/US markets, additional regulatory review is required.
-          Always verify AI-generated safety data against current regulatory databases before commercial use.
+          {tx("This ERP is configured for the East African market (Kenya primary, with export to Uganda, Tanzania, Rwanda). AI formulations include KEBS compliance notes. For export to EU/US markets, additional regulatory review is required. Always verify AI-generated safety data against current regulatory databases before commercial use.")}
         </p>
       </div>
     </div>

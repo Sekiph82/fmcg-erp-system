@@ -4,6 +4,7 @@ import {
   customFieldsApi, EntityType, FieldType,
   ENTITY_LABEL, FIELD_TYPE_LABEL, ValidationRuleType,
 } from "@/lib/custom_fields";
+import { tx } from "@/lib/i18n/core";
 
 const ENTITY_TYPES: EntityType[] = [
   "customer", "supplier", "product", "sales_order", "purchase_order",
@@ -75,7 +76,7 @@ export default function NewFieldPage() {
       });
       setDone(f.custom_field_id);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Failed to create field");
+      setError(e instanceof Error ? e.message : tx("Failed to create field"));
     } finally {
       setSubmitting(false);
     }
@@ -83,12 +84,12 @@ export default function NewFieldPage() {
 
   if (done) return (
     <div className="p-6 text-center space-y-3">
-      <p className="text-green-600 font-semibold text-lg">Field created!</p>
+      <p className="text-green-600 font-semibold text-lg">{tx("Field created!")}</p>
       <div className="flex justify-center gap-3">
-        <a href={`/dashboard/custom-fields/${done}`} className="text-sm text-blue-600 hover:underline">View Field</a>
-        <a href="/dashboard/custom-fields/fields" className="text-sm text-gray-600 hover:underline">Field Manager</a>
+        <a href={`/dashboard/custom-fields/${done}`} className="text-sm text-blue-600 hover:underline">{tx("View Field")}</a>
+        <a href="/dashboard/custom-fields/fields" className="text-sm text-gray-600 hover:underline">{tx("Field Manager")}</a>
         <button onClick={() => { setDone(null); setStep(1); setCore({ ...core, field_code: "", field_label: "" }); }}
-          className="text-sm text-gray-500 hover:underline">Create Another</button>
+          className="text-sm text-gray-500 hover:underline">{tx("Create Another")}</button>
       </div>
     </div>
   );
@@ -97,7 +98,7 @@ export default function NewFieldPage() {
 
   return (
     <div className="p-6 max-w-2xl space-y-5">
-      <h1 className="text-xl font-bold text-gray-900">Create Custom Field</h1>
+      <h1 className="text-xl font-bold text-gray-900">{tx("Create Custom Field")}</h1>
 
       <div className="flex gap-1">
         {steps.map((s, i) => (
@@ -111,66 +112,66 @@ export default function NewFieldPage() {
         <div className="bg-white border rounded-lg p-5 space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2">
-              <label className="text-xs text-gray-500">Module / Entity Type *</label>
+              <label className="text-xs text-gray-500">{tx("Module / Entity Type *")}</label>
               <select className="w-full border rounded px-2 py-1.5 text-sm mt-1" value={core.entity_type}
                 onChange={e => setCore({ ...core, entity_type: e.target.value as EntityType })}>
-                <option value="">Select module…</option>
+                <option value="">{tx("Select module…")}</option>
                 {ENTITY_TYPES.map(t => <option key={t} value={t}>{ENTITY_LABEL[t]}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-xs text-gray-500">Field Label *</label>
+              <label className="text-xs text-gray-500">{tx("Field Label *")}</label>
               <input className="w-full border rounded px-2 py-1.5 text-sm mt-1" value={core.field_label}
                 onChange={e => setCore({ ...core, field_label: e.target.value, field_code: autoCode(e.target.value) })} />
             </div>
             <div>
-              <label className="text-xs text-gray-500">Field Code * (auto-generated)</label>
+              <label className="text-xs text-gray-500">{tx("Field Code * (auto-generated)")}</label>
               <input className="w-full border rounded px-2 py-1.5 text-sm mt-1 font-mono" value={core.field_code}
                 onChange={e => setCore({ ...core, field_code: e.target.value })} />
             </div>
             <div>
-              <label className="text-xs text-gray-500">Field Type *</label>
+              <label className="text-xs text-gray-500">{tx("Field Type *")}</label>
               <select className="w-full border rounded px-2 py-1.5 text-sm mt-1" value={core.field_type}
                 onChange={e => setCore({ ...core, field_type: e.target.value as FieldType })}>
                 {FIELD_TYPES.map(t => <option key={t} value={t}>{FIELD_TYPE_LABEL[t]}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-xs text-gray-500">Display Order</label>
+              <label className="text-xs text-gray-500">{tx("Display Order")}</label>
               <input type="number" className="w-full border rounded px-2 py-1.5 text-sm mt-1" value={core.display_order}
                 onChange={e => setCore({ ...core, display_order: Number(e.target.value) })} />
             </div>
             <div>
-              <label className="text-xs text-gray-500">Section Label (groups fields)</label>
-              <input className="w-full border rounded px-2 py-1.5 text-sm mt-1" placeholder="e.g. Shipping Info"
+              <label className="text-xs text-gray-500">{tx("Section Label (groups fields)")}</label>
+              <input className="w-full border rounded px-2 py-1.5 text-sm mt-1" placeholder={tx("e.g. Shipping Info")}
                 value={core.section_label} onChange={e => setCore({ ...core, section_label: e.target.value })} />
             </div>
             <div>
-              <label className="text-xs text-gray-500">Placeholder Text</label>
+              <label className="text-xs text-gray-500">{tx("Placeholder Text")}</label>
               <input className="w-full border rounded px-2 py-1.5 text-sm mt-1" value={core.placeholder}
                 onChange={e => setCore({ ...core, placeholder: e.target.value })} />
             </div>
             {!isSelectType && !isComputedType && (
               <div>
-                <label className="text-xs text-gray-500">Default Value</label>
+                <label className="text-xs text-gray-500">{tx("Default Value")}</label>
                 <input className="w-full border rounded px-2 py-1.5 text-sm mt-1" value={core.default_value}
                   onChange={e => setCore({ ...core, default_value: e.target.value })} />
               </div>
             )}
             {isComputedType && (
               <div className="col-span-2">
-                <label className="text-xs text-gray-500">Formula (e.g. {"{price}"} * {"{qty}"} )</label>
+                <label className="text-xs text-gray-500">{tx("Formula (e.g.")} {tx("{price}")} * {tx("{qty}")} )</label>
                 <input className="w-full border rounded px-2 py-1.5 text-sm mt-1 font-mono" value={core.formula}
                   onChange={e => setCore({ ...core, formula: e.target.value })} />
               </div>
             )}
             <div className="col-span-2">
-              <label className="text-xs text-gray-500">Help Text</label>
+              <label className="text-xs text-gray-500">{tx("Help Text")}</label>
               <input className="w-full border rounded px-2 py-1.5 text-sm mt-1" value={core.help_text}
                 onChange={e => setCore({ ...core, help_text: e.target.value })} />
             </div>
             <div className="col-span-2">
-              <label className="text-xs text-gray-500">Notes</label>
+              <label className="text-xs text-gray-500">{tx("Notes")}</label>
               <textarea className="w-full border rounded px-2 py-1.5 text-sm mt-1 h-16 resize-none" value={core.notes}
                 onChange={e => setCore({ ...core, notes: e.target.value })} />
             </div>
@@ -180,18 +181,18 @@ export default function NewFieldPage() {
 
       {step === 2 && (
         <div className="bg-white border rounded-lg p-5 space-y-4">
-          <h2 className="font-semibold text-gray-800 text-sm">Field Flags & Visibility</h2>
+          <h2 className="font-semibold text-gray-800 text-sm">{tx("Field Flags & Visibility")}</h2>
           <div className="grid grid-cols-2 gap-3">
             {[
-              { key: "required_flag", label: "Required", desc: "Entity cannot be saved without this field" },
-              { key: "unique_flag", label: "Unique", desc: "Value must be unique across all entities" },
-              { key: "searchable_flag", label: "Searchable", desc: "Included in text search" },
-              { key: "filterable_flag", label: "Filterable", desc: "Available as a list filter" },
-              { key: "reportable_flag", label: "Reportable", desc: "Exposed to the Report Builder" },
-              { key: "importable_flag", label: "Importable", desc: "Included in CSV import template" },
-              { key: "exportable_flag", label: "Exportable", desc: "Included in CSV export" },
-              { key: "sensitive_flag", label: "Sensitive 🔒", desc: "Restricted visibility (flagged)" },
-              { key: "active_flag", label: "Active", desc: "Field is visible and in use" },
+              { key: "required_flag", label: tx("Required"), desc: tx("Entity cannot be saved without this field") },
+              { key: "unique_flag", label: tx("Unique"), desc: tx("Value must be unique across all entities") },
+              { key: "searchable_flag", label: tx("Searchable"), desc: tx("Included in text search") },
+              { key: "filterable_flag", label: tx("Filterable"), desc: tx("Available as a list filter") },
+              { key: "reportable_flag", label: tx("Reportable"), desc: tx("Exposed to the Report Builder") },
+              { key: "importable_flag", label: tx("Importable"), desc: tx("Included in CSV import template") },
+              { key: "exportable_flag", label: tx("Exportable"), desc: tx("Included in CSV export") },
+              { key: "sensitive_flag", label: tx("Sensitive 🔒"), desc: tx("Restricted visibility (flagged)") },
+              { key: "active_flag", label: tx("Active"), desc: tx("Field is visible and in use") },
             ].map(({ key, label, desc }) => (
               <label key={key} className="flex items-start gap-2.5 cursor-pointer p-2 border rounded hover:bg-gray-50">
                 <input type="checkbox" checked={flags[key as keyof typeof flags]}
@@ -211,11 +212,11 @@ export default function NewFieldPage() {
         <div className="space-y-4">
           {isSelectType && (
             <div className="bg-white border rounded-lg p-5 space-y-3">
-              <h2 className="font-semibold text-gray-800 text-sm">Dropdown Options</h2>
+              <h2 className="font-semibold text-gray-800 text-sm">{tx("Dropdown Options")}</h2>
               <div className="flex gap-2">
-                <input className="flex-1 border rounded px-2 py-1.5 text-sm" placeholder="Value (stored)"
+                <input className="flex-1 border rounded px-2 py-1.5 text-sm" placeholder={tx("Value (stored)")}
                   value={newOpt.value} onChange={e => setNewOpt({ ...newOpt, value: e.target.value })} />
-                <input className="flex-1 border rounded px-2 py-1.5 text-sm" placeholder="Label (displayed)"
+                <input className="flex-1 border rounded px-2 py-1.5 text-sm" placeholder={tx("Label (displayed)")}
                   value={newOpt.label} onChange={e => setNewOpt({ ...newOpt, label: e.target.value })} />
                 <button onClick={() => {
                   if (!newOpt.value || !newOpt.label) return;
@@ -230,7 +231,7 @@ export default function NewFieldPage() {
                       <span className="font-mono text-gray-500 text-xs">{o.value}</span>
                       <span className="text-gray-700">{o.label}</span>
                       <button onClick={() => setOptions(prev => prev.filter((_, j) => j !== i))}
-                        className="text-red-400 text-xs hover:underline">Remove</button>
+                        className="text-red-400 text-xs hover:underline">{tx("Remove")}</button>
                     </div>
                   ))}
                 </div>
@@ -239,15 +240,15 @@ export default function NewFieldPage() {
           )}
 
           <div className="bg-white border rounded-lg p-5 space-y-3">
-            <h2 className="font-semibold text-gray-800 text-sm">Validation Rules (optional)</h2>
+            <h2 className="font-semibold text-gray-800 text-sm">{tx("Validation Rules (optional)")}</h2>
             <div className="flex gap-2">
               <select className="border rounded px-2 py-1.5 text-sm" value={newRule.type}
                 onChange={e => setNewRule({ ...newRule, type: e.target.value as ValidationRuleType })}>
                 {RULE_TYPES.map(r => <option key={r} value={r}>{r.replace("_", " ")}</option>)}
               </select>
-              <input className="flex-1 border rounded px-2 py-1.5 text-sm" placeholder="Value (e.g. 100, ^[A-Z]+)"
+              <input className="flex-1 border rounded px-2 py-1.5 text-sm" placeholder={tx("Value (e.g. 100, ^[A-Z]+)")}
                 value={newRule.value} onChange={e => setNewRule({ ...newRule, value: e.target.value })} />
-              <input className="flex-1 border rounded px-2 py-1.5 text-sm" placeholder="Error message"
+              <input className="flex-1 border rounded px-2 py-1.5 text-sm" placeholder={tx("Error message")}
                 value={newRule.message} onChange={e => setNewRule({ ...newRule, message: e.target.value })} />
               <button onClick={() => {
                 if (!newRule.value && !newRule.message) return;
@@ -263,7 +264,7 @@ export default function NewFieldPage() {
                     <span className="font-mono text-gray-600 text-xs">{r.value}</span>
                     <span className="text-gray-500 text-xs flex-1 px-2">{r.message}</span>
                     <button onClick={() => setRules(prev => prev.filter((_, j) => j !== i))}
-                      className="text-red-400 text-xs hover:underline">Remove</button>
+                      className="text-red-400 text-xs hover:underline">{tx("Remove")}</button>
                   </div>
                 ))}
               </div>
@@ -271,12 +272,12 @@ export default function NewFieldPage() {
           </div>
 
           <div className="bg-gray-50 border rounded p-4 text-sm space-y-1">
-            <p className="font-medium text-gray-700 mb-2">Summary</p>
-            <p><span className="font-medium">Module:</span> {ENTITY_LABEL[core.entity_type] ?? core.entity_type}</p>
-            <p><span className="font-medium">Code:</span> <code className="font-mono text-xs">{core.field_code}</code></p>
-            <p><span className="font-medium">Label:</span> {core.field_label}</p>
-            <p><span className="font-medium">Type:</span> {FIELD_TYPE_LABEL[core.field_type]}</p>
-            <p><span className="font-medium">Required:</span> {flags.required_flag ? "Yes" : "No"} · Options: {options.length} · Rules: {rules.length}</p>
+            <p className="font-medium text-gray-700 mb-2">{tx("Summary")}</p>
+            <p><span className="font-medium">{tx("Module:")}</span> {ENTITY_LABEL[core.entity_type] ?? core.entity_type}</p>
+            <p><span className="font-medium">{tx("Code:")}</span> <code className="font-mono text-xs">{core.field_code}</code></p>
+            <p><span className="font-medium">{tx("Label:")}</span> {core.field_label}</p>
+            <p><span className="font-medium">{tx("Type:")}</span> {FIELD_TYPE_LABEL[core.field_type]}</p>
+            <p><span className="font-medium">{tx("Required:")}</span> {flags.required_flag ? tx("Yes") : tx("No")} {tx("· Options:")} {options.length} {tx("· Rules:")} {rules.length}</p>
           </div>
         </div>
       )}
@@ -285,14 +286,14 @@ export default function NewFieldPage() {
 
       <div className="flex justify-between">
         <button onClick={() => setStep(s => Math.max(1, s - 1))} disabled={step === 1}
-          className="rounded border px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-40">Back</button>
+          className="rounded border px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-40">{tx("Back")}</button>
         {step < 3
           ? <button onClick={() => setStep(s => s + 1)}
               disabled={!core.entity_type || !core.field_label || !core.field_code}
-              className="rounded bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-50">Next</button>
+              className="rounded bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-50">{tx("Next")}</button>
           : <button onClick={submit} disabled={submitting}
               className="rounded bg-green-600 px-4 py-2 text-sm text-white hover:bg-green-700 disabled:opacity-50">
-              {submitting ? "Creating…" : "Create Field"}
+              {submitting ? tx("Creating…") : tx("Create Field")}
             </button>
         }
       </div>

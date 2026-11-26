@@ -13,9 +13,10 @@ import { ToastContainer } from "@/components/ui/Toast";
 import { useToast } from "@/hooks/useToast";
 import { ImportModal } from "@/components/import/ImportModal";
 import { PageHelpTooltip } from "@/components/help/PageHelpTooltip";
+import { tx, lx } from "@/lib/i18n/core";
 
-const CAT_OPTS    = [{value:"",label:"All"}         ,{value:"planned",label:"Planned"},{value:"unplanned",label:"Unplanned"},{value:"external",label:"External"}];
-const CAT_CREATE  = [{value:"planned",label:"Planned"},{value:"unplanned",label:"Unplanned"},{value:"external",label:"External"}];
+const CAT_OPTS    = lx(() => [{value:"",label:tx("All")}         ,{value:"planned",label:tx("Planned")},{value:"unplanned",label:tx("Unplanned")},{value:"external",label:tx("External")}]);
+const CAT_CREATE  = lx(() => [{value:"planned",label:tx("Planned")},{value:"unplanned",label:tx("Unplanned")},{value:"external",label:tx("External")}]);
 
 const catVariant = (c:string) => c==="planned"?"blue":c==="external"?"yellow":"red";
 
@@ -33,21 +34,21 @@ export default function DowntimePage() {
   const reasonCategories = reasonCodes.filter((reasonCode) => reasonCode.parent_code == null);
 
   const totalMin = items.reduce((s,i)=>s+(i.duration_min??0),0);
-  const create = useMutation({ mutationFn:()=>advProductionApi.createDowntime(form), onSuccess:()=>{ qc.invalidateQueries({queryKey:["downtime"]}); setOpen(false); toast("success","Logged","Downtime event recorded."); }, onError:(e)=>toast("error","Failed",extractApiError(e)) });
-  const del    = useMutation({ mutationFn:(id:string)=>advProductionApi.deleteDowntime(id), onSuccess:()=>{ qc.invalidateQueries({queryKey:["downtime"]}); setDel(null); toast("success","Deleted",""); }, onError:(e)=>toast("error","Failed",extractApiError(e)) });
+  const create = useMutation({ mutationFn:()=>advProductionApi.createDowntime(form), onSuccess:()=>{ qc.invalidateQueries({queryKey:["downtime"]}); setOpen(false); toast("success",tx("Logged"),tx("Downtime event recorded.")); }, onError:(e)=>toast("error",tx("Failed"),extractApiError(e)) });
+  const del    = useMutation({ mutationFn:(id:string)=>advProductionApi.deleteDowntime(id), onSuccess:()=>{ qc.invalidateQueries({queryKey:["downtime"]}); setDel(null); toast("success",tx("Deleted"),""); }, onError:(e)=>toast("error",tx("Failed"),extractApiError(e)) });
 
   return (
     <div>
       <ToastContainer toasts={toasts} onDismiss={dismiss}/>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Downtime Tracking</h1>
-          <p className="text-sm text-gray-500 mt-1">Total downtime: <strong>{totalMin.toLocaleString()} min</strong> ({items.length} events)</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Downtime Tracking")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{tx("Total downtime:")} <strong>{totalMin.toLocaleString()} {tx("min")}</strong> ({items.length} {tx("events)")}</p>
         </div>
         <div className="flex gap-2 items-center">
           <PageHelpTooltip topic="production-downtime" />
           <ImportModal module="downtime_events" onSuccess={()=>qc.invalidateQueries({queryKey:["downtime"]})}/>
-          <Button onClick={()=>setOpen(true)}>+ Log Downtime</Button>
+          <Button onClick={()=>setOpen(true)}>{tx("+ Log Downtime")}</Button>
         </div>
       </div>
       <div className="mb-4">
@@ -55,38 +56,38 @@ export default function DowntimePage() {
       </div>
       {isLoading ? <div className="flex justify-center py-16"><div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent"/></div> : (
         <Table keyField="id" data={items} emptyMessage="No downtime events." columns={[
-          { header:"Event ID",    accessor:(r)=><span className="font-mono text-xs font-medium">{r.downtime_id}</span> },
-          { header:"Work Center", accessor:(r)=>r.work_center_name??r.work_center_id },
-          { header:"Machine ID",  accessor:(r)=>r.machine_id??"—" },
-          { header:"Start",       accessor:(r)=>new Date(r.start_time).toLocaleString() },
-          { header:"End",         accessor:(r)=>r.end_time ? new Date(r.end_time).toLocaleString() : <span className="text-yellow-600 text-xs font-semibold">Ongoing</span> },
-          { header:"Duration (min)", accessor:(r)=>r.duration_min??<span className="text-yellow-600">—</span> },
-          { header:"Category",    accessor:(r)=><Badge label={r.category} variant={catVariant(r.category)}/> },
-          { header:"Reason",      accessor:(r)=><span className="text-xs text-gray-600 max-w-[200px] truncate block">{r.reason}{r.reason_code ? ` · ${reasonCodes.find((item) => item.code === r.reason_code)?.label || r.reason_code}` : ""}</span> },
-          { header:"Reported By", accessor:(r)=>r.reported_by??"—" },
-          { header:"", accessor:(r)=><button onClick={()=>setDel(r.id)} className="text-xs text-red-500 hover:underline">Delete</button> },
+          { header:tx("Event ID"),    accessor:(r)=><span className="font-mono text-xs font-medium">{r.downtime_id}</span> },
+          { header:tx("Work Center"), accessor:(r)=>r.work_center_name??r.work_center_id },
+          { header:tx("Machine ID"),  accessor:(r)=>r.machine_id??"—" },
+          { header:tx("Start"),       accessor:(r)=>new Date(r.start_time).toLocaleString() },
+          { header:tx("End"),         accessor:(r)=>r.end_time ? new Date(r.end_time).toLocaleString() : <span className="text-yellow-600 text-xs font-semibold">{tx("Ongoing")}</span> },
+          { header:tx("Duration (min)"), accessor:(r)=>r.duration_min??<span className="text-yellow-600">—</span> },
+          { header:tx("Category"),    accessor:(r)=><Badge label={r.category} variant={catVariant(r.category)}/> },
+          { header:tx("Reason"),      accessor:(r)=><span className="text-xs text-gray-600 max-w-[200px] truncate block">{r.reason}{r.reason_code ? ` · ${reasonCodes.find((item) => item.code === r.reason_code)?.label || r.reason_code}` : ""}</span> },
+          { header:tx("Reported By"), accessor:(r)=>r.reported_by??"—" },
+          { header:"", accessor:(r)=><button onClick={()=>setDel(r.id)} className="text-xs text-red-500 hover:underline">{tx("Delete")}</button> },
         ]}/>
       )}
 
-      <Modal open={open} onClose={()=>setOpen(false)} title="Log Downtime Event">
+      <Modal open={open} onClose={()=>setOpen(false)} title={tx("Log Downtime Event")}>
         <form onSubmit={e=>{e.preventDefault();create.mutate();}} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Downtime ID *" value={form.downtime_id} onChange={e=>setForm(f=>({...f,downtime_id:e.target.value}))} required placeholder="DT001"/>
-            <Select label="Work Center" options={[{value:"",label:"— select —"},...wcs.map(w=>({value:w.id,label:`${w.work_center_id} – ${w.name}`}))]} value={form.work_center_id} onChange={e=>setForm(f=>({...f,work_center_id:e.target.value}))}/>
+            <Input label={tx("Downtime ID *")} value={form.downtime_id} onChange={e=>setForm(f=>({...f,downtime_id:e.target.value}))} required placeholder="DT001"/>
+            <Select label={tx("Work Center")} options={[{value:"",label:tx("— select —")},...wcs.map(w=>({value:w.id,label:`${w.work_center_id} – ${w.name}`}))]} value={form.work_center_id} onChange={e=>setForm(f=>({...f,work_center_id:e.target.value}))}/>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Machine ID (free text)" value={form.machine_id} onChange={e=>setForm(f=>({...f,machine_id:e.target.value}))} placeholder="e.g. M001"/>
-            <Select label="Category" options={CAT_CREATE} value={form.category} onChange={e=>setForm(f=>({...f,category:e.target.value}))}/>
+            <Input label={tx("Machine ID (free text)")} value={form.machine_id} onChange={e=>setForm(f=>({...f,machine_id:e.target.value}))} placeholder={tx("e.g. M001")}/>
+            <Select label={tx("Category")} options={CAT_CREATE} value={form.category} onChange={e=>setForm(f=>({...f,category:e.target.value}))}/>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Start Time *" type="datetime-local" onChange={e=>setForm(f=>({...f,start_time:e.target.value}))} required/>
-            <Input label="End Time"     type="datetime-local" onChange={e=>setForm(f=>({...f,end_time:e.target.value}))}/>
+            <Input label={tx("Start Time *")} type="datetime-local" onChange={e=>setForm(f=>({...f,start_time:e.target.value}))} required/>
+            <Input label={tx("End Time")}     type="datetime-local" onChange={e=>setForm(f=>({...f,end_time:e.target.value}))}/>
           </div>
-          <Input label="Reason *" value={form.reason} onChange={e=>setForm(f=>({...f,reason:e.target.value}))} required placeholder="Power outage, equipment failure…"/>
+          <Input label={tx("Reason *")} value={form.reason} onChange={e=>setForm(f=>({...f,reason:e.target.value}))} required placeholder={tx("Power outage, equipment failure…")}/>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Reason Code *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{tx("Reason Code *")}</label>
             <select required className="w-full border rounded px-3 py-2 text-sm" value={form.reason_code} onChange={e=>setForm(f=>({...f,reason_code:e.target.value}))}>
-              <option value="">Select reason code…</option>
+              <option value="">{tx("Select reason code…")}</option>
               {reasonCategories.map((category) => (
                 <optgroup key={category.code} label={category.label}>
                   {reasonCodes.filter((reasonCode) => reasonCode.parent_code === category.code && reasonCode.is_selectable).map((reasonCode) => (
@@ -96,19 +97,19 @@ export default function DowntimePage() {
               ))}
             </select>
           </div>
-          <Input label="Reported By" value={form.reported_by} onChange={e=>setForm(f=>({...f,reported_by:e.target.value}))}/>
+          <Input label={tx("Reported By")} value={form.reported_by} onChange={e=>setForm(f=>({...f,reported_by:e.target.value}))}/>
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" type="button" onClick={()=>setOpen(false)}>Cancel</Button>
-            <Button type="submit" loading={create.isPending}>Log Event</Button>
+            <Button variant="secondary" type="button" onClick={()=>setOpen(false)}>{tx("Cancel")}</Button>
+            <Button type="submit" loading={create.isPending}>{tx("Log Event")}</Button>
           </div>
         </form>
       </Modal>
 
-      <Modal open={!!deletingId} onClose={()=>setDel(null)} title="Delete Downtime Event">
-        <p className="text-sm text-gray-600 mb-4">Remove this downtime record?</p>
+      <Modal open={!!deletingId} onClose={()=>setDel(null)} title={tx("Delete Downtime Event")}>
+        <p className="text-sm text-gray-600 mb-4">{tx("Remove this downtime record?")}</p>
         <div className="flex justify-end gap-3">
-          <Button variant="secondary" onClick={()=>setDel(null)}>Cancel</Button>
-          <Button variant="danger" loading={del.isPending} onClick={()=>deletingId&&del.mutate(deletingId)}>Delete</Button>
+          <Button variant="secondary" onClick={()=>setDel(null)}>{tx("Cancel")}</Button>
+          <Button variant="danger" loading={del.isPending} onClick={()=>deletingId&&del.mutate(deletingId)}>{tx("Delete")}</Button>
         </div>
       </Modal>
     </div>

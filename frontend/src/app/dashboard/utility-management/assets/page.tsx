@@ -33,6 +33,7 @@ import { ToastContainer } from "@/components/ui/Toast";
 import { useToast } from "@/hooks/useToast";
 import { ImportModal } from "@/components/import/ImportModal";
 import { RequirePermission } from "@/components/PermissionGuard";
+import { tx } from "@/lib/i18n/core";
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -116,7 +117,7 @@ function AssetDetailView({ asset, onClose }: { asset: UtilityAsset; onClose: () 
         )}
       </dl>
       <div className="flex justify-end pt-4">
-        <Button variant="secondary" onClick={onClose}>Close</Button>
+        <Button variant="secondary" onClick={onClose}>{tx("Close")}</Button>
       </div>
     </div>
   );
@@ -152,7 +153,7 @@ export default function UtilityAssetsPage() {
   });
 
   const categoryOptions = [
-    { value: "", label: "All categories" },
+    { value: "", label: tx("All categories") },
     ...categories.map((c: UtilityAssetCategory) => ({ value: c.id, label: `${c.code} — ${c.name}` })),
   ];
 
@@ -180,9 +181,9 @@ export default function UtilityAssetsPage() {
       qc.invalidateQueries({ queryKey: ["utility-management", "assets"] });
       setCreateOpen(false);
       setForm(EMPTY_CREATE);
-      toast("success", "Asset created", `${asset.name} (${asset.asset_no}) added.`);
+      toast("success", tx("Asset created"), tx("{name} ({asset_no}) added.", { name: asset.name, asset_no: asset.asset_no }));
     },
-    onError: (err) => toast("error", "Failed to create", extractApiError(err)),
+    onError: (err) => toast("error", tx("Failed to create"), extractApiError(err)),
   });
 
   const updateMutation = useMutation({
@@ -191,9 +192,9 @@ export default function UtilityAssetsPage() {
     onSuccess: (asset) => {
       qc.invalidateQueries({ queryKey: ["utility-management", "assets"] });
       setEditTarget(null);
-      toast("success", "Asset updated", `${asset.name} saved.`);
+      toast("success", tx("Asset updated"), tx("{name} saved.", { name: asset.name }));
     },
-    onError: (err) => toast("error", "Failed to update", extractApiError(err)),
+    onError: (err) => toast("error", tx("Failed to update"), extractApiError(err)),
   });
 
   const deleteMutation = useMutation({
@@ -201,9 +202,9 @@ export default function UtilityAssetsPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["utility-management", "assets"] });
       setDeleteTarget(null);
-      toast("success", "Asset deleted");
+      toast("success", tx("Asset deleted"));
     },
-    onError: (err) => toast("error", "Cannot delete", extractApiError(err)),
+    onError: (err) => toast("error", tx("Cannot delete"), extractApiError(err)),
   });
 
   const openEdit = (asset: UtilityAsset) => {
@@ -258,7 +259,7 @@ export default function UtilityAssetsPage() {
         "utility_assets.csv",
       );
     } catch {
-      toast("error", "Export failed");
+      toast("error", tx("Export failed"));
     }
   };
 
@@ -275,25 +276,25 @@ export default function UtilityAssetsPage() {
 
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Utility Assets</h1>
+            <h1 className="text-2xl font-bold text-gray-900">{tx("Utility Assets")}</h1>
             <p className="text-sm text-gray-500 mt-1">
               {assets.length} assets registered &nbsp;·&nbsp; Boilers, compressors, meters, solar, WWTP and more
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="secondary" onClick={handleExport}>Export CSV</Button>
+            <Button variant="secondary" onClick={handleExport}>{tx("Export CSV")}</Button>
             <ImportModal
               module="utility_assets"
               onSuccess={() => qc.invalidateQueries({ queryKey: ["utility-management", "assets"] })}
             />
-            <Button onClick={() => setCreateOpen(true)}>+ Add Asset</Button>
+            <Button onClick={() => setCreateOpen(true)}>{tx("+ Add Asset")}</Button>
           </div>
         </div>
 
         {/* Filters */}
         <div className="mb-4 flex flex-wrap items-center gap-3">
           <Input
-            placeholder="Search code, name, dept…"
+            placeholder={tx("Search code, name, dept…")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="max-w-xs"
@@ -302,7 +303,7 @@ export default function UtilityAssetsPage() {
             label=""
             value={filterType}
             onChange={(e) => setFilterType(e.target.value as UtilityType | "")}
-            options={[{ value: "", label: "All types" }, ...UTILITY_TYPE_OPTIONS]}
+            options={[{ value: "", label: tx("All types") }, ...UTILITY_TYPE_OPTIONS]}
           />
           <Select
             label=""
@@ -314,22 +315,22 @@ export default function UtilityAssetsPage() {
             label=""
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value as UtilityAssetStatus | "")}
-            options={[{ value: "", label: "All statuses" }, ...ASSET_STATUS_OPTIONS]}
+            options={[{ value: "", label: tx("All statuses") }, ...ASSET_STATUS_OPTIONS]}
           />
           <Select
             label=""
             value={filterLifecycle}
             onChange={(e) => setFilterLifecycle(e.target.value as LifecycleStatus | "")}
-            options={[{ value: "", label: "All lifecycle" }, ...LIFECYCLE_STATUS_OPTIONS]}
+            options={[{ value: "", label: tx("All lifecycle") }, ...LIFECYCLE_STATUS_OPTIONS]}
           />
           <Select
             label=""
             value={filterCriticality}
             onChange={(e) => setFilterCriticality(e.target.value as CriticalityLevel | "")}
-            options={[{ value: "", label: "All criticality" }, ...CRITICALITY_OPTIONS]}
+            options={[{ value: "", label: tx("All criticality") }, ...CRITICALITY_OPTIONS]}
           />
           <Input
-            placeholder="Department…"
+            placeholder={tx("Department…")}
             value={filterDepartment}
             onChange={(e) => setFilterDepartment(e.target.value)}
             className="max-w-[140px]"
@@ -349,14 +350,14 @@ export default function UtilityAssetsPage() {
             }
             columns={[
               {
-                header: "Asset Code",
+                header: tx("Asset Code"),
                 accessor: (r) => (
                   <span className="font-mono text-xs font-semibold">{r.asset_no}</span>
                 ),
               },
-              { header: "Name", accessor: "name" },
+              { header: tx("Name"), accessor: "name" },
               {
-                header: "Category",
+                header: tx("Category"),
                 accessor: (r) =>
                   r.category_code ? (
                     <span className="text-xs text-gray-600">{r.category_code}</span>
@@ -365,19 +366,19 @@ export default function UtilityAssetsPage() {
                   ),
               },
               {
-                header: "Utility Type",
+                header: tx("Utility Type"),
                 accessor: (r) => (
                   <Badge label={UTILITY_TYPE_LABELS[r.utility_type]} variant="blue" />
                 ),
               },
               {
-                header: "Status",
+                header: tx("Status"),
                 accessor: (r) => (
                   <Badge label={ASSET_STATUS_LABELS[r.status]} variant={statusVariant(r.status)} />
                 ),
               },
               {
-                header: "Criticality",
+                header: tx("Criticality"),
                 accessor: (r) =>
                   r.criticality_level ? (
                     <Badge
@@ -389,7 +390,7 @@ export default function UtilityAssetsPage() {
                   ),
               },
               {
-                header: "Dept / Area",
+                header: tx("Dept / Area"),
                 accessor: (r) => (
                   <span className="text-xs text-gray-600">
                     {[r.department, r.building_area].filter(Boolean).join(" · ") || "—"}
@@ -404,19 +405,19 @@ export default function UtilityAssetsPage() {
                       onClick={() => setViewTarget(r)}
                       className="text-xs text-gray-500 hover:text-gray-800 hover:underline"
                     >
-                      View
+                      {tx("View")}
                     </button>
                     <button
                       onClick={() => openEdit(r)}
                       className="text-xs text-indigo-600 hover:text-indigo-800 hover:underline"
                     >
-                      Edit
+                      {tx("Edit")}
                     </button>
                     <button
                       onClick={() => setDeleteTarget(r)}
                       className="text-xs text-red-500 hover:text-red-700 hover:underline"
                     >
-                      Delete
+                      {tx("Delete")}
                     </button>
                   </div>
                 ),
@@ -440,33 +441,33 @@ export default function UtilityAssetsPage() {
         <Modal
           open={createOpen}
           onClose={() => { setCreateOpen(false); setForm(EMPTY_CREATE); }}
-          title="Add Utility Asset"
+          title={tx("Add Utility Asset")}
         >
           <form
             onSubmit={(e) => { e.preventDefault(); createMutation.mutate(form); }}
             className="space-y-4"
           >
             <div className="grid grid-cols-2 gap-4">
-              <SectionTitle>Identity</SectionTitle>
+              <SectionTitle>{tx("Identity")}</SectionTitle>
               <Input
-                label="Asset Code *"
+                label={tx("Asset Code *")}
                 value={form.asset_no}
                 onChange={(e) => setF("asset_no", e.target.value.toUpperCase())}
-                placeholder="e.g. BLR-001"
+                placeholder={tx("e.g. BLR-001")}
                 required
               />
               <Input
-                label="Asset Name *"
+                label={tx("Asset Name *")}
                 value={form.name}
                 onChange={(e) => setF("name", e.target.value)}
                 required
               />
               <Select
-                label="Category *"
+                label={tx("Category *")}
                 value={form.category_id}
                 onChange={(e) => setF("category_id", e.target.value)}
                 options={[
-                  { value: "", label: "— Select category —" },
+                  { value: "", label: tx("— Select category —") },
                   ...categories.map((c: UtilityAssetCategory) => ({
                     value: c.id,
                     label: `${c.code} — ${c.name}`,
@@ -474,7 +475,7 @@ export default function UtilityAssetsPage() {
                 ]}
               />
               <Select
-                label="Utility Type *"
+                label={tx("Utility Type *")}
                 value={form.utility_type}
                 onChange={(e) => setF("utility_type", e.target.value as UtilityType)}
                 options={UTILITY_TYPE_OPTIONS}
@@ -482,68 +483,68 @@ export default function UtilityAssetsPage() {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <SectionTitle>Location</SectionTitle>
+              <SectionTitle>{tx("Location")}</SectionTitle>
               <Input
-                label="Location"
+                label={tx("Location")}
                 value={form.location ?? ""}
                 onChange={(e) => setF("location", e.target.value || null)}
-                placeholder="e.g. Boiler House"
+                placeholder={tx("e.g. Boiler House")}
               />
               <Input
-                label="Building / Area"
+                label={tx("Building / Area")}
                 value={form.building_area ?? ""}
                 onChange={(e) => setF("building_area", e.target.value || null)}
               />
               <Input
-                label="Department"
+                label={tx("Department")}
                 value={form.department ?? ""}
                 onChange={(e) => setF("department", e.target.value || null)}
               />
               <Input
-                label="Subsystem"
+                label={tx("Subsystem")}
                 value={form.subsystem ?? ""}
                 onChange={(e) => setF("subsystem", e.target.value || null)}
-                placeholder="e.g. Cooling Loop"
+                placeholder={tx("e.g. Cooling Loop")}
               />
               <Input
-                label="Line ID"
+                label={tx("Line ID")}
                 value={form.line_id ?? ""}
                 onChange={(e) => setF("line_id", e.target.value || null)}
-                placeholder="Production line code"
+                placeholder={tx("Production line code")}
               />
               <Input
-                label="Machine ID"
+                label={tx("Machine ID")}
                 value={form.machine_id ?? ""}
                 onChange={(e) => setF("machine_id", e.target.value || null)}
-                placeholder="Machine/equipment code"
+                placeholder={tx("Machine/equipment code")}
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <SectionTitle>Equipment Details</SectionTitle>
+              <SectionTitle>{tx("Equipment Details")}</SectionTitle>
               <Input
-                label="Manufacturer"
+                label={tx("Manufacturer")}
                 value={form.manufacturer ?? ""}
                 onChange={(e) => setF("manufacturer", e.target.value || null)}
               />
               <Input
-                label="Model"
+                label={tx("Model")}
                 value={form.equipment_model ?? ""}
                 onChange={(e) => setF("equipment_model", e.target.value || null)}
               />
               <Input
-                label="Serial No."
+                label={tx("Serial No.")}
                 value={form.serial_no ?? ""}
                 onChange={(e) => setF("serial_no", e.target.value || null)}
               />
               <Input
-                label="Install / Commission Date"
+                label={tx("Install / Commission Date")}
                 type="date"
                 value={form.install_date ?? ""}
                 onChange={(e) => setF("install_date", e.target.value || null)}
               />
               <Input
-                label="Warranty Expiry"
+                label={tx("Warranty Expiry")}
                 type="date"
                 value={form.warranty_expiry ?? ""}
                 onChange={(e) => setF("warranty_expiry", e.target.value || null)}
@@ -551,88 +552,88 @@ export default function UtilityAssetsPage() {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <SectionTitle>Capacity & Rating</SectionTitle>
+              <SectionTitle>{tx("Capacity & Rating")}</SectionTitle>
               <Input
-                label="Rated Capacity"
+                label={tx("Rated Capacity")}
                 type="number"
                 step="any"
                 value={form.rated_capacity ?? ""}
                 onChange={(e) => setF("rated_capacity", e.target.value || null)}
               />
               <Input
-                label="Capacity Unit"
+                label={tx("Capacity Unit")}
                 value={form.capacity_unit ?? ""}
                 onChange={(e) => setF("capacity_unit", e.target.value || null)}
-                placeholder="e.g. kW, kg/h, m³/h"
+                placeholder={tx("e.g. kW, kg/h, m³/h")}
               />
               <Input
-                label="Rated Power"
+                label={tx("Rated Power")}
                 type="number"
                 step="any"
                 value={form.rated_power ?? ""}
                 onChange={(e) => setF("rated_power", e.target.value || null)}
               />
               <Input
-                label="Power Unit"
+                label={tx("Power Unit")}
                 value={form.rated_power_unit ?? ""}
                 onChange={(e) => setF("rated_power_unit", e.target.value || null)}
-                placeholder="e.g. kW, kVA"
+                placeholder={tx("e.g. kW, kVA")}
               />
               <Input
-                label="Flow Capacity"
+                label={tx("Flow Capacity")}
                 type="number"
                 step="any"
                 value={form.flow_capacity ?? ""}
                 onChange={(e) => setF("flow_capacity", e.target.value || null)}
               />
               <Input
-                label="Pressure Capacity"
+                label={tx("Pressure Capacity")}
                 type="number"
                 step="any"
                 value={form.pressure_capacity ?? ""}
                 onChange={(e) => setF("pressure_capacity", e.target.value || null)}
               />
               <Input
-                label="Temperature Range"
+                label={tx("Temperature Range")}
                 value={form.temperature_range ?? ""}
                 onChange={(e) => setF("temperature_range", e.target.value || null)}
-                placeholder="e.g. -10°C to 60°C"
+                placeholder={tx("e.g. -10°C to 60°C")}
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <SectionTitle>Classification</SectionTitle>
+              <SectionTitle>{tx("Classification")}</SectionTitle>
               <Select
-                label="Operating Status"
+                label={tx("Operating Status")}
                 value={form.status ?? "ACTIVE"}
                 onChange={(e) => setF("status", e.target.value as UtilityAssetStatus)}
                 options={ASSET_STATUS_OPTIONS}
               />
               <Select
-                label="Lifecycle Status"
+                label={tx("Lifecycle Status")}
                 value={form.lifecycle_status ?? ""}
                 onChange={(e) => setF("lifecycle_status", e.target.value as LifecycleStatus || null)}
-                options={[{ value: "", label: "— None —" }, ...LIFECYCLE_STATUS_OPTIONS]}
+                options={[{ value: "", label: tx("— None —") }, ...LIFECYCLE_STATUS_OPTIONS]}
               />
               <Select
-                label="Criticality Level"
+                label={tx("Criticality Level")}
                 value={form.criticality_level ?? ""}
                 onChange={(e) => setF("criticality_level", e.target.value as CriticalityLevel || null)}
-                options={[{ value: "", label: "— None —" }, ...CRITICALITY_OPTIONS]}
+                options={[{ value: "", label: tx("— None —") }, ...CRITICALITY_OPTIONS]}
               />
               <Input
-                label="Maintenance Strategy"
+                label={tx("Maintenance Strategy")}
                 value={form.maintenance_strategy ?? ""}
                 onChange={(e) => setF("maintenance_strategy", e.target.value || null)}
-                placeholder="e.g. Predictive, Preventive"
+                placeholder={tx("e.g. Predictive, Preventive")}
               />
             </div>
 
             <Input
-              label="Notes"
+              label={tx("Notes")}
               value={form.notes ?? ""}
               onChange={(e) => setF("notes", e.target.value || null)}
-              placeholder="Optional notes"
+              placeholder={tx("Optional notes")}
             />
 
             <div className="flex items-center gap-2">
@@ -643,19 +644,19 @@ export default function UtilityAssetsPage() {
                 onChange={(e) => setF("is_active", e.target.checked)}
                 className="h-4 w-4 rounded border-gray-300 text-indigo-600"
               />
-              <label htmlFor="create-active" className="text-sm text-gray-700">Active</label>
+              <label htmlFor="create-active" className="text-sm text-gray-700">{tx("Active")}</label>
             </div>
 
             <div className="flex justify-end gap-3 pt-2">
               <Button variant="secondary" type="button" onClick={() => { setCreateOpen(false); setForm(EMPTY_CREATE); }}>
-                Cancel
+                {tx("Cancel")}
               </Button>
               <Button
                 type="submit"
                 loading={createMutation.isPending}
                 disabled={!form.asset_no || !form.name || !form.category_id}
               >
-                Create Asset
+                {tx("Create Asset")}
               </Button>
             </div>
           </form>
@@ -665,7 +666,7 @@ export default function UtilityAssetsPage() {
         <Modal
           open={!!editTarget}
           onClose={() => setEditTarget(null)}
-          title={`Edit Asset — ${editTarget?.asset_no}`}
+          title={tx("Edit Asset — {asset_no}", { asset_no: editTarget?.asset_no })}
         >
           <form
             onSubmit={(e) => {
@@ -675,19 +676,19 @@ export default function UtilityAssetsPage() {
             className="space-y-4"
           >
             <div className="grid grid-cols-2 gap-4">
-              <SectionTitle>Identity</SectionTitle>
+              <SectionTitle>{tx("Identity")}</SectionTitle>
               <Input
-                label="Asset Name *"
+                label={tx("Asset Name *")}
                 value={editForm.name ?? ""}
                 onChange={(e) => setE("name", e.target.value)}
                 required
               />
               <Select
-                label="Category *"
+                label={tx("Category *")}
                 value={editForm.category_id ?? ""}
                 onChange={(e) => setE("category_id", e.target.value)}
                 options={[
-                  { value: "", label: "— Select category —" },
+                  { value: "", label: tx("— Select category —") },
                   ...categories.map((c: UtilityAssetCategory) => ({
                     value: c.id,
                     label: `${c.code} — ${c.name}`,
@@ -695,7 +696,7 @@ export default function UtilityAssetsPage() {
                 ]}
               />
               <Select
-                label="Utility Type"
+                label={tx("Utility Type")}
                 value={editForm.utility_type ?? "ELECTRICITY"}
                 onChange={(e) => setE("utility_type", e.target.value as UtilityType)}
                 options={UTILITY_TYPE_OPTIONS}
@@ -703,64 +704,64 @@ export default function UtilityAssetsPage() {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <SectionTitle>Location</SectionTitle>
-              <Input label="Location" value={editForm.location ?? ""} onChange={(e) => setE("location", e.target.value || null)} />
-              <Input label="Building / Area" value={editForm.building_area ?? ""} onChange={(e) => setE("building_area", e.target.value || null)} />
-              <Input label="Department" value={editForm.department ?? ""} onChange={(e) => setE("department", e.target.value || null)} />
-              <Input label="Subsystem" value={editForm.subsystem ?? ""} onChange={(e) => setE("subsystem", e.target.value || null)} />
-              <Input label="Line ID" value={editForm.line_id ?? ""} onChange={(e) => setE("line_id", e.target.value || null)} />
-              <Input label="Machine ID" value={editForm.machine_id ?? ""} onChange={(e) => setE("machine_id", e.target.value || null)} />
+              <SectionTitle>{tx("Location")}</SectionTitle>
+              <Input label={tx("Location")} value={editForm.location ?? ""} onChange={(e) => setE("location", e.target.value || null)} />
+              <Input label={tx("Building / Area")} value={editForm.building_area ?? ""} onChange={(e) => setE("building_area", e.target.value || null)} />
+              <Input label={tx("Department")} value={editForm.department ?? ""} onChange={(e) => setE("department", e.target.value || null)} />
+              <Input label={tx("Subsystem")} value={editForm.subsystem ?? ""} onChange={(e) => setE("subsystem", e.target.value || null)} />
+              <Input label={tx("Line ID")} value={editForm.line_id ?? ""} onChange={(e) => setE("line_id", e.target.value || null)} />
+              <Input label={tx("Machine ID")} value={editForm.machine_id ?? ""} onChange={(e) => setE("machine_id", e.target.value || null)} />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <SectionTitle>Equipment Details</SectionTitle>
-              <Input label="Manufacturer" value={editForm.manufacturer ?? ""} onChange={(e) => setE("manufacturer", e.target.value || null)} />
-              <Input label="Model" value={editForm.equipment_model ?? ""} onChange={(e) => setE("equipment_model", e.target.value || null)} />
-              <Input label="Serial No." value={editForm.serial_no ?? ""} onChange={(e) => setE("serial_no", e.target.value || null)} />
-              <Input label="Install / Commission Date" type="date" value={editForm.install_date ?? ""} onChange={(e) => setE("install_date", e.target.value || null)} />
-              <Input label="Warranty Expiry" type="date" value={editForm.warranty_expiry ?? ""} onChange={(e) => setE("warranty_expiry", e.target.value || null)} />
+              <SectionTitle>{tx("Equipment Details")}</SectionTitle>
+              <Input label={tx("Manufacturer")} value={editForm.manufacturer ?? ""} onChange={(e) => setE("manufacturer", e.target.value || null)} />
+              <Input label={tx("Model")} value={editForm.equipment_model ?? ""} onChange={(e) => setE("equipment_model", e.target.value || null)} />
+              <Input label={tx("Serial No.")} value={editForm.serial_no ?? ""} onChange={(e) => setE("serial_no", e.target.value || null)} />
+              <Input label={tx("Install / Commission Date")} type="date" value={editForm.install_date ?? ""} onChange={(e) => setE("install_date", e.target.value || null)} />
+              <Input label={tx("Warranty Expiry")} type="date" value={editForm.warranty_expiry ?? ""} onChange={(e) => setE("warranty_expiry", e.target.value || null)} />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <SectionTitle>Capacity & Rating</SectionTitle>
-              <Input label="Rated Capacity" type="number" step="any" value={editForm.rated_capacity ?? ""} onChange={(e) => setE("rated_capacity", e.target.value || null)} />
-              <Input label="Capacity Unit" value={editForm.capacity_unit ?? ""} onChange={(e) => setE("capacity_unit", e.target.value || null)} />
-              <Input label="Rated Power" type="number" step="any" value={editForm.rated_power ?? ""} onChange={(e) => setE("rated_power", e.target.value || null)} />
-              <Input label="Power Unit" value={editForm.rated_power_unit ?? ""} onChange={(e) => setE("rated_power_unit", e.target.value || null)} />
-              <Input label="Flow Capacity" type="number" step="any" value={editForm.flow_capacity ?? ""} onChange={(e) => setE("flow_capacity", e.target.value || null)} />
-              <Input label="Pressure Capacity" type="number" step="any" value={editForm.pressure_capacity ?? ""} onChange={(e) => setE("pressure_capacity", e.target.value || null)} />
-              <Input label="Temperature Range" value={editForm.temperature_range ?? ""} onChange={(e) => setE("temperature_range", e.target.value || null)} />
+              <SectionTitle>{tx("Capacity & Rating")}</SectionTitle>
+              <Input label={tx("Rated Capacity")} type="number" step="any" value={editForm.rated_capacity ?? ""} onChange={(e) => setE("rated_capacity", e.target.value || null)} />
+              <Input label={tx("Capacity Unit")} value={editForm.capacity_unit ?? ""} onChange={(e) => setE("capacity_unit", e.target.value || null)} />
+              <Input label={tx("Rated Power")} type="number" step="any" value={editForm.rated_power ?? ""} onChange={(e) => setE("rated_power", e.target.value || null)} />
+              <Input label={tx("Power Unit")} value={editForm.rated_power_unit ?? ""} onChange={(e) => setE("rated_power_unit", e.target.value || null)} />
+              <Input label={tx("Flow Capacity")} type="number" step="any" value={editForm.flow_capacity ?? ""} onChange={(e) => setE("flow_capacity", e.target.value || null)} />
+              <Input label={tx("Pressure Capacity")} type="number" step="any" value={editForm.pressure_capacity ?? ""} onChange={(e) => setE("pressure_capacity", e.target.value || null)} />
+              <Input label={tx("Temperature Range")} value={editForm.temperature_range ?? ""} onChange={(e) => setE("temperature_range", e.target.value || null)} />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <SectionTitle>Classification</SectionTitle>
+              <SectionTitle>{tx("Classification")}</SectionTitle>
               <Select
-                label="Operating Status"
+                label={tx("Operating Status")}
                 value={editForm.status ?? "ACTIVE"}
                 onChange={(e) => setE("status", e.target.value as UtilityAssetStatus)}
                 options={ASSET_STATUS_OPTIONS}
               />
               <Select
-                label="Lifecycle Status"
+                label={tx("Lifecycle Status")}
                 value={editForm.lifecycle_status ?? ""}
                 onChange={(e) => setE("lifecycle_status", e.target.value as LifecycleStatus || null)}
-                options={[{ value: "", label: "— None —" }, ...LIFECYCLE_STATUS_OPTIONS]}
+                options={[{ value: "", label: tx("— None —") }, ...LIFECYCLE_STATUS_OPTIONS]}
               />
               <Select
-                label="Criticality Level"
+                label={tx("Criticality Level")}
                 value={editForm.criticality_level ?? ""}
                 onChange={(e) => setE("criticality_level", e.target.value as CriticalityLevel || null)}
-                options={[{ value: "", label: "— None —" }, ...CRITICALITY_OPTIONS]}
+                options={[{ value: "", label: tx("— None —") }, ...CRITICALITY_OPTIONS]}
               />
               <Input
-                label="Maintenance Strategy"
+                label={tx("Maintenance Strategy")}
                 value={editForm.maintenance_strategy ?? ""}
                 onChange={(e) => setE("maintenance_strategy", e.target.value || null)}
               />
             </div>
 
             <Input
-              label="Notes"
+              label={tx("Notes")}
               value={editForm.notes ?? ""}
               onChange={(e) => setE("notes", e.target.value || null)}
             />
@@ -773,12 +774,12 @@ export default function UtilityAssetsPage() {
                 onChange={(e) => setE("is_active", e.target.checked)}
                 className="h-4 w-4 rounded border-gray-300 text-indigo-600"
               />
-              <label htmlFor="edit-active" className="text-sm text-gray-700">Active</label>
+              <label htmlFor="edit-active" className="text-sm text-gray-700">{tx("Active")}</label>
             </div>
 
             <div className="flex justify-end gap-3 pt-2">
-              <Button variant="secondary" type="button" onClick={() => setEditTarget(null)}>Cancel</Button>
-              <Button type="submit" loading={updateMutation.isPending}>Save Changes</Button>
+              <Button variant="secondary" type="button" onClick={() => setEditTarget(null)}>{tx("Cancel")}</Button>
+              <Button type="submit" loading={updateMutation.isPending}>{tx("Save Changes")}</Button>
             </div>
           </form>
         </Modal>
@@ -787,22 +788,21 @@ export default function UtilityAssetsPage() {
         <Modal
           open={!!deleteTarget}
           onClose={() => setDeleteTarget(null)}
-          title="Delete Utility Asset"
+          title={tx("Delete Utility Asset")}
         >
           <p className="text-sm text-gray-600 mb-4">
-            Delete asset{" "}
+            {tx("Delete asset")}{" "}
             <span className="font-semibold">{deleteTarget?.name}</span>{" "}
-            <span className="font-mono text-xs text-gray-500">({deleteTarget?.asset_no})</span>?
-            This cannot be undone. Readings, transactions and other records referencing this asset will be unlinked.
+            <span className="font-mono text-xs text-gray-500">({deleteTarget?.asset_no})</span>{tx("? This cannot be undone. Readings, transactions and other records referencing this asset will be unlinked.")}
           </p>
           <div className="flex justify-end gap-3">
-            <Button variant="secondary" onClick={() => setDeleteTarget(null)}>Cancel</Button>
+            <Button variant="secondary" onClick={() => setDeleteTarget(null)}>{tx("Cancel")}</Button>
             <Button
               variant="danger"
               loading={deleteMutation.isPending}
               onClick={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
             >
-              Delete
+              {tx("Delete")}
             </Button>
           </div>
         </Modal>

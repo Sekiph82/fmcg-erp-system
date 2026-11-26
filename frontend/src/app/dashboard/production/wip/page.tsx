@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { productionCostApi, fmtKES, WIPRow } from "@/lib/productionCosting";
+import { tx } from "@/lib/i18n/core";
 
 function fmtDate(s: string | null) {
   if (!s) return "—";
@@ -28,17 +29,17 @@ export default function WIPPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">WIP Valuation</h1>
-        <p className="text-sm text-gray-500 mt-1">Work-in-progress financial value for all active production orders</p>
+        <h1 className="text-2xl font-bold text-gray-900">{tx("WIP Valuation")}</h1>
+        <p className="text-sm text-gray-500 mt-1">{tx("Work-in-progress financial value for all active production orders")}</p>
       </div>
 
       {/* Summary KPIs */}
       <div className="grid grid-cols-4 gap-4">
         {[
-          { label: "Total WIP Value", value: fmtKES(totalWIP), color: "text-indigo-700" },
-          { label: "Material Cost", value: fmtKES(totalMaterial), color: "text-blue-700" },
-          { label: "Labor Cost", value: fmtKES(totalLabor), color: "text-emerald-700" },
-          { label: "Machine Cost", value: fmtKES(totalMachine), color: "text-amber-700" },
+          { label: tx("Total WIP Value"), value: fmtKES(totalWIP), color: "text-indigo-700" },
+          { label: tx("Material Cost"), value: fmtKES(totalMaterial), color: "text-blue-700" },
+          { label: tx("Labor Cost"), value: fmtKES(totalLabor), color: "text-emerald-700" },
+          { label: tx("Machine Cost"), value: fmtKES(totalMachine), color: "text-amber-700" },
         ].map((k) => (
           <div key={k.label} className="bg-white rounded-lg border p-4">
             <p className="text-xs text-gray-500 mb-1">{k.label}</p>
@@ -49,26 +50,26 @@ export default function WIPPage() {
 
       <div className="bg-white rounded-lg border">
         <div className="px-5 py-3 border-b flex items-center justify-between">
-          <h2 className="font-semibold text-gray-800">In-Progress Orders — WIP Detail</h2>
-          <span className="text-xs text-gray-500">{rows.length} active orders · refreshes every 60s</span>
+          <h2 className="font-semibold text-gray-800">{tx("In-Progress Orders — WIP Detail")}</h2>
+          <span className="text-xs text-gray-500">{rows.length} {tx("active orders · refreshes every 60s")}</span>
         </div>
 
         {isLoading ? (
-          <p className="px-5 py-8 text-center text-gray-400">Loading…</p>
+          <p className="px-5 py-8 text-center text-gray-400">{tx("Loading…")}</p>
         ) : (
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-gray-50 text-xs text-gray-500 uppercase">
-                <th className="px-4 py-2 text-left">Order</th>
-                <th className="px-4 py-2 text-left">Product</th>
-                <th className="px-4 py-2 text-right">Planned Qty</th>
-                <th className="px-4 py-2 text-right">Actual Qty</th>
-                <th className="px-4 py-2 text-right">Progress</th>
-                <th className="px-4 py-2 text-right">Material</th>
-                <th className="px-4 py-2 text-right">Labor</th>
-                <th className="px-4 py-2 text-right">Machine</th>
-                <th className="px-4 py-2 text-right font-bold">WIP Total</th>
-                <th className="px-4 py-2 text-left">Due</th>
+                <th className="px-4 py-2 text-left">{tx("Order")}</th>
+                <th className="px-4 py-2 text-left">{tx("Product")}</th>
+                <th className="px-4 py-2 text-right">{tx("Planned Qty")}</th>
+                <th className="px-4 py-2 text-right">{tx("Actual Qty")}</th>
+                <th className="px-4 py-2 text-right">{tx("Progress")}</th>
+                <th className="px-4 py-2 text-right">{tx("Material")}</th>
+                <th className="px-4 py-2 text-right">{tx("Labor")}</th>
+                <th className="px-4 py-2 text-right">{tx("Machine")}</th>
+                <th className="px-4 py-2 text-right font-bold">{tx("WIP Total")}</th>
+                <th className="px-4 py-2 text-left">{tx("Due")}</th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -107,13 +108,13 @@ export default function WIPPage() {
                 );
               })}
               {rows.length === 0 && (
-                <tr><td colSpan={10} className="px-5 py-8 text-center text-gray-400">No in-progress production orders</td></tr>
+                <tr><td colSpan={10} className="px-5 py-8 text-center text-gray-400">{tx("No in-progress production orders")}</td></tr>
               )}
             </tbody>
             {rows.length > 0 && (
               <tfoot>
                 <tr className="border-t bg-gray-50 font-semibold text-sm">
-                  <td colSpan={5} className="px-4 py-2 text-gray-600">Total</td>
+                  <td colSpan={5} className="px-4 py-2 text-gray-600">{tx("Total")}</td>
                   <td className="px-4 py-2 text-right text-gray-700">{fmtKES(totalMaterial)}</td>
                   <td className="px-4 py-2 text-right text-gray-700">{fmtKES(totalLabor)}</td>
                   <td className="px-4 py-2 text-right text-gray-700">{fmtKES(totalMachine)}</td>

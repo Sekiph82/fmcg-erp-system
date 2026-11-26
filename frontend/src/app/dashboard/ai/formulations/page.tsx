@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { aiApi, AIFormulation, FormulationIngredient } from "@/lib/aiApi";
 import { RequirePermission } from "@/components/PermissionGuard";
+import { tx } from "@/lib/i18n/core";
 
 const PRODUCT_CATEGORIES = [
   "liquid_detergent",
@@ -82,7 +83,7 @@ function FormulationCard({ f, onApprove, onFavorite, onSelect, isSelected, appro
       <div className="flex items-start justify-between gap-2">
         <div>
           <p className="text-sm font-semibold text-gray-800">{f.name}</p>
-          <p className="text-xs text-gray-400 capitalize mt-0.5">{f.product_category.replace(/_/g, " ")} · v{f.version}</p>
+          <p className="text-xs text-gray-400 capitalize mt-0.5">{f.product_category.replace(/_/g, " ")} {tx("· v")}{f.version}</p>
         </div>
         <div className="flex gap-1">
           <button
@@ -98,18 +99,18 @@ function FormulationCard({ f, onApprove, onFavorite, onSelect, isSelected, appro
           </span>
         )}
         {f.is_approved && (
-          <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">Approved</span>
+          <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">{tx("Approved")}</span>
         )}
-        <span className="text-xs text-gray-400">{f.formulation_data.ingredients?.length ?? 0} ingredients</span>
+        <span className="text-xs text-gray-400">{f.formulation_data.ingredients?.length ?? 0} {tx("ingredients")}</span>
       </div>
       {!f.is_approved && (
         <button
           onClick={(e) => { e.stopPropagation(); onApprove(); }}
           disabled={approvalDisabled}
           className="mt-2 w-full text-xs py-1 bg-green-50 text-green-700 rounded hover:bg-green-100 disabled:cursor-not-allowed disabled:opacity-50"
-          title={approvalDisabled ? "Approval is disabled in AI mock mode" : undefined}
+          title={approvalDisabled ? tx("Approval is disabled in AI mock mode") : undefined}
         >
-          {approvalDisabled ? "Approval Disabled" : "Approve"}
+          {approvalDisabled ? tx("Approval Disabled") : tx("Approve")}
         </button>
       )}
     </div>
@@ -191,19 +192,19 @@ export default function FormulationsPage() {
     <RequirePermission permission="ai.view">
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Formulation Engine</h1>
-        <p className="text-sm text-gray-500 mt-0.5">AI-generated FMCG chemical formulations with real INCI names, CAS numbers, and cost estimates</p>
+        <h1 className="text-2xl font-bold text-gray-900">{tx("Formulation Engine")}</h1>
+        <p className="text-sm text-gray-500 mt-0.5">{tx("AI-generated FMCG chemical formulations with real INCI names, CAS numbers, and cost estimates")}</p>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
         {/* Left: Input Form */}
         <div className="xl:col-span-3 space-y-4">
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 space-y-4">
-            <h2 className="font-semibold text-gray-800">Generate Formulation</h2>
+            <h2 className="font-semibold text-gray-800">{tx("Generate Formulation")}</h2>
 
             {/* Product Category */}
             <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1">Product Category</label>
+              <label className="block text-xs font-semibold text-gray-500 mb-1">{tx("Product Category")}</label>
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
@@ -217,7 +218,7 @@ export default function FormulationsPage() {
 
             {/* Performance Priority */}
             <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1">Optimization Priority</label>
+              <label className="block text-xs font-semibold text-gray-500 mb-1">{tx("Optimization Priority")}</label>
               <div className="grid grid-cols-1 gap-1.5">
                 {PERFORMANCE_PRIORITIES.map((p) => (
                   <button
@@ -237,20 +238,20 @@ export default function FormulationsPage() {
 
             {/* Cost Target */}
             <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1">Cost Target (USD/kg, optional)</label>
+              <label className="block text-xs font-semibold text-gray-500 mb-1">{tx("Cost Target (USD/kg, optional)")}</label>
               <input
                 type="number"
                 step="0.1"
                 value={costTarget}
                 onChange={(e) => setCostTarget(e.target.value)}
-                placeholder="e.g. 1.50"
+                placeholder={tx("e.g. 1.50")}
                 className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-300"
               />
             </div>
 
             {/* Target Properties */}
             <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-2">Target Properties</label>
+              <label className="block text-xs font-semibold text-gray-500 mb-2">{tx("Target Properties")}</label>
               <div className="flex flex-wrap gap-1 mb-2">
                 {TARGET_PROPERTY_OPTIONS.map((opt) => (
                   <button
@@ -272,7 +273,7 @@ export default function FormulationsPage() {
                   <input
                     value={v}
                     onChange={(e) => setTargetProps((prev) => ({ ...prev, [k]: e.target.value }))}
-                    placeholder="value"
+                    placeholder={tx("value")}
                     className="text-xs border border-gray-200 rounded px-2 py-1 w-20 focus:outline-none"
                   />
                   <button onClick={() => setTargetProps((prev) => { const n = { ...prev }; delete n[k]; return n; })} className="text-gray-300 hover:text-red-400 text-xs">✕</button>
@@ -282,13 +283,13 @@ export default function FormulationsPage() {
                 <input
                   value={customProp}
                   onChange={(e) => setCustomProp(e.target.value)}
-                  placeholder="custom property"
+                  placeholder={tx("custom property")}
                   className="text-xs border border-gray-200 rounded px-2 py-1 flex-1 focus:outline-none"
                 />
                 <input
                   value={customVal}
                   onChange={(e) => setCustomVal(e.target.value)}
-                  placeholder="value"
+                  placeholder={tx("value")}
                   className="text-xs border border-gray-200 rounded px-2 py-1 w-16 focus:outline-none"
                 />
               </div>
@@ -299,11 +300,11 @@ export default function FormulationsPage() {
               disabled={generate.isPending}
               className="w-full py-3 text-sm font-bold bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50"
             >
-              {generate.isPending ? "AI Formulating…" : "🧪 Generate Formulation"}
+              {generate.isPending ? tx("AI Formulating…") : tx("🧪 Generate Formulation")}
             </button>
             {generate.isPending && (
               <p className="text-xs text-teal-600 text-center animate-pulse">
-                Generating real chemical formulation with INCI names, CAS numbers, and cost analysis…
+                {tx("Generating real chemical formulation with INCI names, CAS numbers, and cost analysis…")}
               </p>
             )}
           </div>
@@ -311,7 +312,7 @@ export default function FormulationsPage() {
           {/* Saved Formulations List */}
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm">
             <div className="px-4 py-3 border-b border-gray-50 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-gray-800">Saved Formulations</h3>
+              <h3 className="text-sm font-semibold text-gray-800">{tx("Saved Formulations")}</h3>
               <span className="text-xs text-gray-400">{formulations.length}</span>
             </div>
             <div className="px-3 py-2 border-b border-gray-50 flex gap-2">
@@ -320,18 +321,18 @@ export default function FormulationsPage() {
                 onChange={(e) => setCategoryFilter(e.target.value)}
                 className="text-xs border border-gray-200 rounded px-2 py-1 flex-1"
               >
-                <option value="">All categories</option>
+                <option value="">{tx("All categories")}</option>
                 {PRODUCT_CATEGORIES.map((c) => <option key={c} value={c}>{c.replace(/_/g, " ")}</option>)}
               </select>
               <label className="flex items-center gap-1 text-xs text-gray-500">
                 <input type="checkbox" checked={showApprovedOnly} onChange={(e) => setShowApprovedOnly(e.target.checked)} />
-                Approved
+                {tx("Approved")}
               </label>
             </div>
             {isLoading ? (
-              <p className="p-4 text-center text-xs text-gray-400">Loading…</p>
+              <p className="p-4 text-center text-xs text-gray-400">{tx("Loading…")}</p>
             ) : formulations.length === 0 ? (
-              <p className="p-4 text-center text-xs text-gray-400">No formulations yet.</p>
+              <p className="p-4 text-center text-xs text-gray-400">{tx("No formulations yet.")}</p>
             ) : (
               <div className="p-3 space-y-2">
                 {formulations.map((f) => (
@@ -355,8 +356,8 @@ export default function FormulationsPage() {
           {!selected && !generate.isPending && (
             <div className="bg-white rounded-xl border border-dashed border-gray-300 p-16 text-center">
               <p className="text-4xl mb-3">🧪</p>
-              <p className="text-gray-500 font-medium">Select a saved formulation or generate a new one</p>
-              <p className="text-sm text-gray-400 mt-1">AI will generate real INCI names, CAS numbers, percentages summing to 100%, cost estimates, and process instructions</p>
+              <p className="text-gray-500 font-medium">{tx("Select a saved formulation or generate a new one")}</p>
+              <p className="text-sm text-gray-400 mt-1">{tx("AI will generate real INCI names, CAS numbers, percentages summing to 100%, cost estimates, and process instructions")}</p>
             </div>
           )}
 
@@ -364,8 +365,8 @@ export default function FormulationsPage() {
             <div className="bg-teal-50 border border-teal-200 rounded-xl p-12 text-center">
               <div className="animate-pulse">
                 <p className="text-3xl mb-3">⚗️</p>
-                <p className="text-teal-700 font-semibold">AI is formulating your product…</p>
-                <p className="text-sm text-teal-500 mt-1">Calculating ingredient percentages, INCI names, cost estimates</p>
+                <p className="text-teal-700 font-semibold">{tx("AI is formulating your product…")}</p>
+                <p className="text-sm text-teal-500 mt-1">{tx("Calculating ingredient percentages, INCI names, cost estimates")}</p>
               </div>
             </div>
           )}
@@ -378,7 +379,7 @@ export default function FormulationsPage() {
                   <div>
                     <h2 className="text-xl font-bold text-gray-900">{fd.name}</h2>
                     <p className="text-sm text-gray-500 capitalize mt-0.5">
-                      {fd.product_category.replace(/_/g, " ")} · Version {fd.version}
+                      {fd.product_category.replace(/_/g, " ")} {tx("· Version")} {fd.version}
                     </p>
                     {fd.description && <p className="text-sm text-gray-600 mt-1">{fd.description}</p>}
                   </div>
@@ -391,14 +392,14 @@ export default function FormulationsPage() {
                       <button
                         onClick={() => approve.mutate(selected.id)}
                         disabled={approvalDisabled}
-                        title={approvalDisabled ? "Approval is disabled in AI mock mode" : undefined}
+                        title={approvalDisabled ? tx("Approval is disabled in AI mock mode") : undefined}
                         className="px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        {approvalDisabled ? "Approval Disabled" : "Approve"}
+                        {approvalDisabled ? tx("Approval Disabled") : tx("Approve")}
                       </button>
                     )}
                     {selected.is_approved && (
-                      <span className="px-3 py-1.5 text-sm bg-green-100 text-green-700 rounded-lg font-medium">✓ Approved</span>
+                      <span className="px-3 py-1.5 text-sm bg-green-100 text-green-700 rounded-lg font-medium">{tx("✓ Approved")}</span>
                     )}
                   </div>
                 </div>
@@ -413,19 +414,19 @@ export default function FormulationsPage() {
                   )}
                   {fd.estimated_viscosity_cP && (
                     <div className="bg-gray-50 rounded-lg p-2 text-center">
-                      <p className="text-xs text-gray-400">Viscosity</p>
+                      <p className="text-xs text-gray-400">{tx("Viscosity")}</p>
                       <p className="text-sm font-bold text-gray-800">{fd.estimated_viscosity_cP} cP</p>
                     </div>
                   )}
                   {fd.shelf_life && (
                     <div className="bg-gray-50 rounded-lg p-2 text-center">
-                      <p className="text-xs text-gray-400">Shelf Life</p>
+                      <p className="text-xs text-gray-400">{tx("Shelf Life")}</p>
                       <p className="text-sm font-bold text-gray-800">{fd.shelf_life}</p>
                     </div>
                   )}
                   {fd.processing_temperature && (
                     <div className="bg-gray-50 rounded-lg p-2 text-center">
-                      <p className="text-xs text-gray-400">Proc. Temp</p>
+                      <p className="text-xs text-gray-400">{tx("Proc. Temp")}</p>
                       <p className="text-sm font-bold text-gray-800">{fd.processing_temperature}</p>
                     </div>
                   )}
@@ -435,9 +436,9 @@ export default function FormulationsPage() {
               {/* Ingredients Table */}
               <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
                 <div className="px-5 py-4 border-b border-gray-50 flex items-center justify-between">
-                  <h3 className="font-semibold text-gray-800">Ingredients</h3>
+                  <h3 className="font-semibold text-gray-800">{tx("Ingredients")}</h3>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-400">Total:</span>
+                    <span className="text-xs text-gray-400">{tx("Total:")}</span>
                     <span className={`text-xs font-bold px-2 py-0.5 rounded ${Math.abs(totalPct - 100) < 0.5 ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
                       {totalPct.toFixed(1)}%
                     </span>
@@ -447,12 +448,12 @@ export default function FormulationsPage() {
                   <table className="w-full text-sm">
                     <thead className="bg-gray-50 border-b border-gray-100">
                       <tr>
-                        <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500">Ingredient</th>
-                        <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500">INCI Name</th>
-                        <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500">CAS Number</th>
+                        <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500">{tx("Ingredient")}</th>
+                        <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500">{tx("INCI Name")}</th>
+                        <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500">{tx("CAS Number")}</th>
                         <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500 w-32">%</th>
-                        <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500">Function</th>
-                        <th className="px-3 py-2 text-right text-xs font-semibold text-gray-500">Cost/kg</th>
+                        <th className="px-3 py-2 text-left text-xs font-semibold text-gray-500">{tx("Function")}</th>
+                        <th className="px-3 py-2 text-right text-xs font-semibold text-gray-500">{tx("Cost/kg")}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
@@ -466,7 +467,7 @@ export default function FormulationsPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {fd.cost_breakdown && (
                   <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-                    <h3 className="font-semibold text-gray-800 mb-3">Cost Breakdown</h3>
+                    <h3 className="font-semibold text-gray-800 mb-3">{tx("Cost Breakdown")}</h3>
                     <div className="space-y-2">
                       {[
                         ["Raw Materials", fd.cost_breakdown.raw_materials_per_kg_usd],
@@ -479,7 +480,7 @@ export default function FormulationsPage() {
                         </div>
                       ))}
                       <div className="border-t border-gray-100 pt-2 flex items-center justify-between">
-                        <span className="text-sm font-semibold text-gray-800">Total COGS</span>
+                        <span className="text-sm font-semibold text-gray-800">{tx("Total COGS")}</span>
                         <span className="text-sm font-bold text-teal-700 font-mono">${fd.cost_breakdown.total_cogs_per_kg_usd.toFixed(3)}/kg</span>
                       </div>
                     </div>
@@ -488,7 +489,7 @@ export default function FormulationsPage() {
 
                 {fd.performance_profile && (
                   <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-                    <h3 className="font-semibold text-gray-800 mb-3">Performance Profile</h3>
+                    <h3 className="font-semibold text-gray-800 mb-3">{tx("Performance Profile")}</h3>
                     <div className="grid grid-cols-2 gap-2">
                       {Object.entries(fd.performance_profile)
                         .filter(([, v]) => v)
@@ -506,7 +507,7 @@ export default function FormulationsPage() {
               {/* Process Instructions */}
               {fd.process_instructions && fd.process_instructions.length > 0 && (
                 <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-                  <h3 className="font-semibold text-gray-800 mb-3">Process Instructions</h3>
+                  <h3 className="font-semibold text-gray-800 mb-3">{tx("Process Instructions")}</h3>
                   <ol className="space-y-2">
                     {fd.process_instructions.map((step, i) => (
                       <li key={i} className="flex gap-3">
@@ -520,10 +521,10 @@ export default function FormulationsPage() {
                   {(fd.mixing_speed || fd.processing_temperature) && (
                     <div className="flex gap-4 mt-3 pt-3 border-t border-gray-50">
                       {fd.processing_temperature && (
-                        <span className="text-xs text-gray-500">🌡️ Temp: <strong>{fd.processing_temperature}</strong></span>
+                        <span className="text-xs text-gray-500">{tx("🌡️ Temp:")} <strong>{fd.processing_temperature}</strong></span>
                       )}
                       {fd.mixing_speed && (
-                        <span className="text-xs text-gray-500">⚙️ Mix: <strong>{fd.mixing_speed}</strong></span>
+                        <span className="text-xs text-gray-500">{tx("⚙️ Mix:")} <strong>{fd.mixing_speed}</strong></span>
                       )}
                     </div>
                   )}
@@ -533,30 +534,30 @@ export default function FormulationsPage() {
               {/* Alternatives */}
               {fd.alternatives && (
                 <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-                  <h3 className="font-semibold text-gray-800 mb-3">Alternative Versions</h3>
+                  <h3 className="font-semibold text-gray-800 mb-3">{tx("Alternative Versions")}</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     {fd.alternatives.low_cost && (
                       <div className="border border-gray-200 rounded-lg p-3">
-                        <p className="text-xs font-bold text-gray-500 mb-1">💵 Low-Cost Version</p>
+                        <p className="text-xs font-bold text-gray-500 mb-1">{tx("💵 Low-Cost Version")}</p>
                         <p className="text-sm font-medium text-gray-800">{fd.alternatives.low_cost.name}</p>
-                        <p className="text-xs text-gray-500 mt-1">Changes: {fd.alternatives.low_cost.key_changes}</p>
-                        <p className="text-xs text-red-500 mt-1">Trade-offs: {fd.alternatives.low_cost.trade_offs}</p>
+                        <p className="text-xs text-gray-500 mt-1">{tx("Changes:")} {fd.alternatives.low_cost.key_changes}</p>
+                        <p className="text-xs text-red-500 mt-1">{tx("Trade-offs:")} {fd.alternatives.low_cost.trade_offs}</p>
                       </div>
                     )}
                     {fd.alternatives.premium && (
                       <div className="border border-purple-200 rounded-lg p-3 bg-purple-50">
-                        <p className="text-xs font-bold text-purple-500 mb-1">👑 Premium Version</p>
+                        <p className="text-xs font-bold text-purple-500 mb-1">{tx("👑 Premium Version")}</p>
                         <p className="text-sm font-medium text-gray-800">{fd.alternatives.premium.name}</p>
-                        <p className="text-xs text-gray-500 mt-1">Changes: {fd.alternatives.premium.key_changes}</p>
-                        <p className="text-xs text-gray-500 mt-1">Trade-offs: {fd.alternatives.premium.trade_offs}</p>
+                        <p className="text-xs text-gray-500 mt-1">{tx("Changes:")} {fd.alternatives.premium.key_changes}</p>
+                        <p className="text-xs text-gray-500 mt-1">{tx("Trade-offs:")} {fd.alternatives.premium.trade_offs}</p>
                       </div>
                     )}
                     {fd.alternatives.eco && (
                       <div className="border border-green-200 rounded-lg p-3 bg-green-50">
-                        <p className="text-xs font-bold text-green-600 mb-1">🌿 Eco Version</p>
+                        <p className="text-xs font-bold text-green-600 mb-1">{tx("🌿 Eco Version")}</p>
                         <p className="text-sm font-medium text-gray-800">{fd.alternatives.eco.name}</p>
-                        <p className="text-xs text-gray-500 mt-1">Changes: {fd.alternatives.eco.key_changes}</p>
-                        <p className="text-xs text-gray-500 mt-1">Trade-offs: {fd.alternatives.eco.trade_offs}</p>
+                        <p className="text-xs text-gray-500 mt-1">{tx("Changes:")} {fd.alternatives.eco.key_changes}</p>
+                        <p className="text-xs text-gray-500 mt-1">{tx("Trade-offs:")} {fd.alternatives.eco.trade_offs}</p>
                       </div>
                     )}
                   </div>
@@ -566,7 +567,7 @@ export default function FormulationsPage() {
               {/* Safety & Regulatory Notes */}
               {(fd.safety_notes?.length || fd.regulatory_notes) && (
                 <div className="bg-amber-50 border border-amber-200 rounded-xl p-5">
-                  <h3 className="font-semibold text-amber-800 mb-2">⚠️ Safety & Regulatory Notes</h3>
+                  <h3 className="font-semibold text-amber-800 mb-2">{tx("⚠️ Safety & Regulatory Notes")}</h3>
                   {fd.safety_notes && (
                     <ul className="space-y-1 mb-2">
                       {fd.safety_notes.map((note, i) => (

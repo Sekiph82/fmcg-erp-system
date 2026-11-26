@@ -84,7 +84,20 @@ const formDataContentType = (config: InternalAxiosRequestConfig) => {
 apiClient.interceptors.request.use(formDataContentType);
 apiV1Client.interceptors.request.use(formDataContentType);
 
+// M51.S01.T008: system messages from the API (exact backend_messages.json matches) are shown in the user's language.
+// The localizer is registered by the app providers (keeps this module free of the i18n catalogs for node tests).
+let localizeMessage: (message: string) => string = (m) => m;
+export function setApiMessageLocalizer(fn: (message: string) => string) { localizeMessage = fn; }
+function localizeApiError(error: AxiosError) {
+  const data = error.response?.data as { detail?: unknown } | undefined;
+  if (!data || typeof data !== "object") return;
+  const d = data.detail;
+  if (typeof d === "string") data.detail = localizeMessage(d);
+  else if (d && typeof d === "object" && typeof (d as { message?: unknown }).message === "string") (d as { message: string }).message = localizeMessage((d as { message: string }).message);
+}
+
 const handleResponseError = async (error: AxiosError) => {
+    localizeApiError(error);
     if (error.response?.status === 401) {
       const original = error.config as RetryableConfig | undefined;
       const requestPath = original?.url ?? "";

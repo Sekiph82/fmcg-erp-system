@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import type { HelpEntry } from "@/lib/help/types";
+import { tx } from "@/lib/i18n/core";
 
 interface HelpDrawerProps {
   open: boolean;
@@ -35,7 +36,7 @@ export function HelpDrawer({ open, onClose, entry }: HelpDrawerProps) {
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Help"
+        aria-label={tx("Help")}
         className="fixed right-0 top-0 z-50 flex h-full w-full max-w-sm flex-col border-l border-cyan-500/20 bg-[#0a1628] shadow-2xl"
         style={{ boxShadow: "-4px 0 32px rgba(0,212,255,0.08)" }}
       >
@@ -45,11 +46,11 @@ export function HelpDrawer({ open, onClose, entry }: HelpDrawerProps) {
             <span className="flex h-7 w-7 items-center justify-center rounded-full border border-cyan-500/30 bg-cyan-500/10 text-sm font-bold text-cyan-300">
               ?
             </span>
-            <span className="text-sm font-semibold text-slate-100">Help</span>
+            <span className="text-sm font-semibold text-slate-100">{tx("Help")}</span>
           </div>
           <button
             onClick={onClose}
-            aria-label="Close help"
+            aria-label={tx("Close help")}
             className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-white/10 transition-colors"
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -78,14 +79,14 @@ export function HelpDrawer({ open, onClose, entry }: HelpDrawerProps) {
               {entry.quickGuidePath && (
                 <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-4">
                   <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-amber-400">
-                    Kenya Go-Live Quick Guide
+                    {tx("Kenya Go-Live Quick Guide")}
                   </p>
                   <p className="text-xs text-slate-400">
-                    Manual file:{" "}
+                    {tx("Manual file:")}{" "}
                     <code className="text-amber-300/80">{entry.quickGuidePath.split("/").pop()}</code>
                   </p>
                   <p className="mt-1 text-[11px] text-slate-500">
-                    Found at: docs/user-manual/{entry.quickGuidePath}
+                    {tx("Found at: docs/user-manual/")}{entry.quickGuidePath}
                   </p>
                 </div>
               )}
@@ -93,22 +94,21 @@ export function HelpDrawer({ open, onClose, entry }: HelpDrawerProps) {
               {/* Full reference */}
               <div className="rounded-lg border border-slate-700/50 bg-slate-800/30 p-4">
                 <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-slate-400">
-                  Full Reference Manual
+                  {tx("Full Reference Manual")}
                 </p>
                 <p className="text-xs text-slate-400">
-                  Chapter:{" "}
+                  {tx("Chapter:")}{" "}
                   <code className="text-slate-300">{entry.fullReferencePath.split("/").pop()}</code>
                 </p>
                 <p className="mt-1 text-[11px] text-slate-500">
-                  Found at: docs/user-manual/{entry.fullReferencePath}
+                  {tx("Found at: docs/user-manual/")}{entry.fullReferencePath}
                 </p>
               </div>
 
               {/* PDF note */}
               <div className="rounded-lg border border-slate-700/40 bg-slate-900/40 p-3">
                 <p className="text-[11px] text-slate-500">
-                  <span className="font-medium text-slate-400">PDF manuals</span> are available from
-                  your admin or training package. Generate locally with{" "}
+                  <span className="font-medium text-slate-400">{tx("PDF manuals")}</span> {tx("are available from your admin or training package. Generate locally with")}{" "}
                   <code className="text-[10px] text-slate-400">
                     node docs/user-manual/pdf-export/generate-full-reference-pdf.mjs
                   </code>
@@ -118,7 +118,7 @@ export function HelpDrawer({ open, onClose, entry }: HelpDrawerProps) {
               {/* Keywords */}
               {entry.keywords.length > 0 && (
                 <div>
-                  <p className="mb-2 text-xs font-medium text-slate-500">Related topics</p>
+                  <p className="mb-2 text-xs font-medium text-slate-500">{tx("Related topics")}</p>
                   <div className="flex flex-wrap gap-1.5">
                     {entry.keywords.map((kw) => (
                       <span
@@ -135,14 +135,14 @@ export function HelpDrawer({ open, onClose, entry }: HelpDrawerProps) {
           ) : (
             <div className="space-y-4">
               <p className="text-sm text-slate-400">
-                No specific help found for this page.
+                {tx("No specific help found for this page.")}
               </p>
               <p className="text-sm text-slate-500">
-                Visit the{" "}
+                {tx("Visit the")}{" "}
                 <Link href="/dashboard/help" onClick={onClose} className="text-cyan-400 underline hover:text-cyan-300">
-                  Help Center
+                  {tx("Help Center")}
                 </Link>{" "}
-                to browse all topics.
+                {tx("to browse all topics.")}
               </p>
             </div>
           )}
@@ -155,7 +155,7 @@ export function HelpDrawer({ open, onClose, entry }: HelpDrawerProps) {
             onClick={onClose}
             className="flex items-center justify-center gap-2 rounded-lg border border-cyan-500/20 bg-cyan-500/10 px-4 py-2 text-sm font-medium text-cyan-300 hover:bg-cyan-500/20 transition-colors"
           >
-            Browse Help Center
+            {tx("Browse Help Center")}
             <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>

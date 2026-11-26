@@ -4,6 +4,7 @@ import { useParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { contractsApi, STATUS_COLORS, PARTY_COLORS, CONTRACT_TYPE_LABELS, SEVERITY_COLORS } from "@/lib/contracts";
 import Link from "next/link";
+import { tx } from "@/lib/i18n/core";
 
 export default function ContractDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -31,7 +32,7 @@ export default function ContractDetailPage() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["ct-perf", id] }); setPerfForm({ period: "", target_value: "", actual_value: "" }); },
   });
 
-  if (isLoading || !c) return <div className="p-6 text-slate-500">Loading…</div>;
+  if (isLoading || !c) return <div className="p-6 text-slate-500">{tx("Loading…")}</div>;
 
   const daysLeft = c.end_date ? Math.ceil((new Date(c.end_date).getTime() - Date.now()) / 86400000) : null;
 
@@ -39,37 +40,37 @@ export default function ContractDetailPage() {
     <div className="p-6 space-y-6 text-slate-200">
       <div className="flex items-start justify-between">
         <div>
-          <Link href="/dashboard/contracts/list" className="text-slate-500 text-sm hover:text-slate-300">← Contracts</Link>
+          <Link href="/dashboard/contracts/list" className="text-slate-500 text-sm hover:text-slate-300">{tx("← Contracts")}</Link>
           <div className="flex items-center gap-3 mt-1 flex-wrap">
             <h1 className="text-xl font-bold text-white">{c.contract_code}</h1>
             <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${PARTY_COLORS[c.party_type]}`}>{c.party_type}</span>
             <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[c.status]}`}>{c.status}</span>
-            <span className="text-xs text-slate-500">v{c.current_version}</span>
+            <span className="text-xs text-slate-500">{tx("v")}{c.current_version}</span>
           </div>
           <p className="text-slate-400 text-sm mt-0.5">{c.contract_name} · {CONTRACT_TYPE_LABELS[c.contract_type]}</p>
         </div>
         <div className="flex gap-2 flex-wrap">
-          {c.status === "DRAFT" && <button onClick={() => submitMut.mutate()} className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium">Submit for Review</button>}
+          {c.status === "DRAFT" && <button onClick={() => submitMut.mutate()} className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium">{tx("Submit for Review")}</button>}
           {c.status === "UNDER_REVIEW" && <>
-            <button onClick={() => approveMut.mutate()} className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium">Approve</button>
-            <button onClick={() => rejectMut.mutate()} className="px-3 py-1.5 rounded-lg border border-red-500/40 text-red-400 text-xs">Reject</button>
+            <button onClick={() => approveMut.mutate()} className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium">{tx("Approve")}</button>
+            <button onClick={() => rejectMut.mutate()} className="px-3 py-1.5 rounded-lg border border-red-500/40 text-red-400 text-xs">{tx("Reject")}</button>
           </>}
-          {c.status === "APPROVED" && <button onClick={() => activateMut.mutate()} className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium">Activate</button>}
-          {["ACTIVE", "APPROVED"].includes(c.status) && <button onClick={() => setShowTerminate(true)} className="px-3 py-1.5 rounded-lg border border-red-500/40 text-red-400 text-xs">Terminate</button>}
+          {c.status === "APPROVED" && <button onClick={() => activateMut.mutate()} className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium">{tx("Activate")}</button>}
+          {["ACTIVE", "APPROVED"].includes(c.status) && <button onClick={() => setShowTerminate(true)} className="px-3 py-1.5 rounded-lg border border-red-500/40 text-red-400 text-xs">{tx("Terminate")}</button>}
         </div>
       </div>
 
       {/* Info */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: "Start Date", value: c.start_date },
-          { label: "End Date", value: c.end_date ?? "No end" },
-          { label: "Days Left", value: daysLeft !== null ? (daysLeft < 0 ? `${Math.abs(daysLeft)}d expired` : `${daysLeft}d`) : "—", color: daysLeft !== null && daysLeft < 30 ? "text-amber-400" : "text-white" },
-          { label: "Currency", value: c.currency },
-          { label: "Terms", value: String(c.terms.length) },
-          { label: "Rebates", value: String(c.rebates.length) },
-          { label: "Auto Renew", value: c.auto_renew ? "Yes" : "No" },
-          { label: "Notice Days", value: String(c.renewal_notice_days) },
+          { label: tx("Start Date"), value: c.start_date },
+          { label: tx("End Date"), value: c.end_date ?? "No end" },
+          { label: tx("Days Left"), value: daysLeft !== null ? (daysLeft < 0 ? `${Math.abs(daysLeft)}d expired` : `${daysLeft}d`) : "—", color: daysLeft !== null && daysLeft < 30 ? "text-amber-400" : "text-white" },
+          { label: tx("Currency"), value: c.currency },
+          { label: tx("Terms"), value: String(c.terms.length) },
+          { label: tx("Rebates"), value: String(c.rebates.length) },
+          { label: tx("Auto Renew"), value: c.auto_renew ? "Yes" : "No" },
+          { label: tx("Notice Days"), value: String(c.renewal_notice_days) },
         ].map((item) => (
           <div key={item.label} className="glow-card p-3">
             <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-0.5">{item.label}</p>
@@ -81,26 +82,26 @@ export default function ContractDetailPage() {
       {/* Approval comment input */}
       {["DRAFT", "UNDER_REVIEW"].includes(c.status) && (
         <div className="glow-card p-4">
-          <label className="text-xs text-slate-400 mb-1 block">Comments (for approval actions)</label>
+          <label className="text-xs text-slate-400 mb-1 block">{tx("Comments (for approval actions)")}</label>
           <input value={comments} onChange={(e) => setComments(e.target.value)}
             className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
-            placeholder="Optional comments…" />
+            placeholder={tx("Optional comments…")} />
         </div>
       )}
 
       {/* Terminate panel */}
       {showTerminate && (
         <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 space-y-3">
-          <h3 className="text-sm font-semibold text-red-300">Terminate Contract</h3>
+          <h3 className="text-sm font-semibold text-red-300">{tx("Terminate Contract")}</h3>
           <input value={termReason} onChange={(e) => setTermReason(e.target.value)}
             className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none"
-            placeholder="Reason for termination (required)" />
+            placeholder={tx("Reason for termination (required)")} />
           <div className="flex gap-2">
             <button onClick={() => terminateMut.mutate()} disabled={!termReason || terminateMut.isPending}
               className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-white text-sm disabled:opacity-50">
-              {terminateMut.isPending ? "Terminating…" : "Confirm Terminate"}
+              {terminateMut.isPending ? tx("Terminating…") : tx("Confirm Terminate")}
             </button>
-            <button onClick={() => setShowTerminate(false)} className="px-4 py-2 rounded-lg border border-white/[0.08] text-slate-400 text-sm">Cancel</button>
+            <button onClick={() => setShowTerminate(false)} className="px-4 py-2 rounded-lg border border-white/[0.08] text-slate-400 text-sm">{tx("Cancel")}</button>
           </div>
         </div>
       )}
@@ -110,7 +111,7 @@ export default function ContractDetailPage() {
         {(["terms", "rebates", "perf", "history", "approvals"] as const).map((t) => (
           <button key={t} onClick={() => setTab(t)}
             className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${tab === t ? "border-indigo-500 text-indigo-300" : "border-transparent text-slate-500 hover:text-slate-300"}`}>
-            {t === "terms" ? "Terms" : t === "rebates" ? "Rebates" : t === "perf" ? "Performance" : t === "history" ? "Versions" : "Approval Log"}
+            {t === "terms" ? tx("Terms") : t === "rebates" ? tx("Rebates") : t === "perf" ? tx("Performance") : t === "history" ? tx("Versions") : tx("Approval Log")}
           </button>
         ))}
       </div>
@@ -120,13 +121,13 @@ export default function ContractDetailPage() {
           <table className="w-full text-sm">
             <thead className="bg-white/[0.03] text-slate-500 text-xs uppercase tracking-wider">
               <tr>
-                <th className="px-4 py-3 text-left">Type</th>
-                <th className="px-4 py-3 text-left">Value Type</th>
-                <th className="px-4 py-3 text-right">Value</th>
-                <th className="px-4 py-3 text-right">Min</th>
-                <th className="px-4 py-3 text-right">Max</th>
-                <th className="px-4 py-3 text-left">Valid</th>
-                <th className="px-4 py-3 text-left">Active</th>
+                <th className="px-4 py-3 text-left">{tx("Type")}</th>
+                <th className="px-4 py-3 text-left">{tx("Value Type")}</th>
+                <th className="px-4 py-3 text-right">{tx("Value")}</th>
+                <th className="px-4 py-3 text-right">{tx("Min")}</th>
+                <th className="px-4 py-3 text-right">{tx("Max")}</th>
+                <th className="px-4 py-3 text-left">{tx("Valid")}</th>
+                <th className="px-4 py-3 text-left">{tx("Active")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/[0.04]">
@@ -140,12 +141,12 @@ export default function ContractDetailPage() {
                   <td className="px-4 py-3 text-slate-500 text-xs">{t.valid_from ?? "—"} → {t.valid_to ?? "—"}</td>
                   <td className="px-4 py-3">
                     <span className={`text-xs px-2 py-0.5 rounded-full ${t.active_flag ? "bg-emerald-500/20 text-emerald-300" : "bg-slate-500/20 text-slate-400"}`}>
-                      {t.active_flag ? "Active" : "Inactive"}
+                      {t.active_flag ? tx("Active") : tx("Inactive")}
                     </span>
                   </td>
                 </tr>
               ))}
-              {c.terms.length === 0 && <tr><td colSpan={7} className="text-center py-6 text-slate-600">No terms defined</td></tr>}
+              {c.terms.length === 0 && <tr><td colSpan={7} className="text-center py-6 text-slate-600">{tx("No terms defined")}</td></tr>}
             </tbody>
           </table>
         </div>
@@ -156,13 +157,13 @@ export default function ContractDetailPage() {
           <table className="w-full text-sm">
             <thead className="bg-white/[0.03] text-slate-500 text-xs uppercase tracking-wider">
               <tr>
-                <th className="px-4 py-3 text-left">Name</th>
-                <th className="px-4 py-3 text-left">Type</th>
-                <th className="px-4 py-3 text-right">Threshold</th>
-                <th className="px-4 py-3 text-right">Rate %</th>
-                <th className="px-4 py-3 text-right">Accrued</th>
-                <th className="px-4 py-3 text-right">Settled</th>
-                <th className="px-4 py-3 text-left">Frequency</th>
+                <th className="px-4 py-3 text-left">{tx("Name")}</th>
+                <th className="px-4 py-3 text-left">{tx("Type")}</th>
+                <th className="px-4 py-3 text-right">{tx("Threshold")}</th>
+                <th className="px-4 py-3 text-right">{tx("Rate %")}</th>
+                <th className="px-4 py-3 text-right">{tx("Accrued")}</th>
+                <th className="px-4 py-3 text-right">{tx("Settled")}</th>
+                <th className="px-4 py-3 text-left">{tx("Frequency")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/[0.04]">
@@ -177,7 +178,7 @@ export default function ContractDetailPage() {
                   <td className="px-4 py-3 text-slate-400 text-xs">{r.settlement_frequency}</td>
                 </tr>
               ))}
-              {c.rebates.length === 0 && <tr><td colSpan={7} className="text-center py-6 text-slate-600">No rebates defined</td></tr>}
+              {c.rebates.length === 0 && <tr><td colSpan={7} className="text-center py-6 text-slate-600">{tx("No rebates defined")}</td></tr>}
             </tbody>
           </table>
         </div>
@@ -186,12 +187,12 @@ export default function ContractDetailPage() {
       {tab === "perf" && (
         <div className="space-y-4">
           <div className="glow-card p-4">
-            <h3 className="text-xs font-semibold text-white mb-3">Log Performance</h3>
+            <h3 className="text-xs font-semibold text-white mb-3">{tx("Log Performance")}</h3>
             <div className="grid grid-cols-3 gap-3">
               {[
-                { k: "period", label: "Period (YYYY-MM)", placeholder: "2026-04" },
-                { k: "target_value", label: "Target", placeholder: "500000" },
-                { k: "actual_value", label: "Actual", placeholder: "420000" },
+                { k: "period", label: tx("Period (YYYY-MM)"), placeholder: "2026-04" },
+                { k: "target_value", label: tx("Target"), placeholder: "500000" },
+                { k: "actual_value", label: tx("Actual"), placeholder: "420000" },
               ].map(({ k, label, placeholder }) => (
                 <div key={k}>
                   <label className="text-[10px] text-slate-400 mb-1 block">{label}</label>
@@ -203,7 +204,7 @@ export default function ContractDetailPage() {
             </div>
             <button onClick={() => perfMut.mutate()} disabled={!perfForm.period || perfMut.isPending}
               className="mt-3 px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium disabled:opacity-50">
-              {perfMut.isPending ? "Saving…" : "Save"}
+              {perfMut.isPending ? tx("Saving…") : tx("Save")}
             </button>
           </div>
 
@@ -211,12 +212,12 @@ export default function ContractDetailPage() {
             <table className="w-full text-sm">
               <thead className="bg-white/[0.03] text-slate-500 text-xs uppercase tracking-wider">
                 <tr>
-                  <th className="px-4 py-3 text-left">Period</th>
-                  <th className="px-4 py-3 text-right">Target</th>
-                  <th className="px-4 py-3 text-right">Actual</th>
-                  <th className="px-4 py-3 text-right">Achievement %</th>
-                  <th className="px-4 py-3 text-right">Rebate Earned</th>
-                  <th className="px-4 py-3 text-left">Status</th>
+                  <th className="px-4 py-3 text-left">{tx("Period")}</th>
+                  <th className="px-4 py-3 text-right">{tx("Target")}</th>
+                  <th className="px-4 py-3 text-right">{tx("Actual")}</th>
+                  <th className="px-4 py-3 text-right">{tx("Achievement %")}</th>
+                  <th className="px-4 py-3 text-right">{tx("Rebate Earned")}</th>
+                  <th className="px-4 py-3 text-left">{tx("Status")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/[0.04]">
@@ -234,7 +235,7 @@ export default function ContractDetailPage() {
                     <td className="px-4 py-3 text-xs text-slate-400">{p.status}</td>
                   </tr>
                 ))}
-                {perf.length === 0 && <tr><td colSpan={6} className="text-center py-6 text-slate-600">No performance data</td></tr>}
+                {perf.length === 0 && <tr><td colSpan={6} className="text-center py-6 text-slate-600">{tx("No performance data")}</td></tr>}
               </tbody>
             </table>
           </div>
@@ -246,14 +247,14 @@ export default function ContractDetailPage() {
           {history.map((v) => (
             <div key={v.id} className="p-4 glow-card">
               <div className="flex items-center justify-between mb-1">
-                <span className="text-sm font-semibold text-white">Version {v.version_no}</span>
+                <span className="text-sm font-semibold text-white">{tx("Version")} {v.version_no}</span>
                 <span className="text-xs text-slate-500">{new Date(v.created_at).toLocaleDateString()}</span>
               </div>
-              <p className="text-xs text-slate-400">{v.change_summary ?? "No summary"}</p>
-              {v.effective_date && <p className="text-xs text-slate-600 mt-1">Effective: {v.effective_date}</p>}
+              <p className="text-xs text-slate-400">{v.change_summary ?? tx("No summary")}</p>
+              {v.effective_date && <p className="text-xs text-slate-600 mt-1">{tx("Effective:")} {v.effective_date}</p>}
             </div>
           ))}
-          {history.length === 0 && <p className="text-slate-600 text-sm text-center py-6">No version history</p>}
+          {history.length === 0 && <p className="text-slate-600 text-sm text-center py-6">{tx("No version history")}</p>}
         </div>
       )}
 
@@ -267,12 +268,12 @@ export default function ContractDetailPage() {
                 : "bg-slate-500/20 text-slate-400"
               }`}>{a.action}</span>
               <div>
-                <p className="text-xs text-slate-400">{a.comments ?? "No comments"}</p>
+                <p className="text-xs text-slate-400">{a.comments ?? tx("No comments")}</p>
                 <p className="text-[10px] text-slate-600 mt-0.5">{new Date(a.created_at).toLocaleString()}</p>
               </div>
             </div>
           ))}
-          {approvals.length === 0 && <p className="text-slate-600 text-sm text-center py-6">No approval history</p>}
+          {approvals.length === 0 && <p className="text-slate-600 text-sm text-center py-6">{tx("No approval history")}</p>}
         </div>
       )}
     </div>

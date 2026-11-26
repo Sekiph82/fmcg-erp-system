@@ -4,6 +4,7 @@
 // decision, reconciliation (collection / ledger / credit), provider set-up with disabled reasons.
 import { useCallback, useEffect, useState } from "react";
 import { apiClient } from "@/lib/api";
+import { tx } from "@/lib/i18n/core";
 
 type Card = { id: string; status: string; settlement: string; simulated: boolean; amount: string; currency: string; redirect_url: string | null; status_description: string | null };
 type Link = { id: string; status: string; settled_amount: string; expires_at: string; currency: string; allow_partial: boolean;
@@ -55,7 +56,7 @@ export function PaymentLinks({ invoiceId, open }: { invoiceId: string; open: boo
   });
   const decide = (rid: string, d: "approve" | "reject") => act(async () => {
     const r = await apiClient.post(`/api/v1/payment-links/card-refunds/${rid}/${d}`);
-    if (r.data.message) setMsg(`Provider: ${r.data.message}`);
+    if (r.data.message) setMsg(tx("Provider: {message}", { message: r.data.message }));
   });
   const saveSetup = () => setup && act(async () => {
     await apiClient.put("/api/v1/payment-links/card/config", { ...setup, base_url: setup.base_url?.trim() || null }); setSetup(null);
@@ -68,71 +69,71 @@ export function PaymentLinks({ invoiceId, open }: { invoiceId: string; open: boo
 
   return (
     <div className="bg-white rounded-lg border">
-      <div className="px-6 py-4 border-b flex justify-between items-center"><h2 className="font-semibold text-gray-900">Payment links</h2>
-        {open && <button className="text-sm border rounded px-3 py-1 disabled:opacity-50" disabled={busy} onClick={create}>Create payment link</button>}</div>
+      <div className="px-6 py-4 border-b flex justify-between items-center"><h2 className="font-semibold text-gray-900">{tx("Payment links")}</h2>
+        {open && <button className="text-sm border rounded px-3 py-1 disabled:opacity-50" disabled={busy} onClick={create}>{tx("Create payment link")}</button>}</div>
       <div className="px-6 py-3 space-y-2 text-sm">
         {msg && <p role="alert" className="text-red-600 text-xs">{msg}</p>}
-        {url && <p className="text-xs break-all bg-amber-50 border rounded p-2">Send this to the customer (shown once): <b>{url}</b> <button className="underline" onClick={() => navigator.clipboard?.writeText(url)}>copy</button></p>}
-        {checkout && <p className="text-xs break-all bg-blue-50 border rounded p-2">Hosted card checkout (the card is typed on Pesapal&apos;s page, never here): <a className="underline" href={checkout} target="_blank" rel="noopener noreferrer">{checkout}</a> <button className="underline" onClick={() => navigator.clipboard?.writeText(checkout)}>copy</button></p>}
+        {url && <p className="text-xs break-all bg-amber-50 border rounded p-2">{tx("Send this to the customer (shown once):")} <b>{url}</b> <button className="underline" onClick={() => navigator.clipboard?.writeText(url)}>{tx("copy")}</button></p>}
+        {checkout && <p className="text-xs break-all bg-blue-50 border rounded p-2">{tx("Hosted card checkout (the card is typed on Pesapal's page, never here):")} <a className="underline" href={checkout} target="_blank" rel="noopener noreferrer">{checkout}</a> <button className="underline" onClick={() => navigator.clipboard?.writeText(checkout)}>{tx("copy")}</button></p>}
 
         <div className="text-xs border rounded p-2 bg-gray-50">
-          <b>Card payments (Pesapal):</b> {cfg ? low(cfg.mode) : "unknown"}{cfg?.environment ? ` · ${low(cfg.environment)}` : ""}
+          <b>{tx("Card payments (Pesapal):")}</b> {cfg ? low(cfg.mode) : tx("unknown")}{cfg?.environment ? ` · ${low(cfg.environment)}` : ""}
           {cfg?.disabled_reasons.map((r) => <div key={r} className="text-gray-600">• {r}</div>)}
           <div className="flex flex-wrap gap-2 mt-1">
-            <button className="underline" onClick={() => setSetup(setup ? null : { environment: "SANDBOX", consumer_key: "", consumer_secret: "" })}>{setup ? "Close set-up" : "Set up provider"}</button>
-            <button className="underline disabled:opacity-40" disabled={busy || !cfg?.consumer_key_set} title={cfg?.consumer_key_set ? "" : "Save credentials first."} onClick={() => cfgAction("register-ipn")}>Register IPN URL</button>
-            <button className="underline disabled:opacity-40" disabled={busy || cfg?.environment !== "LIVE" || !cfg?.ipn_registered || cfg?.live_active} title={cfg?.environment !== "LIVE" ? "Needs LIVE credentials." : ""} onClick={() => cfgAction("request-live")}>Request live</button>
-            <button className="underline disabled:opacity-40" disabled={busy || !cfg?.live_requested || cfg?.live_active} title={cfg?.live_requested ? "A different finance approver must approve." : "Nobody has requested live payments."} onClick={() => cfgAction("approve-live")}>Approve live</button>
+            <button className="underline" onClick={() => setSetup(setup ? null : { environment: "SANDBOX", consumer_key: "", consumer_secret: "" })}>{setup ? tx("Close set-up") : tx("Set up provider")}</button>
+            <button className="underline disabled:opacity-40" disabled={busy || !cfg?.consumer_key_set} title={cfg?.consumer_key_set ? "" : tx("Save credentials first.")} onClick={() => cfgAction("register-ipn")}>{tx("Register IPN URL")}</button>
+            <button className="underline disabled:opacity-40" disabled={busy || cfg?.environment !== "LIVE" || !cfg?.ipn_registered || cfg?.live_active} title={cfg?.environment !== "LIVE" ? tx("Needs LIVE credentials.") : ""} onClick={() => cfgAction("request-live")}>{tx("Request live")}</button>
+            <button className="underline disabled:opacity-40" disabled={busy || !cfg?.live_requested || cfg?.live_active} title={cfg?.live_requested ? tx("A different finance approver must approve.") : tx("Nobody has requested live payments.")} onClick={() => cfgAction("approve-live")}>{tx("Approve live")}</button>
           </div>
           {setup && <div className="mt-2 grid gap-1 sm:grid-cols-4">
-            <select aria-label="Environment" className="border rounded px-1" value={setup.environment} onChange={(e) => setSetup({ ...setup, environment: e.target.value })}><option value="SANDBOX">Sandbox</option><option value="LIVE">Live</option></select>
-            <input aria-label="Consumer key" className="border rounded px-1" placeholder="Consumer key" value={setup.consumer_key} onChange={(e) => setSetup({ ...setup, consumer_key: e.target.value })} />
-            <input aria-label="Consumer secret" type="password" autoComplete="off" className="border rounded px-1" placeholder="Consumer secret" value={setup.consumer_secret} onChange={(e) => setSetup({ ...setup, consumer_secret: e.target.value })} />
-            <input aria-label="API URL override" className="border rounded px-1 sm:col-span-4" placeholder="API URL override (optional; local simulator only, never in live egress)" value={setup.base_url ?? ""} onChange={(e) => setSetup({ ...setup, base_url: e.target.value })} />
-            <button className="border rounded px-2 disabled:opacity-40" disabled={busy || setup.consumer_key.length < 8 || setup.consumer_secret.length < 8} onClick={saveSetup}>Save (encrypted)</button>
+            <select aria-label={tx("Environment")} className="border rounded px-1" value={setup.environment} onChange={(e) => setSetup({ ...setup, environment: e.target.value })}><option value="SANDBOX">{tx("Sandbox")}</option><option value="LIVE">{tx("Live")}</option></select>
+            <input aria-label={tx("Consumer key")} className="border rounded px-1" placeholder={tx("Consumer key")} value={setup.consumer_key} onChange={(e) => setSetup({ ...setup, consumer_key: e.target.value })} />
+            <input aria-label={tx("Consumer secret")} type="password" autoComplete="off" className="border rounded px-1" placeholder={tx("Consumer secret")} value={setup.consumer_secret} onChange={(e) => setSetup({ ...setup, consumer_secret: e.target.value })} />
+            <input aria-label={tx("API URL override")} className="border rounded px-1 sm:col-span-4" placeholder={tx("API URL override (optional; local simulator only, never in live egress)")} value={setup.base_url ?? ""} onChange={(e) => setSetup({ ...setup, base_url: e.target.value })} />
+            <button className="border rounded px-2 disabled:opacity-40" disabled={busy || setup.consumer_key.length < 8 || setup.consumer_secret.length < 8} onClick={saveSetup}>{tx("Save (encrypted)")}</button>
           </div>}
         </div>
 
-        {links.length === 0 ? <p className="text-xs text-gray-500">No links yet.</p> : links.map((l) => <div key={l.id} className="text-xs border-t pt-1">
-          <b>{low(l.status)}</b> · settled {l.settled_amount} {l.currency} · until {new Date(l.expires_at).toLocaleDateString()}
-          {l.status === "ACTIVE" && <button className="ml-2 text-red-600 underline" onClick={() => revoke(l.id)}>Cancel link</button>}
-          {l.attempts.map((a, i) => <div key={i} className="text-gray-600">M-Pesa {a.amount} · {a.status.toLowerCase()}{a.receipt ? ` · ${a.receipt}` : ""}{a.simulated ? " · simulated" : ""}</div>)}
+        {links.length === 0 ? <p className="text-xs text-gray-500">{tx("No links yet.")}</p> : links.map((l) => <div key={l.id} className="text-xs border-t pt-1">
+          <b>{low(l.status)}</b> {tx("· settled")} {l.settled_amount} {l.currency} {tx("· until")} {new Date(l.expires_at).toLocaleDateString()}
+          {l.status === "ACTIVE" && <button className="ml-2 text-red-600 underline" onClick={() => revoke(l.id)}>{tx("Cancel link")}</button>}
+          {l.attempts.map((a, i) => <div key={i} className="text-gray-600">{tx("M-Pesa")} {a.amount} · {a.status.toLowerCase()}{a.receipt ? ` · ${a.receipt}` : ""}{a.simulated ? tx(" · simulated") : ""}</div>)}
           {open && <div className="flex flex-wrap items-center gap-2 mt-1">
-            <input aria-label="Card amount" inputMode="decimal" className="border rounded px-1 w-28" placeholder={l.allow_partial ? "Amount (blank = all)" : "Full amount"} disabled={!l.allow_partial}
+            <input aria-label={tx("Card amount")} inputMode="decimal" className="border rounded px-1 w-28" placeholder={l.allow_partial ? tx("Amount (blank = all)") : tx("Full amount")} disabled={!l.allow_partial}
               value={amounts[l.id] ?? ""} onChange={(e) => setAmounts({ ...amounts, [l.id]: e.target.value })} />
-            <button className="border rounded px-2 disabled:opacity-40" disabled={busy || !!cardReason(l)} title={cardReason(l)} onClick={() => card(l)}>Card checkout link</button>
+            <button className="border rounded px-2 disabled:opacity-40" disabled={busy || !!cardReason(l)} title={cardReason(l)} onClick={() => card(l)}>{tx("Card checkout link")}</button>
             {cardReason(l) && <span className="text-gray-500">{cardReason(l)}</span>}
           </div>}
-          {l.card_payments.map((p) => <div key={p.id} className="text-gray-600">Card {p.amount} {p.currency} · {low(p.status)} · {low(p.settlement)}{p.simulated ? " · test" : ""}
+          {l.card_payments.map((p) => <div key={p.id} className="text-gray-600">{tx("Card")} {p.amount} {p.currency} · {low(p.status)} · {low(p.settlement)}{p.simulated ? tx(" · test") : ""}
             {p.status_description ? ` · ${p.status_description}` : ""}
-            <button className="ml-2 underline disabled:opacity-40" disabled={busy} onClick={() => refresh(p.id)}>Refresh status</button>
-            {p.status === "COMPLETED" && <button className="ml-2 underline" onClick={() => setRefund({ id: p.id, amount: p.amount, reason: "" })}>Request refund</button>}
+            <button className="ml-2 underline disabled:opacity-40" disabled={busy} onClick={() => refresh(p.id)}>{tx("Refresh status")}</button>
+            {p.status === "COMPLETED" && <button className="ml-2 underline" onClick={() => setRefund({ id: p.id, amount: p.amount, reason: "" })}>{tx("Request refund")}</button>}
           </div>)}
         </div>)}
 
         {refund && <div className="text-xs border rounded p-2 bg-amber-50 flex flex-wrap gap-2 items-center">
-          Refund (one per payment; a second finance person approves):
-          <input aria-label="Refund amount" inputMode="decimal" className="border rounded px-1 w-24" value={refund.amount} onChange={(e) => setRefund({ ...refund, amount: e.target.value })} />
-          <input aria-label="Refund reason" className="border rounded px-1 flex-1 min-w-[10rem]" placeholder="Reason" value={refund.reason} onChange={(e) => setRefund({ ...refund, reason: e.target.value })} />
-          <button className="border rounded px-2 disabled:opacity-40" disabled={busy || refund.reason.trim().length < 3} title={refund.reason.trim().length < 3 ? "Give a reason." : ""} onClick={askRefund}>Send for approval</button>
-          <button className="underline" onClick={() => setRefund(null)}>Cancel</button>
+          {tx("Refund (one per payment; a second finance person approves):")}
+          <input aria-label={tx("Refund amount")} inputMode="decimal" className="border rounded px-1 w-24" value={refund.amount} onChange={(e) => setRefund({ ...refund, amount: e.target.value })} />
+          <input aria-label={tx("Refund reason")} className="border rounded px-1 flex-1 min-w-[10rem]" placeholder={tx("Reason")} value={refund.reason} onChange={(e) => setRefund({ ...refund, reason: e.target.value })} />
+          <button className="border rounded px-2 disabled:opacity-40" disabled={busy || refund.reason.trim().length < 3} title={refund.reason.trim().length < 3 ? tx("Give a reason.") : ""} onClick={askRefund}>{tx("Send for approval")}</button>
+          <button className="underline" onClick={() => setRefund(null)}>{tx("Cancel")}</button>
         </div>}
 
         {rec && rec.card_payments.length > 0 && <div className="text-xs border rounded p-2">
-          <b>Card reconciliation</b> · invoice {rec.invoice_no}: paid {rec.paid} of {rec.total} {rec.currency} ({low(rec.status)})
-          <div className="text-gray-600">Credit: limit {rec.credit.limit ?? "none"} · outstanding {rec.credit.outstanding}{rec.credit.available !== null ? ` · available ${rec.credit.available}` : ""}{rec.credit.over_limit ? " · OVER LIMIT" : ""}. {rec.credit.note}</div>
+          <b>{tx("Card reconciliation")}</b> {tx("· invoice")} {rec.invoice_no}{tx(": paid")} {rec.paid} {tx("of")} {rec.total} {rec.currency} ({low(rec.status)})
+          <div className="text-gray-600">{tx("Credit: limit")} {rec.credit.limit ?? tx("none")} {tx("· outstanding")} {rec.credit.outstanding}{rec.credit.available !== null ? tx(" · available {available}", { available: rec.credit.available }) : ""}{rec.credit.over_limit ? tx(" · OVER LIMIT") : ""}. {rec.credit.note}</div>
           <div className="overflow-x-auto"><table className="min-w-full mt-1">
-            <thead><tr className="text-left text-gray-500"><th className="pr-2">Amount</th><th className="pr-2">Provider</th><th className="pr-2">Settlement</th><th className="pr-2">Collection / ledger</th><th className="pr-2">Refund</th></tr></thead>
+            <thead><tr className="text-left text-gray-500"><th className="pr-2">{tx("Amount")}</th><th className="pr-2">{tx("Provider")}</th><th className="pr-2">{tx("Settlement")}</th><th className="pr-2">{tx("Collection / ledger")}</th><th className="pr-2">{tx("Refund")}</th></tr></thead>
             <tbody>{rec.card_payments.map((p) => <tr key={p.id} className="border-t align-top">
-              <td className="pr-2">{p.amount} {p.currency}{p.simulated ? " (test)" : ""}</td>
-              <td className="pr-2">{low(p.status)}{p.confirmation_code ? ` · ${p.confirmation_code}` : ""}{p.payment_method ? ` · ${p.payment_method}` : ""} · {p.notifications} notices</td>
+              <td className="pr-2">{p.amount} {p.currency}{p.simulated ? tx(" (test)") : ""}</td>
+              <td className="pr-2">{low(p.status)}{p.confirmation_code ? ` · ${p.confirmation_code}` : ""}{p.payment_method ? ` · ${p.payment_method}` : ""} · {p.notifications} {tx("notices")}</td>
               <td className="pr-2">{low(p.settlement)}</td>
               <td className="pr-2">{p.collection ? `${p.collection.no} · ${low(p.collection.status)} · ${p.collection.posted ? "posted" : "awaiting finance"}` : "—"}</td>
-              <td className="pr-2">{p.refund ? <>{p.refund.amount} · {low(p.refund.status)}{p.refund.journal_entry_id ? " · booked" : ""}{p.refund.message ? ` · ${p.refund.message}` : ""}
-                {p.refund.status === "REQUESTED" && <span className="ml-1"><button className="underline" disabled={busy} onClick={() => decide(p.refund!.id, "approve")}>Approve</button> <button className="underline text-red-600" disabled={busy} onClick={() => decide(p.refund!.id, "reject")}>Reject</button></span>}</> : "—"}</td>
+              <td className="pr-2">{p.refund ? <>{p.refund.amount} · {low(p.refund.status)}{p.refund.journal_entry_id ? tx(" · booked") : ""}{p.refund.message ? ` · ${p.refund.message}` : ""}
+                {p.refund.status === "REQUESTED" && <span className="ml-1"><button className="underline" disabled={busy} onClick={() => decide(p.refund!.id, "approve")}>{tx("Approve")}</button> <button className="underline text-red-600" disabled={busy} onClick={() => decide(p.refund!.id, "reject")}>{tx("Reject")}</button></span>}</> : "—"}</td>
             </tr>)}</tbody></table></div>
         </div>}
-        <p className="text-xs text-gray-500">M-Pesa and card payments arrive as collections that finance confirms into the ledger; test payments never do.</p>
+        <p className="text-xs text-gray-500">{tx("M-Pesa and card payments arrive as collections that finance confirms into the ledger; test payments never do.")}</p>
       </div>
     </div>
   );

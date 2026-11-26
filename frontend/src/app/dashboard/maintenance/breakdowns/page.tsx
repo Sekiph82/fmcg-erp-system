@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { RequirePermission } from "@/components/PermissionGuard";
 import { useAuth } from "@/context/AuthContext";
+import { tx } from "@/lib/i18n/core";
 
 const severityBadge = (s: BreakdownSeverity) =>
   s === "CRITICAL" ? "red" : s === "HIGH" ? "red" : s === "MEDIUM" ? "yellow" : "gray";
@@ -68,10 +69,10 @@ export default function BreakdownsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Breakdown Records</h1>
-          <p className="text-sm text-gray-500 mt-1">Equipment failures, downtime logging and resolution</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Breakdown Records")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{tx("Equipment failures, downtime logging and resolution")}</p>
         </div>
-        <Button onClick={() => setShowNew(true)}>Log Breakdown</Button>
+        <Button onClick={() => setShowNew(true)}>{tx("Log Breakdown")}</Button>
       </div>
 
       {/* Status filter */}
@@ -93,75 +94,75 @@ export default function BreakdownsPage() {
           })}
         </div>
         {filtered.length > 0 && (
-          <span className="ml-4 text-sm text-gray-500">Total downtime: <span className="font-semibold text-gray-800">{totalDowntime.toLocaleString()} min ({(totalDowntime / 60).toFixed(1)} hrs)</span></span>
+          <span className="ml-4 text-sm text-gray-500">{tx("Total downtime:")} <span className="font-semibold text-gray-800">{totalDowntime.toLocaleString()} {tx("min (")}{(totalDowntime / 60).toFixed(1)} {tx("hrs)")}</span></span>
         )}
       </div>
 
       <section className="rounded-lg border bg-indigo-50 p-4 space-y-3">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <div>
-            <h2 className="font-semibold text-indigo-950">Scheduled Production Capacity at Risk</h2>
-            {capacityImpact && <p className="text-xs text-indigo-800">UTC report window: {capacityImpact.date_from} – {capacityImpact.date_to}; snapshot {new Date(capacityImpact.as_of).toLocaleString()}</p>}
+            <h2 className="font-semibold text-indigo-950">{tx("Scheduled Production Capacity at Risk")}</h2>
+            {capacityImpact && <p className="text-xs text-indigo-800">{tx("UTC report window:")} {capacityImpact.date_from} – {capacityImpact.date_to}{tx("; snapshot")} {new Date(capacityImpact.as_of).toLocaleString()}</p>}
           </div>
-          {capacityImpact && <p className="text-sm font-semibold text-indigo-950">{capacityImpact.total_schedule_minutes_at_risk.toLocaleString()} scheduled minutes</p>}
+          {capacityImpact && <p className="text-sm font-semibold text-indigo-950">{capacityImpact.total_schedule_minutes_at_risk.toLocaleString()} {tx("scheduled minutes")}</p>}
         </div>
-        {capacityImpactLoading && <p className="text-sm text-indigo-800">Loading downtime impact…</p>}
-        {capacityImpactError && <p className="text-sm text-amber-800">Capacity impact is unavailable for your current access.</p>}
+        {capacityImpactLoading && <p className="text-sm text-indigo-800">{tx("Loading downtime impact…")}</p>}
+        {capacityImpactError && <p className="text-sm text-amber-800">{tx("Capacity impact is unavailable for your current access.")}</p>}
         {capacityImpact?.data_notes.map((note) => <p key={note} className="text-xs text-indigo-800">{note}</p>)}
         {capacityImpact && capacityImpact.impacts.length > 0 && (
           <div className="overflow-x-auto rounded border bg-white">
             <table className="w-full text-xs">
               <thead><tr className="border-b bg-gray-50 text-left uppercase text-gray-500">
-                <th className="px-3 py-2">Maintenance Record</th><th className="px-3 py-2">Asset / Work Center</th><th className="px-3 py-2">Interval</th><th className="px-3 py-2">Schedule Minutes</th><th className="px-3 py-2">Production Orders at Risk</th>
+                <th className="px-3 py-2">{tx("Maintenance Record")}</th><th className="px-3 py-2">{tx("Asset / Work Center")}</th><th className="px-3 py-2">{tx("Interval")}</th><th className="px-3 py-2">{tx("Schedule Minutes")}</th><th className="px-3 py-2">{tx("Production Orders at Risk")}</th>
               </tr></thead>
               <tbody className="divide-y">
                 {capacityImpact.impacts.map((impact) => (
                   <tr key={`${impact.source_type}-${impact.source_id}`}>
-                    <td className="px-3 py-2">{impact.source_type === "BREAKDOWN" ? "Breakdown" : "PM"} {impact.source_number}<div className="text-gray-500">{impact.status}{impact.ongoing ? " · open" : ""}</div></td>
-                    <td className="px-3 py-2">{impact.asset_no} — {impact.asset_name}<div className="text-gray-500">Work center: {impact.work_center_id || "not linked"}</div></td>
+                    <td className="px-3 py-2">{impact.source_type === "BREAKDOWN" ? tx("Breakdown") : "PM"} {impact.source_number}<div className="text-gray-500">{impact.status}{impact.ongoing ? tx(" · open") : ""}</div></td>
+                    <td className="px-3 py-2">{impact.asset_no} — {impact.asset_name}<div className="text-gray-500">{tx("Work center:")} {impact.work_center_id || tx("not linked")}</div></td>
                     <td className="px-3 py-2">{new Date(impact.start_time).toLocaleString()} – {impact.end_time ? new Date(impact.end_time).toLocaleString() : `observed through ${impact.observed_through ? new Date(impact.observed_through).toLocaleString() : "snapshot"}`}</td>
-                    <td className="px-3 py-2">{impact.unavailable_reason ? <span className="text-amber-700">Unknown: {impact.unavailable_reason}</span> : `${impact.schedule_minutes_at_risk.toLocaleString()} min`}</td>
-                    <td className="px-3 py-2">{impact.affected_production_order_ids.length ? impact.affected_production_order_ids.join(", ") : impact.unavailable_reason ? "Not calculated" : "None in active schedule"}</td>
+                    <td className="px-3 py-2">{impact.unavailable_reason ? <span className="text-amber-700">{tx("Unknown:")} {impact.unavailable_reason}</span> : `${impact.schedule_minutes_at_risk.toLocaleString()} min`}</td>
+                    <td className="px-3 py-2">{impact.affected_production_order_ids.length ? impact.affected_production_order_ids.join(", ") : impact.unavailable_reason ? tx("Not calculated") : tx("None in active schedule")}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         )}
-        {capacityImpact && capacityImpact.impacts.length === 0 && <p className="text-sm text-indigo-800">No maintenance intervals intersect active scheduled production in this report window.</p>}
+        {capacityImpact && capacityImpact.impacts.length === 0 && <p className="text-sm text-indigo-800">{tx("No maintenance intervals intersect active scheduled production in this report window.")}</p>}
       </section>
 
       <section className="rounded-lg border bg-amber-50 p-4 space-y-2">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <div>
-            <h2 className="font-semibold text-amber-950">Breakdown Priority & Escalation Review</h2>
-            <p className="text-xs text-amber-900">Virtual demo policy {priorityEscalation?.policy_version || "virtual-demo-v1"}: Critical/P1 now, High/P2 4h, Medium/P3 24h, Low/P4 72h.</p>
+            <h2 className="font-semibold text-amber-950">{tx("Breakdown Priority & Escalation Review")}</h2>
+            <p className="text-xs text-amber-900">{tx("Virtual demo policy")} {priorityEscalation?.policy_version || "virtual-demo-v1"}{tx(": Critical/P1 now, High/P2 4h, Medium/P3 24h, Low/P4 72h.")}</p>
           </div>
-          {priorityEscalation && <p className="text-xs text-amber-900">Snapshot {new Date(priorityEscalation.as_of).toLocaleString()}</p>}
+          {priorityEscalation && <p className="text-xs text-amber-900">{tx("Snapshot")} {new Date(priorityEscalation.as_of).toLocaleString()}</p>}
         </div>
-        <p className="text-xs text-amber-900">These are illustrative software defaults, not approved factory SLAs or staff assignments. The report does not send alerts or assign people.</p>
-        {priorityLoading && <p className="text-sm text-amber-800">Calculating breakdown priority…</p>}
-        {priorityError && <p className="text-sm text-amber-800">Priority review is unavailable for your current access.</p>}
+        <p className="text-xs text-amber-900">{tx("These are illustrative software defaults, not approved factory SLAs or staff assignments. The report does not send alerts or assign people.")}</p>
+        {priorityLoading && <p className="text-sm text-amber-800">{tx("Calculating breakdown priority…")}</p>}
+        {priorityError && <p className="text-sm text-amber-800">{tx("Priority review is unavailable for your current access.")}</p>}
         {priorityEscalation?.data_notes.map((note) => <p key={note} className="text-xs text-amber-800">{note}</p>)}
       </section>
 
       <div className="bg-white rounded-lg border overflow-x-auto">
         {isLoading ? (
-          <p className="px-5 py-8 text-center text-gray-400">Loading…</p>
+          <p className="px-5 py-8 text-center text-gray-400">{tx("Loading…")}</p>
         ) : (
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-gray-50 text-xs text-gray-500 uppercase">
-                <th className="px-5 py-2 text-left">Breakdown No</th>
-                <th className="px-5 py-2 text-left">Asset</th>
-                <th className="px-5 py-2 text-left">Reason</th>
-                <th className="px-5 py-2 text-left">Severity</th>
-                <th className="px-5 py-2 text-left">Start</th>
-                <th className="px-5 py-2 text-left">End</th>
-                <th className="px-5 py-2 text-right">Downtime</th>
-                <th className="px-5 py-2 text-left">Priority</th>
-                <th className="px-5 py-2 text-left">Escalation</th>
-                <th className="px-5 py-2 text-left">Status</th>
+                <th className="px-5 py-2 text-left">{tx("Breakdown No")}</th>
+                <th className="px-5 py-2 text-left">{tx("Asset")}</th>
+                <th className="px-5 py-2 text-left">{tx("Reason")}</th>
+                <th className="px-5 py-2 text-left">{tx("Severity")}</th>
+                <th className="px-5 py-2 text-left">{tx("Start")}</th>
+                <th className="px-5 py-2 text-left">{tx("End")}</th>
+                <th className="px-5 py-2 text-right">{tx("Downtime")}</th>
+                <th className="px-5 py-2 text-left">{tx("Priority")}</th>
+                <th className="px-5 py-2 text-left">{tx("Escalation")}</th>
+                <th className="px-5 py-2 text-left">{tx("Status")}</th>
                 <th className="px-5 py-2" />
               </tr>
             </thead>
@@ -182,26 +183,26 @@ export default function BreakdownsPage() {
                   <td className="px-5 py-3"><Badge label={bd.severity} variant={severityBadge(bd.severity)} /></td>
                   <td className="px-5 py-3 text-gray-600 text-xs">{new Date(bd.start_time).toLocaleString()}</td>
                   <td className="px-5 py-3 text-gray-500 text-xs">{bd.end_time ? new Date(bd.end_time).toLocaleString() : "—"}</td>
-                  <td className="px-5 py-3 text-right font-semibold">{bd.downtime_minutes != null ? `${bd.downtime_minutes} min` : "—"}</td>
-                  <td className="px-5 py-3">{assessment?.priority || (bd.status === "RESOLVED" ? "Closed" : "—")}</td>
+                  <td className="px-5 py-3 text-right font-semibold">{bd.downtime_minutes != null ? tx("{downtime_minutes} min", { downtime_minutes: bd.downtime_minutes }) : "—"}</td>
+                  <td className="px-5 py-3">{assessment?.priority || (bd.status === "RESOLVED" ? tx("Closed") : "—")}</td>
                   <td className={`px-5 py-3 text-xs ${assessment?.state === "ESCALATE_NOW" ? "font-semibold text-red-700" : assessment?.state === "DATA_INCOMPLETE" ? "text-amber-700" : "text-gray-600"}`}>
                     {assessment ? (
                       <span title={assessment.recommended_action}>
-                        {assessment.state.replaceAll("_", " ")}{assessment.minutes_until_escalation != null ? ` · ${assessment.minutes_until_escalation} min left` : ""}
+                        {assessment.state.replaceAll("_", " ")}{assessment.minutes_until_escalation != null ? tx(" · {minutes_until_escalation} min left", { minutes_until_escalation: assessment.minutes_until_escalation }) : ""}
                       </span>
-                    ) : bd.status === "RESOLVED" ? "Resolved" : "Unavailable"}
+                    ) : bd.status === "RESOLVED" ? tx("Resolved") : tx("Unavailable")}
                   </td>
                   <td className="px-5 py-3"><Badge label={bd.status} variant={statusBadge(bd.status)} /></td>
                   <td className="px-5 py-3">
                     {bd.status !== "RESOLVED" && (
-                      <button className="text-xs text-green-600 hover:underline" onClick={() => setResolving(bd)}>Resolve</button>
+                      <button className="text-xs text-green-600 hover:underline" onClick={() => setResolving(bd)}>{tx("Resolve")}</button>
                     )}
                   </td>
                 </tr>
                 );
               })}
               {filtered.length === 0 && (
-                <tr><td colSpan={11} className="px-5 py-8 text-center text-gray-400">No breakdowns</td></tr>
+                <tr><td colSpan={11} className="px-5 py-8 text-center text-gray-400">{tx("No breakdowns")}</td></tr>
               )}
             </tbody>
           </table>
@@ -240,38 +241,38 @@ function NewBreakdownModal({ assets, reasonCodes, onClose, onSubmit, loading }: 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4">
-        <h2 className="font-semibold text-lg">Log Breakdown</h2>
+        <h2 className="font-semibold text-lg">{tx("Log Breakdown")}</h2>
         <div className="space-y-3">
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Asset</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Asset")}</label>
             <select className="w-full border rounded px-3 py-2 text-sm" value={form.asset_id} onChange={(e) => set("asset_id", e.target.value)}>
-              <option value="">Select asset…</option>
+              <option value="">{tx("Select asset…")}</option>
               {assets.map((a) => <option key={a.id} value={a.id}>{a.asset_no} — {a.name}</option>)}
             </select>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Start Time</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Start Time")}</label>
               <input type="datetime-local" className="w-full border rounded px-3 py-2 text-sm" value={form.start_time} onChange={(e) => set("start_time", e.target.value)} />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Severity</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Severity")}</label>
               <select className="w-full border rounded px-3 py-2 text-sm" value={form.severity} onChange={(e) => set("severity", e.target.value)}>
-                <option value="LOW">Low</option>
-                <option value="MEDIUM">Medium</option>
-                <option value="HIGH">High</option>
-                <option value="CRITICAL">Critical</option>
+                <option value="LOW">{tx("Low")}</option>
+                <option value="MEDIUM">{tx("Medium")}</option>
+                <option value="HIGH">{tx("High")}</option>
+                <option value="CRITICAL">{tx("Critical")}</option>
               </select>
             </div>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Reason / Description</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Reason / Description")}</label>
             <textarea className="w-full border rounded px-3 py-2 text-sm" rows={2} value={form.reason} onChange={(e) => set("reason", e.target.value)} />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Reason Code *</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Reason Code *")}</label>
             <select required className="w-full border rounded px-3 py-2 text-sm" value={form.reason_code} onChange={(e) => set("reason_code", e.target.value)}>
-              <option value="">Select reason code…</option>
+              <option value="">{tx("Select reason code…")}</option>
               {categories.map((category) => (
                 <optgroup key={category.code} label={category.label}>
                   {reasonCodes.filter((reasonCode) => reasonCode.parent_code === category.code && reasonCode.is_selectable).map((reasonCode) => (
@@ -282,23 +283,23 @@ function NewBreakdownModal({ assets, reasonCodes, onClose, onSubmit, loading }: 
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Production order (optional)</label>
-            <EntityPicker kind="production_order" label="Production order" value={form.production_order_id} onChange={(id) => set("production_order_id", id)} />
+            <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Production order (optional)")}</label>
+            <EntityPicker kind="production_order" label={tx("Production order")} value={form.production_order_id} onChange={(id) => set("production_order_id", id)} />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Technician (gets it on My Jobs)</label>
-            <EntityPicker kind="user" label="Technician" value={form.assigned_to_id} onChange={(id) => set("assigned_to_id", id)} />
+            <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Technician (gets it on My Jobs)")}</label>
+            <EntityPicker kind="user" label={tx("Technician")} value={form.assigned_to_id} onChange={(id) => set("assigned_to_id", id)} />
           </div>
         </div>
         <div className="flex gap-2 justify-end">
-          <Button variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button variant="secondary" onClick={onClose}>{tx("Cancel")}</Button>
           <Button loading={loading} disabled={loading || !form.reason_code} onClick={() => onSubmit({
             ...form,
             start_time: new Date(form.start_time).toISOString(),
             reason_code: form.reason_code || undefined,
             production_order_id: form.production_order_id || undefined,
             assigned_to_id: form.assigned_to_id || undefined,
-          })}>Log</Button>
+          })}>{tx("Log")}</Button>
         </div>
       </div>
     </div>
@@ -318,32 +319,32 @@ function ResolveModal({ bd, onClose, onSubmit, loading }: { bd: BreakdownRecord;
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4">
         <div>
-          <h2 className="font-semibold text-lg">Resolve Breakdown</h2>
+          <h2 className="font-semibold text-lg">{tx("Resolve Breakdown")}</h2>
           <p className="text-xs text-gray-500 mt-1">{bd.breakdown_no} — {bd.asset_name}</p>
         </div>
         <div className="space-y-3">
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">End Time</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{tx("End Time")}</label>
             <input type="datetime-local" className="w-full border rounded px-3 py-2 text-sm" value={form.end_time} onChange={(e) => set("end_time", e.target.value)} />
-            {downtimeMin > 0 && <p className="text-xs text-gray-500 mt-1">Downtime: {downtimeMin} min ({(downtimeMin / 60).toFixed(1)} hrs)</p>}
+            {downtimeMin > 0 && <p className="text-xs text-gray-500 mt-1">{tx("Downtime:")} {downtimeMin} {tx("min (")}{(downtimeMin / 60).toFixed(1)} {tx("hrs)")}</p>}
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Root Cause</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Root Cause")}</label>
             <textarea className="w-full border rounded px-3 py-2 text-sm" rows={2} value={form.root_cause} onChange={(e) => set("root_cause", e.target.value)} />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Corrective Action Taken</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Corrective Action Taken")}</label>
             <textarea className="w-full border rounded px-3 py-2 text-sm" rows={2} value={form.corrective_action} onChange={(e) => set("corrective_action", e.target.value)} />
           </div>
         </div>
         <div className="flex gap-2 justify-end">
-          <Button variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button variant="secondary" onClick={onClose}>{tx("Cancel")}</Button>
           <Button loading={loading} onClick={() => onSubmit({
             end_time: new Date(form.end_time).toISOString(),
             downtime_minutes: downtimeMin || undefined,
             root_cause: form.root_cause || undefined,
             corrective_action: form.corrective_action || undefined,
-          })}>Resolve</Button>
+          })}>{tx("Resolve")}</Button>
         </div>
       </div>
     </div>

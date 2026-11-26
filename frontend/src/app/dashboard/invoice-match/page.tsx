@@ -7,6 +7,7 @@ import {
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
 } from "recharts";
+import { tx } from "@/lib/i18n/core";
 
 const COLORS = ["#ef4444","#f97316","#eab308","#8b5cf6","#06b6d4","#10b981"];
 
@@ -16,17 +17,17 @@ export default function InvoiceMatchDashboard() {
     queryFn: () => imApi.getDashboard(),
   });
 
-  if (isLoading) return <div className="p-8 text-gray-500">Loading…</div>;
-  if (error) return <div className="p-8 text-red-500">Failed to load dashboard. Ensure the database migration has been run (alembic upgrade heads).</div>;
+  if (isLoading) return <div className="p-8 text-gray-500">{tx("Loading…")}</div>;
+  if (error) return <div className="p-8 text-red-500">{tx("Failed to load dashboard. Ensure the database migration has been run (alembic upgrade heads).")}</div>;
   if (!data) return null;
 
   const kpis = [
-    { label: "Fully Matched",     value: data.fully_matched,   color: "bg-green-100 text-green-700" },
-    { label: "In Tolerance",      value: data.within_tolerance, color: "bg-teal-100 text-teal-700" },
-    { label: "Mismatched",        value: data.mismatched,       color: "bg-orange-100 text-orange-700" },
-    { label: "Blocked",           value: data.blocked,          color: "bg-red-100 text-red-700" },
-    { label: "Pending Review",    value: data.pending_review,   color: "bg-yellow-100 text-yellow-700" },
-    { label: "Duplicate Suspected",value: data.duplicate_suspected, color: "bg-purple-100 text-purple-700" },
+    { label: tx("Fully Matched"),     value: data.fully_matched,   color: "bg-green-100 text-green-700" },
+    { label: tx("In Tolerance"),      value: data.within_tolerance, color: "bg-teal-100 text-teal-700" },
+    { label: tx("Mismatched"),        value: data.mismatched,       color: "bg-orange-100 text-orange-700" },
+    { label: tx("Blocked"),           value: data.blocked,          color: "bg-red-100 text-red-700" },
+    { label: tx("Pending Review"),    value: data.pending_review,   color: "bg-yellow-100 text-yellow-700" },
+    { label: tx("Duplicate Suspected"),value: data.duplicate_suspected, color: "bg-purple-100 text-purple-700" },
   ];
 
   const chartData = (data.mismatch_by_type ?? []).map((m) => ({
@@ -37,15 +38,15 @@ export default function InvoiceMatchDashboard() {
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">3-Way Invoice Matching</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{tx("3-Way Invoice Matching")}</h1>
         <div className="flex gap-2">
           <Link href="/dashboard/invoice-match/review-queue"
             className="px-3 py-1.5 text-sm border rounded-lg bg-white hover:bg-gray-50">
-            Review Queue {data.pending_review > 0 && <span className="ml-1 text-yellow-600 font-bold">({data.pending_review})</span>}
+            {tx("Review Queue")} {data.pending_review > 0 && <span className="ml-1 text-yellow-600 font-bold">({data.pending_review})</span>}
           </Link>
           <Link href="/dashboard/invoice-match/matches"
             className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">
-            All Matches
+            {tx("All Matches")}
           </Link>
         </div>
       </div>
@@ -63,19 +64,19 @@ export default function InvoiceMatchDashboard() {
       {/* Payment readiness */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white border rounded-xl p-5">
-          <p className="text-xs text-gray-500 uppercase tracking-wide">Total Matches</p>
+          <p className="text-xs text-gray-500 uppercase tracking-wide">{tx("Total Matches")}</p>
           <p className="text-3xl font-bold text-gray-900">{data.total_matches}</p>
         </div>
         <div className="bg-green-50 border border-green-200 rounded-xl p-5">
-          <p className="text-xs text-green-600 uppercase tracking-wide font-medium">Payable</p>
+          <p className="text-xs text-green-600 uppercase tracking-wide font-medium">{tx("Payable")}</p>
           <p className="text-3xl font-bold text-green-700">{data.payable_count}</p>
-          <p className="text-xs text-green-500 mt-1">Cleared for payment</p>
+          <p className="text-xs text-green-500 mt-1">{tx("Cleared for payment")}</p>
         </div>
         <div className="bg-red-50 border border-red-200 rounded-xl p-5">
-          <p className="text-xs text-red-600 uppercase tracking-wide font-medium">On Hold</p>
+          <p className="text-xs text-red-600 uppercase tracking-wide font-medium">{tx("On Hold")}</p>
           <p className="text-3xl font-bold text-red-700">{data.on_hold_count}</p>
           <Link href="/dashboard/invoice-match/blocked" className="text-xs text-red-500 hover:underline">
-            View blocked →
+            {tx("View blocked →")}
           </Link>
         </div>
       </div>
@@ -83,9 +84,9 @@ export default function InvoiceMatchDashboard() {
       {/* Mismatch chart + AI alert */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white border rounded-xl p-5">
-          <h2 className="text-sm font-semibold text-gray-700 mb-4">Mismatch by Type</h2>
+          <h2 className="text-sm font-semibold text-gray-700 mb-4">{tx("Mismatch by Type")}</h2>
           {chartData.length === 0 ? (
-            <p className="text-sm text-gray-400">No mismatches recorded.</p>
+            <p className="text-sm text-gray-400">{tx("No mismatches recorded.")}</p>
           ) : (
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={chartData}>
@@ -101,12 +102,12 @@ export default function InvoiceMatchDashboard() {
         </div>
 
         <div className="bg-white border rounded-xl p-5 space-y-3">
-          <h2 className="text-sm font-semibold text-gray-700">Quick Links</h2>
+          <h2 className="text-sm font-semibold text-gray-700">{tx("Quick Links")}</h2>
           {[
-            { href: "/dashboard/invoice-match/duplicates", label: "Duplicate Suspicion Queue", count: data.duplicate_suspected, color: "text-purple-600" },
-            { href: "/dashboard/invoice-match/blocked", label: "Blocked Invoices", count: data.on_hold_count, color: "text-red-600" },
-            { href: "/dashboard/invoice-match/review-queue", label: "Pending Review", count: data.pending_review, color: "text-yellow-600" },
-            { href: "/dashboard/invoice-match/ai", label: "AI Recommendations", count: data.pending_ai_recs, color: "text-purple-600" },
+            { href: "/dashboard/invoice-match/duplicates", label: tx("Duplicate Suspicion Queue"), count: data.duplicate_suspected, color: "text-purple-600" },
+            { href: "/dashboard/invoice-match/blocked", label: tx("Blocked Invoices"), count: data.on_hold_count, color: "text-red-600" },
+            { href: "/dashboard/invoice-match/review-queue", label: tx("Pending Review"), count: data.pending_review, color: "text-yellow-600" },
+            { href: "/dashboard/invoice-match/ai", label: tx("AI Recommendations"), count: data.pending_ai_recs, color: "text-purple-600" },
           ].map((q) => (
             <Link key={q.href} href={q.href}
               className="flex items-center justify-between px-3 py-2.5 border rounded-lg hover:bg-gray-50">
@@ -120,13 +121,13 @@ export default function InvoiceMatchDashboard() {
       {/* Recent matches */}
       <div className="bg-white border rounded-xl overflow-hidden">
         <div className="flex items-center justify-between px-5 py-3 border-b">
-          <h2 className="text-sm font-semibold text-gray-700">Recent Matches</h2>
-          <Link href="/dashboard/invoice-match/matches" className="text-xs text-blue-600 hover:underline">View all →</Link>
+          <h2 className="text-sm font-semibold text-gray-700">{tx("Recent Matches")}</h2>
+          <Link href="/dashboard/invoice-match/matches" className="text-xs text-blue-600 hover:underline">{tx("View all →")}</Link>
         </div>
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
             <tr>
-              {["Match No", "Invoice No", "Date", "Total", "Status", "Payable", ""].map((h) => (
+              {[tx("Match No"), tx("Invoice No"), tx("Date"), tx("Total"), tx("Status"), tx("Payable"), ""].map((h) => (
                 <th key={h} className="px-4 py-2 text-left font-medium">{h}</th>
               ))}
             </tr>
@@ -145,16 +146,16 @@ export default function InvoiceMatchDashboard() {
                 </td>
                 <td className="px-4 py-2">
                   <span className={`text-xs font-medium ${m.is_payable ? "text-green-600" : "text-red-600"}`}>
-                    {m.is_payable ? "✓ Payable" : "✗ Hold"}
+                    {m.is_payable ? tx("✓ Payable") : tx("✗ Hold")}
                   </span>
                 </td>
                 <td className="px-4 py-2">
-                  <Link href={`/dashboard/invoice-match/${m.id}`} className="text-blue-600 hover:underline text-xs">View</Link>
+                  <Link href={`/dashboard/invoice-match/${m.id}`} className="text-blue-600 hover:underline text-xs">{tx("View")}</Link>
                 </td>
               </tr>
             ))}
             {(data.recent_matches ?? []).length === 0 && (
-              <tr><td colSpan={7} className="px-4 py-6 text-center text-gray-400">No matches yet. Run a match from an invoice.</td></tr>
+              <tr><td colSpan={7} className="px-4 py-6 text-center text-gray-400">{tx("No matches yet. Run a match from an invoice.")}</td></tr>
             )}
           </tbody>
         </table>

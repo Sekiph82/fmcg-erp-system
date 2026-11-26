@@ -10,6 +10,7 @@
  *   Never add child items/sections here — those become sidebar links.
  */
 import React from "react";
+import { tx, lx } from "@/lib/i18n/core";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -88,13 +89,13 @@ function ws(
 
 // ── Navigation config ─────────────────────────────────────────────────────────
 
-export const NAV_CONFIG: NavEntry[] = [
+export const NAV_CONFIG: NavEntry[] = lx(() => [
 
   // Dashboard
   {
     type: "link",
     id: "dashboard",
-    label: "Dashboard",
+    label: tx("Dashboard"),
     href: "/dashboard",
     icon: md("M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"),
   },
@@ -103,7 +104,7 @@ export const NAV_CONFIG: NavEntry[] = [
   {
     type: "link",
     id: "my-approvals",
-    label: "My Approvals",
+    label: tx("My Approvals"),
     href: "/dashboard/my-approvals",
     icon: md("M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"),
     permission: "self.my_approvals",
@@ -127,28 +128,28 @@ export const NAV_CONFIG: NavEntry[] = [
   ws("inventory",   "Inventory",       "/dashboard/inventory",
     md("M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"),
     { permission: "inventory.view", searchHints: [
-      { label: "Cycle Count",         tab: "cycle-count" },
-      { label: "Shelf Life / FEFO",   tab: "shelf-life" },
-      { label: "Lot Traceability",    tab: "traceability" },
-      { label: "Serial / Batch",      tab: "serials" },
-      { label: "Stock Movements",     tab: "movements" },
+      { label: tx("Cycle Count"),         tab: "cycle-count" },
+      { label: tx("Shelf Life / FEFO"),   tab: "shelf-life" },
+      { label: tx("Lot Traceability"),    tab: "traceability" },
+      { label: tx("Serial / Batch"),      tab: "serials" },
+      { label: tx("Stock Movements"),     tab: "movements" },
     ]}),
 
   ws("warehouses",  "Warehouses & WMS","/dashboard/warehouses",
     md("M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10"),
     { permission: "inventory.view", searchHints: [
-      { label: "WMS / Picking",       tab: "wms" },
-      { label: "Putaway",             tab: "wms" },
-      { label: "Bin Replenishment",   tab: "wms" },
+      { label: tx("WMS / Picking"),       tab: "wms" },
+      { label: tx("Putaway"),             tab: "wms" },
+      { label: tx("Bin Replenishment"),   tab: "wms" },
     ]}),
 
   ws("procurement", "Procurement",     "/dashboard/procurement",
     md("M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"),
     { permission: "procurement.view", searchHints: [
-      { label: "Subcontracting",      tab: "subcontracting" },
-      { label: "Landed Cost",         tab: "landed-cost" },
-      { label: "Supplier Portal",     tab: "supplier-portal" },
-      { label: "AI Suggestions",      tab: "suggestions" },
+      { label: tx("Subcontracting"),      tab: "subcontracting" },
+      { label: tx("Landed Cost"),         tab: "landed-cost" },
+      { label: tx("Supplier Portal"),     tab: "supplier-portal" },
+      { label: tx("AI Suggestions"),      tab: "suggestions" },
     ]}),
 
   // ── Manufacturing ───────────────────────────────────────────────────────────
@@ -157,11 +158,11 @@ export const NAV_CONFIG: NavEntry[] = [
   ws("production",  "Production",      "/dashboard/production",
     md("M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"),
     { permission: "production.view", searchHints: [
-      { label: "Production Execution",tab: "execution" },
-      { label: "Machine Operators",   tab: "machine-ops" },
-      { label: "Material Flow",       tab: "material-flow" },
-      { label: "OEE Records",         tab: "oee" },
-      { label: "Batch / Lots",        tab: "batch-lots" },
+      { label: tx("Production Execution"),tab: "execution" },
+      { label: tx("Machine Operators"),   tab: "machine-ops" },
+      { label: tx("Material Flow"),       tab: "material-flow" },
+      { label: tx("OEE Records"),         tab: "oee" },
+      { label: tx("Batch / Lots"),        tab: "batch-lots" },
     ]}),
 
   ws("planning",    "Planning",        "/dashboard/planning",
@@ -169,40 +170,40 @@ export const NAV_CONFIG: NavEntry[] = [
     { permission: "planning.view", searchHints: [
       { label: "MRP",                 tab: "mrp" },
       { label: "MPS",                 tab: "mps" },
-      { label: "Kanban",              tab: "kanban" },
-      { label: "Capacity Board",      tab: "advanced" },
-      { label: "Simulation",          tab: "advanced" },
+      { label: tx("Kanban"),              tab: "kanban" },
+      { label: tx("Capacity Board"),      tab: "advanced" },
+      { label: tx("Simulation"),          tab: "advanced" },
     ]}),
 
   ws("npd",         "NPD",             "/dashboard/npd",
     md("M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"),
     { permission: "npd.view", searchHints: [
-      { label: "New Product Development", href: "/dashboard/npd",             permission: "npd.view" },
-      { label: "NPD Projects",    href: "/dashboard/npd",   permission: "npd.view" },
+      { label: tx("New Product Development"), href: "/dashboard/npd",             permission: "npd.view" },
+      { label: tx("NPD Projects"),    href: "/dashboard/npd",   permission: "npd.view" },
     ]}),
 
   ws("bom",         "BOM & Formula",   "/dashboard/bom",
     md("M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"),
     { permission: "bom.view", searchHints: [
-      { label: "Formula Versions",    tab: "list" },
-      { label: "Substitutes",         tab: "substitutes" },
-      { label: "BOM Compare",         tab: "compare" },
-      { label: "BOM Master",          href: "/dashboard/bom",            permission: "bom.view" },
-      { label: "Conversion Profiles", href: "/dashboard/bom/conversion", permission: "bom.view" },
+      { label: tx("Formula Versions"),    tab: "list" },
+      { label: tx("Substitutes"),         tab: "substitutes" },
+      { label: tx("BOM Compare"),         tab: "compare" },
+      { label: tx("BOM Master"),          href: "/dashboard/bom",            permission: "bom.view" },
+      { label: tx("Conversion Profiles"), href: "/dashboard/bom/conversion", permission: "bom.view" },
     ]}),
 
   ws("recipes",     "Recipes",         "/dashboard/recipes",
     md("M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"),
     { permission: "recipe.view", searchHints: [
-      { label: "Recipes / BOM", href: "/dashboard/recipes",         permission: "recipe.view" },
+      { label: tx("Recipes / BOM"), href: "/dashboard/recipes",         permission: "recipe.view" },
     ]}),
 
   ws("quality",     "Quality",         "/dashboard/quality",
     md("M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"),
     { permission: "quality.view", searchHints: [
-      { label: "QMS & HACCP",         tab: "qms" },
-      { label: "Allergen Matrix",     tab: "allergen" },
-      { label: "Consumer Complaints", tab: "consumer-complaints", permission: "consumer_complaints.view" },
+      { label: tx("QMS & HACCP"),         tab: "qms" },
+      { label: tx("Allergen Matrix"),     tab: "allergen" },
+      { label: tx("Consumer Complaints"), tab: "consumer-complaints", permission: "consumer_complaints.view" },
       { label: "CAPA",                tab: "qms" },
       { label: "COA",                 tab: "qms" },
     ]}),
@@ -210,18 +211,18 @@ export const NAV_CONFIG: NavEntry[] = [
   ws("compliance",  "Compliance",      "/dashboard/compliance",
     md("M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"),
     { permission: "gs1.view", searchHints: [
-      { label: "GS1 Labels",          tab: "gs1" },
-      { label: "Barcode Generator",   tab: "gs1" },
-      { label: "Print Queue",         tab: "gs1" },
-      { label: "Regulatory Certs",    tab: "regulatory-certs" },
+      { label: tx("GS1 Labels"),          tab: "gs1" },
+      { label: tx("Barcode Generator"),   tab: "gs1" },
+      { label: tx("Print Queue"),         tab: "gs1" },
+      { label: tx("Regulatory Certs"),    tab: "regulatory-certs" },
     ]}),
 
   ws("shop-floor",  "Shop Floor",      "/dashboard/shop-floor",
     md("M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"),
     { permission: "production.view", searchHints: [
-      { label: "Operator Terminal",   tab: "terminal" },
-      { label: "Supervisor Console",  tab: "supervisor" },
-      { label: "Queue Board",         tab: "queue" },
+      { label: tx("Operator Terminal"),   tab: "terminal" },
+      { label: tx("Supervisor Console"),  tab: "supervisor" },
+      { label: tx("Queue Board"),         tab: "queue" },
     ]}),
 
   // ── Commercial ──────────────────────────────────────────────────────────────
@@ -230,42 +231,42 @@ export const NAV_CONFIG: NavEntry[] = [
   ws("sales",       "Sales",           "/dashboard/sales",
     md("M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"),
     { permission: "sales.view", searchHints: [
-      { label: "Price Lists",         tab: "price-lists" },
-      { label: "Van Sales",           tab: "van-sales" },
-      { label: "Secondary Sales",     tab: "secondary" },
-      { label: "Commissions",         tab: "commissions" },
-      { label: "Recurring Orders",    tab: "recurring" },
-      { label: "Customer Portal",     tab: "portal" },
-      { label: "Dynamic Pricing",     tab: "dynamic-pricing" },
+      { label: tx("Price Lists"),         tab: "price-lists" },
+      { label: tx("Van Sales"),           tab: "van-sales" },
+      { label: tx("Secondary Sales"),     tab: "secondary" },
+      { label: tx("Commissions"),         tab: "commissions" },
+      { label: tx("Recurring Orders"),    tab: "recurring" },
+      { label: tx("Customer Portal"),     tab: "portal" },
+      { label: tx("Dynamic Pricing"),     tab: "dynamic-pricing" },
     ]}),
 
   // Employee self-service (M38): every employee's own leave, attendance, requests, payslips
   ws("my-hr",       "My HR",           "/dashboard/ess",
     md("M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"),
     { permission: "self.my_hr", searchHints: [
-      { label: "My Leave",            href: "/dashboard/ess/leave" },
-      { label: "My Attendance",       href: "/dashboard/ess/attendance" },
-      { label: "My Payslips",         href: "/dashboard/ess/payslips" },
-      { label: "My Requests",         href: "/dashboard/ess/requests" },
-      { label: "My Business Card",    href: "/dashboard/ess/card" },
+      { label: tx("My Leave"),            href: "/dashboard/ess/leave" },
+      { label: tx("My Attendance"),       href: "/dashboard/ess/attendance" },
+      { label: tx("My Payslips"),         href: "/dashboard/ess/payslips" },
+      { label: tx("My Requests"),         href: "/dashboard/ess/requests" },
+      { label: tx("My Business Card"),    href: "/dashboard/ess/card" },
     ]}),
 
   // Warehouse floor (M38): scan-driven picking and putaway for warehouse operators
   ws("warehouse-floor", "Warehouse Floor", "/dashboard/warehouse-floor",
     md("M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"),
     { permission: "inventory.dispatch", searchHints: [
-      { label: "Pick tasks",          href: "/dashboard/warehouse-floor" },
-      { label: "Putaway tasks",       href: "/dashboard/warehouse-floor" },
+      { label: tx("Pick tasks"),          href: "/dashboard/warehouse-floor" },
+      { label: tx("Putaway tasks"),       href: "/dashboard/warehouse-floor" },
     ]}),
 
   // Field app (M38): reps, moto riders, drivers and field controllers see only their own work; no module permission needed
   ws("field",       "Field App",       "/dashboard/field",
     md("M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0zM15 11a3 3 0 11-6 0 3 3 0 016 0z"),
     { permission: "self.field_app", searchHints: [
-      { label: "My Route",            href: "/dashboard/field" },
-      { label: "My Deliveries",       href: "/dashboard/field" },
-      { label: "Outlet Audits",       href: "/dashboard/field" },
-      { label: "Field Team Compliance", href: "/dashboard/field/supervisor", permission: "field.supervise" },
+      { label: tx("My Route"),            href: "/dashboard/field" },
+      { label: tx("My Deliveries"),       href: "/dashboard/field" },
+      { label: tx("Outlet Audits"),       href: "/dashboard/field" },
+      { label: tx("Field Team Compliance"), href: "/dashboard/field/supervisor", permission: "field.supervise" },
     ]}),
 
   // Technician (M40.S01.T002): the maintenance jobs assigned to me, on the phone
@@ -276,20 +277,20 @@ export const NAV_CONFIG: NavEntry[] = [
   ws("crm",         "CRM",             "/dashboard/crm",
     md("M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"),
     { permission: "crm.view", searchHints: [
-      { label: "Pipeline Board",      tab: "pipeline" },
-      { label: "Loyalty Program",     tab: "loyalty" },
-      { label: "NPS Tracking",        tab: "nps" },
-      { label: "Surveys",             tab: "surveys" },
+      { label: tx("Pipeline Board"),      tab: "pipeline" },
+      { label: tx("Loyalty Program"),     tab: "loyalty" },
+      { label: tx("NPS Tracking"),        tab: "nps" },
+      { label: tx("Surveys"),             tab: "surveys" },
     ]}),
 
   ws("marketing",   "Marketing",       "/dashboard/marketing",
     md("M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z", "M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"),
     { permission: "marketing.view", searchHints: [
       { label: "TPM",                 tab: "tpm" },
-      { label: "Trade Spend",         tab: "tpm" },
-      { label: "Promotions",          tab: "promotions-schemes" },
-      { label: "Market Intelligence", tab: "market-intel" },
-      { label: "E-commerce",          tab: "ecommerce" },
+      { label: tx("Trade Spend"),         tab: "tpm" },
+      { label: tx("Promotions"),          tab: "promotions-schemes" },
+      { label: tx("Market Intelligence"), tab: "market-intel" },
+      { label: tx("E-commerce"),          tab: "ecommerce" },
     ]}),
 
   ws("pos",         "POS",             "/dashboard/pos",
@@ -302,14 +303,14 @@ export const NAV_CONFIG: NavEntry[] = [
   ws("finance",     "Finance",         "/dashboard/finance",
     md("M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"),
     { permission: "finance.view", searchHints: [
-      { label: "Bank Reconciliation", tab: "bank-recon" },
-      { label: "Invoice Match",       tab: "invoice-match" },
-      { label: "Fixed Assets",        tab: "fixed-assets" },
-      { label: "Dimensions",          tab: "dimensions" },
-      { label: "Dunning",             tab: "dunning" },
-      { label: "Tax",                 tab: "tax" },
-      { label: "Journal Entries",     tab: "accounting" },
-      { label: "eTIMS / e-Invoice",   tab: "etims" },
+      { label: tx("Bank Reconciliation"), tab: "bank-recon" },
+      { label: tx("Invoice Match"),       tab: "invoice-match" },
+      { label: tx("Fixed Assets"),        tab: "fixed-assets" },
+      { label: tx("Dimensions"),          tab: "dimensions" },
+      { label: tx("Dunning"),             tab: "dunning" },
+      { label: tx("Tax"),                 tab: "tax" },
+      { label: tx("Journal Entries"),     tab: "accounting" },
+      { label: tx("eTIMS / e-Invoice"),   tab: "etims" },
     ]}),
 
   // ── Factory Operations ──────────────────────────────────────────────────────
@@ -322,12 +323,12 @@ export const NAV_CONFIG: NavEntry[] = [
   ws("utility-management", "Utilities","/dashboard/utility-management",
     md("M13 10V3L4 14h7v7l9-11h-7z"),
     { permission: "utility_management.view", searchHints: [
-      { label: "Electricity",         tab: "electricity" },
-      { label: "Water",               tab: "water" },
+      { label: tx("Electricity"),         tab: "electricity" },
+      { label: tx("Water"),               tab: "water" },
       { label: "ESG",                 tab: "esg" },
-      { label: "IoT",                 href: "/dashboard/iot",    permission: "iot.view" },
-      { label: "Alarms",              tab: "alarm-center" },
-      { label: "KPI Center",          tab: "kpi-center" },
+      { label: tx("IoT"),                 href: "/dashboard/iot",    permission: "iot.view" },
+      { label: tx("Alarms"),              tab: "alarm-center" },
+      { label: tx("KPI Center"),          tab: "kpi-center" },
     ]}),
 
   // ── Logistics ───────────────────────────────────────────────────────────────
@@ -336,9 +337,9 @@ export const NAV_CONFIG: NavEntry[] = [
   ws("logistics",   "Logistics",       "/dashboard/logistics",
     md("M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"),
     { permission: "logistics.view", searchHints: [
-      { label: "Fleet",               tab: "fleet" },
-      { label: "Containers",          tab: "containers" },
-      { label: "Shipments",           tab: "shipments" },
+      { label: tx("Fleet"),               tab: "fleet" },
+      { label: tx("Containers"),          tab: "containers" },
+      { label: tx("Shipments"),           tab: "shipments" },
     ]}),
 
   // ── HR & Payroll ────────────────────────────────────────────────────────────
@@ -347,12 +348,12 @@ export const NAV_CONFIG: NavEntry[] = [
   ws("hr",          "HR",              "/dashboard/hr",
     md("M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"),
     { permission: "hr.view", searchHints: [
-      { label: "Recruitment",         tab: "recruitment" },
-      { label: "Appraisals",          tab: "appraisals" },
-      { label: "Timesheets",          tab: "timesheets" },
+      { label: tx("Recruitment"),         tab: "recruitment" },
+      { label: tx("Appraisals"),          tab: "appraisals" },
+      { label: tx("Timesheets"),          tab: "timesheets" },
       { label: "ESS",                 tab: "ess" },
-      { label: "Training",            tab: "training" },
-      { label: "Expenses",            tab: "expenses" },
+      { label: tx("Training"),            tab: "training" },
+      { label: tx("Expenses"),            tab: "expenses" },
     ]}),
 
   ws("payroll",     "Kenya Payroll",   "/dashboard/payroll",
@@ -365,17 +366,17 @@ export const NAV_CONFIG: NavEntry[] = [
   ws("documents",   "Documents",       "/dashboard/documents",
     md("M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"),
     { permission: "documents.view", searchHints: [
-      { label: "Knowledge Base",      tab: "knowledge-base" },
-      { label: "E-Signatures",        tab: "esign" },
+      { label: tx("Knowledge Base"),      tab: "knowledge-base" },
+      { label: tx("E-Signatures"),        tab: "esign" },
     ]}),
 
   ws("communication","Communication",  "/dashboard/communication",
     md("M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"),
     { searchHints: [
-      { label: "Chatter",             tab: "chatter" },
-      { label: "Calendar",            tab: "calendar" },
-      { label: "Notifications",       tab: "notifications" },
-      { label: "WhatsApp",            tab: "whatsapp" },
+      { label: tx("Chatter"),             tab: "chatter" },
+      { label: tx("Calendar"),            tab: "calendar" },
+      { label: tx("Notifications"),       tab: "notifications" },
+      { label: tx("WhatsApp"),            tab: "whatsapp" },
     ]}),
 
   ws("helpdesk",    "Helpdesk",        "/dashboard/helpdesk",
@@ -388,17 +389,17 @@ export const NAV_CONFIG: NavEntry[] = [
   ws("ai",          "AI",              "/dashboard/ai",
     md("M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"),
     { permission: "ai.view", searchHints: [
-      { label: "AI Chat / Copilot",   tab: "chat" },
-      { label: "Predictions",         tab: "predictions" },
-      { label: "Formulations",        tab: "formulations" },
-      { label: "Scenarios",           tab: "scenarios" },
+      { label: tx("AI Chat / Copilot"),   tab: "chat" },
+      { label: tx("Predictions"),         tab: "predictions" },
+      { label: tx("Formulations"),        tab: "formulations" },
+      { label: tx("Scenarios"),           tab: "scenarios" },
     ]}),
 
   ws("analytics",   "Analytics",       "/dashboard/analytics",
     md("M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"),
     { permission: "analytics.view", searchHints: [
-      { label: "Report Builder",      tab: "report-builder" },
-      { label: "Saved Reports",       tab: "reports" },
+      { label: tx("Report Builder"),      tab: "report-builder" },
+      { label: tx("Saved Reports"),       tab: "reports" },
     ]}),
 
   // ── Administration ───────────────────────────────────────────────────────────
@@ -407,32 +408,32 @@ export const NAV_CONFIG: NavEntry[] = [
   ws("admin",       "Admin",           "/dashboard/admin",
     md("M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z", "M15 12a3 3 0 11-6 0 3 3 0 016 0z"),
     { permission: "users.view", searchHints: [
-      { label: "Users",               tab: "users" },
-      { label: "Roles",               tab: "roles" },
-      { label: "Security",            tab: "security" },
-      { label: "Custom Fields",       tab: "custom-fields" },
-      { label: "System Config",       tab: "system-config" },
-      { label: "Audit Logs",          tab: "logs" },
+      { label: tx("Users"),               tab: "users" },
+      { label: tx("Roles"),               tab: "roles" },
+      { label: tx("Security"),            tab: "security" },
+      { label: tx("Custom Fields"),       tab: "custom-fields" },
+      { label: tx("System Config"),       tab: "system-config" },
+      { label: tx("Audit Logs"),          tab: "logs" },
     ]}),
 
   ws("integrations","Integrations",    "/dashboard/integrations",
     md("M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"),
     { permission: "integrations.view", searchHints: [
-      { label: "Webhooks",            tab: "webhooks" },
-      { label: "Developer Portal",    tab: "developer" },
-      { label: "API Keys",            tab: "developer" },
-      { label: "M-Pesa",              tab: "mpesa" },
+      { label: tx("Webhooks"),            tab: "webhooks" },
+      { label: tx("Developer Portal"),    tab: "developer" },
+      { label: tx("API Keys"),            tab: "developer" },
+      { label: tx("M-Pesa"),              tab: "mpesa" },
     ]}),
 
   {
     type: "link",
     id: "help",
-    label: "Help Center",
+    label: tx("Help Center"),
     href: "/dashboard/help",
     icon: md("M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.938-.306.06-.55.288-.55.607v.334m0 3.668h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"),
   },
 
-];
+]);
 
 // ── Active path helpers ───────────────────────────────────────────────────────
 

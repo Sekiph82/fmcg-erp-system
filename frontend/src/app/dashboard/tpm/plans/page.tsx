@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { tpmApi, TPMPlanStatus, TPMPlan, fmtCurrency, PLAN_STATUS_BADGE, PERIOD_TYPE_LABEL } from "@/lib/tpm";
 import Link from "next/link";
+import { tx } from "@/lib/i18n/core";
 
 export default function TPMPlansPage() {
   const qc = useQueryClient();
@@ -28,18 +29,18 @@ export default function TPMPlansPage() {
     <div className="p-6 space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Trade Promotion Plans</h1>
-          <p className="text-sm text-gray-500">Annual and periodic trade promotion planning.</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Trade Promotion Plans")}</h1>
+          <p className="text-sm text-gray-500">{tx("Annual and periodic trade promotion planning.")}</p>
         </div>
         <div className="flex gap-2 items-center">
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as TPMPlanStatus | "")}
             className="rounded-lg border border-gray-300 px-3 py-2 text-sm">
-            <option value="">All Statuses</option>
+            <option value="">{tx("All Statuses")}</option>
             {(["DRAFT","UNDER_REVIEW","APPROVED","ACTIVE","CLOSED","ARCHIVED"] as TPMPlanStatus[]).map((s) => (
               <option key={s} value={s}>{s}</option>
             ))}
           </select>
-          <Link href="/dashboard/tpm/plans/new" className="glow-button text-sm">+ New Plan</Link>
+          <Link href="/dashboard/tpm/plans/new" className="glow-button text-sm">{tx("+ New Plan")}</Link>
         </div>
       </div>
 
@@ -47,21 +48,21 @@ export default function TPMPlansPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-blue-900/30">
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Plan</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Year</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Period</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Status</th>
-              <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Planned Budget</th>
-              <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Actual Spend</th>
-              <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Promos</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Actions</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Plan")}</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Year")}</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Period")}</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Status")}</th>
+              <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Planned Budget")}</th>
+              <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Actual Spend")}</th>
+              <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Promos")}</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Actions")}</th>
             </tr>
           </thead>
           <tbody>
             {isLoading ? (
-              <tr><td colSpan={8} className="text-center py-10 text-gray-400">Loading…</td></tr>
+              <tr><td colSpan={8} className="text-center py-10 text-gray-400">{tx("Loading…")}</td></tr>
             ) : plans.length === 0 ? (
-              <tr><td colSpan={8} className="text-center py-10 text-gray-400">No plans found.</td></tr>
+              <tr><td colSpan={8} className="text-center py-10 text-gray-400">{tx("No plans found.")}</td></tr>
             ) : plans.map((plan: TPMPlan) => (
               <tr key={plan.id} className="border-b border-blue-900/20 hover:bg-blue-950/20 transition-colors">
                 <td className="px-4 py-3">
@@ -82,15 +83,15 @@ export default function TPMPlansPage() {
                   <div className="flex gap-1">
                     {plan.status === "DRAFT" || plan.status === "UNDER_REVIEW" ? (
                       <button onClick={() => approve.mutate(plan.id)}
-                        disabled={approve.isPending} className="glow-button text-xs !py-1">Approve</button>
+                        disabled={approve.isPending} className="glow-button text-xs !py-1">{tx("Approve")}</button>
                     ) : null}
                     {plan.status === "APPROVED" && (
                       <button onClick={() => updateStatus.mutate({ id: plan.id, status: "ACTIVE" })}
-                        disabled={updateStatus.isPending} className="glow-button-secondary text-xs !py-1">Activate</button>
+                        disabled={updateStatus.isPending} className="glow-button-secondary text-xs !py-1">{tx("Activate")}</button>
                     )}
                     {plan.status === "ACTIVE" && (
                       <button onClick={() => updateStatus.mutate({ id: plan.id, status: "CLOSED" })}
-                        disabled={updateStatus.isPending} className="text-xs text-red-400 border border-red-200 rounded px-2 py-1">Close</button>
+                        disabled={updateStatus.isPending} className="text-xs text-red-400 border border-red-200 rounded px-2 py-1">{tx("Close")}</button>
                     )}
                   </div>
                 </td>

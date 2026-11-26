@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { mrpApi, STATUS_COLOR, SUGGESTION_TYPE_COLOR, fmtQty, MRPSuggestion } from "@/lib/mrp";
+import { tx } from "@/lib/i18n/core";
 
 const Badge = ({ s, colorMap }: { s: string; colorMap: Record<string, string> }) => (
   <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${colorMap[s] ?? "bg-gray-100 text-gray-600"}`}>{s}</span>
@@ -61,28 +62,28 @@ export default function SuggestionsPage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6 space-y-6">
       <div className="flex items-center gap-3 mb-1">
-        <Link href="/dashboard/mrp" className="text-sm text-gray-500 hover:text-indigo-600">← MRP Dashboard</Link>
+        <Link href="/dashboard/mrp" className="text-sm text-gray-500 hover:text-indigo-600">{tx("← MRP Dashboard")}</Link>
       </div>
       <h1 className="text-2xl font-bold text-gray-900 dark:text-white" style={{ borderLeft: "4px solid #6366f1", paddingLeft: 12 }}>
-        MRP Suggestions
+        {tx("MRP Suggestions")}
       </h1>
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-          <p className="text-xs text-gray-500">Production Orders</p>
+          <p className="text-xs text-gray-500">{tx("Production Orders")}</p>
           <p className="text-2xl font-bold text-orange-600 mt-1">{prodCount}</p>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-          <p className="text-xs text-gray-500">Purchase Requests</p>
+          <p className="text-xs text-gray-500">{tx("Purchase Requests")}</p>
           <p className="text-2xl font-bold text-teal-600 mt-1">{procCount}</p>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-          <p className="text-xs text-gray-500">Selected</p>
+          <p className="text-xs text-gray-500">{tx("Selected")}</p>
           <p className="text-2xl font-bold text-indigo-600 mt-1">{selected.size}</p>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-          <p className="text-xs text-gray-500">Est. Procurement Cost</p>
+          <p className="text-xs text-gray-500">{tx("Est. Procurement Cost")}</p>
           <p className="text-xl font-bold text-gray-900 dark:text-white mt-1">
             {totalEst > 0 ? `$${totalEst.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : "—"}
           </p>
@@ -92,26 +93,26 @@ export default function SuggestionsPage() {
       {/* Filters + bulk actions */}
       <div className="flex flex-wrap gap-3 items-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3">
         <select className={sel} value={typeFilter} onChange={e => setTypeFilter(e.target.value)}>
-          <option value="">All Types</option>
-          <option value="PRODUCTION">Production</option>
-          <option value="PROCUREMENT">Procurement</option>
+          <option value="">{tx("All Types")}</option>
+          <option value="PRODUCTION">{tx("Production")}</option>
+          <option value="PROCUREMENT">{tx("Procurement")}</option>
         </select>
         <select className={sel} value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
-          <option value="">All Statuses</option>
-          <option value="DRAFT">Draft</option>
-          <option value="APPROVED">Approved</option>
-          <option value="REJECTED">Rejected</option>
-          <option value="CONVERTED">Converted</option>
+          <option value="">{tx("All Statuses")}</option>
+          <option value="DRAFT">{tx("Draft")}</option>
+          <option value="APPROVED">{tx("Approved")}</option>
+          <option value="REJECTED">{tx("Rejected")}</option>
+          <option value="CONVERTED">{tx("Converted")}</option>
         </select>
         {selected.size > 0 && (
           <>
             <button onClick={approveSelected}
               className="px-4 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700">
-              ✓ Approve {selected.size}
+              {tx("✓ Approve")} {selected.size}
             </button>
             <button onClick={() => setSelected(new Set())}
               className="px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
-              Clear
+              {tx("Clear")}
             </button>
           </>
         )}
@@ -121,21 +122,21 @@ export default function SuggestionsPage() {
       {rejectTarget && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-96 shadow-xl">
-            <h3 className="text-sm font-semibold mb-3">Reject Suggestion</h3>
+            <h3 className="text-sm font-semibold mb-3">{tx("Reject Suggestion")}</h3>
             <textarea
               className="w-full rounded-lg border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm bg-white dark:bg-gray-700"
-              rows={3} placeholder="Reason for rejection…"
+              rows={3} placeholder={tx("Reason for rejection…")}
               value={rejectReason} onChange={e => setRejectReason(e.target.value)}
             />
             <div className="flex gap-3 mt-4">
               <button onClick={() => rejectMutation.mutate({ id: rejectTarget!, reason: rejectReason })}
                 disabled={!rejectReason || rejectMutation.isPending}
                 className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-60">
-                Reject
+                {tx("Reject")}
               </button>
               <button onClick={() => { setRejectTarget(null); setRejectReason(""); }}
                 className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
-                Cancel
+                {tx("Cancel")}
               </button>
             </div>
           </div>
@@ -156,8 +157,8 @@ export default function SuggestionsPage() {
                       else setSelected(new Set());
                     }} />
                 </th>
-                {["Type", "SKU / Code", "Item", "Driver Product", "Qty", "UOM", "Net Req.", "MOQ",
-                  "Required By", "Planned Start", "Supplier", "Est. Cost", "Status", "Actions"].map(h => (
+                {[tx("Type"), tx("SKU / Code"), tx("Item"), tx("Driver Product"), tx("Qty"), "UOM", tx("Net Req."), "MOQ",
+                  tx("Required By"), tx("Planned Start"), tx("Supplier"), tx("Est. Cost"), tx("Status"), tx("Actions")].map(h => (
                   <th key={h} className="px-3 py-3 text-left font-medium whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -213,11 +214,11 @@ export default function SuggestionsPage() {
                           <button onClick={() => convertMutation.mutate(s.id)}
                             disabled={convertMutation.isPending}
                             className="px-2 py-1 text-xs bg-indigo-100 text-indigo-700 rounded hover:bg-indigo-200">
-                            Convert
+                            {tx("Convert")}
                           </button>
                         )}
                         {s.status === "CONVERTED" && (
-                          <span className="text-xs text-green-600">✓ Done</span>
+                          <span className="text-xs text-green-600">{tx("✓ Done")}</span>
                         )}
                       </div>
                     </td>
@@ -225,7 +226,7 @@ export default function SuggestionsPage() {
                 );
               })}
               {suggestions.length === 0 && !isLoading && (
-                <tr><td colSpan={15} className="px-4 py-8 text-center text-gray-400">No suggestions found</td></tr>
+                <tr><td colSpan={15} className="px-4 py-8 text-center text-gray-400">{tx("No suggestions found")}</td></tr>
               )}
             </tbody>
           </table>

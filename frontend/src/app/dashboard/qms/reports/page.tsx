@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { qmsApi } from "@/lib/qms";
+import { tx } from "@/lib/i18n/core";
 
 interface QCReport {
   total: number;
@@ -79,31 +80,31 @@ export default function QMSReportsPage() {
     }).catch(console.error).finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <div className="p-8 text-gray-500">Loading QMS reports…</div>;
+  if (loading) return <div className="p-8 text-gray-500">{tx("Loading QMS reports…")}</div>;
 
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">QMS Reports</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Quality performance, CCP violations, deviations, and lot quality</p>
+        <h1 className="text-2xl font-bold text-gray-900">{tx("QMS Reports")}</h1>
+        <p className="text-sm text-gray-500 mt-0.5">{tx("Quality performance, CCP violations, deviations, and lot quality")}</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {/* QC Summary */}
         {qcReport && (
-          <Section title="QC Inspection Summary">
+          <Section title={tx("QC Inspection Summary")}>
             <div className="grid grid-cols-3 gap-4 mb-4">
               <div className="text-center">
                 <p className="text-3xl font-bold text-gray-800">{qcReport.total}</p>
-                <p className="text-xs text-gray-500 mt-0.5">Total Inspections</p>
+                <p className="text-xs text-gray-500 mt-0.5">{tx("Total Inspections")}</p>
               </div>
               <div className="text-center">
                 <p className="text-3xl font-bold text-green-700">{qcReport.pass_rate}%</p>
-                <p className="text-xs text-gray-500 mt-0.5">Pass Rate</p>
+                <p className="text-xs text-gray-500 mt-0.5">{tx("Pass Rate")}</p>
               </div>
               <div className="text-center">
                 <p className="text-3xl font-bold text-red-700">{qcReport.fail_rate}%</p>
-                <p className="text-xs text-gray-500 mt-0.5">Fail Rate</p>
+                <p className="text-xs text-gray-500 mt-0.5">{tx("Fail Rate")}</p>
               </div>
             </div>
             {Object.entries(qcReport.by_status).map(([status, count]) => (
@@ -116,13 +117,13 @@ export default function QMSReportsPage() {
 
         {/* CCP Violations */}
         {ccpReport && (
-          <Section title="CCP Violations">
+          <Section title={tx("CCP Violations")}>
             <div className="mb-4">
               <p className="text-3xl font-bold text-red-700">{ccpReport.total_violations}</p>
-              <p className="text-xs text-gray-500 mt-0.5">Total Violations</p>
+              <p className="text-xs text-gray-500 mt-0.5">{tx("Total Violations")}</p>
             </div>
             {Object.entries(ccpReport.violations_by_ccp).length === 0 ? (
-              <p className="text-sm text-green-700">No CCP violations recorded</p>
+              <p className="text-sm text-green-700">{tx("No CCP violations recorded")}</p>
             ) : (
               Object.entries(ccpReport.violations_by_ccp).map(([ccp_id, count]) => (
                 <StatRow key={ccp_id} label={`CCP ${ccp_id.slice(0, 8)}…`} value={count} color="bg-red-500" />
@@ -130,11 +131,11 @@ export default function QMSReportsPage() {
             )}
             {ccpReport.recent_violations.length > 0 && (
               <div className="mt-4">
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Recent</p>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">{tx("Recent")}</p>
                 {ccpReport.recent_violations.slice(0, 5).map(v => (
                   <div key={v.id} className="flex items-center justify-between py-1.5 text-xs border-t border-gray-100">
-                    <span className="text-gray-600">Value: {v.recorded_value}</span>
-                    <span className="text-red-600">+{v.deviation_amount} deviation</span>
+                    <span className="text-gray-600">{tx("Value:")} {v.recorded_value}</span>
+                    <span className="text-red-600">+{v.deviation_amount} {tx("deviation")}</span>
                     <span className="text-gray-400">{new Date(v.monitoring_datetime).toLocaleDateString()}</span>
                   </div>
                 ))}
@@ -145,22 +146,22 @@ export default function QMSReportsPage() {
 
         {/* Deviations */}
         {devReport && (
-          <Section title="Deviation Analysis">
+          <Section title={tx("Deviation Analysis")}>
             <div className="grid grid-cols-3 gap-4 mb-4">
               <div className="text-center">
                 <p className="text-3xl font-bold text-gray-800">{devReport.total}</p>
-                <p className="text-xs text-gray-500 mt-0.5">Total</p>
+                <p className="text-xs text-gray-500 mt-0.5">{tx("Total")}</p>
               </div>
               <div className="text-center">
                 <p className="text-3xl font-bold text-red-700">{devReport.open}</p>
-                <p className="text-xs text-gray-500 mt-0.5">Open</p>
+                <p className="text-xs text-gray-500 mt-0.5">{tx("Open")}</p>
               </div>
               <div className="text-center">
                 <p className="text-3xl font-bold text-green-700">{devReport.resolved}</p>
-                <p className="text-xs text-gray-500 mt-0.5">Resolved</p>
+                <p className="text-xs text-gray-500 mt-0.5">{tx("Resolved")}</p>
               </div>
             </div>
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">By Severity</p>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">{tx("By Severity")}</p>
             {Object.entries(devReport.by_severity).map(([sev, count]) => (
               <StatRow key={sev} label={sev} value={count}
                 bar={devReport.total ? (count / devReport.total * 100) : 0}
@@ -171,27 +172,27 @@ export default function QMSReportsPage() {
 
         {/* Lot Quality */}
         {lotReport && (
-          <Section title="Lot Quality Status">
+          <Section title={tx("Lot Quality Status")}>
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div className="text-center">
                 <p className="text-3xl font-bold text-gray-800">{lotReport.total_lots_tracked}</p>
-                <p className="text-xs text-gray-500 mt-0.5">Lots Tracked</p>
+                <p className="text-xs text-gray-500 mt-0.5">{tx("Lots Tracked")}</p>
               </div>
               <div className="text-center">
                 <p className="text-3xl font-bold text-teal-700">{lotReport.fefo_eligible}</p>
-                <p className="text-xs text-gray-500 mt-0.5">FEFO Eligible</p>
+                <p className="text-xs text-gray-500 mt-0.5">{tx("FEFO Eligible")}</p>
               </div>
             </div>
             {[
-              { label: "On Hold", value: lotReport.on_hold, color: "bg-orange-500" },
-              { label: "Quarantined", value: lotReport.quarantined, color: "bg-red-500" },
-              { label: "Shipment Eligible", value: lotReport.shipment_eligible, color: "bg-green-500" },
+              { label: tx("On Hold"), value: lotReport.on_hold, color: "bg-orange-500" },
+              { label: tx("Quarantined"), value: lotReport.quarantined, color: "bg-red-500" },
+              { label: tx("Shipment Eligible"), value: lotReport.shipment_eligible, color: "bg-green-500" },
             ].map(row => (
               <StatRow key={row.label} label={row.label} value={row.value}
                 bar={lotReport.total_lots_tracked ? (row.value / lotReport.total_lots_tracked * 100) : 0}
                 color={row.color} />
             ))}
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 mt-3">By Release Status</p>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 mt-3">{tx("By Release Status")}</p>
             {Object.entries(lotReport.by_release_status).map(([status, count]) => (
               <StatRow key={status} label={status.replace("_", " ")} value={count}
                 bar={lotReport.total_lots_tracked ? (count / lotReport.total_lots_tracked * 100) : 0} />

@@ -9,6 +9,7 @@ import {
   BarcodeLabel,
   BarcodeScanResult,
 } from "@/lib/integrations";
+import { tx } from "@/lib/i18n/core";
 
 type EntityType = "PRODUCT" | "LOT" | "LOCATION" | "MATERIAL";
 const ENTITY_TYPES: EntityType[] = ["PRODUCT", "LOT", "LOCATION", "MATERIAL"];
@@ -71,8 +72,8 @@ export default function BarcodePage() {
     <div className="w-full min-w-0 px-4 sm:px-6 lg:px-8 py-6 space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">📷 Barcode System</h1>
-        <p className="text-gray-500 text-sm mt-0.5">Scan, generate, and manage barcode labels</p>
+        <h1 className="text-2xl font-bold text-gray-900">{tx("📷 Barcode System")}</h1>
+        <p className="text-gray-500 text-sm mt-0.5">{tx("Scan, generate, and manage barcode labels")}</p>
       </div>
 
       {/* Tabs */}
@@ -87,7 +88,7 @@ export default function BarcodePage() {
                 : "text-gray-600 hover:text-gray-900"
             }`}
           >
-            {tab === "scan" ? "📷 Scan" : tab === "generate" ? "✨ Generate" : "📋 Labels"}
+            {tab === "scan" ? tx("📷 Scan") : tab === "generate" ? tx("✨ Generate") : tx("📋 Labels")}
           </button>
         ))}
       </div>
@@ -96,9 +97,9 @@ export default function BarcodePage() {
       {activeTab === "scan" && (
         <div className="space-y-4">
           <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-4">
-            <h2 className="font-semibold text-gray-900">Scan Barcode</h2>
+            <h2 className="font-semibold text-gray-900">{tx("Scan Barcode")}</h2>
             <p className="text-sm text-gray-500">
-              Scan a barcode using a scanner device or type the value manually.
+              {tx("Scan a barcode using a scanner device or type the value manually.")}
             </p>
 
             <div className="flex gap-2">
@@ -108,7 +109,7 @@ export default function BarcodePage() {
                 value={scanInput}
                 onChange={(e) => setScanInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleScan()}
-                placeholder="Scan or type barcode value (e.g. PRD1A2B3C4D5E6F)"
+                placeholder={tx("Scan or type barcode value (e.g. PRD1A2B3C4D5E6F)")}
                 className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-400"
                 autoFocus
               />
@@ -117,15 +118,15 @@ export default function BarcodePage() {
                 disabled={scanMut.isPending || !scanInput.trim()}
                 className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50"
               >
-                {scanMut.isPending ? "..." : "Lookup"}
+                {scanMut.isPending ? "..." : tx("Lookup")}
               </button>
             </div>
 
             {scanResult === "notfound" && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <p className="text-sm text-red-700 font-medium">Barcode not found</p>
+                <p className="text-sm text-red-700 font-medium">{tx("Barcode not found")}</p>
                 <p className="text-xs text-red-500 mt-1">
-                  No entity is registered with barcode value &quot;{scanInput}&quot;
+                  {tx("No entity is registered with barcode value \"")}{scanInput}&quot;
                 </p>
               </div>
             )}
@@ -153,7 +154,7 @@ export default function BarcodePage() {
                   onClick={() => { setScanInput(""); setScanResult(null); scanRef.current?.focus(); }}
                   className="text-xs text-emerald-700 underline"
                 >
-                  Scan another
+                  {tx("Scan another")}
                 </button>
               </div>
             )}
@@ -165,7 +166,7 @@ export default function BarcodePage() {
       {activeTab === "generate" && (
         <div className="space-y-4">
           <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-4">
-            <h2 className="font-semibold text-gray-900">Generate Barcode Label</h2>
+            <h2 className="font-semibold text-gray-900">{tx("Generate Barcode Label")}</h2>
 
             {genError && (
               <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{genError}</p>
@@ -173,7 +174,7 @@ export default function BarcodePage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Entity Type</label>
+                <label className="block text-xs font-medium text-gray-700 mb-1">{tx("Entity Type")}</label>
                 <select
                   value={genForm.entity_type}
                   onChange={(e) => setGenForm((f) => ({ ...f, entity_type: e.target.value as EntityType }))}
@@ -187,12 +188,12 @@ export default function BarcodePage() {
 
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">{genForm.entity_type.charAt(0) + genForm.entity_type.slice(1).toLowerCase()}</label>
-                <EntityPicker key={genForm.entity_type} kind={kindFor(genForm.entity_type) ?? "product"} label="Record to label"
+                <EntityPicker key={genForm.entity_type} kind={kindFor(genForm.entity_type) ?? "product"} label={tx("Record to label")}
                   value={genForm.entity_id} onChange={(id) => setGenForm((f) => ({ ...f, entity_id: id }))} />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Format</label>
+                <label className="block text-xs font-medium text-gray-700 mb-1">{tx("Format")}</label>
                 <select
                   value={genForm.barcode_format}
                   onChange={(e) => setGenForm((f) => ({ ...f, barcode_format: e.target.value as "CODE128" }))}
@@ -205,13 +206,13 @@ export default function BarcodePage() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Label Template</label>
+                <label className="block text-xs font-medium text-gray-700 mb-1">{tx("Label Template")}</label>
                 <select
                   value={genForm.label_template}
                   onChange={(e) => setGenForm((f) => ({ ...f, label_template: e.target.value }))}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
                 >
-                  {["standard", "compact", "shipping", "warehouse"].map((t) => (
+                  {[tx("standard"), tx("compact"), tx("shipping"), tx("warehouse")].map((t) => (
                     <option key={t} value={t}>{t}</option>
                   ))}
                 </select>
@@ -223,7 +224,7 @@ export default function BarcodePage() {
               disabled={generateMut.isPending || !genForm.entity_id}
               className="px-6 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50"
             >
-              {generateMut.isPending ? "Generating..." : "Generate Barcode"}
+              {generateMut.isPending ? tx("Generating...") : tx("Generate Barcode")}
             </button>
           </div>
 
@@ -239,7 +240,7 @@ export default function BarcodePage() {
                   disabled={printMut.isPending}
                   className="px-3 py-1.5 text-sm bg-gray-900 text-white rounded-lg hover:bg-gray-800"
                 >
-                  🖨️ Print
+                  {tx("🖨️ Print")}
                 </button>
               </div>
 
@@ -285,22 +286,22 @@ export default function BarcodePage() {
                     : "bg-white text-gray-600 border-gray-200 hover:border-indigo-300"
                 }`}
               >
-                {t || "All Types"}
+                {t || tx("All Types")}
               </button>
             ))}
           </div>
 
           <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
             {labelsLoading ? (
-              <div className="p-8 text-center text-gray-400 text-sm">Loading...</div>
+              <div className="p-8 text-center text-gray-400 text-sm">{tx("Loading...")}</div>
             ) : labels.length === 0 ? (
-              <div className="p-8 text-center text-gray-400 text-sm">No barcode labels found</div>
+              <div className="p-8 text-center text-gray-400 text-sm">{tx("No barcode labels found")}</div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
-                      {["Barcode Value", "Entity", "Type", "Format", "Prints", "Last Printed", ""].map((h) => (
+                      {[tx("Barcode Value"), tx("Entity"), tx("Type"), tx("Format"), tx("Prints"), tx("Last Printed"), ""].map((h) => (
                         <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500">{h}</th>
                       ))}
                     </tr>
@@ -316,7 +317,7 @@ export default function BarcodePage() {
                         <td className="px-4 py-3 text-xs text-gray-500">
                           {label.last_printed_at
                             ? new Date(label.last_printed_at).toLocaleDateString()
-                            : "Never"}
+                            : tx("Never")}
                         </td>
                         <td className="px-4 py-3">
                           <button
@@ -324,7 +325,7 @@ export default function BarcodePage() {
                             disabled={printMut.isPending}
                             className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
                           >
-                            Print
+                            {tx("Print")}
                           </button>
                         </td>
                       </tr>

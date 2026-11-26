@@ -5,6 +5,7 @@ import { ModuleWorkspace } from "@/components/workspace";
 import { useQuery } from "@tanstack/react-query";
 import { marketingApi, MarketingDashboard } from "@/lib/marketingApi";
 import { RequirePermission } from "@/components/PermissionGuard";
+import { tx } from "@/lib/i18n/core";
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
@@ -40,7 +41,7 @@ const STATUS_BADGE: Record<string, string> = {
 
 function StatusBar({ data }: { data: Record<string, number> }) {
   const total = Object.values(data).reduce((a, b) => a + b, 0);
-  if (total === 0) return <p className="text-slate-500 text-sm">No campaigns yet.</p>;
+  if (total === 0) return <p className="text-slate-500 text-sm">{tx("No campaigns yet.")}</p>;
   return (
     <div className="space-y-2">
       {Object.entries(data).map(([status, count]) => (
@@ -60,7 +61,7 @@ function StatusBar({ data }: { data: Record<string, number> }) {
 }
 
 function BudgetVsActualChart({ rows }: { rows: MarketingDashboard["budget_vs_actual"] }) {
-  if (!rows.length) return <p className="text-slate-500 text-sm">No budget data.</p>;
+  if (!rows.length) return <p className="text-slate-500 text-sm">{tx("No budget data.")}</p>;
   const max = Math.max(...rows.flatMap((r) => [r.budget, r.actual_revenue, r.expected_revenue]));
   return (
     <div className="space-y-3">
@@ -69,7 +70,7 @@ function BudgetVsActualChart({ rows }: { rows: MarketingDashboard["budget_vs_act
           <p className="text-xs text-slate-400 mb-1 truncate" title={r.name}>{r.name}</p>
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-500 w-20 shrink-0">Budget</span>
+              <span className="text-xs text-slate-500 w-20 shrink-0">{tx("Budget")}</span>
               <div className="flex-1 h-1.5 bg-slate-800/60 rounded-full overflow-hidden">
                 <div className="h-full bg-blue-500 rounded-full" style={{ width: `${(r.budget / max) * 100}%` }} />
               </div>
@@ -78,7 +79,7 @@ function BudgetVsActualChart({ rows }: { rows: MarketingDashboard["budget_vs_act
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-500 w-20 shrink-0">Actual Rev</span>
+              <span className="text-xs text-slate-500 w-20 shrink-0">{tx("Actual Rev")}</span>
               <div className="flex-1 h-1.5 bg-slate-800/60 rounded-full overflow-hidden">
                 <div className={`h-full rounded-full ${r.actual_revenue >= r.budget ? "bg-emerald-500" : "bg-orange-500"}`}
                   style={{ width: `${(r.actual_revenue / max) * 100}%` }} />
@@ -95,7 +96,7 @@ function BudgetVsActualChart({ rows }: { rows: MarketingDashboard["budget_vs_act
 }
 
 function PromotionsByRegion({ rows }: { rows: Array<{ region: string; count: number }> }) {
-  if (!rows.length) return <p className="text-slate-500 text-sm">No regional data yet.</p>;
+  if (!rows.length) return <p className="text-slate-500 text-sm">{tx("No regional data yet.")}</p>;
   const max = Math.max(...rows.map((r) => r.count));
   return (
     <div className="space-y-2">
@@ -132,75 +133,75 @@ function MarketingDashboardTab() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-slate-100">Marketing Dashboard</h1>
-            <p className="text-sm text-slate-400 mt-1">Campaign and promotion performance overview</p>
+            <h1 className="text-2xl font-bold text-slate-100">{tx("Marketing Dashboard")}</h1>
+            <p className="text-sm text-slate-400 mt-1">{tx("Campaign and promotion performance overview")}</p>
           </div>
           <div className="flex gap-2">
-            <a href="/dashboard/marketing?tab=campaigns&drawer=create" className="glow-button-secondary text-sm">+ New Campaign</a>
-            <a href="/dashboard/marketing?tab=promotions&drawer=create" className="glow-button text-sm">+ New Promotion</a>
+            <a href="/dashboard/marketing?tab=campaigns&drawer=create" className="glow-button-secondary text-sm">{tx("+ New Campaign")}</a>
+            <a href="/dashboard/marketing?tab=promotions&drawer=create" className="glow-button text-sm">{tx("+ New Promotion")}</a>
           </div>
         </div>
 
         {isLoading ? (
-          <p className="text-slate-400">Loading...</p>
+          <p className="text-slate-400">{tx("Loading...")}</p>
         ) : !data ? (
-          <p className="text-red-400">Failed to load marketing data.</p>
+          <p className="text-red-400">{tx("Failed to load marketing data.")}</p>
         ) : (
           <>
             {/* ── Campaign KPIs ────────────────────────────────────────────── */}
             <section>
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Campaigns</p>
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">{tx("Campaigns")}</p>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <KPI label="Active Campaigns"  value={data.active_campaigns}           color="text-emerald-400" />
-                <KPI label="Planned Campaigns" value={data.planned_campaigns}           color="text-blue-400" />
-                <KPI label="Total Budget"       value={fmt(data.total_budget)} />
-                <KPI label="Actual Revenue"     value={fmt(data.total_actual_revenue)}  color="text-sky-400" />
+                <KPI label={tx("Active Campaigns")}  value={data.active_campaigns}           color="text-emerald-400" />
+                <KPI label={tx("Planned Campaigns")} value={data.planned_campaigns}           color="text-blue-400" />
+                <KPI label={tx("Total Budget")}       value={fmt(data.total_budget)} />
+                <KPI label={tx("Actual Revenue")}     value={fmt(data.total_actual_revenue)}  color="text-sky-400" />
               </div>
             </section>
 
             {/* ── ROI KPIs ─────────────────────────────────────────────────── */}
             <section>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                <KPI label="Expected ROI"     value={`${(data.expected_roi * 100).toFixed(1)}%`}  sub="revenue / budget" />
+                <KPI label={tx("Expected ROI")}     value={`${(data.expected_roi * 100).toFixed(1)}%`}  sub="revenue / budget" />
                 <KPI
-                  label="Actual ROI"
+                  label={tx("Actual ROI")}
                   value={`${(data.actual_roi * 100).toFixed(1)}%`}
                   color={data.actual_roi >= data.expected_roi ? "text-emerald-400" : "text-orange-400"}
                 />
-                <KPI label="Expected Revenue" value={fmt(data.total_expected_revenue)} />
+                <KPI label={tx("Expected Revenue")} value={fmt(data.total_expected_revenue)} />
               </div>
             </section>
 
             {/* ── Promotion KPIs ───────────────────────────────────────────── */}
             <section>
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Promotions</p>
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">{tx("Promotions")}</p>
               <div className="grid grid-cols-2 gap-4">
-                <KPI label="Total Promotions"  value={data.total_promotions} />
-                <KPI label="Active Promotions" value={data.active_promotions} color="text-emerald-400" />
+                <KPI label={tx("Total Promotions")}  value={data.total_promotions} />
+                <KPI label={tx("Active Promotions")} value={data.active_promotions} color="text-emerald-400" />
               </div>
             </section>
 
             {/* ── Charts row ───────────────────────────────────────────────── */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="glow-card p-5">
-                <h3 className="text-sm font-semibold text-slate-200 mb-4">Campaign Count by Status</h3>
+                <h3 className="text-sm font-semibold text-slate-200 mb-4">{tx("Campaign Count by Status")}</h3>
                 <StatusBar data={data.campaign_by_status} />
               </div>
               <div className="glow-card p-5">
-                <h3 className="text-sm font-semibold text-slate-200 mb-4">Budget vs Actual Revenue (Top 10)</h3>
+                <h3 className="text-sm font-semibold text-slate-200 mb-4">{tx("Budget vs Actual Revenue (Top 10)")}</h3>
                 <BudgetVsActualChart rows={data.budget_vs_actual} />
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="glow-card p-5">
-                <h3 className="text-sm font-semibold text-slate-200 mb-4">Promotions by Region</h3>
+                <h3 className="text-sm font-semibold text-slate-200 mb-4">{tx("Promotions by Region")}</h3>
                 <PromotionsByRegion rows={data.promotions_by_region} />
               </div>
               <div className="glow-card p-5">
-                <h3 className="text-sm font-semibold text-slate-200 mb-4">Recent Campaign Activity</h3>
+                <h3 className="text-sm font-semibold text-slate-200 mb-4">{tx("Recent Campaign Activity")}</h3>
                 {data.recent_campaigns.length === 0 ? (
-                  <p className="text-slate-500 text-sm">No recent campaigns.</p>
+                  <p className="text-slate-500 text-sm">{tx("No recent campaigns.")}</p>
                 ) : (
                   <div className="space-y-2 max-h-56 overflow-y-auto">
                     {data.recent_campaigns.map((c, i) => (
@@ -221,13 +222,13 @@ function MarketingDashboardTab() {
 
             {/* Quick links */}
             <section>
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Quick Actions</p>
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">{tx("Quick Actions")}</p>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {[
-                  { label: "+ New Campaign",  href: "/dashboard/marketing?tab=campaigns&drawer=create" },
-                  { label: "+ New Promotion", href: "/dashboard/marketing?tab=promotions&drawer=create" },
-                  { label: "All Campaigns",   href: "/dashboard/marketing/campaigns" },
-                  { label: "All Promotions",  href: "/dashboard/marketing/promotions" },
+                  { label: tx("+ New Campaign"),  href: "/dashboard/marketing?tab=campaigns&drawer=create" },
+                  { label: tx("+ New Promotion"), href: "/dashboard/marketing?tab=promotions&drawer=create" },
+                  { label: tx("All Campaigns"),   href: "/dashboard/marketing/campaigns" },
+                  { label: tx("All Promotions"),  href: "/dashboard/marketing/promotions" },
                 ].map((item) => (
                   <a
                     key={item.href}
@@ -268,31 +269,31 @@ const MembersMediaPage        = dynamic(() => import("@/app/dashboard/marketing/
 
 export default function MarketingPage() {
   const tabs = [
-    { key: "overview",      label: "Overview",         permission: "marketing.view", content: <MarketingDashboardTab /> },
-    { key: "studio",        label: "Marketing Studio", permission: "marketing.view", content: <MarketingStudioPage /> },
-    { key: "campaigns",     label: "Campaigns",        permission: "campaigns.view", content: <MarketingCampaignsPage /> },
-    { key: "promotions",    label: "Promotions",       permission: "promotions.view", content: <MarketingPromotionsPage /> },
-    { key: "promotions-schemes", label: "Schemes",    permission: "promotions.view", content: <MarketingPromotionsPage /> },
+    { key: "overview",      label: tx("Overview"),         permission: "marketing.view", content: <MarketingDashboardTab /> },
+    { key: "studio",        label: tx("Marketing Studio"), permission: "marketing.view", content: <MarketingStudioPage /> },
+    { key: "campaigns",     label: tx("Campaigns"),        permission: "campaigns.view", content: <MarketingCampaignsPage /> },
+    { key: "promotions",    label: tx("Promotions"),       permission: "promotions.view", content: <MarketingPromotionsPage /> },
+    { key: "promotions-schemes", label: tx("Schemes"),    permission: "promotions.view", content: <MarketingPromotionsPage /> },
     { key: "tpm",           label: "TPM",              permission: "marketing.view", content: <TPMPage /> },
-    { key: "trade-spend",   label: "Trade Spend",      permission: "trade_spend.view", content: <MarketingTradeSpendPage /> },
-    { key: "ads",           label: "Ads",              permission: "ad_performance.view", content: <MarketingAdsPage /> },
-    { key: "social-media",  label: "Social Media",     permission: "social_media.view", content: <MarketingSocialPage /> },
-    { key: "segments",      label: "Segments",         permission: "segments.view", content: <MarketingSegmentsPage /> },
-    { key: "influencers",   label: "Influencers",      permission: "influencers.view", content: <MarketingInfluencersPage /> },
-    { key: "ecommerce",     label: "E-Commerce",       permission: "ecommerce.view", content: <MarketingEcommercePage /> },
-    { key: "brand-spend",   label: "Brand Spend",      permission: "brand_spend.view", content: <MarketingBrandSpendPage /> },
-    { key: "visits",        label: "Visits",           permission: "customer_visits.view", content: <MarketingVisitsPage /> },
-    { key: "market-intel",  label: "Market Intel",     permission: "marketing.view", content: <MarketIntelPage /> },
-    { key: "analytics",     label: "Analytics",        permission: "marketing_analytics.view", content: <MarketingAnalyticsPage /> },
-    { key: "website",       label: "Website & blog",   permission: "marketing.view", content: <WebsitePage /> },
-    { key: "content-studio", label: "Content studio",  permission: "marketing.view", content: <ContentStudioPage /> },
-    { key: "media-studio", label: "Media studio",     permission: "marketing.view", content: <MediaStudioPage /> },
-    { key: "seo-pro",      label: "SEO & AEO",        permission: "marketing.view", content: <SeoProPage /> },
-    { key: "members-media", label: "Members & media",  permission: "marketing.view", content: <MembersMediaPage /> },
+    { key: "trade-spend",   label: tx("Trade Spend"),      permission: "trade_spend.view", content: <MarketingTradeSpendPage /> },
+    { key: "ads",           label: tx("Ads"),              permission: "ad_performance.view", content: <MarketingAdsPage /> },
+    { key: "social-media",  label: tx("Social Media"),     permission: "social_media.view", content: <MarketingSocialPage /> },
+    { key: "segments",      label: tx("Segments"),         permission: "segments.view", content: <MarketingSegmentsPage /> },
+    { key: "influencers",   label: tx("Influencers"),      permission: "influencers.view", content: <MarketingInfluencersPage /> },
+    { key: "ecommerce",     label: tx("E-Commerce"),       permission: "ecommerce.view", content: <MarketingEcommercePage /> },
+    { key: "brand-spend",   label: tx("Brand Spend"),      permission: "brand_spend.view", content: <MarketingBrandSpendPage /> },
+    { key: "visits",        label: tx("Visits"),           permission: "customer_visits.view", content: <MarketingVisitsPage /> },
+    { key: "market-intel",  label: tx("Market Intel"),     permission: "marketing.view", content: <MarketIntelPage /> },
+    { key: "analytics",     label: tx("Analytics"),        permission: "marketing_analytics.view", content: <MarketingAnalyticsPage /> },
+    { key: "website",       label: tx("Website & blog"),   permission: "marketing.view", content: <WebsitePage /> },
+    { key: "content-studio", label: tx("Content studio"),  permission: "marketing.view", content: <ContentStudioPage /> },
+    { key: "media-studio", label: tx("Media studio"),     permission: "marketing.view", content: <MediaStudioPage /> },
+    { key: "seo-pro",      label: tx("SEO & AEO"),        permission: "marketing.view", content: <SeoProPage /> },
+    { key: "members-media", label: tx("Members & media"),  permission: "marketing.view", content: <MembersMediaPage /> },
   ];
   return (
     <ModuleWorkspace
-      title="Marketing"
+      title={tx("Marketing")}
       description="Campaigns, promotions, TPM, ads, social media, e-commerce"
       permission="marketing.view"
       tabs={tabs}

@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { ToastContainer } from "@/components/ui/Toast";
 import { useToast } from "@/hooks/useToast";
+import { tx } from "@/lib/i18n/core";
 
 function ScoreMeter({ value, suffix = "" }: { value?: number | null; suffix?: string }) {
   if (value == null) return <span className="text-gray-400 text-xs">—</span>;
@@ -62,9 +63,9 @@ export default function SupplierEvaluationPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["supplier-dashboard"] });
       setEvalOpen(false);
-      toast("success", "Evaluation saved", `${selectedSupplier?.supplier_name} scored.`);
+      toast("success", tx("Evaluation saved"), tx("{supplier_name} scored.", { supplier_name: selectedSupplier?.supplier_name }));
     },
-    onError: (e) => toast("error", "Failed", extractApiError(e)),
+    onError: (e) => toast("error", tx("Failed"), extractApiError(e)),
   });
 
   const canViewCapa = hasAnyPermission(["quality.view", "quality.view_all"]);
@@ -76,7 +77,7 @@ export default function SupplierEvaluationPage() {
   });
   const createCapa = useMutation({
     mutationFn: () => {
-      if (!selectedSupplier) throw new Error("Select a supplier first.");
+      if (!selectedSupplier) throw new Error(tx("Select a supplier first."));
       return qmsApi.createCA({
         title: capaForm.title.trim(),
         description: capaForm.description.trim(),
@@ -89,9 +90,9 @@ export default function SupplierEvaluationPage() {
       qc.invalidateQueries({ queryKey: ["supplier-capas", selectedSupplier?.supplier_id] });
       qc.invalidateQueries({ queryKey: ["supplier-dashboard"] });
       setCapaForm({ title: "", description: "", severity: "MEDIUM", supplier_evaluation_id: "" });
-      toast("success", "Corrective action created", `${selectedSupplier?.supplier_name} was linked to the action.`);
+      toast("success", tx("Corrective action created"), tx("{supplier_name} was linked to the action.", { supplier_name: selectedSupplier?.supplier_name }));
     },
-    onError: (e) => toast("error", "Failed", extractApiError(e)),
+    onError: (e) => toast("error", tx("Failed"), extractApiError(e)),
   });
 
   const openEval = (row: SupplierDashboardRow) => {
@@ -115,28 +116,28 @@ export default function SupplierEvaluationPage() {
       <ToastContainer toasts={toasts} onDismiss={dismiss} />
 
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Supplier Evaluation Dashboard</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{tx("Supplier Evaluation Dashboard")}</h1>
         <p className="text-sm text-gray-500 mt-1">
-          Dimension scorecard: OTIF uses due ordered POs and posted GRNs from the rolling 365-day window; other procurement scores use recorded evaluations. ESG shows the latest active linked assessment and food safety shows the latest linked record per certificate type. No combined weighted rank is applied.
+          {tx("Dimension scorecard: OTIF uses due ordered POs and posted GRNs from the rolling 365-day window; other procurement scores use recorded evaluations. ESG shows the latest active linked assessment and food safety shows the latest linked record per certificate type. No combined weighted rank is applied.")}
         </p>
       </div>
 
       {/* Summary cards */}
       <div className="grid grid-cols-4 gap-4">
         <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-          <p className="text-xs text-gray-500">Active Suppliers</p>
+          <p className="text-xs text-gray-500">{tx("Active Suppliers")}</p>
           <p className="text-2xl font-bold">{dashboard.length}</p>
         </div>
         <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-          <p className="text-xs text-gray-500">Preferred</p>
+          <p className="text-xs text-gray-500">{tx("Preferred")}</p>
           <p className="text-2xl font-bold text-green-600">{preferred.length}</p>
         </div>
         <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-          <p className="text-xs text-gray-500">With Overdue POs</p>
+          <p className="text-xs text-gray-500">{tx("With Overdue POs")}</p>
           <p className={`text-2xl font-bold ${overdue.length > 0 ? "text-red-600" : "text-gray-400"}`}>{overdue.length}</p>
         </div>
         <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-          <p className="text-xs text-gray-500">Never Evaluated</p>
+          <p className="text-xs text-gray-500">{tx("Never Evaluated")}</p>
           <p className={`text-2xl font-bold ${uneval.length > 0 ? "text-amber-600" : "text-gray-400"}`}>{uneval.length}</p>
         </div>
       </div>
@@ -151,116 +152,116 @@ export default function SupplierEvaluationPage() {
           emptyMessage="No active suppliers."
           columns={[
             {
-              header: "Supplier",
+              header: tx("Supplier"),
               accessor: (r) => (
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-sm">{r.supplier_name}</span>
-                    {r.is_preferred && <Badge label="Preferred" variant="green" />}
+                    {r.is_preferred && <Badge label={tx("Preferred")} variant="green" />}
                   </div>
                   <span className="font-mono text-xs text-gray-400">{r.supplier_code}</span>
                 </div>
               ),
             },
             {
-              header: "Qualification",
+              header: tx("Qualification"),
               accessor: (r) => {
                 const value = r.qualification_status ?? "LEGACY / UNRECORDED";
                 const variant = value === "APPROVED" ? "green" : ["SUSPENDED", "REJECTED"].includes(value) ? "red" : "yellow";
                 return (
                   <div className="space-y-1">
                     <Badge label={value} variant={variant} />
-                    {r.approved_until && <div className="text-[10px] text-gray-500">valid to {r.approved_until}</div>}
+                    {r.approved_until && <div className="text-[10px] text-gray-500">{tx("valid to")} {r.approved_until}</div>}
                   </div>
                 );
               },
             },
-            { header: "Lead Time", accessor: (r) => `${r.lead_time_days}d` },
+            { header: tx("Lead Time"), accessor: (r) => `${r.lead_time_days}d` },
             {
-              header: "POs",
+              header: tx("POs"),
               accessor: (r) => (
                 <div className="text-sm">
-                  <span>{r.total_pos} total</span>
-                  {r.open_pos > 0 && <span className="ml-1 text-blue-600">· {r.open_pos} open</span>}
-                  {r.overdue_pos > 0 && <span className="ml-1 text-red-600 font-medium">· {r.overdue_pos} overdue</span>}
+                  <span>{r.total_pos} {tx("total")}</span>
+                  {r.open_pos > 0 && <span className="ml-1 text-blue-600">· {r.open_pos} {tx("open")}</span>}
+                  {r.overdue_pos > 0 && <span className="ml-1 text-red-600 font-medium">· {r.overdue_pos} {tx("overdue")}</span>}
                 </div>
               ),
             },
             {
-              header: "Overall Score",
+              header: tx("Overall Score"),
               accessor: (r) => <ScoreMeter value={r.avg_overall} />,
             },
             {
-              header: "OTIF (365d)",
+              header: tx("OTIF (365d)"),
               accessor: (r) => (
                 <div>
                   <ScoreMeter value={r.otif_rate} suffix="%" />
                   <span className="text-[11px] text-gray-400">
-                    {r.otif_order_count === 0 ? "No due orders" : `${r.otif_met_order_count}/${r.otif_order_count} orders`}
+                    {r.otif_order_count === 0 ? tx("No due orders") : tx("{otif_met_order_count}/{otif_order_count} orders", { otif_met_order_count: r.otif_met_order_count, otif_order_count: r.otif_order_count })}
                   </span>
                 </div>
               ),
             },
             {
-              header: "Delivery Eval",
+              header: tx("Delivery Eval"),
               accessor: (r) => <ScoreMeter value={r.avg_on_time_delivery} />,
             },
             {
-              header: "Quality Eval",
+              header: tx("Quality Eval"),
               accessor: (r) => (
                 <div>
                   <ScoreMeter value={r.avg_quality} />
-                  <span className="text-[11px] text-gray-400">{r.evaluation_count} evals</span>
+                  <span className="text-[11px] text-gray-400">{r.evaluation_count} {tx("evals")}</span>
                 </div>
               ),
             },
             {
-              header: "Corrective Actions",
+              header: tx("Corrective Actions"),
               accessor: (r) => r.supplier_capa_signals_restricted ? (
-                <span className="text-xs text-gray-400">Restricted</span>
+                <span className="text-xs text-gray-400">{tx("Restricted")}</span>
               ) : (
                 <Button variant="secondary" onClick={() => openCapas(r)}>
-                  {r.supplier_open_capa_count ?? 0} open / {r.supplier_capa_count ?? 0} total
+                  {r.supplier_open_capa_count ?? 0} {tx("open /")} {r.supplier_capa_count ?? 0} {tx("total")}
                 </Button>
               ),
             },
             {
-              header: "Price Eval",
+              header: tx("Price Eval"),
               accessor: (r) => (
                 <div>
                   <ScoreMeter value={r.avg_price_competitiveness} />
-                  <span className="text-[11px] text-gray-400">{r.evaluation_count} evals</span>
+                  <span className="text-[11px] text-gray-400">{r.evaluation_count} {tx("evals")}</span>
                 </div>
               ),
             },
             {
-              header: "Responsiveness Eval",
+              header: tx("Responsiveness Eval"),
               accessor: (r) => (
                 <div>
                   <ScoreMeter value={r.avg_responsiveness} />
-                  <span className="text-[11px] text-gray-400">{r.evaluation_count} evals</span>
+                  <span className="text-[11px] text-gray-400">{r.evaluation_count} {tx("evals")}</span>
                 </div>
               ),
             },
             {
               header: "ESG",
               accessor: (r) => r.supplier_signals_restricted ? (
-                <span className="text-xs text-gray-400">Restricted</span>
+                <span className="text-xs text-gray-400">{tx("Restricted")}</span>
               ) : (
                 <div>
                   <ScoreMeter value={r.esg_overall_score} />
                   <span className="text-[11px] text-gray-400">
-                    {r.esg_assessment_period_end ? `Period end ${r.esg_assessment_period_end}` : "Not assessed"}
+                    {r.esg_assessment_period_end ? tx("Period end {esg_assessment_period_end}", { esg_assessment_period_end: r.esg_assessment_period_end }) : tx("Not assessed")}
                   </span>
                 </div>
               ),
             },
             {
-              header: "Food Safety",
+              header: tx("Food Safety"),
               accessor: (r) => r.supplier_signals_restricted ? (
-                <span className="text-xs text-gray-400">Restricted</span>
+                <span className="text-xs text-gray-400">{tx("Restricted")}</span>
               ) : r.food_safety_approvals.length === 0 ? (
-                <span className="text-xs text-gray-400">Not assessed</span>
+                <span className="text-xs text-gray-400">{tx("Not assessed")}</span>
               ) : (
                 <div className="space-y-1">
                   {r.food_safety_approvals.map((approval) => {
@@ -273,10 +274,10 @@ export default function SupplierEvaluationPage() {
                     return (
                       <div key={approval.approval_type} className={`text-[11px] ${statusClass}`}>
                         {approval.approval_type}: {approval.status}
-                        {approval.is_expired ? " · expired" : ""}
-                        {approval.is_current == null ? " · expiry not recorded" : ""}
+                        {approval.is_expired ? tx(" · expired") : ""}
+                        {approval.is_current == null ? tx(" · expiry not recorded") : ""}
                         {approval.audit_score != null ? ` · audit ${Number(approval.audit_score).toFixed(1)}` : ""}
-                        {approval.expiry_date ? ` · exp ${approval.expiry_date}` : ""}
+                        {approval.expiry_date ? tx(" · exp {expiry_date}", { expiry_date: approval.expiry_date }) : ""}
                       </div>
                     );
                   })}
@@ -284,13 +285,13 @@ export default function SupplierEvaluationPage() {
               ),
             },
             {
-              header: "Last Evaluated",
+              header: tx("Last Evaluated"),
               accessor: (r) => r.last_evaluation_date
                 ? new Date(r.last_evaluation_date).toLocaleDateString()
-                : <span className="text-amber-600 text-xs">Never</span>,
+                : <span className="text-amber-600 text-xs">{tx("Never")}</span>,
             },
             {
-              header: "Compliance",
+              header: tx("Compliance"),
               accessor: (r) => r.compliance_notes
                 ? <span className="text-xs text-gray-600 truncate max-w-[120px] block" title={r.compliance_notes}>{r.compliance_notes}</span>
                 : <span className="text-gray-300 text-xs">—</span>,
@@ -299,7 +300,7 @@ export default function SupplierEvaluationPage() {
               header: "",
               accessor: (r) => (
                 <div className="flex gap-2">
-                  <Button variant="secondary" onClick={() => openEval(r)}>Evaluate</Button>
+                  <Button variant="secondary" onClick={() => openEval(r)}>{tx("Evaluate")}</Button>
                   {(canViewCapa || canCreateCapa) && (
                     <Button variant="secondary" onClick={() => openCapas(r)}>CAPA</Button>
                   )}
@@ -311,59 +312,59 @@ export default function SupplierEvaluationPage() {
       )}
 
       {/* Evaluation Modal */}
-      <Modal open={evalOpen} onClose={() => setEvalOpen(false)} title={`Evaluate: ${selectedSupplier?.supplier_name}`}>
+      <Modal open={evalOpen} onClose={() => setEvalOpen(false)} title={tx("Evaluate: {supplier_name}", { supplier_name: selectedSupplier?.supplier_name })}>
         <form onSubmit={(e) => { e.preventDefault(); createEval.mutate(); }} className="space-y-4">
-          <p className="text-xs text-gray-500">Score each dimension 0–100. Overall score is the average of all dimensions.</p>
-          <Input label="Evaluation Date *" type="date" value={evalForm.evaluation_date} onChange={(e) => setEvalForm((f) => ({ ...f, evaluation_date: e.target.value }))} required />
+          <p className="text-xs text-gray-500">{tx("Score each dimension 0–100. Overall score is the average of all dimensions.")}</p>
+          <Input label={tx("Evaluation Date *")} type="date" value={evalForm.evaluation_date} onChange={(e) => setEvalForm((f) => ({ ...f, evaluation_date: e.target.value }))} required />
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Input label="On-Time Delivery (0-100) *" type="number" min="0" max="100" step="0.1"
+              <Input label={tx("On-Time Delivery (0-100) *")} type="number" min="0" max="100" step="0.1"
                 value={evalForm.on_time_delivery_score} onChange={(e) => setEvalForm((f) => ({ ...f, on_time_delivery_score: e.target.value }))} required />
               {selectedSupplier?.avg_on_time_delivery != null && (
-                <p className="text-xs text-gray-400 mt-1">Avg: {Number(selectedSupplier.avg_on_time_delivery).toFixed(1)}</p>
+                <p className="text-xs text-gray-400 mt-1">{tx("Avg:")} {Number(selectedSupplier.avg_on_time_delivery).toFixed(1)}</p>
               )}
             </div>
             <div>
-              <Input label="Quality (0-100) *" type="number" min="0" max="100" step="0.1"
+              <Input label={tx("Quality (0-100) *")} type="number" min="0" max="100" step="0.1"
                 value={evalForm.quality_score} onChange={(e) => setEvalForm((f) => ({ ...f, quality_score: e.target.value }))} required />
               {selectedSupplier?.avg_quality != null && (
-                <p className="text-xs text-gray-400 mt-1">Avg: {Number(selectedSupplier.avg_quality).toFixed(1)}</p>
+                <p className="text-xs text-gray-400 mt-1">{tx("Avg:")} {Number(selectedSupplier.avg_quality).toFixed(1)}</p>
               )}
             </div>
-            <Input label="Price Competitiveness (0-100) *" type="number" min="0" max="100" step="0.1"
+            <Input label={tx("Price Competitiveness (0-100) *")} type="number" min="0" max="100" step="0.1"
               value={evalForm.price_competitiveness_score} onChange={(e) => setEvalForm((f) => ({ ...f, price_competitiveness_score: e.target.value }))} required />
-            <Input label="Responsiveness (0-100) *" type="number" min="0" max="100" step="0.1"
+            <Input label={tx("Responsiveness (0-100) *")} type="number" min="0" max="100" step="0.1"
               value={evalForm.responsiveness_score} onChange={(e) => setEvalForm((f) => ({ ...f, responsiveness_score: e.target.value }))} required />
           </div>
-          <Input label="Notes" value={evalForm.notes} onChange={(e) => setEvalForm((f) => ({ ...f, notes: e.target.value }))} />
+          <Input label={tx("Notes")} value={evalForm.notes} onChange={(e) => setEvalForm((f) => ({ ...f, notes: e.target.value }))} />
           {evalForm.on_time_delivery_score && evalForm.quality_score && evalForm.price_competitiveness_score && evalForm.responsiveness_score && (
             <div className="rounded-lg bg-gray-50 border border-gray-200 p-3 text-sm text-gray-600">
-              Overall score preview:{" "}
+              {tx("Overall score preview:")}{" "}
               <strong>
                 {((parseFloat(evalForm.on_time_delivery_score) + parseFloat(evalForm.quality_score) + parseFloat(evalForm.price_competitiveness_score) + parseFloat(evalForm.responsiveness_score)) / 4).toFixed(1)}
               </strong>
             </div>
           )}
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" type="button" onClick={() => setEvalOpen(false)}>Cancel</Button>
+            <Button variant="secondary" type="button" onClick={() => setEvalOpen(false)}>{tx("Cancel")}</Button>
             <Button type="submit" loading={createEval.isPending}
               disabled={!evalForm.evaluation_date || !evalForm.on_time_delivery_score || !evalForm.quality_score || !evalForm.price_competitiveness_score || !evalForm.responsiveness_score}>
-              Save Evaluation
+              {tx("Save Evaluation")}
             </Button>
           </div>
         </form>
       </Modal>
 
-      <Modal open={capaOpen} onClose={() => setCapaOpen(false)} title={`Corrective actions: ${selectedSupplier?.supplier_name}`}>
+      <Modal open={capaOpen} onClose={() => setCapaOpen(false)} title={tx("Corrective actions: {supplier_name}", { supplier_name: selectedSupplier?.supplier_name })}>
         <div className="space-y-5">
-          <p className="text-xs text-gray-500">Actions are linked to this supplier. Linking an evaluation records the exact source; no score or automatic trigger is inferred.</p>
+          <p className="text-xs text-gray-500">{tx("Actions are linked to this supplier. Linking an evaluation records the exact source; no score or automatic trigger is inferred.")}</p>
           {canViewCapa ? (
-            <section className="space-y-2" aria-label="Supplier corrective action history">
-              <h2 className="text-sm font-semibold">History</h2>
-              {supplierCapas.isLoading ? <p className="text-sm text-gray-500">Loading…</p> : null}
+            <section className="space-y-2" aria-label={tx("Supplier corrective action history")}>
+              <h2 className="text-sm font-semibold">{tx("History")}</h2>
+              {supplierCapas.isLoading ? <p className="text-sm text-gray-500">{tx("Loading…")}</p> : null}
               {supplierCapas.isError ? <p className="text-sm text-red-600">{extractApiError(supplierCapas.error)}</p> : null}
               {!supplierCapas.isLoading && !supplierCapas.isError && (supplierCapas.data ?? []).length === 0 ? (
-                <p className="text-sm text-gray-500">No corrective actions recorded.</p>
+                <p className="text-sm text-gray-500">{tx("No corrective actions recorded.")}</p>
               ) : null}
               {(supplierCapas.data ?? []).map((action: CorrectiveAction) => (
                 <div key={action.id} className="rounded border border-gray-200 p-3">
@@ -372,38 +373,38 @@ export default function SupplierEvaluationPage() {
                     <Badge label={action.status} variant={action.status === "VERIFIED" ? "green" : action.status === "OVERDUE" ? "red" : "yellow"} />
                   </div>
                   <p className="mt-1 text-xs text-gray-600">{action.description}</p>
-                  {action.supplier_evaluation_id && <p className="mt-1 text-[11px] text-gray-400">Linked evaluation: {action.supplier_evaluation_id}</p>}
+                  {action.supplier_evaluation_id && <p className="mt-1 text-[11px] text-gray-400">{tx("Linked evaluation:")} {action.supplier_evaluation_id}</p>}
                 </div>
               ))}
             </section>
           ) : (
-            <p className="text-sm text-gray-500">History is restricted to users with quality view permission.</p>
+            <p className="text-sm text-gray-500">{tx("History is restricted to users with quality view permission.")}</p>
           )}
           {canCreateCapa && (
             <form onSubmit={(e) => { e.preventDefault(); createCapa.mutate(); }} className="space-y-3 border-t border-gray-200 pt-4">
-              <h2 className="text-sm font-semibold">Record corrective action</h2>
-              <Input label="Title *" value={capaForm.title} onChange={(e) => setCapaForm((f) => ({ ...f, title: e.target.value }))} required />
+              <h2 className="text-sm font-semibold">{tx("Record corrective action")}</h2>
+              <Input label={tx("Title *")} value={capaForm.title} onChange={(e) => setCapaForm((f) => ({ ...f, title: e.target.value }))} required />
               <label className="block text-sm text-gray-700">
-                Description *
+                {tx("Description *")}
                 <textarea className="mt-1 w-full rounded border border-gray-300 p-2 text-sm" rows={3} value={capaForm.description} onChange={(e) => setCapaForm((f) => ({ ...f, description: e.target.value }))} required />
               </label>
               <label className="block text-sm text-gray-700">
-                Severity
+                {tx("Severity")}
                 <select className="mt-1 w-full rounded border border-gray-300 p-2 text-sm" value={capaForm.severity} onChange={(e) => setCapaForm((f) => ({ ...f, severity: e.target.value as RiskLevel }))}>
                   {["LOW", "MEDIUM", "HIGH", "CRITICAL"].map((severity) => <option key={severity} value={severity}>{severity}</option>)}
                 </select>
               </label>
               {selectedSupplier?.latest_evaluation_id && (
                 <label className="block text-sm text-gray-700">
-                  Source evaluation
+                  {tx("Source evaluation")}
                   <select className="mt-1 w-full rounded border border-gray-300 p-2 text-sm" value={capaForm.supplier_evaluation_id} onChange={(e) => setCapaForm((f) => ({ ...f, supplier_evaluation_id: e.target.value }))}>
-                    <option value="">Supplier only</option>
-                    <option value={selectedSupplier.latest_evaluation_id}>Latest evaluation ({selectedSupplier.last_evaluation_date})</option>
+                    <option value="">{tx("Supplier only")}</option>
+                    <option value={selectedSupplier.latest_evaluation_id}>{tx("Latest evaluation (")}{selectedSupplier.last_evaluation_date})</option>
                   </select>
                 </label>
               )}
               <div className="flex justify-end">
-                <Button type="submit" loading={createCapa.isPending} disabled={!capaForm.title.trim() || !capaForm.description.trim()}>Create linked action</Button>
+                <Button type="submit" loading={createCapa.isPending} disabled={!capaForm.title.trim() || !capaForm.description.trim()}>{tx("Create linked action")}</Button>
               </div>
             </form>
           )}

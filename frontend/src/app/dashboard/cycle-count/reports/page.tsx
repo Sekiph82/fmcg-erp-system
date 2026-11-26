@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { getAccuracyReport, getVarianceReport, getCompletionReport, getVarianceAnalyzer, getCountOptimizer } from "@/lib/cycleCount";
 import { Button } from "@/components/ui/Button";
+import { tx } from "@/lib/i18n/core";
 
 export default function CycleCountReportsPage() {
   const [days, setDays] = useState(30);
@@ -39,27 +40,27 @@ export default function CycleCountReportsPage() {
     <div className="max-w-6xl mx-auto py-8 px-4 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Cycle Count Reports & AI</h1>
-          <p className="text-sm text-gray-500 mt-1">Accuracy, variance, and completion analytics</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Cycle Count Reports & AI")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{tx("Accuracy, variance, and completion analytics")}</p>
         </div>
         <div className="flex items-center gap-3">
           <select className="border border-gray-300 rounded-lg px-3 py-2 text-sm" value={days} onChange={(e) => setDays(Number(e.target.value))}>
-            <option value={7}>Last 7 days</option>
-            <option value={30}>Last 30 days</option>
-            <option value={90}>Last 90 days</option>
+            <option value={7}>{tx("Last 7 days")}</option>
+            <option value={30}>{tx("Last 30 days")}</option>
+            <option value={90}>{tx("Last 90 days")}</option>
           </select>
-          <Button onClick={loadAll} loading={loading}>Load Reports</Button>
+          <Button onClick={loadAll} loading={loading}>{tx("Load Reports")}</Button>
         </div>
       </div>
 
       {acc && (
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           {[
-            { label: "Accuracy", value: `${acc.accuracy_pct}%`, color: Number(acc.accuracy_pct) >= 98 ? "text-green-700" : "text-amber-600" },
-            { label: "Total Counts", value: acc.total_entries, color: "text-gray-900" },
-            { label: "Accurate", value: acc.accurate_entries, color: "text-green-700" },
-            { label: "Variances", value: acc.inaccurate_entries, color: "text-red-600" },
-            { label: "Variance Value", value: `KES ${Number(acc.total_variance_value || 0).toLocaleString()}`, color: "text-amber-600" },
+            { label: tx("Accuracy"), value: `${acc.accuracy_pct}%`, color: Number(acc.accuracy_pct) >= 98 ? "text-green-700" : "text-amber-600" },
+            { label: tx("Total Counts"), value: acc.total_entries, color: "text-gray-900" },
+            { label: tx("Accurate"), value: acc.accurate_entries, color: "text-green-700" },
+            { label: tx("Variances"), value: acc.inaccurate_entries, color: "text-red-600" },
+            { label: tx("Variance Value"), value: `KES ${Number(acc.total_variance_value || 0).toLocaleString()}`, color: "text-amber-600" },
           ].map((k) => (
             <div key={k.label} className="bg-white rounded-xl border border-gray-200 p-4">
               <div className={`text-xl font-bold ${k.color}`}>{k.value}</div>
@@ -71,7 +72,7 @@ export default function CycleCountReportsPage() {
 
       {comp && (
         <div className="bg-white rounded-2xl border border-gray-200 p-6">
-          <h2 className="font-semibold text-gray-900 mb-3 text-sm">Task Completion</h2>
+          <h2 className="font-semibold text-gray-900 mb-3 text-sm">{tx("Task Completion")}</h2>
           <div className="flex items-center gap-6">
             <div className="text-3xl font-bold text-indigo-700">{comp.completion_pct}%</div>
             <div className="flex gap-4 text-sm text-gray-600">
@@ -85,12 +86,12 @@ export default function CycleCountReportsPage() {
 
       {variances.length > 0 && (
         <div className="bg-white rounded-2xl border border-gray-200 p-6">
-          <h2 className="font-semibold text-gray-900 mb-3 text-sm">Top Variances</h2>
+          <h2 className="font-semibold text-gray-900 mb-3 text-sm">{tx("Top Variances")}</h2>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  {["System Qty", "Counted Qty", "Variance", "Variance %", "Value (KES)", "Root Cause"].map((h) => (
+                  {[tx("System Qty"), tx("Counted Qty"), tx("Variance"), tx("Variance %"), tx("Value (KES)"), tx("Root Cause")].map((h) => (
                     <th key={h} className="text-left px-3 py-2 font-medium text-gray-700">{h}</th>
                   ))}
                 </tr>
@@ -116,13 +117,13 @@ export default function CycleCountReportsPage() {
 
       {!!ai1 && (
         <div className="bg-white rounded-2xl border border-gray-200 p-6">
-          <h2 className="font-semibold text-gray-900 mb-3">AI: Variance Analyzer</h2>
+          <h2 className="font-semibold text-gray-900 mb-3">{tx("AI: Variance Analyzer")}</h2>
           <pre className="text-xs bg-gray-900 text-amber-300 rounded-lg p-4 overflow-auto max-h-64">{JSON.stringify(ai1, null, 2)}</pre>
         </div>
       )}
       {!!ai2 && (
         <div className="bg-white rounded-2xl border border-gray-200 p-6">
-          <h2 className="font-semibold text-gray-900 mb-3">AI: Count Optimizer</h2>
+          <h2 className="font-semibold text-gray-900 mb-3">{tx("AI: Count Optimizer")}</h2>
           <pre className="text-xs bg-gray-900 text-blue-300 rounded-lg p-4 overflow-auto max-h-64">{JSON.stringify(ai2, null, 2)}</pre>
         </div>
       )}

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { sfApi, ShiftHandover } from "@/lib/shopFloor";
+import { tx } from "@/lib/i18n/core";
 
 export default function ShiftHandoverPage() {
   const qc = useQueryClient();
@@ -70,15 +71,15 @@ export default function ShiftHandoverPage() {
       <div className="flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <a href="/dashboard/shop-floor" className="text-sm text-gray-400 hover:text-gray-600">← Dashboard</a>
+            <a href="/dashboard/shop-floor" className="text-sm text-gray-400 hover:text-gray-600">{tx("← Dashboard")}</a>
           </div>
-          <h1 className="text-xl font-bold text-gray-900">Shift Handover Board</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Document and approve shift transitions</p>
+          <h1 className="text-xl font-bold text-gray-900">{tx("Shift Handover Board")}</h1>
+          <p className="text-sm text-gray-500 mt-0.5">{tx("Document and approve shift transitions")}</p>
         </div>
         <div className="flex gap-2">
           <input
             className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm"
-            placeholder="Filter by line…"
+            placeholder={tx("Filter by line…")}
             value={lineFilter}
             onChange={(e) => setLineFilter(e.target.value)}
           />
@@ -86,7 +87,7 @@ export default function ShiftHandoverPage() {
             onClick={() => setShowModal(true)}
             className="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
           >
-            + New Handover
+            {tx("+ New Handover")}
           </button>
         </div>
       </div>
@@ -94,9 +95,9 @@ export default function ShiftHandoverPage() {
       {/* KPIs */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: "Total Handovers", value: handovers.length, color: "text-gray-700" },
-          { label: "Approved", value: handovers.filter((h) => h.is_approved).length, color: "text-green-600" },
-          { label: "Pending Approval", value: handovers.filter((h) => !h.is_approved).length, color: "text-yellow-600" },
+          { label: tx("Total Handovers"), value: handovers.length, color: "text-gray-700" },
+          { label: tx("Approved"), value: handovers.filter((h) => h.is_approved).length, color: "text-green-600" },
+          { label: tx("Pending Approval"), value: handovers.filter((h) => !h.is_approved).length, color: "text-yellow-600" },
         ].map((k) => (
           <div key={k.label} className="bg-white rounded-xl border border-gray-100 shadow-sm p-3 text-center">
             <p className="text-xs text-gray-400">{k.label}</p>
@@ -107,10 +108,10 @@ export default function ShiftHandoverPage() {
 
       {/* List */}
       {isLoading ? (
-        <div className="text-center text-gray-400 py-8">Loading…</div>
+        <div className="text-center text-gray-400 py-8">{tx("Loading…")}</div>
       ) : handovers.length === 0 ? (
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-8 text-center text-sm text-gray-400">
-          No handover records
+          {tx("No handover records")}
         </div>
       ) : (
         <div className="space-y-4">
@@ -123,20 +124,20 @@ export default function ShiftHandoverPage() {
                       {h.shift_from_name || "?"} → {h.shift_to_name || "?"}
                     </h3>
                     <span className={`text-xs px-1.5 py-0.5 rounded-full ${h.is_approved ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}>
-                      {h.is_approved ? "Approved" : "Pending"}
+                      {h.is_approved ? tx("Approved") : tx("Pending")}
                     </span>
                     {h.line_id && <span className="text-xs text-gray-400">{h.line_id}</span>}
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-1 text-xs text-gray-500">
-                    <div><span className="text-gray-400">Outgoing:</span> {h.outgoing_supervisor || "—"}</div>
-                    <div><span className="text-gray-400">Incoming:</span> {h.incoming_supervisor || "—"}</div>
-                    {h.qty_completed !== null && <div><span className="text-gray-400">Completed:</span> {Number(h.qty_completed).toFixed(0)}</div>}
-                    {h.qty_remaining !== null && <div><span className="text-gray-400">Remaining:</span> {Number(h.qty_remaining).toFixed(0)}</div>}
+                    <div><span className="text-gray-400">{tx("Outgoing:")}</span> {h.outgoing_supervisor || "—"}</div>
+                    <div><span className="text-gray-400">{tx("Incoming:")}</span> {h.incoming_supervisor || "—"}</div>
+                    {h.qty_completed !== null && <div><span className="text-gray-400">{tx("Completed:")}</span> {Number(h.qty_completed).toFixed(0)}</div>}
+                    {h.qty_remaining !== null && <div><span className="text-gray-400">{tx("Remaining:")}</span> {Number(h.qty_remaining).toFixed(0)}</div>}
                   </div>
                   <div className="mt-2 grid grid-cols-1 md:grid-cols-3 gap-2">
                     {h.issues_open && h.issues_open.length > 0 && (
                       <div>
-                        <p className="text-xs font-medium text-red-600 mb-0.5">Open Issues</p>
+                        <p className="text-xs font-medium text-red-600 mb-0.5">{tx("Open Issues")}</p>
                         <ul className="text-xs text-gray-500 space-y-0.5">
                           {h.issues_open.map((iss, i) => <li key={i}>• {iss}</li>)}
                         </ul>
@@ -144,7 +145,7 @@ export default function ShiftHandoverPage() {
                     )}
                     {h.qc_pending_items && h.qc_pending_items.length > 0 && (
                       <div>
-                        <p className="text-xs font-medium text-purple-600 mb-0.5">QC Pending</p>
+                        <p className="text-xs font-medium text-purple-600 mb-0.5">{tx("QC Pending")}</p>
                         <ul className="text-xs text-gray-500 space-y-0.5">
                           {h.qc_pending_items.map((q, i) => <li key={i}>• {q}</li>)}
                         </ul>
@@ -152,7 +153,7 @@ export default function ShiftHandoverPage() {
                     )}
                     {h.material_shortages && h.material_shortages.length > 0 && (
                       <div>
-                        <p className="text-xs font-medium text-orange-600 mb-0.5">Material Shortages</p>
+                        <p className="text-xs font-medium text-orange-600 mb-0.5">{tx("Material Shortages")}</p>
                         <ul className="text-xs text-gray-500 space-y-0.5">
                           {h.material_shortages.map((m, i) => <li key={i}>• {m}</li>)}
                         </ul>
@@ -162,7 +163,7 @@ export default function ShiftHandoverPage() {
                   {h.notes && <p className="mt-2 text-xs text-gray-500 italic">{h.notes}</p>}
                   <p className="mt-1.5 text-xs text-gray-400">
                     {new Date(h.handover_time).toLocaleString()}
-                    {h.is_approved && h.approved_by && ` · Approved by ${h.approved_by}`}
+                    {h.is_approved && h.approved_by && tx(" · Approved by {approved_by}", { approved_by: h.approved_by })}
                   </p>
                 </div>
                 {!h.is_approved && (
@@ -171,7 +172,7 @@ export default function ShiftHandoverPage() {
                       <div className="flex gap-1 items-center">
                         <input
                           className="border border-gray-200 rounded-lg px-2 py-1 text-xs w-28"
-                          placeholder="Approver name"
+                          placeholder={tx("Approver name")}
                           value={approvedBy}
                           onChange={(e) => setApprovedBy(e.target.value)}
                         />
@@ -180,7 +181,7 @@ export default function ShiftHandoverPage() {
                           disabled={!approvedBy || approveMut.isPending}
                           className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 disabled:opacity-40"
                         >
-                          Confirm
+                          {tx("Confirm")}
                         </button>
                         <button onClick={() => setApprovingId(null)} className="px-2 py-1 border border-gray-200 text-xs rounded">✕</button>
                       </div>
@@ -189,7 +190,7 @@ export default function ShiftHandoverPage() {
                         onClick={() => { setApprovingId(h.id); setApprovedBy(""); }}
                         className="px-3 py-1.5 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700"
                       >
-                        Approve
+                        {tx("Approve")}
                       </button>
                     )}
                   </div>
@@ -204,16 +205,16 @@ export default function ShiftHandoverPage() {
       {showModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 overflow-y-auto">
           <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-xl space-y-4 my-8">
-            <h2 className="text-lg font-bold text-gray-900">New Shift Handover</h2>
+            <h2 className="text-lg font-bold text-gray-900">{tx("New Shift Handover")}</h2>
             <div className="grid grid-cols-2 gap-3">
               {[
-                { key: "line_id", label: "Line ID", placeholder: "e.g. LINE-1" },
-                { key: "shift_from_name", label: "Shift From", placeholder: "e.g. Morning" },
-                { key: "shift_to_name", label: "Shift To", placeholder: "e.g. Afternoon" },
-                { key: "outgoing_supervisor", label: "Outgoing Supervisor", placeholder: "" },
-                { key: "incoming_supervisor", label: "Incoming Supervisor", placeholder: "" },
-                { key: "qty_completed", label: "Qty Completed", placeholder: "0" },
-                { key: "qty_remaining", label: "Qty Remaining", placeholder: "0" },
+                { key: "line_id", label: tx("Line ID"), placeholder: tx("e.g. LINE-1") },
+                { key: "shift_from_name", label: tx("Shift From"), placeholder: tx("e.g. Morning") },
+                { key: "shift_to_name", label: tx("Shift To"), placeholder: tx("e.g. Afternoon") },
+                { key: "outgoing_supervisor", label: tx("Outgoing Supervisor"), placeholder: "" },
+                { key: "incoming_supervisor", label: tx("Incoming Supervisor"), placeholder: "" },
+                { key: "qty_completed", label: tx("Qty Completed"), placeholder: "0" },
+                { key: "qty_remaining", label: tx("Qty Remaining"), placeholder: "0" },
               ].map(({ key, label, placeholder }) => (
                 <div key={key}>
                   <label className="text-xs text-gray-500">{label}</label>
@@ -221,19 +222,19 @@ export default function ShiftHandoverPage() {
                 </div>
               ))}
               <div>
-                <label className="text-xs text-gray-500">Outgoing Operators (comma-sep)</label>
+                <label className="text-xs text-gray-500">{tx("Outgoing Operators (comma-sep)")}</label>
                 <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mt-0.5" value={form.outgoing_operators_str} onChange={(e) => updateForm("outgoing_operators_str", e.target.value)} />
               </div>
               <div>
-                <label className="text-xs text-gray-500">Incoming Operators (comma-sep)</label>
+                <label className="text-xs text-gray-500">{tx("Incoming Operators (comma-sep)")}</label>
                 <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mt-0.5" value={form.incoming_operators_str} onChange={(e) => updateForm("incoming_operators_str", e.target.value)} />
               </div>
             </div>
             {[
-              { key: "issues_str", label: "Open Issues (one per line)" },
-              { key: "qc_pending_str", label: "QC Pending Items (one per line)" },
-              { key: "material_shortages_str", label: "Material Shortages (one per line)" },
-              { key: "notes", label: "Notes" },
+              { key: "issues_str", label: tx("Open Issues (one per line)") },
+              { key: "qc_pending_str", label: tx("QC Pending Items (one per line)") },
+              { key: "material_shortages_str", label: tx("Material Shortages (one per line)") },
+              { key: "notes", label: tx("Notes") },
             ].map(({ key, label }) => (
               <div key={key}>
                 <label className="text-xs text-gray-500">{label}</label>
@@ -241,9 +242,9 @@ export default function ShiftHandoverPage() {
               </div>
             ))}
             <div className="flex gap-2">
-              <button onClick={() => setShowModal(false)} className="flex-1 py-2 border border-gray-200 rounded-lg text-sm">Cancel</button>
+              <button onClick={() => setShowModal(false)} className="flex-1 py-2 border border-gray-200 rounded-lg text-sm">{tx("Cancel")}</button>
               <button onClick={() => createMut.mutate()} disabled={createMut.isPending} className="flex-1 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium disabled:opacity-40">
-                Submit Handover
+                {tx("Submit Handover")}
               </button>
             </div>
           </div>

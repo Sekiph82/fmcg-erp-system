@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { ModuleWorkspace } from "@/components/workspace";
+import { tx } from "@/lib/i18n/core";
 
 const AssetsPage           = dynamic(() => import("@/app/dashboard/utility-management/assets/page"),            { ssr: false });
 const ElectricityPage      = dynamic(() => import("@/app/dashboard/utility-management/electricity/page"),       { ssr: false });
@@ -27,31 +28,31 @@ const ESGPage              = dynamic(() => import("@/app/dashboard/esg/page"),  
 
 export default function UtilityManagementPage() {
   const tabs = [
-    { key: "assets",             label: "Assets",             permission: "utilities.view", content: <AssetsPage /> },
-    { key: "electricity",        label: "Electricity",        permission: "utilities.view", content: <ElectricityPage /> },
-    { key: "water",              label: "Water",              permission: "utilities.view", content: <WaterPage /> },
-    { key: "solar",              label: "Solar",              permission: "utilities.view", content: <SolarPage /> },
-    { key: "steam",              label: "Steam",              permission: "utilities.view", content: <SteamPage /> },
-    { key: "wastewater",         label: "Wastewater",         permission: "utilities.view", content: <WastewaterPage /> },
-    { key: "soft-water",         label: "Soft Water",         permission: "utilities.view", content: <SoftWaterPage /> },
-    { key: "compressor",         label: "Compressor",         permission: "utilities.view", content: <CompressorPage /> },
-    { key: "chemical-treatment", label: "Chemical Treatment", permission: "utilities.view", content: <ChemTreatPage /> },
-    { key: "machine-utility",    label: "Machine Utility",    permission: "utilities.view", content: <MachineUtilityPage /> },
-    { key: "readings",           label: "Readings",           permission: "utilities.view", content: <ReadingsPage /> },
-    { key: "devices",            label: "Devices",            permission: "utilities.view", content: <DevicesPage /> },
-    { key: "kpi-center",         label: "KPI Center",         permission: "utilities.view", content: <KPICenterPage /> },
-    { key: "alarm-center",       label: "Alarm Center",       permission: "utilities.view", content: <AlarmCenterPage /> },
-    { key: "alarm-rules",        label: "Alarm Rules",        permission: "utilities.view", content: <AlarmRulesPage /> },
-    { key: "billing",            label: "Billing",            permission: "utilities.view", content: <BillingPage /> },
-    { key: "transactions",       label: "Transactions",       permission: "utilities.view", content: <TransactionsPage /> },
-    { key: "reports",            label: "Reports",            permission: "utilities.view", content: <UtilReportsPage /> },
-    { key: "integration",        label: "Integration",        permission: "utilities.view", content: <UtilIntegrationPage /> },
-    { key: "iot",                label: "IoT",                permission: "utilities.view", content: <IoTPage /> },
+    { key: "assets",             label: tx("Assets"),             permission: "utilities.view", content: <AssetsPage /> },
+    { key: "electricity",        label: tx("Electricity"),        permission: "utilities.view", content: <ElectricityPage /> },
+    { key: "water",              label: tx("Water"),              permission: "utilities.view", content: <WaterPage /> },
+    { key: "solar",              label: tx("Solar"),              permission: "utilities.view", content: <SolarPage /> },
+    { key: "steam",              label: tx("Steam"),              permission: "utilities.view", content: <SteamPage /> },
+    { key: "wastewater",         label: tx("Wastewater"),         permission: "utilities.view", content: <WastewaterPage /> },
+    { key: "soft-water",         label: tx("Soft Water"),         permission: "utilities.view", content: <SoftWaterPage /> },
+    { key: "compressor",         label: tx("Compressor"),         permission: "utilities.view", content: <CompressorPage /> },
+    { key: "chemical-treatment", label: tx("Chemical Treatment"), permission: "utilities.view", content: <ChemTreatPage /> },
+    { key: "machine-utility",    label: tx("Machine Utility"),    permission: "utilities.view", content: <MachineUtilityPage /> },
+    { key: "readings",           label: tx("Readings"),           permission: "utilities.view", content: <ReadingsPage /> },
+    { key: "devices",            label: tx("Devices"),            permission: "utilities.view", content: <DevicesPage /> },
+    { key: "kpi-center",         label: tx("KPI Center"),         permission: "utilities.view", content: <KPICenterPage /> },
+    { key: "alarm-center",       label: tx("Alarm Center"),       permission: "utilities.view", content: <AlarmCenterPage /> },
+    { key: "alarm-rules",        label: tx("Alarm Rules"),        permission: "utilities.view", content: <AlarmRulesPage /> },
+    { key: "billing",            label: tx("Billing"),            permission: "utilities.view", content: <BillingPage /> },
+    { key: "transactions",       label: tx("Transactions"),       permission: "utilities.view", content: <TransactionsPage /> },
+    { key: "reports",            label: tx("Reports"),            permission: "utilities.view", content: <UtilReportsPage /> },
+    { key: "integration",        label: tx("Integration"),        permission: "utilities.view", content: <UtilIntegrationPage /> },
+    { key: "iot",                label: tx("IoT"),                permission: "utilities.view", content: <IoTPage /> },
     { key: "esg",                label: "ESG",                permission: "utilities.view", content: <ESGPage /> },
   ];
   return (
     <ModuleWorkspace
-      title="Utility Management"
+      title={tx("Utility Management")}
       description="Electricity, water, solar, steam, IoT sensors, ESG, alarms, KPIs"
       permission="utility_management.view"
       tabs={tabs}

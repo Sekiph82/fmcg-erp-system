@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { inventoryApi, ValuationRow, AgingRow } from "@/lib/inventory";
+import { tx } from "@/lib/i18n/core";
 
 function fmtKES(n?: number | string | null) {
   if (n == null) return "—";
@@ -54,28 +55,28 @@ export default function ValuationPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Inventory Valuation</h1>
-        <p className="text-sm text-gray-500 mt-1">FIFO / Weighted Average / Standard cost · Aging analysis</p>
+        <h1 className="text-2xl font-bold text-gray-900">{tx("Inventory Valuation")}</h1>
+        <p className="text-sm text-gray-500 mt-1">{tx("FIFO / Weighted Average / Standard cost · Aging analysis")}</p>
       </div>
 
       {/* KPI cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-white rounded-lg border p-4">
-          <p className="text-xs text-gray-500 mb-1">FIFO Total Value</p>
+          <p className="text-xs text-gray-500 mb-1">{tx("FIFO Total Value")}</p>
           <p className="text-xl font-bold text-indigo-700">{fmtKES(fifoTotal)}</p>
-          <p className="text-xs text-gray-400 mt-1">{valuation?.item_count ?? 0} stock lines</p>
+          <p className="text-xs text-gray-400 mt-1">{valuation?.item_count ?? 0} {tx("stock lines")}</p>
         </div>
         <div className="bg-white rounded-lg border p-4">
-          <p className="text-xs text-gray-500 mb-1">Standard Cost Value</p>
+          <p className="text-xs text-gray-500 mb-1">{tx("Standard Cost Value")}</p>
           <p className="text-xl font-bold text-blue-700">{fmtKES(stdTotal)}</p>
           <p className={`text-xs mt-1 font-medium ${stdTotal > fifoTotal ? "text-red-500" : "text-emerald-500"}`}>
             {fifoTotal > 0 ? `${((stdTotal - fifoTotal) / fifoTotal * 100).toFixed(1)}% vs FIFO` : "—"}
           </p>
         </div>
         <div className="bg-white rounded-lg border p-4">
-          <p className="text-xs text-gray-500 mb-1">Aging Inventory Value</p>
+          <p className="text-xs text-gray-500 mb-1">{tx("Aging Inventory Value")}</p>
           <p className="text-xl font-bold text-amber-700">{fmtKES(agingTotal)}</p>
-          <p className="text-xs text-gray-400 mt-1">{aging.length} cost layers</p>
+          <p className="text-xs text-gray-400 mt-1">{aging.length} {tx("cost layers")}</p>
         </div>
       </div>
 
@@ -99,23 +100,23 @@ export default function ValuationPage() {
       {tab === "valuation" && (
         <div className="bg-white rounded-lg border overflow-x-auto">
           <div className="px-5 py-3 border-b font-semibold text-gray-800">
-            Stock Valuation — FIFO / WAC / Standard ({rows.length} lines)
+            {tx("Stock Valuation — FIFO / WAC / Standard (")}{rows.length} {tx("lines)")}
           </div>
           {valLoading ? (
-            <p className="px-5 py-8 text-center text-gray-400">Loading…</p>
+            <p className="px-5 py-8 text-center text-gray-400">{tx("Loading…")}</p>
           ) : (
             <table className="w-full text-sm min-w-[900px]">
               <thead>
                 <tr className="border-b bg-gray-50 text-xs text-gray-500 uppercase">
-                  <th className="px-4 py-2 text-left">Item</th>
-                  <th className="px-4 py-2 text-left">Warehouse</th>
-                  <th className="px-4 py-2 text-left">Lot</th>
-                  <th className="px-4 py-2 text-right">Qty on Hand</th>
-                  <th className="px-4 py-2 text-right">FIFO Unit</th>
-                  <th className="px-4 py-2 text-right">FIFO Value</th>
-                  <th className="px-4 py-2 text-right">Std Unit</th>
-                  <th className="px-4 py-2 text-right">Std Value</th>
-                  <th className="px-4 py-2 text-right">Std vs FIFO</th>
+                  <th className="px-4 py-2 text-left">{tx("Item")}</th>
+                  <th className="px-4 py-2 text-left">{tx("Warehouse")}</th>
+                  <th className="px-4 py-2 text-left">{tx("Lot")}</th>
+                  <th className="px-4 py-2 text-right">{tx("Qty on Hand")}</th>
+                  <th className="px-4 py-2 text-right">{tx("FIFO Unit")}</th>
+                  <th className="px-4 py-2 text-right">{tx("FIFO Value")}</th>
+                  <th className="px-4 py-2 text-right">{tx("Std Unit")}</th>
+                  <th className="px-4 py-2 text-right">{tx("Std Value")}</th>
+                  <th className="px-4 py-2 text-right">{tx("Std vs FIFO")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
@@ -142,13 +143,13 @@ export default function ValuationPage() {
                   );
                 })}
                 {rows.length === 0 && (
-                  <tr><td colSpan={9} className="px-5 py-8 text-center text-gray-400">No active stock — create cost layers via goods receipts</td></tr>
+                  <tr><td colSpan={9} className="px-5 py-8 text-center text-gray-400">{tx("No active stock — create cost layers via goods receipts")}</td></tr>
                 )}
               </tbody>
               {rows.length > 0 && (
                 <tfoot>
                   <tr className="border-t bg-gray-50 font-semibold text-sm">
-                    <td colSpan={5} className="px-4 py-2 text-gray-600">Total</td>
+                    <td colSpan={5} className="px-4 py-2 text-gray-600">{tx("Total")}</td>
                     <td className="px-4 py-2 text-right text-indigo-700">{fmtKES(fifoTotal)}</td>
                     <td />
                     <td className="px-4 py-2 text-right text-blue-700">{fmtKES(stdTotal)}</td>
@@ -170,31 +171,31 @@ export default function ValuationPage() {
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
             {bucketTotals.map((b) => (
               <div key={b.bucket} className="bg-white rounded-lg border p-3 text-center">
-                <span className={`text-xs font-bold px-2 py-0.5 rounded ${BUCKET_COLOR[b.bucket]}`}>{b.bucket} days</span>
+                <span className={`text-xs font-bold px-2 py-0.5 rounded ${BUCKET_COLOR[b.bucket]}`}>{b.bucket} {tx("days")}</span>
                 <p className="text-lg font-bold text-gray-800 mt-2">{fmtKES(b.value)}</p>
-                <p className="text-xs text-gray-400">{b.count} layers</p>
+                <p className="text-xs text-gray-400">{b.count} {tx("layers")}</p>
               </div>
             ))}
           </div>
 
           <div className="bg-white rounded-lg border overflow-x-auto">
             <div className="px-5 py-3 border-b font-semibold text-gray-800">
-              Aging Detail ({aging.length} cost layers)
+              {tx("Aging Detail (")}{aging.length} {tx("cost layers)")}
             </div>
             {agingLoading ? (
-              <p className="px-5 py-8 text-center text-gray-400">Loading…</p>
+              <p className="px-5 py-8 text-center text-gray-400">{tx("Loading…")}</p>
             ) : (
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b bg-gray-50 text-xs text-gray-500 uppercase">
-                    <th className="px-4 py-2 text-left">Item</th>
-                    <th className="px-4 py-2 text-left">Lot</th>
-                    <th className="px-4 py-2 text-left">Receipt Date</th>
-                    <th className="px-4 py-2 text-right">Days Held</th>
-                    <th className="px-4 py-2 text-left">Bucket</th>
-                    <th className="px-4 py-2 text-right">Qty Remaining</th>
-                    <th className="px-4 py-2 text-right">Unit Cost</th>
-                    <th className="px-4 py-2 text-right">Value</th>
+                    <th className="px-4 py-2 text-left">{tx("Item")}</th>
+                    <th className="px-4 py-2 text-left">{tx("Lot")}</th>
+                    <th className="px-4 py-2 text-left">{tx("Receipt Date")}</th>
+                    <th className="px-4 py-2 text-right">{tx("Days Held")}</th>
+                    <th className="px-4 py-2 text-left">{tx("Bucket")}</th>
+                    <th className="px-4 py-2 text-right">{tx("Qty Remaining")}</th>
+                    <th className="px-4 py-2 text-right">{tx("Unit Cost")}</th>
+                    <th className="px-4 py-2 text-right">{tx("Value")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -220,7 +221,7 @@ export default function ValuationPage() {
                     </tr>
                   ))}
                   {aging.length === 0 && (
-                    <tr><td colSpan={8} className="px-5 py-8 text-center text-gray-400">No cost layers found — receive stock to create layers</td></tr>
+                    <tr><td colSpan={8} className="px-5 py-8 text-center text-gray-400">{tx("No cost layers found — receive stock to create layers")}</td></tr>
                   )}
                 </tbody>
               </table>

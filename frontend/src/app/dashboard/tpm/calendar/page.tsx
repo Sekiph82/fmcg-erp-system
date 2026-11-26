@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { tpmApi, TPMPromotion, PROMOTION_TYPE_LABEL, PROMOTION_STATUS_BADGE } from "@/lib/tpm";
 import Link from "next/link";
+import { tx } from "@/lib/i18n/core";
 
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const TYPE_COLORS: Record<string, string> = {
@@ -51,8 +52,8 @@ export default function TPMCalendarPage() {
     <div className="p-6 space-y-5">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Promotion Calendar</h1>
-          <p className="text-sm text-gray-500">View overlaps, gaps, and concentration by month.</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Promotion Calendar")}</h1>
+          <p className="text-sm text-gray-500">{tx("View overlaps, gaps, and concentration by month.")}</p>
         </div>
         <div className="flex gap-2 items-center flex-wrap">
           <button onClick={() => setYear(y => y - 1)} className="glow-button-secondary text-xs !py-1">← {year - 1}</button>
@@ -60,7 +61,7 @@ export default function TPMCalendarPage() {
           <button onClick={() => setYear(y => y + 1)} className="glow-button-secondary text-xs !py-1">{year + 1} →</button>
           <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}
             className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm">
-            <option value="">All Types</option>
+            <option value="">{tx("All Types")}</option>
             {Object.keys(PROMOTION_TYPE_LABEL).map((t) => (
               <option key={t} value={t}>{PROMOTION_TYPE_LABEL[t as keyof typeof PROMOTION_TYPE_LABEL]}</option>
             ))}
@@ -68,7 +69,7 @@ export default function TPMCalendarPage() {
           {channels.length > 0 && (
             <select value={channelFilter} onChange={(e) => setChannelFilter(e.target.value)}
               className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm">
-              <option value="">All Channels</option>
+              <option value="">{tx("All Channels")}</option>
               {channels.map((c) => <option key={c} value={c!}>{c}</option>)}
             </select>
           )}
@@ -76,13 +77,13 @@ export default function TPMCalendarPage() {
       </div>
 
       {isLoading ? (
-        <div className="text-gray-400 text-center py-10">Loading…</div>
+        <div className="text-gray-400 text-center py-10">{tx("Loading…")}</div>
       ) : (
         <div className="glass-table overflow-x-auto">
           <table className="w-full text-sm min-w-[900px]">
             <thead>
               <tr className="border-b border-blue-900/30">
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase w-48">Promotion</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase w-48">{tx("Promotion")}</th>
                 {MONTHS.map((m) => (
                   <th key={m} className="text-center px-1 py-3 text-xs font-semibold text-gray-400 uppercase w-16">{m}</th>
                 ))}
@@ -90,7 +91,7 @@ export default function TPMCalendarPage() {
             </thead>
             <tbody>
               {filtered.length === 0 ? (
-                <tr><td colSpan={13} className="text-center py-10 text-gray-400">No promotions for {year}.</td></tr>
+                <tr><td colSpan={13} className="text-center py-10 text-gray-400">{tx("No promotions for")} {year}.</td></tr>
               ) : filtered.map((p: TPMPromotion) => (
                 <tr key={p.id} className="border-b border-blue-900/20 hover:bg-blue-950/10">
                   <td className="px-4 py-2">
@@ -143,7 +144,7 @@ export default function TPMCalendarPage() {
         }
         return warnings.length > 0 ? (
           <div className="liquid-glass p-4 space-y-2 border border-yellow-900/40">
-            <p className="text-sm font-semibold text-yellow-400">⚠ Overlap Warnings ({warnings.length})</p>
+            <p className="text-sm font-semibold text-yellow-400">{tx("⚠ Overlap Warnings (")}{warnings.length})</p>
             {warnings.map((w, i) => <p key={i} className="text-xs text-yellow-300">{w}</p>)}
           </div>
         ) : null;

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { listAdjustments, approveAdjustments, rejectAdjustments, listEntries, CountAdjustment, CountEntry, AdjustmentStatus } from "@/lib/cycleCount";
 import { Button } from "@/components/ui/Button";
+import { tx } from "@/lib/i18n/core";
 
 export default function VariancesPage() {
   const [adjustments, setAdjustments] = useState<CountAdjustment[]>([]);
@@ -43,21 +44,21 @@ export default function VariancesPage() {
     setProcessing(true);
     try {
       const r = await approveAdjustments(Array.from(selected));
-      setMsg(`Approved & posted ${r.approved} adjustment(s)`);
+      setMsg(tx("Approved & posted {approved} adjustment(s)", { approved: r.approved }));
       await load();
-    } catch { setMsg("Approve failed"); }
+    } catch { setMsg(tx("Approve failed")); }
     setProcessing(false);
   }
 
   async function handleReject() {
-    if (!selected.size || !rejectionReason) { setMsg("Enter rejection reason"); return; }
+    if (!selected.size || !rejectionReason) { setMsg(tx("Enter rejection reason")); return; }
     setProcessing(true);
     try {
       const r = await rejectAdjustments(Array.from(selected), rejectionReason);
-      setMsg(`Rejected ${r.rejected} adjustment(s)`);
+      setMsg(tx("Rejected {rejected} adjustment(s)", { rejected: r.rejected }));
       setRejectionReason("");
       await load();
-    } catch { setMsg("Reject failed"); }
+    } catch { setMsg(tx("Reject failed")); }
     setProcessing(false);
   }
 
@@ -67,8 +68,8 @@ export default function VariancesPage() {
     <div className="max-w-6xl mx-auto py-8 px-4 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Variance Review</h1>
-          <p className="text-sm text-gray-500 mt-1">{adjustments.length} adjustment record(s)</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Variance Review")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{adjustments.length} {tx("adjustment record(s)")}</p>
         </div>
         <div className="flex gap-2">
           {STATUSES.map((s) => (
@@ -83,21 +84,21 @@ export default function VariancesPage() {
 
       {selected.size > 0 && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center gap-4">
-          <span className="text-sm text-amber-700">{selected.size} selected</span>
-          <Button onClick={handleApprove} loading={processing}>Approve & Post</Button>
+          <span className="text-sm text-amber-700">{selected.size} {tx("selected")}</span>
+          <Button onClick={handleApprove} loading={processing}>{tx("Approve & Post")}</Button>
           <div className="flex gap-2 flex-1">
             <input
               className="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
-              placeholder="Rejection reason..."
+              placeholder={tx("Rejection reason...")}
               value={rejectionReason}
               onChange={(e) => setRejectionReason(e.target.value)}
             />
-            <Button variant="danger" onClick={handleReject} loading={processing}>Reject</Button>
+            <Button variant="danger" onClick={handleReject} loading={processing}>{tx("Reject")}</Button>
           </div>
         </div>
       )}
 
-      {loading ? <div className="text-gray-500 py-8 text-center">Loading...</div> : (
+      {loading ? <div className="text-gray-500 py-8 text-center">{tx("Loading...")}</div> : (
         <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-200">
@@ -108,7 +109,7 @@ export default function VariancesPage() {
                     else setSelected(new Set());
                   }} />
                 </th>
-                {["Status", "Adj. Qty", "Value (KES)", "System Qty", "Counted Qty", "Variance %", "Movement Ref"].map((h) => (
+                {[tx("Status"), tx("Adj. Qty"), tx("Value (KES)"), tx("System Qty"), tx("Counted Qty"), tx("Variance %"), tx("Movement Ref")].map((h) => (
                   <th key={h} className="text-left px-4 py-3 font-medium text-gray-700">{h}</th>
                 ))}
               </tr>
@@ -144,7 +145,7 @@ export default function VariancesPage() {
                   </tr>
                 );
               })}
-              {adjustments.length === 0 && <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">No adjustments found</td></tr>}
+              {adjustments.length === 0 && <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">{tx("No adjustments found")}</td></tr>}
             </tbody>
           </table>
         </div>

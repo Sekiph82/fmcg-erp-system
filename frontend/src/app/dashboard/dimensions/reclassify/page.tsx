@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { dimApi } from "@/lib/dimensions";
+import { tx } from "@/lib/i18n/core";
 
 export default function ReclassifyPage() {
   const qc = useQueryClient();
@@ -41,55 +42,55 @@ export default function ReclassifyPage() {
   return (
     <div className="p-6 space-y-5">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Dimension Reclassification</h1>
-        <p className="text-sm text-gray-500">Correct dimension tags on previously posted transactions with full audit trail.</p>
+        <h1 className="text-2xl font-bold text-gray-900">{tx("Dimension Reclassification")}</h1>
+        <p className="text-sm text-gray-500">{tx("Correct dimension tags on previously posted transactions with full audit trail.")}</p>
       </div>
 
       {done && (
         <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-700">
-          ✓ Reclassification recorded successfully.
+          {tx("✓ Reclassification recorded successfully.")}
         </div>
       )}
 
       <div className="liquid-glass p-5 space-y-4 max-w-2xl">
-        <h2 className="text-sm font-semibold text-gray-700">Reclassify Transaction</h2>
+        <h2 className="text-sm font-semibold text-gray-700">{tx("Reclassify Transaction")}</h2>
         <div className="grid grid-cols-2 gap-4">
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-gray-500">Transaction Type *</label>
+            <label className="text-xs text-gray-500">{tx("Transaction Type *")}</label>
             <input type="text" value={form.transaction_type} onChange={(e) => set("transaction_type", e.target.value)}
-              className="rounded-lg border border-gray-300 px-3 py-2 text-sm" placeholder="e.g. journal_entry" />
+              className="rounded-lg border border-gray-300 px-3 py-2 text-sm" placeholder={tx("e.g. journal_entry")} />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-gray-500">Transaction ID *</label>
+            <label className="text-xs text-gray-500">{tx("Transaction ID *")}</label>
             <input type="text" value={form.transaction_id} onChange={(e) => set("transaction_id", e.target.value)}
-              className="rounded-lg border border-gray-300 px-3 py-2 text-sm" placeholder="UUID or ref number" />
+              className="rounded-lg border border-gray-300 px-3 py-2 text-sm" placeholder={tx("UUID or ref number")} />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-gray-500">Dimension Type *</label>
+            <label className="text-xs text-gray-500">{tx("Dimension Type *")}</label>
             <select value={form.dim_type_id} onChange={(e) => set("dim_type_id", e.target.value)}
               className="rounded-lg border border-gray-300 px-3 py-2 text-sm">
-              <option value="">— Select —</option>
+              <option value="">{tx("— Select —")}</option>
               {types.map((t) => <option key={t.id} value={t.id}>{t.type_name}</option>)}
             </select>
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-gray-500">New Dimension Value *</label>
+            <label className="text-xs text-gray-500">{tx("New Dimension Value *")}</label>
             <select value={form.new_dim_value_id} onChange={(e) => set("new_dim_value_id", e.target.value)}
               className="rounded-lg border border-gray-300 px-3 py-2 text-sm">
-              <option value="">— Select —</option>
+              <option value="">{tx("— Select —")}</option>
               {filteredValues.map((v) => <option key={v.id} value={v.id}>{v.dim_name}</option>)}
             </select>
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-gray-500">Journal Entry Ref</label>
+            <label className="text-xs text-gray-500">{tx("Journal Entry Ref")}</label>
             <input type="text" value={form.journal_entry_ref} onChange={(e) => set("journal_entry_ref", e.target.value)}
               className="rounded-lg border border-gray-300 px-3 py-2 text-sm" />
           </div>
           <div className="flex flex-col gap-1 col-span-2">
-            <label className="text-xs text-gray-500">Reason for Reclassification *</label>
+            <label className="text-xs text-gray-500">{tx("Reason for Reclassification *")}</label>
             <textarea value={form.reason} onChange={(e) => set("reason", e.target.value)}
               className="rounded-lg border border-gray-300 px-3 py-2 text-sm" rows={2}
-              placeholder="Explain why this reclassification is needed" />
+              placeholder={tx("Explain why this reclassification is needed")} />
           </div>
         </div>
         <button
@@ -97,25 +98,25 @@ export default function ReclassifyPage() {
           disabled={submit.isPending || !form.transaction_type || !form.transaction_id || !form.dim_type_id || !form.new_dim_value_id || !form.reason}
           className="glow-button"
         >
-          {submit.isPending ? "Recording…" : "Record Reclassification"}
+          {submit.isPending ? tx("Recording…") : tx("Record Reclassification")}
         </button>
       </div>
 
       <div className="space-y-3">
-        <h2 className="text-sm font-semibold text-gray-700">Reclassification History</h2>
+        <h2 className="text-sm font-semibold text-gray-700">{tx("Reclassification History")}</h2>
         {history.length === 0 ? (
-          <div className="liquid-glass p-8 text-center text-gray-400">No reclassifications recorded yet.</div>
+          <div className="liquid-glass p-8 text-center text-gray-400">{tx("No reclassifications recorded yet.")}</div>
         ) : (
           <div className="glass-table overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-blue-900/30">
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Tx Type</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Tx ID</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Dimension</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Old Value</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">New Value</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Reason</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Tx Type")}</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Tx ID")}</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Dimension")}</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Old Value")}</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("New Value")}</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Reason")}</th>
                 </tr>
               </thead>
               <tbody>

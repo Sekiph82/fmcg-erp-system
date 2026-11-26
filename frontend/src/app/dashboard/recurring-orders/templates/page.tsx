@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { subscriptionApi, STATUS_COLORS, RECURRENCE_LABELS, SubscriptionStatus } from "@/lib/subscription";
 import Link from "next/link";
 import { useState } from "react";
+import { tx } from "@/lib/i18n/core";
 
 const STATUSES: SubscriptionStatus[] = ["DRAFT", "ACTIVE", "PAUSED", "EXPIRED", "CANCELLED", "ARCHIVED"];
 
@@ -18,14 +19,14 @@ export default function TemplateListPage() {
     <div className="p-6 space-y-5 text-slate-200">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-white">Recurring Templates</h1>
-          <p className="text-slate-500 text-sm mt-0.5">{templates.length} templates</p>
+          <h1 className="text-xl font-bold text-white">{tx("Recurring Templates")}</h1>
+          <p className="text-slate-500 text-sm mt-0.5">{templates.length} {tx("templates")}</p>
         </div>
         <Link
           href="/dashboard/recurring-orders/templates/new"
           className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium"
         >
-          + New Template
+          {tx("+ New Template")}
         </Link>
       </div>
 
@@ -37,7 +38,7 @@ export default function TemplateListPage() {
             statusFilter === "" ? "bg-indigo-600 border-indigo-500 text-white" : "border-white/[0.08] text-slate-400 hover:border-white/20"
           }`}
         >
-          All
+          {tx("All")}
         </button>
         {STATUSES.map((s) => (
           <button
@@ -57,22 +58,22 @@ export default function TemplateListPage() {
         <table className="w-full text-sm">
           <thead className="bg-white/[0.03] text-slate-500 text-xs uppercase tracking-wider">
             <tr>
-              <th className="px-4 py-3 text-left">Code</th>
-              <th className="px-4 py-3 text-left">Name</th>
-              <th className="px-4 py-3 text-left">Customer</th>
-              <th className="px-4 py-3 text-left">Recurrence</th>
-              <th className="px-4 py-3 text-left">Next Generation</th>
-              <th className="px-4 py-3 text-left">Mode</th>
-              <th className="px-4 py-3 text-left">Status</th>
-              <th className="px-4 py-3 text-left">Lines</th>
+              <th className="px-4 py-3 text-left">{tx("Code")}</th>
+              <th className="px-4 py-3 text-left">{tx("Name")}</th>
+              <th className="px-4 py-3 text-left">{tx("Customer")}</th>
+              <th className="px-4 py-3 text-left">{tx("Recurrence")}</th>
+              <th className="px-4 py-3 text-left">{tx("Next Generation")}</th>
+              <th className="px-4 py-3 text-left">{tx("Mode")}</th>
+              <th className="px-4 py-3 text-left">{tx("Status")}</th>
+              <th className="px-4 py-3 text-left">{tx("Lines")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-white/[0.04]">
             {isLoading && (
-              <tr><td colSpan={8} className="text-center py-8 text-slate-600">Loading...</td></tr>
+              <tr><td colSpan={8} className="text-center py-8 text-slate-600">{tx("Loading...")}</td></tr>
             )}
             {!isLoading && templates.length === 0 && (
-              <tr><td colSpan={8} className="text-center py-8 text-slate-600">No templates</td></tr>
+              <tr><td colSpan={8} className="text-center py-8 text-slate-600">{tx("No templates")}</td></tr>
             )}
             {templates.map((t) => (
               <tr key={t.id} className="hover:bg-white/[0.02] transition-colors">

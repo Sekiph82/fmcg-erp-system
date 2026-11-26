@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { tx } from "@/lib/i18n/core";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -151,12 +152,12 @@ export default function CertificatesPage() {
     <div className="p-6 space-y-6 max-w-6xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Regulatory Certificate Register</h1>
-          <p className="text-sm text-gray-500 mt-0.5">KEBS, HALAL, ISO, FSCC, NAFDAC and all regulatory certifications</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Regulatory Certificate Register")}</h1>
+          <p className="text-sm text-gray-500 mt-0.5">{tx("KEBS, HALAL, ISO, FSCC, NAFDAC and all regulatory certifications")}</p>
         </div>
         <button onClick={() => setShowForm(true)}
           className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded">
-          + Add Certificate
+          {tx("+ Add Certificate")}
         </button>
       </div>
 
@@ -165,10 +166,10 @@ export default function CertificatesPage() {
       {/* KPI strip */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {[
-          { label: "Total Active", value: stats.total_active, color: "text-gray-800" },
-          { label: "Expiring (90d)", value: stats.expiring_90d, color: "text-amber-600" },
+          { label: tx("Total Active"), value: stats.total_active, color: "text-gray-800" },
+          { label: tx("Expiring (90d)"), value: stats.expiring_90d, color: "text-amber-600" },
           { label: "Expired", value: stats.expired, color: "text-red-600" },
-          { label: "Authorities", value: Object.keys(stats?.by_authority ?? {}).length, color: "text-blue-600" },
+          { label: tx("Authorities"), value: Object.keys(stats?.by_authority ?? {}).length, color: "text-blue-600" },
         ].map((k) => (
           <div key={k.label} className={`bg-white border rounded-lg p-4 shadow-sm ${k.label === "Expired" && k.value > 0 ? "border-red-300 bg-red-50" : ""}`}>
             <p className="text-xs text-gray-500">{k.label}</p>
@@ -192,90 +193,90 @@ export default function CertificatesPage() {
       {/* Filters */}
       <div className="flex flex-wrap gap-3 bg-white border rounded-lg p-3 shadow-sm items-end">
         <div>
-          <label className="text-xs text-gray-500 block mb-1">Status</label>
+          <label className="text-xs text-gray-500 block mb-1">{tx("Status")}</label>
           <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}
             className="border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none">
-            <option value="">All</option>
+            <option value="">{tx("All")}</option>
             {STATUSES.map((s) => <option key={s} value={s}>{s.replace(/_/g, " ")}</option>)}
           </select>
         </div>
         <div>
-          <label className="text-xs text-gray-500 block mb-1">Entity Type</label>
+          <label className="text-xs text-gray-500 block mb-1">{tx("Entity Type")}</label>
           <select value={filterType} onChange={(e) => setFilterType(e.target.value)}
             className="border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none">
-            <option value="">All</option>
+            <option value="">{tx("All")}</option>
             {ENTITY_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
           </select>
         </div>
         <label className="flex items-center gap-1.5 text-sm text-gray-600 cursor-pointer">
           <input type="checkbox" checked={expiringOnly} onChange={(e) => setExpiringOnly(e.target.checked)} className="h-3.5 w-3.5" />
-          Expiring / Expired only
+          {tx("Expiring / Expired only")}
         </label>
         <button onClick={() => { setFilterAuth(""); setFilterStatus(""); setFilterType(""); setExpiringOnly(false); }}
-          className="text-xs text-gray-500 hover:text-gray-700 underline">Clear</button>
+          className="text-xs text-gray-500 hover:text-gray-700 underline">{tx("Clear")}</button>
       </div>
 
       {/* Add form */}
       {showForm && (
         <div className="bg-white border rounded-lg p-5 shadow-sm space-y-3">
-          <h2 className="text-sm font-semibold text-gray-700">Register Certificate</h2>
+          <h2 className="text-sm font-semibold text-gray-700">{tx("Register Certificate")}</h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <div className="sm:col-span-2">
-              <label className="text-xs text-gray-500 block mb-1">Entity Name *</label>
-              <input type="text" value={form.entity_name} onChange={(e) => setForm((p) => ({ ...p, entity_name: e.target.value }))} placeholder="e.g. POVU AllClean 1 L or Plant A"
+              <label className="text-xs text-gray-500 block mb-1">{tx("Entity Name *")}</label>
+              <input type="text" value={form.entity_name} onChange={(e) => setForm((p) => ({ ...p, entity_name: e.target.value }))} placeholder={tx("e.g. POVU AllClean 1 L or Plant A")}
                 className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" />
             </div>
             <div>
-              <label className="text-xs text-gray-500 block mb-1">Authority *</label>
+              <label className="text-xs text-gray-500 block mb-1">{tx("Authority *")}</label>
               <select value={form.authority} onChange={(e) => setForm((p) => ({ ...p, authority: e.target.value }))}
                 className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none">
                 {AUTHORITIES.map((a) => <option key={a} value={a}>{a.replace(/_/g, " ")}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-xs text-gray-500 block mb-1">Entity Type</label>
+              <label className="text-xs text-gray-500 block mb-1">{tx("Entity Type")}</label>
               <select value={form.entity_type} onChange={(e) => setForm((p) => ({ ...p, entity_type: e.target.value }))}
                 className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none">
                 {ENTITY_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-xs text-gray-500 block mb-1">Certificate Number</label>
-              <input type="text" value={form.certificate_number} onChange={(e) => setForm((p) => ({ ...p, certificate_number: e.target.value }))} placeholder="e.g. KEBS/SB/2026/123"
+              <label className="text-xs text-gray-500 block mb-1">{tx("Certificate Number")}</label>
+              <input type="text" value={form.certificate_number} onChange={(e) => setForm((p) => ({ ...p, certificate_number: e.target.value }))} placeholder={tx("e.g. KEBS/SB/2026/123")}
                 className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none" />
             </div>
             <div>
-              <label className="text-xs text-gray-500 block mb-1">Issued Date</label>
+              <label className="text-xs text-gray-500 block mb-1">{tx("Issued Date")}</label>
               <input type="date" value={form.issued_date} onChange={(e) => setForm((p) => ({ ...p, issued_date: e.target.value }))}
                 className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none" />
             </div>
             <div>
-              <label className="text-xs text-gray-500 block mb-1">Expiry Date</label>
+              <label className="text-xs text-gray-500 block mb-1">{tx("Expiry Date")}</label>
               <input type="date" value={form.expiry_date} onChange={(e) => setForm((p) => ({ ...p, expiry_date: e.target.value }))}
                 className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none" />
             </div>
             <div>
-              <label className="text-xs text-gray-500 block mb-1">Country</label>
+              <label className="text-xs text-gray-500 block mb-1">{tx("Country")}</label>
               <input type="text" value={form.country} onChange={(e) => setForm((p) => ({ ...p, country: e.target.value }))}
                 className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none" />
             </div>
             <div>
-              <label className="text-xs text-gray-500 block mb-1">Status</label>
+              <label className="text-xs text-gray-500 block mb-1">{tx("Status")}</label>
               <select value={form.status} onChange={(e) => setForm((p) => ({ ...p, status: e.target.value }))}
                 className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none">
                 {STATUSES.map((s) => <option key={s} value={s}>{s.replace(/_/g, " ")}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-xs text-gray-500 block mb-1">Document URL</label>
+              <label className="text-xs text-gray-500 block mb-1">{tx("Document URL")}</label>
               <input type="text" value={form.document_url} onChange={(e) => setForm((p) => ({ ...p, document_url: e.target.value }))} placeholder="https://…"
                 className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none" />
             </div>
           </div>
           <div className="flex gap-2">
             <button onClick={save} disabled={saving || !form.entity_name}
-              className="bg-blue-600 text-white text-sm px-4 py-2 rounded disabled:opacity-50">{saving ? "Saving…" : "Register Certificate"}</button>
-            <button onClick={() => setShowForm(false)} className="border border-gray-300 text-sm px-4 py-2 rounded hover:bg-gray-50">Cancel</button>
+              className="bg-blue-600 text-white text-sm px-4 py-2 rounded disabled:opacity-50">{saving ? tx("Saving…") : tx("Register Certificate")}</button>
+            <button onClick={() => setShowForm(false)} className="border border-gray-300 text-sm px-4 py-2 rounded hover:bg-gray-50">{tx("Cancel")}</button>
           </div>
         </div>
       )}
@@ -283,21 +284,21 @@ export default function CertificatesPage() {
       {/* Certificate table */}
       <div className="bg-white border rounded-lg shadow-sm overflow-hidden">
         <div className="px-4 py-3 border-b bg-gray-50">
-          <h2 className="text-sm font-semibold text-gray-700">Certificates <span className="font-normal text-gray-400">({certs.length})</span></h2>
+          <h2 className="text-sm font-semibold text-gray-700">{tx("Certificates")} <span className="font-normal text-gray-400">({certs.length})</span></h2>
         </div>
-        {loading ? <div className="p-6 text-sm text-gray-400 text-center">Loading…</div> :
-         certs.length === 0 ? <div className="p-6 text-sm text-gray-400 text-center">No certificates found.</div> : (
+        {loading ? <div className="p-6 text-sm text-gray-400 text-center">{tx("Loading…")}</div> :
+         certs.length === 0 ? <div className="p-6 text-sm text-gray-400 text-center">{tx("No certificates found.")}</div> : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-gray-50 text-xs text-gray-500">
                 <tr>
-                  <th className="text-left px-4 py-2">Ref</th>
-                  <th className="text-left px-4 py-2">Entity</th>
-                  <th className="text-left px-4 py-2">Authority</th>
-                  <th className="text-left px-4 py-2">Type</th>
-                  <th className="text-left px-4 py-2">Expiry</th>
-                  <th className="text-left px-4 py-2">Days Left</th>
-                  <th className="text-left px-4 py-2">Status</th>
+                  <th className="text-left px-4 py-2">{tx("Ref")}</th>
+                  <th className="text-left px-4 py-2">{tx("Entity")}</th>
+                  <th className="text-left px-4 py-2">{tx("Authority")}</th>
+                  <th className="text-left px-4 py-2">{tx("Type")}</th>
+                  <th className="text-left px-4 py-2">{tx("Expiry")}</th>
+                  <th className="text-left px-4 py-2">{tx("Days Left")}</th>
+                  <th className="text-left px-4 py-2">{tx("Status")}</th>
                   <th className="px-4 py-2"></th>
                 </tr>
               </thead>
@@ -316,7 +317,7 @@ export default function CertificatesPage() {
                       {c.days_to_expiry !== null
                         ? c.days_to_expiry < 0
                           ? `Expired ${Math.abs(c.days_to_expiry)}d ago`
-                          : `${c.days_to_expiry}d`
+                          : tx("{days_to_expiry}d", { days_to_expiry: c.days_to_expiry })
                         : "—"}
                     </td>
                     <td className="px-4 py-2.5">
@@ -326,7 +327,7 @@ export default function CertificatesPage() {
                     </td>
                     <td className="px-4 py-2.5">
                       {c.document_url && (
-                        <a href={c.document_url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:text-blue-700">Doc ↗</a>
+                        <a href={c.document_url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:text-blue-700">{tx("Doc ↗")}</a>
                       )}
                     </td>
                   </tr>

@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
 import { marketingApi, SegmentType } from "@/lib/marketingApi";
 import { RequirePermission } from "@/components/PermissionGuard";
+import { tx } from "@/lib/i18n/core";
 
 const SEGMENT_TYPES: SegmentType[] = [
   "RETAIL", "WHOLESALE", "KIOSK", "SUPERMARKET", "DISTRIBUTOR",
@@ -33,7 +34,7 @@ export default function SegmentDetailPage() {
       setEditing(false);
     },
     onError: (err: unknown) => {
-      setSaveError((err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ?? "Save failed.");
+      setSaveError((err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ?? tx("Save failed."));
     },
   });
 
@@ -54,8 +55,8 @@ export default function SegmentDetailPage() {
     setEditing(true);
   }
 
-  if (isLoading) return <div className="min-h-screen bg-[#0b1120] p-6 text-slate-400">Loading...</div>;
-  if (!segment) return <div className="min-h-screen bg-[#0b1120] p-6 text-red-400">Segment not found.</div>;
+  if (isLoading) return <div className="min-h-screen bg-[#0b1120] p-6 text-slate-400">{tx("Loading...")}</div>;
+  if (!segment) return <div className="min-h-screen bg-[#0b1120] p-6 text-red-400">{tx("Segment not found.")}</div>;
 
   return (
     <RequirePermission permission="segments.view">
@@ -64,14 +65,14 @@ export default function SegmentDetailPage() {
         <div className="flex items-start justify-between mb-6">
           <div>
             <a href="/dashboard/marketing/segments" className="text-sm text-slate-400 hover:text-white mb-1 inline-block">
-              ← Segments
+              {tx("← Segments")}
             </a>
             <h1 className="text-2xl font-bold">{segment.segment_name}</h1>
             <div className="flex items-center gap-3 mt-1">
               <span className="text-xs text-blue-400">{segment.segment_type.replace(/_/g, " ")}</span>
               {segment.region && <span className="text-xs text-slate-400">{segment.region}</span>}
               <span className={`text-xs font-medium ${segment.is_active ? "text-emerald-400" : "text-slate-400"}`}>
-                {segment.is_active ? "Active" : "Inactive"}
+                {segment.is_active ? tx("Active") : tx("Inactive")}
               </span>
             </div>
           </div>
@@ -79,11 +80,11 @@ export default function SegmentDetailPage() {
             <div className="flex gap-2 mt-5">
               <button onClick={startEdit}
                 className="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-sm font-medium transition-colors">
-                Edit
+                {tx("Edit")}
               </button>
-              <button onClick={() => { if (confirm("Delete this segment?")) deleteMut.mutate(); }}
+              <button onClick={() => { if (confirm(tx("Delete this segment?"))) deleteMut.mutate(); }}
                 className="px-3 py-1.5 rounded-lg bg-red-600/20 text-red-400 hover:bg-red-600/40 text-sm font-medium transition-colors">
-                Delete
+                {tx("Delete")}
               </button>
             </div>
           )}
@@ -94,15 +95,15 @@ export default function SegmentDetailPage() {
           <div className="rounded-xl bg-[#131c2e] border border-slate-700/50 p-5 space-y-4">
             {segment.description ? (
               <div>
-                <p className="text-xs text-slate-500 mb-0.5">Description</p>
+                <p className="text-xs text-slate-500 mb-0.5">{tx("Description")}</p>
                 <p className="text-sm text-slate-300">{segment.description}</p>
               </div>
             ) : (
-              <p className="text-sm text-slate-500 italic">No description provided.</p>
+              <p className="text-sm text-slate-500 italic">{tx("No description provided.")}</p>
             )}
             <div className="grid grid-cols-2 gap-4 text-sm pt-2 border-t border-slate-700">
               <div>
-                <p className="text-xs text-slate-500 mb-0.5">Created</p>
+                <p className="text-xs text-slate-500 mb-0.5">{tx("Created")}</p>
                 <p>{segment.created_at ? new Date(segment.created_at).toLocaleDateString() : "—"}</p>
               </div>
             </div>
@@ -118,7 +119,7 @@ export default function SegmentDetailPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
-                <label className="block text-xs text-slate-400 mb-1">Segment Name</label>
+                <label className="block text-xs text-slate-400 mb-1">{tx("Segment Name")}</label>
                 <input
                   value={editForm.segment_name as string ?? ""}
                   onChange={(e) => setEditForm((f) => ({ ...f, segment_name: e.target.value }))}
@@ -126,7 +127,7 @@ export default function SegmentDetailPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Type</label>
+                <label className="block text-xs text-slate-400 mb-1">{tx("Type")}</label>
                 <select
                   value={editForm.segment_type as string ?? ""}
                   onChange={(e) => setEditForm((f) => ({ ...f, segment_type: e.target.value }))}
@@ -136,7 +137,7 @@ export default function SegmentDetailPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Region</label>
+                <label className="block text-xs text-slate-400 mb-1">{tx("Region")}</label>
                 <input
                   value={editForm.region as string ?? ""}
                   onChange={(e) => setEditForm((f) => ({ ...f, region: e.target.value }))}
@@ -146,7 +147,7 @@ export default function SegmentDetailPage() {
             </div>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Description</label>
+              <label className="block text-xs text-slate-400 mb-1">{tx("Description")}</label>
               <textarea
                 value={editForm.description as string ?? ""}
                 onChange={(e) => setEditForm((f) => ({ ...f, description: e.target.value }))}
@@ -163,17 +164,17 @@ export default function SegmentDetailPage() {
                 onChange={(e) => setEditForm((f) => ({ ...f, is_active: e.target.checked }))}
                 className="w-4 h-4 rounded border-slate-700"
               />
-              <label htmlFor="edit_is_active" className="text-sm text-slate-300">Active</label>
+              <label htmlFor="edit_is_active" className="text-sm text-slate-300">{tx("Active")}</label>
             </div>
 
             <div className="flex gap-3 pt-2">
               <button onClick={() => updateMut.mutate()} disabled={updateMut.isPending}
                 className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-sm font-medium disabled:opacity-50 transition-colors">
-                {updateMut.isPending ? "Saving..." : "Save Changes"}
+                {updateMut.isPending ? tx("Saving...") : tx("Save Changes")}
               </button>
               <button onClick={() => setEditing(false)}
                 className="px-5 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-sm font-medium transition-colors">
-                Cancel
+                {tx("Cancel")}
               </button>
             </div>
           </div>

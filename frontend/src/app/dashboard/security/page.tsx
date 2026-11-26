@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { PageHelpTooltip } from "@/components/help/PageHelpTooltip";
+import { tx } from "@/lib/i18n/core";
 
 type Step = "idle" | "qr" | "otp_input" | "done" | "disable";
 
@@ -73,7 +74,7 @@ export default function SecurityPage() {
       }
     } catch (err: unknown) {
       const e = err as { response?: { data?: { detail?: string } } };
-      setError(e?.response?.data?.detail || "Setup failed");
+      setError(e?.response?.data?.detail || tx("Setup failed"));
     } finally {
       setLoading(false);
     }
@@ -89,7 +90,7 @@ export default function SecurityPage() {
       await loadSettings();
     } catch (err: unknown) {
       const e = err as { response?: { data?: { detail?: string } } };
-      setError(e?.response?.data?.detail || "Invalid code");
+      setError(e?.response?.data?.detail || tx("Invalid code"));
     } finally {
       setLoading(false);
     }
@@ -105,7 +106,7 @@ export default function SecurityPage() {
       startCooldown(res.cooldown_seconds);
     } catch (err: unknown) {
       const e = err as { response?: { data?: { detail?: string } } };
-      setError(e?.response?.data?.detail || "Failed to resend code");
+      setError(e?.response?.data?.detail || tx("Failed to resend code"));
     } finally {
       setLoading(false);
     }
@@ -121,7 +122,7 @@ export default function SecurityPage() {
       await loadSettings();
     } catch (err: unknown) {
       const e = err as { response?: { data?: { detail?: string } } };
-      setError(e?.response?.data?.detail || "Failed to disable 2FA");
+      setError(e?.response?.data?.detail || tx("Failed to disable 2FA"));
     } finally {
       setLoading(false);
     }
@@ -136,14 +137,14 @@ export default function SecurityPage() {
       setStep("done");
     } catch (err: unknown) {
       const e = err as { response?: { data?: { detail?: string } } };
-      setError(e?.response?.data?.detail || "Failed to regenerate");
+      setError(e?.response?.data?.detail || tx("Failed to regenerate"));
     } finally {
       setLoading(false);
     }
   }
 
   async function handleRevokeAllSessions() {
-    if (!window.confirm("Sign out this account on every device, including this one?")) return;
+    if (!window.confirm(tx("Sign out this account on every device, including this one?"))) return;
     setSessionError("");
     setRevokingSessions(true);
     try {
@@ -151,7 +152,7 @@ export default function SecurityPage() {
       window.location.replace("/login");
     } catch (err: unknown) {
       const e = err as { response?: { data?: { detail?: string } } };
-      setSessionError(e?.response?.data?.detail || "Could not sign out all sessions. Try again.");
+      setSessionError(e?.response?.data?.detail || tx("Could not sign out all sessions. Try again."));
     } finally {
       setRevokingSessions(false);
     }
@@ -180,25 +181,25 @@ export default function SecurityPage() {
     <div className="max-w-2xl mx-auto py-8 px-4 space-y-8">
       <div>
         <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-bold text-gray-900">Security Settings</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Security Settings")}</h1>
           <PageHelpTooltip topic="admin-security" />
         </div>
-        <p className="text-sm text-gray-500 mt-1">Manage two-factor authentication for your account.</p>
-        {user?.is_superuser && <div className="flex gap-4"><a className="text-sm text-indigo-600 underline" href="/dashboard/security/support-access">Support access &amp; notification defaults</a>
-          <a className="text-sm text-indigo-600 underline" href="/dashboard/security/sso">Single sign-on</a>
-          <a className="text-sm text-indigo-600 underline" href="/dashboard/security/config-sandbox">Configuration sandbox</a>
-          <a className="text-sm text-indigo-600 underline" href="/dashboard/security/warehouse-exports">Warehouse exports</a></div>}
+        <p className="text-sm text-gray-500 mt-1">{tx("Manage two-factor authentication for your account.")}</p>
+        {user?.is_superuser && <div className="flex gap-4"><a className="text-sm text-indigo-600 underline" href="/dashboard/security/support-access">{tx("Support access & notification defaults")}</a>
+          <a className="text-sm text-indigo-600 underline" href="/dashboard/security/sso">{tx("Single sign-on")}</a>
+          <a className="text-sm text-indigo-600 underline" href="/dashboard/security/config-sandbox">{tx("Configuration sandbox")}</a>
+          <a className="text-sm text-indigo-600 underline" href="/dashboard/security/warehouse-exports">{tx("Warehouse exports")}</a></div>}
       </div>
 
       {/* Current status */}
       <div className="bg-white rounded-2xl border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">Two-Factor Authentication</h2>
+            <h2 className="text-lg font-semibold text-gray-900">{tx("Two-Factor Authentication")}</h2>
             <p className="text-sm text-gray-500">
               {settings?.is_enabled
                 ? `Enabled · Method: ${methodLabels[settings.method!] || settings.method}`
-                : "Not enabled"}
+                : tx("Not enabled")}
             </p>
           </div>
           <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
@@ -206,14 +207,14 @@ export default function SecurityPage() {
               ? "bg-green-100 text-green-800"
               : "bg-gray-100 text-gray-600"
           }`}>
-            {settings?.is_enabled ? "Active" : "Disabled"}
+            {settings?.is_enabled ? tx("Active") : tx("Disabled")}
           </span>
         </div>
 
         {!settings?.is_enabled && step === "idle" && (
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Choose method</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{tx("Choose method")}</label>
               <div className="grid grid-cols-3 gap-3">
                 {(["totp", "sms", "email"] as TwoFAMethod[]).map((m) => (
                   <button
@@ -234,7 +235,7 @@ export default function SecurityPage() {
             {method === "sms" && (
               <Input
                 id="phone-number"
-                label="Phone Number"
+                label={tx("Phone Number")}
                 type="tel"
                 placeholder="+254700000000"
                 value={phoneNumber}
@@ -243,7 +244,7 @@ export default function SecurityPage() {
             )}
 
             <Button onClick={handleSetup} loading={loading} disabled={method === "sms" && !phoneNumber.trim()}>
-              Enable 2FA
+              {tx("Enable 2FA")}
             </Button>
           </div>
         )}
@@ -251,10 +252,10 @@ export default function SecurityPage() {
         {settings?.is_enabled && step === "idle" && (
           <div className="flex gap-3">
             <Button variant="secondary" onClick={() => setStep("disable")}>
-              Disable 2FA
+              {tx("Disable 2FA")}
             </Button>
             <Button variant="secondary" onClick={handleRegenerate} loading={loading}>
-              Regenerate Recovery Codes
+              {tx("Regenerate Recovery Codes")}
             </Button>
           </div>
         )}
@@ -262,9 +263,9 @@ export default function SecurityPage() {
 
       <div className="bg-white rounded-2xl border border-red-200 p-6 space-y-3">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">Active sessions</h2>
+          <h2 className="text-lg font-semibold text-gray-900">{tx("Active sessions")}</h2>
           <p className="text-sm text-gray-500 mt-1">
-            Sign out this account on every device. You will need to sign in again here.
+            {tx("Sign out this account on every device. You will need to sign in again here.")}
           </p>
         </div>
         {sessionError && (
@@ -273,39 +274,39 @@ export default function SecurityPage() {
           </div>
         )}
         <Button variant="danger" onClick={handleRevokeAllSessions} loading={revokingSessions}>
-          Sign out all sessions
+          {tx("Sign out all sessions")}
         </Button>
       </div>
 
       {/* QR Code display (TOTP) */}
       {step === "qr" && setupData && (
         <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900">Scan QR Code</h2>
+          <h2 className="text-lg font-semibold text-gray-900">{tx("Scan QR Code")}</h2>
           {setupData.qr_code_image && (
             <div className="flex justify-center">
               {/* eslint-disable-next-line @next/next/no-img-element -- 2FA QR data URI is generated by the backend for direct scanning. */}
               <img
                 src={`data:image/png;base64,${setupData.qr_code_image}`}
-                alt="2FA QR Code"
+                alt={tx("2FA QR Code")}
                 className="w-48 h-48 border border-gray-200 rounded-lg"
               />
             </div>
           )}
           {setupData.secret_key && (
             <div className="bg-gray-50 rounded-lg p-3 text-center">
-              <p className="text-xs text-gray-500 mb-1">Manual entry key</p>
+              <p className="text-xs text-gray-500 mb-1">{tx("Manual entry key")}</p>
               <code className="text-sm font-mono font-bold tracking-widest text-gray-900">
                 {setupData.secret_key}
               </code>
             </div>
           )}
           <p className="text-sm text-gray-600">
-            Open your authenticator app, scan the QR code, then enter the 6-digit code below.
+            {tx("Open your authenticator app, scan the QR code, then enter the 6-digit code below.")}
           </p>
           <div className="space-y-3">
             <Input
               id="verify-code"
-              label="Verification Code"
+              label={tx("Verification Code")}
               type="text"
               placeholder="000000"
               value={code}
@@ -319,7 +320,7 @@ export default function SecurityPage() {
               </div>
             )}
             <Button onClick={handleVerify} loading={loading} className="w-full">
-              Verify & Enable
+              {tx("Verify & Enable")}
             </Button>
           </div>
         </div>
@@ -329,17 +330,17 @@ export default function SecurityPage() {
       {step === "otp_input" && (
         <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
           <h2 className="text-lg font-semibold text-gray-900">
-            {method === "email" ? "Check your email" : "Check your phone"}
+            {method === "email" ? tx("Check your email") : tx("Check your phone")}
           </h2>
           <p className="text-sm text-gray-600">
             {method === "email"
-              ? `We sent a 6-digit code to ${user?.email}. Enter it below to enable Email OTP.`
-              : `We sent a 6-digit code to ${phoneNumber}. Enter it below to enable SMS OTP.`}
+              ? tx("We sent a 6-digit code to {email}. Enter it below to enable Email OTP.", { email: user?.email })
+              : tx("We sent a 6-digit code to {phoneNumber}. Enter it below to enable SMS OTP.", { phoneNumber })}
           </p>
           <div className="space-y-3">
             <Input
               id="otp-code"
-              label="Verification Code"
+              label={tx("Verification Code")}
               type="text"
               inputMode="numeric"
               placeholder="000000"
@@ -354,7 +355,7 @@ export default function SecurityPage() {
               </div>
             )}
             <Button onClick={handleVerify} loading={loading} className="w-full" disabled={code.length !== 6}>
-              Verify & Enable
+              {tx("Verify & Enable")}
             </Button>
             <button
               type="button"
@@ -362,7 +363,7 @@ export default function SecurityPage() {
               disabled={resendCooldown > 0 || loading}
               className="w-full text-sm text-indigo-600 hover:text-indigo-800 disabled:text-gray-400 disabled:cursor-not-allowed"
             >
-              {resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : "Resend code"}
+              {resendCooldown > 0 ? tx("Resend code in {resendCooldown}s", { resendCooldown }) : tx("Resend code")}
             </button>
           </div>
         </div>
@@ -376,9 +377,9 @@ export default function SecurityPage() {
               <span className="text-amber-600 font-bold text-sm">!</span>
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">Save your recovery codes</h2>
+              <h2 className="text-lg font-semibold text-gray-900">{tx("Save your recovery codes")}</h2>
               <p className="text-sm text-gray-500 mt-1">
-                Store these codes securely. Each can only be used once. They will not be shown again.
+                {tx("Store these codes securely. Each can only be used once. They will not be shown again.")}
               </p>
             </div>
           </div>
@@ -390,7 +391,7 @@ export default function SecurityPage() {
             ))}
           </div>
           <Button onClick={() => { setStep("idle"); setRecoveryCodes([]); }} className="w-full">
-            I have saved my codes
+            {tx("I have saved my codes")}
           </Button>
         </div>
       )}
@@ -398,11 +399,11 @@ export default function SecurityPage() {
       {/* Disable confirm */}
       {step === "disable" && (
         <div className="bg-white rounded-2xl border border-red-200 p-6 space-y-4">
-          <h2 className="text-lg font-semibold text-gray-900">Disable 2FA</h2>
-          <p className="text-sm text-gray-500">Enter your password to confirm disabling two-factor authentication.</p>
+          <h2 className="text-lg font-semibold text-gray-900">{tx("Disable 2FA")}</h2>
+          <p className="text-sm text-gray-500">{tx("Enter your password to confirm disabling two-factor authentication.")}</p>
           <Input
             id="password"
-            label="Password"
+            label={tx("Password")}
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -415,10 +416,10 @@ export default function SecurityPage() {
           )}
           <div className="flex gap-3">
             <Button variant="danger" onClick={handleDisable} loading={loading}>
-              Disable 2FA
+              {tx("Disable 2FA")}
             </Button>
             <Button variant="secondary" onClick={() => { setStep("idle"); setError(""); }}>
-              Cancel
+              {tx("Cancel")}
             </Button>
           </div>
         </div>
@@ -428,9 +429,9 @@ export default function SecurityPage() {
       {user?.is_superuser && (
         <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">Security Reports</h2>
+            <h2 className="text-lg font-semibold text-gray-900">{tx("Security Reports")}</h2>
             <Button variant="secondary" onClick={loadReport} loading={loading}>
-              Load Reports
+              {tx("Load Reports")}
             </Button>
           </div>
 
@@ -438,18 +439,18 @@ export default function SecurityPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-gray-50 rounded-xl p-4">
                 <div className="text-2xl font-bold text-gray-900">{report.users_with_2fa_enabled}</div>
-                <div className="text-sm text-gray-500">Users with 2FA</div>
+                <div className="text-sm text-gray-500">{tx("Users with 2FA")}</div>
               </div>
               <div className="bg-gray-50 rounded-xl p-4">
                 <div className="text-2xl font-bold text-red-600">{report.users_without_2fa}</div>
-                <div className="text-sm text-gray-500">Without 2FA</div>
+                <div className="text-sm text-gray-500">{tx("Without 2FA")}</div>
               </div>
               <div className="bg-gray-50 rounded-xl p-4">
                 <div className="text-2xl font-bold text-amber-600">{report.failed_attempts_last_24h}</div>
-                <div className="text-sm text-gray-500">Failed attempts (24h)</div>
+                <div className="text-sm text-gray-500">{tx("Failed attempts (24h)")}</div>
               </div>
               <div className="bg-gray-50 rounded-xl p-4">
-                <div className="text-sm font-medium text-gray-700 mb-1">Methods</div>
+                <div className="text-sm font-medium text-gray-700 mb-1">{tx("Methods")}</div>
                 {Object.entries(report.method_breakdown).map(([k, v]) => (
                   <div key={k} className="text-sm text-gray-500">{k}: {v}</div>
                 ))}
@@ -459,7 +460,7 @@ export default function SecurityPage() {
 
           {!!riskReport && (
             <div>
-              <h3 className="text-sm font-semibold text-gray-700 mb-2">AI Security Risk Monitor</h3>
+              <h3 className="text-sm font-semibold text-gray-700 mb-2">{tx("AI Security Risk Monitor")}</h3>
               <pre className="bg-gray-900 text-green-300 text-xs rounded-lg p-3 overflow-auto max-h-40">
                 {JSON.stringify(riskReport, null, 2)}
               </pre>
@@ -468,7 +469,7 @@ export default function SecurityPage() {
 
           {!!anomalyReport && (
             <div>
-              <h3 className="text-sm font-semibold text-gray-700 mb-2">AI Access Anomaly Detector</h3>
+              <h3 className="text-sm font-semibold text-gray-700 mb-2">{tx("AI Access Anomaly Detector")}</h3>
               <pre className="bg-gray-900 text-blue-300 text-xs rounded-lg p-3 overflow-auto max-h-40">
                 {JSON.stringify(anomalyReport, null, 2)}
               </pre>

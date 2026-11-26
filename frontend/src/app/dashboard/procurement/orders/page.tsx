@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { ToastContainer } from "@/components/ui/Toast";
 import { useToast } from "@/hooks/useToast";
+import { tx, lx } from "@/lib/i18n/core";
 
 const statusVariant = (s: POStatus) =>
   s === "RECEIVED" ? "green"
@@ -23,15 +24,15 @@ const statusVariant = (s: POStatus) =>
   : s === "CANCELLED" ? "red"
   : "blue";
 
-const STATUS_OPTS = [
-  { value: "", label: "All" },
-  { value: "DRAFT", label: "Draft" },
-  { value: "APPROVED", label: "Approved" },
-  { value: "ORDERED", label: "Ordered" },
-  { value: "PARTIALLY_RECEIVED", label: "Partially Received" },
-  { value: "RECEIVED", label: "Received" },
-  { value: "CANCELLED", label: "Cancelled" },
-];
+const STATUS_OPTS = lx(() => [
+  { value: "", label: tx("All") },
+  { value: "DRAFT", label: tx("Draft") },
+  { value: "APPROVED", label: tx("Approved") },
+  { value: "ORDERED", label: tx("Ordered") },
+  { value: "PARTIALLY_RECEIVED", label: tx("Partially Received") },
+  { value: "RECEIVED", label: tx("Received") },
+  { value: "CANCELLED", label: tx("Cancelled") },
+]);
 
 const UNIT_OPTS = ["KG", "G", "L", "ML", "PCS", "BOX", "CARTON", "PALLET"].map((u) => ({ value: u, label: u }));
 
@@ -63,8 +64,8 @@ export default function PurchaseOrdersPage() {
   const { data: suppliers = [] } = useQuery({ queryKey: ["suppliers"], queryFn: () => suppliersApi.list(0, 200), enabled: hasPermission("suppliers.view") });
   const { data: materials = [] } = useQuery({ queryKey: ["materials"], queryFn: () => materialsApi.list(0, 200), enabled: open });
 
-  const suppOpts = [{ value: "", label: "All Suppliers" }, ...suppliers.map((s) => ({ value: s.id, label: s.name }))];
-  const matOpts = [{ value: "", label: "Select material…" }, ...materials.map((m) => ({ value: m.id, label: `${m.code} — ${m.name}` }))];
+  const suppOpts = [{ value: "", label: tx("All Suppliers") }, ...suppliers.map((s) => ({ value: s.id, label: s.name }))];
+  const matOpts = [{ value: "", label: tx("Select material…") }, ...materials.map((m) => ({ value: m.id, label: `${m.code} — ${m.name}` }))];
 
   const create = useMutation({
     mutationFn: () =>
@@ -83,9 +84,9 @@ export default function PurchaseOrdersPage() {
     onSuccess: (po) => {
       qc.invalidateQueries({ queryKey: ["pos"] });
       setOpen(false);
-      toast("success", "PO created", `${po.po_no} created.`);
+      toast("success", tx("PO created"), tx("{po_no} created.", { po_no: po.po_no }));
     },
-    onError: (e) => toast("error", "Failed", extractApiError(e)),
+    onError: (e) => toast("error", tx("Failed"), extractApiError(e)),
   });
 
   const updateLine = (i: number, field: keyof LineForm, val: string) =>
@@ -97,10 +98,10 @@ export default function PurchaseOrdersPage() {
 
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Purchase Orders</h1>
-          <p className="text-sm text-gray-500 mt-1">{pos.length} total</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Purchase Orders")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{pos.length} {tx("total")}</p>
         </div>
-        <Button onClick={() => setOpen(true)}>+ New PO</Button>
+        <Button onClick={() => setOpen(true)}>{tx("+ New PO")}</Button>
       </div>
 
       <div className="mb-4 flex gap-3">
@@ -117,63 +118,63 @@ export default function PurchaseOrdersPage() {
           emptyMessage="No purchase orders yet."
           columns={[
             {
-              header: "PO No",
+              header: tx("PO No"),
               accessor: (p) => (
                 <button className="font-mono text-xs font-medium text-indigo-600 hover:underline" onClick={() => router.push(`/dashboard/procurement/orders/${p.id}`)}>
                   {p.po_no}
                 </button>
               ),
             },
-            { header: "Supplier", accessor: (p) => p.supplier_name ?? "—" },
+            { header: tx("Supplier"), accessor: (p) => p.supplier_name ?? "—" },
             { header: "PR", accessor: (p) => p.pr_no ? <span className="font-mono text-xs text-gray-500">{p.pr_no}</span> : "—" },
-            { header: "Order Date", accessor: (p) => new Date(p.order_date).toLocaleDateString() },
+            { header: tx("Order Date"), accessor: (p) => new Date(p.order_date).toLocaleDateString() },
             {
-              header: "Delivery",
+              header: tx("Delivery"),
               accessor: (p) => (
                 <span className={(p.days_until_delivery ?? 0) < 0 ? "text-red-600 font-semibold" : (p.days_until_delivery ?? 0) <= 7 ? "text-amber-600" : ""}>
                   {new Date(p.expected_delivery_date).toLocaleDateString()}
                   {p.days_until_delivery != null && (
                     <span className="ml-1 text-xs text-gray-400">
-                      {p.days_until_delivery < 0 ? `(${Math.abs(p.days_until_delivery)}d overdue)` : `(${p.days_until_delivery}d)`}
+                      {p.days_until_delivery < 0 ? `(${Math.abs(p.days_until_delivery)}d overdue)` : tx("({days_until_delivery}d)", { days_until_delivery: p.days_until_delivery })}
                     </span>
                   )}
                 </span>
               ),
             },
-            { header: "Currency", accessor: "currency", className: "text-xs" },
+            { header: tx("Currency"), accessor: "currency", className: "text-xs" },
             {
-              header: "Value",
+              header: tx("Value"),
               accessor: (p) => p.total_value != null
                 ? Number(p.total_value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
                 : "—",
             },
-            { header: "Status", accessor: (p) => <Badge label={p.status.replace(/_/g, " ")} variant={statusVariant(p.status)} /> },
+            { header: tx("Status"), accessor: (p) => <Badge label={p.status.replace(/_/g, " ")} variant={statusVariant(p.status)} /> },
             {
               header: "",
-              accessor: (p) => <Button variant="secondary" onClick={() => router.push(`/dashboard/procurement/orders/${p.id}`)}>View</Button>,
+              accessor: (p) => <Button variant="secondary" onClick={() => router.push(`/dashboard/procurement/orders/${p.id}`)}>{tx("View")}</Button>,
             },
           ]}
         />
       )}
 
-      <Modal open={open} onClose={() => setOpen(false)} title="New Purchase Order">
+      <Modal open={open} onClose={() => setOpen(false)} title={tx("New Purchase Order")}>
         <form onSubmit={(e) => { e.preventDefault(); create.mutate(); }} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <Input label="PO No *" value={form.po_no} onChange={(e) => setForm((f) => ({ ...f, po_no: e.target.value }))} placeholder="e.g. PO-2026-001" required />
-            <Input label="Currency" value={form.currency} onChange={(e) => setForm((f) => ({ ...f, currency: e.target.value }))} />
+            <Input label={tx("PO No *")} value={form.po_no} onChange={(e) => setForm((f) => ({ ...f, po_no: e.target.value }))} placeholder={tx("e.g. PO-2026-001")} required />
+            <Input label={tx("Currency")} value={form.currency} onChange={(e) => setForm((f) => ({ ...f, currency: e.target.value }))} />
           </div>
-          <Select label="Supplier *" options={[{ value: "", label: "Select…" }, ...suppliers.map((s) => ({ value: s.id, label: s.name }))]}
+          <Select label={tx("Supplier *")} options={[{ value: "", label: tx("Select…") }, ...suppliers.map((s) => ({ value: s.id, label: s.name }))]}
             value={form.supplier_id} onChange={(e) => setForm((f) => ({ ...f, supplier_id: e.target.value }))} />
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Order Date *" type="date" onChange={(e) => setForm((f) => ({ ...f, order_date: e.target.value }))} required />
-            <Input label="Expected Delivery *" type="date" onChange={(e) => setForm((f) => ({ ...f, expected_delivery_date: e.target.value }))} required />
+            <Input label={tx("Order Date *")} type="date" onChange={(e) => setForm((f) => ({ ...f, order_date: e.target.value }))} required />
+            <Input label={tx("Expected Delivery *")} type="date" onChange={(e) => setForm((f) => ({ ...f, expected_delivery_date: e.target.value }))} required />
           </div>
-          <Input label="Payment Terms" value={form.payment_terms} onChange={(e) => setForm((f) => ({ ...f, payment_terms: e.target.value }))} placeholder="e.g. Net 30" />
+          <Input label={tx("Payment Terms")} value={form.payment_terms} onChange={(e) => setForm((f) => ({ ...f, payment_terms: e.target.value }))} placeholder={tx("e.g. Net 30")} />
 
           <div>
             <div className="flex items-center justify-between mb-2">
-              <p className="text-sm font-semibold text-gray-700">Order Lines</p>
-              <button type="button" className="text-xs text-indigo-600 hover:underline" onClick={() => setLines((ls) => [...ls, emptyLine(ls.length + 1)])}>+ Add Line</button>
+              <p className="text-sm font-semibold text-gray-700">{tx("Order Lines")}</p>
+              <button type="button" className="text-xs text-indigo-600 hover:underline" onClick={() => setLines((ls) => [...ls, emptyLine(ls.length + 1)])}>{tx("+ Add Line")}</button>
             </div>
             <div className="space-y-2">
               {lines.map((l, i) => (
@@ -182,16 +183,16 @@ export default function PurchaseOrdersPage() {
                     <Select options={matOpts} value={l.material_id} onChange={(e) => updateLine(i, "material_id", e.target.value)} />
                   </div>
                   <div className="col-span-2">
-                    <Input placeholder="Qty" value={l.quantity} onChange={(e) => updateLine(i, "quantity", e.target.value)} type="number" step="0.001" />
+                    <Input placeholder={tx("Qty")} value={l.quantity} onChange={(e) => updateLine(i, "quantity", e.target.value)} type="number" step="0.001" />
                   </div>
                   <div className="col-span-2">
                     <Select options={UNIT_OPTS} value={l.unit} onChange={(e) => updateLine(i, "unit", e.target.value)} />
                   </div>
                   <div className="col-span-2">
-                    <Input placeholder="Unit price" value={l.unit_price} onChange={(e) => updateLine(i, "unit_price", e.target.value)} type="number" step="0.0001" />
+                    <Input placeholder={tx("Unit price")} value={l.unit_price} onChange={(e) => updateLine(i, "unit_price", e.target.value)} type="number" step="0.0001" />
                   </div>
                   <div className="col-span-1">
-                    <Input placeholder="Tax%" value={l.tax_rate} onChange={(e) => updateLine(i, "tax_rate", e.target.value)} type="number" step="0.01" />
+                    <Input placeholder={tx("Tax%")} value={l.tax_rate} onChange={(e) => updateLine(i, "tax_rate", e.target.value)} type="number" step="0.01" />
                   </div>
                   <div className="col-span-1 flex justify-end">
                     {lines.length > 1 && (
@@ -204,8 +205,8 @@ export default function PurchaseOrdersPage() {
           </div>
 
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" type="button" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button type="submit" loading={create.isPending} disabled={!form.po_no || !form.supplier_id || !form.order_date || !form.expected_delivery_date}>Create PO</Button>
+            <Button variant="secondary" type="button" onClick={() => setOpen(false)}>{tx("Cancel")}</Button>
+            <Button type="submit" loading={create.isPending} disabled={!form.po_no || !form.supplier_id || !form.order_date || !form.expected_delivery_date}>{tx("Create PO")}</Button>
           </div>
         </form>
       </Modal>

@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { financeApi, Budget, BudgetStatus, BudgetType } from "@/lib/finance";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { tx } from "@/lib/i18n/core";
 
 const statusBadge = (s: BudgetStatus) =>
   s === "APPROVED" ? "green" : s === "LOCKED" ? "blue" : "yellow";
@@ -92,19 +93,19 @@ export default function BudgetPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Budget Management</h1>
-          <p className="text-sm text-gray-500 mt-1">Department budgets, approvals, and variance tracking</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Budget Management")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{tx("Department budgets, approvals, and variance tracking")}</p>
         </div>
-        <Button onClick={() => setShowNew(true)}>New Budget</Button>
+        <Button onClick={() => setShowNew(true)}>{tx("New Budget")}</Button>
       </div>
 
       {/* KPI cards */}
       <div className="grid grid-cols-4 gap-4">
         {[
-          { label: "Total Budgeted", value: `KES ${fmtNum(totalBudgeted)}`, color: "text-gray-800" },
-          { label: "Total Actual", value: `KES ${fmtNum(totalActual)}`, color: "text-indigo-700" },
-          { label: "Variance", value: `${totalVariance >= 0 ? "+" : ""}KES ${fmtNum(totalVariance)}`, color: totalVariance > 0 ? "text-red-600" : "text-emerald-600" },
-          { label: "Alerts", value: `${criticalCount} critical / ${warningCount} warning`, color: criticalCount > 0 ? "text-red-600" : warningCount > 0 ? "text-amber-600" : "text-gray-500" },
+          { label: tx("Total Budgeted"), value: `KES ${fmtNum(totalBudgeted)}`, color: "text-gray-800" },
+          { label: tx("Total Actual"), value: `KES ${fmtNum(totalActual)}`, color: "text-indigo-700" },
+          { label: tx("Variance"), value: `${totalVariance >= 0 ? "+" : ""}KES ${fmtNum(totalVariance)}`, color: totalVariance > 0 ? "text-red-600" : "text-emerald-600" },
+          { label: tx("Alerts"), value: `${criticalCount} critical / ${warningCount} warning`, color: criticalCount > 0 ? "text-red-600" : warningCount > 0 ? "text-amber-600" : "text-gray-500" },
         ].map((k) => (
           <div key={k.label} className="bg-white rounded-lg border p-4">
             <p className="text-xs text-gray-500 mb-1">{k.label}</p>
@@ -116,7 +117,7 @@ export default function BudgetPage() {
       {/* Alerts section */}
       {alertData.length > 0 && (
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-          <h3 className="font-semibold text-amber-800 mb-2">Budget Threshold Alerts — {bvaYear}</h3>
+          <h3 className="font-semibold text-amber-800 mb-2">{tx("Budget Threshold Alerts —")} {bvaYear}</h3>
           <div className="space-y-1">
             {alertData.map((a, i) => (
               <div key={i} className="flex items-center gap-3 text-sm">
@@ -125,7 +126,7 @@ export default function BudgetPage() {
                 </span>
                 <span className="text-gray-700">{a.department} · {a.category} · {MONTHS[a.month - 1]}</span>
                 <span className="text-gray-500">
-                  {a.utilization_pct.toFixed(1)}% used (KES {fmtNum(a.actual)} / {fmtNum(a.budgeted)})
+                  {a.utilization_pct.toFixed(1)}{tx("% used (KES")} {fmtNum(a.actual)} / {fmtNum(a.budgeted)})
                 </span>
               </div>
             ))}
@@ -136,16 +137,16 @@ export default function BudgetPage() {
       <div className="grid grid-cols-2 gap-6">
         {/* Budget list */}
         <div className="bg-white rounded-lg border">
-          <div className="px-5 py-3 border-b font-semibold text-gray-800">Budgets</div>
+          <div className="px-5 py-3 border-b font-semibold text-gray-800">{tx("Budgets")}</div>
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-gray-50 text-xs text-gray-500 uppercase">
-                <th className="px-4 py-2 text-left">Year</th>
-                <th className="px-4 py-2 text-left">Department</th>
-                <th className="px-4 py-2 text-left">Type</th>
-                <th className="px-4 py-2 text-left">Ver</th>
-                <th className="px-4 py-2 text-right">Total</th>
-                <th className="px-4 py-2 text-left">Status</th>
+                <th className="px-4 py-2 text-left">{tx("Year")}</th>
+                <th className="px-4 py-2 text-left">{tx("Department")}</th>
+                <th className="px-4 py-2 text-left">{tx("Type")}</th>
+                <th className="px-4 py-2 text-left">{tx("Ver")}</th>
+                <th className="px-4 py-2 text-right">{tx("Total")}</th>
+                <th className="px-4 py-2 text-left">{tx("Status")}</th>
                 <th className="px-4 py-2" />
               </tr>
             </thead>
@@ -163,7 +164,7 @@ export default function BudgetPage() {
                       {b.budget_type ?? "OPEX"}
                     </span>
                   </td>
-                  <td className="px-4 py-2.5 text-gray-500">v{b.version ?? 1}</td>
+                  <td className="px-4 py-2.5 text-gray-500">{tx("v")}{b.version ?? 1}</td>
                   <td className="px-4 py-2.5 text-right">
                     {b.total_budgeted != null ? fmtNum(Number(b.total_budgeted)) : "—"}
                   </td>
@@ -172,22 +173,22 @@ export default function BudgetPage() {
                     <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
                       {b.status === "DRAFT" && (
                         <button className="text-xs text-indigo-600 hover:underline" onClick={() => approveBudget.mutate(b.id)}>
-                          Approve
+                          {tx("Approve")}
                         </button>
                       )}
                       {b.status === "APPROVED" && (
                         <>
                           <button className="text-xs text-gray-500 hover:underline" onClick={() => lockBudget.mutate(b.id)}>
-                            Lock
+                            {tx("Lock")}
                           </button>
                           <button className="text-xs text-indigo-600 hover:underline ml-1" onClick={() => reviseBudget.mutate(b.id)}>
-                            Revise
+                            {tx("Revise")}
                           </button>
                         </>
                       )}
                       {b.status === "LOCKED" && (
                         <button className="text-xs text-indigo-600 hover:underline" onClick={() => reviseBudget.mutate(b.id)}>
-                          New Rev.
+                          {tx("New Rev.")}
                         </button>
                       )}
                     </div>
@@ -195,7 +196,7 @@ export default function BudgetPage() {
                 </tr>
               ))}
               {budgets.length === 0 && (
-                <tr><td colSpan={7} className="px-5 py-8 text-center text-gray-400">No budgets</td></tr>
+                <tr><td colSpan={7} className="px-5 py-8 text-center text-gray-400">{tx("No budgets")}</td></tr>
               )}
             </tbody>
           </table>
@@ -206,15 +207,15 @@ export default function BudgetPage() {
           <div className="px-5 py-3 border-b font-semibold text-gray-800">
             {budgetDetail
               ? `${budgetDetail.department} ${budgetDetail.year} v${budgetDetail.version ?? 1} — Lines`
-              : "Select a budget to view lines"}
+              : tx("Select a budget to view lines")}
           </div>
           {budgetDetail ? (
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-gray-50 text-xs text-gray-500 uppercase">
-                  <th className="px-5 py-2 text-left">Category</th>
-                  <th className="px-5 py-2 text-left">Month</th>
-                  <th className="px-5 py-2 text-right">Budgeted</th>
+                  <th className="px-5 py-2 text-left">{tx("Category")}</th>
+                  <th className="px-5 py-2 text-left">{tx("Month")}</th>
+                  <th className="px-5 py-2 text-right">{tx("Budgeted")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
@@ -226,12 +227,12 @@ export default function BudgetPage() {
                   </tr>
                 ))}
                 {(budgetDetail.lines ?? []).length === 0 && (
-                  <tr><td colSpan={3} className="px-5 py-6 text-center text-gray-400">No lines</td></tr>
+                  <tr><td colSpan={3} className="px-5 py-6 text-center text-gray-400">{tx("No lines")}</td></tr>
                 )}
               </tbody>
             </table>
           ) : (
-            <p className="px-5 py-12 text-center text-gray-400 text-sm">Click a budget row on the left</p>
+            <p className="px-5 py-12 text-center text-gray-400 text-sm">{tx("Click a budget row on the left")}</p>
           )}
         </div>
       </div>
@@ -239,7 +240,7 @@ export default function BudgetPage() {
       {/* Budget vs Actual */}
       <div className="bg-white rounded-lg border">
         <div className="px-5 py-3 border-b flex items-center justify-between">
-          <h2 className="font-semibold text-gray-800">Budget vs Actual</h2>
+          <h2 className="font-semibold text-gray-800">{tx("Budget vs Actual")}</h2>
           <div className="flex items-center gap-3">
             <select
               className="border rounded px-3 py-1.5 text-sm"
@@ -255,25 +256,25 @@ export default function BudgetPage() {
               value={bvaDept}
               onChange={(e) => setBvaDept(e.target.value)}
             >
-              <option value="">All Departments</option>
+              <option value="">{tx("All Departments")}</option>
               {departments.map((d) => <option key={d} value={d}>{d}</option>)}
             </select>
           </div>
         </div>
         {bvaLoading ? (
-          <p className="px-5 py-8 text-center text-gray-400">Loading…</p>
+          <p className="px-5 py-8 text-center text-gray-400">{tx("Loading…")}</p>
         ) : (
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-gray-50 text-xs text-gray-500 uppercase">
-                <th className="px-5 py-2 text-left">Department</th>
-                <th className="px-5 py-2 text-left">Category</th>
-                <th className="px-5 py-2 text-left">Month</th>
-                <th className="px-5 py-2 text-right">Budgeted</th>
-                <th className="px-5 py-2 text-right">Actual</th>
-                <th className="px-5 py-2 text-right">Variance</th>
-                <th className="px-5 py-2 text-right">Var %</th>
-                <th className="px-5 py-2 text-left">Utilization</th>
+                <th className="px-5 py-2 text-left">{tx("Department")}</th>
+                <th className="px-5 py-2 text-left">{tx("Category")}</th>
+                <th className="px-5 py-2 text-left">{tx("Month")}</th>
+                <th className="px-5 py-2 text-right">{tx("Budgeted")}</th>
+                <th className="px-5 py-2 text-right">{tx("Actual")}</th>
+                <th className="px-5 py-2 text-right">{tx("Variance")}</th>
+                <th className="px-5 py-2 text-right">{tx("Var %")}</th>
+                <th className="px-5 py-2 text-left">{tx("Utilization")}</th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -299,7 +300,7 @@ export default function BudgetPage() {
                 );
               })}
               {bvaData.length === 0 && (
-                <tr><td colSpan={8} className="px-5 py-8 text-center text-gray-400">No budget vs actual data for {bvaYear}</td></tr>
+                <tr><td colSpan={8} className="px-5 py-8 text-center text-gray-400">{tx("No budget vs actual data for")} {bvaYear}</td></tr>
               )}
             </tbody>
           </table>
@@ -331,37 +332,37 @@ function NewBudgetModal({ onClose, onSubmit, loading }: { onClose: () => void; o
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 space-y-4">
-        <h2 className="font-semibold text-lg">New Budget</h2>
+        <h2 className="font-semibold text-lg">{tx("New Budget")}</h2>
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Year</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Year")}</label>
               <input className="w-full border rounded px-3 py-2 text-sm" type="number" value={form.year} onChange={(e) => set("year", e.target.value)} />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Currency</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Currency")}</label>
               <input className="w-full border rounded px-3 py-2 text-sm" value={form.currency} onChange={(e) => set("currency", e.target.value)} />
             </div>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Department</label>
-            <input className="w-full border rounded px-3 py-2 text-sm" value={form.department} onChange={(e) => set("department", e.target.value)} placeholder="e.g. Operations, Sales…" />
+            <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Department")}</label>
+            <input className="w-full border rounded px-3 py-2 text-sm" value={form.department} onChange={(e) => set("department", e.target.value)} placeholder={tx("e.g. Operations, Sales…")} />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Budget Type</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Budget Type")}</label>
             <select className="w-full border rounded px-3 py-2 text-sm" value={form.budget_type} onChange={(e) => set("budget_type", e.target.value)}>
-              <option value="OPEX">OPEX — Operating Expenses</option>
-              <option value="CAPEX">CAPEX — Capital Expenditure</option>
+              <option value="OPEX">{tx("OPEX — Operating Expenses")}</option>
+              <option value="CAPEX">{tx("CAPEX — Capital Expenditure")}</option>
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Notes")}</label>
             <textarea className="w-full border rounded px-3 py-2 text-sm" rows={2} value={form.notes} onChange={(e) => set("notes", e.target.value)} />
           </div>
         </div>
         <div className="flex gap-2 justify-end">
-          <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button loading={loading} onClick={() => onSubmit({ ...form, year: parseInt(form.year), lines: [] })}>Create</Button>
+          <Button variant="secondary" onClick={onClose}>{tx("Cancel")}</Button>
+          <Button loading={loading} onClick={() => onSubmit({ ...form, year: parseInt(form.year), lines: [] })}>{tx("Create")}</Button>
         </div>
       </div>
     </div>

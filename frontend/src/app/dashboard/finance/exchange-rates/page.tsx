@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { financeApi, ExchangeRate, RateSource } from "@/lib/finance";
 import { useAuth } from "@/context/AuthContext";
+import { tx } from "@/lib/i18n/core";
 
 const COMMON_CURRENCIES = ["USD", "EUR", "GBP", "CNY", "INR", "AED", "ZAR", "TZS", "UGX", "ETB"];
 
@@ -74,44 +75,44 @@ export default function ExchangeRatesPage() {
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-10">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Exchange Rates</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{tx("Exchange Rates")}</h1>
         <p className="text-sm text-gray-400 mt-0.5">
-          The system fetches the Central Bank of Kenya rates (USD, GBP, EUR) by itself every 6 hours. A rate entered here by hand for the same day is kept.
+          {tx("The system fetches the Central Bank of Kenya rates (USD, GBP, EUR) by itself every 6 hours. A rate entered here by hand for the same day is kept.")}
         </p>
         {canFetch && <button type="button" onClick={() => cbkMut.mutate()} disabled={cbkMut.isPending}
           className="mt-2 px-3 py-1.5 text-sm border rounded-lg hover:bg-gray-50 disabled:opacity-50">
-          {cbkMut.isPending ? "Fetching…" : "Fetch CBK rates now"}
+          {cbkMut.isPending ? tx("Fetching…") : tx("Fetch CBK rates now")}
         </button>}
-        {cbkMut.data && <span className="ml-2 text-sm text-green-700">CBK {cbkMut.data.rate_date}: USD {cbkMut.data.rates.USD}</span>}
-        {cbkMut.isError && <span className="ml-2 text-sm text-red-600">CBK could not be reached; the last rate stays in use.</span>}
+        {cbkMut.data && <span className="ml-2 text-sm text-green-700">CBK {cbkMut.data.rate_date}{tx(": USD")} {cbkMut.data.rates.USD}</span>}
+        {cbkMut.isError && <span className="ml-2 text-sm text-red-600">{tx("CBK could not be reached; the last rate stays in use.")}</span>}
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">
         {/* Add Rate */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-4">
-          <h2 className="font-semibold text-gray-800">Add / Update Rate</h2>
+          <h2 className="font-semibold text-gray-800">{tx("Add / Update Rate")}</h2>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Currency</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1">{tx("Currency")}</label>
               <select value={form.currency} onChange={(e) => setForm((f) => ({ ...f, currency: e.target.value }))}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
                 {COMMON_CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Date</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1">{tx("Date")}</label>
               <input type="date" value={form.rate_date} onChange={(e) => setForm((f) => ({ ...f, rate_date: e.target.value }))}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Rate to KES *</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1">{tx("Rate to KES *")}</label>
               <input type="number" value={form.rate_to_kes}
                 onChange={(e) => setForm((f) => ({ ...f, rate_to_kes: e.target.value }))}
-                placeholder="e.g. 130.50"
+                placeholder={tx("e.g. 130.50")}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Source</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1">{tx("Source")}</label>
               <select value={form.source} onChange={(e) => setForm((f) => ({ ...f, source: e.target.value as RateSource }))}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
                 {(Object.keys(SOURCE_LABELS) as RateSource[]).map((s) => (
@@ -120,34 +121,34 @@ export default function ExchangeRatesPage() {
               </select>
             </div>
             <div className="col-span-2">
-              <label className="block text-xs font-medium text-gray-500 mb-1">Notes</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1">{tx("Notes")}</label>
               <input value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
             </div>
           </div>
-          {createMut.isError && <p className="text-sm text-red-500">Failed to save rate.</p>}
+          {createMut.isError && <p className="text-sm text-red-500">{tx("Failed to save rate.")}</p>}
           <button
             onClick={() => createMut.mutate({ ...form, rate_to_kes: parseFloat(form.rate_to_kes) })}
             disabled={!form.rate_to_kes || createMut.isPending}
             className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50"
           >
-            {createMut.isPending ? "Saving…" : "Save Rate"}
+            {createMut.isPending ? tx("Saving…") : tx("Save Rate")}
           </button>
         </div>
 
         {/* Currency Converter */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-4">
-          <h2 className="font-semibold text-gray-800">Currency Converter</h2>
+          <h2 className="font-semibold text-gray-800">{tx("Currency Converter")}</h2>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Amount</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1">{tx("Amount")}</label>
               <input type="number" value={convertForm.amount}
                 onChange={(e) => setConvertForm((f) => ({ ...f, amount: e.target.value }))}
                 placeholder="100"
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">From Currency</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1">{tx("From Currency")}</label>
               <select value={convertForm.currency}
                 onChange={(e) => setConvertForm((f) => ({ ...f, currency: e.target.value }))}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
@@ -160,7 +161,7 @@ export default function ExchangeRatesPage() {
             disabled={!convertForm.amount}
             className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-50"
           >
-            Convert to KES
+            {tx("Convert to KES")}
           </button>
           {convertResult && (
             <div className="bg-green-50 rounded-lg p-4 text-sm">
@@ -172,8 +173,7 @@ export default function ExchangeRatesPage() {
                 </span>
               </p>
               <p className="text-green-600 text-xs mt-1">
-                Rate: 1 {convertResult.from_currency} = {convertResult.rate} KES
-                (as of {convertResult.rate_date})
+                {tx("Rate: 1")} {convertResult.from_currency} = {convertResult.rate} {tx("KES (as of")} {convertResult.rate_date})
               </p>
             </div>
           )}
@@ -183,23 +183,23 @@ export default function ExchangeRatesPage() {
       {/* Latest Rates Table */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-100">
-          <h2 className="font-semibold text-gray-800">Latest Rates</h2>
+          <h2 className="font-semibold text-gray-800">{tx("Latest Rates")}</h2>
         </div>
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-100">
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Currency</th>
-              <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Rate (1 unit → KES)</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Date</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Source</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{tx("Currency")}</th>
+              <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{tx("Rate (1 unit → KES)")}</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{tx("Date")}</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{tx("Source")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
             {isLoading && (
-              <tr><td colSpan={4} className="text-center py-8 text-gray-400">Loading…</td></tr>
+              <tr><td colSpan={4} className="text-center py-8 text-gray-400">{tx("Loading…")}</td></tr>
             )}
             {!isLoading && (latest ?? []).length === 0 && (
-              <tr><td colSpan={4} className="text-center py-8 text-gray-400">No exchange rates entered yet.</td></tr>
+              <tr><td colSpan={4} className="text-center py-8 text-gray-400">{tx("No exchange rates entered yet.")}</td></tr>
             )}
             {(latest ?? []).map((r) => (
               <tr key={r.id} className="hover:bg-gray-50">
@@ -219,16 +219,16 @@ export default function ExchangeRatesPage() {
       {history && history.length > (latest?.length ?? 0) && (
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-100">
-            <h2 className="font-semibold text-gray-800">Rate History (recent 100)</h2>
+            <h2 className="font-semibold text-gray-800">{tx("Rate History (recent 100)")}</h2>
           </div>
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-100">
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Currency</th>
-                <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Rate → KES</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Date</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Source</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Notes</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{tx("Currency")}</th>
+                <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{tx("Rate → KES")}</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{tx("Date")}</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{tx("Source")}</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{tx("Notes")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">

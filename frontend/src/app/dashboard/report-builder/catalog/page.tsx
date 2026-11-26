@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { reportBuilderApi, DataSource } from "@/lib/report_builder";
+import { tx } from "@/lib/i18n/core";
 
 const TYPE_COLOR: Record<string, string> = {
   string: "bg-blue-100 text-blue-700",
@@ -56,13 +57,13 @@ export default function DataCatalogPage() {
 
   return (
     <div className="p-6 space-y-4">
-      <h1 className="text-xl font-bold text-gray-900">Data Catalog</h1>
-      <p className="text-sm text-gray-500">Browse available data sources and their fields. Click a source to preview data.</p>
+      <h1 className="text-xl font-bold text-gray-900">{tx("Data Catalog")}</h1>
+      <p className="text-sm text-gray-500">{tx("Browse available data sources and their fields. Click a source to preview data.")}</p>
 
-      <input className="w-full border rounded px-3 py-2 text-sm max-w-sm" placeholder="Search data sources or fields…"
+      <input className="w-full border rounded px-3 py-2 text-sm max-w-sm" placeholder={tx("Search data sources or fields…")}
         value={search} onChange={(e) => setSearch(e.target.value)} />
 
-      {loading ? <p className="text-gray-500 text-sm">Loading…</p> : (
+      {loading ? <p className="text-gray-500 text-sm">{tx("Loading…")}</p> : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {filtered.map(([key, ds]) => (
             <div key={key} className={`border rounded-lg p-4 shadow-sm cursor-pointer hover:shadow-md transition-shadow ${MODULE_COLOR[ds.module] ?? "bg-white border-gray-200"} ${selected === key ? "ring-2 ring-blue-500" : ""}`}
@@ -70,7 +71,7 @@ export default function DataCatalogPage() {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="font-semibold text-gray-800">{ds.label}</p>
-                  <p className="text-xs text-gray-500 capitalize mt-0.5">{ds.module} module · {ds.field_count} fields</p>
+                  <p className="text-xs text-gray-500 capitalize mt-0.5">{ds.module} {tx("module ·")} {ds.field_count} {tx("fields")}</p>
                 </div>
                 <span className="text-xs font-mono text-gray-400">{key}</span>
               </div>
@@ -90,8 +91,8 @@ export default function DataCatalogPage() {
       {selected && (
         <div className="bg-white border rounded-lg p-4 shadow-sm">
           <h2 className="text-sm font-semibold text-gray-700 mb-3">
-            Preview: {catalog[selected]?.label}
-            {previewing && <span className="ml-2 text-gray-400 text-xs">Loading…</span>}
+            {tx("Preview:")} {catalog[selected]?.label}
+            {previewing && <span className="ml-2 text-gray-400 text-xs">{tx("Loading…")}</span>}
           </h2>
           {preview && (
             <div className="overflow-x-auto">
@@ -113,10 +114,10 @@ export default function DataCatalogPage() {
                   ))}
                 </tbody>
               </table>
-              <p className="text-xs text-gray-400 mt-2">Total: {preview.total.toLocaleString()} rows · Showing 5</p>
+              <p className="text-xs text-gray-400 mt-2">{tx("Total:")} {preview.total.toLocaleString()} {tx("rows · Showing 5")}</p>
             </div>
           )}
-          {!previewing && !preview && <p className="text-gray-400 text-xs">No preview available.</p>}
+          {!previewing && !preview && <p className="text-gray-400 text-xs">{tx("No preview available.")}</p>}
         </div>
       )}
     </div>

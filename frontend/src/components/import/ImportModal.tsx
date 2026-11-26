@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { importApi, MODULE_LABELS, type ImportMode, type ImportResult } from "@/lib/importApi";
 import { ImportResultView } from "./ImportResultView";
+import { tx } from "@/lib/i18n/core";
 
 interface Props {
   module:      string;   // e.g. "products"
@@ -47,7 +48,7 @@ export function ImportModal({ module, onSuccess, trigger }: Props) {
       setResult(res);
       setStep("validated");
     } catch (e: any) {
-      setError(e?.response?.data?.detail ?? "Validation failed");
+      setError(e?.response?.data?.detail ?? tx("Validation failed"));
       setStep("idle");
     }
   }
@@ -62,7 +63,7 @@ export function ImportModal({ module, onSuccess, trigger }: Props) {
       setStep("done");
       if (res.imported && onSuccess) onSuccess();
     } catch (e: any) {
-      setError(e?.response?.data?.detail ?? "Import failed");
+      setError(e?.response?.data?.detail ?? tx("Import failed"));
       setStep("validated");
     }
   }
@@ -87,7 +88,7 @@ export function ImportModal({ module, onSuccess, trigger }: Props) {
       <span onClick={() => setOpen(true)}>
         {trigger ?? (
           <button className="flex items-center gap-1.5 rounded-lg border border-white/[0.07] bg-white/[0.03] px-3 py-1.5 text-xs text-slate-300 hover:bg-white/[0.06] transition-colors">
-            <UploadIcon /> Import CSV
+            <UploadIcon /> {tx("Import CSV")}
           </button>
         )}
       </span>
@@ -100,8 +101,8 @@ export function ImportModal({ module, onSuccess, trigger }: Props) {
             {/* Header */}
             <div className="flex items-start justify-between mb-5">
               <div>
-                <h2 className="text-base font-semibold text-white">Import {label}</h2>
-                <p className="text-xs text-slate-500 mt-0.5">Upload a CSV file to bulk-import records.</p>
+                <h2 className="text-base font-semibold text-white">{tx("Import")} {label}</h2>
+                <p className="text-xs text-slate-500 mt-0.5">{tx("Upload a CSV file to bulk-import records.")}</p>
               </div>
               <button onClick={close} className="text-slate-600 hover:text-slate-300 text-xl leading-none">×</button>
             </div>
@@ -112,8 +113,8 @@ export function ImportModal({ module, onSuccess, trigger }: Props) {
                 {/* Template download */}
                 <div className="flex items-center justify-between rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-3">
                   <div>
-                    <p className="text-sm text-slate-300 font-medium">Step 1 – Download Template</p>
-                    <p className="text-[11px] text-slate-500 mt-0.5">Get the CSV template with required fields and examples.</p>
+                    <p className="text-sm text-slate-300 font-medium">{tx("Step 1 – Download Template")}</p>
+                    <p className="text-[11px] text-slate-500 mt-0.5">{tx("Get the CSV template with required fields and examples.")}</p>
                   </div>
                   <button
                     onClick={() =>
@@ -123,13 +124,13 @@ export function ImportModal({ module, onSuccess, trigger }: Props) {
                     }
                     className="shrink-0 rounded-lg border border-indigo-500/30 bg-indigo-500/10 px-3 py-1.5 text-xs text-indigo-300 hover:bg-indigo-500/20 transition-colors"
                   >
-                    ↓ Template
+                    {tx("↓ Template")}
                   </button>
                 </div>
 
                 {/* File input */}
                 <div>
-                  <p className="text-xs text-slate-500 mb-1.5">Step 2 – Select your CSV file</p>
+                  <p className="text-xs text-slate-500 mb-1.5">{tx("Step 2 – Select your CSV file")}</p>
                   <input
                     ref={fileRef}
                     type="file"
@@ -148,14 +149,14 @@ export function ImportModal({ module, onSuccess, trigger }: Props) {
 
                 <div className="flex gap-2 pt-1">
                   <button onClick={close} className="flex-1 rounded-lg border border-white/[0.07] py-2 text-xs text-slate-400 hover:text-slate-200 transition-colors">
-                    Cancel
+                    {tx("Cancel")}
                   </button>
                   <button
                     onClick={handleValidate}
                     disabled={!file || step === "validating"}
                     className="flex-1 rounded-lg bg-indigo-600 py-2 text-xs font-medium text-white hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   >
-                    {step === "validating" ? "Validating…" : "Validate"}
+                    {step === "validating" ? tx("Validating…") : tx("Validate")}
                   </button>
                 </div>
               </div>
@@ -169,10 +170,10 @@ export function ImportModal({ module, onSuccess, trigger }: Props) {
                 {/* Import mode selector */}
                 {result.valid_rows > 0 && (
                   <div>
-                    <p className="text-[11px] text-slate-500 mb-1.5">Import mode</p>
+                    <p className="text-[11px] text-slate-500 mb-1.5">{tx("Import mode")}</p>
                     <div className="flex gap-2">
-                      <ModeBtn current={mode} value="import_valid_only" label="Import valid rows only" onChange={setMode} />
-                      <ModeBtn current={mode} value="strict"           label="Strict (abort on any error)" onChange={setMode} />
+                      <ModeBtn current={mode} value="import_valid_only" label={tx("Import valid rows only")} onChange={setMode} />
+                      <ModeBtn current={mode} value="strict"           label={tx("Strict (abort on any error)")} onChange={setMode} />
                     </div>
                   </div>
                 )}
@@ -183,10 +184,10 @@ export function ImportModal({ module, onSuccess, trigger }: Props) {
 
                 <div className="flex gap-2">
                   <button onClick={reset} className="rounded-lg border border-white/[0.07] px-4 py-2 text-xs text-slate-400 hover:text-slate-200 transition-colors">
-                    ← Back
+                    {tx("← Back")}
                   </button>
                   <button onClick={close} className="rounded-lg border border-white/[0.07] px-4 py-2 text-xs text-slate-400 hover:text-slate-200 transition-colors">
-                    Cancel
+                    {tx("Cancel")}
                   </button>
                   {result.valid_rows > 0 && (
                     <button
@@ -194,7 +195,7 @@ export function ImportModal({ module, onSuccess, trigger }: Props) {
                       disabled={step === "importing"}
                       className="flex-1 rounded-lg bg-emerald-600 py-2 text-xs font-medium text-white hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                     >
-                      {step === "importing" ? "Importing…" : `Import ${result.valid_rows} row${result.valid_rows !== 1 ? "s" : ""}`}
+                      {step === "importing" ? tx("Importing…") : `Import ${result.valid_rows} row${result.valid_rows !== 1 ? "s" : ""}`}
                     </button>
                   )}
                 </div>
@@ -207,10 +208,10 @@ export function ImportModal({ module, onSuccess, trigger }: Props) {
                 <ImportResultView result={result} onDownloadErrors={result.failed_rows > 0 ? downloadErrors : undefined} />
                 <div className="flex gap-2">
                   <button onClick={close} className="flex-1 rounded-lg bg-indigo-600 py-2 text-xs font-medium text-white hover:bg-indigo-500 transition-colors">
-                    Done
+                    {tx("Done")}
                   </button>
                   <button onClick={reset} className="rounded-lg border border-white/[0.07] px-4 py-2 text-xs text-slate-400 hover:text-slate-200 transition-colors">
-                    Import Another
+                    {tx("Import Another")}
                   </button>
                 </div>
               </div>

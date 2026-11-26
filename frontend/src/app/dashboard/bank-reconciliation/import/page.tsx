@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { brApi, type StatementFileFormat } from "@/lib/bank_reconciliation";
+import { tx } from "@/lib/i18n/core";
 
 interface LineRow {
   transaction_date: string;
@@ -60,7 +61,7 @@ export default function BRImportPage() {
       qc.invalidateQueries({ queryKey: ["br-dashboard"] });
       router.push(`/dashboard/bank-reconciliation/statements/${stmt.id}`);
     },
-    onError: (e: unknown) => setError(e instanceof Error ? e.message : "Import failed"),
+    onError: (e: unknown) => setError(e instanceof Error ? e.message : tx("Import failed")),
   });
 
   const [fileFormat, setFileFormat] = useState<StatementFileFormat>("CAMT053");
@@ -73,7 +74,7 @@ export default function BRImportPage() {
     },
     onError: (e: unknown) => {
       const detail = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
-      setError(typeof detail === "string" ? detail : e instanceof Error ? e.message : "Import failed");
+      setError(typeof detail === "string" ? detail : e instanceof Error ? e.message : tx("Import failed"));
     },
   });
 
@@ -83,40 +84,40 @@ export default function BRImportPage() {
 
   return (
     <div className="p-6 space-y-6 max-w-5xl">
-      <h1 className="text-2xl font-bold text-gray-900">Import Bank Statement</h1>
+      <h1 className="text-2xl font-bold text-gray-900">{tx("Import Bank Statement")}</h1>
 
       {error && <p className="text-red-600 text-sm bg-red-50 px-3 py-2 rounded">{error}</p>}
 
       {/* File upload */}
-      <form aria-label="Upload bank statement file" className="bg-white border rounded-xl p-5 space-y-4"
+      <form aria-label={tx("Upload bank statement file")} className="bg-white border rounded-xl p-5 space-y-4"
         onSubmit={(e) => { e.preventDefault(); setError(null); upload.mutate(); }}>
         <div>
-          <h2 className="text-sm font-semibold text-gray-700">Upload bank file</h2>
-          <p className="text-xs text-gray-500">ISO 20022 camt.053, SWIFT MT940, OFX or CSV as exported by the bank. Opening + credits − debits must equal the closing balance, and the currency and account number must match the selected account.</p>
+          <h2 className="text-sm font-semibold text-gray-700">{tx("Upload bank file")}</h2>
+          <p className="text-xs text-gray-500">{tx("ISO 20022 camt.053, SWIFT MT940, OFX or CSV as exported by the bank. Opening + credits − debits must equal the closing balance, and the currency and account number must match the selected account.")}</p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label htmlFor="upload-account" className="text-xs text-gray-500 font-medium">Bank Account *</label>
+            <label htmlFor="upload-account" className="text-xs text-gray-500 font-medium">{tx("Bank Account *")}</label>
             <select id="upload-account" value={form.bank_account_id} onChange={(e) => setForm({ ...form, bank_account_id: e.target.value })}
               className="mt-1 w-full border rounded-lg px-3 py-2 text-sm">
-              <option value="">Select account…</option>
+              <option value="">{tx("Select account…")}</option>
               {accounts.map((a) => (
                 <option key={a.id} value={a.id}>{a.account_name} — {a.bank_name} ({a.currency})</option>
               ))}
             </select>
           </div>
           <div>
-            <label htmlFor="upload-format" className="text-xs text-gray-500 font-medium">File format</label>
+            <label htmlFor="upload-format" className="text-xs text-gray-500 font-medium">{tx("File format")}</label>
             <select id="upload-format" value={fileFormat} onChange={(e) => setFileFormat(e.target.value as StatementFileFormat)}
               className="mt-1 w-full border rounded-lg px-3 py-2 text-sm">
-              <option value="CAMT053">ISO 20022 camt.053 (XML)</option>
-              <option value="MT940">SWIFT MT940</option>
+              <option value="CAMT053">{tx("ISO 20022 camt.053 (XML)")}</option>
+              <option value="MT940">{tx("SWIFT MT940")}</option>
               <option value="OFX">OFX</option>
               <option value="CSV">CSV</option>
             </select>
           </div>
           <div>
-            <label htmlFor="upload-file" className="text-xs text-gray-500 font-medium">Statement file *</label>
+            <label htmlFor="upload-file" className="text-xs text-gray-500 font-medium">{tx("Statement file *")}</label>
             <input id="upload-file" type="file" accept=".xml,.sta,.mt940,.txt,.ofx,.qfx,.csv"
               onChange={(e) => setFile(e.target.files?.[0] ?? null)}
               className="mt-1 w-full text-sm" />
@@ -125,27 +126,27 @@ export default function BRImportPage() {
         <div className="flex justify-end">
           <button type="submit" disabled={!form.bank_account_id || !file || upload.isPending}
             className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
-            {upload.isPending ? "Importing…" : "Import file"}
+            {upload.isPending ? tx("Importing…") : tx("Import file")}
           </button>
         </div>
       </form>
 
       {/* Header */}
       <div className="bg-white border rounded-xl p-5 space-y-4">
-        <h2 className="text-sm font-semibold text-gray-700">Or enter the statement manually</h2>
+        <h2 className="text-sm font-semibold text-gray-700">{tx("Or enter the statement manually")}</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="text-xs text-gray-500 font-medium">Bank Account *</label>
+            <label className="text-xs text-gray-500 font-medium">{tx("Bank Account *")}</label>
             <select value={form.bank_account_id} onChange={(e) => setForm({ ...form, bank_account_id: e.target.value })}
               className="mt-1 w-full border rounded-lg px-3 py-2 text-sm">
-              <option value="">Select account…</option>
+              <option value="">{tx("Select account…")}</option>
               {accounts.map((a) => (
                 <option key={a.id} value={a.id}>{a.account_name} — {a.bank_name} ({a.currency})</option>
               ))}
             </select>
           </div>
           <div>
-            <label className="text-xs text-gray-500 font-medium">Import Source</label>
+            <label className="text-xs text-gray-500 font-medium">{tx("Import Source")}</label>
             <select value={form.import_source} onChange={(e) => setForm({ ...form, import_source: e.target.value as "MANUAL" })}
               className="mt-1 w-full border rounded-lg px-3 py-2 text-sm">
               {["MANUAL", "CSV", "OFX", "MPESA", "API"].map((s) => (
@@ -154,13 +155,13 @@ export default function BRImportPage() {
             </select>
           </div>
           {[
-            { key: "statement_date", label: "Statement Date", type: "date" },
-            { key: "period_start_date", label: "Period Start", type: "date" },
-            { key: "period_end_date", label: "Period End", type: "date" },
-            { key: "statement_currency", label: "Currency", type: "text" },
-            { key: "opening_balance", label: "Opening Balance", type: "number" },
-            { key: "closing_balance", label: "Closing Balance", type: "number" },
-            { key: "imported_by", label: "Imported By", type: "text" },
+            { key: "statement_date", label: tx("Statement Date"), type: "date" },
+            { key: "period_start_date", label: tx("Period Start"), type: "date" },
+            { key: "period_end_date", label: tx("Period End"), type: "date" },
+            { key: "statement_currency", label: tx("Currency"), type: "text" },
+            { key: "opening_balance", label: tx("Opening Balance"), type: "number" },
+            { key: "closing_balance", label: tx("Closing Balance"), type: "number" },
+            { key: "imported_by", label: tx("Imported By"), type: "text" },
           ].map(({ key, label, type }) => (
             <div key={key}>
               <label className="text-xs text-gray-500 font-medium">{label}</label>
@@ -175,17 +176,17 @@ export default function BRImportPage() {
       {/* Lines */}
       <div className="bg-white border rounded-xl overflow-hidden">
         <div className="px-5 py-3 border-b bg-gray-50 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-gray-700">Statement Lines ({lines.length})</h2>
+          <h2 className="text-sm font-semibold text-gray-700">{tx("Statement Lines (")}{lines.length})</h2>
           <button onClick={() => setLines((p) => [...p, emptyLine()])}
             className="text-xs px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700">
-            + Add Line
+            {tx("+ Add Line")}
           </button>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead className="bg-gray-50 text-gray-500 uppercase">
               <tr>
-                {["Date *", "D/C", "Amount *", "Narration", "Ext. Ref", "Bank Ref", "Counterparty", ""].map((h) => (
+                {[tx("Date *"), "D/C", tx("Amount *"), tx("Narration"), tx("Ext. Ref"), tx("Bank Ref"), tx("Counterparty"), ""].map((h) => (
                   <th key={h} className="px-3 py-2 text-left font-medium">{h}</th>
                 ))}
               </tr>
@@ -247,11 +248,11 @@ export default function BRImportPage() {
           onClick={() => submit.mutate()}
           disabled={submit.isPending || !form.bank_account_id}
           className="px-6 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50">
-          {submit.isPending ? "Importing…" : "Import Statement"}
+          {submit.isPending ? tx("Importing…") : tx("Import Statement")}
         </button>
         <button onClick={() => window.history.back()}
           className="px-4 py-2 border text-sm rounded-lg text-gray-600 hover:bg-gray-50">
-          Cancel
+          {tx("Cancel")}
         </button>
       </div>
     </div>

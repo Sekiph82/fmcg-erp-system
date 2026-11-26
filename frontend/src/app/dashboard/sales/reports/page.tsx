@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { salesApi } from "@/lib/sales";
 import { fieldSalesApi } from "@/lib/field_sales";
 import { distributorsApi } from "@/lib/distribution";
+import { tx } from "@/lib/i18n/core";
 
 type ReportView = "overview" | "by_rep" | "by_region" | "by_product" | "by_customer";
 
@@ -90,11 +91,11 @@ export default function SalesReportsPage() {
   const byCustomer = Object.values(custMap).sort((a, b) => b.revenue - a.revenue).slice(0, 20);
 
   const views: { id: ReportView; label: string }[] = [
-    { id: "overview", label: "Overview" },
-    { id: "by_rep", label: "By Rep" },
-    { id: "by_region", label: "By Region" },
-    { id: "by_product", label: "By Product" },
-    { id: "by_customer", label: "By Customer" },
+    { id: "overview", label: tx("Overview") },
+    { id: "by_rep", label: tx("By Rep") },
+    { id: "by_region", label: tx("By Region") },
+    { id: "by_product", label: tx("By Product") },
+    { id: "by_customer", label: tx("By Customer") },
   ];
 
   const maxRevenue = Math.max(
@@ -106,8 +107,8 @@ export default function SalesReportsPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Sales Reports</h1>
-          <p className="text-sm text-gray-500 mt-1">Revenue · Volume · Rep performance · Regional breakdown</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Sales Reports")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{tx("Revenue · Volume · Rep performance · Regional breakdown")}</p>
         </div>
         <div className="flex items-center gap-2">
           <input
@@ -129,10 +130,10 @@ export default function SalesReportsPage() {
       {/* Overview KPIs — always visible */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
         {[
-          { label: "Total Revenue", value: `KES ${totalRevenue.toLocaleString()}`, color: "text-indigo-600" },
-          { label: "Orders", value: totalOrders, color: "text-gray-800" },
-          { label: "Confirmed", value: confirmedOrders, color: "text-green-600" },
-          { label: "Avg. Order Value", value: `KES ${Math.round(avgOrderValue).toLocaleString()}`, color: "text-blue-600" },
+          { label: tx("Total Revenue"), value: `KES ${totalRevenue.toLocaleString()}`, color: "text-indigo-600" },
+          { label: tx("Orders"), value: totalOrders, color: "text-gray-800" },
+          { label: tx("Confirmed"), value: confirmedOrders, color: "text-green-600" },
+          { label: tx("Avg. Order Value"), value: `KES ${Math.round(avgOrderValue).toLocaleString()}`, color: "text-blue-600" },
         ].map((k) => (
           <div key={k.label} className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
             <p className={`text-2xl font-bold ${k.color}`}>{k.value}</p>
@@ -168,14 +169,14 @@ export default function SalesReportsPage() {
           {view === "overview" && (
             <div className="space-y-4">
               <div className="grid grid-cols-3 gap-3">
-                <StatCard label="Reps Active" value={reps.filter((r) => r.is_active).length} icon="🏍️" />
-                <StatCard label="Distributors" value={distributors.length} icon="🏭" />
-                <StatCard label="Cancelled Orders" value={orders.filter((o) => o.status === "CANCELLED").length} icon="❌" />
+                <StatCard label={tx("Reps Active")} value={reps.filter((r) => r.is_active).length} icon="🏍️" />
+                <StatCard label={tx("Distributors")} value={distributors.length} icon="🏭" />
+                <StatCard label={tx("Cancelled Orders")} value={orders.filter((o) => o.status === "CANCELLED").length} icon="❌" />
               </div>
 
               {/* Order status breakdown */}
               <div className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
-                <p className="text-sm font-semibold text-gray-700 mb-3">Orders by Status</p>
+                <p className="text-sm font-semibold text-gray-700 mb-3">{tx("Orders by Status")}</p>
                 {(["DRAFT", "CONFIRMED", "ALLOCATED", "PICKING", "SHIPPED", "INVOICED", "CANCELLED"] as const).map((status) => {
                   const count = orders.filter((o) => o.status === status).length;
                   const pct = totalOrders > 0 ? (count / totalOrders) * 100 : 0;
@@ -205,7 +206,7 @@ export default function SalesReportsPage() {
           {/* By Rep */}
           {view === "by_rep" && (
             byRep.length === 0 ? (
-              <p className="text-gray-400 text-sm py-8 text-center">No field sales orders in this period.</p>
+              <p className="text-gray-400 text-sm py-8 text-center">{tx("No field sales orders in this period.")}</p>
             ) : (
               <RevenueTable
                 rows={byRep.map((r) => ({ label: r.name, orders: r.orders, revenue: r.revenue }))}
@@ -217,7 +218,7 @@ export default function SalesReportsPage() {
           {/* By Region */}
           {view === "by_region" && (
             byRegion.length === 0 ? (
-              <p className="text-gray-400 text-sm py-8 text-center">No regional data available.</p>
+              <p className="text-gray-400 text-sm py-8 text-center">{tx("No regional data available.")}</p>
             ) : (
               <RevenueTable
                 rows={byRegion.map((r) => ({ label: r.region, orders: r.orders, revenue: r.revenue }))}
@@ -229,7 +230,7 @@ export default function SalesReportsPage() {
           {/* By Product */}
           {view === "by_product" && (
             byProduct.length === 0 ? (
-              <p className="text-gray-400 text-sm py-8 text-center">No product data available.</p>
+              <p className="text-gray-400 text-sm py-8 text-center">{tx("No product data available.")}</p>
             ) : (
               <div className="space-y-2">
                 {byProduct.map((p, i) => (
@@ -237,7 +238,7 @@ export default function SalesReportsPage() {
                     <div className="flex items-center justify-between mb-1.5">
                       <p className="text-sm font-medium text-gray-800">{p.name}</p>
                       <div className="flex items-center gap-4 text-sm">
-                        <span className="text-gray-400">{p.qty.toLocaleString()} units</span>
+                        <span className="text-gray-400">{p.qty.toLocaleString()} {tx("units")}</span>
                         <span className="font-bold text-gray-900">KES {p.revenue.toLocaleString()}</span>
                       </div>
                     </div>
@@ -256,7 +257,7 @@ export default function SalesReportsPage() {
           {/* By Customer */}
           {view === "by_customer" && (
             byCustomer.length === 0 ? (
-              <p className="text-gray-400 text-sm py-8 text-center">No customer data available.</p>
+              <p className="text-gray-400 text-sm py-8 text-center">{tx("No customer data available.")}</p>
             ) : (
               <RevenueTable
                 rows={byCustomer.map((c) => ({ label: c.name, orders: c.orders, revenue: c.revenue }))}
@@ -299,7 +300,7 @@ function RevenueTable({
               <p className="text-sm font-medium text-gray-800">{r.label}</p>
             </div>
             <div className="flex items-center gap-4 text-sm">
-              <span className="text-gray-400">{r.orders} order{r.orders !== 1 ? "s" : ""}</span>
+              <span className="text-gray-400">{r.orders} {tx("order")}{r.orders !== 1 ? tx("s") : ""}</span>
               <span className="font-bold text-gray-900 min-w-[100px] text-right">
                 KES {r.revenue.toLocaleString()}
               </span>

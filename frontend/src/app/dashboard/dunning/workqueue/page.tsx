@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { dunningApi, CASE_STATUS_COLORS, DunningCaseStatus } from "@/lib/dunning";
+import { tx } from "@/lib/i18n/core";
 
 export default function WorkQueuePage() {
   const [queue, setQueue] = useState<any[]>([]);
@@ -15,7 +16,7 @@ export default function WorkQueuePage() {
 
   const checkPTPs = async () => {
     const res = await dunningApi.checkBrokenPTPs();
-    alert(`${res.broken_ptps_flagged} broken PTPs flagged.`);
+    alert(tx("{broken_ptps_flagged} broken PTPs flagged.", { broken_ptps_flagged: res.broken_ptps_flagged }));
     load();
   };
 
@@ -23,22 +24,22 @@ export default function WorkQueuePage() {
     <div className="p-6 space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Collector Work Queue</h1>
-          <p className="text-sm text-gray-500 mt-1">Priority-sorted collection cases for today&apos;s action</p>
+          <h1 className="text-xl font-bold text-gray-900">{tx("Collector Work Queue")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{tx("Priority-sorted collection cases for today's action")}</p>
         </div>
         <div className="flex gap-2">
           <button onClick={checkPTPs} className="px-3 py-2 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600">
-            Check Broken PTPs
+            {tx("Check Broken PTPs")}
           </button>
         </div>
       </div>
 
       <div className="grid grid-cols-4 gap-4">
         {[
-          { label: "Total Cases", value: queue.length, color: "text-blue-700" },
-          { label: "Credit Holds", value: queue.filter((c) => c.credit_hold).length, color: "text-red-700" },
-          { label: "Open PTPs", value: queue.reduce((s, c) => s + (c.open_ptps || 0), 0), color: "text-purple-700" },
-          { label: "Escalated", value: queue.filter((c) => c.status === "ESCALATED").length, color: "text-orange-700" },
+          { label: tx("Total Cases"), value: queue.length, color: "text-blue-700" },
+          { label: tx("Credit Holds"), value: queue.filter((c) => c.credit_hold).length, color: "text-red-700" },
+          { label: tx("Open PTPs"), value: queue.reduce((s, c) => s + (c.open_ptps || 0), 0), color: "text-purple-700" },
+          { label: tx("Escalated"), value: queue.filter((c) => c.status === "ESCALATED").length, color: "text-orange-700" },
         ].map((k) => (
           <div key={k.label} className="bg-white rounded-xl border border-gray-200 p-4">
             <div className={`text-2xl font-bold ${k.color}`}>{k.value}</div>
@@ -51,16 +52,16 @@ export default function WorkQueuePage() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
-              {["Pri", "Case #", "Customer", "Overdue Amt", "Oldest Due", "Level", "Status", "Hold", "PTPs", "Next Action", "Actions"].map((h) => (
+              {[tx("Pri"), tx("Case #"), tx("Customer"), tx("Overdue Amt"), tx("Oldest Due"), tx("Level"), tx("Status"), tx("Hold"), tx("PTPs"), tx("Next Action"), tx("Actions")].map((h) => (
                 <th key={h} className="px-3 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {loading ? (
-              <tr><td colSpan={11} className="px-4 py-8 text-center text-gray-400">Loading…</td></tr>
+              <tr><td colSpan={11} className="px-4 py-8 text-center text-gray-400">{tx("Loading…")}</td></tr>
             ) : queue.length === 0 ? (
-              <tr><td colSpan={11} className="px-4 py-8 text-center text-gray-400">Queue is empty. Run overdue detection first.</td></tr>
+              <tr><td colSpan={11} className="px-4 py-8 text-center text-gray-400">{tx("Queue is empty. Run overdue detection first.")}</td></tr>
             ) : queue.map((c) => (
               <tr key={c.case_id} className={`hover:bg-gray-50 ${c.credit_hold ? "bg-red-50/30" : ""}`}>
                 <td className="px-3 py-3">
@@ -93,7 +94,7 @@ export default function WorkQueuePage() {
                 </td>
                 <td className="px-3 py-3 text-gray-500 text-xs">{c.next_action_date || "—"}</td>
                 <td className="px-3 py-3">
-                  <a href={`/dashboard/dunning/cases/${c.case_id}`} className="text-blue-600 hover:underline text-xs">Open</a>
+                  <a href={`/dashboard/dunning/cases/${c.case_id}`} className="text-blue-600 hover:underline text-xs">{tx("Open")}</a>
                 </td>
               </tr>
             ))}

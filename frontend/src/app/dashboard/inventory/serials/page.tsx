@@ -6,6 +6,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { serialApi, SerialNumber, SerialStatus, SerialMovement } from "@/lib/inventory";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { tx } from "@/lib/i18n/core";
 
 const STATUS_COLORS: Record<SerialStatus, "green" | "blue" | "red" | "yellow" | "gray"> = {
   IN_STOCK: "green",
@@ -75,7 +76,7 @@ export default function SerialsPage() {
       const r = await serialApi.lookup(lookupQuery.trim());
       setLookupResult(r);
     } catch {
-      setLookupError("Serial not found");
+      setLookupError(tx("Serial not found"));
     }
   }
 
@@ -89,24 +90,24 @@ export default function SerialsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Serial Number Tracking</h1>
-          <p className="text-sm text-gray-500 mt-1">Per-unit tracking, status history, warranty visibility</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Serial Number Tracking")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{tx("Per-unit tracking, status history, warranty visibility")}</p>
         </div>
-        <Button onClick={() => setShowCreate(true)}>+ Assign Serial</Button>
+        <Button onClick={() => setShowCreate(true)}>{tx("+ Assign Serial")}</Button>
       </div>
 
       {/* Quick Lookup */}
       <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-4">
-        <p className="text-sm font-semibold text-indigo-800 mb-2">Quick Serial Lookup</p>
+        <p className="text-sm font-semibold text-indigo-800 mb-2">{tx("Quick Serial Lookup")}</p>
         <div className="flex gap-2 items-center">
           <input
             className="border rounded px-3 py-2 text-sm flex-1 max-w-xs"
-            placeholder="Enter serial number…"
+            placeholder={tx("Enter serial number…")}
             value={lookupQuery}
             onChange={(e) => setLookupQuery(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && doLookup()}
           />
-          <Button onClick={doLookup}>Lookup</Button>
+          <Button onClick={doLookup}>{tx("Lookup")}</Button>
         </div>
         {lookupError && <p className="text-red-600 text-sm mt-2">{lookupError}</p>}
         {lookupResult && (
@@ -119,7 +120,7 @@ export default function SerialsPage() {
               className="ml-auto text-xs text-indigo-600 hover:underline"
               onClick={() => { setSelected(lookupResult); setLookupResult(null); setLookupQuery(""); }}
             >
-              View details
+              {tx("View details")}
             </button>
           </div>
         )}
@@ -147,7 +148,7 @@ export default function SerialsPage() {
           <div className="px-5 py-3 border-b flex items-center gap-3">
             <input
               className="border rounded px-3 py-1.5 text-sm flex-1"
-              placeholder="Search serial no…"
+              placeholder={tx("Search serial no…")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -156,23 +157,23 @@ export default function SerialsPage() {
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value as SerialStatus | "")}
             >
-              <option value="">All Statuses</option>
+              <option value="">{tx("All Statuses")}</option>
               {(["IN_STOCK", "SOLD", "IN_REPAIR", "RETURNED", "SCRAPPED"] as SerialStatus[]).map((s) => (
                 <option key={s} value={s}>{s.replace("_", " ")}</option>
               ))}
             </select>
           </div>
           {isLoading ? (
-            <p className="px-5 py-8 text-center text-gray-400">Loading…</p>
+            <p className="px-5 py-8 text-center text-gray-400">{tx("Loading…")}</p>
           ) : (
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-gray-50 text-xs text-gray-500 uppercase">
-                  <th className="px-4 py-2 text-left">Serial No.</th>
-                  <th className="px-4 py-2 text-left">Product</th>
-                  <th className="px-4 py-2 text-left">Status</th>
-                  <th className="px-4 py-2 text-left">Location</th>
-                  <th className="px-4 py-2 text-left">Warranty</th>
+                  <th className="px-4 py-2 text-left">{tx("Serial No.")}</th>
+                  <th className="px-4 py-2 text-left">{tx("Product")}</th>
+                  <th className="px-4 py-2 text-left">{tx("Status")}</th>
+                  <th className="px-4 py-2 text-left">{tx("Location")}</th>
+                  <th className="px-4 py-2 text-left">{tx("Warranty")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
@@ -192,7 +193,7 @@ export default function SerialsPage() {
                         {s.warranty_expiry ? (
                           <span className={`text-xs font-medium ${wdays != null && wdays < 30 ? "text-red-600" : wdays != null && wdays < 90 ? "text-amber-600" : "text-gray-600"}`}>
                             {fmtDate(s.warranty_expiry)}
-                            {wdays != null && wdays < 0 ? " (expired)" : wdays != null && wdays < 90 ? ` (${wdays}d)` : ""}
+                            {wdays != null && wdays < 0 ? tx(" (expired)") : wdays != null && wdays < 90 ? tx(" ({wdays}d)", { wdays }) : ""}
                           </span>
                         ) : "—"}
                       </td>
@@ -200,7 +201,7 @@ export default function SerialsPage() {
                   );
                 })}
                 {serials.length === 0 && (
-                  <tr><td colSpan={5} className="px-5 py-8 text-center text-gray-400">No serials found</td></tr>
+                  <tr><td colSpan={5} className="px-5 py-8 text-center text-gray-400">{tx("No serials found")}</td></tr>
                 )}
               </tbody>
             </table>
@@ -238,14 +239,14 @@ export default function SerialsPage() {
                 onClick={() => setShowTransfer(true)}
                 className="w-full"
               >
-                Change Status / Location
+                {tx("Change Status / Location")}
               </Button>
 
               {/* History */}
               <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Movement History</p>
+                <p className="text-xs font-semibold text-gray-500 uppercase mb-2">{tx("Movement History")}</p>
                 {history.length === 0 ? (
-                  <p className="text-xs text-gray-400">No history</p>
+                  <p className="text-xs text-gray-400">{tx("No history")}</p>
                 ) : (
                   <div className="space-y-2">
                     {history.map((m) => (
@@ -270,7 +271,7 @@ export default function SerialsPage() {
               </div>
             </>
           ) : (
-            <p className="text-center text-gray-400 text-sm py-12">Select a serial to view details</p>
+            <p className="text-center text-gray-400 text-sm py-12">{tx("Select a serial to view details")}</p>
           )}
         </div>
       </div>
@@ -308,10 +309,10 @@ function CreateSerialModal({
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 space-y-4">
-        <h2 className="font-semibold text-lg">Assign Serial Number</h2>
+        <h2 className="font-semibold text-lg">{tx("Assign Serial Number")}</h2>
         <div className="space-y-3">
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Serial No.</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Serial No.")}</label>
             <input className="w-full border rounded px-3 py-2 text-sm" value={form.serial_no} onChange={(e) => set("serial_no", e.target.value)} placeholder="SN-001234" />
           </div>
           {([["product_id", "Product", "product"], ["lot_id", "Lot (optional)", "lot"], ["warehouse_id", "Warehouse (optional)", "warehouse"]] as const).map(([k, label, kind]) => (
@@ -321,16 +322,16 @@ function CreateSerialModal({
             </div>
           ))}
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Warranty Expiry</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Warranty Expiry")}</label>
             <input type="date" className="w-full border rounded px-3 py-2 text-sm" value={form.warranty_expiry} onChange={(e) => set("warranty_expiry", e.target.value)} />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Notes")}</label>
             <textarea className="w-full border rounded px-3 py-2 text-sm" rows={2} value={form.notes} onChange={(e) => set("notes", e.target.value)} />
           </div>
         </div>
         <div className="flex gap-2 justify-end">
-          <Button variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button variant="secondary" onClick={onClose}>{tx("Cancel")}</Button>
           <Button
             loading={loading}
             onClick={() => onSubmit({
@@ -342,7 +343,7 @@ function CreateSerialModal({
               notes: form.notes || undefined,
             })}
           >
-            Assign
+            {tx("Assign")}
           </Button>
         </div>
       </div>
@@ -369,10 +370,10 @@ function TransferModal({
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 space-y-4">
-        <h2 className="font-semibold text-lg">Change Status — {serial.serial_no}</h2>
+        <h2 className="font-semibold text-lg">{tx("Change Status —")} {serial.serial_no}</h2>
         <div className="space-y-3">
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">New Status</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{tx("New Status")}</label>
             <select className="w-full border rounded px-3 py-2 text-sm" value={form.to_status} onChange={(e) => set("to_status", e.target.value)}>
               {(["IN_STOCK", "SOLD", "IN_REPAIR", "RETURNED", "SCRAPPED"] as SerialStatus[]).map((s) => (
                 <option key={s} value={s}>{s.replace("_", " ")}</option>
@@ -380,11 +381,11 @@ function TransferModal({
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">New warehouse (optional)</label>
-            <EntityPicker kind="warehouse" label="New warehouse" value={form.to_warehouse_id} onChange={(id) => set("to_warehouse_id", id)} />
+            <label className="block text-xs font-medium text-gray-600 mb-1">{tx("New warehouse (optional)")}</label>
+            <EntityPicker kind="warehouse" label={tx("New warehouse")} value={form.to_warehouse_id} onChange={(id) => set("to_warehouse_id", id)} />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Reference Type</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Reference Type")}</label>
             <select className="w-full border rounded px-3 py-2 text-sm" value={form.reference_type} onChange={(e) => set("reference_type", e.target.value)}>
               {["RECEIPT", "DISPATCH", "ADJUSTMENT", "RETURN", "REPAIR"].map((t) => (
                 <option key={t} value={t}>{t}</option>
@@ -392,12 +393,12 @@ function TransferModal({
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Reference No.</label>
-            <input className="w-full border rounded px-3 py-2 text-sm" value={form.reference_no} onChange={(e) => set("reference_no", e.target.value)} placeholder="e.g. DO-0042" />
+            <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Reference No.")}</label>
+            <input className="w-full border rounded px-3 py-2 text-sm" value={form.reference_no} onChange={(e) => set("reference_no", e.target.value)} placeholder={tx("e.g. DO-0042")} />
           </div>
         </div>
         <div className="flex gap-2 justify-end">
-          <Button variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button variant="secondary" onClick={onClose}>{tx("Cancel")}</Button>
           <Button
             loading={loading}
             onClick={() => onSubmit({
@@ -407,7 +408,7 @@ function TransferModal({
               reference_no: form.reference_no || undefined,
             })}
           >
-            Update
+            {tx("Update")}
           </Button>
         </div>
       </div>

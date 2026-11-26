@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { appraisalsApi, AppraisalDashboard } from "@/lib/appraisals";
+import { tx } from "@/lib/i18n/core";
 
 export default function AppraisalsDashboard() {
   const [dash, setDash] = useState<AppraisalDashboard | null>(null);
@@ -13,15 +14,15 @@ export default function AppraisalsDashboard() {
 
   const kpis = dash
     ? [
-        { label: "Total Appraisals", value: dash.total_records },
-        { label: "Self Review Pending", value: dash.self_review_pending, color: "text-yellow-600" },
-        { label: "Manager Review Pending", value: dash.manager_review_pending, color: "text-orange-600" },
-        { label: "HR Review Pending", value: dash.hr_review_pending, color: "text-purple-600" },
-        { label: "Calibration Pending", value: dash.calibration_pending, color: "text-indigo-600" },
-        { label: "Completed", value: dash.completed, color: "text-green-600" },
-        { label: "Avg Final Score", value: dash.avg_final_score != null ? `${dash.avg_final_score}%` : "—" },
-        { label: "Promotion Recs", value: dash.promotion_recommendations, color: "text-blue-600" },
-        { label: "Open Dev Plans", value: dash.pending_development_plans, color: "text-rose-600" },
+        { label: tx("Total Appraisals"), value: dash.total_records },
+        { label: tx("Self Review Pending"), value: dash.self_review_pending, color: "text-yellow-600" },
+        { label: tx("Manager Review Pending"), value: dash.manager_review_pending, color: "text-orange-600" },
+        { label: tx("HR Review Pending"), value: dash.hr_review_pending, color: "text-purple-600" },
+        { label: tx("Calibration Pending"), value: dash.calibration_pending, color: "text-indigo-600" },
+        { label: tx("Completed"), value: dash.completed, color: "text-green-600" },
+        { label: tx("Avg Final Score"), value: dash.avg_final_score != null ? `${dash.avg_final_score}%` : "—" },
+        { label: tx("Promotion Recs"), value: dash.promotion_recommendations, color: "text-blue-600" },
+        { label: tx("Open Dev Plans"), value: dash.pending_development_plans, color: "text-rose-600" },
       ]
     : [];
 
@@ -33,24 +34,24 @@ export default function AppraisalsDashboard() {
   };
 
   const links = [
-    { href: "/dashboard/appraisals/periods", label: "Appraisal Periods" },
-    { href: "/dashboard/appraisals/templates", label: "Templates" },
-    { href: "/dashboard/appraisals/records", label: "All Records" },
-    { href: "/dashboard/appraisals/records/new", label: "New Appraisal" },
-    { href: "/dashboard/appraisals/self-review", label: "Self Review" },
-    { href: "/dashboard/appraisals/manager-queue", label: "Manager Queue" },
-    { href: "/dashboard/appraisals/hr-review", label: "HR Review" },
-    { href: "/dashboard/appraisals/development-plans", label: "Development Plans" },
-    { href: "/dashboard/appraisals/reports", label: "Reports" },
-    { href: "/dashboard/appraisals/ai", label: "AI Insights" },
+    { href: "/dashboard/appraisals/periods", label: tx("Appraisal Periods") },
+    { href: "/dashboard/appraisals/templates", label: tx("Templates") },
+    { href: "/dashboard/appraisals/records", label: tx("All Records") },
+    { href: "/dashboard/appraisals/records/new", label: tx("New Appraisal") },
+    { href: "/dashboard/appraisals/self-review", label: tx("Self Review") },
+    { href: "/dashboard/appraisals/manager-queue", label: tx("Manager Queue") },
+    { href: "/dashboard/appraisals/hr-review", label: tx("HR Review") },
+    { href: "/dashboard/appraisals/development-plans", label: tx("Development Plans") },
+    { href: "/dashboard/appraisals/reports", label: tx("Reports") },
+    { href: "/dashboard/appraisals/ai", label: tx("AI Insights") },
   ];
 
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Performance Appraisals</h1>
+      <h1 className="text-2xl font-bold text-gray-900">{tx("Performance Appraisals")}</h1>
 
       {loading ? (
-        <p className="text-gray-500">Loading…</p>
+        <p className="text-gray-500">{tx("Loading…")}</p>
       ) : (
         <>
           <div className="grid grid-cols-3 gap-4 lg:grid-cols-5">
@@ -64,7 +65,7 @@ export default function AppraisalsDashboard() {
 
           {dash && Object.keys(dash.rating_distribution).length > 0 && (
             <div className="bg-white border rounded-lg p-4 shadow-sm">
-              <h2 className="text-sm font-semibold text-gray-700 mb-3">Rating Distribution</h2>
+              <h2 className="text-sm font-semibold text-gray-700 mb-3">{tx("Rating Distribution")}</h2>
               <div className="flex gap-3 flex-wrap">
                 {Object.entries(dash.rating_distribution).map(([rating, count]) => (
                   <div key={rating} className="flex items-center gap-2">
@@ -79,7 +80,7 @@ export default function AppraisalsDashboard() {
 
           {dash && dash.department_avg_scores.length > 0 && (
             <div className="bg-white border rounded-lg p-4 shadow-sm">
-              <h2 className="text-sm font-semibold text-gray-700 mb-3">Department Average Scores</h2>
+              <h2 className="text-sm font-semibold text-gray-700 mb-3">{tx("Department Average Scores")}</h2>
               <div className="space-y-2">
                 {dash.department_avg_scores.map((d) => (
                   <div key={d.department} className="flex items-center gap-3">
@@ -100,7 +101,7 @@ export default function AppraisalsDashboard() {
       )}
 
       <div className="bg-white border rounded-lg p-4 shadow-sm">
-        <h2 className="text-sm font-semibold text-gray-700 mb-3">Quick Navigation</h2>
+        <h2 className="text-sm font-semibold text-gray-700 mb-3">{tx("Quick Navigation")}</h2>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {links.map((l) => (
             <Link

@@ -7,6 +7,7 @@ import {
   LINE_STATUS_COLOR, STATUS_COLOR, ERP_TX_LABEL,
   BRERPTransactionType,
 } from "@/lib/bank_reconciliation";
+import { tx } from "@/lib/i18n/core";
 
 export default function StatementDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -92,7 +93,7 @@ export default function StatementDetailPage() {
     queryFn: () => brApi.listAdjustments(id),
   });
 
-  if (lStmt || !stmt) return <p className="p-6 text-gray-400">Loading…</p>;
+  if (lStmt || !stmt) return <p className="p-6 text-gray-400">{tx("Loading…")}</p>;
 
   const matchedLines   = lines.filter((l) => l.match_status === "MATCHED").length;
   const unmatchedLines = lines.filter((l) => l.match_status === "UNMATCHED").length;
@@ -115,35 +116,35 @@ export default function StatementDetailPage() {
           {stmt.status !== "LOCKED" && stmt.status !== "CLOSED" && (
             <button onClick={() => autoMatch.mutate()} disabled={autoMatch.isPending}
               className="px-3 py-1.5 text-xs bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50">
-              {autoMatch.isPending ? "Matching…" : "Auto-Match"}
+              {autoMatch.isPending ? tx("Matching…") : tx("Auto-Match")}
             </button>
           )}
           {autoMatch.data && (
             <span className="text-xs text-green-700 bg-green-50 px-2 py-1 rounded">
-              {(autoMatch.data as { auto_applied: number; suggestions_created: number }).auto_applied} applied,{" "}
-              {(autoMatch.data as { auto_applied: number; suggestions_created: number }).suggestions_created} suggested
+              {(autoMatch.data as { auto_applied: number; suggestions_created: number }).auto_applied} {tx("applied,")}{" "}
+              {(autoMatch.data as { auto_applied: number; suggestions_created: number }).suggestions_created} {tx("suggested")}
             </span>
           )}
           <button onClick={() => setShowAdj(true)}
             className="px-3 py-1.5 text-xs bg-yellow-600 text-white rounded-lg hover:bg-yellow-700">
-            Add Adjustment
+            {tx("Add Adjustment")}
           </button>
           {(stmt.status === "IN_RECONCILIATION" || stmt.status === "IMPORTED" || stmt.status === "RECONCILED") && (
             <button onClick={() => doClose.mutate()} disabled={doClose.isPending}
               className="px-3 py-1.5 text-xs bg-gray-700 text-white rounded-lg hover:bg-gray-800">
-              Close
+              {tx("Close")}
             </button>
           )}
           {stmt.status === "CLOSED" && (
             <button onClick={() => doLock.mutate()} disabled={doLock.isPending}
               className="px-3 py-1.5 text-xs bg-gray-900 text-white rounded-lg">
-              Lock
+              {tx("Lock")}
             </button>
           )}
           {(stmt.status === "CLOSED" || stmt.status === "LOCKED") && (
             <button onClick={() => doReopen.mutate()} disabled={doReopen.isPending}
               className="px-3 py-1.5 text-xs border rounded-lg text-gray-600 hover:bg-gray-50">
-              Reopen
+              {tx("Reopen")}
             </button>
           )}
         </div>
@@ -152,11 +153,11 @@ export default function StatementDetailPage() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         {[
-          { label: "Opening", value: Number(stmt.opening_balance).toLocaleString(undefined, { minimumFractionDigits: 2 }) },
-          { label: "Closing", value: Number(stmt.closing_balance).toLocaleString(undefined, { minimumFractionDigits: 2 }) },
-          { label: "Total Lines", value: stmt.total_lines },
-          { label: "Matched", value: matchedLines, cls: "text-green-700" },
-          { label: "Unmatched", value: unmatchedLines + partialLines, cls: unmatchedLines + partialLines > 0 ? "text-red-600" : "text-green-600" },
+          { label: tx("Opening"), value: Number(stmt.opening_balance).toLocaleString(undefined, { minimumFractionDigits: 2 }) },
+          { label: tx("Closing"), value: Number(stmt.closing_balance).toLocaleString(undefined, { minimumFractionDigits: 2 }) },
+          { label: tx("Total Lines"), value: stmt.total_lines },
+          { label: tx("Matched"), value: matchedLines, cls: "text-green-700" },
+          { label: tx("Unmatched"), value: unmatchedLines + partialLines, cls: unmatchedLines + partialLines > 0 ? "text-red-600" : "text-green-600" },
         ].map((s) => (
           <div key={s.label} className="bg-white border rounded-xl p-3">
             <p className="text-xs text-gray-500">{s.label}</p>
@@ -168,10 +169,10 @@ export default function StatementDetailPage() {
       {/* Adjustment modal */}
       {showAdj && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 space-y-3">
-          <h3 className="text-sm font-semibold text-yellow-800">Add Adjustment</h3>
+          <h3 className="text-sm font-semibold text-yellow-800">{tx("Add Adjustment")}</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div>
-              <label className="text-xs text-gray-500">Type</label>
+              <label className="text-xs text-gray-500">{tx("Type")}</label>
               <select value={adjForm.type} onChange={(e) => setAdjForm({ ...adjForm, type: e.target.value })}
                 className="mt-1 w-full border rounded px-2 py-1.5 text-sm">
                 {["BANK_CHARGE", "INTEREST", "ROUNDING", "FX_DIFFERENCE", "WRITE_OFF", "OTHER"].map((t) => (
@@ -180,12 +181,12 @@ export default function StatementDetailPage() {
               </select>
             </div>
             <div>
-              <label className="text-xs text-gray-500">Amount</label>
+              <label className="text-xs text-gray-500">{tx("Amount")}</label>
               <input type="number" value={adjForm.amount} onChange={(e) => setAdjForm({ ...adjForm, amount: e.target.value })}
                 className="mt-1 w-full border rounded px-2 py-1.5 text-sm" />
             </div>
             <div className="md:col-span-2">
-              <label className="text-xs text-gray-500">Description</label>
+              <label className="text-xs text-gray-500">{tx("Description")}</label>
               <input type="text" value={adjForm.description} onChange={(e) => setAdjForm({ ...adjForm, description: e.target.value })}
                 className="mt-1 w-full border rounded px-2 py-1.5 text-sm" />
             </div>
@@ -193,9 +194,9 @@ export default function StatementDetailPage() {
           <div className="flex gap-2">
             <button onClick={() => doAdj.mutate()} disabled={doAdj.isPending || !adjForm.amount || !adjForm.description}
               className="px-4 py-1.5 text-xs bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:opacity-50">
-              Save
+              {tx("Save")}
             </button>
-            <button onClick={() => setShowAdj(false)} className="text-xs text-gray-500 hover:underline">Cancel</button>
+            <button onClick={() => setShowAdj(false)} className="text-xs text-gray-500 hover:underline">{tx("Cancel")}</button>
           </div>
         </div>
       )}
@@ -203,16 +204,16 @@ export default function StatementDetailPage() {
       {/* Lines workspace */}
       <div className="bg-white border rounded-xl overflow-hidden">
         <div className="px-5 py-3 border-b bg-gray-50">
-          <h2 className="text-sm font-semibold text-gray-700">Statement Lines — Reconciliation Workspace</h2>
+          <h2 className="text-sm font-semibold text-gray-700">{tx("Statement Lines — Reconciliation Workspace")}</h2>
         </div>
         {lLines ? (
-          <p className="p-4 text-gray-400 text-sm">Loading…</p>
+          <p className="p-4 text-gray-400 text-sm">{tx("Loading…")}</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
                 <tr>
-                  {["#", "Date", "D/C", "Amount", "Unmatched", "Narration / Ref", "Status", "Actions"].map((h) => (
+                  {["#", tx("Date"), "D/C", tx("Amount"), tx("Unmatched"), tx("Narration / Ref"), tx("Status"), tx("Actions")].map((h) => (
                     <th key={h} className="px-3 py-2 text-left font-medium">{h}</th>
                   ))}
                 </tr>
@@ -234,7 +235,7 @@ export default function StatementDetailPage() {
                     <td className="px-3 py-2 text-xs max-w-xs">
                       <p className="truncate text-gray-700">{l.narration || "—"}</p>
                       {l.external_reference && <p className="text-gray-400 truncate">{l.external_reference}</p>}
-                      {l.is_duplicate_suspected && <p className="text-red-500 text-xs">⚠ Duplicate suspected</p>}
+                      {l.is_duplicate_suspected && <p className="text-red-500 text-xs">{tx("⚠ Duplicate suspected")}</p>}
                     </td>
                     <td className="px-3 py-2">
                       <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${LINE_STATUS_COLOR[l.match_status]}`}>
@@ -246,19 +247,19 @@ export default function StatementDetailPage() {
                         {l.match_status !== "MATCHED" && l.match_status !== "IGNORED" && stmt.status !== "LOCKED" && (
                           <button onClick={() => setMatchForm({ lineId: l.id, txType: "AR_PAYMENT", amount: String(l.unmatched_amount), ref: "", notes: "" })}
                             className="text-xs px-2 py-0.5 bg-blue-600 text-white rounded hover:bg-blue-700">
-                            Match
+                            {tx("Match")}
                           </button>
                         )}
                         {l.match_status !== "UNMATCHED" && l.match_status !== "IGNORED" && (
                           <button onClick={() => doUnmatch.mutate(l.id)}
                             className="text-xs px-2 py-0.5 border rounded text-gray-600 hover:bg-gray-50">
-                            Unmatch
+                            {tx("Unmatch")}
                           </button>
                         )}
                         {l.match_status !== "IGNORED" && stmt.status !== "LOCKED" && (
                           <button onClick={() => doIgnore.mutate(l.id)}
                             className="text-xs px-2 py-0.5 border rounded text-gray-500 hover:bg-gray-50">
-                            Ignore
+                            {tx("Ignore")}
                           </button>
                         )}
                       </div>
@@ -266,7 +267,7 @@ export default function StatementDetailPage() {
                   </tr>
                 ))}
                 {lines.length === 0 && (
-                  <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400 text-sm">No lines. Import or add lines.</td></tr>
+                  <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400 text-sm">{tx("No lines. Import or add lines.")}</td></tr>
                 )}
               </tbody>
             </table>
@@ -277,10 +278,10 @@ export default function StatementDetailPage() {
       {/* Manual match panel */}
       {matchForm.lineId && (
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-3">
-          <h3 className="text-sm font-semibold text-blue-800">Manual Match</h3>
+          <h3 className="text-sm font-semibold text-blue-800">{tx("Manual Match")}</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div>
-              <label className="text-xs text-gray-500">ERP Transaction Type</label>
+              <label className="text-xs text-gray-500">{tx("ERP Transaction Type")}</label>
               <select value={matchForm.txType}
                 onChange={(e) => setMatchForm({ ...matchForm, txType: e.target.value as BRERPTransactionType })}
                 className="mt-1 w-full border rounded px-2 py-1.5 text-sm">
@@ -290,33 +291,33 @@ export default function StatementDetailPage() {
               </select>
             </div>
             <div>
-              <label className="text-xs text-gray-500">Matched Amount</label>
+              <label className="text-xs text-gray-500">{tx("Matched Amount")}</label>
               <input type="number" value={matchForm.amount}
                 onChange={(e) => setMatchForm({ ...matchForm, amount: e.target.value })}
                 className="mt-1 w-full border rounded px-2 py-1.5 text-sm" />
             </div>
             <div>
-              <label className="text-xs text-gray-500">ERP Reference</label>
+              <label className="text-xs text-gray-500">{tx("ERP Reference")}</label>
               <input type="text" value={matchForm.ref}
                 onChange={(e) => setMatchForm({ ...matchForm, ref: e.target.value })}
-                className="mt-1 w-full border rounded px-2 py-1.5 text-sm" placeholder="Optional" />
+                className="mt-1 w-full border rounded px-2 py-1.5 text-sm" placeholder={tx("Optional")} />
             </div>
             <div>
-              <label className="text-xs text-gray-500">Notes</label>
+              <label className="text-xs text-gray-500">{tx("Notes")}</label>
               <input type="text" value={matchForm.notes}
                 onChange={(e) => setMatchForm({ ...matchForm, notes: e.target.value })}
-                className="mt-1 w-full border rounded px-2 py-1.5 text-sm" placeholder="Optional" />
+                className="mt-1 w-full border rounded px-2 py-1.5 text-sm" placeholder={tx("Optional")} />
             </div>
           </div>
           <div className="flex gap-2">
             <button onClick={() => doManualMatch.mutate()}
               disabled={doManualMatch.isPending || !matchForm.amount}
               className="px-4 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
-              Confirm Match
+              {tx("Confirm Match")}
             </button>
             <button onClick={() => setMatchForm({ lineId: null, txType: "AR_PAYMENT", amount: "", ref: "", notes: "" })}
               className="text-xs text-gray-500 hover:underline">
-              Cancel
+              {tx("Cancel")}
             </button>
           </div>
         </div>
@@ -326,12 +327,12 @@ export default function StatementDetailPage() {
       {adjustments.length > 0 && (
         <div className="bg-white border rounded-xl overflow-hidden">
           <div className="px-5 py-3 border-b bg-gray-50">
-            <h2 className="text-sm font-semibold text-gray-700">Adjustments ({adjustments.length})</h2>
+            <h2 className="text-sm font-semibold text-gray-700">{tx("Adjustments (")}{adjustments.length})</h2>
           </div>
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
               <tr>
-                {["Type", "Amount", "Description", "Posted", ""].map((h) => (
+                {[tx("Type"), tx("Amount"), tx("Description"), tx("Posted"), ""].map((h) => (
                   <th key={h} className="px-4 py-2 text-left font-medium">{h}</th>
                 ))}
               </tr>
@@ -344,14 +345,14 @@ export default function StatementDetailPage() {
                   <td className="px-4 py-2 text-gray-600">{a.description}</td>
                   <td className="px-4 py-2">
                     <span className={`px-2 py-0.5 rounded-full text-xs ${a.posted ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
-                      {a.posted ? "Posted" : "Draft"}
+                      {a.posted ? tx("Posted") : tx("Draft")}
                     </span>
                   </td>
                   <td className="px-4 py-2">
                     {!a.posted && (
                       <button onClick={() => brApi.postAdjustment(a.id).then(() => qc.invalidateQueries({ queryKey: ["br-adj", id] }))}
                         className="text-xs text-blue-600 hover:underline">
-                        Post
+                        {tx("Post")}
                       </button>
                     )}
                   </td>

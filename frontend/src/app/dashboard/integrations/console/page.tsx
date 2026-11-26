@@ -2,6 +2,7 @@
 // Integration console (M36.S05.T003): evidence-based health per connector — never a fake "synced".
 import { useCallback, useEffect, useState } from "react";
 import { apiClient } from "@/lib/api";
+import { tx } from "@/lib/i18n/core";
 
 interface Row {
   provider: string; label: string; capability: string; health: string; credentials: "SET" | "NOT_SET" | null;
@@ -27,7 +28,7 @@ export default function IntegrationConsolePage() {
 
   const load = useCallback(async () => {
     try { setData((await apiClient.get<Console>("/api/v1/integrations/console")).data); }
-    catch { setMsg({ ok: false, text: "Could not load the integration console." }); }
+    catch { setMsg({ ok: false, text: tx("Could not load the integration console.") }); }
   }, []);
   useEffect(() => { load(); }, [load]);
 
@@ -49,11 +50,11 @@ export default function IntegrationConsolePage() {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-lg font-semibold text-gray-900">Integration console</h2>
-        <p className="text-xs text-gray-500">Health comes only from recorded runs. Secrets are never shown — only whether they are set.</p>
+        <h2 className="text-lg font-semibold text-gray-900">{tx("Integration console")}</h2>
+        <p className="text-xs text-gray-500">{tx("Health comes only from recorded runs. Secrets are never shown — only whether they are set.")}</p>
       </div>
       {msg && <p role="status" className={`text-sm rounded px-3 py-2 ${msg.ok ? "bg-emerald-50 text-emerald-800" : "bg-red-50 text-red-700"}`}>{msg.text}</p>}
-      {!data ? <p className="text-sm text-gray-500">Loading…</p> : (
+      {!data ? <p className="text-sm text-gray-500">{tx("Loading…")}</p> : (
         <>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {data.connectors.map((r) => {
@@ -65,32 +66,32 @@ export default function IntegrationConsolePage() {
                     <span className={`shrink-0 text-xs rounded-full px-2 py-0.5 ${cls}`}>{label}</span>
                   </div>
                   <dl className="text-xs text-gray-600 grid grid-cols-2 gap-x-2 gap-y-1">
-                    <dt>Credentials</dt><dd>{r.credentials === null ? "not needed" : r.credentials === "SET" ? "set" : "not set"}</dd>
-                    <dt>Last success</dt><dd>{when(r.last_success_at)}</dd>
-                    {r.consecutive_failures > 0 && <><dt>Failures in a row</dt><dd>{r.consecutive_failures}</dd></>}
-                    {r.next_retry_at && <><dt>Next retry</dt><dd>{when(r.next_retry_at)}</dd></>}
+                    <dt>{tx("Credentials")}</dt><dd>{r.credentials === null ? tx("not needed") : r.credentials === "SET" ? tx("set") : tx("not set")}</dd>
+                    <dt>{tx("Last success")}</dt><dd>{when(r.last_success_at)}</dd>
+                    {r.consecutive_failures > 0 && <><dt>{tx("Failures in a row")}</dt><dd>{r.consecutive_failures}</dd></>}
+                    {r.next_retry_at && <><dt>{tx("Next retry")}</dt><dd>{when(r.next_retry_at)}</dd></>}
                   </dl>
                   {r.last_error && <p className="text-xs text-red-700 break-words">{r.last_error}</p>}
                   <div className="flex flex-wrap gap-2 pt-1">
                     {r.can_sync && (
                       <button onClick={() => sync(r)} disabled={busy !== null || !!r.next_retry_at}
                         className="text-xs rounded bg-blue-600 text-white px-3 py-1.5 disabled:opacity-50">
-                        {busy === r.provider ? "Syncing…" : "Sync now"}
+                        {busy === r.provider ? tx("Syncing…") : tx("Sync now")}
                       </button>
                     )}
-                    {r.screen && <a href={r.screen} className="text-xs rounded border px-3 py-1.5 text-gray-700">Open</a>}
+                    {r.screen && <a href={r.screen} className="text-xs rounded border px-3 py-1.5 text-gray-700">{tx("Open")}</a>}
                   </div>
                 </div>
               );
             })}
           </div>
           <div className="bg-white border rounded-xl p-4 text-xs text-gray-700 space-y-1">
-            <p className="font-semibold text-gray-900 text-sm mb-1">Mapping health</p>
-            <p>Shop orders: {tally(m?.ecommerce_orders)}</p>
-            <p>Shop products: {tally(m?.ecommerce_products)}</p>
-            <p>External CRM customers: {tally(m?.crm_customers)}</p>
-            <p>Mailboxes: {String(m?.mailboxes?.connected ?? 0)} connected, {String(m?.mailboxes?.with_errors ?? 0)} with errors</p>
-            <p>Webhook deliveries: {tally(m?.webhooks?.by_status as Record<string, unknown>)}</p>
+            <p className="font-semibold text-gray-900 text-sm mb-1">{tx("Mapping health")}</p>
+            <p>{tx("Shop orders:")} {tally(m?.ecommerce_orders)}</p>
+            <p>{tx("Shop products:")} {tally(m?.ecommerce_products)}</p>
+            <p>{tx("External CRM customers:")} {tally(m?.crm_customers)}</p>
+            <p>{tx("Mailboxes:")} {String(m?.mailboxes?.connected ?? 0)} {tx("connected,")} {String(m?.mailboxes?.with_errors ?? 0)} {tx("with errors")}</p>
+            <p>{tx("Webhook deliveries:")} {tally(m?.webhooks?.by_status as Record<string, unknown>)}</p>
           </div>
         </>
       )}

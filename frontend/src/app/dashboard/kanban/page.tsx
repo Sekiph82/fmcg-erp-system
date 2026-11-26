@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { kanbanApi, KanbanDashboard, PRIORITY_COLOR } from "@/lib/kanban";
+import { tx } from "@/lib/i18n/core";
 
 export default function KanbanDashboardPage() {
   const [dash, setDash] = useState<KanbanDashboard | null>(null);
@@ -16,39 +17,39 @@ export default function KanbanDashboardPage() {
     setSeeding(true);
     const r = await kanbanApi.seedBoards();
     setSeeding(false);
-    alert(`Seeded ${r.created} default boards.`);
+    alert(tx("Seeded {created} default boards.", { created: r.created }));
     kanbanApi.getDashboard().then(setDash);
   };
 
   const kpis = dash ? [
-    { label: "Total Boards", value: dash.total_boards },
-    { label: "Active Boards", value: dash.active_boards, color: "text-green-600" },
-    { label: "Total Cards", value: dash.total_cards },
-    { label: "Active Cards", value: dash.active_cards, color: "text-blue-600" },
-    { label: "Overdue", value: dash.overdue_cards, color: "text-red-600" },
-    { label: "Blocked", value: dash.blocked_cards, color: "text-orange-600" },
-    { label: "Done", value: dash.done_cards, color: "text-green-600" },
+    { label: tx("Total Boards"), value: dash.total_boards },
+    { label: tx("Active Boards"), value: dash.active_boards, color: "text-green-600" },
+    { label: tx("Total Cards"), value: dash.total_cards },
+    { label: tx("Active Cards"), value: dash.active_cards, color: "text-blue-600" },
+    { label: tx("Overdue"), value: dash.overdue_cards, color: "text-red-600" },
+    { label: tx("Blocked"), value: dash.blocked_cards, color: "text-orange-600" },
+    { label: tx("Done"), value: dash.done_cards, color: "text-green-600" },
   ] : [];
 
   const links = [
-    { href: "/dashboard/kanban/boards", label: "All Boards" },
-    { href: "/dashboard/kanban/view", label: "Board View" },
-    { href: "/dashboard/kanban/cards", label: "All Cards" },
-    { href: "/dashboard/kanban/reports", label: "Reports" },
-    { href: "/dashboard/kanban/ai", label: "AI Insights" },
+    { href: "/dashboard/kanban/boards", label: tx("All Boards") },
+    { href: "/dashboard/kanban/view", label: tx("Board View") },
+    { href: "/dashboard/kanban/cards", label: tx("All Cards") },
+    { href: "/dashboard/kanban/reports", label: tx("Reports") },
+    { href: "/dashboard/kanban/ai", label: tx("AI Insights") },
   ];
 
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Kanban Boards</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{tx("Kanban Boards")}</h1>
         <button onClick={seed} disabled={seeding}
           className="rounded border border-gray-300 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-50">
-          {seeding ? "Seeding…" : "Seed Default Boards"}
+          {seeding ? tx("Seeding…") : tx("Seed Default Boards")}
         </button>
       </div>
 
-      {loading ? <p className="text-gray-500">Loading…</p> : (
+      {loading ? <p className="text-gray-500">{tx("Loading…")}</p> : (
         <>
           <div className="grid grid-cols-3 gap-4 lg:grid-cols-7">
             {kpis.map((k) => (
@@ -62,7 +63,7 @@ export default function KanbanDashboardPage() {
           {dash && (
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <div className="bg-white border rounded-lg p-4 shadow-sm">
-                <h2 className="text-sm font-semibold text-gray-700 mb-3">By Priority</h2>
+                <h2 className="text-sm font-semibold text-gray-700 mb-3">{tx("By Priority")}</h2>
                 <div className="space-y-1.5">
                   {Object.entries(dash.cards_by_priority).map(([p, c]) => (
                     <div key={p} className="flex items-center justify-between">
@@ -75,7 +76,7 @@ export default function KanbanDashboardPage() {
                 </div>
               </div>
               <div className="bg-white border rounded-lg p-4 shadow-sm">
-                <h2 className="text-sm font-semibold text-gray-700 mb-3">By Module</h2>
+                <h2 className="text-sm font-semibold text-gray-700 mb-3">{tx("By Module")}</h2>
                 <div className="space-y-1.5">
                   {dash.cards_by_module.map((m) => (
                     <div key={m.module} className="flex items-center justify-between">
@@ -86,15 +87,15 @@ export default function KanbanDashboardPage() {
                 </div>
               </div>
               <div className="bg-white border rounded-lg p-4 shadow-sm">
-                <h2 className="text-sm font-semibold text-gray-700 mb-3">Top Assignees</h2>
+                <h2 className="text-sm font-semibold text-gray-700 mb-3">{tx("Top Assignees")}</h2>
                 <div className="space-y-1.5">
                   {dash.top_assignees.map((a) => (
                     <div key={a.user} className="flex items-center justify-between">
                       <span className="text-sm text-gray-700">{a.user}</span>
-                      <span className="text-sm font-semibold text-blue-600">{a.count} cards</span>
+                      <span className="text-sm font-semibold text-blue-600">{a.count} {tx("cards")}</span>
                     </div>
                   ))}
-                  {dash.top_assignees.length === 0 && <p className="text-gray-400 text-xs">No assigned cards yet.</p>}
+                  {dash.top_assignees.length === 0 && <p className="text-gray-400 text-xs">{tx("No assigned cards yet.")}</p>}
                 </div>
               </div>
             </div>
@@ -103,7 +104,7 @@ export default function KanbanDashboardPage() {
       )}
 
       <div className="bg-white border rounded-lg p-4 shadow-sm">
-        <h2 className="text-sm font-semibold text-gray-700 mb-3">Quick Navigation</h2>
+        <h2 className="text-sm font-semibold text-gray-700 mb-3">{tx("Quick Navigation")}</h2>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
           {links.map((l) => (
             <Link key={l.href} href={l.href}

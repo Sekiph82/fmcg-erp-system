@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { mpsApi, MPSPlanSummary, CapacityHeatmap, utilizationColor } from "@/lib/mps";
 import { useAuth } from "@/context/AuthContext";
+import { tx } from "@/lib/i18n/core";
 
 function UtilBar({ pct }: { pct: number }) {
   const w = Math.min(100, pct);
@@ -48,23 +49,23 @@ export default function CapacityPage() {
   return (
     <div className="p-6 space-y-5">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-gray-900">Capacity Heatmap</h1>
-        <a href="/dashboard/mps" className="text-xs text-blue-600 hover:underline">← MPS Dashboard</a>
+        <h1 className="text-xl font-semibold text-gray-900">{tx("Capacity Heatmap")}</h1>
+        <a href="/dashboard/mps" className="text-xs text-blue-600 hover:underline">{tx("← MPS Dashboard")}</a>
       </div>
-      {plansLoading && <p role="status" aria-live="polite" className="text-sm text-gray-500">Loading plans…</p>}
-      {plansError && <p role="alert" className="text-sm text-red-700">Could not load MPS plans: {(plansError as Error).message}</p>}
-      {runCapacity.error && <p role="alert" className="text-sm text-red-700">Capacity scheduling failed: {(runCapacity.error as Error).message}</p>}
+      {plansLoading && <p role="status" aria-live="polite" className="text-sm text-gray-500">{tx("Loading plans…")}</p>}
+      {plansError && <p role="alert" className="text-sm text-red-700">{tx("Could not load MPS plans:")} {(plansError as Error).message}</p>}
+      {runCapacity.error && <p role="alert" className="text-sm text-red-700">{tx("Capacity scheduling failed:")} {(runCapacity.error as Error).message}</p>}
 
       {/* Plan selector */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex flex-wrap items-center gap-3">
-        <label htmlFor="capacity-plan" className="text-sm font-medium text-gray-600">Select Plan:</label>
+        <label htmlFor="capacity-plan" className="text-sm font-medium text-gray-600">{tx("Select Plan:")}</label>
         <select
           id="capacity-plan"
           className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm min-w-64"
           value={selectedPlanId || ""}
           onChange={(e) => setSelectedPlanId(e.target.value || null)}
         >
-          <option value="">-- select plan --</option>
+          <option value="">{tx("-- select plan --")}</option>
           {plans.map((p) => (
             <option key={p.id} value={p.id}>{p.plan_no} — {p.plan_name}</option>
           ))}
@@ -75,14 +76,14 @@ export default function CapacityPage() {
             disabled={runCapacity.isPending}
             className="px-3 py-1.5 text-xs font-medium bg-orange-100 text-orange-700 hover:bg-orange-200 rounded-lg"
           >
-            {runCapacity.isPending ? "Scheduling…" : "Re-run Capacity Scheduling"}
+            {runCapacity.isPending ? tx("Scheduling…") : tx("Re-run Capacity Scheduling")}
           </button>
         )}
       </div>
 
       {/* Legend */}
       <div className="flex items-center gap-4 text-xs text-gray-500">
-        <span>Utilization:</span>
+        <span>{tx("Utilization:")}</span>
         {[["< 60%", "bg-green-400"], ["60–80%", "bg-yellow-400"], ["80–100%", "bg-orange-400"], ["> 100%", "bg-red-500"]].map(([label, c]) => (
           <div key={label} className="flex items-center gap-1">
             <div className={`w-3 h-3 rounded ${c}`} />
@@ -97,7 +98,7 @@ export default function CapacityPage() {
           {heatmap && heatmap.overload_alerts.length > 0 && (
             <div className="bg-red-50 border border-red-200 rounded-xl p-4">
               <h2 className="text-sm font-semibold text-red-700 mb-2">
-                Overload Alerts ({heatmap.overload_alerts.length})
+                {tx("Overload Alerts (")}{heatmap.overload_alerts.length})
               </h2>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                 {heatmap.overload_alerts.map((a, i) => (
@@ -105,9 +106,9 @@ export default function CapacityPage() {
                     <p className="text-xs font-medium text-gray-700">{a.work_center}</p>
                     <p className="text-xs text-gray-400">{a.date}</p>
                     <p className="text-sm font-bold text-red-600 mt-1">
-                      +{a.overload_hours.toFixed(1)} hrs
+                      +{a.overload_hours.toFixed(1)} {tx("hrs")}
                     </p>
-                    <p className="text-xs text-orange-600">{a.utilization_pct.toFixed(0)}% utilization</p>
+                    <p className="text-xs text-orange-600">{a.utilization_pct.toFixed(0)}{tx("% utilization")}</p>
                   </div>
                 ))}
               </div>
@@ -116,12 +117,12 @@ export default function CapacityPage() {
 
           {/* Heatmap Grid */}
           {isLoading ? (
-            <div role="status" aria-live="polite" className="text-center text-gray-400 py-8">Loading heatmap…</div>
+            <div role="status" aria-live="polite" className="text-center text-gray-400 py-8">{tx("Loading heatmap…")}</div>
           ) : heatmapError ? (
-            <div role="alert" className="bg-white rounded-xl border border-red-200 p-8 text-center text-sm text-red-700">Could not load capacity data: {(heatmapError as Error).message}</div>
+            <div role="alert" className="bg-white rounded-xl border border-red-200 p-8 text-center text-sm text-red-700">{tx("Could not load capacity data:")} {(heatmapError as Error).message}</div>
           ) : !heatmap || heatmap.rows.length === 0 ? (
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-8 text-center text-sm text-gray-400">
-              No capacity data. Run capacity scheduling first.
+              {tx("No capacity data. Run capacity scheduling first.")}
             </div>
           ) : (
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
@@ -130,10 +131,10 @@ export default function CapacityPage() {
                   <thead className="bg-gray-50 sticky top-0">
                     <tr>
                       <th className="px-4 py-2 text-left font-medium text-gray-500 whitespace-nowrap min-w-[160px]">
-                        Work Center
+                        {tx("Work Center")}
                       </th>
-                      <th className="px-3 py-2 text-left font-medium text-gray-400">Peak</th>
-                      <th className="px-3 py-2 text-left font-medium text-gray-400">Over</th>
+                      <th className="px-3 py-2 text-left font-medium text-gray-400">{tx("Peak")}</th>
+                      <th className="px-3 py-2 text-left font-medium text-gray-400">{tx("Over")}</th>
                       {allDates.map((d) => (
                         <th key={d} className="px-1 py-2 text-center font-medium text-gray-400 min-w-[48px]">
                           {d.slice(5)}
@@ -154,7 +155,7 @@ export default function CapacityPage() {
                           </td>
                           <td className="px-3 py-2 text-center">
                             {row.overloaded_days > 0 ? (
-                              <span className="text-red-600 font-medium">{row.overloaded_days}d</span>
+                              <span className="text-red-600 font-medium">{row.overloaded_days}{tx("d")}</span>
                             ) : (
                               <span className="text-green-500">✓</span>
                             )}

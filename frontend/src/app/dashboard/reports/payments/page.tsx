@@ -8,6 +8,7 @@ import { DashboardShell, Section, ChartCard } from "@/components/bi/DashboardShe
 import { KpiCard } from "@/components/bi/KpiCard";
 import { TrendLineChart } from "@/components/bi/Charts";
 import { ExceptionList } from "@/components/bi/ExceptionList";
+import { tx } from "@/lib/i18n/core";
 
 function PaymentsDashboard() {
   const [days, setDays] = useState(30);
@@ -18,60 +19,60 @@ function PaymentsDashboard() {
 
   return (
     <DashboardShell
-      title="M-Pesa Payments Analytics"
+      title={tx("M-Pesa Payments Analytics")}
       subtitle="Collections, success rates, and failure analysis"
       days={days}
       onDaysChange={setDays}
       backHref="/dashboard/reports"
       loading={isLoading}
     >
-      <Section title="Today">
+      <Section title={tx("Today")}>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <KpiCard label="Today Collected" value={data ? fmtKES(data.today_collected) : "—"} color="green" />
-          <KpiCard label="Today Transactions" value={data ? fmt(data.today_transactions) : "—"} color="default" />
+          <KpiCard label={tx("Today Collected")} value={data ? fmtKES(data.today_collected) : "—"} color="green" />
+          <KpiCard label={tx("Today Transactions")} value={data ? fmt(data.today_transactions) : "—"} color="default" />
           <KpiCard
-            label="Success Rate"
+            label={tx("Success Rate")}
             value={data ? `${data.today_success_rate.toFixed(1)}%` : "—"}
             color={data && data.today_success_rate >= 95 ? "green" : data && data.today_success_rate >= 80 ? "amber" : "red"}
             trend={data && data.today_success_rate >= 95 ? "up" : "down"}
           />
-          <KpiCard label="Failed Today" value={data ? fmt(data.today_failed) : "—"} color={data && data.today_failed > 0 ? "red" : "green"} />
+          <KpiCard label={tx("Failed Today")} value={data ? fmt(data.today_failed) : "—"} color={data && data.today_failed > 0 ? "red" : "green"} />
         </div>
       </Section>
 
-      <Section title={`Last ${days} Days`}>
+      <Section title={tx("Last {days} Days", { days })}>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <KpiCard label="Period Collected" value={data ? fmtKES(data.period_collected) : "—"} color="blue" />
-          <KpiCard label="Total Transactions" value={data ? fmt(data.period_total_transactions) : "—"} color="default" />
+          <KpiCard label={tx("Period Collected")} value={data ? fmtKES(data.period_collected) : "—"} color="blue" />
+          <KpiCard label={tx("Total Transactions")} value={data ? fmt(data.period_total_transactions) : "—"} color="default" />
           <KpiCard
-            label="Avg Success Rate"
+            label={tx("Avg Success Rate")}
             value={data ? `${data.period_success_rate.toFixed(1)}%` : "—"}
             color={data && data.period_success_rate >= 95 ? "green" : data && data.period_success_rate >= 80 ? "amber" : "red"}
           />
-          <KpiCard label="Total Failed" value={data ? fmt(data.period_failed) : "—"} color={data && data.period_failed > 0 ? "amber" : "green"} />
+          <KpiCard label={tx("Total Failed")} value={data ? fmt(data.period_failed) : "—"} color={data && data.period_failed > 0 ? "amber" : "green"} />
         </div>
       </Section>
 
-      <Section title="Collection Trend">
-        <ChartCard title={`Daily Collections — Last ${days}d`}>
+      <Section title={tx("Collection Trend")}>
+        <ChartCard title={tx("Daily Collections — Last {days}d", { days })}>
           {data?.daily_collection_trend ? (
             <TrendLineChart
               data={data.daily_collection_trend}
               color="#22c55e"
-              label="Collected (KES)"
+              label={tx("Collected (KES)")}
               height={220}
               formatY={(v) => fmtKES(v)}
             />
           ) : (
-            <div className="h-[220px] flex items-center justify-center text-slate-600 text-sm">No data</div>
+            <div className="h-[220px] flex items-center justify-center text-slate-600 text-sm">{tx("No data")}</div>
           )}
         </ChartCard>
       </Section>
 
-      <Section title="Failure Analysis">
+      <Section title={tx("Failure Analysis")}>
         <ExceptionList
           items={data?.recent_failures ?? []}
-          title="Recent M-Pesa Failures"
+          title={tx("Recent M-Pesa Failures")}
         />
       </Section>
     </DashboardShell>

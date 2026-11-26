@@ -6,6 +6,7 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api";
+import { tx } from "@/lib/i18n/core";
 
 interface Provider { provider: "google" | "microsoft"; purposes: string[]; configured: boolean }
 interface Connection {
@@ -45,7 +46,7 @@ export function ConnectedAccounts({ purposes }: { purposes: ("mail" | "calendar"
     mutationFn: async ({ provider, purpose }: { provider: string; purpose: string }) =>
       (await apiClient.post(`/api/v1/integrations/oauth/${provider}/${purpose}/start`)).data as { authorize_url: string },
     onSuccess: (d) => { window.location.assign(d.authorize_url); },
-    onError: () => setNotice({ ok: false, text: "Could not start the connection." }),
+    onError: () => setNotice({ ok: false, text: tx("Could not start the connection.") }),
   });
   const disconnect = useMutation({
     mutationFn: async (id: string) => apiClient.delete(`/api/v1/integrations/oauth/connections/${id}`),
@@ -54,7 +55,7 @@ export function ConnectedAccounts({ purposes }: { purposes: ("mail" | "calendar"
 
   return (
     <div className="border rounded-lg bg-white p-3 space-y-2">
-      <div className="text-sm font-semibold text-gray-800">Connected accounts</div>
+      <div className="text-sm font-semibold text-gray-800">{tx("Connected accounts")}</div>
       {notice && (
         <div className={`text-xs rounded px-2 py-1 ${notice.ok ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}>{notice.text}</div>
       )}
@@ -67,19 +68,19 @@ export function ConnectedAccounts({ purposes }: { purposes: ("mail" | "calendar"
               <div className="flex items-center justify-between gap-2">
                 <span className="font-medium">{LABEL[p.provider]} {PURPOSE[purpose]}</span>
                 <span className={`px-1.5 py-0.5 rounded ${live ? "bg-green-100 text-green-700" : !p.configured ? "bg-gray-100 text-gray-600" : c?.status === "ERROR" ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-800"}`}>
-                  {live ? "Connected" : !p.configured ? "Waiting for setup" : c?.status === "ERROR" ? "Reconnect needed" : "Not connected"}
+                  {live ? tx("Connected") : !p.configured ? tx("Waiting for setup") : c?.status === "ERROR" ? tx("Reconnect needed") : tx("Not connected")}
                 </span>
               </div>
               {c?.account_email && <div className="text-gray-600 break-all">{c.account_email}</div>}
               {c?.last_error && <div className="text-red-600">{c.last_error}</div>}
-              {!p.configured && <div className="text-gray-500">An administrator enters the {LABEL[p.provider]} app keys under Integrations → Provider keys.</div>}
+              {!p.configured && <div className="text-gray-500">{tx("An administrator enters the")} {LABEL[p.provider]} {tx("app keys under Integrations → Provider keys.")}</div>}
               <div className="flex gap-2">
                 {p.configured && !live && (
                   <button className="text-indigo-600 hover:underline disabled:opacity-50" disabled={start.isPending}
-                          onClick={() => start.mutate({ provider: p.provider, purpose })}>Connect</button>
+                          onClick={() => start.mutate({ provider: p.provider, purpose })}>{tx("Connect")}</button>
                 )}
                 {c && c.status !== "REVOKED" && (
-                  <button className="text-red-600 hover:underline" onClick={() => { if (confirm("Disconnect this account? The ERP stops reading and sending through it.")) disconnect.mutate(c.id); }}>Disconnect</button>
+                  <button className="text-red-600 hover:underline" onClick={() => { if (confirm(tx("Disconnect this account? The ERP stops reading and sending through it."))) disconnect.mutate(c.id); }}>{tx("Disconnect")}</button>
                 )}
               </div>
             </div>

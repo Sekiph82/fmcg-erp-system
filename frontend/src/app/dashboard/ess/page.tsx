@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { essApi, essSelf, ESSDashboard } from "@/lib/ess";
+import { tx } from "@/lib/i18n/core";
 
 
 export default function ESSDashboardPage() {
@@ -13,17 +14,17 @@ export default function ESSDashboardPage() {
   useEffect(() => { essSelf.me().then((m) => setData(m.dashboard)).catch((e) => setError(e.message)); }, []);
 
   const links = [
-    { href: "/dashboard/ess/profile",       label: "My Profile",    icon: "👤" },
-    { href: "/dashboard/ess/card",          label: "My Business Card", icon: "🪪" },
-    { href: "/dashboard/ess/leave",         label: "Leave",         icon: "🏖️" },
-    { href: "/dashboard/ess/attendance",    label: "Attendance",    icon: "📅" },
-    { href: "/dashboard/ess/documents",     label: "Documents",     icon: "📄" },
-    { href: "/dashboard/ess/payslips",      label: "My Payslips",   icon: "💵" },
-    { href: "/dashboard/ess/requests",      label: "My Requests",   icon: "📋" },
-    { href: "/dashboard/ess/notifications", label: "Notifications", icon: "🔔" },
+    { href: "/dashboard/ess/profile",       label: tx("My Profile"),    icon: "👤" },
+    { href: "/dashboard/ess/card",          label: tx("My Business Card"), icon: "🪪" },
+    { href: "/dashboard/ess/leave",         label: tx("Leave"),         icon: "🏖️" },
+    { href: "/dashboard/ess/attendance",    label: tx("Attendance"),    icon: "📅" },
+    { href: "/dashboard/ess/documents",     label: tx("Documents"),     icon: "📄" },
+    { href: "/dashboard/ess/payslips",      label: tx("My Payslips"),   icon: "💵" },
+    { href: "/dashboard/ess/requests",      label: tx("My Requests"),   icon: "📋" },
+    { href: "/dashboard/ess/notifications", label: tx("Notifications"), icon: "🔔" },
     ...(hasPermission("hr.view") ? [  // HR-only pages
-      { href: "/dashboard/ess/ai",            label: "AI Insights",   icon: "🤖" },
-      { href: "/dashboard/ess/admin",         label: "HR Admin",      icon: "⚙️" },
+      { href: "/dashboard/ess/ai",            label: tx("AI Insights"),   icon: "🤖" },
+      { href: "/dashboard/ess/admin",         label: tx("HR Admin"),      icon: "⚙️" },
     ] : []),
   ];
 
@@ -31,10 +32,10 @@ export default function ESSDashboardPage() {
     <div className="p-6 space-y-6 text-slate-200">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h1 className="text-2xl font-bold text-white">Employee Self-Service</h1>
+          <h1 className="text-2xl font-bold text-white">{tx("Employee Self-Service")}</h1>
           {data && <p className="text-slate-500 text-sm mt-0.5">{data.employee_name} · {data.job_title} · {data.department_name}</p>}
         </div>
-        {data && <p className="text-xs text-slate-600">{data.days_since_joining} days with the company</p>}
+        {data && <p className="text-xs text-slate-600">{data.days_since_joining} {tx("days with the company")}</p>}
       </div>
 
       {error && <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-3 text-sm text-amber-300">{error}</div>}
@@ -42,11 +43,11 @@ export default function ESSDashboardPage() {
       {data && (
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           {[
-            { label: "Annual Leave Available", value: `${data.annual_leave_available} days`, color: "text-emerald-400" },
-            { label: "Pending Leave Requests", value: data.pending_leave_requests, color: "text-amber-400" },
-            { label: "Attendance This Month", value: `${data.attendance_this_month} days`, color: "text-blue-400" },
-            { label: "Pending Requests", value: data.pending_requests, color: "text-orange-400" },
-            { label: "Unread Notifications", value: data.unread_notifications, color: "text-purple-400" },
+            { label: tx("Annual Leave Available"), value: `${data.annual_leave_available} days`, color: "text-emerald-400" },
+            { label: tx("Pending Leave Requests"), value: data.pending_leave_requests, color: "text-amber-400" },
+            { label: tx("Attendance This Month"), value: `${data.attendance_this_month} days`, color: "text-blue-400" },
+            { label: tx("Pending Requests"), value: data.pending_requests, color: "text-orange-400" },
+            { label: tx("Unread Notifications"), value: data.unread_notifications, color: "text-purple-400" },
           ].map((k) => (
             <div key={k.label} className="glow-card p-5">
               <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">{k.label}</p>

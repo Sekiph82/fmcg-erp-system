@@ -1,6 +1,7 @@
 "use client";
 import { useQuery } from "@tanstack/react-query";
 import { scApi, fmt } from "@/lib/subcontracting";
+import { tx } from "@/lib/i18n/core";
 
 export default function SubcontractorStockPage() {
   const { data, isLoading } = useQuery({ queryKey: ["sc-stock"], queryFn: () => scApi.getStock() });
@@ -19,20 +20,20 @@ export default function SubcontractorStockPage() {
     <div className="p-6 space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900">Subcontractor Stock</h1>
-          <p className="text-sm text-gray-500">Materials currently at external subcontractor locations</p>
+          <h1 className="text-xl font-semibold text-gray-900">{tx("Subcontractor Stock")}</h1>
+          <p className="text-sm text-gray-500">{tx("Materials currently at external subcontractor locations")}</p>
         </div>
         <div className="flex gap-4 text-sm text-gray-600">
-          <span>Total Balance: <strong>{fmt(totalBalance)}</strong></span>
-          <span>Total Value: <strong>KES {fmt(totalValue, 0)}</strong></span>
+          <span>{tx("Total Balance:")} <strong>{fmt(totalBalance)}</strong></span>
+          <span>{tx("Total Value:")} <strong>KES {fmt(totalValue, 0)}</strong></span>
         </div>
       </div>
 
-      {isLoading && <div className="text-gray-400">Loading…</div>}
+      {isLoading && <div className="text-gray-400">{tx("Loading…")}</div>}
 
       {!isLoading && Object.keys(bySupplier).length === 0 && (
         <div className="text-center py-12 text-gray-400">
-          No materials currently at subcontractor locations.
+          {tx("No materials currently at subcontractor locations.")}
         </div>
       )}
 
@@ -41,20 +42,20 @@ export default function SubcontractorStockPage() {
           <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
             <h2 className="font-semibold text-gray-800">{name}</h2>
             <span className="text-sm text-gray-500">
-              {rows!.length} material(s) · KES {fmt(rows!.reduce((s, r) => s + Number(r.total_value ?? 0), 0), 0)}
+              {rows!.length} {tx("material(s) · KES")} {fmt(rows!.reduce((s, r) => s + Number(r.total_value ?? 0), 0), 0)}
             </span>
           </div>
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
               <tr>
-                <th className="text-left px-4 py-2">Material</th>
-                <th className="text-right px-4 py-2">Issued</th>
-                <th className="text-right px-4 py-2">Returned</th>
-                <th className="text-right px-4 py-2">Consumed</th>
-                <th className="text-right px-4 py-2">Scrapped</th>
-                <th className="text-right px-4 py-2 font-bold">Balance</th>
-                <th className="text-right px-4 py-2">Unit Cost</th>
-                <th className="text-right px-4 py-2">Value</th>
+                <th className="text-left px-4 py-2">{tx("Material")}</th>
+                <th className="text-right px-4 py-2">{tx("Issued")}</th>
+                <th className="text-right px-4 py-2">{tx("Returned")}</th>
+                <th className="text-right px-4 py-2">{tx("Consumed")}</th>
+                <th className="text-right px-4 py-2">{tx("Scrapped")}</th>
+                <th className="text-right px-4 py-2 font-bold">{tx("Balance")}</th>
+                <th className="text-right px-4 py-2">{tx("Unit Cost")}</th>
+                <th className="text-right px-4 py-2">{tx("Value")}</th>
               </tr>
             </thead>
             <tbody>

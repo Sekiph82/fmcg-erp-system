@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { ToastContainer } from "@/components/ui/Toast";
 import { useToast } from "@/hooks/useToast";
+import { tx } from "@/lib/i18n/core";
 
 function StatCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
   return (
@@ -43,27 +44,27 @@ export default function ProductionReportsPage() {
       <ToastContainer toasts={toasts} onDismiss={dismiss} />
 
       <div className="mb-2">
-        <h1 className="text-2xl font-bold text-gray-900">Production Reports</h1>
-        <p className="text-sm text-gray-500 mt-1">Planned vs actual, downtime, and OEE summary</p>
+        <h1 className="text-2xl font-bold text-gray-900">{tx("Production Reports")}</h1>
+        <p className="text-sm text-gray-500 mt-1">{tx("Planned vs actual, downtime, and OEE summary")}</p>
       </div>
 
       {/* Date filter */}
       <div className="flex gap-3 items-end flex-wrap rounded-xl border border-gray-200 bg-white p-4">
         <Input
-          label="From"
+          label={tx("From")}
           type="datetime-local"
           value={dateFrom}
           onChange={(e) => setDateFrom(e.target.value)}
           className="w-56"
         />
         <Input
-          label="To"
+          label={tx("To")}
           type="datetime-local"
           value={dateTo}
           onChange={(e) => setDateTo(e.target.value)}
           className="w-56"
         />
-        <Button onClick={() => setSubmitted(true)}>Run Report</Button>
+        <Button onClick={() => setSubmitted(true)}>{tx("Run Report")}</Button>
       </div>
 
       {isLoading && (
@@ -82,18 +83,18 @@ export default function ProductionReportsPage() {
         <>
           {/* Summary cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <StatCard label="Total Orders" value={report.total_orders} />
+            <StatCard label={tx("Total Orders")} value={report.total_orders} />
             <StatCard
-              label="Completed"
+              label={tx("Completed")}
               value={report.completed_orders}
               sub={`${report.in_progress_orders} in progress`}
             />
             <StatCard
-              label="Avg OEE"
+              label={tx("Avg OEE")}
               value={report.avg_oee != null ? String((report.avg_oee * 100).toFixed(1)) + "%" : "—"}
             />
             <StatCard
-              label="Total Downtime"
+              label={tx("Total Downtime")}
               value={`${report.total_downtime_minutes.toFixed(0)} min`}
               sub={`${(report.total_downtime_minutes / 60).toFixed(1)} hours`}
             />
@@ -101,31 +102,31 @@ export default function ProductionReportsPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <StatCard
-              label="Planned Qty Total"
+              label={tx("Planned Qty Total")}
               value={Number(report.planned_quantity_total).toLocaleString()}
             />
             <StatCard
-              label="Actual Qty Total"
+              label={tx("Actual Qty Total")}
               value={Number(report.actual_quantity_total).toLocaleString()}
             />
             <StatCard
-              label="Overall Variance"
+              label={tx("Overall Variance")}
               value={`${Number(report.overall_variance) >= 0 ? "+" : ""}${Number(report.overall_variance).toLocaleString()}`}
             />
           </div>
 
           {/* Orders table */}
           <div>
-            <h2 className="text-lg font-semibold text-gray-800 mb-3">Order Detail</h2>
+            <h2 className="text-lg font-semibold text-gray-800 mb-3">{tx("Order Detail")}</h2>
             <Table
               keyField="order_no"
               data={report.orders}
               emptyMessage="No orders in this period."
               columns={[
-                { header: "Date", accessor: "date" },
-                { header: "Order No", accessor: "order_no", className: "font-mono text-xs" },
+                { header: tx("Date"), accessor: "date" },
+                { header: tx("Order No"), accessor: "order_no", className: "font-mono text-xs" },
                 {
-                  header: "Product",
+                  header: tx("Product"),
                   accessor: (r) => (
                     <span>
                       <span className="font-mono text-xs text-gray-500">{r.product_sku}</span>{" "}
@@ -133,18 +134,18 @@ export default function ProductionReportsPage() {
                     </span>
                   ),
                 },
-                { header: "Batch", accessor: (r) => r.batch_no ?? "—" },
+                { header: tx("Batch"), accessor: (r) => r.batch_no ?? "—" },
                 {
-                  header: "Planned",
+                  header: tx("Planned"),
                   accessor: (r) => Number(r.planned_quantity).toLocaleString(),
                 },
                 {
-                  header: "Actual",
+                  header: tx("Actual"),
                   accessor: (r) =>
                     r.actual_quantity != null ? Number(r.actual_quantity).toLocaleString() : "—",
                 },
                 {
-                  header: "Variance",
+                  header: tx("Variance"),
                   accessor: (r) => {
                     if (r.variance == null) return "—";
                     const v = Number(r.variance);
@@ -157,11 +158,11 @@ export default function ProductionReportsPage() {
                   },
                 },
                 {
-                  header: "Downtime",
+                  header: tx("Downtime"),
                   accessor: (r) => r.downtime_minutes > 0 ? `${r.downtime_minutes} min` : "—",
                 },
                 {
-                  header: "Status",
+                  header: tx("Status"),
                   accessor: (r) => (
                     <Badge
                       label={r.status}
@@ -180,17 +181,17 @@ export default function ProductionReportsPage() {
           {/* Downtime summary */}
           {report.downtime_summary.length > 0 && (
             <div>
-              <h2 className="text-lg font-semibold text-gray-800 mb-3">Downtime Summary</h2>
+              <h2 className="text-lg font-semibold text-gray-800 mb-3">{tx("Downtime Summary")}</h2>
               <Table
                 keyField="reason"
                 data={report.downtime_summary}
                 emptyMessage=""
                 columns={[
-                  { header: "Reason", accessor: (d) => d.reason.replace(/_/g, " ") },
-                  { header: "Machine / Line", accessor: (d) => d.machine_id ?? "—" },
-                  { header: "Occurrences", accessor: "count" },
+                  { header: tx("Reason"), accessor: (d) => d.reason.replace(/_/g, " ") },
+                  { header: tx("Machine / Line"), accessor: (d) => d.machine_id ?? "—" },
+                  { header: tx("Occurrences"), accessor: "count" },
                   {
-                    header: "Total Duration",
+                    header: tx("Total Duration"),
                     accessor: (d) => `${d.total_minutes.toFixed(0)} min (${(d.total_minutes / 60).toFixed(1)} h)`,
                   },
                 ]}

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { secondarySalesApi, InventorySnapshot } from "@/lib/secondarySales";
+import { tx } from "@/lib/i18n/core";
 
 export default function DistributorInventoryPage() {
   const [snapshots, setSnapshots] = useState<InventorySnapshot[]>([]);
@@ -65,7 +66,7 @@ export default function DistributorInventoryPage() {
       setForm({ distributor_id: "", product_id: "", stock_qty: "", snapshot_date: new Date().toISOString().split("T")[0], notes: "" });
       load();
     } catch (err: any) {
-      setError(err?.response?.data?.detail || "Save failed");
+      setError(err?.response?.data?.detail || tx("Save failed"));
     } finally {
       setSaving(false);
     }
@@ -78,23 +79,23 @@ export default function DistributorInventoryPage() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Distributor Inventory</h1>
-          <p className="text-sm text-gray-500 mt-1">Stock snapshots at distributor level</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Distributor Inventory")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{tx("Stock snapshots at distributor level")}</p>
         </div>
         <button
           onClick={() => setShowModal(true)}
           className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
         >
-          + Add Snapshot
+          {tx("+ Add Snapshot")}
         </button>
       </div>
 
       {/* KPIs */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label: "Total Snapshots", value: snapshots.length },
-          { label: "Total Stock (units)", value: totalStock.toLocaleString() },
-          { label: "Overstock Risk (>60 days)", value: atRisk, color: "text-red-600" },
+          { label: tx("Total Snapshots"), value: snapshots.length },
+          { label: tx("Total Stock (units)"), value: totalStock.toLocaleString() },
+          { label: tx("Overstock Risk (>60 days)"), value: atRisk, color: "text-red-600" },
         ].map((k) => (
           <div key={k.label} className="bg-white rounded-lg border p-4">
             <p className="text-xs text-gray-500">{k.label}</p>
@@ -109,7 +110,7 @@ export default function DistributorInventoryPage() {
         onChange={(e) => setFilterDist(e.target.value)}
         className="border rounded-lg px-3 py-2 text-sm"
       >
-        <option value="">All Distributors</option>
+        <option value="">{tx("All Distributors")}</option>
         {distributors.map((d) => (
           <option key={d.id} value={d.id}>{d.name}</option>
         ))}
@@ -120,20 +121,20 @@ export default function DistributorInventoryPage() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-gray-600 uppercase text-xs">
             <tr>
-              <th className="px-4 py-3 text-left">Distributor</th>
-              <th className="px-4 py-3 text-left">Product</th>
+              <th className="px-4 py-3 text-left">{tx("Distributor")}</th>
+              <th className="px-4 py-3 text-left">{tx("Product")}</th>
               <th className="px-4 py-3 text-left">SKU</th>
-              <th className="px-4 py-3 text-right">Stock Qty</th>
-              <th className="px-4 py-3 text-right">Days of Stock</th>
-              <th className="px-4 py-3 text-right">ST Rate</th>
-              <th className="px-4 py-3 text-left">Snapshot Date</th>
+              <th className="px-4 py-3 text-right">{tx("Stock Qty")}</th>
+              <th className="px-4 py-3 text-right">{tx("Days of Stock")}</th>
+              <th className="px-4 py-3 text-right">{tx("ST Rate")}</th>
+              <th className="px-4 py-3 text-left">{tx("Snapshot Date")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {loading ? (
-              <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400">Loading…</td></tr>
+              <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400">{tx("Loading…")}</td></tr>
             ) : snapshots.length === 0 ? (
-              <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400">No inventory snapshots recorded</td></tr>
+              <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400">{tx("No inventory snapshots recorded")}</td></tr>
             ) : (
               snapshots.map((s) => {
                 const daysRisk = s.days_of_stock != null && Number(s.days_of_stock) > 60;
@@ -162,31 +163,31 @@ export default function DistributorInventoryPage() {
       {showModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
-            <h2 className="text-lg font-semibold mb-4">Add Inventory Snapshot</h2>
+            <h2 className="text-lg font-semibold mb-4">{tx("Add Inventory Snapshot")}</h2>
             <form onSubmit={handleSave} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">Distributor *</label>
+                <label className="block text-sm font-medium mb-1">{tx("Distributor *")}</label>
                 <select
                   required
                   value={form.distributor_id}
                   onChange={(e) => setForm({ ...form, distributor_id: e.target.value })}
                   className="w-full border rounded-lg px-3 py-2 text-sm"
                 >
-                  <option value="">Select…</option>
+                  <option value="">{tx("Select…")}</option>
                   {distributors.map((d) => (
                     <option key={d.id} value={d.id}>{d.name}</option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Product *</label>
+                <label className="block text-sm font-medium mb-1">{tx("Product *")}</label>
                 <select
                   required
                   value={form.product_id}
                   onChange={(e) => setForm({ ...form, product_id: e.target.value })}
                   className="w-full border rounded-lg px-3 py-2 text-sm"
                 >
-                  <option value="">Select…</option>
+                  <option value="">{tx("Select…")}</option>
                   {products.map((p) => (
                     <option key={p.id} value={p.id}>{p.sku} — {p.name}</option>
                   ))}
@@ -194,7 +195,7 @@ export default function DistributorInventoryPage() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Stock Qty *</label>
+                  <label className="block text-sm font-medium mb-1">{tx("Stock Qty *")}</label>
                   <input
                     required
                     type="number"
@@ -205,7 +206,7 @@ export default function DistributorInventoryPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Snapshot Date *</label>
+                  <label className="block text-sm font-medium mb-1">{tx("Snapshot Date *")}</label>
                   <input
                     required
                     type="date"
@@ -216,7 +217,7 @@ export default function DistributorInventoryPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Notes</label>
+                <label className="block text-sm font-medium mb-1">{tx("Notes")}</label>
                 <textarea
                   value={form.notes}
                   onChange={(e) => setForm({ ...form, notes: e.target.value })}
@@ -231,14 +232,14 @@ export default function DistributorInventoryPage() {
                   onClick={() => setShowModal(false)}
                   className="flex-1 py-2 border rounded-lg text-sm hover:bg-gray-50"
                 >
-                  Cancel
+                  {tx("Cancel")}
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
                   className="flex-1 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50"
                 >
-                  {saving ? "Saving…" : "Save"}
+                  {saving ? tx("Saving…") : tx("Save")}
                 </button>
               </div>
             </form>

@@ -18,13 +18,14 @@ import { ToastContainer } from "@/components/ui/Toast";
 import { useToast } from "@/hooks/useToast";
 import { RecipeBulkImportModal } from "@/components/import/RecipeBulkImportModal";
 import { PermissionGuard, RequirePermission } from "@/components/PermissionGuard";
+import { tx, lx } from "@/lib/i18n/core";
 
-const STATUS_FILTER_OPTIONS = [
-  { value: "", label: "All Statuses" },
-  { value: "DRAFT", label: "Draft" },
-  { value: "APPROVED", label: "Approved" },
-  { value: "OBSOLETE", label: "Obsolete" },
-];
+const STATUS_FILTER_OPTIONS = lx(() => [
+  { value: "", label: tx("All Statuses") },
+  { value: "DRAFT", label: tx("Draft") },
+  { value: "APPROVED", label: tx("Approved") },
+  { value: "OBSOLETE", label: tx("Obsolete") },
+]);
 
 const statusVariant = (s: RecipeStatus) =>
   s === "APPROVED" ? "green" : s === "DRAFT" ? "blue" : "red";
@@ -69,19 +70,19 @@ function RecipesListTab() {
       qc.invalidateQueries({ queryKey: ["recipes"] });
       setOpen(false);
       setForm(empty);
-      toast("success", "Recipe created", `${r.name} v${r.version} created as DRAFT.`);
+      toast("success", tx("Recipe created"), tx("{name} v{version} created as DRAFT.", { name: r.name, version: r.version }));
     },
-    onError: (err) => toast("error", "Failed to create recipe", extractApiError(err)),
+    onError: (err) => toast("error", tx("Failed to create recipe"), extractApiError(err)),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => recipesApi.deleteRecipe(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["recipes"] });
-      toast("success", "Recipe deleted", "Draft recipe removed.");
+      toast("success", tx("Recipe deleted"), tx("Draft recipe removed."));
       setDeletingId(null);
     },
-    onError: (err) => toast("error", "Failed to delete recipe", extractApiError(err)),
+    onError: (err) => toast("error", tx("Failed to delete recipe"), extractApiError(err)),
   });
 
   const deletingRecipe = recipes.find((r) => r.id === deletingId);
@@ -104,8 +105,8 @@ function RecipesListTab() {
 
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Recipes / Formulations</h1>
-          <p className="text-sm text-gray-500 mt-1">{recipes.length} total</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Recipes / Formulations")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{recipes.length} {tx("total")}</p>
         </div>
         <div className="flex items-center gap-2">
           <PermissionGuard permission="recipe.create">
@@ -114,14 +115,14 @@ function RecipesListTab() {
             />
           </PermissionGuard>
           <PermissionGuard permission="recipe.create">
-            <Button onClick={() => setOpen(true)}>+ New Recipe</Button>
+            <Button onClick={() => setOpen(true)}>{tx("+ New Recipe")}</Button>
           </PermissionGuard>
         </div>
       </div>
 
       <div className="mb-4 flex gap-3">
         <Input
-          placeholder="Search by name, product, version…"
+          placeholder={tx("Search by name, product, version…")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="max-w-xs"
@@ -145,7 +146,7 @@ function RecipesListTab() {
           emptyMessage={search ? "No recipes match your search." : "No recipes yet."}
           columns={[
             {
-              header: "Name",
+              header: tx("Name"),
               accessor: (r) => (
                 <button
                   className="text-indigo-600 hover:underline font-medium text-left"
@@ -155,9 +156,9 @@ function RecipesListTab() {
                 </button>
               ),
             },
-            { header: "Version", accessor: "version", className: "font-mono text-xs" },
+            { header: tx("Version"), accessor: "version", className: "font-mono text-xs" },
             {
-              header: "Product",
+              header: tx("Product"),
               accessor: (r) =>
                 r.product_sku ? (
                   <span>
@@ -170,22 +171,22 @@ function RecipesListTab() {
                 ),
             },
             {
-              header: "Status",
+              header: tx("Status"),
               accessor: (r) => (
                 <Badge label={r.status} variant={statusVariant(r.status)} />
               ),
             },
             {
-              header: "Active",
+              header: tx("Active"),
               accessor: (r) => (
                 <Badge
-                  label={r.is_active ? "Yes" : "No"}
+                  label={r.is_active ? tx("Yes") : tx("No")}
                   variant={r.is_active ? "green" : "red"}
                 />
               ),
             },
-            { header: "Valid From", accessor: (r) => r.valid_from ?? "—" },
-            { header: "Valid To", accessor: (r) => r.valid_to ?? "—" },
+            { header: tx("Valid From"), accessor: (r) => r.valid_from ?? "—" },
+            { header: tx("Valid To"), accessor: (r) => r.valid_to ?? "—" },
             {
               header: "",
               accessor: (r) => (
@@ -194,7 +195,7 @@ function RecipesListTab() {
                     variant="secondary"
                     onClick={() => router.push(`/dashboard/recipes/${r.id}`)}
                   >
-                    View
+                    {tx("View")}
                   </Button>
                   {r.status === "DRAFT" && (
                     <PermissionGuard permission="recipe.delete">
@@ -202,7 +203,7 @@ function RecipesListTab() {
                       onClick={() => setDeletingId(r.id)}
                       className="text-xs text-red-500 hover:text-red-700 hover:underline"
                     >
-                      Delete
+                      {tx("Delete")}
                     </button>
                     </PermissionGuard>
                   )}
@@ -215,21 +216,20 @@ function RecipesListTab() {
 
       {/* Delete Confirm Modal */}
       <PermissionGuard permission="recipe.delete">
-      <Modal open={!!deletingId} onClose={() => setDeletingId(null)} title="Delete Recipe">
+      <Modal open={!!deletingId} onClose={() => setDeletingId(null)} title={tx("Delete Recipe")}>
         <p className="text-sm text-gray-600 mb-4">
-          Are you sure you want to delete the DRAFT recipe{" "}
+          {tx("Are you sure you want to delete the DRAFT recipe")}{" "}
           <span className="font-semibold text-gray-900">{deletingRecipe?.name}</span>{" "}
-          <span className="font-mono text-xs text-gray-500">(v{deletingRecipe?.version})</span>?
-          This action cannot be undone.
+          <span className="font-mono text-xs text-gray-500">{tx("(v")}{deletingRecipe?.version})</span>{tx("? This action cannot be undone.")}
         </p>
         <div className="flex justify-end gap-3">
-          <Button variant="secondary" onClick={() => setDeletingId(null)}>Cancel</Button>
+          <Button variant="secondary" onClick={() => setDeletingId(null)}>{tx("Cancel")}</Button>
           <Button
             variant="danger"
             loading={deleteMutation.isPending}
             onClick={() => deletingId && deleteMutation.mutate(deletingId)}
           >
-            Delete
+            {tx("Delete")}
           </Button>
         </div>
       </Modal>
@@ -242,7 +242,7 @@ function RecipesListTab() {
           setOpen(false);
           setForm(empty);
         }}
-        title="New Recipe / Formulation"
+        title={tx("New Recipe / Formulation")}
       >
         <form
           onSubmit={(e) => {
@@ -252,39 +252,39 @@ function RecipesListTab() {
           className="space-y-4"
         >
           <Select
-            label="Product *"
-            options={[{ value: "", label: "Select a product…" }, ...productOptions]}
+            label={tx("Product *")}
+            options={[{ value: "", label: tx("Select a product…") }, ...productOptions]}
             value={form.product_id}
             onChange={(e) => set("product_id", e.target.value)}
           />
           <div className="grid grid-cols-2 gap-4">
             <Input
-              label="Recipe Name *"
+              label={tx("Recipe Name *")}
               value={form.name}
               onChange={(e) => set("name", e.target.value)}
               required
             />
             <Input
-              label="Version *"
+              label={tx("Version *")}
               value={form.version}
               onChange={(e) => set("version", e.target.value)}
               required
-              placeholder="e.g. 1.0"
+              placeholder={tx("e.g. 1.0")}
             />
           </div>
           <Input
-            label="Description"
+            label={tx("Description")}
             value={form.description ?? ""}
             onChange={(e) => set("description", e.target.value)}
           />
           <div className="grid grid-cols-2 gap-4">
             <Input
-              label="Valid From"
+              label={tx("Valid From")}
               type="date"
               onChange={(e) => set("valid_from", e.target.value || undefined)}
             />
             <Input
-              label="Valid To"
+              label={tx("Valid To")}
               type="date"
               onChange={(e) => set("valid_to", e.target.value || undefined)}
             />
@@ -298,14 +298,14 @@ function RecipesListTab() {
                 setForm(empty);
               }}
             >
-              Cancel
+              {tx("Cancel")}
             </Button>
             <Button
               type="submit"
               loading={create.isPending}
               disabled={!form.product_id || !form.name || !form.version}
             >
-              Create Recipe
+              {tx("Create Recipe")}
             </Button>
           </div>
         </form>
@@ -318,11 +318,11 @@ function RecipesListTab() {
 
 export default function RecipesPage() {
   const tabs = [
-    { key: "recipes", label: "Recipes", permission: "recipe.view", content: <RecipesListTab /> },
+    { key: "recipes", label: tx("Recipes"), permission: "recipe.view", content: <RecipesListTab /> },
   ];
   return (
     <ModuleWorkspace
-      title="Recipes"
+      title={tx("Recipes")}
       description="Production recipes, instructions, ingredient steps"
       permission="recipe.view"
       tabs={tabs}

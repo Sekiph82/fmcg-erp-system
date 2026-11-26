@@ -35,6 +35,7 @@ import {
   type BoilerStatus,
 } from "@/lib/steam";
 import { importApi, type ImportResult } from "@/lib/importApi";
+import { tx } from "@/lib/i18n/core";
 
 // ── Palette ────────────────────────────────────────────────────────────────────
 const CYAN   = "#22d3ee";
@@ -113,7 +114,7 @@ function ImportModal({
         qc.invalidateQueries({ queryKey: ["steam-kpis"] });
       }
     } catch (e: unknown) {
-      setErr(e instanceof Error ? e.message : "Unknown error");
+      setErr(e instanceof Error ? e.message : tx("Unknown error"));
     } finally {
       setBusy(false);
     }
@@ -122,13 +123,13 @@ function ImportModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
       <div className="bg-slate-800 border border-slate-700 rounded-xl w-full max-w-lg p-6 space-y-4">
-        <h3 className="text-white font-semibold text-lg">Import {label}</h3>
+        <h3 className="text-white font-semibold text-lg">{tx("Import")} {label}</h3>
         <div className="space-y-2">
           <button
             onClick={() => importApi.downloadTemplate(module)}
             className="text-xs text-cyan-400 hover:text-cyan-300 underline"
           >
-            Download CSV template
+            {tx("Download CSV template")}
           </button>
           <input
             type="file" accept=".csv"
@@ -140,12 +141,12 @@ function ImportModal({
         {result && (
           <div className="text-sm space-y-1">
             <p className="text-slate-300">
-              Rows: {result.total_rows} | Valid: {result.valid_rows} | Failed: {result.failed_rows}
+              {tx("Rows:")} {result.total_rows} {tx("| Valid:")} {result.valid_rows} {tx("| Failed:")} {result.failed_rows}
             </p>
             {result.errors.slice(0, 5).map((e, i) => (
-              <p key={i} className="text-red-400">Row {e.row}: {e.message}</p>
+              <p key={i} className="text-red-400">{tx("Row")} {e.row}: {e.message}</p>
             ))}
-            {result.imported && <p className="text-emerald-400 font-medium">Import complete.</p>}
+            {result.imported && <p className="text-emerald-400 font-medium">{tx("Import complete.")}</p>}
           </div>
         )}
         <div className="flex gap-2 pt-2">
@@ -154,17 +155,17 @@ function ImportModal({
             onClick={() => run(false)}
             className="px-3 py-1.5 text-sm bg-slate-700 hover:bg-slate-600 text-white rounded disabled:opacity-40"
           >
-            {busy ? "…" : "Validate"}
+            {busy ? "…" : tx("Validate")}
           </button>
           <button
             disabled={!file || busy}
             onClick={() => run(true)}
             className="px-3 py-1.5 text-sm bg-cyan-600 hover:bg-cyan-500 text-white rounded disabled:opacity-40"
           >
-            {busy ? "…" : "Import"}
+            {busy ? "…" : tx("Import")}
           </button>
           <button onClick={onClose} className="ml-auto px-3 py-1.5 text-sm text-slate-400 hover:text-white">
-            Close
+            {tx("Close")}
           </button>
         </div>
       </div>
@@ -319,9 +320,9 @@ export default function SteamPage() {
       {/* ── Header ────────────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-white">Steam &amp; Boiler Management</h1>
+          <h1 className="text-2xl font-semibold text-white">{tx("Steam & Boiler Management")}</h1>
           <p className="text-sm text-slate-400 mt-0.5">
-            Operational records, KPI monitoring, and cost allocation for plant steam systems
+            {tx("Operational records, KPI monitoring, and cost allocation for plant steam systems")}
           </p>
         </div>
         <div className="flex gap-2">
@@ -329,19 +330,19 @@ export default function SteamPage() {
             onClick={() => setImportModule("boiler_records")}
             className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-slate-700 hover:bg-slate-600 rounded text-slate-200"
           >
-            Import Records
+            {tx("Import Records")}
           </button>
           <button
             onClick={() => setImportModule("steam_transactions")}
             className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-slate-700 hover:bg-slate-600 rounded text-slate-200"
           >
-            Import Transactions
+            {tx("Import Transactions")}
           </button>
           <button
             onClick={() => { setForm(emptyForm()); setCreateOpen(true); }}
             className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-cyan-600 hover:bg-cyan-500 rounded text-white"
           >
-            + Add Record
+            {tx("+ Add Record")}
           </button>
         </div>
       </div>
@@ -350,37 +351,37 @@ export default function SteamPage() {
       <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           <div>
-            <label className="text-xs text-slate-400 block mb-1">Date From</label>
+            <label className="text-xs text-slate-400 block mb-1">{tx("Date From")}</label>
             <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
               className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-sm text-white" />
           </div>
           <div>
-            <label className="text-xs text-slate-400 block mb-1">Date To</label>
+            <label className="text-xs text-slate-400 block mb-1">{tx("Date To")}</label>
             <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
               className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-sm text-white" />
           </div>
           <div>
-            <label className="text-xs text-slate-400 block mb-1">Boiler Asset</label>
+            <label className="text-xs text-slate-400 block mb-1">{tx("Boiler Asset")}</label>
             <select value={assetId} onChange={e => setAssetId(e.target.value)}
               className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-sm text-white">
-              <option value="">All boilers</option>
+              <option value="">{tx("All boilers")}</option>
               {assets.map(a => (
                 <option key={a.id} value={a.id}>{a.asset_no} — {a.name}</option>
               ))}
             </select>
           </div>
           <div>
-            <label className="text-xs text-slate-400 block mb-1">Department</label>
+            <label className="text-xs text-slate-400 block mb-1">{tx("Department")}</label>
             <input type="text" value={department} onChange={e => setDepartment(e.target.value)}
-              placeholder="e.g. Utilities"
+              placeholder={tx("e.g. Utilities")}
               className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-sm text-white placeholder-slate-500" />
           </div>
           <div>
-            <label className="text-xs text-slate-400 block mb-1">Shift</label>
+            <label className="text-xs text-slate-400 block mb-1">{tx("Shift")}</label>
             <select value={shiftRef} onChange={e => setShiftRef(e.target.value)}
               className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-sm text-white">
-              <option value="">All shifts</option>
-              {["A", "B", "C", "Day", "Night"].map(s => (
+              <option value="">{tx("All shifts")}</option>
+              {["A", "B", "C", tx("Day"), tx("Night")].map(s => (
                 <option key={s} value={s}>{s}</option>
               ))}
             </select>
@@ -390,23 +391,23 @@ export default function SteamPage() {
 
       {/* ── KPI strip ─────────────────────────────────────────────────────────── */}
       {kpisLoading ? (
-        <div className="text-slate-400 text-sm">Loading KPIs…</div>
+        <div className="text-slate-400 text-sm">{tx("Loading KPIs…")}</div>
       ) : K && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
           <KPICard
-            label="Steam Generated"
+            label={tx("Steam Generated")}
             value={`${n(K.total_steam_generated_tons, 1)} t`}
             sub={`${n(K.total_steam_generated_kg, 0)} kg`}
             accent="border-cyan-500/40"
           />
           <KPICard
-            label="Fuel Consumed"
+            label={tx("Fuel Consumed")}
             value={`${n(K.total_fuel_consumed, 1)} ${K.fuel_unit ?? ""}`}
             sub={K.gas_per_ton_steam != null ? `${n(K.gas_per_ton_steam, 2)} ${K.fuel_unit ?? ""}/t steam` : undefined}
             accent="border-orange-500/40"
           />
           <KPICard
-            label="Boiler Efficiency"
+            label={tx("Boiler Efficiency")}
             value={K.avg_efficiency_pct != null ? `${n(K.avg_efficiency_pct, 1)}%` : "—"}
             sub={K.avg_boiler_load_pct != null ? `Load: ${n(K.avg_boiler_load_pct, 1)}%` : undefined}
             flag={K.flag_low_efficiency}
@@ -414,7 +415,7 @@ export default function SteamPage() {
             accent="border-green-500/40"
           />
           <KPICard
-            label="Condensate Recovery"
+            label={tx("Condensate Recovery")}
             value={K.condensate_recovery_pct != null ? `${n(K.condensate_recovery_pct, 1)}%` : "—"}
             sub={`${n(K.total_condensate_m3, 2)} m³ returned`}
             flag={K.flag_low_condensate}
@@ -422,7 +423,7 @@ export default function SteamPage() {
             accent="border-blue-500/40"
           />
           <KPICard
-            label="Blowdown Loss"
+            label={tx("Blowdown Loss")}
             value={K.blowdown_loss_pct != null ? `${n(K.blowdown_loss_pct, 2)}%` : "—"}
             sub={`${n(K.total_blowdown_litres, 0)} L blown`}
             flag={K.flag_high_blowdown}
@@ -430,31 +431,31 @@ export default function SteamPage() {
             accent="border-amber-500/40"
           />
           <KPICard
-            label="Feedwater Used"
+            label={tx("Feedwater Used")}
             value={`${n(K.total_feedwater_m3, 2)} m³`}
             sub={K.water_per_ton_steam != null ? `${n(K.water_per_ton_steam, 3)} m³/t` : undefined}
             accent="border-sky-500/40"
           />
           <KPICard
-            label="Availability"
+            label={tx("Availability")}
             value={K.availability_pct != null ? `${n(K.availability_pct, 1)}%` : "—"}
             sub={K.total_burner_hours != null ? `${n(K.total_burner_hours, 1)} burner hrs` : undefined}
             accent="border-violet-500/40"
           />
           <KPICard
-            label="Downtime"
+            label={tx("Downtime")}
             value={K.total_downtime_hours != null ? `${n(K.total_downtime_hours, 1)} h` : "—"}
             sub={`${K.total_start_stops} start-stops`}
             accent="border-slate-500/40"
           />
           <KPICard
-            label="Steam Cost / Ton"
+            label={tx("Steam Cost / Ton")}
             value={K.steam_cost_per_ton != null ? `$${n(K.steam_cost_per_ton, 2)}` : "—"}
             sub={K.steam_cost_total != null ? `Total: $${n(K.steam_cost_total, 0)}` : undefined}
             accent="border-emerald-500/40"
           />
           <KPICard
-            label="Records / Anomalies"
+            label={tx("Records / Anomalies")}
             value={`${K.record_count}`}
             sub={`${K.anomaly_count} anomalies · ${K.maintenance_count} maintenance`}
             accent="border-slate-600"
@@ -464,9 +465,9 @@ export default function SteamPage() {
 
       {/* ── Trend chart ───────────────────────────────────────────────────────── */}
       <div className="bg-slate-800 border border-slate-700 rounded-lg p-4 space-y-3">
-        <h2 className="text-sm font-medium text-slate-200">Daily Trend — Steam &amp; Fuel</h2>
+        <h2 className="text-sm font-medium text-slate-200">{tx("Daily Trend — Steam & Fuel")}</h2>
         {trendData.length === 0 ? (
-          <p className="text-slate-500 text-sm py-8 text-center">No data in selected range</p>
+          <p className="text-slate-500 text-sm py-8 text-center">{tx("No data in selected range")}</p>
         ) : (
           <ResponsiveContainer width="100%" height={260}>
             <AreaChart data={trendData} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
@@ -500,7 +501,7 @@ export default function SteamPage() {
       {/* ── Efficiency trend ──────────────────────────────────────────────────── */}
       {trendData.some(t => t.eff != null) && (
         <div className="bg-slate-800 border border-slate-700 rounded-lg p-4 space-y-3">
-          <h2 className="text-sm font-medium text-slate-200">Daily Boiler Efficiency %</h2>
+          <h2 className="text-sm font-medium text-slate-200">{tx("Daily Boiler Efficiency %")}</h2>
           <ResponsiveContainer width="100%" height={180}>
             <LineChart data={trendData} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
@@ -522,9 +523,9 @@ export default function SteamPage() {
 
         {/* Shift */}
         <div className="bg-slate-800 border border-slate-700 rounded-lg p-4 space-y-3">
-          <h2 className="text-sm font-medium text-slate-200">Shift Analysis</h2>
+          <h2 className="text-sm font-medium text-slate-200">{tx("Shift Analysis")}</h2>
           {shiftData.length === 0 ? (
-            <p className="text-slate-500 text-sm py-6 text-center">No shift data</p>
+            <p className="text-slate-500 text-sm py-6 text-center">{tx("No shift data")}</p>
           ) : (
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={shiftData} layout="vertical" margin={{ top: 0, right: 16, left: 40, bottom: 0 }}>
@@ -548,7 +549,7 @@ export default function SteamPage() {
         {/* Breakdown */}
         <div className="bg-slate-800 border border-slate-700 rounded-lg p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-medium text-slate-200">Steam Consumption Breakdown</h2>
+            <h2 className="text-sm font-medium text-slate-200">{tx("Steam Consumption Breakdown")}</h2>
             <select
               value={breakdownDim}
               onChange={e => setBreakdownDim(e.target.value as typeof breakdownDim)}
@@ -560,7 +561,7 @@ export default function SteamPage() {
             </select>
           </div>
           {breakdownData.length === 0 ? (
-            <p className="text-slate-500 text-sm py-6 text-center">No transaction data for breakdown</p>
+            <p className="text-slate-500 text-sm py-6 text-center">{tx("No transaction data for breakdown")}</p>
           ) : (
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={breakdownData} layout="vertical" margin={{ top: 0, right: 16, left: 60, bottom: 0 }}>
@@ -583,10 +584,10 @@ export default function SteamPage() {
             <table className="w-full text-xs mt-2">
               <thead>
                 <tr className="text-slate-400 text-left">
-                  <th className="pb-1">Group</th>
-                  <th className="pb-1 text-right">Steam (t)</th>
+                  <th className="pb-1">{tx("Group")}</th>
+                  <th className="pb-1 text-right">{tx("Steam (t)")}</th>
                   <th className="pb-1 text-right">%</th>
-                  <th className="pb-1 text-right">Cost</th>
+                  <th className="pb-1 text-right">{tx("Cost")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -607,36 +608,36 @@ export default function SteamPage() {
       {/* ── Boiler records table ──────────────────────────────────────────────── */}
       <div className="bg-slate-800 border border-slate-700 rounded-lg overflow-hidden">
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700">
-          <h2 className="text-sm font-medium text-slate-200">Boiler Operational Records</h2>
+          <h2 className="text-sm font-medium text-slate-200">{tx("Boiler Operational Records")}</h2>
           <div className="flex gap-2">
             <button
               onClick={() => downloadBoilerCsv(scope as Record<string, string | number | boolean | undefined>, "boiler_records.csv")}
               className="text-xs text-slate-400 hover:text-white px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded"
             >
-              Export CSV
+              {tx("Export CSV")}
             </button>
           </div>
         </div>
 
         {recsLoading ? (
-          <div className="p-6 text-slate-400 text-sm">Loading records…</div>
+          <div className="p-6 text-slate-400 text-sm">{tx("Loading records…")}</div>
         ) : records.length === 0 ? (
-          <div className="p-6 text-slate-500 text-sm text-center">No records found</div>
+          <div className="p-6 text-slate-500 text-sm text-center">{tx("No records found")}</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-slate-900/40">
                 <tr className="text-xs text-slate-400 text-left">
-                  <th className="px-4 py-2">Record No.</th>
-                  <th className="px-4 py-2">Asset</th>
-                  <th className="px-4 py-2">Date/Time</th>
-                  <th className="px-4 py-2">Shift</th>
-                  <th className="px-4 py-2 text-right">Steam (kg)</th>
-                  <th className="px-4 py-2 text-right">Fuel</th>
-                  <th className="px-4 py-2 text-right">Eff. %</th>
-                  <th className="px-4 py-2 text-right">Load %</th>
-                  <th className="px-4 py-2">Status</th>
-                  <th className="px-4 py-2 text-center">Flags</th>
+                  <th className="px-4 py-2">{tx("Record No.")}</th>
+                  <th className="px-4 py-2">{tx("Asset")}</th>
+                  <th className="px-4 py-2">{tx("Date/Time")}</th>
+                  <th className="px-4 py-2">{tx("Shift")}</th>
+                  <th className="px-4 py-2 text-right">{tx("Steam (kg)")}</th>
+                  <th className="px-4 py-2 text-right">{tx("Fuel")}</th>
+                  <th className="px-4 py-2 text-right">{tx("Eff. %")}</th>
+                  <th className="px-4 py-2 text-right">{tx("Load %")}</th>
+                  <th className="px-4 py-2">{tx("Status")}</th>
+                  <th className="px-4 py-2 text-center">{tx("Flags")}</th>
                   <th className="px-4 py-2"></th>
                 </tr>
               </thead>
@@ -671,8 +672,8 @@ export default function SteamPage() {
                       <StatusBadge status={rec.status as BoilerStatus} />
                     </td>
                     <td className="px-4 py-2 text-center text-sm">
-                      {rec.is_anomaly        && <span title="Anomaly" className="text-red-400 mr-1">⚠</span>}
-                      {rec.maintenance_flag  && <span title="Maintenance" className="text-amber-400">🔧</span>}
+                      {rec.is_anomaly        && <span title={tx("Anomaly")} className="text-red-400 mr-1">⚠</span>}
+                      {rec.maintenance_flag  && <span title={tx("Maintenance")} className="text-amber-400">🔧</span>}
                     </td>
                     <td className="px-4 py-2" onClick={e => e.stopPropagation()}>
                       <div className="flex gap-2 justify-end">
@@ -680,13 +681,13 @@ export default function SteamPage() {
                           onClick={() => { setForm({ ...rec }); setEditRec(rec); }}
                           className="text-xs text-cyan-400 hover:text-cyan-300"
                         >
-                          Edit
+                          {tx("Edit")}
                         </button>
                         <button
                           onClick={() => setDeleteRec(rec)}
                           className="text-xs text-red-400 hover:text-red-300"
                         >
-                          Delete
+                          {tx("Delete")}
                         </button>
                       </div>
                     </td>
@@ -699,12 +700,12 @@ export default function SteamPage() {
 
         {/* Pagination */}
         <div className="flex items-center justify-between px-4 py-2 border-t border-slate-700 text-xs text-slate-400">
-          <span>Showing {recPage * REC_LIMIT + 1}–{recPage * REC_LIMIT + records.length}</span>
+          <span>{tx("Showing")} {recPage * REC_LIMIT + 1}–{recPage * REC_LIMIT + records.length}</span>
           <div className="flex gap-2">
             <button disabled={recPage === 0} onClick={() => setRecPage(p => p - 1)}
-              className="px-2 py-1 bg-slate-700 rounded disabled:opacity-40">Prev</button>
+              className="px-2 py-1 bg-slate-700 rounded disabled:opacity-40">{tx("Prev")}</button>
             <button disabled={records.length < REC_LIMIT} onClick={() => setRecPage(p => p + 1)}
-              className="px-2 py-1 bg-slate-700 rounded disabled:opacity-40">Next</button>
+              className="px-2 py-1 bg-slate-700 rounded disabled:opacity-40">{tx("Next")}</button>
           </div>
         </div>
       </div>
@@ -730,12 +731,12 @@ export default function SteamPage() {
               <div className="flex gap-2 flex-wrap">
                 {viewRec.is_anomaly && (
                   <span className="px-2 py-0.5 bg-red-500/10 border border-red-500/20 text-red-400 text-xs rounded">
-                    Anomaly: {viewRec.anomaly_note ?? "flagged"}
+                    {tx("Anomaly:")} {viewRec.anomaly_note ?? tx("flagged")}
                   </span>
                 )}
                 {viewRec.maintenance_flag && (
                   <span className="px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs rounded">
-                    Maintenance flag
+                    {tx("Maintenance flag")}
                   </span>
                 )}
               </div>
@@ -783,10 +784,10 @@ export default function SteamPage() {
                 onClick={() => { setForm({ ...viewRec }); setEditRec(viewRec); setViewRec(null); }}
                 className="px-3 py-1.5 text-sm bg-cyan-600 hover:bg-cyan-500 text-white rounded"
               >
-                Edit
+                {tx("Edit")}
               </button>
               <button onClick={() => setViewRec(null)} className="px-3 py-1.5 text-sm text-slate-400 hover:text-white">
-                Close
+                {tx("Close")}
               </button>
             </div>
           </div>
@@ -798,52 +799,52 @@ export default function SteamPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className="bg-slate-800 border border-slate-700 rounded-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-6 space-y-5">
             <h3 className="text-white font-semibold text-lg">
-              {editRec ? "Edit Boiler Record" : "New Boiler Record"}
+              {editRec ? tx("Edit Boiler Record") : tx("New Boiler Record")}
             </h3>
 
             {/* Asset + datetime */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-xs text-slate-400 block mb-1">Boiler Asset *</label>
+                <label className="text-xs text-slate-400 block mb-1">{tx("Boiler Asset *")}</label>
                 <select value={form.asset_id ?? ""}
                   onChange={e => fSet("asset_id", e.target.value)}
                   className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-sm text-white">
-                  <option value="">Select asset…</option>
+                  <option value="">{tx("Select asset…")}</option>
                   {assets.map(a => (
                     <option key={a.id} value={a.id}>{a.asset_no} — {a.name}</option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="text-xs text-slate-400 block mb-1">Record Date/Time *</label>
+                <label className="text-xs text-slate-400 block mb-1">{tx("Record Date/Time *")}</label>
                 <input type="datetime-local" value={(form.record_datetime ?? "").slice(0, 16)}
                   onChange={e => fSet("record_datetime", e.target.value)}
                   className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-sm text-white" />
               </div>
               <div>
-                <label className="text-xs text-slate-400 block mb-1">Shift</label>
+                <label className="text-xs text-slate-400 block mb-1">{tx("Shift")}</label>
                 <select value={form.shift_ref ?? ""}
                   onChange={e => fSet("shift_ref", e.target.value || undefined)}
                   className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-sm text-white">
                   <option value="">—</option>
-                  {["A", "B", "C", "Day", "Night"].map(s => <option key={s}>{s}</option>)}
+                  {["A", "B", "C", tx("Day"), tx("Night")].map(s => <option key={s}>{s}</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-xs text-slate-400 block mb-1">Department</label>
+                <label className="text-xs text-slate-400 block mb-1">{tx("Department")}</label>
                 <input type="text" value={form.department ?? ""}
                   onChange={e => fSet("department", e.target.value || undefined)}
                   className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-sm text-white placeholder-slate-500"
-                  placeholder="e.g. Utilities" />
+                  placeholder={tx("e.g. Utilities")} />
               </div>
               <div>
-                <label className="text-xs text-slate-400 block mb-1">Period Hours</label>
+                <label className="text-xs text-slate-400 block mb-1">{tx("Period Hours")}</label>
                 <input type="number" step="0.01" value={form.period_hours ?? ""}
                   onChange={e => fSet("period_hours", e.target.value ? +e.target.value : undefined)}
                   className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-sm text-white" />
               </div>
               <div>
-                <label className="text-xs text-slate-400 block mb-1">Status</label>
+                <label className="text-xs text-slate-400 block mb-1">{tx("Status")}</label>
                 <select value={form.status ?? "RUNNING"}
                   onChange={e => fSet("status", e.target.value)}
                   className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-sm text-white">
@@ -856,7 +857,7 @@ export default function SteamPage() {
 
             {/* Steam */}
             <fieldset className="border border-slate-700 rounded p-3 space-y-3">
-              <legend className="text-xs text-slate-400 px-1">Steam Parameters</legend>
+              <legend className="text-xs text-slate-400 px-1">{tx("Steam Parameters")}</legend>
               <div className="grid grid-cols-3 gap-3">
                 {[
                   ["Steam Generated (kg)",   "steam_generated_kg"],
@@ -879,7 +880,7 @@ export default function SteamPage() {
 
             {/* Water */}
             <fieldset className="border border-slate-700 rounded p-3 space-y-3">
-              <legend className="text-xs text-slate-400 px-1">Water Consumption</legend>
+              <legend className="text-xs text-slate-400 px-1">{tx("Water Consumption")}</legend>
               <div className="grid grid-cols-3 gap-3">
                 {[
                   ["Feedwater (m³)",         "feedwater_consumed_m3"],
@@ -902,10 +903,10 @@ export default function SteamPage() {
 
             {/* Fuel & combustion */}
             <fieldset className="border border-slate-700 rounded p-3 space-y-3">
-              <legend className="text-xs text-slate-400 px-1">Fuel &amp; Combustion</legend>
+              <legend className="text-xs text-slate-400 px-1">{tx("Fuel & Combustion")}</legend>
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="text-xs text-slate-400 block mb-1">Fuel Type</label>
+                  <label className="text-xs text-slate-400 block mb-1">{tx("Fuel Type")}</label>
                   <select value={form.fuel_type ?? ""}
                     onChange={e => fSet("fuel_type", e.target.value || undefined)}
                     className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-sm text-white">
@@ -916,18 +917,18 @@ export default function SteamPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs text-slate-400 block mb-1">Fuel Consumed</label>
+                  <label className="text-xs text-slate-400 block mb-1">{tx("Fuel Consumed")}</label>
                   <input type="number" step="any" value={form.fuel_consumption ?? ""}
                     onChange={e => fSet("fuel_consumption", e.target.value ? +e.target.value : undefined)}
                     className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-sm text-white" />
                 </div>
                 <div>
-                  <label className="text-xs text-slate-400 block mb-1">Fuel Unit</label>
+                  <label className="text-xs text-slate-400 block mb-1">{tx("Fuel Unit")}</label>
                   <select value={form.fuel_unit ?? ""}
                     onChange={e => fSet("fuel_unit", e.target.value || undefined)}
                     className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-sm text-white">
                     <option value="">—</option>
-                    {["m3", "L", "kg", "ton"].map(u => <option key={u}>{u}</option>)}
+                    {[tx("m3"), "L", tx("kg"), tx("ton")].map(u => <option key={u}>{u}</option>)}
                   </select>
                 </div>
                 {[
@@ -951,7 +952,7 @@ export default function SteamPage() {
 
             {/* Operational */}
             <fieldset className="border border-slate-700 rounded p-3 space-y-3">
-              <legend className="text-xs text-slate-400 px-1">Operational</legend>
+              <legend className="text-xs text-slate-400 px-1">{tx("Operational")}</legend>
               <div className="grid grid-cols-3 gap-3">
                 {[
                   ["Burner Runtime (h)",     "burner_runtime_hours"],
@@ -969,18 +970,18 @@ export default function SteamPage() {
                   </div>
                 ))}
                 <div>
-                  <label className="text-xs text-slate-400 block mb-1">Chemical Unit</label>
+                  <label className="text-xs text-slate-400 block mb-1">{tx("Chemical Unit")}</label>
                   <input type="text" value={form.chemical_dosing_unit ?? ""}
                     onChange={e => fSet("chemical_dosing_unit", e.target.value || undefined)}
                     className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-sm text-white"
-                    placeholder="kg / L / ppm" />
+                    placeholder={tx("kg / L / ppm")} />
                 </div>
                 <div className="col-span-3">
-                  <label className="text-xs text-slate-400 block mb-1">Downtime Reason</label>
+                  <label className="text-xs text-slate-400 block mb-1">{tx("Downtime Reason")}</label>
                   <input type="text" value={form.downtime_reason ?? ""}
                     onChange={e => fSet("downtime_reason", e.target.value || undefined)}
                     className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-sm text-white"
-                    placeholder="e.g. Tube scaling, Safety valve test…" />
+                    placeholder={tx("e.g. Tube scaling, Safety valve test…")} />
                 </div>
               </div>
             </fieldset>
@@ -990,15 +991,15 @@ export default function SteamPage() {
               <div className="flex items-center gap-2">
                 <input type="checkbox" id="maint_flag" checked={!!form.maintenance_flag}
                   onChange={e => fSet("maintenance_flag", e.target.checked)} />
-                <label htmlFor="maint_flag" className="text-sm text-slate-300">Maintenance flag</label>
+                <label htmlFor="maint_flag" className="text-sm text-slate-300">{tx("Maintenance flag")}</label>
               </div>
               <div className="flex items-center gap-2">
                 <input type="checkbox" id="anomaly_flag" checked={!!form.is_anomaly}
                   onChange={e => fSet("is_anomaly", e.target.checked)} />
-                <label htmlFor="anomaly_flag" className="text-sm text-slate-300">Anomaly</label>
+                <label htmlFor="anomaly_flag" className="text-sm text-slate-300">{tx("Anomaly")}</label>
               </div>
               <div className="col-span-2">
-                <label className="text-xs text-slate-400 block mb-1">Notes</label>
+                <label className="text-xs text-slate-400 block mb-1">{tx("Notes")}</label>
                 <textarea value={form.notes ?? ""}
                   onChange={e => fSet("notes", e.target.value || undefined)}
                   rows={2}
@@ -1020,13 +1021,13 @@ export default function SteamPage() {
                 disabled={createMut.isPending || updateMut.isPending}
                 className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded text-sm disabled:opacity-40"
               >
-                {(createMut.isPending || updateMut.isPending) ? "Saving…" : editRec ? "Save Changes" : "Create Record"}
+                {(createMut.isPending || updateMut.isPending) ? tx("Saving…") : editRec ? tx("Save Changes") : tx("Create Record")}
               </button>
               <button
                 onClick={() => { setCreateOpen(false); setEditRec(null); }}
                 className="px-4 py-2 text-slate-400 hover:text-white text-sm"
               >
-                Cancel
+                {tx("Cancel")}
               </button>
             </div>
           </div>
@@ -1037,9 +1038,9 @@ export default function SteamPage() {
       {deleteRec && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className="bg-slate-800 border border-slate-700 rounded-xl w-full max-w-sm p-6 space-y-4">
-            <h3 className="text-white font-semibold">Delete Record</h3>
+            <h3 className="text-white font-semibold">{tx("Delete Record")}</h3>
             <p className="text-sm text-slate-300">
-              Delete <span className="font-mono text-slate-200">{deleteRec.record_no}</span>? This cannot be undone.
+              {tx("Delete")} <span className="font-mono text-slate-200">{deleteRec.record_no}</span>{tx("? This cannot be undone.")}
             </p>
             <div className="flex gap-2">
               <button
@@ -1047,10 +1048,10 @@ export default function SteamPage() {
                 disabled={deleteMut.isPending}
                 className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded text-sm disabled:opacity-40"
               >
-                {deleteMut.isPending ? "Deleting…" : "Delete"}
+                {deleteMut.isPending ? tx("Deleting…") : tx("Delete")}
               </button>
               <button onClick={() => setDeleteRec(null)} className="px-4 py-2 text-slate-400 hover:text-white text-sm">
-                Cancel
+                {tx("Cancel")}
               </button>
             </div>
           </div>
@@ -1061,14 +1062,14 @@ export default function SteamPage() {
       {importModule === "boiler_records" && (
         <ImportModal
           module="boiler_records"
-          label="Boiler Operational Records"
+          label={tx("Boiler Operational Records")}
           onClose={() => setImportModule(null)}
         />
       )}
       {importModule === "steam_transactions" && (
         <ImportModal
           module="steam_transactions"
-          label="Steam Consumption Transactions"
+          label={tx("Steam Consumption Transactions")}
           onClose={() => setImportModule(null)}
         />
       )}

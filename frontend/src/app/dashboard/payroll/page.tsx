@@ -7,6 +7,7 @@ import { payrollKeApi, PayrollRun, STATUS_COLORS, MONTH_NAMES, PayrollInsight } 
 import Link from "next/link";
 import { RequirePermission } from "@/components/PermissionGuard";
 import { useAuth } from "@/context/AuthContext";
+import { tx } from "@/lib/i18n/core";
 
 function PayrollDashboardLegacy() {
   return (
@@ -81,21 +82,21 @@ function PayrollDashboardContent() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Kenya Payroll</h1>
-          <p className="text-sm text-gray-500 mt-1">PAYE · NHIF · NSSF · AHL — Finance Act 2023/2024</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Kenya Payroll")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{tx("PAYE · NHIF · NSSF · AHL — Finance Act 2023/2024")}</p>
         </div>
         <div className="flex gap-2 flex-wrap">
-          <Link href="/dashboard/payroll/profiles" className="px-3 py-2 text-sm border rounded-lg hover:bg-gray-50">Payroll Profiles</Link>
-          <Link href="/dashboard/payroll/reports" className="px-3 py-2 text-sm border rounded-lg hover:bg-gray-50">Reports</Link>
+          <Link href="/dashboard/payroll/profiles" className="px-3 py-2 text-sm border rounded-lg hover:bg-gray-50">{tx("Payroll Profiles")}</Link>
+          <Link href="/dashboard/payroll/reports" className="px-3 py-2 text-sm border rounded-lg hover:bg-gray-50">{tx("Reports")}</Link>
           {canCreatePayroll && (
-            <button onClick={handleSeed} className="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg">Seed 2024 Rates</button>
+            <button onClick={handleSeed} className="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg">{tx("Seed 2024 Rates")}</button>
           )}
           <button onClick={handleCompliance} disabled={aiLoading} className="px-3 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50">
-            {aiLoading ? "Checking…" : "Compliance Check"}
+            {aiLoading ? tx("Checking…") : tx("Compliance Check")}
           </button>
           {canCreatePayroll && (
             <button onClick={() => setShowCreate(true)} className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-              + New Payroll Run
+              {tx("+ New Payroll Run")}
             </button>
           )}
         </div>
@@ -106,10 +107,10 @@ function PayrollDashboardContent() {
       {/* KPIs */}
       <div className="grid grid-cols-4 gap-4">
         {[
-          { label: "Total Runs", value: runs.length },
-          { label: "Latest Employees", value: latest?.employee_count ?? "—", color: "text-blue-600" },
-          { label: "Latest Net Payroll", value: latest ? `KES ${Number(latest.total_net).toLocaleString()}` : "—", color: "text-green-600" },
-          { label: "YTD Net Paid", value: `KES ${totalNet.toLocaleString()}`, color: "text-purple-600" },
+          { label: tx("Total Runs"), value: runs.length },
+          { label: tx("Latest Employees"), value: latest?.employee_count ?? "—", color: "text-blue-600" },
+          { label: tx("Latest Net Payroll"), value: latest ? `KES ${Number(latest.total_net).toLocaleString()}` : "—", color: "text-green-600" },
+          { label: tx("YTD Net Paid"), value: `KES ${totalNet.toLocaleString()}`, color: "text-purple-600" },
         ].map((k) => (
           <div key={k.label} className="bg-white rounded-lg border p-4">
             <p className="text-xs text-gray-500">{k.label}</p>
@@ -135,23 +136,23 @@ function PayrollDashboardContent() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-gray-600 uppercase text-xs">
             <tr>
-              <th className="px-4 py-3 text-left">Run No</th>
-              <th className="px-4 py-3 text-left">Period</th>
-              <th className="px-4 py-3 text-right">Employees</th>
-              <th className="px-4 py-3 text-right">Gross</th>
+              <th className="px-4 py-3 text-left">{tx("Run No")}</th>
+              <th className="px-4 py-3 text-left">{tx("Period")}</th>
+              <th className="px-4 py-3 text-right">{tx("Employees")}</th>
+              <th className="px-4 py-3 text-right">{tx("Gross")}</th>
               <th className="px-4 py-3 text-right">PAYE</th>
               <th className="px-4 py-3 text-right">NHIF</th>
               <th className="px-4 py-3 text-right">NSSF</th>
-              <th className="px-4 py-3 text-right">Net</th>
-              <th className="px-4 py-3 text-left">Status</th>
-              <th className="px-4 py-3 text-left">Action</th>
+              <th className="px-4 py-3 text-right">{tx("Net")}</th>
+              <th className="px-4 py-3 text-left">{tx("Status")}</th>
+              <th className="px-4 py-3 text-left">{tx("Action")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {loading ? (
-              <tr><td colSpan={10} className="px-4 py-8 text-center text-gray-400">Loading…</td></tr>
+              <tr><td colSpan={10} className="px-4 py-8 text-center text-gray-400">{tx("Loading…")}</td></tr>
             ) : runs.length === 0 ? (
-              <tr><td colSpan={10} className="px-4 py-8 text-center text-gray-400">No payroll runs yet. Seed rates first, then create a run.</td></tr>
+              <tr><td colSpan={10} className="px-4 py-8 text-center text-gray-400">{tx("No payroll runs yet. Seed rates first, then create a run.")}</td></tr>
             ) : (
               runs.map((r) => (
                 <tr key={r.id} className="hover:bg-gray-50">
@@ -167,7 +168,7 @@ function PayrollDashboardContent() {
                     <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[r.status]}`}>{r.status}</span>
                   </td>
                   <td className="px-4 py-2">
-                    <Link href={`/dashboard/payroll/runs/${r.id}`} className="text-blue-600 hover:underline text-xs">Open</Link>
+                    <Link href={`/dashboard/payroll/runs/${r.id}`} className="text-blue-600 hover:underline text-xs">{tx("Open")}</Link>
                   </td>
                 </tr>
               ))
@@ -180,28 +181,28 @@ function PayrollDashboardContent() {
       {showCreate && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6">
-            <h2 className="text-lg font-semibold mb-4">New Payroll Run</h2>
+            <h2 className="text-lg font-semibold mb-4">{tx("New Payroll Run")}</h2>
             <form onSubmit={handleCreate} className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Month *</label>
+                  <label className="block text-sm font-medium mb-1">{tx("Month *")}</label>
                   <select required value={createForm.period_month} onChange={(e) => setCreateForm({ ...createForm, period_month: parseInt(e.target.value) })} className="w-full border rounded-lg px-3 py-2 text-sm">
                     {MONTH_NAMES.slice(1).map((m, i) => (<option key={i + 1} value={i + 1}>{m}</option>))}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Year *</label>
+                  <label className="block text-sm font-medium mb-1">{tx("Year *")}</label>
                   <input required type="number" value={createForm.period_year} onChange={(e) => setCreateForm({ ...createForm, period_year: parseInt(e.target.value) })} className="w-full border rounded-lg px-3 py-2 text-sm" />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Notes</label>
+                <label className="block text-sm font-medium mb-1">{tx("Notes")}</label>
                 <textarea value={createForm.notes} onChange={(e) => setCreateForm({ ...createForm, notes: e.target.value })} className="w-full border rounded-lg px-3 py-2 text-sm" rows={2} />
               </div>
               <div className="flex gap-2 pt-1">
-                <button type="button" onClick={() => setShowCreate(false)} className="flex-1 py-2 border rounded-lg text-sm hover:bg-gray-50">Cancel</button>
+                <button type="button" onClick={() => setShowCreate(false)} className="flex-1 py-2 border rounded-lg text-sm hover:bg-gray-50">{tx("Cancel")}</button>
                 <button type="submit" disabled={creating} className="flex-1 py-2 bg-blue-600 text-white rounded-lg text-sm disabled:opacity-50">
-                  {creating ? "Creating…" : "Create Run"}
+                  {creating ? tx("Creating…") : tx("Create Run")}
                 </button>
               </div>
             </form>
@@ -217,13 +218,13 @@ const PayrollReportsPage  = dynamic(() => import("@/app/dashboard/payroll/report
 
 export default function PayrollDashboard() {
   const tabs = [
-    { key: "overview",  label: "Overview",  permission: "payroll_ke.view", content: <PayrollDashboardContent /> },
-    { key: "profiles",  label: "Profiles",  permission: "payroll_ke.view", content: <PayrollProfilesPage /> },
-    { key: "reports",   label: "Reports",   permission: "payroll_ke.view", content: <PayrollReportsPage /> },
+    { key: "overview",  label: tx("Overview"),  permission: "payroll_ke.view", content: <PayrollDashboardContent /> },
+    { key: "profiles",  label: tx("Profiles"),  permission: "payroll_ke.view", content: <PayrollProfilesPage /> },
+    { key: "reports",   label: tx("Reports"),   permission: "payroll_ke.view", content: <PayrollReportsPage /> },
   ];
   return (
     <ModuleWorkspace
-      title="Kenya Payroll"
+      title={tx("Kenya Payroll")}
       description="Payroll runs, employee profiles, PAYE, NHIF, NSSF, reports"
       permission="payroll_ke.view"
       tabs={tabs}

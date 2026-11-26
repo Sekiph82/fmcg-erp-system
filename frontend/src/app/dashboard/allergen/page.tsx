@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { allergenApi, riskColor } from "@/lib/allergen";
+import { tx } from "@/lib/i18n/core";
 
 function Stat({ label, value, warn }: { label: string; value: number; warn?: boolean }) {
   return (
@@ -25,54 +26,54 @@ export default function AllergenDashboardPage() {
       ]);
       return a.generated + b.generated + c.generated;
     },
-    onSuccess: (n) => { qc.invalidateQueries({ queryKey: ["an-dashboard"] }); alert(`AI agents ran — ${n} recommendation(s) generated`); },
+    onSuccess: (n) => { qc.invalidateQueries({ queryKey: ["an-dashboard"] }); alert(tx("AI agents ran — {n} recommendation(s) generated", { n })); },
   });
 
   const seed = useMutation({
     mutationFn: allergenApi.seedDefaults,
-    onSuccess: (r) => { qc.invalidateQueries({ queryKey: ["an-dashboard"] }); alert(`Seeded ${r.added} default allergens`); },
+    onSuccess: (r) => { qc.invalidateQueries({ queryKey: ["an-dashboard"] }); alert(tx("Seeded {added} default allergens", { added: r.added })); },
   });
 
-  if (isLoading) return <div className="p-8 text-gray-400">Loading…</div>;
-  if (isError || !data) return <div className="p-8 text-red-500">Failed to load Allergen & Nutrition dashboard. Ensure the database migration has been run (<code>alembic upgrade head</code>).</div>;
+  if (isLoading) return <div className="p-8 text-gray-400">{tx("Loading…")}</div>;
+  if (isError || !data) return <div className="p-8 text-red-500">{tx("Failed to load Allergen & Nutrition dashboard. Ensure the database migration has been run (")}<code>alembic upgrade head</code>).</div>;
 
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900">Allergen + Nutrition Management</h1>
-          <p className="text-sm text-gray-500">Allergen master · Roll-up engine · Nutrition panels · Label readiness</p>
+          <h1 className="text-xl font-semibold text-gray-900">{tx("Allergen + Nutrition Management")}</h1>
+          <p className="text-sm text-gray-500">{tx("Allergen master · Roll-up engine · Nutrition panels · Label readiness")}</p>
         </div>
         <div className="flex gap-2">
           <button onClick={() => seed.mutate()} disabled={seed.isPending} className="px-3 py-1.5 text-sm border rounded hover:bg-gray-50 disabled:opacity-50">
-            Seed Allergens
+            {tx("Seed Allergens")}
           </button>
           <button onClick={() => runAll.mutate()} disabled={runAll.isPending} className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50">
-            {runAll.isPending ? "Running AI…" : "Run All AI Agents"}
+            {runAll.isPending ? tx("Running AI…") : tx("Run All AI Agents")}
           </button>
         </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-        <Stat label="Allergens" value={data.total_allergens} />
-        <Stat label="Materials Profiled" value={data.materials_with_allergen_profiles} />
-        <Stat label="Missing Profiles" value={data.materials_missing_profiles} warn />
-        <Stat label="Product Allergen Summaries" value={data.products_with_allergen_summaries} />
-        <Stat label="Product Nutrition Summaries" value={data.products_with_nutrition_summaries} />
-        <Stat label="Stale Allergen Summaries" value={data.stale_allergen_summaries} warn />
-        <Stat label="Stale Nutrition Summaries" value={data.stale_nutrition_summaries} warn />
-        <Stat label="Open Change Logs" value={data.open_change_logs} warn />
-        <Stat label="Pending Label Reviews" value={data.pending_label_reviews} warn />
-        <Stat label="High Cross-Contact Risk" value={data.high_risk_cross_contact} warn />
-        <Stat label="AI Pending" value={data.ai_pending} warn />
+        <Stat label={tx("Allergens")} value={data.total_allergens} />
+        <Stat label={tx("Materials Profiled")} value={data.materials_with_allergen_profiles} />
+        <Stat label={tx("Missing Profiles")} value={data.materials_missing_profiles} warn />
+        <Stat label={tx("Product Allergen Summaries")} value={data.products_with_allergen_summaries} />
+        <Stat label={tx("Product Nutrition Summaries")} value={data.products_with_nutrition_summaries} />
+        <Stat label={tx("Stale Allergen Summaries")} value={data.stale_allergen_summaries} warn />
+        <Stat label={tx("Stale Nutrition Summaries")} value={data.stale_nutrition_summaries} warn />
+        <Stat label={tx("Open Change Logs")} value={data.open_change_logs} warn />
+        <Stat label={tx("Pending Label Reviews")} value={data.pending_label_reviews} warn />
+        <Stat label={tx("High Cross-Contact Risk")} value={data.high_risk_cross_contact} warn />
+        <Stat label={tx("AI Pending")} value={data.ai_pending} warn />
       </div>
 
       {/* Action Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {[
-          { title: "Missing allergen profiles", count: data.materials_missing_profiles, href: "/dashboard/allergen/material-profiles", color: "text-red-600", desc: "materials without allergen data" },
-          { title: "Stale summaries", count: data.stale_allergen_summaries + data.stale_nutrition_summaries, href: "/dashboard/allergen/product-allergens", color: "text-orange-600", desc: "need recalculation" },
-          { title: "Label reviews pending", count: data.pending_label_reviews, href: "/dashboard/allergen/change-logs", color: "text-purple-600", desc: "allergen changes to review" },
+          { title: tx("Missing allergen profiles"), count: data.materials_missing_profiles, href: "/dashboard/allergen/material-profiles", color: "text-red-600", desc: tx("materials without allergen data") },
+          { title: tx("Stale summaries"), count: data.stale_allergen_summaries + data.stale_nutrition_summaries, href: "/dashboard/allergen/product-allergens", color: "text-orange-600", desc: tx("need recalculation") },
+          { title: tx("Label reviews pending"), count: data.pending_label_reviews, href: "/dashboard/allergen/change-logs", color: "text-purple-600", desc: tx("allergen changes to review") },
         ].map((card) => (
           <a key={card.title} href={card.href} className="bg-white border rounded-lg p-4 hover:shadow-sm transition-shadow block">
             <p className={`text-2xl font-bold ${card.color}`}>{card.count}</p>
@@ -84,7 +85,7 @@ export default function AllergenDashboardPage() {
 
       {/* Quick Navigation */}
       <div className="bg-white border rounded-lg p-4">
-        <h2 className="text-sm font-medium text-gray-700 mb-3">Quick Navigation</h2>
+        <h2 className="text-sm font-medium text-gray-700 mb-3">{tx("Quick Navigation")}</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2">
           {[
             ["Allergen Master", "/dashboard/allergen/allergens"],

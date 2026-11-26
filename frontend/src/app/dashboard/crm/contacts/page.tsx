@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { apiClient } from "@/lib/api";
 import { EntityPicker } from "@/components/EntityPicker";
+import { tx } from "@/lib/i18n/core";
 
 interface Contact { id: string; full_name: string; email: string | null; phone: string | null; job_title: string | null;
   lifecycle_stage: string | null }
@@ -33,21 +34,21 @@ export default function CRMContactsPage() {
     <div className="p-4 grid lg:grid-cols-2 gap-4">
       <section className="space-y-2">
         <div className="flex gap-2 items-center">
-          <h2 className="text-lg font-semibold">Contacts</h2>
-          <input aria-label="Search contacts" className="border rounded px-2 py-1 text-sm flex-1" placeholder="Search name, e-mail, phone…" value={q} onChange={(e) => setQ(e.target.value)} />
+          <h2 className="text-lg font-semibold">{tx("Contacts")}</h2>
+          <input aria-label={tx("Search contacts")} className="border rounded px-2 py-1 text-sm flex-1" placeholder={tx("Search name, e-mail, phone…")} value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
         <form className="grid grid-cols-2 gap-1 text-xs border rounded p-2 bg-white" onSubmit={async (e) => {
           e.preventDefault();
           try { const r = await apiClient.post("/api/v1/crm-contacts", { ...form, email: form.email || null, language: form.language || null }); setForm({ full_name: "", email: "", phone: "", job_title: "", language: "" }); load(); show(r.data.id); setMsg(null); }
           catch (x) { setMsg(err(x, "Could not add the contact.")); }
         }}>
-          <input required className="border rounded px-2 py-1" placeholder="Full name" value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} />
-          <input type="email" className="border rounded px-2 py-1" placeholder="E-mail" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-          <input className="border rounded px-2 py-1" placeholder="Phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
-          <input className="border rounded px-2 py-1" placeholder="Job title" value={form.job_title} onChange={(e) => setForm({ ...form, job_title: e.target.value })} />
-          <select aria-label="Language" className="border rounded px-2 py-1" value={form.language} onChange={(e) => setForm({ ...form, language: e.target.value })}>
-            <option value="">Language…</option><option value="en">English</option><option value="sw">Swahili</option></select>
-          <button className="col-span-2 bg-indigo-600 text-white rounded py-1">Add contact</button>
+          <input required className="border rounded px-2 py-1" placeholder={tx("Full name")} value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} />
+          <input type="email" className="border rounded px-2 py-1" placeholder={tx("E-mail")} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+          <input className="border rounded px-2 py-1" placeholder={tx("Phone")} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+          <input className="border rounded px-2 py-1" placeholder={tx("Job title")} value={form.job_title} onChange={(e) => setForm({ ...form, job_title: e.target.value })} />
+          <select aria-label={tx("Language")} className="border rounded px-2 py-1" value={form.language} onChange={(e) => setForm({ ...form, language: e.target.value })}>
+            <option value="">{tx("Language…")}</option><option value="en">{tx("English")}</option><option value="sw">{tx("Swahili")}</option></select>
+          <button className="col-span-2 bg-indigo-600 text-white rounded py-1">{tx("Add contact")}</button>
         </form>
         {msg && <p role="alert" className="text-xs text-red-600">{msg}</p>}
         <ul className="divide-y border rounded bg-white">
@@ -56,39 +57,39 @@ export default function CRMContactsPage() {
               <span className="font-medium">{c.full_name}</span> <span className="text-gray-500 text-xs">{c.email ?? c.phone ?? ""} · {c.lifecycle_stage ?? "—"}</span>
             </button></li>
           ))}
-          {rows.length === 0 && <li className="px-3 py-2 text-xs text-gray-500">No contacts.</li>}
+          {rows.length === 0 && <li className="px-3 py-2 text-xs text-gray-500">{tx("No contacts.")}</li>}
         </ul>
       </section>
       {open && (
         <section className="border rounded bg-white p-3 space-y-3 text-sm">
           <div><div className="font-semibold">{open.full_name}</div><div className="text-xs text-gray-500">{open.job_title} {open.email} {open.phone}</div></div>
-          <label className="text-xs">Lifecycle stage
+          <label className="text-xs">{tx("Lifecycle stage")}
             <select className="ml-2 border rounded px-2 py-1" value={open.lifecycle_stage ?? ""} onChange={async (e) => {
               const stage = e.target.value;
               const back = STAGES.indexOf(stage) < STAGES.indexOf(open.lifecycle_stage ?? "SUBSCRIBER");
-              const reason = back ? prompt("Why move this contact back?") : null;
+              const reason = back ? prompt(tx("Why move this contact back?")) : null;
               if (back && !reason) return;
               try { await apiClient.put(`/api/v1/crm-contacts/${open.id}/lifecycle`, { stage, reason }); show(open.id); load(); } catch (x) { setMsg(err(x, "Not allowed.")); }
             }}>{STAGES.map((s) => <option key={s}>{s}</option>)}</select></label>
           <div>
-            <div className="text-xs font-semibold mb-1">Linked to</div>
+            <div className="text-xs font-semibold mb-1">{tx("Linked to")}</div>
             {open.associations.map((a) => (
               <div key={a.id} className="flex justify-between text-xs border-b py-1"><span>{a.object_type} · {a.label}</span>
-                <button className="text-red-600" onClick={async () => { await apiClient.delete(`/api/v1/crm-contacts/${open.id}/associations/${a.id}`).catch(() => null); show(open.id); }}>Remove</button></div>
+                <button className="text-red-600" onClick={async () => { await apiClient.delete(`/api/v1/crm-contacts/${open.id}/associations/${a.id}`).catch(() => null); show(open.id); }}>{tx("Remove")}</button></div>
             ))}
             <div className="flex flex-wrap gap-1 mt-2 text-xs items-end">
               <select className="border rounded px-1 py-1" value={assoc.object_type} onChange={(e) => setAssoc({ ...assoc, object_type: e.target.value, object_id: "" })}>
-                {["customer", "crm_record", "sales_order"].map((t) => <option key={t}>{t}</option>)}</select>
+                {[tx("customer"), "crm_record", "sales_order"].map((t) => <option key={t}>{t}</option>)}</select>
               <div className="min-w-[12rem] flex-1"><EntityPicker kind={assoc.object_type as "customer"} value={assoc.object_id} onChange={(id) => setAssoc({ ...assoc, object_id: id })} /></div>
               <select className="border rounded px-1 py-1" value={assoc.label} onChange={(e) => setAssoc({ ...assoc, label: e.target.value })}>
                 {LABELS.map((l) => <option key={l}>{l}</option>)}</select>
               <button className="border rounded px-2 py-1" disabled={!assoc.object_id} onClick={async () => {
                 try { await apiClient.post(`/api/v1/crm-contacts/${open.id}/associations`, assoc); show(open.id); } catch (x) { setMsg(err(x, "Could not link.")); }
-              }}>Link</button>
+              }}>{tx("Link")}</button>
             </div>
           </div>
           <div>
-            <div className="text-xs font-semibold mb-1">Lifecycle history</div>
+            <div className="text-xs font-semibold mb-1">{tx("Lifecycle history")}</div>
             {open.lifecycle_history.map((h, i) => <div key={i} className="text-xs text-gray-600">{new Date(h.changed_at).toLocaleString()}: {h.from ?? "—"} → {h.to} ({h.source}{h.reason ? `: ${h.reason}` : ""})</div>)}
           </div>
         </section>

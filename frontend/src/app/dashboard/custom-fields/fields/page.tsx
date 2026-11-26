@@ -4,6 +4,7 @@ import {
   customFieldsApi, CustomFieldDefinition, EntityType,
   ENTITY_LABEL, FIELD_TYPE_LABEL, FIELD_TYPE_ICON,
 } from "@/lib/custom_fields";
+import { tx } from "@/lib/i18n/core";
 
 const ENTITY_TYPES: EntityType[] = [
   "customer", "supplier", "product", "sales_order", "purchase_order",
@@ -26,7 +27,7 @@ export default function FieldManagerPage() {
   useEffect(() => { load(); }, [filterEntity, filterActive]);
 
   const disable = async (id: string) => {
-    if (!confirm("Disable this field? Values will be preserved.")) return;
+    if (!confirm(tx("Disable this field? Values will be preserved."))) return;
     await customFieldsApi.disableField(id);
     load();
   };
@@ -39,34 +40,34 @@ export default function FieldManagerPage() {
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <h1 className="text-xl font-bold text-gray-900">Field Manager</h1>
+        <h1 className="text-xl font-bold text-gray-900">{tx("Field Manager")}</h1>
         <a href="/dashboard/custom-fields/new-field"
           className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
-          + Create Field
+          {tx("+ Create Field")}
         </a>
       </div>
 
       <div className="flex gap-3 flex-wrap">
         <select className="border rounded px-2 py-1.5 text-sm" value={filterEntity}
           onChange={e => setFilterEntity(e.target.value)}>
-          <option value="">All Modules</option>
+          <option value="">{tx("All Modules")}</option>
           {ENTITY_TYPES.map(t => <option key={t} value={t}>{ENTITY_LABEL[t]}</option>)}
         </select>
         <select className="border rounded px-2 py-1.5 text-sm" value={filterActive}
           onChange={e => setFilterActive(e.target.value)}>
-          <option value="">All Status</option>
-          <option value="true">Active</option>
-          <option value="false">Disabled</option>
+          <option value="">{tx("All Status")}</option>
+          <option value="true">{tx("Active")}</option>
+          <option value="false">{tx("Disabled")}</option>
         </select>
-        <span className="text-xs text-gray-500 self-center">{fields.length} fields</span>
+        <span className="text-xs text-gray-500 self-center">{fields.length} {tx("fields")}</span>
       </div>
 
-      {loading ? <p className="text-sm text-gray-500">Loading…</p> : (
+      {loading ? <p className="text-sm text-gray-500">{tx("Loading…")}</p> : (
         <div className="bg-white border rounded-lg shadow-sm overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b">
               <tr>
-                {["Label", "Code", "Module", "Type", "Flags", "Order", "Status", "Actions"].map(h => (
+                {[tx("Label"), tx("Code"), tx("Module"), tx("Type"), tx("Flags"), tx("Order"), tx("Status"), tx("Actions")].map(h => (
                   <th key={h} className="px-4 py-2 text-left text-xs font-semibold text-gray-600">{h}</th>
                 ))}
               </tr>
@@ -89,27 +90,27 @@ export default function FieldManagerPage() {
                   </td>
                   <td className="px-4 py-2">
                     <div className="flex gap-1 flex-wrap">
-                      {f.searchable_flag && <span className="text-xs bg-blue-50 text-blue-600 rounded px-1">Search</span>}
-                      {f.filterable_flag && <span className="text-xs bg-purple-50 text-purple-600 rounded px-1">Filter</span>}
-                      {f.reportable_flag && <span className="text-xs bg-green-50 text-green-600 rounded px-1">Report</span>}
+                      {f.searchable_flag && <span className="text-xs bg-blue-50 text-blue-600 rounded px-1">{tx("Search")}</span>}
+                      {f.filterable_flag && <span className="text-xs bg-purple-50 text-purple-600 rounded px-1">{tx("Filter")}</span>}
+                      {f.reportable_flag && <span className="text-xs bg-green-50 text-green-600 rounded px-1">{tx("Report")}</span>}
                       {f.sensitive_flag && <span className="text-xs bg-red-50 text-red-500 rounded px-1">🔒</span>}
                     </div>
                   </td>
                   <td className="px-4 py-2 text-gray-500 text-xs">{f.display_order}</td>
                   <td className="px-4 py-2">
                     <span className={`text-xs rounded-full px-2 py-0.5 ${f.active_flag ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
-                      {f.active_flag ? "active" : "disabled"}
+                      {f.active_flag ? tx("active") : tx("disabled")}
                     </span>
                   </td>
                   <td className="px-4 py-2">
                     <div className="flex gap-2">
                       <a href={`/dashboard/custom-fields/${f.custom_field_id}`}
-                        className="text-xs text-blue-600 hover:underline">Edit</a>
+                        className="text-xs text-blue-600 hover:underline">{tx("Edit")}</a>
                       {f.active_flag
                         ? <button onClick={() => disable(f.custom_field_id)}
-                            className="text-xs text-red-500 hover:underline">Disable</button>
+                            className="text-xs text-red-500 hover:underline">{tx("Disable")}</button>
                         : <button onClick={() => enable(f.custom_field_id)}
-                            className="text-xs text-green-600 hover:underline">Enable</button>
+                            className="text-xs text-green-600 hover:underline">{tx("Enable")}</button>
                       }
                     </div>
                   </td>
@@ -117,7 +118,7 @@ export default function FieldManagerPage() {
               ))}
             </tbody>
           </table>
-          {fields.length === 0 && <p className="text-center text-gray-400 py-8 text-sm">No fields found.</p>}
+          {fields.length === 0 && <p className="text-center text-gray-400 py-8 text-sm">{tx("No fields found.")}</p>}
         </div>
       )}
     </div>

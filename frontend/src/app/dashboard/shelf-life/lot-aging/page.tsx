@@ -4,20 +4,21 @@ import {
   shelfLifeApi, LotShelfLifeProfile, ShelfLifeStatus,
   SL_STATUS_BG, SL_STATUS_LABEL, fmtDays, expiryBgColor,
 } from "@/lib/shelfLife";
+import { tx, lx } from "@/lib/i18n/core";
 
 const STATUSES: ShelfLifeStatus[] = [
   "active","near_expiry","expired","blocked","qc_hold","quarantine",
   "pending_retest","retested_released","customer_restricted","not_applicable",
 ];
 
-const AGE_BUCKETS = [
-  { label: "Expiring in ≤7d",  min: -Infinity, max: 7 },
-  { label: "8–30d",            min: 8,  max: 30 },
-  { label: "31–90d",           min: 31, max: 90 },
-  { label: "91–180d",          min: 91, max: 180 },
-  { label: "> 180d",           min: 181, max: Infinity },
+const AGE_BUCKETS = lx(() => [
+  { label: tx("Expiring in ≤7d"),  min: -Infinity, max: 7 },
+  { label: tx("8–30d"),            min: 8,  max: 30 },
+  { label: tx("31–90d"),           min: 31, max: 90 },
+  { label: tx("91–180d"),          min: 91, max: 180 },
+  { label: tx("> 180d"),           min: 181, max: Infinity },
   { label: "Expired",          min: -Infinity, max: -1 },
-];
+]);
 
 function bucket(days: number | null): string {
   if (days === null) return "Unknown";
@@ -55,7 +56,7 @@ export default function LotAgingPage() {
     setRecalculating(true);
     try {
       const r = await shelfLifeApi.batchRecalculate();
-      alert(`Recalculated ${r.updated} lot statuses.`);
+      alert(tx("Recalculated {updated} lot statuses.", { updated: r.updated }));
       load();
     } finally { setRecalculating(false); }
   };
@@ -80,12 +81,12 @@ export default function LotAgingPage() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Lot Aging Explorer</h1>
-          <p className="text-sm text-gray-500">{lots.length} lots tracked — filter by status or age bucket</p>
+          <h1 className="text-xl font-bold text-gray-900">{tx("Lot Aging Explorer")}</h1>
+          <p className="text-sm text-gray-500">{lots.length} {tx("lots tracked — filter by status or age bucket")}</p>
         </div>
         <button onClick={handleBatchRecalc} disabled={recalculating}
           className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50">
-          {recalculating ? "Recalculating…" : "Batch Recalculate All"}
+          {recalculating ? tx("Recalculating…") : tx("Batch Recalculate All")}
         </button>
       </div>
 
@@ -103,13 +104,13 @@ export default function LotAgingPage() {
       <div className="flex flex-wrap gap-3 items-center">
         <select className="border rounded-lg px-3 py-2 text-sm"
           value={filterStatus} onChange={e => handleStatusFilter(e.target.value)}>
-          <option value="">All Statuses</option>
+          <option value="">{tx("All Statuses")}</option>
           {STATUSES.map(s => <option key={s} value={s}>{SL_STATUS_LABEL[s]}</option>)}
         </select>
         <select className="border rounded-lg px-3 py-2 text-sm"
           value={sortBy} onChange={e => setSortBy(e.target.value as any)}>
-          <option value="remaining">Sort: Remaining Days (asc)</option>
-          <option value="expiry">Sort: Expiry Date</option>
+          <option value="remaining">{tx("Sort: Remaining Days (asc)")}</option>
+          <option value="expiry">{tx("Sort: Expiry Date")}</option>
         </select>
       </div>
 
@@ -118,16 +119,16 @@ export default function LotAgingPage() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-xs uppercase text-gray-500">
             <tr>
-              {["Lot ID", "Expiry Date", "Remaining", "% Remaining", "Status", "Age Since Prod", "Blocked Issue", "Blocked Ship", "Hold Reason"].map(h => (
+              {[tx("Lot ID"), tx("Expiry Date"), tx("Remaining"), tx("% Remaining"), tx("Status"), tx("Age Since Prod"), tx("Blocked Issue"), tx("Blocked Ship"), tx("Hold Reason")].map(h => (
                 <th key={h} className="px-4 py-3 text-left font-medium">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {loading ? (
-              <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">Loading…</td></tr>
+              <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">{tx("Loading…")}</td></tr>
             ) : sorted.length === 0 ? (
-              <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">No lots found</td></tr>
+              <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">{tx("No lots found")}</td></tr>
             ) : sorted.map((l) => (
               <tr key={l.id} className={`hover:bg-gray-50 ${expiryBgColor(l.remaining_shelf_life_days)}`}>
                 <td className="px-4 py-3 font-mono text-xs text-gray-700">{l.lot_id.slice(0, 12)}…</td>
@@ -139,9 +140,9 @@ export default function LotAgingPage() {
                     {SL_STATUS_LABEL[l.shelf_life_status]}
                   </span>
                 </td>
-                <td className="px-4 py-3">{l.age_since_production_days !== null ? `${l.age_since_production_days}d` : "—"}</td>
-                <td className="px-4 py-3">{l.blocked_for_issue_flag ? <span className="text-red-600 font-medium">Yes</span> : "No"}</td>
-                <td className="px-4 py-3">{l.blocked_for_shipment_flag ? <span className="text-red-600 font-medium">Yes</span> : "No"}</td>
+                <td className="px-4 py-3">{l.age_since_production_days !== null ? tx("{age_since_production_days}d", { age_since_production_days: l.age_since_production_days }) : "—"}</td>
+                <td className="px-4 py-3">{l.blocked_for_issue_flag ? <span className="text-red-600 font-medium">{tx("Yes")}</span> : tx("No")}</td>
+                <td className="px-4 py-3">{l.blocked_for_shipment_flag ? <span className="text-red-600 font-medium">{tx("Yes")}</span> : tx("No")}</td>
                 <td className="px-4 py-3 text-gray-500 text-xs">{l.hold_reason || "—"}</td>
               </tr>
             ))}

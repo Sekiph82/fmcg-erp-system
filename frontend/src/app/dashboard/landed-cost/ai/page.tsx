@@ -4,13 +4,14 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   lcApi, LCAIRec, LCAIRecStatus, AI_AGENT_LABEL, AI_REC_STATUS_COLOR,
 } from "@/lib/landed_cost";
+import { tx, lx } from "@/lib/i18n/core";
 
-const STATUSES: { value: LCAIRecStatus | ""; label: string }[] = [
-  { value: "", label: "All" },
-  { value: "PENDING", label: "Pending" },
-  { value: "ACCEPTED", label: "Accepted" },
-  { value: "REJECTED", label: "Rejected" },
-];
+const STATUSES: { value: LCAIRecStatus | ""; label: string }[] = lx(() => [
+  { value: "", label: tx("All") },
+  { value: "PENDING", label: tx("Pending") },
+  { value: "ACCEPTED", label: tx("Accepted") },
+  { value: "REJECTED", label: tx("Rejected") },
+]);
 
 export default function LandedCostAIPage() {
   const [statusFilter, setStatusFilter] = useState<LCAIRecStatus | "">("");
@@ -38,10 +39,10 @@ export default function LandedCostAIPage() {
     <div className="p-6 space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">AI Recommendations</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("AI Recommendations")}</h1>
           {pending > 0 && (
             <p className="text-sm text-yellow-600 mt-1">
-              {pending} pending recommendation{pending > 1 ? "s" : ""} awaiting review
+              {pending} {tx("pending recommendation")}{pending > 1 ? tx("s") : ""} {tx("awaiting review")}
             </p>
           )}
         </div>
@@ -50,13 +51,13 @@ export default function LandedCostAIPage() {
           disabled={runAI.isPending}
           className="px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 disabled:opacity-50"
         >
-          {runAI.isPending ? "Running…" : "Run AI Agents"}
+          {runAI.isPending ? tx("Running…") : tx("Run AI Agents")}
         </button>
       </div>
 
       {runAI.data && (
         <p className="text-sm text-green-700 bg-green-50 px-3 py-2 rounded">
-          Created {(runAI.data as { recommendations_created: number }).recommendations_created} new recommendation(s).
+          {tx("Created")} {(runAI.data as { recommendations_created: number }).recommendations_created} {tx("new recommendation(s).")}
         </p>
       )}
 
@@ -79,9 +80,9 @@ export default function LandedCostAIPage() {
 
       {/* Recs list */}
       {isLoading ? (
-        <p className="text-gray-400 text-sm">Loading…</p>
+        <p className="text-gray-400 text-sm">{tx("Loading…")}</p>
       ) : recs.length === 0 ? (
-        <p className="text-gray-400 text-sm">No recommendations found. Run AI agents to generate insights.</p>
+        <p className="text-gray-400 text-sm">{tx("No recommendations found. Run AI agents to generate insights.")}</p>
       ) : (
         <div className="space-y-3">
           {recs.map((rec) => (
@@ -97,7 +98,7 @@ export default function LandedCostAIPage() {
                     </span>
                     {rec.confidence_score != null && (
                       <span className="text-xs text-gray-400">
-                        Confidence: {Math.round(Number(rec.confidence_score) * 100)}%
+                        {tx("Confidence:")} {Math.round(Number(rec.confidence_score) * 100)}%
                       </span>
                     )}
                   </div>
@@ -105,12 +106,12 @@ export default function LandedCostAIPage() {
                   {rec.explanation && <p className="text-sm text-gray-600">{rec.explanation}</p>}
                   {rec.impact_summary && (
                     <p className="text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded">
-                      Impact: {rec.impact_summary}
+                      {tx("Impact:")} {rec.impact_summary}
                     </p>
                   )}
                   {rec.suggested_action && (
                     <p className="text-xs text-blue-700 bg-blue-50 px-2 py-1 rounded">
-                      Suggestion: {rec.suggested_action}
+                      {tx("Suggestion:")} {rec.suggested_action}
                     </p>
                   )}
                 </div>
@@ -120,19 +121,19 @@ export default function LandedCostAIPage() {
                       onClick={() => action.mutate({ id: rec.id, status: "ACCEPTED" })}
                       className="px-3 py-1 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700"
                     >
-                      Accept
+                      {tx("Accept")}
                     </button>
                     <button
                       onClick={() => action.mutate({ id: rec.id, status: "REJECTED" })}
                       className="px-3 py-1 text-xs border rounded-lg text-red-600 hover:bg-red-50"
                     >
-                      Reject
+                      {tx("Reject")}
                     </button>
                   </div>
                 )}
               </div>
               <p className="text-xs text-gray-400">
-                Created {new Date(rec.created_at).toLocaleString()}
+                {tx("Created")} {new Date(rec.created_at).toLocaleString()}
                 {rec.actioned_at && ` · Actioned ${new Date(rec.actioned_at).toLocaleString()}`}
               </p>
             </div>

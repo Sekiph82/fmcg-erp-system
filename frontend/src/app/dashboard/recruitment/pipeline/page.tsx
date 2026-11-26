@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { recruitmentApi, CandidatePipeline, RecruitmentStage, JobRequisition, PIPELINE_STATUS_COLOR } from "@/lib/recruitment";
+import { tx } from "@/lib/i18n/core";
 
 export default function PipelineBoardPage() {
   const searchParams = useSearchParams();
@@ -31,7 +32,7 @@ export default function PipelineBoardPage() {
 
   const handleDrop = async (targetStageId: string) => {
     if (!dragging) return;
-    try { await recruitmentApi.moveStage(dragging, { stage_id: targetStageId }); await loadPipeline(); setMsg("Moved"); setTimeout(() => setMsg(""), 1500); }
+    try { await recruitmentApi.moveStage(dragging, { stage_id: targetStageId }); await loadPipeline(); setMsg(tx("Moved")); setTimeout(() => setMsg(""), 1500); }
     catch (e: any) { setMsg(e.message); }
     setDragging(null);
   };
@@ -40,12 +41,12 @@ export default function PipelineBoardPage() {
     <div className="p-6 space-y-4 text-slate-200">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-white">Pipeline Board</h1>
-          <p className="text-slate-500 text-sm mt-0.5">Drag candidates between stages</p>
+          <h1 className="text-xl font-bold text-white">{tx("Pipeline Board")}</h1>
+          <p className="text-slate-500 text-sm mt-0.5">{tx("Drag candidates between stages")}</p>
         </div>
         <select value={selectedReq} onChange={(e) => setSelectedReq(e.target.value)}
           className="bg-[#0d1829] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none w-72">
-          <option value="">All Requisitions</option>
+          <option value="">{tx("All Requisitions")}</option>
           {reqs.map((r) => <option key={r.requisition_id} value={r.requisition_id}>{r.requisition_code} — {r.job_title}</option>)}
         </select>
       </div>
@@ -69,16 +70,16 @@ export default function PipelineBoardPage() {
                   <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${PIPELINE_STATUS_COLOR[p.status]}`}>{p.status}</span>
                   <p className="text-[10px] text-slate-600">{p.application_date}</p>
                   <button onClick={() => recruitmentApi.rejectCandidate(p.pipeline_id, "Rejected from board").then(loadPipeline)}
-                    className="text-[10px] text-red-400 hover:text-red-300">Reject</button>
+                    className="text-[10px] text-red-400 hover:text-red-300">{tx("Reject")}</button>
                 </div>
               ))}
               {cards.length === 0 && (
-                <div className="border-2 border-dashed border-white/[0.05] rounded-lg p-3 text-center text-[10px] text-slate-600">Drop here</div>
+                <div className="border-2 border-dashed border-white/[0.05] rounded-lg p-3 text-center text-[10px] text-slate-600">{tx("Drop here")}</div>
               )}
             </div>
           );
         })}
-        {stages.length === 0 && <p className="text-slate-500 text-sm">No stages — go to Stages to seed defaults first.</p>}
+        {stages.length === 0 && <p className="text-slate-500 text-sm">{tx("No stages — go to Stages to seed defaults first.")}</p>}
       </div>
     </div>
   );

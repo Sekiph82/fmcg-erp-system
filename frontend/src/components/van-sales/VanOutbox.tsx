@@ -2,6 +2,7 @@
 // Van sales offline outbox: shows what this device still has to send for the van, and sends it via /sync.
 import { useCallback, useEffect, useState } from "react";
 import { vanSalesApi, readOutbox, writeOutbox, type Outbox } from "@/lib/van_sales";
+import { tx } from "@/lib/i18n/core";
 
 export function VanOutbox({ vanId, version = 0 }: { vanId: string; version?: number }) {
   const [ob, setOb] = useState<Outbox>({ transactions: [], payments: [] });
@@ -30,12 +31,12 @@ export function VanOutbox({ vanId, version = 0 }: { vanId: string; version?: num
   }
 
   return (
-    <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm space-y-2" role="region" aria-label="Offline outbox">
+    <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm space-y-2" role="region" aria-label={tx("Offline outbox")}>
       {pending > 0 && <div className="flex items-center justify-between gap-2">
-        <span className="text-amber-200">{ob.transactions.length} sale(s) and {ob.payments.length} payment(s) saved on this device, not yet sent.</span>
+        <span className="text-amber-200">{ob.transactions.length} {tx("sale(s) and")} {ob.payments.length} {tx("payment(s) saved on this device, not yet sent.")}</span>
         <button onClick={sync} disabled={busy || (typeof navigator !== "undefined" && !navigator.onLine)}
-          title={typeof navigator !== "undefined" && !navigator.onLine ? "You are offline" : undefined}
-          className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-medium disabled:opacity-50">{busy ? "Syncing…" : "Sync now"}</button>
+          title={typeof navigator !== "undefined" && !navigator.onLine ? tx("You are offline") : undefined}
+          className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-medium disabled:opacity-50">{busy ? tx("Syncing…") : tx("Sync now")}</button>
       </div>}
       {msg && <p role={msg.ok ? "status" : "alert"} className={msg.ok ? "text-emerald-300" : "text-red-300"}>{msg.text}</p>}
     </div>

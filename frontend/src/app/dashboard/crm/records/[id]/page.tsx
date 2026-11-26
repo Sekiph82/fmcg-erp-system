@@ -8,6 +8,7 @@ import {
   fmtCurrency, STATUS_LABELS, STATUS_COLORS, TEMPERATURE_LABELS, TEMPERATURE_COLORS,
   ACTIVITY_TYPE_LABELS, ACTIVITY_RESULT_LABELS, LOSS_REASON_LABELS, WIN_REASON_LABELS,
 } from "@/lib/crm_pipeline";
+import { tx } from "@/lib/i18n/core";
 
 type Tab = "overview" | "activities" | "products" | "competitors" | "close";
 
@@ -99,15 +100,15 @@ export default function RecordDetailPage() {
     try { await crmApi.updateScore(id); await load(); } catch (e) { console.error(e); }
   };
 
-  if (loading) return <div className="p-6 text-gray-500">Loading…</div>;
-  if (!record) return <div className="p-6 text-red-500">Record not found</div>;
+  if (loading) return <div className="p-6 text-gray-500">{tx("Loading…")}</div>;
+  if (!record) return <div className="p-6 text-red-500">{tx("Record not found")}</div>;
 
   const tabs: { id: Tab; label: string }[] = [
-    { id: "overview", label: "Overview" },
+    { id: "overview", label: tx("Overview") },
     { id: "activities", label: `Activities (${record.activities?.length || 0})` },
     { id: "products", label: `Products (${record.interest_lines?.length || 0})` },
     { id: "competitors", label: `Competitors (${record.competitors?.length || 0})` },
-    { id: "close", label: "Close Deal" },
+    { id: "close", label: tx("Close Deal") },
   ];
 
   return (
@@ -138,16 +139,16 @@ export default function RecordDetailPage() {
           {record.record_type === "LEAD" && record.status === "OPEN" && (
             <button onClick={() => setShowConvert(true)}
               className="px-3 py-1.5 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700">
-              Convert to Opportunity
+              {tx("Convert to Opportunity")}
             </button>
           )}
           <button onClick={() => setShowActivity(true)}
             className="px-3 py-1.5 text-sm border rounded-lg hover:bg-gray-50">
-            + Activity
+            {tx("+ Activity")}
           </button>
           <button onClick={handleUpdateScore}
             className="px-3 py-1.5 text-sm border rounded-lg hover:bg-gray-50">
-            Update Score
+            {tx("Update Score")}
           </button>
         </div>
       </div>
@@ -168,26 +169,26 @@ export default function RecordDetailPage() {
       {tab === "overview" && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-white rounded-xl border shadow-sm p-4 space-y-3">
-            <h2 className="font-semibold text-gray-800">Contact Details</h2>
+            <h2 className="font-semibold text-gray-800">{tx("Contact Details")}</h2>
             <div className="grid grid-cols-2 gap-2 text-sm">
-              <div className="text-gray-500">Contact</div><div className="text-gray-800">{record.contact_person_name || "—"}</div>
-              <div className="text-gray-500">Email</div><div className="text-gray-800">{record.contact_email || "—"}</div>
-              <div className="text-gray-500">Phone</div><div className="text-gray-800">{record.contact_phone || "—"}</div>
-              <div className="text-gray-500">Region</div><div className="text-gray-800">{record.region_id || "—"}</div>
-              <div className="text-gray-500">Channel</div><div className="text-gray-800">{record.channel_id || "—"}</div>
+              <div className="text-gray-500">{tx("Contact")}</div><div className="text-gray-800">{record.contact_person_name || "—"}</div>
+              <div className="text-gray-500">{tx("Email")}</div><div className="text-gray-800">{record.contact_email || "—"}</div>
+              <div className="text-gray-500">{tx("Phone")}</div><div className="text-gray-800">{record.contact_phone || "—"}</div>
+              <div className="text-gray-500">{tx("Region")}</div><div className="text-gray-800">{record.region_id || "—"}</div>
+              <div className="text-gray-500">{tx("Channel")}</div><div className="text-gray-800">{record.channel_id || "—"}</div>
             </div>
           </div>
           <div className="bg-white rounded-xl border shadow-sm p-4 space-y-3">
-            <h2 className="font-semibold text-gray-800">Deal Details</h2>
+            <h2 className="font-semibold text-gray-800">{tx("Deal Details")}</h2>
             <div className="grid grid-cols-2 gap-2 text-sm">
-              <div className="text-gray-500">Stage</div><div className="text-gray-800">{record.stage?.stage_name || "—"}</div>
-              <div className="text-gray-500">Probability</div><div className="text-gray-800">{record.probability_pct ?? 0}%</div>
-              <div className="text-gray-500">Expected Rev</div><div className="text-gray-800 font-semibold">{fmtCurrency(record.expected_revenue, record.currency)}</div>
-              <div className="text-gray-500">Expected Margin</div><div className="text-gray-800">{fmtCurrency(record.expected_margin, record.currency)}</div>
-              <div className="text-gray-500">Close Date</div><div className="text-gray-800">{record.expected_close_date || "—"}</div>
-              <div className="text-gray-500">Next Action</div><div className="text-gray-800">{record.next_action_date || "—"}</div>
-              <div className="text-gray-500">Rep</div><div className="text-gray-800">{record.assigned_rep_id || "—"}</div>
-              <div className="text-gray-500">Lead Score</div>
+              <div className="text-gray-500">{tx("Stage")}</div><div className="text-gray-800">{record.stage?.stage_name || "—"}</div>
+              <div className="text-gray-500">{tx("Probability")}</div><div className="text-gray-800">{record.probability_pct ?? 0}%</div>
+              <div className="text-gray-500">{tx("Expected Rev")}</div><div className="text-gray-800 font-semibold">{fmtCurrency(record.expected_revenue, record.currency)}</div>
+              <div className="text-gray-500">{tx("Expected Margin")}</div><div className="text-gray-800">{fmtCurrency(record.expected_margin, record.currency)}</div>
+              <div className="text-gray-500">{tx("Close Date")}</div><div className="text-gray-800">{record.expected_close_date || "—"}</div>
+              <div className="text-gray-500">{tx("Next Action")}</div><div className="text-gray-800">{record.next_action_date || "—"}</div>
+              <div className="text-gray-500">{tx("Rep")}</div><div className="text-gray-800">{record.assigned_rep_id || "—"}</div>
+              <div className="text-gray-500">{tx("Lead Score")}</div>
               <div className="flex items-center gap-1">
                 <div className="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden">
                   <div className="h-full bg-blue-500 rounded-full" style={{ width: `${record.lead_score}%` }} />
@@ -198,21 +199,21 @@ export default function RecordDetailPage() {
           </div>
           {record.notes && (
             <div className="md:col-span-2 bg-white rounded-xl border shadow-sm p-4">
-              <h2 className="font-semibold text-gray-800 mb-2">Notes</h2>
+              <h2 className="font-semibold text-gray-800 mb-2">{tx("Notes")}</h2>
               <p className="text-sm text-gray-600 whitespace-pre-wrap">{record.notes}</p>
             </div>
           )}
           {record.win_loss && (
             <div className="md:col-span-2 bg-white rounded-xl border shadow-sm p-4">
-              <h2 className="font-semibold text-gray-800 mb-2">Win/Loss Record</h2>
+              <h2 className="font-semibold text-gray-800 mb-2">{tx("Win/Loss Record")}</h2>
               <div className="grid grid-cols-2 gap-2 text-sm">
-                <div className="text-gray-500">Result</div><div className="font-bold" style={{ color: record.win_loss.final_status === "WON" ? "#10B981" : "#EF4444" }}>{record.win_loss.final_status}</div>
-                <div className="text-gray-500">Close Date</div><div>{record.win_loss.close_date || "—"}</div>
-                <div className="text-gray-500">Final Revenue</div><div>{fmtCurrency(record.win_loss.final_revenue)}</div>
-                <div className="text-gray-500">Reason</div>
+                <div className="text-gray-500">{tx("Result")}</div><div className="font-bold" style={{ color: record.win_loss.final_status === "WON" ? "#10B981" : "#EF4444" }}>{record.win_loss.final_status}</div>
+                <div className="text-gray-500">{tx("Close Date")}</div><div>{record.win_loss.close_date || "—"}</div>
+                <div className="text-gray-500">{tx("Final Revenue")}</div><div>{fmtCurrency(record.win_loss.final_revenue)}</div>
+                <div className="text-gray-500">{tx("Reason")}</div>
                 <div>{record.win_loss.win_reason_code ? WIN_REASON_LABELS[record.win_loss.win_reason_code] : record.win_loss.loss_reason_code ? LOSS_REASON_LABELS[record.win_loss.loss_reason_code] : "—"}</div>
-                {record.win_loss.competitor_name && <><div className="text-gray-500">Competitor</div><div>{record.win_loss.competitor_name}</div></>}
-                {record.win_loss.narrative && <><div className="text-gray-500 col-span-2">Narrative</div><div className="col-span-2 text-xs text-gray-600">{record.win_loss.narrative}</div></>}
+                {record.win_loss.competitor_name && <><div className="text-gray-500">{tx("Competitor")}</div><div>{record.win_loss.competitor_name}</div></>}
+                {record.win_loss.narrative && <><div className="text-gray-500 col-span-2">{tx("Narrative")}</div><div className="col-span-2 text-xs text-gray-600">{record.win_loss.narrative}</div></>}
               </div>
             </div>
           )}
@@ -225,9 +226,9 @@ export default function RecordDetailPage() {
         <div className="space-y-3">
           <button onClick={() => setShowActivity(true)}
             className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-            + Log Activity
+            {tx("+ Log Activity")}
           </button>
-          {(record.activities || []).length === 0 && <p className="text-sm text-gray-400">No activities yet</p>}
+          {(record.activities || []).length === 0 && <p className="text-sm text-gray-400">{tx("No activities yet")}</p>}
           <div className="space-y-2">
             {(record.activities || []).map(act => (
               <div key={act.id} className="bg-white rounded-xl border shadow-sm p-4 flex items-start gap-4">
@@ -241,11 +242,11 @@ export default function RecordDetailPage() {
                     {act.due_datetime && ` · Due: ${new Date(act.due_datetime).toLocaleDateString()}`}
                   </div>
                   {act.description && <p className="text-xs text-gray-600 mt-1">{act.description}</p>}
-                  {act.next_step && <p className="text-xs text-indigo-600 mt-1">Next: {act.next_step}</p>}
+                  {act.next_step && <p className="text-xs text-indigo-600 mt-1">{tx("Next:")} {act.next_step}</p>}
                 </div>
                 {act.result_status === "PLANNED" && (
                   <button onClick={() => handleCompleteActivity(act.id)}
-                    className="text-xs text-green-600 hover:underline flex-shrink-0">Complete</button>
+                    className="text-xs text-green-600 hover:underline flex-shrink-0">{tx("Complete")}</button>
                 )}
               </div>
             ))}
@@ -260,17 +261,17 @@ export default function RecordDetailPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-gray-50 text-xs text-gray-600">
-                  <th className="px-3 py-2 text-left">Item</th>
-                  <th className="px-3 py-2 text-left">Brand</th>
-                  <th className="px-3 py-2 text-left">Exp Qty</th>
-                  <th className="px-3 py-2 text-left">Exp Value</th>
-                  <th className="px-3 py-2 text-left">Competitor</th>
-                  <th className="px-3 py-2 text-left">Comp Price</th>
+                  <th className="px-3 py-2 text-left">{tx("Item")}</th>
+                  <th className="px-3 py-2 text-left">{tx("Brand")}</th>
+                  <th className="px-3 py-2 text-left">{tx("Exp Qty")}</th>
+                  <th className="px-3 py-2 text-left">{tx("Exp Value")}</th>
+                  <th className="px-3 py-2 text-left">{tx("Competitor")}</th>
+                  <th className="px-3 py-2 text-left">{tx("Comp Price")}</th>
                 </tr>
               </thead>
               <tbody>
                 {(record.interest_lines || []).length === 0 && (
-                  <tr><td colSpan={6} className="px-3 py-6 text-center text-gray-400">No product interests</td></tr>
+                  <tr><td colSpan={6} className="px-3 py-6 text-center text-gray-400">{tx("No product interests")}</td></tr>
                 )}
                 {(record.interest_lines || []).map(line => (
                   <tr key={line.id} className="border-b">
@@ -291,16 +292,16 @@ export default function RecordDetailPage() {
       {/* Competitors Tab */}
       {tab === "competitors" && (
         <div className="space-y-3">
-          {(record.competitors || []).length === 0 && <p className="text-sm text-gray-400">No competitors logged</p>}
+          {(record.competitors || []).length === 0 && <p className="text-sm text-gray-400">{tx("No competitors logged")}</p>}
           {(record.competitors || []).map(c => (
             <div key={c.id} className="bg-white rounded-xl border shadow-sm p-4">
               <div className="font-semibold text-gray-800">{c.competitor_name}</div>
               <div className="grid grid-cols-2 gap-2 text-sm mt-2">
-                <div className="text-gray-500">Product</div><div>{c.competitor_product || "—"}</div>
-                <div className="text-gray-500">Price</div><div>{fmtCurrency(c.competitor_price)}</div>
-                <div className="text-gray-500">Risk</div><div>{c.risk_level || "—"}</div>
-                {c.competitor_strength && <><div className="text-gray-500">Strength</div><div className="text-xs">{c.competitor_strength}</div></>}
-                {c.competitor_weakness && <><div className="text-gray-500">Weakness</div><div className="text-xs">{c.competitor_weakness}</div></>}
+                <div className="text-gray-500">{tx("Product")}</div><div>{c.competitor_product || "—"}</div>
+                <div className="text-gray-500">{tx("Price")}</div><div>{fmtCurrency(c.competitor_price)}</div>
+                <div className="text-gray-500">{tx("Risk")}</div><div>{c.risk_level || "—"}</div>
+                {c.competitor_strength && <><div className="text-gray-500">{tx("Strength")}</div><div className="text-xs">{c.competitor_strength}</div></>}
+                {c.competitor_weakness && <><div className="text-gray-500">{tx("Weakness")}</div><div className="text-xs">{c.competitor_weakness}</div></>}
               </div>
             </div>
           ))}
@@ -310,30 +311,30 @@ export default function RecordDetailPage() {
       {/* Close Deal Tab */}
       {tab === "close" && record.status === "OPEN" && (
         <div className="space-y-4 max-w-lg">
-          <p className="text-sm text-gray-600">Record the outcome of this {record.record_type.toLowerCase()}.</p>
+          <p className="text-sm text-gray-600">{tx("Record the outcome of this")} {record.record_type.toLowerCase()}.</p>
           <div className="flex gap-3">
             <button onClick={() => { setShowWon(true); setShowLost(false); }}
               className="flex-1 py-3 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700">
-              Mark as Won
+              {tx("Mark as Won")}
             </button>
             <button onClick={() => { setShowLost(true); setShowWon(false); }}
               className="flex-1 py-3 bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700">
-              Mark as Lost
+              {tx("Mark as Lost")}
             </button>
           </div>
           <button onClick={() => crmApi.onHold(id).then(load)}
             className="w-full py-2 border-2 border-yellow-400 text-yellow-700 rounded-xl font-medium hover:bg-yellow-50">
-            Put On Hold
+            {tx("Put On Hold")}
           </button>
         </div>
       )}
       {tab === "close" && record.status !== "OPEN" && (
         <div className="space-y-3">
-          <p className="text-sm text-gray-500">This record is {STATUS_LABELS[record.status]}.</p>
+          <p className="text-sm text-gray-500">{tx("This record is")} {STATUS_LABELS[record.status]}.</p>
           {record.status !== "ARCHIVED" && (
             <button onClick={() => crmApi.reopen(id).then(load)}
               className="px-4 py-2 border rounded-lg text-sm hover:bg-gray-50">
-              Reopen
+              {tx("Reopen")}
             </button>
           )}
         </div>
@@ -343,8 +344,8 @@ export default function RecordDetailPage() {
       {showConvert && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md space-y-3">
-            <h2 className="font-semibold text-lg">Convert to Opportunity</h2>
-            <input type="number" placeholder="Expected Revenue" value={convertForm.expected_revenue}
+            <h2 className="font-semibold text-lg">{tx("Convert to Opportunity")}</h2>
+            <input type="number" placeholder={tx("Expected Revenue")} value={convertForm.expected_revenue}
               onChange={e => setConvertForm(f => ({ ...f, expected_revenue: e.target.value }))}
               className="w-full border rounded-lg px-3 py-2 text-sm" />
             <input type="date" value={convertForm.expected_close_date}
@@ -352,15 +353,15 @@ export default function RecordDetailPage() {
               className="w-full border rounded-lg px-3 py-2 text-sm" />
             <select value={convertForm.stage_id} onChange={e => setConvertForm(f => ({ ...f, stage_id: e.target.value }))}
               className="w-full border rounded-lg px-3 py-2 text-sm">
-              <option value="">Select Stage</option>
+              <option value="">{tx("Select Stage")}</option>
               {stages.map(s => <option key={s.id} value={s.id}>{s.stage_name}</option>)}
             </select>
             <div className="flex gap-2 pt-1">
               <button onClick={handleConvert} disabled={saving}
                 className="flex-1 bg-purple-600 text-white py-2 rounded-lg text-sm disabled:opacity-50">
-                {saving ? "Converting…" : "Convert"}
+                {saving ? tx("Converting…") : tx("Convert")}
               </button>
-              <button onClick={() => setShowConvert(false)} className="flex-1 border rounded-lg py-2 text-sm">Cancel</button>
+              <button onClick={() => setShowConvert(false)} className="flex-1 border rounded-lg py-2 text-sm">{tx("Cancel")}</button>
             </div>
           </div>
         </div>
@@ -370,28 +371,28 @@ export default function RecordDetailPage() {
       {showWon && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md space-y-3">
-            <h2 className="font-semibold text-lg text-green-700">Mark as Won</h2>
-            <input type="number" placeholder="Final Revenue" value={wonForm.final_revenue}
+            <h2 className="font-semibold text-lg text-green-700">{tx("Mark as Won")}</h2>
+            <input type="number" placeholder={tx("Final Revenue")} value={wonForm.final_revenue}
               onChange={e => setWonForm(f => ({ ...f, final_revenue: e.target.value }))}
               className="w-full border rounded-lg px-3 py-2 text-sm" />
             <select value={wonForm.win_reason_code}
               onChange={e => setWonForm(f => ({ ...f, win_reason_code: e.target.value }))}
               className="w-full border rounded-lg px-3 py-2 text-sm">
-              <option value="">Win Reason</option>
+              <option value="">{tx("Win Reason")}</option>
               {Object.entries(WIN_REASON_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
-            <input placeholder="Competitor (if any)" value={wonForm.competitor_name}
+            <input placeholder={tx("Competitor (if any)")} value={wonForm.competitor_name}
               onChange={e => setWonForm(f => ({ ...f, competitor_name: e.target.value }))}
               className="w-full border rounded-lg px-3 py-2 text-sm" />
-            <textarea placeholder="Narrative" value={wonForm.narrative}
+            <textarea placeholder={tx("Narrative")} value={wonForm.narrative}
               onChange={e => setWonForm(f => ({ ...f, narrative: e.target.value }))}
               className="w-full border rounded-lg px-3 py-2 text-sm" rows={2} />
             <div className="flex gap-2 pt-1">
               <button onClick={handleCloseWon} disabled={saving}
                 className="flex-1 bg-green-600 text-white py-2 rounded-lg text-sm disabled:opacity-50">
-                {saving ? "Saving…" : "Confirm Won"}
+                {saving ? tx("Saving…") : tx("Confirm Won")}
               </button>
-              <button onClick={() => setShowWon(false)} className="flex-1 border rounded-lg py-2 text-sm">Cancel</button>
+              <button onClick={() => setShowWon(false)} className="flex-1 border rounded-lg py-2 text-sm">{tx("Cancel")}</button>
             </div>
           </div>
         </div>
@@ -401,25 +402,25 @@ export default function RecordDetailPage() {
       {showLost && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md space-y-3">
-            <h2 className="font-semibold text-lg text-red-700">Mark as Lost</h2>
+            <h2 className="font-semibold text-lg text-red-700">{tx("Mark as Lost")}</h2>
             <select value={lostForm.loss_reason_code}
               onChange={e => setLostForm(f => ({ ...f, loss_reason_code: e.target.value }))}
               className="w-full border rounded-lg px-3 py-2 text-sm">
-              <option value="">Loss Reason *</option>
+              <option value="">{tx("Loss Reason *")}</option>
               {Object.entries(LOSS_REASON_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
-            <input placeholder="Competitor (if any)" value={lostForm.competitor_name}
+            <input placeholder={tx("Competitor (if any)")} value={lostForm.competitor_name}
               onChange={e => setLostForm(f => ({ ...f, competitor_name: e.target.value }))}
               className="w-full border rounded-lg px-3 py-2 text-sm" />
-            <textarea placeholder="Narrative" value={lostForm.narrative}
+            <textarea placeholder={tx("Narrative")} value={lostForm.narrative}
               onChange={e => setLostForm(f => ({ ...f, narrative: e.target.value }))}
               className="w-full border rounded-lg px-3 py-2 text-sm" rows={2} />
             <div className="flex gap-2 pt-1">
               <button onClick={handleCloseLost} disabled={saving}
                 className="flex-1 bg-red-600 text-white py-2 rounded-lg text-sm disabled:opacity-50">
-                {saving ? "Saving…" : "Confirm Lost"}
+                {saving ? tx("Saving…") : tx("Confirm Lost")}
               </button>
-              <button onClick={() => setShowLost(false)} className="flex-1 border rounded-lg py-2 text-sm">Cancel</button>
+              <button onClick={() => setShowLost(false)} className="flex-1 border rounded-lg py-2 text-sm">{tx("Cancel")}</button>
             </div>
           </div>
         </div>
@@ -429,31 +430,31 @@ export default function RecordDetailPage() {
       {showActivity && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md space-y-3">
-            <h2 className="font-semibold text-lg">Log Activity</h2>
+            <h2 className="font-semibold text-lg">{tx("Log Activity")}</h2>
             <select value={actForm.activity_type}
               onChange={e => setActForm(f => ({ ...f, activity_type: e.target.value }))}
               className="w-full border rounded-lg px-3 py-2 text-sm">
               {Object.entries(ACTIVITY_TYPE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
-            <input placeholder="Subject *" value={actForm.subject}
+            <input placeholder={tx("Subject *")} value={actForm.subject}
               onChange={e => setActForm(f => ({ ...f, subject: e.target.value }))}
               className="w-full border rounded-lg px-3 py-2 text-sm" />
-            <textarea placeholder="Description" value={actForm.description}
+            <textarea placeholder={tx("Description")} value={actForm.description}
               onChange={e => setActForm(f => ({ ...f, description: e.target.value }))}
               className="w-full border rounded-lg px-3 py-2 text-sm" rows={2} />
-            <input type="datetime-local" placeholder="Due Date/Time" value={actForm.due_datetime}
+            <input type="datetime-local" placeholder={tx("Due Date/Time")} value={actForm.due_datetime}
               onChange={e => setActForm(f => ({ ...f, due_datetime: e.target.value }))}
               className="w-full border rounded-lg px-3 py-2 text-sm" />
-            <input placeholder="Assigned To" value={actForm.assigned_to}
+            <input placeholder={tx("Assigned To")} value={actForm.assigned_to}
               onChange={e => setActForm(f => ({ ...f, assigned_to: e.target.value }))}
               className="w-full border rounded-lg px-3 py-2 text-sm" />
             <div className="flex gap-2 pt-1">
               <button onClick={handleAddActivity} disabled={saving || !actForm.subject}
                 className="flex-1 bg-blue-600 text-white py-2 rounded-lg text-sm disabled:opacity-50">
-                {saving ? "Saving…" : "Log Activity"}
+                {saving ? tx("Saving…") : tx("Log Activity")}
               </button>
               <button onClick={() => setShowActivity(false)}
-                className="flex-1 border rounded-lg py-2 text-sm">Cancel</button>
+                className="flex-1 border rounded-lg py-2 text-sm">{tx("Cancel")}</button>
             </div>
           </div>
         </div>
@@ -470,9 +471,9 @@ function DealJourney({ id }: { id: string }) {
   if (!j) return null;  // no marketing/CRM-admin right → section hidden
   return (
     <div className="md:col-span-2 bg-white rounded-xl border shadow-sm p-4">
-      <h2 className="font-semibold text-gray-800 mb-2">Website journey</h2>
-      {j.linked === 0 ? <p className="text-xs text-gray-500">No website visits linked to this deal&apos;s {j.contacts} contact(s). Visits are linked only after marketing consent.</p> : <>
-        {j.first_touch && <p className="text-xs">First touch: <b>{j.first_touch.source}</b>{j.first_touch.campaign ? ` / ${j.first_touch.campaign}` : ""} on {new Date(j.first_touch.at).toLocaleString()}</p>}
+      <h2 className="font-semibold text-gray-800 mb-2">{tx("Website journey")}</h2>
+      {j.linked === 0 ? <p className="text-xs text-gray-500">{tx("No website visits linked to this deal's")} {j.contacts} {tx("contact(s). Visits are linked only after marketing consent.")}</p> : <>
+        {j.first_touch && <p className="text-xs">{tx("First touch:")} <b>{j.first_touch.source}</b>{j.first_touch.campaign ? ` / ${j.first_touch.campaign}` : ""} {tx("on")} {new Date(j.first_touch.at).toLocaleString()}</p>}
         <ul className="text-xs max-h-60 overflow-auto">{j.events.map((ev, i) => <li key={i}>{new Date(ev.at).toLocaleString()} · {ev.email} · {ev.kind}{ev.name ? `:${ev.name}` : ""} · {ev.path}</li>)}</ul></>}
     </div>
   );

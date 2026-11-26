@@ -6,6 +6,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import { docsApi, CATEGORY_LABELS, DocumentCategory } from "@/lib/documents";
 import { RequirePermission } from "@/components/PermissionGuard";
+import { tx } from "@/lib/i18n/core";
 
 const CATEGORIES = Object.entries(CATEGORY_LABELS) as [DocumentCategory, string][];
 
@@ -113,16 +114,16 @@ function NewDocumentContent() {
     <div className="max-w-2xl space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">
-          {supersedeId ? "New Version" : "New Document"}
+          {supersedeId ? tx("New Version") : tx("New Document")}
         </h1>
         <p className="text-sm text-gray-500 mt-1">
           {supersedeId
             ? `Creating next version — supersedes document ${supersedeId.slice(0, 8)}…`
-            : "Add a document record to the ERP document store"}
+            : tx("Add a document record to the ERP document store")}
         </p>
         {supersedeId && parentDoc && (
           <div className="mt-2 bg-indigo-50 border border-indigo-200 rounded px-3 py-2 text-xs text-indigo-700">
-            Superseding: <strong>{parentDoc.title}</strong> (v{parentDoc.version}) — previous version will be marked as not-latest.
+            {tx("Superseding:")} <strong>{parentDoc.title}</strong> {tx("(v")}{parentDoc.version}{tx(") — previous version will be marked as not-latest.")}
           </div>
         )}
       </div>
@@ -130,77 +131,77 @@ function NewDocumentContent() {
       <div className="bg-white border rounded-lg p-6 space-y-5">
         {/* Core fields */}
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Title *</label>
+          <label className="block text-xs text-gray-500 mb-1">{tx("Title *")}</label>
           <input className="w-full border rounded px-3 py-2 text-sm" {...f("title")} />
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Category *</label>
+            <label className="block text-xs text-gray-500 mb-1">{tx("Category *")}</label>
             <select className="w-full border rounded px-3 py-2 text-sm" {...f("category")}>
               {CATEGORIES.map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Version</label>
+            <label className="block text-xs text-gray-500 mb-1">{tx("Version")}</label>
             <input type="number" min={1} className="w-full border rounded px-3 py-2 text-sm" {...f("version")} />
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Effective Date</label>
+            <label className="block text-xs text-gray-500 mb-1">{tx("Effective Date")}</label>
             <input type="date" className="w-full border rounded px-3 py-2 text-sm" {...f("effective_date")} />
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Expiry Date</label>
+            <label className="block text-xs text-gray-500 mb-1">{tx("Expiry Date")}</label>
             <input type="date" className="w-full border rounded px-3 py-2 text-sm" {...f("expiry_date")} />
           </div>
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Description</label>
+          <label className="block text-xs text-gray-500 mb-1">{tx("Description")}</label>
           <textarea className="w-full border rounded px-3 py-2 text-sm" rows={3} {...f("description")} />
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Revision Note</label>
+          <label className="block text-xs text-gray-500 mb-1">{tx("Revision Note")}</label>
           <input className="w-full border rounded px-3 py-2 text-sm" {...f("revision_note")} />
         </div>
 
         {/* Entity link */}
         <div className="border-t pt-4">
-          <p className="text-xs font-semibold text-gray-600 mb-3 uppercase tracking-wide">Link to ERP Entity (optional)</p>
+          <p className="text-xs font-semibold text-gray-600 mb-3 uppercase tracking-wide">{tx("Link to ERP Entity (optional)")}</p>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Entity Type</label>
+              <label className="block text-xs text-gray-500 mb-1">{tx("Entity Type")}</label>
               <select className="w-full border rounded px-3 py-2 text-sm" {...f("related_entity_type")}>
-                <option value="">— none —</option>
+                <option value="">{tx("— none —")}</option>
                 {ENTITY_TYPES.map(([k, v]) => <option key={k} value={k}>{v}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Record</label>
+              <label className="block text-xs text-gray-500 mb-1">{tx("Record")}</label>
               {form.related_entity_type && kindFor(form.related_entity_type) ? (
-                <EntityPicker key={form.related_entity_type} kind={kindFor(form.related_entity_type)!} label="Linked record"
+                <EntityPicker key={form.related_entity_type} kind={kindFor(form.related_entity_type)!} label={tx("Linked record")}
                   value={form.related_entity_id} onChange={(id) => setForm((p) => ({ ...p, related_entity_id: id }))} />
               ) : (
-                <input className="w-full border rounded px-3 py-2 text-sm" placeholder={form.related_entity_type ? "Record number" : "Choose a type first"}
+                <input className="w-full border rounded px-3 py-2 text-sm" placeholder={form.related_entity_type ? tx("Record number") : tx("Choose a type first")}
                   disabled={!form.related_entity_type} {...f("related_entity_id")} />
               )}
             </div>
           </div>
           {(form.related_entity_type === "mpesa_transaction" || form.related_entity_type === "cash_transaction") && (
             <div className="mt-2 bg-blue-50 border border-blue-200 rounded px-3 py-2 text-xs text-blue-700">
-              M-Pesa / Cash payment document — link payment proof or reconciliation files here.
+              {tx("M-Pesa / Cash payment document — link payment proof or reconciliation files here.")}
             </div>
           )}
         </div>
 
         {/* Binary files are attached from the saved document's detail page. */}
         <div className="border-t pt-4">
-          <p className="text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide">File Attachment</p>
+          <p className="text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide">{tx("File Attachment")}</p>
           <p className="text-sm text-gray-500">
-            Save the document first. You can attach a file from its detail page; it will remain unavailable until a malware scan succeeds.
+            {tx("Save the document first. You can attach a file from its detail page; it will remain unavailable until a malware scan succeeds.")}
           </p>
         </div>
 
         {mutation.isError && (
-          <p className="text-sm text-red-600">Failed to save document. Check required fields.</p>
+          <p className="text-sm text-red-600">{tx("Failed to save document. Check required fields.")}</p>
         )}
 
         <div className="flex gap-3 pt-2">
@@ -209,13 +210,13 @@ function NewDocumentContent() {
             disabled={!form.title || mutation.isPending}
             className="px-4 py-2 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700 disabled:opacity-50"
           >
-            {mutation.isPending ? "Saving..." : "Save Document"}
+            {mutation.isPending ? tx("Saving...") : tx("Save Document")}
           </button>
           <button
             onClick={() => router.push("/dashboard/documents")}
             className="px-4 py-2 border rounded text-sm hover:bg-gray-50"
           >
-            Cancel
+            {tx("Cancel")}
           </button>
         </div>
       </div>

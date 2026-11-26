@@ -2,6 +2,7 @@
 import { EntityPicker } from "@/components/EntityPicker";
 import { useState } from "react";
 import { shelfLifeApi, FEFOValidateShipmentResponse } from "@/lib/shelfLife";
+import { tx } from "@/lib/i18n/core";
 
 export default function ShipmentValidationPage() {
   const [lotId, setLotId] = useState("");
@@ -24,43 +25,43 @@ export default function ShipmentValidationPage() {
       });
       setResult(r);
     } catch (e: any) {
-      alert(`Error: ${e.message}`);
+      alert(tx("Error: {message}", { message: e.message }));
     } finally { setLoading(false); }
   };
 
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-xl font-bold text-gray-900">Shipment Shelf-Life Validation</h1>
-        <p className="text-sm text-gray-500">Validate a lot before shipment — checks expiry, customer rules, min remaining shelf life</p>
+        <h1 className="text-xl font-bold text-gray-900">{tx("Shipment Shelf-Life Validation")}</h1>
+        <p className="text-sm text-gray-500">{tx("Validate a lot before shipment — checks expiry, customer rules, min remaining shelf life")}</p>
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4 max-w-2xl">
-        <h2 className="font-semibold text-gray-800">Validate Lot for Shipment</h2>
+        <h2 className="font-semibold text-gray-800">{tx("Validate Lot for Shipment")}</h2>
 
         <div className="grid grid-cols-2 gap-4">
           <div className="col-span-2">
-            <label className="text-xs font-medium text-gray-600">Lot *</label>
-            <EntityPicker kind="lot" label="Lot" required value={lotId} onChange={setLotId} />
+            <label className="text-xs font-medium text-gray-600">{tx("Lot *")}</label>
+            <EntityPicker kind="lot" label={tx("Lot")} required value={lotId} onChange={setLotId} />
           </div>
           <div>
-            <label className="text-xs font-medium text-gray-600">Quantity</label>
+            <label className="text-xs font-medium text-gray-600">{tx("Quantity")}</label>
             <input type="number" className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
               value={qty} onChange={e => setQty(e.target.value)} />
           </div>
           <div>
-            <label className="text-xs font-medium text-gray-600">Product</label>
-            <EntityPicker kind="product" label="Product" value={productId} onChange={setProductId} />
+            <label className="text-xs font-medium text-gray-600">{tx("Product")}</label>
+            <EntityPicker kind="product" label={tx("Product")} value={productId} onChange={setProductId} />
           </div>
           <div className="col-span-2">
-            <label className="text-xs font-medium text-gray-600">Customer (for customer-specific rules)</label>
-            <EntityPicker kind="customer" label="Customer" value={customerId} onChange={setCustomerId} />
+            <label className="text-xs font-medium text-gray-600">{tx("Customer (for customer-specific rules)")}</label>
+            <EntityPicker kind="customer" label={tx("Customer")} value={customerId} onChange={setCustomerId} />
           </div>
         </div>
 
         <button onClick={validate} disabled={!lotId || loading}
           className="w-full py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 font-medium">
-          {loading ? "Validating…" : "Validate for Shipment"}
+          {loading ? tx("Validating…") : tx("Validate for Shipment")}
         </button>
 
         {result && (
@@ -71,34 +72,34 @@ export default function ShipmentValidationPage() {
               </div>
               <div>
                 <p className={`font-bold text-lg ${result.allowed ? "text-green-800" : "text-red-800"}`}>
-                  Shipment {result.allowed ? "Approved" : "BLOCKED"}
+                  {tx("Shipment")} {result.allowed ? tx("Approved") : "BLOCKED"}
                 </p>
                 {result.requires_approval && (
-                  <p className="text-sm text-amber-700 font-medium">⚠ Requires supervisor approval</p>
+                  <p className="text-sm text-amber-700 font-medium">{tx("⚠ Requires supervisor approval")}</p>
                 )}
               </div>
             </div>
 
             <div className="grid grid-cols-3 gap-3 text-sm">
               <div className="bg-white/60 rounded-lg p-3 text-center">
-                <p className="text-xs text-gray-500">Remaining Days</p>
+                <p className="text-xs text-gray-500">{tx("Remaining Days")}</p>
                 <p className="text-xl font-bold text-gray-800">{result.remaining_days ?? "—"}</p>
               </div>
               <div className="bg-white/60 rounded-lg p-3 text-center">
-                <p className="text-xs text-gray-500">% Shelf Life</p>
+                <p className="text-xs text-gray-500">{tx("% Shelf Life")}</p>
                 <p className="text-xl font-bold text-gray-800">
                   {result.pct_remaining ? `${parseFloat(result.pct_remaining).toFixed(1)}%` : "—"}
                 </p>
               </div>
               <div className="bg-white/60 rounded-lg p-3 text-center">
-                <p className="text-xs text-gray-500">Customer Minimum</p>
-                <p className="text-xl font-bold text-gray-800">{result.customer_min_days ? `${result.customer_min_days}d` : "—"}</p>
+                <p className="text-xs text-gray-500">{tx("Customer Minimum")}</p>
+                <p className="text-xl font-bold text-gray-800">{result.customer_min_days ? tx("{customer_min_days}d", { customer_min_days: result.customer_min_days }) : "—"}</p>
               </div>
             </div>
 
             {result.errors.length > 0 && (
               <div className="space-y-1">
-                <p className="text-xs font-semibold text-red-700 uppercase">Errors</p>
+                <p className="text-xs font-semibold text-red-700 uppercase">{tx("Errors")}</p>
                 {result.errors.map((e, i) => (
                   <div key={i} className="flex items-start gap-2 text-sm text-red-700">
                     <span className="mt-0.5">✗</span><span>{e}</span>
@@ -108,7 +109,7 @@ export default function ShipmentValidationPage() {
             )}
             {result.warnings.length > 0 && (
               <div className="space-y-1">
-                <p className="text-xs font-semibold text-amber-700 uppercase">Warnings</p>
+                <p className="text-xs font-semibold text-amber-700 uppercase">{tx("Warnings")}</p>
                 {result.warnings.map((w, i) => (
                   <div key={i} className="flex items-start gap-2 text-sm text-amber-700">
                     <span className="mt-0.5">⚠</span><span>{w}</span>
@@ -122,13 +123,13 @@ export default function ShipmentValidationPage() {
 
       {/* Info Box */}
       <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 max-w-2xl">
-        <p className="text-sm font-semibold text-blue-800 mb-2">What this validation checks:</p>
+        <p className="text-sm font-semibold text-blue-800 mb-2">{tx("What this validation checks:")}</p>
         <ul className="text-xs text-blue-700 space-y-1">
-          <li>• Lot expiry date vs today</li>
-          <li>• Item-level minimum remaining shelf life for shipment</li>
-          <li>• Customer-specific minimum remaining days or % rules</li>
-          <li>• Explicit shipment block flags on the lot profile</li>
-          <li>• Near-expiry shipment policy (block / warn / approval required)</li>
+          <li>{tx("• Lot expiry date vs today")}</li>
+          <li>{tx("• Item-level minimum remaining shelf life for shipment")}</li>
+          <li>{tx("• Customer-specific minimum remaining days or % rules")}</li>
+          <li>{tx("• Explicit shipment block flags on the lot profile")}</li>
+          <li>{tx("• Near-expiry shipment policy (block / warn / approval required)")}</li>
         </ul>
       </div>
     </div>

@@ -1,24 +1,25 @@
 "use client";
 import { useEffect, useState } from "react";
 import { chatterApi, CTAIRec, CTAIAgentType, CTAIRecStatus } from "@/lib/chatter";
+import { tx, lx } from "@/lib/i18n/core";
 
-const AGENT_META: Record<CTAIAgentType, { label: string; desc: string; color: string }> = {
+const AGENT_META: Record<CTAIAgentType, { label: string; desc: string; color: string }> = lx(() => ({
   activity_summarizer: {
-    label: "Activity Summarizer",
-    desc: "Identifies high-activity records with 10+ events and suggests pinning a summary comment to help team members catch up quickly.",
+    label: tx("Activity Summarizer"),
+    desc: tx("Identifies high-activity records with 10+ events and suggests pinning a summary comment to help team members catch up quickly."),
     color: "bg-blue-50 border-blue-200",
   },
   follow_up_assistant: {
-    label: "Follow-up Assistant",
-    desc: "Detects @mentions that are older than 48 hours without a response or notification, and flags them for follow-up.",
+    label: tx("Follow-up Assistant"),
+    desc: tx("Detects @mentions that are older than 48 hours without a response or notification, and flags them for follow-up."),
     color: "bg-orange-50 border-orange-200",
   },
   insight_extractor: {
-    label: "Insight Extractor",
-    desc: "Scans recent comments for problem-related keywords (error, delay, stuck, urgent) and surfaces patterns and inactive modules.",
+    label: tx("Insight Extractor"),
+    desc: tx("Scans recent comments for problem-related keywords (error, delay, stuck, urgent) and surfaces patterns and inactive modules."),
     color: "bg-purple-50 border-purple-200",
   },
-};
+}));
 
 const STATUS_COLOR: Record<CTAIRecStatus, string> = {
   pending: "bg-yellow-100 text-yellow-700",
@@ -52,7 +53,7 @@ export default function ChatterAIPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-xl font-bold text-gray-900">Chatter AI Insights</h1>
+      <h1 className="text-xl font-bold text-gray-900">{tx("Chatter AI Insights")}</h1>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         {(Object.entries(AGENT_META) as [CTAIAgentType, typeof AGENT_META[CTAIAgentType]][]).map(([type, meta]) => (
@@ -61,7 +62,7 @@ export default function ChatterAIPage() {
             <p className="text-xs text-gray-600 mt-1 mb-3">{meta.desc}</p>
             <button onClick={() => run(type)} disabled={running === type}
               className="w-full rounded bg-gray-800 px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-700 disabled:opacity-50">
-              {running === type ? "Running…" : "Run Agent"}
+              {running === type ? tx("Running…") : tx("Run Agent")}
             </button>
           </div>
         ))}
@@ -70,12 +71,12 @@ export default function ChatterAIPage() {
       <div className="bg-white border rounded-lg shadow-sm">
         <div className="px-4 py-3 border-b">
           <h2 className="font-semibold text-gray-800 text-sm">
-            AI Recommendations ({recs.filter(r => r.status === "pending").length} pending)
+            {tx("AI Recommendations (")}{recs.filter(r => r.status === "pending").length} {tx("pending)")}
           </h2>
         </div>
-        {loading ? <p className="text-gray-500 text-sm p-4">Loading…</p> :
+        {loading ? <p className="text-gray-500 text-sm p-4">{tx("Loading…")}</p> :
           recs.length === 0
-            ? <p className="text-gray-400 text-sm text-center py-8">No recommendations yet.</p>
+            ? <p className="text-gray-400 text-sm text-center py-8">{tx("No recommendations yet.")}</p>
             : (
               <div className="divide-y">
                 {recs.map(r => (
@@ -89,7 +90,7 @@ export default function ChatterAIPage() {
                           <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLOR[r.status]}`}>
                             {r.status}
                           </span>
-                          {r.score != null && <span className="text-xs text-gray-400">Score: {r.score}</span>}
+                          {r.score != null && <span className="text-xs text-gray-400">{tx("Score:")} {r.score}</span>}
                           {r.reference_type && (
                             <span className="text-xs bg-gray-100 text-gray-500 rounded px-1.5 py-0.5 capitalize">
                               {r.reference_type.replace("_", " ")}
@@ -102,11 +103,11 @@ export default function ChatterAIPage() {
                       {r.status === "pending" && (
                         <div className="flex flex-col gap-1 shrink-0">
                           <button onClick={() => ack(r.rec_id, "acknowledged")}
-                            className="rounded border border-blue-300 px-2 py-0.5 text-xs text-blue-600 hover:bg-blue-50">Ack</button>
+                            className="rounded border border-blue-300 px-2 py-0.5 text-xs text-blue-600 hover:bg-blue-50">{tx("Ack")}</button>
                           <button onClick={() => ack(r.rec_id, "actioned")}
-                            className="rounded border border-green-300 px-2 py-0.5 text-xs text-green-600 hover:bg-green-50">Action</button>
+                            className="rounded border border-green-300 px-2 py-0.5 text-xs text-green-600 hover:bg-green-50">{tx("Action")}</button>
                           <button onClick={() => ack(r.rec_id, "dismissed")}
-                            className="rounded border border-gray-200 px-2 py-0.5 text-xs text-gray-500 hover:bg-gray-50">Dismiss</button>
+                            className="rounded border border-gray-200 px-2 py-0.5 text-xs text-gray-500 hover:bg-gray-50">{tx("Dismiss")}</button>
                         </div>
                       )}
                     </div>

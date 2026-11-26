@@ -6,6 +6,7 @@ import {
 } from "@/lib/procurement";
 import { suppliersApi, Supplier } from "@/lib/suppliers";
 import { useAuth } from "@/context/AuthContext";
+import { tx } from "@/lib/i18n/core";
 
 const STATUS_COLORS: Record<RFQStatus, string> = {
   DRAFT: "bg-gray-100 text-gray-600",
@@ -102,7 +103,7 @@ export default function RFQPage() {
 
   const create = async () => {
     if (!form.rfq_no.trim() || !form.title.trim() || !form.quantity || selectedSupplierIds.length === 0) {
-      setError("RFQ No., Title, Quantity, and at least one invited supplier are required"); return;
+      setError(tx("RFQ No., Title, Quantity, and at least one invited supplier are required")); return;
     }
     setSaving(true); setError("");
     try {
@@ -116,7 +117,7 @@ export default function RFQPage() {
       setSelectedSupplierIds([]);
       await load();
     } catch {
-      setError("Failed to create RFQ");
+      setError(tx("Failed to create RFQ"));
     } finally {
       setSaving(false);
     }
@@ -129,7 +130,7 @@ export default function RFQPage() {
       await load();
       if (selected?.id === id) setSelected(updated);
     } catch {
-      setError("Could not issue invitations. Confirm that the RFQ has active suppliers and remains a draft.");
+      setError(tx("Could not issue invitations. Confirm that the RFQ has active suppliers and remains a draft."));
     }
   };
 
@@ -146,7 +147,7 @@ export default function RFQPage() {
         };
       });
     if (allocations.length === 0 || allocations.some((allocation) => !Number.isFinite(allocation.quantity) || allocation.quantity <= 0)) {
-      setError("Enter a positive allocation quantity for at least one submitted bid.");
+      setError(tx("Enter a positive allocation quantity for at least one submitted bid."));
       return;
     }
     setSaving(true); setError("");
@@ -159,7 +160,7 @@ export default function RFQPage() {
       setAwardJustification("");
       setAwards(await procurementApi.listRFQAwards(selected.id));
     } catch {
-      setError("Award proposal was not saved. Check allocation totals and confirm an active RFQ approval rule has an eligible approver.");
+      setError(tx("Award proposal was not saved. Check allocation totals and confirm an active RFQ approval rule has an eligible approver."));
     } finally {
       setSaving(false);
     }
@@ -169,7 +170,7 @@ export default function RFQPage() {
     if (!selected) return;
     const comments = awardComments[awardId]?.trim() ?? "";
     if (decision === "reject" && comments.length < 3) {
-      setError("Enter a rejection reason of at least three characters.");
+      setError(tx("Enter a rejection reason of at least three characters."));
       return;
     }
     setSaving(true); setError("");
@@ -179,17 +180,17 @@ export default function RFQPage() {
       setSelected(await procurementApi.getRFQ(selected.id));
       await load();
     } catch {
-      setError("Award decision was not recorded. Confirm that this is the current approval step assigned to your account.");
+      setError(tx("Award decision was not recorded. Confirm that this is the current approval step assigned to your account."));
     } finally {
       setSaving(false);
     }
   };
 
   const submitResponse = async () => {
-    if (!selected || !respForm.supplier_id) { setError("Supplier ID required"); return; }
+    if (!selected || !respForm.supplier_id) { setError(tx("Supplier ID required")); return; }
     if (selected.lines.length > 0 && selected.lines.some((line) => !responseLineQuotes[line.id]?.trim()
       || !Number.isFinite(Number(responseLineQuotes[line.id])) || Number(responseLineQuotes[line.id]) <= 0)) {
-      setError("Enter a positive unit price for every RFQ line.");
+      setError(tx("Enter a positive unit price for every RFQ line."));
       return;
     }
     setSaving(true); setError("");
@@ -215,7 +216,7 @@ export default function RFQPage() {
       setSelected(updated);
       await load();
     } catch {
-      setError("Failed to submit response");
+      setError(tx("Failed to submit response"));
     } finally {
       setSaving(false);
     }
@@ -233,7 +234,7 @@ export default function RFQPage() {
       });
       setSelected(await procurementApi.getRFQ(selected.id));
     } catch {
-      setError("Could not save the matrix. Use unique codes, include both dimensions, and make weights total exactly 100%.");
+      setError(tx("Could not save the matrix. Use unique codes, include both dimensions, and make weights total exactly 100%."));
     } finally {
       setSaving(false);
     }
@@ -266,7 +267,7 @@ export default function RFQPage() {
       setSelected(await procurementApi.getRFQ(selected.id));
       setActiveEvaluationResponseId(null);
     } catch {
-      setError("Could not record evaluation. Enter a 0–100 score for every criterion and pass/fail for mandatory gates.");
+      setError(tx("Could not record evaluation. Enter a 0–100 score for every criterion and pass/fail for mandatory gates."));
     } finally {
       setSaving(false);
     }
@@ -283,24 +284,24 @@ export default function RFQPage() {
     <div className="p-6 space-y-5">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Request for Quotation (RFQ)</h1>
-          <p className="text-xs text-gray-500 mt-0.5">Issue RFQs to suppliers, collect quotes, compare, and award.</p>
+          <h1 className="text-xl font-bold text-gray-900">{tx("Request for Quotation (RFQ)")}</h1>
+          <p className="text-xs text-gray-500 mt-0.5">{tx("Issue RFQs to suppliers, collect quotes, compare, and award.")}</p>
         </div>
         <button onClick={() => { setShowCreate(true); setError(""); }}
           className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
-          + New RFQ
+          {tx("+ New RFQ")}
         </button>
       </div>
 
       <div className="flex gap-3 flex-wrap items-center">
         <select className="border rounded px-2 py-1.5 text-sm" value={filterStatus}
           onChange={e => setFilterStatus(e.target.value as RFQStatus | "")}>
-          <option value="">All Status</option>
+          <option value="">{tx("All Status")}</option>
           {(["DRAFT","SENT","RESPONSES_RECEIVED","AWARDED","CANCELLED"] as RFQStatus[]).map(s => (
             <option key={s} value={s}>{s.replace("_", " ")}</option>
           ))}
         </select>
-        <span className="text-xs text-gray-500 self-center">{rfqs.length} RFQs</span>
+        <span className="text-xs text-gray-500 self-center">{rfqs.length} {tx("RFQs")}</span>
         {error && <span role="alert" className="text-xs text-red-600">{error}</span>}
       </div>
 
@@ -308,18 +309,18 @@ export default function RFQPage() {
         {/* RFQ List */}
         <div className="lg:col-span-2">
           {loading ? (
-            <p className="text-sm text-gray-500">Loading…</p>
+            <p className="text-sm text-gray-500">{tx("Loading…")}</p>
           ) : rfqs.length === 0 ? (
             <div className="bg-white border rounded-lg p-10 text-center text-gray-400">
               <p className="text-2xl mb-2">📋</p>
-              <p className="text-sm">No RFQs found.</p>
+              <p className="text-sm">{tx("No RFQs found.")}</p>
             </div>
           ) : (
             <div className="bg-white border rounded-lg shadow-sm overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 border-b">
                   <tr>
-                    {["RFQ No.", "Title", "Qty", "Deadline", "Responses", "Status", ""].map(h => (
+                    {[tx("RFQ No."), tx("Title"), tx("Qty"), tx("Deadline"), tx("Responses"), tx("Status"), ""].map(h => (
                       <th key={h} className="px-4 py-2 text-left text-xs font-semibold text-gray-600">{h}</th>
                     ))}
                   </tr>
@@ -333,7 +334,7 @@ export default function RFQPage() {
                           {r.title}
                         </button>
                       </td>
-                      <td className="px-4 py-3 text-xs text-gray-600">{r.quantity != null ? `${r.quantity} ${r.unit}` : `${r.line_count} lines`}</td>
+                      <td className="px-4 py-3 text-xs text-gray-600">{r.quantity != null ? `${r.quantity} ${r.unit}` : tx("{line_count} lines", { line_count: r.line_count })}</td>
                       <td className="px-4 py-3 text-xs text-gray-600">{r.response_deadline ?? "—"}</td>
                       <td className="px-4 py-3 text-xs font-semibold text-blue-600">{r.response_count}/{r.invited_count}</td>
                       <td className="px-4 py-3">
@@ -344,7 +345,7 @@ export default function RFQPage() {
                       <td className="px-4 py-3">
                         {r.status === "DRAFT" && (
                           <button onClick={() => sendRFQ(r.id)} className="text-xs text-blue-600 hover:underline">
-                            Issue invitations
+                            {tx("Issue invitations")}
                           </button>
                         )}
                       </td>
@@ -359,7 +360,7 @@ export default function RFQPage() {
         {/* Detail Panel */}
         <div className="bg-white border rounded-lg p-5">
           {detailLoading ? (
-            <p className="text-sm text-gray-500">Loading…</p>
+            <p className="text-sm text-gray-500">{tx("Loading…")}</p>
           ) : selected ? (
             <div className="space-y-4">
               <div>
@@ -370,12 +371,12 @@ export default function RFQPage() {
                   </span>
                 </div>
                 <p className="text-xs text-gray-600">{selected.title}</p>
-                <p className="text-xs text-gray-500 mt-1">{selected.quantity != null ? `${selected.quantity} ${selected.unit}` : `${selected.lines.length} event lines`}</p>
+                <p className="text-xs text-gray-500 mt-1">{selected.quantity != null ? `${selected.quantity} ${selected.unit}` : tx("{length} event lines", { length: selected.lines.length })}</p>
                 {selected.lines.length > 0 && (
                   <ul className="mt-2 space-y-1 text-xs text-gray-500">
                     {selected.lines.map((line) => (
                       <li key={line.id}>
-                        {line.line_no}. {line.description || line.material_id || line.product_id || "Requirement"}: {line.quantity} {line.unit}
+                        {line.line_no}. {line.description || line.material_id || line.product_id || tx("Requirement")}: {line.quantity} {line.unit}
                       </li>
                     ))}
                   </ul>
@@ -385,33 +386,33 @@ export default function RFQPage() {
 
               <div className="border-t pt-3">
                 {selected.status === "SENT" || selected.status === "RESPONSES_RECEIVED" ? (
-                  <p className="mb-2 text-xs text-amber-700">Invitation recorded in the ERP. This local workflow does not send external email.</p>
+                  <p className="mb-2 text-xs text-amber-700">{tx("Invitation recorded in the ERP. This local workflow does not send external email.")}</p>
                 ) : null}
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs font-semibold text-gray-600">Bids ({selected.response_count}) · Invited ({selected.invited_count})</p>
+                  <p className="text-xs font-semibold text-gray-600">{tx("Bids (")}{selected.response_count}{tx(") · Invited (")}{selected.invited_count})</p>
                   {(selected.status === "SENT" || selected.status === "RESPONSES_RECEIVED") && (
                     <button onClick={() => { setShowResponse(true); setError(""); setResponseLineQuotes({}); }}
                       className="text-xs text-blue-600 hover:underline">
-                      + Record Bid
+                      {tx("+ Record Bid")}
                     </button>
                   )}
                 </div>
                 {selected.responses.length === 0 ? (
-                  <p className="text-xs text-gray-400">No responses yet.</p>
+                  <p className="text-xs text-gray-400">{tx("No responses yet.")}</p>
                 ) : (
                   <div className="space-y-2">
                     {selected.responses.map(resp => (
                       <div key={resp.id} className="border rounded p-3 bg-gray-50">
                         <div className="flex items-center justify-between">
                           <p className="text-xs font-medium text-gray-700">{resp.supplier_name ?? resp.supplier_id.slice(0,8)}</p>
-                          <span className="text-xs text-gray-500">{resp.status} · {resp.invitation_status === "ISSUED" ? "Invitation issued" : "Not issued"}</span>
+                          <span className="text-xs text-gray-500">{resp.status} · {resp.invitation_status === "ISSUED" ? tx("Invitation issued") : tx("Not issued")}</span>
                         </div>
-                        {resp.invitation_issued_at && <p className="text-xs text-gray-500 mt-1">Issued in ERP: {new Date(resp.invitation_issued_at).toLocaleString()}</p>}
-                        {resp.submitted_at && <p className="text-xs text-gray-500 mt-1">Bid recorded: {new Date(resp.submitted_at).toLocaleString()}</p>}
+                        {resp.invitation_issued_at && <p className="text-xs text-gray-500 mt-1">{tx("Issued in ERP:")} {new Date(resp.invitation_issued_at).toLocaleString()}</p>}
+                        {resp.submitted_at && <p className="text-xs text-gray-500 mt-1">{tx("Bid recorded:")} {new Date(resp.submitted_at).toLocaleString()}</p>}
                         {resp.quoted_unit_price != null && (
                           <p className="text-xs text-gray-600 mt-1">
                             {resp.quoted_currency} {Number(resp.quoted_unit_price).toLocaleString()} /unit
-                            {resp.lead_time_days != null && ` · ${resp.lead_time_days}d lead`}
+                            {resp.lead_time_days != null && tx(" · {lead_time_days}d lead", { lead_time_days: resp.lead_time_days })}
                           </p>
                         )}
                         {resp.line_quotes.map((quote) => {
@@ -429,12 +430,12 @@ export default function RFQPage() {
                 )}
                 {selected.status === "RESPONSES_RECEIVED" && selected.access?.can_edit && (
                   <div className="mt-3 space-y-2 rounded border border-green-200 bg-green-50 p-3">
-                    <p className="text-xs font-semibold text-green-900">Award proposal</p>
+                    <p className="text-xs font-semibold text-green-900">{tx("Award proposal")}</p>
                     <p className="text-[11px] text-green-800">
                       {selected.lines.length > 0
-                        ? "Allocate every RFQ line quantity across submitted bids. Line-level supplier prices are used for the approval amount."
-                        : `Allocate the full ${selected.quantity} ${selected.unit} across submitted bids.`}
-                      {" "}An active RFQ approval rule is required; configured scope and amount limits are applied.
+                        ? tx("Allocate every RFQ line quantity across submitted bids. Line-level supplier prices are used for the approval amount.")
+                        : tx("Allocate the full {quantity} {unit} across submitted bids.", { quantity: selected.quantity, unit: selected.unit })}
+                      {" "}{tx("An active RFQ approval rule is required; configured scope and amount limits are applied.")}
                     </p>
                     {(selected.lines.length > 0 ? selected.lines : [null]).flatMap((line) => (
                       selected.responses.filter((response) => response.status === "SUBMITTED").map((response) => {
@@ -448,7 +449,7 @@ export default function RFQPage() {
                               {line ? `${line.line_no}. ${line.description || "RFQ line"} · ` : ""}
                               {response.supplier_name ?? response.supplier_id.slice(0, 8)} ·
                               {" "}{lineQuote?.quoted_currency ?? response.quoted_currency}{" "}
-                              {lineQuote?.quoted_unit_price ?? response.quoted_unit_price ?? "no quote"}
+                              {lineQuote?.quoted_unit_price ?? response.quoted_unit_price ?? tx("no quote")}
                             </span>
                             <input
                               aria-label={`Award quantity for ${response.supplier_name ?? response.supplier_id}${line ? ` on line ${line.line_no}` : ""}`}
@@ -462,27 +463,27 @@ export default function RFQPage() {
                       })
                     ))}
                     <textarea
-                      aria-label="Award proposal justification"
+                      aria-label={tx("Award proposal justification")}
                       value={awardJustification}
                       onChange={(event) => setAwardJustification(event.target.value)}
                       maxLength={1000}
-                      placeholder="Business justification"
+                      placeholder={tx("Business justification")}
                       className="w-full rounded border px-2 py-1 text-xs"
                     />
                     <button type="button" onClick={createAwardProposal}
                       disabled={saving || awardJustification.trim().length < 3}
                       className="w-full rounded bg-green-700 px-3 py-2 text-xs font-medium text-white disabled:opacity-50">
-                      {saving ? "Saving…" : "Submit award proposal for approval"}
+                      {saving ? tx("Saving…") : tx("Submit award proposal for approval")}
                     </button>
                   </div>
                 )}
                 {awards.length > 0 && (
                   <div className="mt-3 space-y-2 border-t pt-3">
-                    <p className="text-xs font-semibold text-gray-700">Award proposal history</p>
+                    <p className="text-xs font-semibold text-gray-700">{tx("Award proposal history")}</p>
                     {awards.map((award) => (
                       <div key={award.id} className="space-y-2 rounded border p-3">
                         <div className="flex items-center justify-between text-xs">
-                          <span className="font-medium">Revision {award.revision_no} · {award.currency} {Number(award.total_amount).toLocaleString()}</span>
+                          <span className="font-medium">{tx("Revision")} {award.revision_no} · {award.currency} {Number(award.total_amount).toLocaleString()}</span>
                           <span>{award.status.replace("_", " ")}</span>
                         </div>
                         <p className="text-[11px] text-gray-600">{award.justification}</p>
@@ -495,19 +496,19 @@ export default function RFQPage() {
                         </ul>
                         {award.approvals.map((approval) => (
                           <div key={approval.id} className="flex flex-wrap items-center gap-2 border-t pt-2 text-[11px]">
-                            <span className="flex-1">{approval.rule_name} · level {approval.approval_level} · {approval.decision_status}{approval.requires_all_matching_approvers ? " · all assigned approvers" : ""}</span>
+                            <span className="flex-1">{approval.rule_name} {tx("· level")} {approval.approval_level} · {approval.decision_status}{approval.requires_all_matching_approvers ? tx(" · all assigned approvers") : ""}</span>
                             {award.status === "PENDING_APPROVAL" && approval.decision_status === "PENDING"
                               && isCurrentAwardApprovalStep(award, approval)
                               && selected.access?.can_approve && user?.id === approval.approver_user_id && (
                               <>
-                                <input aria-label="Award rejection reason" value={awardComments[award.id] ?? ""}
+                                <input aria-label={tx("Award rejection reason")} value={awardComments[award.id] ?? ""}
                                   onChange={(event) => setAwardComments((current) => ({ ...current, [award.id]: event.target.value }))}
-                                  className="min-w-40 rounded border px-2 py-1" placeholder="Rejection reason if rejecting" />
+                                  className="min-w-40 rounded border px-2 py-1" placeholder={tx("Rejection reason if rejecting")} />
                                 <button type="button" disabled={saving} onClick={() => decideAward(award.id, "approve")}
-                                  className="rounded bg-green-700 px-2 py-1 text-white disabled:opacity-50">Approve</button>
+                                  className="rounded bg-green-700 px-2 py-1 text-white disabled:opacity-50">{tx("Approve")}</button>
                                 <button type="button" disabled={saving || (awardComments[award.id] ?? "").trim().length < 3}
                                   onClick={() => decideAward(award.id, "reject")}
-                                  className="rounded bg-red-700 px-2 py-1 text-white disabled:opacity-50">Reject</button>
+                                  className="rounded bg-red-700 px-2 py-1 text-white disabled:opacity-50">{tx("Reject")}</button>
                               </>
                             )}
                             {approval.comments && <p className="w-full text-gray-500">{approval.comments}</p>}
@@ -523,8 +524,8 @@ export default function RFQPage() {
               {(selected.status === "SENT" || selected.status === "RESPONSES_RECEIVED") && (
                 <div className="border-t pt-3 space-y-3">
                   <div>
-                    <p className="text-xs font-semibold text-gray-700">Bid evaluation</p>
-                    <p className="text-[11px] text-gray-500 mt-1">Set a separate, buyer-configured matrix for this RFQ. Example values are editable and are not organization-wide policy.</p>
+                    <p className="text-xs font-semibold text-gray-700">{tx("Bid evaluation")}</p>
+                    <p className="text-[11px] text-gray-500 mt-1">{tx("Set a separate, buyer-configured matrix for this RFQ. Example values are editable and are not organization-wide policy.")}</p>
                   </div>
                   {selected.evaluation_criteria.length === 0 ? (
                     selected.access?.can_edit ? <div className="space-y-2">
@@ -532,18 +533,18 @@ export default function RFQPage() {
                         <div key={`${criterion.code}-${index}`} className="grid grid-cols-2 gap-2 rounded border p-2">
                           <input aria-label={`Criterion ${index + 1} code`} value={criterion.code}
                             onChange={(event) => setCriteriaDraft((rows) => rows.map((row, rowIndex) => rowIndex === index ? { ...row, code: event.target.value } : row))}
-                            className="border rounded px-2 py-1 text-xs" placeholder="Code" />
+                            className="border rounded px-2 py-1 text-xs" placeholder={tx("Code")} />
                           <input aria-label={`Criterion ${index + 1} name`} value={criterion.name}
                             onChange={(event) => setCriteriaDraft((rows) => rows.map((row, rowIndex) => rowIndex === index ? { ...row, name: event.target.value } : row))}
-                            className="border rounded px-2 py-1 text-xs" placeholder="Criterion name" />
+                            className="border rounded px-2 py-1 text-xs" placeholder={tx("Criterion name")} />
                           <select aria-label={`Criterion ${index + 1} dimension`} value={criterion.dimension}
                             onChange={(event) => setCriteriaDraft((rows) => rows.map((row, rowIndex) => rowIndex === index ? { ...row, dimension: event.target.value as RFQEvaluationDimension } : row))}
                             className="border rounded px-2 py-1 text-xs">
-                            <option value="TECHNICAL">Technical</option>
-                            <option value="COMMERCIAL">Commercial</option>
+                            <option value="TECHNICAL">{tx("Technical")}</option>
+                            <option value="COMMERCIAL">{tx("Commercial")}</option>
                           </select>
                           <label className="flex items-center gap-2 text-xs text-gray-600">
-                            Weight %
+                            {tx("Weight %")}
                             <input aria-label={`Criterion ${index + 1} weight`} type="number" min="0.01" max="100" step="0.01" value={criterion.weight_percent}
                               onChange={(event) => setCriteriaDraft((rows) => rows.map((row, rowIndex) => rowIndex === index ? { ...row, weight_percent: event.target.value } : row))}
                               className="w-20 border rounded px-2 py-1" />
@@ -551,29 +552,29 @@ export default function RFQPage() {
                           <label className="col-span-2 flex items-center gap-2 text-xs text-gray-600">
                             <input type="checkbox" checked={criterion.is_mandatory}
                               onChange={(event) => setCriteriaDraft((rows) => rows.map((row, rowIndex) => rowIndex === index ? { ...row, is_mandatory: event.target.checked } : row))} />
-                            Mandatory pass/fail gate
+                            {tx("Mandatory pass/fail gate")}
                           </label>
                         </div>
                       ))}
                       <div className="flex items-center justify-between text-xs">
                         <button type="button" onClick={() => setCriteriaDraft((rows) => [...rows, {
                           code: `CRITERION_${rows.length + 1}`, name: "New criterion", dimension: "COMMERCIAL", weight_percent: "10", is_mandatory: false,
-                        }])} className="text-blue-600 hover:underline">+ Add criterion</button>
+                        }])} className="text-blue-600 hover:underline">{tx("+ Add criterion")}</button>
                         <span className={evaluationMatrixReady ? "text-green-700" : "text-amber-700"}>
-                          Total: {criteriaWeightTotal.toFixed(2)}%
+                          {tx("Total:")} {criteriaWeightTotal.toFixed(2)}%
                         </span>
                       </div>
                       <button type="button" onClick={saveEvaluationMatrix} disabled={saving || !evaluationMatrixReady}
                         className="w-full rounded bg-indigo-600 px-3 py-2 text-xs font-medium text-white disabled:opacity-50">
-                        {saving ? "Saving…" : "Save RFQ evaluation matrix"}
+                        {saving ? tx("Saving…") : tx("Save RFQ evaluation matrix")}
                       </button>
-                    </div> : <p className="text-xs text-gray-500">An evaluation matrix has not been configured for this RFQ.</p>
+                    </div> : <p className="text-xs text-gray-500">{tx("An evaluation matrix has not been configured for this RFQ.")}</p>
                   ) : (
                     <div className="space-y-3">
                       <ul className="space-y-1">
                         {selected.evaluation_criteria.map((criterion) => (
                           <li key={criterion.id} className="text-[11px] text-gray-600">
-                            {criterion.dimension}: {criterion.name} · {Number(criterion.weight_percent).toFixed(2)}%{criterion.is_mandatory ? " · mandatory gate" : ""}
+                            {criterion.dimension}: {criterion.name} · {Number(criterion.weight_percent).toFixed(2)}%{criterion.is_mandatory ? tx(" · mandatory gate") : ""}
                           </li>
                         ))}
                       </ul>
@@ -593,23 +594,23 @@ export default function RFQPage() {
                                 return (
                                   <div key={criterion.id} className="grid grid-cols-2 gap-2 border-t pt-2">
                                     <label className="text-[11px] text-gray-600">
-                                      {criterion.name} score (0–100)
+                                      {criterion.name} {tx("score (0–100)")}
                                       <input type="number" min="0" max="100" step="0.01" value={draft.score}
                                         onChange={(event) => setEvaluationDraft((current) => ({ ...current, [criterion.id]: { ...draft, score: event.target.value } }))}
                                         className="mt-1 w-full border rounded px-2 py-1 text-xs" />
                                     </label>
                                     {criterion.is_mandatory ? (
-                                      <label className="text-[11px] text-gray-600">Mandatory gate decision
+                                      <label className="text-[11px] text-gray-600">{tx("Mandatory gate decision")}
                                         <select value={draft.passes_gate === null ? "" : String(draft.passes_gate)}
                                           onChange={(event) => setEvaluationDraft((current) => ({ ...current, [criterion.id]: { ...draft, passes_gate: event.target.value === "" ? null : event.target.value === "true" } }))}
                                           className="mt-1 w-full border rounded px-2 py-1 text-xs">
-                                          <option value="">Select pass/fail</option><option value="true">Pass</option><option value="false">Fail</option>
+                                          <option value="">{tx("Select pass/fail")}</option><option value="true">{tx("Pass")}</option><option value="false">{tx("Fail")}</option>
                                         </select>
                                       </label>
-                                    ) : <div className="text-[11px] text-gray-500 self-center">{previous ? `Previous revision ${previous.revision_no}` : "No prior score"}</div>}
-                                    <input aria-label={`${criterion.name} evaluation comments`} value={draft.comments}
+                                    ) : <div className="text-[11px] text-gray-500 self-center">{previous ? tx("Previous revision {revision_no}", { revision_no: previous.revision_no }) : tx("No prior score")}</div>}
+                                    <input aria-label={tx("{name} evaluation comments", { name: criterion.name })} value={draft.comments}
                                       onChange={(event) => setEvaluationDraft((current) => ({ ...current, [criterion.id]: { ...draft, comments: event.target.value } }))}
-                                      className="col-span-2 border rounded px-2 py-1 text-xs" placeholder="Evaluation notes (optional)" />
+                                      className="col-span-2 border rounded px-2 py-1 text-xs" placeholder={tx("Evaluation notes (optional)")} />
                                   </div>
                                 );
                               })}
@@ -620,19 +621,19 @@ export default function RFQPage() {
                                   const score = Number(draft?.score);
                                   return !draft?.score.trim() || !Number.isFinite(score) || score < 0 || score > 100 || (criterion.is_mandatory && draft.passes_gate === null);
                                 })}
-                                  className="flex-1 rounded bg-indigo-600 px-2 py-1.5 text-xs text-white disabled:opacity-50">Save evaluation revision</button>
-                                <button type="button" onClick={() => setActiveEvaluationResponseId(null)} className="rounded border px-2 py-1.5 text-xs">Cancel</button>
+                                  className="flex-1 rounded bg-indigo-600 px-2 py-1.5 text-xs text-white disabled:opacity-50">{tx("Save evaluation revision")}</button>
+                                <button type="button" onClick={() => setActiveEvaluationResponseId(null)} className="rounded border px-2 py-1.5 text-xs">{tx("Cancel")}</button>
                               </div>
                             </div>
                           ) : (
                             <div className="space-y-1">
                               {response.evaluation_history.map((evaluation) => (
                                 <p key={`${evaluation.criterion_id}-${evaluation.revision_no}`} className="text-[11px] text-gray-500">
-                                  {evaluation.criterion_name ?? evaluation.criterion_code}: {Number(evaluation.score).toFixed(2)} · revision {evaluation.revision_no}{evaluation.passes_gate === null || evaluation.passes_gate === undefined ? "" : evaluation.passes_gate ? " · gate passed" : " · gate failed"} · {evaluation.evaluator_id ? `evaluator ${evaluation.evaluator_id.slice(0, 8)}` : "unattributed"} · {new Date(evaluation.evaluated_at).toLocaleString()}{evaluation.comments ? ` · ${evaluation.comments}` : ""}
+                                  {evaluation.criterion_name ?? evaluation.criterion_code}: {Number(evaluation.score).toFixed(2)} {tx("· revision")} {evaluation.revision_no}{evaluation.passes_gate === null || evaluation.passes_gate === undefined ? "" : evaluation.passes_gate ? tx(" · gate passed") : tx(" · gate failed")} · {evaluation.evaluator_id ? `evaluator ${evaluation.evaluator_id.slice(0, 8)}` : tx("unattributed")} · {new Date(evaluation.evaluated_at).toLocaleString()}{evaluation.comments ? ` · ${evaluation.comments}` : ""}
                                 </p>
                               ))}
                               {selected.access?.can_edit && <button type="button" onClick={() => startEvaluation(response, selected.evaluation_criteria)} className="text-xs text-indigo-700 hover:underline">
-                                {response.evaluations.length > 0 ? "Record new evaluation revision" : "Evaluate bid"}
+                                {response.evaluations.length > 0 ? tx("Record new evaluation revision") : tx("Evaluate bid")}
                               </button>}
                             </div>
                           )}
@@ -645,14 +646,14 @@ export default function RFQPage() {
 
               {selected.awarded_supplier_name && (
                 <div className="bg-green-50 border border-green-200 rounded p-3">
-                  <p className="text-xs font-semibold text-green-700">Awarded to: {selected.awarded_supplier_name}</p>
+                  <p className="text-xs font-semibold text-green-700">{tx("Awarded to:")} {selected.awarded_supplier_name}</p>
                 </div>
               )}
             </div>
           ) : (
             <div className="text-center py-8 text-gray-400">
               <p className="text-2xl mb-2">📋</p>
-              <p className="text-sm">Click an RFQ to view details.</p>
+              <p className="text-sm">{tx("Click an RFQ to view details.")}</p>
             </div>
           )}
         </div>
@@ -663,16 +664,16 @@ export default function RFQPage() {
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
             <div className="px-6 py-4 border-b flex items-center justify-between">
-              <h2 className="text-base font-semibold">New RFQ</h2>
+              <h2 className="text-base font-semibold">{tx("New RFQ")}</h2>
               <button onClick={() => setShowCreate(false)} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
             </div>
             <div className="p-6 space-y-4">
               {error && <p className="text-xs text-red-500 bg-red-50 border border-red-200 rounded px-3 py-2">{error}</p>}
               {[
-                { label: "RFQ No. *", key: "rfq_no", placeholder: "RFQ-2026-001" },
-                { label: "Title *", key: "title", placeholder: "Raw material procurement Q3" },
-                { label: "Description", key: "description", placeholder: "Details…" },
-                { label: "Quantity *", key: "quantity", placeholder: "100", type: "number" },
+                { label: tx("RFQ No. *"), key: "rfq_no", placeholder: "RFQ-2026-001" },
+                { label: tx("Title *"), key: "title", placeholder: tx("Raw material procurement Q3") },
+                { label: tx("Description"), key: "description", placeholder: tx("Details…") },
+                { label: tx("Quantity *"), key: "quantity", placeholder: "100", type: "number" },
               ].map(f => (
                 <div key={f.key}>
                   <label className="block text-xs font-medium text-gray-600 mb-1">{f.label}</label>
@@ -684,9 +685,9 @@ export default function RFQPage() {
                 </div>
               ))}
               <fieldset className="space-y-2">
-                <legend className="block text-xs font-medium text-gray-600">Suppliers to invite *</legend>
+                <legend className="block text-xs font-medium text-gray-600">{tx("Suppliers to invite *")}</legend>
                 {suppliers.length === 0 ? (
-                  <p className="text-xs text-amber-700">No active suppliers are available.</p>
+                  <p className="text-xs text-amber-700">{tx("No active suppliers are available.")}</p>
                 ) : suppliers.map((supplier) => (
                   <label key={supplier.id} className="flex items-center gap-2 text-xs text-gray-700">
                     <input
@@ -699,13 +700,13 @@ export default function RFQPage() {
                     <span>{supplier.name}{supplier.email ? ` · ${supplier.email}` : ""}</span>
                   </label>
                 ))}
-                <p className="text-[11px] text-gray-500">Issuing records invitations in the ERP; external email delivery is not configured here.</p>
+                <p className="text-[11px] text-gray-500">{tx("Issuing records invitations in the ERP; external email delivery is not configured here.")}</p>
               </fieldset>
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  { label: "Unit", key: "unit" },
-                  { label: "Required By", key: "required_by", type: "date" },
-                  { label: "Response Deadline", key: "response_deadline", type: "date" },
+                  { label: tx("Unit"), key: "unit" },
+                  { label: tx("Required By"), key: "required_by", type: "date" },
+                  { label: tx("Response Deadline"), key: "response_deadline", type: "date" },
                 ].map(f => (
                   <div key={f.key}>
                     <label className="block text-xs font-medium text-gray-600 mb-1">{f.label}</label>
@@ -721,11 +722,11 @@ export default function RFQPage() {
             <div className="px-6 pb-5 flex gap-3">
               <button onClick={create} disabled={saving}
                 className="flex-1 rounded bg-blue-600 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">
-                {saving ? "Creating…" : "Create RFQ"}
+                {saving ? tx("Creating…") : tx("Create RFQ")}
               </button>
               <button onClick={() => setShowCreate(false)}
                 className="flex-1 rounded border py-2 text-sm text-gray-600 hover:bg-gray-50">
-                Cancel
+                {tx("Cancel")}
               </button>
             </div>
           </div>
@@ -737,34 +738,34 @@ export default function RFQPage() {
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
             <div className="px-6 py-4 border-b flex items-center justify-between">
-              <h2 className="text-base font-semibold">Add Supplier Response</h2>
+              <h2 className="text-base font-semibold">{tx("Add Supplier Response")}</h2>
               <button onClick={() => setShowResponse(false)} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
             </div>
             <div className="p-6 space-y-3">
               {error && <p className="text-xs text-red-500 bg-red-50 border border-red-200 rounded px-3 py-2">{error}</p>}
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Invited supplier *</label>
+                <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Invited supplier *")}</label>
                 <select
                   value={respForm.supplier_id}
                   onChange={(event) => setRespForm((prev) => ({ ...prev, supplier_id: event.target.value }))}
                   className="w-full border rounded px-3 py-2 text-sm"
                 >
-                  <option value="">Select invited supplier</option>
+                  <option value="">{tx("Select invited supplier")}</option>
                   {selected.responses.filter((response) => response.invitation_status === "ISSUED" && response.status === "PENDING").map((response) => (
                     <option key={response.id} value={response.supplier_id}>{response.supplier_name ?? response.supplier_id}</option>
                   ))}
                 </select>
-                <p className="mt-1 text-[11px] text-gray-500">Internal procurement users record a quote supplied through the approved business channel.</p>
+                <p className="mt-1 text-[11px] text-gray-500">{tx("Internal procurement users record a quote supplied through the approved business channel.")}</p>
               </div>
               {[
                 ...(selected.lines.length === 0
-                  ? [{ label: "Quoted Unit Price", key: "quoted_unit_price", type: "number", placeholder: "0.00" }]
+                  ? [{ label: tx("Quoted Unit Price"), key: "quoted_unit_price", type: "number", placeholder: "0.00" }]
                   : []),
-                { label: "Currency", key: "quoted_currency", placeholder: "KES" },
-                { label: "Lead Time (days)", key: "lead_time_days", type: "number", placeholder: "7" },
-                { label: "Valid Until", key: "valid_until", type: "date" },
-                { label: "Payment Terms", key: "payment_terms", placeholder: "e.g. Net 30" },
-                { label: "Notes", key: "notes", placeholder: "" },
+                { label: tx("Currency"), key: "quoted_currency", placeholder: "KES" },
+                { label: tx("Lead Time (days)"), key: "lead_time_days", type: "number", placeholder: "7" },
+                { label: tx("Valid Until"), key: "valid_until", type: "date" },
+                { label: tx("Payment Terms"), key: "payment_terms", placeholder: tx("e.g. Net 30") },
+                { label: tx("Notes"), key: "notes", placeholder: "" },
               ].map(f => (
                 <div key={f.key}>
                   <label className="block text-xs font-medium text-gray-600 mb-1">{f.label}</label>
@@ -777,21 +778,21 @@ export default function RFQPage() {
               ))}
               {selected.lines.length > 0 && selected.lines.map((line) => (
                 <label key={line.id} className="block text-xs font-medium text-gray-600">
-                  {line.line_no}. {line.description || "RFQ line"} — {line.quantity} {line.unit}
+                  {line.line_no}. {line.description || tx("RFQ line")} — {line.quantity} {line.unit}
                   <input type="number" min="0" step="0.0001" value={responseLineQuotes[line.id] ?? ""}
                     onChange={(event) => setResponseLineQuotes((current) => ({ ...current, [line.id]: event.target.value }))}
-                    className="mt-1 w-full rounded border px-3 py-2 text-sm" placeholder="Supplier unit price" />
+                    className="mt-1 w-full rounded border px-3 py-2 text-sm" placeholder={tx("Supplier unit price")} />
                 </label>
               ))}
             </div>
             <div className="px-6 pb-5 flex gap-3">
               <button onClick={submitResponse} disabled={saving}
                 className="flex-1 rounded bg-blue-600 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">
-                {saving ? "Saving…" : "Submit Response"}
+                {saving ? tx("Saving…") : tx("Submit Response")}
               </button>
               <button onClick={() => setShowResponse(false)}
                 className="flex-1 rounded border py-2 text-sm text-gray-600 hover:bg-gray-50">
-                Cancel
+                {tx("Cancel")}
               </button>
             </div>
           </div>

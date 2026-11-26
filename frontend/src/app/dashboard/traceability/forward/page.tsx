@@ -3,6 +3,7 @@ import { EntityPicker } from "@/components/EntityPicker";
 import { useSearchParams } from "next/navigation";
 import { useState, useEffect, Suspense } from "react";
 import { traceApi, ForwardTraceResult } from "@/lib/traceability";
+import { tx } from "@/lib/i18n/core";
 
 function ForwardTraceContent() {
   const params = useSearchParams();
@@ -30,19 +31,19 @@ function ForwardTraceContent() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-xl font-bold text-gray-900">Forward Traceability</h1>
-        <p className="text-sm text-gray-500">Trace a lot forward to finished goods, shipments, and customer deliveries</p>
+        <h1 className="text-xl font-bold text-gray-900">{tx("Forward Traceability")}</h1>
+        <p className="text-sm text-gray-500">{tx("Trace a lot forward to finished goods, shipments, and customer deliveries")}</p>
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 p-5 flex gap-3">
         <div className="flex-1">
-          <label className="text-xs font-medium text-gray-600">Lot</label>
-          <EntityPicker kind="lot" label="Lot" value={lotId} onChange={setLotId} />
+          <label className="text-xs font-medium text-gray-600">{tx("Lot")}</label>
+          <EntityPicker kind="lot" label={tx("Lot")} value={lotId} onChange={setLotId} />
         </div>
         <div className="flex items-end">
           <button onClick={() => handleTrace()} disabled={!lotId || loading}
             className="px-5 py-2 bg-green-700 text-white text-sm rounded-lg hover:bg-green-800 disabled:opacity-50">
-            {loading ? "Tracing…" : "Forward Trace →"}
+            {loading ? tx("Tracing…") : tx("Forward Trace →")}
           </button>
         </div>
       </div>
@@ -52,12 +53,12 @@ function ForwardTraceContent() {
           {/* Quantity breakdown */}
           <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
             {[
-              { label: "In Stock",     value: result.qty_in_stock,   color: "border-green-200 bg-green-50 text-green-700" },
-              { label: "Shipped",      value: result.qty_shipped,    color: "border-blue-200 bg-blue-50 text-blue-700" },
-              { label: "Returned",     value: result.qty_returned,   color: "border-purple-200 bg-purple-50 text-purple-700" },
-              { label: "Quarantined",  value: result.qty_quarantined,color: "border-red-200 bg-red-50 text-red-700" },
-              { label: "Scrapped",     value: result.qty_scrapped,   color: "border-gray-200 bg-gray-50 text-gray-700" },
-              { label: "Reworked",     value: result.qty_reworked,   color: "border-amber-200 bg-amber-50 text-amber-700" },
+              { label: tx("In Stock"),     value: result.qty_in_stock,   color: "border-green-200 bg-green-50 text-green-700" },
+              { label: tx("Shipped"),      value: result.qty_shipped,    color: "border-blue-200 bg-blue-50 text-blue-700" },
+              { label: tx("Returned"),     value: result.qty_returned,   color: "border-purple-200 bg-purple-50 text-purple-700" },
+              { label: tx("Quarantined"),  value: result.qty_quarantined,color: "border-red-200 bg-red-50 text-red-700" },
+              { label: tx("Scrapped"),     value: result.qty_scrapped,   color: "border-gray-200 bg-gray-50 text-gray-700" },
+              { label: tx("Reworked"),     value: result.qty_reworked,   color: "border-amber-200 bg-amber-50 text-amber-700" },
             ].map(s => (
               <div key={s.label} className={`rounded-xl border p-3 text-center ${s.color}`}>
                 <p className="text-xl font-bold">{fmtQty(s.value)}</p>
@@ -69,19 +70,19 @@ function ForwardTraceContent() {
           {/* Stats */}
           <div className="bg-white rounded-xl border border-gray-200 p-4 flex gap-6">
             <div>
-              <p className="text-xs text-gray-500">Total Affected</p>
+              <p className="text-xs text-gray-500">{tx("Total Affected")}</p>
               <p className="text-2xl font-bold text-gray-800">{fmtQty(result.total_affected_qty)}</p>
             </div>
             <div>
-              <p className="text-xs text-gray-500">Affected Lots</p>
+              <p className="text-xs text-gray-500">{tx("Affected Lots")}</p>
               <p className="text-2xl font-bold text-gray-800">{result.affected_lots.length}</p>
             </div>
             <div>
-              <p className="text-xs text-gray-500">Shipments</p>
+              <p className="text-xs text-gray-500">{tx("Shipments")}</p>
               <p className="text-2xl font-bold text-gray-800">{result.affected_shipments.length}</p>
             </div>
             <div>
-              <p className="text-xs text-gray-500">Customers</p>
+              <p className="text-xs text-gray-500">{tx("Customers")}</p>
               <p className="text-2xl font-bold text-gray-800">{result.affected_customers.length}</p>
             </div>
           </div>
@@ -89,16 +90,16 @@ function ForwardTraceContent() {
           {/* Affected lots */}
           {result.affected_lots.length > 0 && (
             <div className="bg-white rounded-xl border border-gray-200 p-5">
-              <h2 className="font-semibold text-gray-800 mb-3">Descendant Lots</h2>
+              <h2 className="font-semibold text-gray-800 mb-3">{tx("Descendant Lots")}</h2>
               <div className="space-y-1.5">
                 {result.affected_lots.map((l, i) => (
                   <div key={i} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
                     <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">{l.rel_type.replace("_"," ")}</span>
                     {l.child_stage && <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">{l.child_stage}</span>}
                     <span className="font-mono text-xs text-gray-700 flex-1">{l.lot_id}</span>
-                    <span className="text-sm text-gray-600">{l.quantity.toLocaleString()} units</span>
+                    <span className="text-sm text-gray-600">{l.quantity.toLocaleString()} {tx("units")}</span>
                     <a href={`/dashboard/traceability/forward?lot_id=${l.lot_id}`}
-                      className="text-xs text-green-600 hover:underline">Trace further →</a>
+                      className="text-xs text-green-600 hover:underline">{tx("Trace further →")}</a>
                   </div>
                 ))}
               </div>
@@ -108,12 +109,12 @@ function ForwardTraceContent() {
           {/* Shipments */}
           {result.affected_shipments.length > 0 && (
             <div className="bg-white rounded-xl border border-gray-200 p-5">
-              <h2 className="font-semibold text-gray-800 mb-3">Shipments ({result.affected_shipments.length})</h2>
+              <h2 className="font-semibold text-gray-800 mb-3">{tx("Shipments (")}{result.affected_shipments.length})</h2>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50 text-xs uppercase text-gray-500">
                     <tr>
-                      {["Customer ID","Lot ID","Quantity","Shipment Date"].map(h => (
+                      {[tx("Customer ID"),tx("Lot ID"),tx("Quantity"),tx("Shipment Date")].map(h => (
                         <th key={h} className="px-3 py-2 text-left">{h}</th>
                       ))}
                     </tr>
@@ -135,7 +136,7 @@ function ForwardTraceContent() {
 
           {result.affected_lots.length === 0 && result.affected_shipments.length === 0 && (
             <div className="bg-gray-50 rounded-xl border border-gray-200 p-6 text-center text-gray-400">
-              No descendant lots or shipments found. This lot appears to be in its original state with no forward traceability recorded.
+              {tx("No descendant lots or shipments found. This lot appears to be in its original state with no forward traceability recorded.")}
             </div>
           )}
         </div>
@@ -145,5 +146,5 @@ function ForwardTraceContent() {
 }
 
 export default function ForwardTracePage() {
-  return <Suspense fallback={<div className="p-8 text-gray-400">Loading…</div>}><ForwardTraceContent /></Suspense>;
+  return <Suspense fallback={<div className="p-8 text-gray-400">{tx("Loading…")}</div>}><ForwardTraceContent /></Suspense>;
 }

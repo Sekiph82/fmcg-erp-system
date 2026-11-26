@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, BarChart, Bar } from "recharts";
 import { kpiApi, type DailyTrendPoint } from "@/lib/utilityKpi";
+import { tx } from "@/lib/i18n/core";
 
 const today = new Date().toISOString().slice(0, 10);
 const mtdStart = today.slice(0, 8) + "01";
@@ -26,7 +27,7 @@ function DateFilter({ from, to, onFrom, onTo }: { from: string; to: string; onFr
   return (
     <div className="flex gap-3 items-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3">
       <input type="date" className={ic} value={from} onChange={e => onFrom(e.target.value)} />
-      <span className="text-gray-400 text-xs">to</span>
+      <span className="text-gray-400 text-xs">{tx("to")}</span>
       <input type="date" className={ic} value={to} onChange={e => onTo(e.target.value)} />
     </div>
   );
@@ -55,12 +56,12 @@ export default function ElectricityKpiPage() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <div className="flex items-center gap-3 mb-1">
-            <Link href="/dashboard/utility-management/kpi-center" className="text-sm text-gray-500 hover:text-blue-600">← KPI Center</Link>
+            <Link href="/dashboard/utility-management/kpi-center" className="text-sm text-gray-500 hover:text-blue-600">{tx("← KPI Center")}</Link>
             <span className="text-gray-300">|</span>
-            <Link href="/dashboard/utility-management/electricity" className="text-sm text-blue-600 hover:underline">Operational Records →</Link>
+            <Link href="/dashboard/utility-management/electricity" className="text-sm text-blue-600 hover:underline">{tx("Operational Records →")}</Link>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white" style={{ borderLeft: "4px solid #fbbf24", paddingLeft: 12 }}>Electricity KPI Dashboard</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Monitor electricity consumption, cost efficiency, and solar offset for the selected period.</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white" style={{ borderLeft: "4px solid #fbbf24", paddingLeft: 12 }}>{tx("Electricity KPI Dashboard")}</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{tx("Monitor electricity consumption, cost efficiency, and solar offset for the selected period.")}</p>
         </div>
         <DateFilter from={dateFrom} to={dateTo} onFrom={setDateFrom} onTo={setDateTo} />
       </div>
@@ -68,39 +69,39 @@ export default function ElectricityKpiPage() {
       {/* KPI cards grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         <KpiCard
-          label="kWh Total"
+          label={tx("kWh Total")}
           value={fmt(kpi?.kwh_total, 1)}
           unit="kWh"
           sub={`${dateFrom} – ${dateTo}`}
         />
         <KpiCard
-          label="Cost Total"
+          label={tx("Cost Total")}
           value={fmt(kpi?.total_cost, 2)}
           unit="$"
         />
         <KpiCard
-          label="Cost per kWh"
+          label={tx("Cost per kWh")}
           value={fmt(kpi?.cost_per_kwh, 4)}
           unit="$/kWh"
         />
         <KpiCard
-          label="Solar Offset"
+          label={tx("Solar Offset")}
           value={fmt(kpi?.solar_offset_kwh, 1)}
           unit="kWh"
           highlight={(kpi?.solar_offset_kwh ?? 0) > 0}
         />
         <KpiCard
-          label="Solar Contribution %"
+          label={tx("Solar Contribution %")}
           value={pct(kpi?.solar_contribution_pct)}
           highlight={(kpi?.solar_contribution_pct ?? 0) > 10}
         />
         <KpiCard
-          label="Estimated Data %"
+          label={tx("Estimated Data %")}
           value={pct(kpi?.estimated_pct)}
           warn={(kpi?.estimated_pct ?? 0) > 20}
         />
         <KpiCard
-          label="Anomaly Count"
+          label={tx("Anomaly Count")}
           value={kpi?.anomaly_count == null ? "—" : String(kpi.anomaly_count)}
           warn={(kpi?.anomaly_count ?? 0) > 0}
         />
@@ -108,7 +109,7 @@ export default function ElectricityKpiPage() {
 
       {/* Trend chart */}
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Electricity KPI Dashboard — Daily Trend</h3>
+        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">{tx("Electricity KPI Dashboard — Daily Trend")}</h3>
         <ResponsiveContainer width="100%" height={260}>
           <LineChart data={trend} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" />

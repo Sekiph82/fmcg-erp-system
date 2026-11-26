@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { marketingApi, TradeSpend, ApprovalStatus, APPROVAL_STATUS_COLORS } from "@/lib/marketingApi";
 import { RequirePermission } from "@/components/PermissionGuard";
+import { tx } from "@/lib/i18n/core";
 
 export default function TradeSpendPage() {
   const qc = useQueryClient();
@@ -30,18 +31,18 @@ export default function TradeSpendPage() {
       <div className="min-h-screen bg-[#0b1120] p-6 text-white">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold">Trade Spend</h1>
-            <p className="text-slate-400 text-sm mt-1">{records.length} records</p>
+            <h1 className="text-2xl font-bold">{tx("Trade Spend")}</h1>
+            <p className="text-slate-400 text-sm mt-1">{records.length} {tx("records")}</p>
           </div>
           <div className="flex items-center gap-3">
             <div className="rounded-xl bg-[#131c2e] border border-slate-700/50 px-4 py-2 text-right">
-              <p className="text-xs text-slate-400">Total</p>
+              <p className="text-xs text-slate-400">{tx("Total")}</p>
               <p className="text-lg font-bold text-emerald-400">KES {totalSpend.toLocaleString()}</p>
             </div>
             <RequirePermission permission="trade_spend.create">
               <Link href="/dashboard/marketing/trade-spend/new"
                 className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-sm font-medium text-white">
-                + New
+                {tx("+ New")}
               </Link>
             </RequirePermission>
           </div>
@@ -50,7 +51,7 @@ export default function TradeSpendPage() {
         <div className="flex gap-3 mb-6">
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
             className="bg-[#131c2e] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
-            <option value="">All statuses</option>
+            <option value="">{tx("All statuses")}</option>
             {(["PENDING", "APPROVED", "REJECTED"] as ApprovalStatus[]).map((s) => (
               <option key={s} value={s}>{s}</option>
             ))}
@@ -58,13 +59,13 @@ export default function TradeSpendPage() {
         </div>
 
         {isLoading ? (
-          <p className="text-slate-400">Loading...</p>
+          <p className="text-slate-400">{tx("Loading...")}</p>
         ) : (
           <div className="overflow-x-auto rounded-xl border border-slate-700/50">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-700/50 bg-[#131c2e]">
-                  {["Type", "Amount", "Currency", "Date", "Status", "Notes", "Actions"].map((h) => (
+                  {[tx("Type"), tx("Amount"), tx("Currency"), tx("Date"), tx("Status"), tx("Notes"), tx("Actions")].map((h) => (
                     <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">{h}</th>
                   ))}
                 </tr>
@@ -85,12 +86,12 @@ export default function TradeSpendPage() {
                     <td className="px-4 py-3 flex items-center gap-2">
                       <Link href={`/dashboard/marketing/trade-spend/${t.id}`}
                         className="px-2 py-1 rounded bg-slate-700/50 hover:bg-slate-700 text-slate-300 text-xs">
-                        View
+                        {tx("View")}
                       </Link>
                       {t.approval_status === "PENDING" && (
                         <button onClick={() => approveMut.mutate(t.id)}
                           className="px-2 py-1 rounded bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/40 text-xs">
-                          Approve
+                          {tx("Approve")}
                         </button>
                       )}
                     </td>

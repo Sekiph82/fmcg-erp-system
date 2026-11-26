@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { ToastContainer } from "@/components/ui/Toast";
 import { useToast } from "@/hooks/useToast";
+import { tx, lx } from "@/lib/i18n/core";
 
 const statusVariant = (s: QCStatus) =>
   s === "PASSED" ? "green"
@@ -32,22 +33,22 @@ const decisionVariant = (d?: string) =>
   : d === "CONDITIONAL_RELEASE" ? "blue"
   : "blue";
 
-const TYPE_OPTS = [
-  { value: "", label: "All Types" },
-  { value: "INCOMING", label: "Incoming QC" },
-  { value: "IN_PROCESS", label: "In-Process QC" },
-  { value: "FINISHED_GOODS", label: "Finished Goods QC" },
-];
+const TYPE_OPTS = lx(() => [
+  { value: "", label: tx("All Types") },
+  { value: "INCOMING", label: tx("Incoming QC") },
+  { value: "IN_PROCESS", label: tx("In-Process QC") },
+  { value: "FINISHED_GOODS", label: tx("Finished Goods QC") },
+]);
 
-const STATUS_OPTS = [
-  { value: "", label: "All Statuses" },
-  { value: "PENDING", label: "Pending" },
-  { value: "IN_PROGRESS", label: "In Progress" },
-  { value: "PASSED", label: "Passed" },
-  { value: "FAILED", label: "Failed" },
-  { value: "CONDITIONAL_RELEASE", label: "Conditional Release" },
-  { value: "CANCELLED", label: "Cancelled" },
-];
+const STATUS_OPTS = lx(() => [
+  { value: "", label: tx("All Statuses") },
+  { value: "PENDING", label: tx("Pending") },
+  { value: "IN_PROGRESS", label: tx("In Progress") },
+  { value: "PASSED", label: tx("Passed") },
+  { value: "FAILED", label: tx("Failed") },
+  { value: "CONDITIONAL_RELEASE", label: tx("Conditional Release") },
+  { value: "CANCELLED", label: tx("Cancelled") },
+]);
 
 function QCInspectionsTab() {
   const qc = useQueryClient();
@@ -91,7 +92,7 @@ function QCInspectionsTab() {
       setOpen(false);
       router.push(`/dashboard/quality/${insp.id}`);
     },
-    onError: (e) => toast("error", "Failed", extractApiError(e)),
+    onError: (e) => toast("error", tx("Failed"), extractApiError(e)),
   });
 
   // Dashboard counts
@@ -105,19 +106,19 @@ function QCInspectionsTab() {
 
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">QC Inspections</h1>
-          <p className="text-sm text-gray-500 mt-1">{inspections.length} total · {pending} open · {failed} failed</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("QC Inspections")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{inspections.length} {tx("total ·")} {pending} {tx("open ·")} {failed} {tx("failed")}</p>
         </div>
-        <Button onClick={() => setOpen(true)} data-testid="quality-create-inspection-button">+ New Inspection</Button>
+        <Button onClick={() => setOpen(true)} data-testid="quality-create-inspection-button">{tx("+ New Inspection")}</Button>
       </div>
 
       {/* Summary cards */}
       <div className="grid grid-cols-4 gap-4 mb-6">
         {[
-          { label: "Pending / Active", value: pending, color: "text-blue-600" },
-          { label: "Passed", value: inspections.filter((i) => i.status === "PASSED").length, color: "text-green-600" },
-          { label: "Failed", value: failed, color: failed > 0 ? "text-red-600" : "text-gray-400" },
-          { label: "Critical Failures", value: criticalFails, color: criticalFails > 0 ? "text-red-700 font-extrabold" : "text-gray-400" },
+          { label: tx("Pending / Active"), value: pending, color: "text-blue-600" },
+          { label: tx("Passed"), value: inspections.filter((i) => i.status === "PASSED").length, color: "text-green-600" },
+          { label: tx("Failed"), value: failed, color: failed > 0 ? "text-red-600" : "text-gray-400" },
+          { label: tx("Critical Failures"), value: criticalFails, color: criticalFails > 0 ? "text-red-700 font-extrabold" : "text-gray-400" },
         ].map((c) => (
           <div key={c.label} className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
             <p className="text-xs text-gray-500">{c.label}</p>
@@ -141,7 +142,7 @@ function QCInspectionsTab() {
             emptyMessage="No QC inspections yet."
             columns={[
             {
-              header: "Inspection No",
+              header: tx("Inspection No"),
               accessor: (i) => (
                 <button className="font-mono text-xs font-medium text-indigo-600 hover:underline" onClick={() => router.push(`/dashboard/quality/${i.id}`)}>
                   {i.inspection_no}
@@ -149,7 +150,7 @@ function QCInspectionsTab() {
               ),
             },
             {
-              header: "Type",
+              header: tx("Type"),
               accessor: (i) => (
                 <Badge
                   label={i.qc_type.replace(/_/g, " ")}
@@ -158,7 +159,7 @@ function QCInspectionsTab() {
               ),
             },
             {
-              header: "Item",
+              header: tx("Item"),
               accessor: (i) => (
                 <span>
                   {i.material_code && <span className="font-mono text-xs text-gray-400 mr-1">{i.material_code}</span>}
@@ -166,11 +167,11 @@ function QCInspectionsTab() {
                 </span>
               ),
             },
-            { header: "Supplier", accessor: (i) => i.supplier_name ?? "—" },
-            { header: "Lot / Batch", accessor: (i) => i.lot_number || i.batch_no || "—" },
-            { header: "Date", accessor: (i) => new Date(i.inspection_date).toLocaleDateString() },
+            { header: tx("Supplier"), accessor: (i) => i.supplier_name ?? "—" },
+            { header: tx("Lot / Batch"), accessor: (i) => i.lot_number || i.batch_no || "—" },
+            { header: tx("Date"), accessor: (i) => new Date(i.inspection_date).toLocaleDateString() },
             {
-              header: "Tests",
+              header: tx("Tests"),
               accessor: (i) => i.test_count > 0 ? (
                 <span className="text-sm">
                   <span className="text-green-600">{i.pass_count}✓</span>
@@ -180,7 +181,7 @@ function QCInspectionsTab() {
               ) : <span className="text-gray-400 text-xs">—</span>,
             },
             {
-              header: "Status",
+              header: tx("Status"),
               accessor: (i) => (
                 <div className="flex items-center gap-1">
                   <Badge label={i.status.replace(/_/g, " ")} variant={statusVariant(i.status)} />
@@ -190,46 +191,46 @@ function QCInspectionsTab() {
             },
             {
               header: "",
-              accessor: (i) => <Button variant="secondary" onClick={() => router.push(`/dashboard/quality/${i.id}`)}>View</Button>,
+              accessor: (i) => <Button variant="secondary" onClick={() => router.push(`/dashboard/quality/${i.id}`)}>{tx("View")}</Button>,
             },
             ]}
           />
         </div>
       )}
 
-      <Modal open={open} onClose={() => setOpen(false)} title="New QC Inspection">
+      <Modal open={open} onClose={() => setOpen(false)} title={tx("New QC Inspection")}>
         <form onSubmit={(e) => { e.preventDefault(); create.mutate(); }} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Inspection No *" value={form.inspection_no} onChange={(e) => setForm((f) => ({ ...f, inspection_no: e.target.value }))} placeholder="e.g. QC-2026-001" required />
-            <Select label="QC Type *" options={[
-              { value: "INCOMING", label: "Incoming QC" },
-              { value: "IN_PROCESS", label: "In-Process QC" },
-              { value: "FINISHED_GOODS", label: "Finished Goods QC" },
+            <Input label={tx("Inspection No *")} value={form.inspection_no} onChange={(e) => setForm((f) => ({ ...f, inspection_no: e.target.value }))} placeholder={tx("e.g. QC-2026-001")} required />
+            <Select label={tx("QC Type *")} options={[
+              { value: "INCOMING", label: tx("Incoming QC") },
+              { value: "IN_PROCESS", label: tx("In-Process QC") },
+              { value: "FINISHED_GOODS", label: tx("Finished Goods QC") },
             ]} value={form.qc_type} onChange={(e) => setForm((f) => ({ ...f, qc_type: e.target.value as QCType }))} />
           </div>
-          <Input label="Inspection Date *" type="date" onChange={(e) => setForm((f) => ({ ...f, inspection_date: e.target.value }))} required />
+          <Input label={tx("Inspection Date *")} type="date" onChange={(e) => setForm((f) => ({ ...f, inspection_date: e.target.value }))} required />
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Lot Number" value={form.lot_number} onChange={(e) => setForm((f) => ({ ...f, lot_number: e.target.value }))} />
-            <Input label="Batch No" value={form.batch_no} onChange={(e) => setForm((f) => ({ ...f, batch_no: e.target.value }))} />
+            <Input label={tx("Lot Number")} value={form.lot_number} onChange={(e) => setForm((f) => ({ ...f, lot_number: e.target.value }))} />
+            <Input label={tx("Batch No")} value={form.batch_no} onChange={(e) => setForm((f) => ({ ...f, batch_no: e.target.value }))} />
           </div>
           {form.qc_type === "INCOMING" && (
             <>
-              <Select label="Supplier" options={[{ value: "", label: "Select…" }, ...suppliers.map((s) => ({ value: s.id, label: s.name }))]}
+              <Select label={tx("Supplier")} options={[{ value: "", label: tx("Select…") }, ...suppliers.map((s) => ({ value: s.id, label: s.name }))]}
                 value={form.supplier_id} onChange={(e) => setForm((f) => ({ ...f, supplier_id: e.target.value }))} />
-              <Select label="Material" options={[{ value: "", label: "Select material…" }, ...materials.map((m) => ({ value: m.id, label: `${m.code} — ${m.name}` }))]}
+              <Select label={tx("Material")} options={[{ value: "", label: tx("Select material…") }, ...materials.map((m) => ({ value: m.id, label: `${m.code} — ${m.name}` }))]}
                 value={form.material_id} onChange={(e) => setForm((f) => ({ ...f, material_id: e.target.value }))} />
             </>
           )}
-          <Select label="Warehouse" options={[{ value: "", label: "Select warehouse…" }, ...warehouses.map((w) => ({ value: w.id, label: w.name }))]}
+          <Select label={tx("Warehouse")} options={[{ value: "", label: tx("Select warehouse…") }, ...warehouses.map((w) => ({ value: w.id, label: w.name }))]}
             value={form.warehouse_id} onChange={(e) => setForm((f) => ({ ...f, warehouse_id: e.target.value }))} />
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Sample Size" type="number" step="0.001" value={form.sample_size} onChange={(e) => setForm((f) => ({ ...f, sample_size: e.target.value }))} />
-            <Input label="Sample Unit" value={form.sample_unit} onChange={(e) => setForm((f) => ({ ...f, sample_unit: e.target.value }))} />
+            <Input label={tx("Sample Size")} type="number" step="0.001" value={form.sample_size} onChange={(e) => setForm((f) => ({ ...f, sample_size: e.target.value }))} />
+            <Input label={tx("Sample Unit")} value={form.sample_unit} onChange={(e) => setForm((f) => ({ ...f, sample_unit: e.target.value }))} />
           </div>
-          <Input label="Notes" value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
+          <Input label={tx("Notes")} value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" type="button" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button type="submit" loading={create.isPending} disabled={!form.inspection_no || !form.inspection_date}>Create Inspection</Button>
+            <Button variant="secondary" type="button" onClick={() => setOpen(false)}>{tx("Cancel")}</Button>
+            <Button type="submit" loading={create.isPending} disabled={!form.inspection_no || !form.inspection_date}>{tx("Create Inspection")}</Button>
           </div>
         </form>
       </Modal>
@@ -249,20 +250,20 @@ const QAEnterpriseWorkspace = dynamic(() => import("@/components/quality/qa-ente
 
 export default function QualityPage() {
   const tabs = [
-    { key: "inspections",        label: "Inspections",         permission: "quality.view", content: <QCInspectionsTab /> },
-    { key: "certificates",       label: "Certificates",        permission: "quality.view", content: <QualityCertsPage /> },
-    { key: "parameters",         label: "Parameters",          permission: "quality.view", content: <QualityParamsPage /> },
-    { key: "consumer-complaints",label: "Consumer Complaints", permission: "consumer_complaints.view", content: <QualityComplaintsPage /> },
-    { key: "reports",            label: "Reports",             permission: "quality.view", content: <QualityReportsPage /> },
-    { key: "gates",              label: "Quality Gates",       content: <QualityGateWorkspace /> },
+    { key: "inspections",        label: tx("Inspections"),         permission: "quality.view", content: <QCInspectionsTab /> },
+    { key: "certificates",       label: tx("Certificates"),        permission: "quality.view", content: <QualityCertsPage /> },
+    { key: "parameters",         label: tx("Parameters"),          permission: "quality.view", content: <QualityParamsPage /> },
+    { key: "consumer-complaints",label: tx("Consumer Complaints"), permission: "consumer_complaints.view", content: <QualityComplaintsPage /> },
+    { key: "reports",            label: tx("Reports"),             permission: "quality.view", content: <QualityReportsPage /> },
+    { key: "gates",              label: tx("Quality Gates"),       content: <QualityGateWorkspace /> },
     { key: "qms",                label: "QMS",                 permission: "quality.view", content: <QMSPage /> },
-    { key: "qa-governance",      label: "QA Governance",       permission: "quality.view", exact: true, content: <QAEnterpriseWorkspace /> },
-    { key: "allergen",           label: "Allergen",            permission: "quality.view", content: <AllergenPage /> },
-    { key: "brand-assets",       label: "Brand Assets",        permission: "quality.view", content: <BrandAssetsPage /> },
+    { key: "qa-governance",      label: tx("QA Governance"),       permission: "quality.view", exact: true, content: <QAEnterpriseWorkspace /> },
+    { key: "allergen",           label: tx("Allergen"),            permission: "quality.view", content: <AllergenPage /> },
+    { key: "brand-assets",       label: tx("Brand Assets"),        permission: "quality.view", content: <BrandAssetsPage /> },
   ];
   return (
     <ModuleWorkspace
-      title="Quality"
+      title={tx("Quality")}
       description="QC inspections, certificates, parameters, quality gates, allergen, brand assets"
       permission="quality.view"
       tabs={tabs}

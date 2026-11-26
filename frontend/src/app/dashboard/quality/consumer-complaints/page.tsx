@@ -2,6 +2,7 @@
 import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { PermissionGuard, RequirePermission } from "@/components/PermissionGuard";
+import { tx } from "@/lib/i18n/core";
 
 interface Complaint {
   id: string;
@@ -156,13 +157,13 @@ export default function ConsumerComplaintsPage() {
     <div className="p-6 space-y-6 max-w-6xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Consumer Complaint Management</h1>
-          <p className="text-sm text-gray-500 mt-0.5">End-consumer complaints linked to product batches and lots</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Consumer Complaint Management")}</h1>
+          <p className="text-sm text-gray-500 mt-0.5">{tx("End-consumer complaints linked to product batches and lots")}</p>
         </div>
         <PermissionGuard permission="consumer_complaints.create">
           <button onClick={() => setShowForm(true)}
             className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded">
-            + Log Complaint
+            {tx("+ Log Complaint")}
           </button>
         </PermissionGuard>
       </div>
@@ -173,8 +174,8 @@ export default function ConsumerComplaintsPage() {
       {stats && (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {[
-            { label: "Total Complaints", value: stats.total, color: "text-gray-800" },
-            { label: "Open", value: stats.open, color: "text-orange-600" },
+            { label: tx("Total Complaints"), value: stats.total, color: "text-gray-800" },
+            { label: tx("Open"), value: stats.open, color: "text-orange-600" },
             { label: "Recall Triggered", value: stats.recall_triggered, color: "text-red-600" },
             { label: "SAFETY", value: stats.by_severity.SAFETY ?? 0, color: "text-red-800" },
           ].map((k) => (
@@ -189,49 +190,49 @@ export default function ConsumerComplaintsPage() {
       {/* Filters */}
       <div className="flex flex-wrap gap-3 bg-white border rounded-lg p-3 shadow-sm items-end">
         <div>
-          <label className="text-xs text-gray-500 block mb-1">Severity</label>
+          <label className="text-xs text-gray-500 block mb-1">{tx("Severity")}</label>
           <select value={filterSev} onChange={(e) => setFilterSev(e.target.value)}
             className="border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none">
-            <option value="">All</option>
+            <option value="">{tx("All")}</option>
             {SEVERITIES.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
         <div>
-          <label className="text-xs text-gray-500 block mb-1">Status</label>
+          <label className="text-xs text-gray-500 block mb-1">{tx("Status")}</label>
           <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}
             className="border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none">
-            <option value="">All</option>
+            <option value="">{tx("All")}</option>
             {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
         <div>
-          <label className="text-xs text-gray-500 block mb-1">Lot Number</label>
+          <label className="text-xs text-gray-500 block mb-1">{tx("Lot Number")}</label>
           <input type="text" value={filterLot} onChange={(e) => setFilterLot(e.target.value)}
-            placeholder="e.g. LOT-2026-001"
+            placeholder={tx("e.g. LOT-2026-001")}
             className="border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none w-36" />
         </div>
         <button onClick={() => { setFilterSev(""); setFilterStatus(""); setFilterLot(""); }}
-          className="text-xs text-gray-500 hover:text-gray-700 underline">Clear</button>
+          className="text-xs text-gray-500 hover:text-gray-700 underline">{tx("Clear")}</button>
       </div>
 
       {/* Log form */}
       {showForm && (
         <div className="bg-white border rounded-lg p-5 shadow-sm space-y-3">
-          <h2 className="text-sm font-semibold text-gray-700">Log Consumer Complaint</h2>
+          <h2 className="text-sm font-semibold text-gray-700">{tx("Log Consumer Complaint")}</h2>
           {form.severity === "SAFETY" && (
             <div className="bg-red-50 border border-red-300 rounded p-2 text-xs text-red-800 font-medium">
-              SAFETY severity will auto-trigger recall flag and mark as regulatory reporting required.
+              {tx("SAFETY severity will auto-trigger recall flag and mark as regulatory reporting required.")}
             </div>
           )}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {[
-              { label: "Consumer Name", key: "consumer_name", placeholder: "Optional" },
-              { label: "Contact (Phone/Email)", key: "consumer_contact", placeholder: "Optional" },
-              { label: "Consumer Location", key: "consumer_location", placeholder: "e.g. Nairobi, Karen" },
-              { label: "Product Name *", key: "product_name", placeholder: "e.g. POVU AllClean Multi-Purpose Cleaner 1 L Bottle" },
-              { label: "Lot Number", key: "lot_number", placeholder: "e.g. LOT-2026-001" },
-              { label: "Purchase Date", key: "purchase_date", placeholder: "YYYY-MM-DD" },
-              { label: "Purchase Location", key: "purchase_location", placeholder: "e.g. Naivas Karen" },
+              { label: tx("Consumer Name"), key: "consumer_name", placeholder: tx("Optional") },
+              { label: tx("Contact (Phone/Email)"), key: "consumer_contact", placeholder: tx("Optional") },
+              { label: tx("Consumer Location"), key: "consumer_location", placeholder: tx("e.g. Nairobi, Karen") },
+              { label: tx("Product Name *"), key: "product_name", placeholder: tx("e.g. POVU AllClean Multi-Purpose Cleaner 1 L Bottle") },
+              { label: tx("Lot Number"), key: "lot_number", placeholder: tx("e.g. LOT-2026-001") },
+              { label: tx("Purchase Date"), key: "purchase_date", placeholder: "YYYY-MM-DD" },
+              { label: tx("Purchase Location"), key: "purchase_location", placeholder: tx("e.g. Naivas Karen") },
             ].map(({ label, key, placeholder }) => (
               <div key={key}>
                 <label className="text-xs text-gray-500 block mb-1">{label}</label>
@@ -242,14 +243,14 @@ export default function ConsumerComplaintsPage() {
               </div>
             ))}
             <div>
-              <label className="text-xs text-gray-500 block mb-1">Channel</label>
+              <label className="text-xs text-gray-500 block mb-1">{tx("Channel")}</label>
               <select value={form.channel} onChange={(e) => setForm((p) => ({ ...p, channel: e.target.value }))}
                 className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none">
                 {CHANNELS.map((c) => <option key={c} value={c}>{c.replace(/_/g, " ")}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-xs text-gray-500 block mb-1">Severity *</label>
+              <label className="text-xs text-gray-500 block mb-1">{tx("Severity *")}</label>
               <select value={form.severity} onChange={(e) => setForm((p) => ({ ...p, severity: e.target.value }))}
                 className={`w-full border rounded px-3 py-1.5 text-sm focus:outline-none ${form.severity === "SAFETY" ? "border-red-400 bg-red-50" : "border-gray-300"}`}>
                 {SEVERITIES.map((s) => <option key={s} value={s}>{s.replace(/_/g, " ")}</option>)}
@@ -257,15 +258,15 @@ export default function ConsumerComplaintsPage() {
             </div>
           </div>
           <div>
-            <label className="text-xs text-gray-500 block mb-1">Description *</label>
+            <label className="text-xs text-gray-500 block mb-1">{tx("Description *")}</label>
             <textarea rows={3} value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
-              placeholder="Detailed complaint description"
+              placeholder={tx("Detailed complaint description")}
               className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" />
           </div>
           <div className="flex gap-2">
             <button onClick={save} disabled={saving || !form.product_name || !form.description}
-              className="bg-blue-600 text-white text-sm px-4 py-2 rounded disabled:opacity-50">{saving ? "Logging…" : "Log Complaint"}</button>
-            <button onClick={() => setShowForm(false)} className="border border-gray-300 text-sm px-4 py-2 rounded hover:bg-gray-50">Cancel</button>
+              className="bg-blue-600 text-white text-sm px-4 py-2 rounded disabled:opacity-50">{saving ? tx("Logging…") : tx("Log Complaint")}</button>
+            <button onClick={() => setShowForm(false)} className="border border-gray-300 text-sm px-4 py-2 rounded hover:bg-gray-50">{tx("Cancel")}</button>
           </div>
         </div>
       )}
@@ -273,10 +274,10 @@ export default function ConsumerComplaintsPage() {
       {/* Complaint list */}
       <div className="bg-white border rounded-lg shadow-sm overflow-hidden">
         <div className="px-4 py-3 border-b bg-gray-50">
-          <h2 className="text-sm font-semibold text-gray-700">Complaints <span className="font-normal text-gray-400">({complaints.length})</span></h2>
+          <h2 className="text-sm font-semibold text-gray-700">{tx("Complaints")} <span className="font-normal text-gray-400">({complaints.length})</span></h2>
         </div>
-        {loading ? <div className="p-6 text-sm text-gray-400 text-center">Loading…</div> :
-         complaints.length === 0 ? <div className="p-6 text-sm text-gray-400 text-center">No complaints found.</div> : (
+        {loading ? <div className="p-6 text-sm text-gray-400 text-center">{tx("Loading…")}</div> :
+         complaints.length === 0 ? <div className="p-6 text-sm text-gray-400 text-center">{tx("No complaints found.")}</div> : (
           <div className="divide-y">
             {complaints.map((c) => (
               <div key={c.id} className={`px-4 py-3 ${c.recall_triggered_flag ? "bg-red-50" : ""}`}>
@@ -291,7 +292,7 @@ export default function ConsumerComplaintsPage() {
                     <p className="text-sm font-medium text-gray-900 mt-0.5">{c.product_name}</p>
                     <p className="text-xs text-gray-500 truncate">{c.description}</p>
                     <div className="flex gap-3 text-xs text-gray-400 mt-0.5 flex-wrap">
-                      {c.lot_number && <span>Lot: {c.lot_number}</span>}
+                      {c.lot_number && <span>{tx("Lot:")} {c.lot_number}</span>}
                       <span>{c.channel.replace(/_/g, " ")}</span>
                       <span>{fmtDt(c.created_at)}</span>
                       {c.assigned_to && <span>→ {c.assigned_to}</span>}
@@ -299,7 +300,7 @@ export default function ConsumerComplaintsPage() {
                   </div>
                   <PermissionGuard permission="consumer_complaints.edit">
                     <button onClick={() => { setSelected(c); setUpdateForm({ status: c.status, assigned_to: c.assigned_to ?? "", root_cause: c.root_cause ?? "", corrective_action: c.corrective_action ?? "" }); }}
-                      className="text-xs text-blue-600 hover:text-blue-800 shrink-0">Update</button>
+                      className="text-xs text-blue-600 hover:text-blue-800 shrink-0">{tx("Update")}</button>
                   </PermissionGuard>
                 </div>
               </div>
@@ -312,37 +313,37 @@ export default function ConsumerComplaintsPage() {
       {selected && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg space-y-4 p-6">
-            <h2 className="text-sm font-semibold text-gray-800">Update Complaint — {selected.complaint_ref}</h2>
+            <h2 className="text-sm font-semibold text-gray-800">{tx("Update Complaint —")} {selected.complaint_ref}</h2>
             <p className="text-xs text-gray-500">{selected.product_name} · {selected.severity}</p>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
-                <label className="text-xs text-gray-500 block mb-1">Status</label>
+                <label className="text-xs text-gray-500 block mb-1">{tx("Status")}</label>
                 <select value={updateForm.status} onChange={(e) => setUpdateForm((p) => ({ ...p, status: e.target.value }))}
                   className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none">
                   {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-xs text-gray-500 block mb-1">Assigned To</label>
+                <label className="text-xs text-gray-500 block mb-1">{tx("Assigned To")}</label>
                 <input type="text" value={updateForm.assigned_to} onChange={(e) => setUpdateForm((p) => ({ ...p, assigned_to: e.target.value }))}
-                  placeholder="e.g. QA Manager"
+                  placeholder={tx("e.g. QA Manager")}
                   className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none" />
               </div>
               <div className="sm:col-span-2">
-                <label className="text-xs text-gray-500 block mb-1">Root Cause</label>
+                <label className="text-xs text-gray-500 block mb-1">{tx("Root Cause")}</label>
                 <textarea rows={2} value={updateForm.root_cause} onChange={(e) => setUpdateForm((p) => ({ ...p, root_cause: e.target.value }))}
                   className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none" />
               </div>
               <div className="sm:col-span-2">
-                <label className="text-xs text-gray-500 block mb-1">Corrective Action</label>
+                <label className="text-xs text-gray-500 block mb-1">{tx("Corrective Action")}</label>
                 <textarea rows={2} value={updateForm.corrective_action} onChange={(e) => setUpdateForm((p) => ({ ...p, corrective_action: e.target.value }))}
                   className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none" />
               </div>
             </div>
             <div className="flex gap-2">
               <button onClick={update} disabled={updating}
-                className="bg-blue-600 text-white text-sm px-4 py-2 rounded disabled:opacity-50">{updating ? "Saving…" : "Save"}</button>
-              <button onClick={() => setSelected(null)} className="border border-gray-300 text-sm px-4 py-2 rounded hover:bg-gray-50">Cancel</button>
+                className="bg-blue-600 text-white text-sm px-4 py-2 rounded disabled:opacity-50">{updating ? tx("Saving…") : tx("Save")}</button>
+              <button onClick={() => setSelected(null)} className="border border-gray-300 text-sm px-4 py-2 rounded hover:bg-gray-50">{tx("Cancel")}</button>
             </div>
           </div>
         </div>

@@ -6,6 +6,7 @@ import {
   plApi, PLHeader, PLLine, PLTier, PLAssignment, PLChangeHistory, PLApproval,
   PL_STATUS_COLORS, PL_TYPE_COLORS, PLStatus,
 } from "@/lib/price_list";
+import { tx } from "@/lib/i18n/core";
 
 type Tab = "lines" | "tiers" | "assignments" | "history" | "approvals";
 
@@ -108,7 +109,7 @@ export default function PLDetail() {
     setSaving(false);
   };
 
-  if (!hdr) return <div className="p-6 text-gray-400">Loading…</div>;
+  if (!hdr) return <div className="p-6 text-gray-400">{tx("Loading…")}</div>;
 
   const canEdit = hdr.status === "DRAFT";
 
@@ -126,39 +127,39 @@ export default function PLDetail() {
       <div className="flex items-start justify-between">
         <div>
           <div className="flex items-center gap-3 flex-wrap">
-            <a href="/dashboard/price-lists" className="text-blue-600 hover:underline text-sm">← Price Lists</a>
+            <a href="/dashboard/price-lists" className="text-blue-600 hover:underline text-sm">{tx("← Price Lists")}</a>
             <h1 className="text-xl font-bold text-gray-900">{hdr.price_list_name}</h1>
             <span className="font-mono text-xs bg-gray-100 px-2 py-0.5 rounded text-gray-600">{hdr.price_list_code}</span>
             <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${PL_TYPE_COLORS[hdr.pl_type]}`}>{hdr.pl_type.replace(/_/g, " ")}</span>
             <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${PL_STATUS_COLORS[hdr.status]}`}>{hdr.status}</span>
           </div>
           <div className="text-sm text-gray-500 mt-1">
-            {hdr.currency} · Valid {hdr.valid_from} → {hdr.valid_to || "open"} · Priority {hdr.priority_rank}
-            {hdr.minimum_margin_pct && ` · Min margin ${hdr.minimum_margin_pct}%`}
+            {hdr.currency} {tx("· Valid")} {hdr.valid_from} → {hdr.valid_to || tx("open")} {tx("· Priority")} {hdr.priority_rank}
+            {hdr.minimum_margin_pct && tx(" · Min margin {minimum_margin_pct}%", { minimum_margin_pct: hdr.minimum_margin_pct })}
           </div>
         </div>
         <div className="flex gap-2">
           {hdr.status === "DRAFT" && (
             <div className="flex items-center gap-2">
               <input value={submitter} onChange={(e) => setSubmitter(e.target.value)}
-                placeholder="Your name" className="border border-gray-300 rounded-lg px-2 py-1.5 text-xs w-28" />
+                placeholder={tx("Your name")} className="border border-gray-300 rounded-lg px-2 py-1.5 text-xs w-28" />
               <button onClick={submitApproval} disabled={saving}
-                className="px-3 py-1.5 bg-yellow-500 text-white rounded-lg text-xs font-medium">Submit</button>
+                className="px-3 py-1.5 bg-yellow-500 text-white rounded-lg text-xs font-medium">{tx("Submit")}</button>
             </div>
           )}
           {hdr.status === "UNDER_REVIEW" && (
             <div className="flex items-center gap-2">
               <input value={reviewer} onChange={(e) => setReviewer(e.target.value)}
-                placeholder="Reviewer name" className="border border-gray-300 rounded-lg px-2 py-1.5 text-xs w-28" />
-              <button onClick={() => reviewApproval("APPROVED")} className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-xs font-medium">Approve</button>
-              <button onClick={() => reviewApproval("REJECTED")} className="px-3 py-1.5 bg-red-500 text-white rounded-lg text-xs font-medium">Reject</button>
+                placeholder={tx("Reviewer name")} className="border border-gray-300 rounded-lg px-2 py-1.5 text-xs w-28" />
+              <button onClick={() => reviewApproval("APPROVED")} className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-xs font-medium">{tx("Approve")}</button>
+              <button onClick={() => reviewApproval("REJECTED")} className="px-3 py-1.5 bg-red-500 text-white rounded-lg text-xs font-medium">{tx("Reject")}</button>
             </div>
           )}
           {hdr.status === "APPROVED" && (
-            <button onClick={activate} disabled={saving} className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-xs font-medium">Activate</button>
+            <button onClick={activate} disabled={saving} className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-xs font-medium">{tx("Activate")}</button>
           )}
           {hdr.status === "ACTIVE" && (
-            <button onClick={() => plApi.archive(id).then(setHdr)} className="px-3 py-1.5 bg-gray-500 text-white rounded-lg text-xs font-medium">Archive</button>
+            <button onClick={() => plApi.archive(id).then(setHdr)} className="px-3 py-1.5 bg-gray-500 text-white rounded-lg text-xs font-medium">{tx("Archive")}</button>
           )}
         </div>
       </div>
@@ -177,22 +178,22 @@ export default function PLDetail() {
       {tab === "lines" && (
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-            <span className="text-sm font-semibold text-gray-900">Price Lines</span>
+            <span className="text-sm font-semibold text-gray-900">{tx("Price Lines")}</span>
             {canEdit && (
-              <button onClick={() => setAddingLine(true)} className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-medium">+ Add Line</button>
+              <button onClick={() => setAddingLine(true)} className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-medium">{tx("+ Add Line")}</button>
             )}
           </div>
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                {["Product ID", "UOM", "Base Price", "Min Price", "Rec. Price", "Currency", "Valid", "Actions"].map((h) => (
+                {[tx("Product ID"), "UOM", tx("Base Price"), tx("Min Price"), tx("Rec. Price"), tx("Currency"), tx("Valid"), tx("Actions")].map((h) => (
                   <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {lines.length === 0 ? (
-                <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">No lines yet. Add price lines above.</td></tr>
+                <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">{tx("No lines yet. Add price lines above.")}</td></tr>
               ) : lines.map((l) => (
                 <tr key={l.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3 font-mono text-xs text-gray-500">{l.product_id.slice(0, 12)}…</td>
@@ -201,9 +202,9 @@ export default function PLDetail() {
                   <td className="px-4 py-3 font-mono text-gray-500">{l.minimum_price ? Number(l.minimum_price).toLocaleString() : "—"}</td>
                   <td className="px-4 py-3 font-mono text-gray-500">{l.recommended_price ? Number(l.recommended_price).toLocaleString() : "—"}</td>
                   <td className="px-4 py-3 text-xs">{l.currency}</td>
-                  <td className="px-4 py-3 text-xs text-gray-500">{l.valid_from ? `${l.valid_from} →` : "Always"}{l.valid_to ? ` ${l.valid_to}` : ""}</td>
+                  <td className="px-4 py-3 text-xs text-gray-500">{l.valid_from ? `${l.valid_from} →` : tx("Always")}{l.valid_to ? ` ${l.valid_to}` : ""}</td>
                   <td className="px-4 py-3">
-                    <button onClick={() => loadTiers(l)} className="text-blue-600 hover:underline text-xs">Tiers</button>
+                    <button onClick={() => loadTiers(l)} className="text-blue-600 hover:underline text-xs">{tx("Tiers")}</button>
                   </td>
                 </tr>
               ))}
@@ -217,11 +218,11 @@ export default function PLDetail() {
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
             <div>
-              <span className="text-sm font-semibold text-gray-900">Quantity Break Tiers</span>
-              {selectedLine && <span className="text-xs text-gray-500 ml-2">for product {selectedLine.product_id.slice(0, 8)}… / {selectedLine.uom} @ base {Number(selectedLine.base_price).toLocaleString()}</span>}
+              <span className="text-sm font-semibold text-gray-900">{tx("Quantity Break Tiers")}</span>
+              {selectedLine && <span className="text-xs text-gray-500 ml-2">{tx("for product")} {selectedLine.product_id.slice(0, 8)}… / {selectedLine.uom} {tx("@ base")} {Number(selectedLine.base_price).toLocaleString()}</span>}
             </div>
             {canEdit && selectedLine && (
-              <button onClick={() => setAddingTier(true)} className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-medium">+ Add Tier</button>
+              <button onClick={() => setAddingTier(true)} className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-medium">{tx("+ Add Tier")}</button>
             )}
           </div>
           {lines.length > 0 && (
@@ -237,14 +238,14 @@ export default function PLDetail() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                {["Min Qty", "Max Qty", "Unit Price", "Discount %", "Fixed Disc.", "Est. Margin %"].map((h) => (
+                {[tx("Min Qty"), tx("Max Qty"), tx("Unit Price"), tx("Discount %"), tx("Fixed Disc."), tx("Est. Margin %")].map((h) => (
                   <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {tiers.length === 0 ? (
-                <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">No tiers. One price for all quantities.</td></tr>
+                <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">{tx("No tiers. One price for all quantities.")}</td></tr>
               ) : tiers.map((t) => (
                 <tr key={t.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3 font-mono font-semibold">{Number(t.min_qty).toLocaleString()}</td>
@@ -264,20 +265,20 @@ export default function PLDetail() {
       {tab === "assignments" && (
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-            <span className="text-sm font-semibold text-gray-900">Customer / Channel Assignments</span>
-            <button onClick={() => setAddingAsn(true)} className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-medium">+ Add Assignment</button>
+            <span className="text-sm font-semibold text-gray-900">{tx("Customer / Channel Assignments")}</span>
+            <button onClick={() => setAddingAsn(true)} className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-medium">{tx("+ Add Assignment")}</button>
           </div>
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                {["Customer ID", "Channel", "Region", "Country", "Segment", "Valid From", "Valid To", "Priority"].map((h) => (
+                {[tx("Customer ID"), tx("Channel"), tx("Region"), tx("Country"), tx("Segment"), tx("Valid From"), tx("Valid To"), tx("Priority")].map((h) => (
                   <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {assignments.length === 0 ? (
-                <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">No assignments. Price list applies globally by type/default.</td></tr>
+                <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">{tx("No assignments. Price list applies globally by type/default.")}</td></tr>
               ) : assignments.map((a) => (
                 <tr key={a.id}>
                   <td className="px-4 py-3 font-mono text-xs text-gray-500">{a.customer_id?.slice(0, 10) || "—"}</td>
@@ -286,7 +287,7 @@ export default function PLDetail() {
                   <td className="px-4 py-3 text-gray-600">{a.country || "—"}</td>
                   <td className="px-4 py-3 text-gray-600">{a.segment || "—"}</td>
                   <td className="px-4 py-3 text-xs text-gray-500">{a.valid_from}</td>
-                  <td className="px-4 py-3 text-xs text-gray-500">{a.valid_to || "Open"}</td>
+                  <td className="px-4 py-3 text-xs text-gray-500">{a.valid_to || tx("Open")}</td>
                   <td className="px-4 py-3 text-center text-xs font-bold">{a.priority_rank}</td>
                 </tr>
               ))}
@@ -299,14 +300,14 @@ export default function PLDetail() {
       {tab === "history" && (
         <div className="space-y-2">
           {history.length === 0 ? (
-            <div className="bg-white border border-gray-200 rounded-xl p-8 text-center text-gray-400">No change history.</div>
+            <div className="bg-white border border-gray-200 rounded-xl p-8 text-center text-gray-400">{tx("No change history.")}</div>
           ) : history.map((h) => (
             <div key={h.id} className="bg-white border border-gray-200 rounded-xl p-4 flex items-start gap-3">
               <div className="w-2 h-2 rounded-full bg-blue-400 mt-1.5 shrink-0"></div>
               <div className="flex-1">
                 <div className="flex items-center gap-2">
                   <span className="font-semibold text-sm text-gray-900">{h.change_type.replace(/_/g, " ")}</span>
-                  <span className="text-xs text-gray-400">by {h.changed_by}</span>
+                  <span className="text-xs text-gray-400">{tx("by")} {h.changed_by}</span>
                 </div>
                 {h.new_value_json && (
                   <div className="text-xs text-gray-500 mt-0.5 font-mono">{JSON.stringify(h.new_value_json)}</div>
@@ -322,15 +323,15 @@ export default function PLDetail() {
       {tab === "approvals" && (
         <div className="space-y-2">
           {approvals.length === 0 ? (
-            <div className="bg-white border border-gray-200 rounded-xl p-8 text-center text-gray-400">No approval records.</div>
+            <div className="bg-white border border-gray-200 rounded-xl p-8 text-center text-gray-400">{tx("No approval records.")}</div>
           ) : approvals.map((a) => (
             <div key={a.id} className={`bg-white border rounded-xl p-4 ${a.action === "APPROVED" ? "border-green-200" : a.action === "REJECTED" ? "border-red-200" : "border-gray-200"}`}>
               <div className="flex items-center gap-2">
                 <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${a.action === "APPROVED" ? "bg-green-100 text-green-800" : a.action === "REJECTED" ? "bg-red-100 text-red-800" : "bg-yellow-100 text-yellow-800"}`}>
                   {a.action}
                 </span>
-                <span className="text-sm text-gray-700">Submitted by {a.submitted_by}</span>
-                {a.reviewed_by && <span className="text-sm text-gray-500">· Reviewed by {a.reviewed_by}</span>}
+                <span className="text-sm text-gray-700">{tx("Submitted by")} {a.submitted_by}</span>
+                {a.reviewed_by && <span className="text-sm text-gray-500">{tx("· Reviewed by")} {a.reviewed_by}</span>}
               </div>
               {a.notes && <div className="text-xs text-gray-500 mt-1">{a.notes}</div>}
               <div className="text-xs text-gray-400 mt-0.5">{a.created_at ? new Date(a.created_at).toLocaleString() : ""}</div>
@@ -343,10 +344,10 @@ export default function PLDetail() {
       {addingLine && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md space-y-4">
-            <h2 className="text-lg font-bold text-gray-900">Add Price Line</h2>
+            <h2 className="text-lg font-bold text-gray-900">{tx("Add Price Line")}</h2>
             <div>
-              <label className="text-xs font-medium text-gray-700">Product</label>
-              <EntityPicker kind="product" label="Product" value={lineForm.product_id} onChange={(id) => setLineForm((f) => ({ ...f, product_id: id }))} />
+              <label className="text-xs font-medium text-gray-700">{tx("Product")}</label>
+              <EntityPicker kind="product" label={tx("Product")} value={lineForm.product_id} onChange={(id) => setLineForm((f) => ({ ...f, product_id: id }))} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -355,26 +356,26 @@ export default function PLDetail() {
                   className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-700">Currency</label>
+                <label className="text-xs font-medium text-gray-700">{tx("Currency")}</label>
                 <input value={lineForm.currency} onChange={(e) => setLineForm({ ...lineForm, currency: e.target.value })}
                   className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-medium text-gray-700">Base Price</label>
+                <label className="text-xs font-medium text-gray-700">{tx("Base Price")}</label>
                 <input type="number" value={lineForm.base_price} onChange={(e) => setLineForm({ ...lineForm, base_price: e.target.value })}
                   className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-700">Minimum Price</label>
+                <label className="text-xs font-medium text-gray-700">{tx("Minimum Price")}</label>
                 <input type="number" value={lineForm.minimum_price} onChange={(e) => setLineForm({ ...lineForm, minimum_price: e.target.value })}
                   className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
               </div>
             </div>
             <div className="flex justify-end gap-3">
-              <button onClick={() => setAddingLine(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm">Cancel</button>
-              <button onClick={addLine} disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium">Add</button>
+              <button onClick={() => setAddingLine(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm">{tx("Cancel")}</button>
+              <button onClick={addLine} disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium">{tx("Add")}</button>
             </div>
           </div>
         </div>
@@ -384,34 +385,34 @@ export default function PLDetail() {
       {addingTier && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md space-y-4">
-            <h2 className="text-lg font-bold text-gray-900">Add Quantity Tier</h2>
+            <h2 className="text-lg font-bold text-gray-900">{tx("Add Quantity Tier")}</h2>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-medium text-gray-700">Min Qty</label>
+                <label className="text-xs font-medium text-gray-700">{tx("Min Qty")}</label>
                 <input type="number" value={tierForm.min_qty} onChange={(e) => setTierForm({ ...tierForm, min_qty: e.target.value })}
                   className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-700">Max Qty (blank = unlimited)</label>
+                <label className="text-xs font-medium text-gray-700">{tx("Max Qty (blank = unlimited)")}</label>
                 <input type="number" value={tierForm.max_qty} onChange={(e) => setTierForm({ ...tierForm, max_qty: e.target.value })}
                   className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-medium text-gray-700">Override Unit Price</label>
+                <label className="text-xs font-medium text-gray-700">{tx("Override Unit Price")}</label>
                 <input type="number" value={tierForm.unit_price} onChange={(e) => setTierForm({ ...tierForm, unit_price: e.target.value })}
-                  className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" placeholder="or use discount" />
+                  className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" placeholder={tx("or use discount")} />
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-700">Discount %</label>
+                <label className="text-xs font-medium text-gray-700">{tx("Discount %")}</label>
                 <input type="number" value={tierForm.discount_pct} onChange={(e) => setTierForm({ ...tierForm, discount_pct: e.target.value })}
-                  className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" placeholder="e.g. 5" />
+                  className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" placeholder={tx("e.g. 5")} />
               </div>
             </div>
             <div className="flex justify-end gap-3">
-              <button onClick={() => setAddingTier(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm">Cancel</button>
-              <button onClick={addTier} disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium">Add Tier</button>
+              <button onClick={() => setAddingTier(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm">{tx("Cancel")}</button>
+              <button onClick={addTier} disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium">{tx("Add Tier")}</button>
             </div>
           </div>
         </div>
@@ -421,38 +422,38 @@ export default function PLDetail() {
       {addingAsn && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md space-y-4">
-            <h2 className="text-lg font-bold text-gray-900">Add Assignment</h2>
+            <h2 className="text-lg font-bold text-gray-900">{tx("Add Assignment")}</h2>
             <div>
-              <label className="text-xs font-medium text-gray-700">Customer (optional)</label>
-              <EntityPicker kind="customer" label="Customer" value={asnForm.customer_id} onChange={(id) => setAsnForm({ ...asnForm, customer_id: id })} />
+              <label className="text-xs font-medium text-gray-700">{tx("Customer (optional)")}</label>
+              <EntityPicker kind="customer" label={tx("Customer")} value={asnForm.customer_id} onChange={(id) => setAsnForm({ ...asnForm, customer_id: id })} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-medium text-gray-700">Channel</label>
+                <label className="text-xs font-medium text-gray-700">{tx("Channel")}</label>
                 <input value={asnForm.channel} onChange={(e) => setAsnForm({ ...asnForm, channel: e.target.value })}
                   className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-700">Region</label>
+                <label className="text-xs font-medium text-gray-700">{tx("Region")}</label>
                 <input value={asnForm.region} onChange={(e) => setAsnForm({ ...asnForm, region: e.target.value })}
                   className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-medium text-gray-700">Valid From</label>
+                <label className="text-xs font-medium text-gray-700">{tx("Valid From")}</label>
                 <input type="date" value={asnForm.valid_from} onChange={(e) => setAsnForm({ ...asnForm, valid_from: e.target.value })}
                   className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-700">Priority Rank</label>
+                <label className="text-xs font-medium text-gray-700">{tx("Priority Rank")}</label>
                 <input type="number" value={asnForm.priority_rank} onChange={(e) => setAsnForm({ ...asnForm, priority_rank: Number(e.target.value) })}
                   className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
               </div>
             </div>
             <div className="flex justify-end gap-3">
-              <button onClick={() => setAddingAsn(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm">Cancel</button>
-              <button onClick={addAssignment} disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium">Assign</button>
+              <button onClick={() => setAddingAsn(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm">{tx("Cancel")}</button>
+              <button onClick={addAssignment} disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium">{tx("Assign")}</button>
             </div>
           </div>
         </div>

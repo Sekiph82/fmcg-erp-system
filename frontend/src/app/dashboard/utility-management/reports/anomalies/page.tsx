@@ -6,6 +6,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
 import { reportsApi } from "@/lib/utilitiesReports";
+import { tx } from "@/lib/i18n/core";
 
 const today = new Date().toISOString().slice(0, 10);
 const d30 = new Date(Date.now() - 30 * 86400_000).toISOString().slice(0, 10);
@@ -27,7 +28,7 @@ function DateFilter({ from, to, onFrom, onTo }: { from: string; to: string; onFr
   return (
     <div className="flex gap-3 items-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3">
       <input type="date" className={ic} value={from} onChange={e => onFrom(e.target.value)} />
-      <span className="text-gray-400 text-xs">to</span>
+      <span className="text-gray-400 text-xs">{tx("to")}</span>
       <input type="date" className={ic} value={to} onChange={e => onTo(e.target.value)} />
     </div>
   );
@@ -48,15 +49,15 @@ function AlarmTrendsTab({ dateFrom, dateTo, utilityType, severity }: {
     <div className="space-y-6">
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         <div className="rounded-xl border-2 border-red-400 bg-red-50 dark:bg-red-950/20 p-4">
-          <p className="text-xs font-medium text-gray-500">Total Events</p>
+          <p className="text-xs font-medium text-gray-500">{tx("Total Events")}</p>
           <p className="text-2xl font-bold text-red-700 mt-1">{d?.total_events ?? "—"}</p>
         </div>
         <div className="rounded-xl border-2 border-red-600 bg-red-100 dark:bg-red-950/30 p-4">
-          <p className="text-xs font-medium text-gray-500">Critical</p>
+          <p className="text-xs font-medium text-gray-500">{tx("Critical")}</p>
           <p className="text-2xl font-bold text-red-700 mt-1">{d?.critical_count ?? "—"}</p>
         </div>
         <div className="rounded-xl border-2 border-amber-400 bg-amber-50 dark:bg-amber-950/20 p-4">
-          <p className="text-xs font-medium text-gray-500">Unresolved</p>
+          <p className="text-xs font-medium text-gray-500">{tx("Unresolved")}</p>
           <p className="text-2xl font-bold text-amber-700 mt-1">{d?.unresolved_count ?? "—"}</p>
         </div>
       </div>
@@ -64,8 +65,8 @@ function AlarmTrendsTab({ dateFrom, dateTo, utilityType, severity }: {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-sm font-semibold">Alarm Trend by Severity</h3>
-            <button onClick={() => reportsApi.exportAlarmTrends(params)} className="px-3 py-1.5 text-xs bg-red-600 text-white rounded-lg hover:bg-red-700">Export CSV</button>
+            <h3 className="text-sm font-semibold">{tx("Alarm Trend by Severity")}</h3>
+            <button onClick={() => reportsApi.exportAlarmTrends(params)} className="px-3 py-1.5 text-xs bg-red-600 text-white rounded-lg hover:bg-red-700">{tx("Export CSV")}</button>
           </div>
           <ResponsiveContainer width="100%" height={240}>
             <BarChart data={d?.trend ?? []} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
@@ -82,7 +83,7 @@ function AlarmTrendsTab({ dateFrom, dateTo, utilityType, severity }: {
           </ResponsiveContainer>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-          <h3 className="text-sm font-semibold mb-3">Top Triggered Rules</h3>
+          <h3 className="text-sm font-semibold mb-3">{tx("Top Triggered Rules")}</h3>
           <div className="space-y-2">
             {(d?.top_rules ?? []).slice(0, 8).map((rule, i) => (
               <div key={i} className="flex items-center justify-between">
@@ -90,20 +91,20 @@ function AlarmTrendsTab({ dateFrom, dateTo, utilityType, severity }: {
                 <span className="text-xs font-semibold text-gray-800 ml-2">{rule.value}</span>
               </div>
             ))}
-            {!d?.top_rules.length && <p className="text-xs text-gray-400">No alarm events</p>}
+            {!d?.top_rules.length && <p className="text-xs text-gray-400">{tx("No alarm events")}</p>}
           </div>
         </div>
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
-          <h3 className="text-sm font-semibold">Recent Alarm Events</h3>
+          <h3 className="text-sm font-semibold">{tx("Recent Alarm Events")}</h3>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 dark:bg-gray-700 text-xs uppercase text-gray-500">
               <tr>
-                {["Event No", "Rule", "Utility", "Asset", "Device", "Severity", "Triggered At", "Value", "Threshold", "Status"].map(h => (
+                {[tx("Event No"), tx("Rule"), tx("Utility"), tx("Asset"), tx("Device"), tx("Severity"), tx("Triggered At"), tx("Value"), tx("Threshold"), tx("Status")].map(h => (
                   <th key={h} className="px-3 py-3 text-left font-medium whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -127,7 +128,7 @@ function AlarmTrendsTab({ dateFrom, dateTo, utilityType, severity }: {
                   <td className="px-3 py-2">{row.status ?? "—"}</td>
                 </tr>
               ))}
-              {!d?.recent.length && <tr><td colSpan={10} className="px-4 py-8 text-center text-gray-400">No recent alarms</td></tr>}
+              {!d?.recent.length && <tr><td colSpan={10} className="px-4 py-8 text-center text-gray-400">{tx("No recent alarms")}</td></tr>}
             </tbody>
           </table>
         </div>
@@ -150,31 +151,31 @@ function AbnormalTab({ dateFrom, dateTo, utilityType }: { dateFrom: string; date
     <div className="space-y-6">
       <div className="flex gap-4 items-center flex-wrap">
         <div className="rounded-xl border-2 border-amber-400 bg-amber-50 dark:bg-amber-950/20 p-4">
-          <p className="text-xs font-medium text-gray-500">Anomaly Count</p>
+          <p className="text-xs font-medium text-gray-500">{tx("Anomaly Count")}</p>
           <p className="text-2xl font-bold text-amber-700 mt-1">{d?.anomaly_count ?? "—"}</p>
         </div>
         <div className="rounded-xl border-2 border-red-400 bg-red-50 dark:bg-red-950/20 p-4">
-          <p className="text-xs font-medium text-gray-500">High Deviation (&gt;{threshold}%)</p>
+          <p className="text-xs font-medium text-gray-500">{tx("High Deviation (>")}{threshold}%)</p>
           <p className="text-2xl font-bold text-red-700 mt-1">{d?.high_deviation_count ?? "—"}</p>
         </div>
         <div className="flex items-center gap-2 ml-auto">
-          <label className="text-xs text-gray-500">Threshold %:</label>
+          <label className="text-xs text-gray-500">{tx("Threshold %:")}</label>
           <input type="number" value={threshold} onChange={e => setThreshold(Number(e.target.value))}
             className="w-20 rounded-lg border border-gray-300 px-2 py-1 text-sm" min={5} max={200} step={5} />
           <button onClick={() => reportsApi.exportAbnormalConsumption(params)}
-            className="px-3 py-1.5 text-xs bg-amber-600 text-white rounded-lg hover:bg-amber-700">Export CSV</button>
+            className="px-3 py-1.5 text-xs bg-amber-600 text-white rounded-lg hover:bg-amber-700">{tx("Export CSV")}</button>
         </div>
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700 text-xs text-gray-500">
-          {d?.rows.length ?? 0} deviation events — sorted by deviation magnitude
+          {d?.rows.length ?? 0} {tx("deviation events — sorted by deviation magnitude")}
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 dark:bg-gray-700 text-xs uppercase text-gray-500">
               <tr>
-                {["Date", "Utility", "Department", "Quantity", "Unit", "Baseline Mean", "Deviation %", "Cost", "Anomaly", "Note"].map(h => (
+                {[tx("Date"), tx("Utility"), tx("Department"), tx("Quantity"), tx("Unit"), tx("Baseline Mean"), tx("Deviation %"), tx("Cost"), tx("Anomaly"), tx("Note")].map(h => (
                   <th key={h} className="px-3 py-3 text-left font-medium whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -200,7 +201,7 @@ function AbnormalTab({ dateFrom, dateTo, utilityType }: { dateFrom: string; date
                   </tr>
                 );
               })}
-              {!d?.rows.length && <tr><td colSpan={10} className="px-4 py-8 text-center text-gray-400">No deviation events found</td></tr>}
+              {!d?.rows.length && <tr><td colSpan={10} className="px-4 py-8 text-center text-gray-400">{tx("No deviation events found")}</td></tr>}
             </tbody>
           </table>
         </div>
@@ -225,22 +226,22 @@ export default function AnomaliesPage() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <div className="flex items-center gap-3 mb-1">
-            <Link href="/dashboard/utility-management/reports" className="text-sm text-gray-500 hover:text-blue-600">← Reports</Link>
+            <Link href="/dashboard/utility-management/reports" className="text-sm text-gray-500 hover:text-blue-600">{tx("← Reports")}</Link>
           </div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white" style={{ borderLeft: "4px solid #ef4444", paddingLeft: 12 }}>
-            Anomalies & Alarms
+            {tx("Anomalies & Alarms")}
           </h1>
         </div>
         <div className="flex gap-3 flex-wrap items-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3">
           <input type="date" className={sel} value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
-          <span className="text-gray-400 text-xs">to</span>
+          <span className="text-gray-400 text-xs">{tx("to")}</span>
           <input type="date" className={sel} value={dateTo} onChange={e => setDateTo(e.target.value)} />
           <select className={sel} value={utilityType} onChange={e => setUtilityType(e.target.value)}>
-            {UTILITY_TYPES.map(t => <option key={t} value={t}>{t || "All Utilities"}</option>)}
+            {UTILITY_TYPES.map(t => <option key={t} value={t}>{t || tx("All Utilities")}</option>)}
           </select>
           {tab === "alarms" && (
             <select className={sel} value={severity} onChange={e => setSeverity(e.target.value)}>
-              {SEVERITIES.map(s => <option key={s} value={s}>{s || "All Severities"}</option>)}
+              {SEVERITIES.map(s => <option key={s} value={s}>{s || tx("All Severities")}</option>)}
             </select>
           )}
         </div>
@@ -248,8 +249,8 @@ export default function AnomaliesPage() {
 
       <div className="flex gap-2">
         {[
-          { id: "alarms" as Tab, label: "Alarm Trends", color: "#ef4444" },
-          { id: "abnormal" as Tab, label: "Abnormal Consumption", color: "#f97316" },
+          { id: "alarms" as Tab, label: tx("Alarm Trends"), color: "#ef4444" },
+          { id: "abnormal" as Tab, label: tx("Abnormal Consumption"), color: "#f97316" },
         ].map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${tab === t.id ? "text-white" : "bg-white dark:bg-gray-800 text-gray-600 border border-gray-200 dark:border-gray-700"}`}

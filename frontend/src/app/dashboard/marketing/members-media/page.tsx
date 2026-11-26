@@ -3,6 +3,7 @@
 // WebVTT captions, podcast shows, and who watched (member plays also appear on the customer timeline).
 import { useCallback, useEffect, useState } from "react";
 import { apiClient } from "@/lib/api";
+import { tx } from "@/lib/i18n/core";
 
 type Acl = { id: string; name: string; account_ids: string[]; account_types: string[]; revoked_ids: string[] };
 type Account = { id: string; code: string; name: string | null; type: string; status: string };
@@ -33,53 +34,53 @@ export default function MembersMediaPage() {
     fd.append("file", up.file); fd.append("title", up.title || up.file.name);
     if (up.podcast) fd.append("podcast", up.podcast);
     if (up.access === "PUBLIC") fd.append("public", "true"); else if (up.access) fd.append("access_list_id", up.access);
-    apiClient.post("/api/v1/cms/media", fd).then(() => { setMsg("Uploaded."); setUp({ file: null, title: "", podcast: "", access: "" }); load(); }).catch((e) => setMsg(err(e)));
+    apiClient.post("/api/v1/cms/media", fd).then(() => { setMsg(tx("Uploaded.")); setUp({ file: null, title: "", podcast: "", access: "" }); load(); }).catch((e) => setMsg(err(e)));
   };
   return (
     <div className="p-4 space-y-3 text-sm">
-      <h2 className="text-lg font-semibold">Members &amp; media</h2>
-      <p className="text-xs text-gray-500">Members sign in through the customer portal. A page, video or help article on an access list is shown only to listed accounts; removing or revoking an account takes effect at once.</p>
+      <h2 className="text-lg font-semibold">{tx("Members & media")}</h2>
+      <p className="text-xs text-gray-500">{tx("Members sign in through the customer portal. A page, video or help article on an access list is shown only to listed accounts; removing or revoking an account takes effect at once.")}</p>
       {msg && <p role="status" className="text-xs bg-amber-50 border rounded p-2">{msg}</p>}
       <section className="border rounded p-3 bg-white space-y-2 text-xs">
-        <h3 className="font-semibold text-sm">Access lists</h3>
-        <div className="flex gap-2"><input aria-label="New access list" placeholder="e.g. Gold distributors" className="border rounded px-1" value={name} onChange={(e) => setName(e.target.value)} />
-          <button className="border rounded px-2" onClick={() => apiClient.post("/api/v1/cms/access-lists", { name }).then(() => { setName(""); load(); }).catch((e) => setMsg(err(e)))}>Create</button></div>
+        <h3 className="font-semibold text-sm">{tx("Access lists")}</h3>
+        <div className="flex gap-2"><input aria-label={tx("New access list")} placeholder={tx("e.g. Gold distributors")} className="border rounded px-1" value={name} onChange={(e) => setName(e.target.value)} />
+          <button className="border rounded px-2" onClick={() => apiClient.post("/api/v1/cms/access-lists", { name }).then(() => { setName(""); load(); }).catch((e) => setMsg(err(e)))}>{tx("Create")}</button></div>
         <ul className="flex flex-wrap gap-2">{acls.map((a) => <li key={a.id}><button className={`border rounded px-2 ${cur?.id === a.id ? "bg-indigo-50 font-bold" : ""}`} onClick={() => setCur(a)}>{a.name} ({a.account_ids.length})</button></li>)}</ul>
         {cur && <div className="space-y-1">
-          <fieldset className="flex gap-3"><legend>Whole account types</legend>{["CUSTOMER", "DISTRIBUTOR"].map((t) => <label key={t} className="flex gap-1"><input type="checkbox" checked={cur.account_types.includes(t)}
+          <fieldset className="flex gap-3"><legend>{tx("Whole account types")}</legend>{["CUSTOMER", "DISTRIBUTOR"].map((t) => <label key={t} className="flex gap-1"><input type="checkbox" checked={cur.account_types.includes(t)}
             onChange={(e) => saveAcl(cur, { account_types: e.target.checked ? [...cur.account_types, t] : cur.account_types.filter((x) => x !== t) })} />{t.toLowerCase()}</label>)}</fieldset>
-          <table className="w-full"><thead><tr><th className="text-left">Portal account</th><th>Type</th><th>Member</th><th>Revoked</th></tr></thead><tbody>{accounts.map((a) =>
+          <table className="w-full"><thead><tr><th className="text-left">{tx("Portal account")}</th><th>{tx("Type")}</th><th>{tx("Member")}</th><th>{tx("Revoked")}</th></tr></thead><tbody>{accounts.map((a) =>
             <tr key={a.id} className="border-t"><td>{a.code}{a.name ? ` · ${a.name}` : ""}</td><td className="text-center">{a.type.toLowerCase()}</td>
-              <td className="text-center"><input type="checkbox" aria-label={`Member ${a.code}`} checked={cur.account_ids.includes(a.id)} onChange={(e) => saveAcl(cur, { account_ids: e.target.checked ? [...cur.account_ids, a.id] : cur.account_ids.filter((x) => x !== a.id) })} /></td>
-              <td className="text-center"><input type="checkbox" aria-label={`Revoke ${a.code}`} checked={cur.revoked_ids.includes(a.id)} onChange={(e) => saveAcl(cur, { revoked_ids: e.target.checked ? [...cur.revoked_ids, a.id] : cur.revoked_ids.filter((x) => x !== a.id) })} /></td></tr>)}</tbody></table>
-          <p className="text-gray-500">To gate a help article, set its access list in Knowledge base (field access_list_id) — members read it at /kb/members.</p>
+              <td className="text-center"><input type="checkbox" aria-label={tx("Member {code}", { code: a.code })} checked={cur.account_ids.includes(a.id)} onChange={(e) => saveAcl(cur, { account_ids: e.target.checked ? [...cur.account_ids, a.id] : cur.account_ids.filter((x) => x !== a.id) })} /></td>
+              <td className="text-center"><input type="checkbox" aria-label={tx("Revoke {code}", { code: a.code })} checked={cur.revoked_ids.includes(a.id)} onChange={(e) => saveAcl(cur, { revoked_ids: e.target.checked ? [...cur.revoked_ids, a.id] : cur.revoked_ids.filter((x) => x !== a.id) })} /></td></tr>)}</tbody></table>
+          <p className="text-gray-500">{tx("To gate a help article, set its access list in Knowledge base (field access_list_id) — members read it at /kb/members.")}</p>
         </div>}
       </section>
       <section className="border rounded p-3 bg-white space-y-2 text-xs">
-        <h3 className="font-semibold text-sm">Video &amp; audio</h3>
+        <h3 className="font-semibold text-sm">{tx("Video & audio")}</h3>
         <div className="flex flex-wrap gap-2 items-center">
-          <input aria-label="Media file" type="file" accept=".mp4,.m4v,.webm,.m4a,.mp3,.ogg,.wav" onChange={(e) => setUp({ ...up, file: e.target.files?.[0] ?? null })} />
-          <input aria-label="Media title" placeholder="Title" className="border rounded px-1" value={up.title} onChange={(e) => setUp({ ...up, title: e.target.value })} />
-          <input aria-label="Podcast show" placeholder="Podcast show (optional)" className="border rounded px-1" value={up.podcast} onChange={(e) => setUp({ ...up, podcast: e.target.value })} />
-          <select aria-label="Media access" className="border rounded" value={up.access} onChange={(e) => setUp({ ...up, access: e.target.value })}>
-            <option value="">Staff only (not shown)</option><option value="PUBLIC">Public</option>{acls.map((a) => <option key={a.id} value={a.id}>Members: {a.name}</option>)}</select>
-          <button className="bg-indigo-600 text-white rounded px-3 py-1" onClick={upload} disabled={!up.file}>Upload</button></div>
-        <ul className="divide-y">{media.length === 0 ? <li className="py-1 text-gray-500">No media yet.</li> : media.map((m) => <li key={m.id} className="py-1 space-y-1">
-          <div className="flex flex-wrap justify-between gap-2"><span><b>{m.title}</b> · {m.kind.toLowerCase()} · {(m.size / 1048576).toFixed(1)} MB · {m.public ? "public" : m.access_list_id ? `members: ${acls.find((a) => a.id === m.access_list_id)?.name ?? "list"}` : "staff only"}
-            {m.podcast ? ` · podcast ${m.podcast}` : ""}{m.page_id ? " · page narration" : ""}{m.poster ? " · poster set" : ""} · captions {m.captions.join(", ") || "none"} · {m.views} plays · id <code className="select-all">{m.id}</code></span>
-            <span className="flex gap-2"><button className="underline" onClick={() => setCap({ id: m.id, locale: "en", vtt: "WEBVTT\n\n00:00.000 --> 00:03.000\n" })}>Captions</button>
-              <button className="underline" onClick={() => setCut(cut?.id === m.id ? null : { id: m.id, at: "0", start: "0", end: "10" })}>Poster / Trim</button>
-              <button className="underline" onClick={() => apiClient.get(`/api/v1/cms/media/${m.id}/views`).then((r) => setViews({ id: m.id, rows: r.data }))}>Plays</button></span></div>
-          {cap?.id === m.id && <div className="space-y-1"><select aria-label="Caption language" className="border rounded" value={cap.locale} onChange={(e) => setCap({ ...cap, locale: e.target.value })}>{["en", "sw", "tr"].map((l) => <option key={l}>{l}</option>)}</select>
-            <textarea aria-label="WebVTT captions" rows={5} className="border rounded w-full font-mono" value={cap.vtt} onChange={(e) => setCap({ ...cap, vtt: e.target.value })} />
-            <button className="border rounded px-2" onClick={() => apiClient.put(`/api/v1/cms/media/${m.id}/captions/${cap.locale}`, { vtt: cap.vtt }).then(() => { setCap(null); load(); }).catch((e) => setMsg(err(e)))}>Save captions</button></div>}
+          <input aria-label={tx("Media file")} type="file" accept=".mp4,.m4v,.webm,.m4a,.mp3,.ogg,.wav" onChange={(e) => setUp({ ...up, file: e.target.files?.[0] ?? null })} />
+          <input aria-label={tx("Media title")} placeholder={tx("Title")} className="border rounded px-1" value={up.title} onChange={(e) => setUp({ ...up, title: e.target.value })} />
+          <input aria-label={tx("Podcast show")} placeholder={tx("Podcast show (optional)")} className="border rounded px-1" value={up.podcast} onChange={(e) => setUp({ ...up, podcast: e.target.value })} />
+          <select aria-label={tx("Media access")} className="border rounded" value={up.access} onChange={(e) => setUp({ ...up, access: e.target.value })}>
+            <option value="">{tx("Staff only (not shown)")}</option><option value="PUBLIC">{tx("Public")}</option>{acls.map((a) => <option key={a.id} value={a.id}>{tx("Members:")} {a.name}</option>)}</select>
+          <button className="bg-indigo-600 text-white rounded px-3 py-1" onClick={upload} disabled={!up.file}>{tx("Upload")}</button></div>
+        <ul className="divide-y">{media.length === 0 ? <li className="py-1 text-gray-500">{tx("No media yet.")}</li> : media.map((m) => <li key={m.id} className="py-1 space-y-1">
+          <div className="flex flex-wrap justify-between gap-2"><span><b>{m.title}</b> · {m.kind.toLowerCase()} · {(m.size / 1048576).toFixed(1)} {tx("MB ·")} {m.public ? tx("public") : m.access_list_id ? `members: ${acls.find((a) => a.id === m.access_list_id)?.name ?? "list"}` : tx("staff only")}
+            {m.podcast ? tx(" · podcast {podcast}", { podcast: m.podcast }) : ""}{m.page_id ? tx(" · page narration") : ""}{m.poster ? tx(" · poster set") : ""} {tx("· captions")} {m.captions.join(", ") || tx("none")} · {m.views} {tx("plays · id")} <code className="select-all">{m.id}</code></span>
+            <span className="flex gap-2"><button className="underline" onClick={() => setCap({ id: m.id, locale: "en", vtt: "WEBVTT\n\n00:00.000 --> 00:03.000\n" })}>{tx("Captions")}</button>
+              <button className="underline" onClick={() => setCut(cut?.id === m.id ? null : { id: m.id, at: "0", start: "0", end: "10" })}>{tx("Poster / Trim")}</button>
+              <button className="underline" onClick={() => apiClient.get(`/api/v1/cms/media/${m.id}/views`).then((r) => setViews({ id: m.id, rows: r.data }))}>{tx("Plays")}</button></span></div>
+          {cap?.id === m.id && <div className="space-y-1"><select aria-label={tx("Caption language")} className="border rounded" value={cap.locale} onChange={(e) => setCap({ ...cap, locale: e.target.value })}>{[tx("en"), tx("sw"), tx("tr")].map((l) => <option key={l}>{l}</option>)}</select>
+            <textarea aria-label={tx("WebVTT captions")} rows={5} className="border rounded w-full font-mono" value={cap.vtt} onChange={(e) => setCap({ ...cap, vtt: e.target.value })} />
+            <button className="border rounded px-2" onClick={() => apiClient.put(`/api/v1/cms/media/${m.id}/captions/${cap.locale}`, { vtt: cap.vtt }).then(() => { setCap(null); load(); }).catch((e) => setMsg(err(e)))}>{tx("Save captions")}</button></div>}
           {cut?.id === m.id && <div className="flex flex-wrap gap-2 items-center">
-            {m.kind === "VIDEO" && <><label>Poster at (s)<input aria-label="Poster time" type="number" min={0} step="0.1" className="border rounded px-1 w-16 ml-1" value={cut.at} onChange={(e) => setCut({ ...cut, at: e.target.value })} /></label>
-              <button className="border rounded px-2" onClick={() => apiClient.post(`/api/v1/cms/media/${m.id}/poster`, { t: +cut.at || 0 }).then(() => { setMsg("Poster frame saved; it is shown with the same access as the video."); load(); }).catch((e) => setMsg(err(e)))}>Make poster</button></>}
-            <label>Trim from (s)<input aria-label="Trim start" type="number" min={0} step="0.1" className="border rounded px-1 w-16 ml-1" value={cut.start} onChange={(e) => setCut({ ...cut, start: e.target.value })} /></label>
-            <label>to (s)<input aria-label="Trim end" type="number" min={0} step="0.1" className="border rounded px-1 w-16 ml-1" value={cut.end} onChange={(e) => setCut({ ...cut, end: e.target.value })} /></label>
-            <button className="border rounded px-2" onClick={() => apiClient.post(`/api/v1/cms/media/${m.id}/trim`, { start: +cut.start, end: +cut.end }).then(() => { setMsg("Trimmed copy saved as a new staff-only item; the original is unchanged."); setCut(null); load(); }).catch((e) => setMsg(err(e)))}>Save trimmed copy</button></div>}
-          {views?.id === m.id &&<ul className="pl-3">{views.rows.length === 0 ? <li>No plays yet.</li> : views.rows.map((v, i) => <li key={i}>{new Date(v.at).toLocaleString()} · {v.account ?? "anonymous"} · {v.seconds} s</li>)}</ul>}
+            {m.kind === "VIDEO" && <><label>{tx("Poster at (s)")}<input aria-label={tx("Poster time")} type="number" min={0} step="0.1" className="border rounded px-1 w-16 ml-1" value={cut.at} onChange={(e) => setCut({ ...cut, at: e.target.value })} /></label>
+              <button className="border rounded px-2" onClick={() => apiClient.post(`/api/v1/cms/media/${m.id}/poster`, { t: +cut.at || 0 }).then(() => { setMsg(tx("Poster frame saved; it is shown with the same access as the video.")); load(); }).catch((e) => setMsg(err(e)))}>{tx("Make poster")}</button></>}
+            <label>{tx("Trim from (s)")}<input aria-label={tx("Trim start")} type="number" min={0} step="0.1" className="border rounded px-1 w-16 ml-1" value={cut.start} onChange={(e) => setCut({ ...cut, start: e.target.value })} /></label>
+            <label>{tx("to (s)")}<input aria-label={tx("Trim end")} type="number" min={0} step="0.1" className="border rounded px-1 w-16 ml-1" value={cut.end} onChange={(e) => setCut({ ...cut, end: e.target.value })} /></label>
+            <button className="border rounded px-2" onClick={() => apiClient.post(`/api/v1/cms/media/${m.id}/trim`, { start: +cut.start, end: +cut.end }).then(() => { setMsg(tx("Trimmed copy saved as a new staff-only item; the original is unchanged.")); setCut(null); load(); }).catch((e) => setMsg(err(e)))}>{tx("Save trimmed copy")}</button></div>}
+          {views?.id === m.id &&<ul className="pl-3">{views.rows.length === 0 ? <li>{tx("No plays yet.")}</li> : views.rows.map((v, i) => <li key={i}>{new Date(v.at).toLocaleString()} · {v.account ?? tx("anonymous")} · {v.seconds} {tx("s")}</li>)}</ul>}
         </li>)}</ul>
       </section>
     </div>

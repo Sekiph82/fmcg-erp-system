@@ -5,6 +5,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { crmApi } from "@/lib/crm_pipeline";
 import { useAuth } from "@/context/AuthContext";
+import { tx } from "@/lib/i18n/core";
 
 type Pending = { customerId: string; tries: number; body: { channel: string; summary: string; follow_up_date?: string; client_ref: string } };
 const keyFor = (userId: string) => `povu.crm.pendingNotes.${userId}`;   // never sent as another user
@@ -73,38 +74,38 @@ export function QuickNote({ customerId, onSaved }: { customerId: string; onSaved
     setBusy(true); setMsg(null);
     try {
       await crmApi.addQuickNote(customerId, body);
-      setSummary(""); setFollowUp(""); setMsg("Saved."); saved.current?.();
+      setSummary(""); setFollowUp(""); setMsg(tx("Saved.")); saved.current?.();
     } catch (e) {
       if (retryable(e)) {
         update(key, (q) => [...q, { customerId, tries: 0, body }]);
         setSummary(""); setFollowUp(""); setWaiting((n) => n + 1);
-        setMsg("Not sent yet: saved on this phone and will be sent automatically.");
+        setMsg(tx("Not sent yet: saved on this phone and will be sent automatically."));
       } else {
         const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
-        setMsg(typeof d === "string" ? d : "The note could not be saved.");
+        setMsg(typeof d === "string" ? d : tx("The note could not be saved."));
       }
     } finally { setBusy(false); }
   }
 
   return (
-    <section aria-label="Quick note" className="bg-white rounded-xl border p-3 space-y-2">
+    <section aria-label={tx("Quick note")} className="bg-white rounded-xl border p-3 space-y-2">
       <div className="grid grid-cols-4 gap-1">
         {[["visit", "Visit"], ["call", "Call"], ["message", "Message"], ["note", "Note"]].map(([k, v]) => (
           <button key={k} type="button" aria-pressed={channel === k} onClick={() => setChannel(k)}
             className={`py-2.5 rounded-lg text-sm border ${channel === k ? "bg-indigo-600 text-white border-indigo-600 ring-2 ring-indigo-400 font-semibold" : "opacity-80"}`}>{channel === k ? "✓ " : ""}{v}</button>
         ))}
       </div>
-      <textarea aria-label="What happened" rows={3} maxLength={2000} placeholder="What happened? e.g. shelf has 3 cartons left, wants 20 on Friday"
+      <textarea aria-label={tx("What happened")} rows={3} maxLength={2000} placeholder={tx("What happened? e.g. shelf has 3 cartons left, wants 20 on Friday")}
         value={summary} onChange={(e) => setSummary(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm" />
       <div className="flex flex-wrap gap-2 items-center">
-        <label className="text-xs text-gray-500 flex items-center gap-1">Follow up
+        <label className="text-xs text-gray-500 flex items-center gap-1">{tx("Follow up")}
           <input type="date" value={followUp} onChange={(e) => setFollowUp(e.target.value)} className="border rounded-lg px-2 py-1.5 text-sm" />
         </label>
         <button type="button" disabled={busy || summary.trim().length < 2} onClick={save}
-          className="ml-auto px-4 py-2.5 rounded-lg bg-indigo-600 text-white text-sm disabled:opacity-50">Save</button>
+          className="ml-auto px-4 py-2.5 rounded-lg bg-indigo-600 text-white text-sm disabled:opacity-50">{tx("Save")}</button>
       </div>
       {msg && <p role="status" className="text-xs text-gray-600">{msg}</p>}
-      {waiting > 0 && <p className="text-xs text-amber-700">{waiting} note(s) waiting for a connection.</p>}
+      {waiting > 0 && <p className="text-xs text-amber-700">{waiting} {tx("note(s) waiting for a connection.")}</p>}
     </section>
   );
 }

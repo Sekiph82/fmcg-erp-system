@@ -19,25 +19,26 @@ import { Select } from "@/components/ui/Select";
 import { ToastContainer } from "@/components/ui/Toast";
 import { useToast } from "@/hooks/useToast";
 import { RequirePermission, PermissionGuard } from "@/components/PermissionGuard";
+import { tx, lx } from "@/lib/i18n/core";
 
 // ── Tab definitions ────────────────────────────────────────────────────────────
 
 type Tab = "configs" | "uom" | "series" | "currencies";
 
-const TABS: { id: Tab; label: string }[] = [
-  { id: "configs",    label: "System Configs" },
-  { id: "uom",        label: "UOM Conversions" },
-  { id: "series",     label: "Number Series" },
-  { id: "currencies", label: "Currencies" },
-];
+const TABS: { id: Tab; label: string }[] = lx(() => [
+  { id: "configs",    label: tx("System Configs") },
+  { id: "uom",        label: tx("UOM Conversions") },
+  { id: "series",     label: tx("Number Series") },
+  { id: "currencies", label: tx("Currencies") },
+]);
 
-const CONFIG_CATEGORIES: { value: string; label: string }[] = [
-  { value: "COMPANY",       label: "Company" },
-  { value: "SYSTEM",        label: "System" },
-  { value: "FINANCE",       label: "Finance" },
-  { value: "NOTIFICATIONS", label: "Notifications" },
-  { value: "OPERATIONS",    label: "Operations" },
-];
+const CONFIG_CATEGORIES: { value: string; label: string }[] = lx(() => [
+  { value: "COMPANY",       label: tx("Company") },
+  { value: "SYSTEM",        label: tx("System") },
+  { value: "FINANCE",       label: tx("Finance") },
+  { value: "NOTIFICATIONS", label: tx("Notifications") },
+  { value: "OPERATIONS",    label: tx("Operations") },
+]);
 
 function Spinner() {
   return (
@@ -69,9 +70,9 @@ function ConfigsTab() {
       qc.invalidateQueries({ queryKey: ["utilities", "configs"] });
       setCreateOpen(false);
       setForm({ key: "", value: "", category: "SYSTEM", is_editable: true });
-      toast("success", "Config created", "System configuration saved.");
+      toast("success", tx("Config created"), tx("System configuration saved."));
     },
-    onError: (err) => toast("error", "Failed to create config", extractApiError(err)),
+    onError: (err) => toast("error", tx("Failed to create config"), extractApiError(err)),
   });
 
   const updateMutation = useMutation({
@@ -80,9 +81,9 @@ function ConfigsTab() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["utilities", "configs"] });
       setEditTarget(null);
-      toast("success", "Config updated", "Configuration saved.");
+      toast("success", tx("Config updated"), tx("Configuration saved."));
     },
-    onError: (err) => toast("error", "Failed to update config", extractApiError(err)),
+    onError: (err) => toast("error", tx("Failed to update config"), extractApiError(err)),
   });
 
   const deleteMutation = useMutation({
@@ -90,9 +91,9 @@ function ConfigsTab() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["utilities", "configs"] });
       setDeleteTarget(null);
-      toast("success", "Config deleted");
+      toast("success", tx("Config deleted"));
     },
-    onError: (err) => toast("error", "Failed to delete config", extractApiError(err)),
+    onError: (err) => toast("error", tx("Failed to delete config"), extractApiError(err)),
   });
 
   const openEdit = (cfg: SystemConfig) => {
@@ -105,9 +106,9 @@ function ConfigsTab() {
       <ToastContainer toasts={toasts} onDismiss={dismiss} />
 
       <div className="mb-4 flex items-center justify-between">
-        <p className="text-sm text-gray-500">{configs.length} configuration entries</p>
+        <p className="text-sm text-gray-500">{configs.length} {tx("configuration entries")}</p>
         <PermissionGuard permission="utilities.manage">
-          <Button onClick={() => setCreateOpen(true)}>+ Add Config</Button>
+          <Button onClick={() => setCreateOpen(true)}>{tx("+ Add Config")}</Button>
         </PermissionGuard>
       </div>
 
@@ -117,19 +118,19 @@ function ConfigsTab() {
           data={configs}
           emptyMessage="No system configurations found."
           columns={[
-            { header: "Key",      accessor: (r) => <code className="text-xs bg-gray-100 px-1 rounded">{r.key}</code> },
-            { header: "Value",    accessor: (r) => r.value ?? "—" },
-            { header: "Category", accessor: (r) => <Badge label={r.category} variant={r.category === "FINANCE" ? "green" : r.category === "COMPANY" ? "blue" : r.category === "NOTIFICATIONS" ? "yellow" : "gray"} /> },
-            { header: "Editable", accessor: (r) => <Badge label={r.is_editable ? "Yes" : "Read-only"} variant={r.is_editable ? "green" : "gray"} /> },
+            { header: tx("Key"),      accessor: (r) => <code className="text-xs bg-gray-100 px-1 rounded">{r.key}</code> },
+            { header: tx("Value"),    accessor: (r) => r.value ?? "—" },
+            { header: tx("Category"), accessor: (r) => <Badge label={r.category} variant={r.category === "FINANCE" ? "green" : r.category === "COMPANY" ? "blue" : r.category === "NOTIFICATIONS" ? "yellow" : "gray"} /> },
+            { header: tx("Editable"), accessor: (r) => <Badge label={r.is_editable ? tx("Yes") : tx("Read-only")} variant={r.is_editable ? "green" : "gray"} /> },
             {
-              header: "Actions",
+              header: tx("Actions"),
               accessor: (r) => (
                 <div className="flex gap-2">
                   <PermissionGuard permission="utilities.edit">
-                    <Button variant="secondary" onClick={() => openEdit(r)} disabled={!r.is_editable}>Edit</Button>
+                    <Button variant="secondary" onClick={() => openEdit(r)} disabled={!r.is_editable}>{tx("Edit")}</Button>
                   </PermissionGuard>
                   <PermissionGuard permission="utilities.manage">
-                    <Button variant="danger" onClick={() => setDeleteTarget(r)} disabled={!r.is_editable}>Delete</Button>
+                    <Button variant="danger" onClick={() => setDeleteTarget(r)} disabled={!r.is_editable}>{tx("Delete")}</Button>
                   </PermissionGuard>
                 </div>
               ),
@@ -139,61 +140,61 @@ function ConfigsTab() {
       )}
 
       {/* Create Modal */}
-      <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="Add System Config">
+      <Modal open={createOpen} onClose={() => setCreateOpen(false)} title={tx("Add System Config")}>
         <div className="space-y-4">
-          <Input label="Key" value={form.key} onChange={(e) => setForm((f) => ({ ...f, key: e.target.value }))} placeholder="e.g. company.name" />
-          <Input label="Value" value={form.value ?? ""} onChange={(e) => setForm((f) => ({ ...f, value: e.target.value }))} />
-          <Input label="Description" value={form.description ?? ""} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />
+          <Input label={tx("Key")} value={form.key} onChange={(e) => setForm((f) => ({ ...f, key: e.target.value }))} placeholder={tx("e.g. company.name")} />
+          <Input label={tx("Value")} value={form.value ?? ""} onChange={(e) => setForm((f) => ({ ...f, value: e.target.value }))} />
+          <Input label={tx("Description")} value={form.description ?? ""} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />
           <Select
-            label="Category"
+            label={tx("Category")}
             value={form.category ?? "SYSTEM"}
             onChange={(e) => setForm((f) => ({ ...f, category: e.target.value as ConfigCategory }))}
             options={CONFIG_CATEGORIES}
           />
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={form.is_editable ?? true} onChange={(e) => setForm((f) => ({ ...f, is_editable: e.target.checked }))} />
-            Editable (users can change this value)
+            {tx("Editable (users can change this value)")}
           </label>
           <div className="flex justify-end gap-2">
-            <Button variant="secondary" onClick={() => setCreateOpen(false)}>Cancel</Button>
-            <Button onClick={() => createMutation.mutate(form)} disabled={!form.key} loading={createMutation.isPending}>Save</Button>
+            <Button variant="secondary" onClick={() => setCreateOpen(false)}>{tx("Cancel")}</Button>
+            <Button onClick={() => createMutation.mutate(form)} disabled={!form.key} loading={createMutation.isPending}>{tx("Save")}</Button>
           </div>
         </div>
       </Modal>
 
       {/* Edit Modal */}
-      <Modal open={!!editTarget} onClose={() => setEditTarget(null)} title={`Edit: ${editTarget?.key}`}>
+      <Modal open={!!editTarget} onClose={() => setEditTarget(null)} title={tx("Edit: {key}", { key: editTarget?.key })}>
         <div className="space-y-4">
-          <Input label="Value" value={editData.value ?? ""} onChange={(e) => setEditData((d) => ({ ...d, value: e.target.value }))} />
-          <Input label="Description" value={editData.description ?? ""} onChange={(e) => setEditData((d) => ({ ...d, description: e.target.value }))} />
+          <Input label={tx("Value")} value={editData.value ?? ""} onChange={(e) => setEditData((d) => ({ ...d, value: e.target.value }))} />
+          <Input label={tx("Description")} value={editData.description ?? ""} onChange={(e) => setEditData((d) => ({ ...d, description: e.target.value }))} />
           <Select
-            label="Category"
+            label={tx("Category")}
             value={editData.category ?? "SYSTEM"}
             onChange={(e) => setEditData((d) => ({ ...d, category: e.target.value as ConfigCategory }))}
             options={CONFIG_CATEGORIES}
           />
           <div className="flex justify-end gap-2">
-            <Button variant="secondary" onClick={() => setEditTarget(null)}>Cancel</Button>
+            <Button variant="secondary" onClick={() => setEditTarget(null)}>{tx("Cancel")}</Button>
             <Button
               onClick={() => editTarget && updateMutation.mutate({ id: editTarget.id, data: editData })}
               loading={updateMutation.isPending}
-            >Save</Button>
+            >{tx("Save")}</Button>
           </div>
         </div>
       </Modal>
 
       {/* Delete Confirm */}
-      <Modal open={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="Delete Config">
+      <Modal open={!!deleteTarget} onClose={() => setDeleteTarget(null)} title={tx("Delete Config")}>
         <p className="text-sm text-gray-700 mb-4">
-          Delete config key <strong>{deleteTarget?.key}</strong>? This cannot be undone.
+          {tx("Delete config key")} <strong>{deleteTarget?.key}</strong>{tx("? This cannot be undone.")}
         </p>
         <div className="flex justify-end gap-2">
-          <Button variant="secondary" onClick={() => setDeleteTarget(null)}>Cancel</Button>
+          <Button variant="secondary" onClick={() => setDeleteTarget(null)}>{tx("Cancel")}</Button>
           <Button
             variant="danger"
             onClick={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
             loading={deleteMutation.isPending}
-          >Delete</Button>
+          >{tx("Delete")}</Button>
         </div>
       </Modal>
     </div>
@@ -220,16 +221,16 @@ function UomTab() {
       qc.invalidateQueries({ queryKey: ["utilities", "uom"] });
       setCreateOpen(false);
       setForm({ from_uom: "", to_uom: "", factor: "1", is_active: true });
-      toast("success", "Conversion created");
+      toast("success", tx("Conversion created"));
     },
-    onError: (err) => toast("error", "Failed to create conversion", extractApiError(err)),
+    onError: (err) => toast("error", tx("Failed to create conversion"), extractApiError(err)),
   });
 
   const toggleMutation = useMutation({
     mutationFn: ({ id, is_active }: { id: string; is_active: boolean }) =>
       utilitiesApi.uomConversions.update(id, { is_active }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["utilities", "uom"] }),
-    onError: (err) => toast("error", "Update failed", extractApiError(err)),
+    onError: (err) => toast("error", tx("Update failed"), extractApiError(err)),
   });
 
   const deleteMutation = useMutation({
@@ -237,9 +238,9 @@ function UomTab() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["utilities", "uom"] });
       setDeleteTarget(null);
-      toast("success", "Conversion deleted");
+      toast("success", tx("Conversion deleted"));
     },
-    onError: (err) => toast("error", "Failed to delete", extractApiError(err)),
+    onError: (err) => toast("error", tx("Failed to delete"), extractApiError(err)),
   });
 
   return (
@@ -247,9 +248,9 @@ function UomTab() {
       <ToastContainer toasts={toasts} onDismiss={dismiss} />
 
       <div className="mb-4 flex items-center justify-between">
-        <p className="text-sm text-gray-500">{conversions.length} conversion rules</p>
+        <p className="text-sm text-gray-500">{conversions.length} {tx("conversion rules")}</p>
         <PermissionGuard permission="utilities.edit">
-          <Button onClick={() => setCreateOpen(true)}>+ Add Conversion</Button>
+          <Button onClick={() => setCreateOpen(true)}>{tx("+ Add Conversion")}</Button>
         </PermissionGuard>
       </div>
 
@@ -259,12 +260,12 @@ function UomTab() {
           data={conversions}
           emptyMessage="No UOM conversions defined."
           columns={[
-            { header: "From",   accessor: (r) => <Badge label={r.from_uom} variant="blue" /> },
-            { header: "To",     accessor: (r) => <Badge label={r.to_uom} variant="yellow" /> },
-            { header: "Factor", accessor: (r) => <span className="font-mono text-sm">{r.factor}</span> },
-            { header: "Status", accessor: (r) => <Badge label={r.is_active ? "Active" : "Inactive"} variant={r.is_active ? "green" : "gray"} /> },
+            { header: tx("From"),   accessor: (r) => <Badge label={r.from_uom} variant="blue" /> },
+            { header: tx("To"),     accessor: (r) => <Badge label={r.to_uom} variant="yellow" /> },
+            { header: tx("Factor"), accessor: (r) => <span className="font-mono text-sm">{r.factor}</span> },
+            { header: tx("Status"), accessor: (r) => <Badge label={r.is_active ? tx("Active") : tx("Inactive")} variant={r.is_active ? "green" : "gray"} /> },
             {
-              header: "Actions",
+              header: tx("Actions"),
               accessor: (r) => (
                 <div className="flex gap-2">
                   <PermissionGuard permission="utilities.edit">
@@ -272,11 +273,11 @@ function UomTab() {
                       variant="secondary"
                       onClick={() => toggleMutation.mutate({ id: r.id, is_active: !r.is_active })}
                     >
-                      {r.is_active ? "Deactivate" : "Activate"}
+                      {r.is_active ? tx("Deactivate") : tx("Activate")}
                     </Button>
                   </PermissionGuard>
                   <PermissionGuard permission="utilities.manage">
-                    <Button variant="danger" onClick={() => setDeleteTarget(r)}>Delete</Button>
+                    <Button variant="danger" onClick={() => setDeleteTarget(r)}>{tx("Delete")}</Button>
                   </PermissionGuard>
                 </div>
               ),
@@ -285,34 +286,34 @@ function UomTab() {
         />
       )}
 
-      <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="Add UOM Conversion">
+      <Modal open={createOpen} onClose={() => setCreateOpen(false)} title={tx("Add UOM Conversion")}>
         <div className="space-y-4">
-          <Input label="From UOM" value={form.from_uom} onChange={(e) => setForm((f) => ({ ...f, from_uom: e.target.value.toUpperCase() }))} placeholder="e.g. KG" />
-          <Input label="To UOM" value={form.to_uom} onChange={(e) => setForm((f) => ({ ...f, to_uom: e.target.value.toUpperCase() }))} placeholder="e.g. G" />
-          <Input label="Factor (from → to)" value={form.factor} onChange={(e) => setForm((f) => ({ ...f, factor: e.target.value }))} placeholder="e.g. 1000" type="number" step="any" />
+          <Input label={tx("From UOM")} value={form.from_uom} onChange={(e) => setForm((f) => ({ ...f, from_uom: e.target.value.toUpperCase() }))} placeholder={tx("e.g. KG")} />
+          <Input label={tx("To UOM")} value={form.to_uom} onChange={(e) => setForm((f) => ({ ...f, to_uom: e.target.value.toUpperCase() }))} placeholder={tx("e.g. G")} />
+          <Input label={tx("Factor (from → to)")} value={form.factor} onChange={(e) => setForm((f) => ({ ...f, factor: e.target.value }))} placeholder={tx("e.g. 1000")} type="number" step="any" />
           <p className="text-xs text-gray-500">1 {form.from_uom || "FROM"} = {form.factor || "?"} {form.to_uom || "TO"}</p>
           <div className="flex justify-end gap-2">
-            <Button variant="secondary" onClick={() => setCreateOpen(false)}>Cancel</Button>
+            <Button variant="secondary" onClick={() => setCreateOpen(false)}>{tx("Cancel")}</Button>
             <Button
               onClick={() => createMutation.mutate(form)}
               disabled={!form.from_uom || !form.to_uom || !form.factor}
               loading={createMutation.isPending}
-            >Save</Button>
+            >{tx("Save")}</Button>
           </div>
         </div>
       </Modal>
 
-      <Modal open={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="Delete Conversion">
+      <Modal open={!!deleteTarget} onClose={() => setDeleteTarget(null)} title={tx("Delete Conversion")}>
         <p className="text-sm text-gray-700 mb-4">
-          Delete conversion <strong>{deleteTarget?.from_uom} → {deleteTarget?.to_uom}</strong>?
+          {tx("Delete conversion")} <strong>{deleteTarget?.from_uom} → {deleteTarget?.to_uom}</strong>?
         </p>
         <div className="flex justify-end gap-2">
-          <Button variant="secondary" onClick={() => setDeleteTarget(null)}>Cancel</Button>
+          <Button variant="secondary" onClick={() => setDeleteTarget(null)}>{tx("Cancel")}</Button>
           <Button
             variant="danger"
             onClick={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
             loading={deleteMutation.isPending}
-          >Delete</Button>
+          >{tx("Delete")}</Button>
         </div>
       </Modal>
     </div>
@@ -347,9 +348,9 @@ function NumberSeriesTab() {
       qc.invalidateQueries({ queryKey: ["utilities", "series"] });
       setCreateOpen(false);
       setForm({ module: "", label: "", prefix: "", suffix: null, current_number: 0, padding: 4, is_active: true });
-      toast("success", "Number series created");
+      toast("success", tx("Number series created"));
     },
-    onError: (err) => toast("error", "Failed to create series", extractApiError(err)),
+    onError: (err) => toast("error", tx("Failed to create series"), extractApiError(err)),
   });
 
   const updateMutation = useMutation({
@@ -358,9 +359,9 @@ function NumberSeriesTab() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["utilities", "series"] });
       setEditTarget(null);
-      toast("success", "Number series updated");
+      toast("success", tx("Number series updated"));
     },
-    onError: (err) => toast("error", "Update failed", extractApiError(err)),
+    onError: (err) => toast("error", tx("Update failed"), extractApiError(err)),
   });
 
   const deleteMutation = useMutation({
@@ -368,9 +369,9 @@ function NumberSeriesTab() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["utilities", "series"] });
       setDeleteTarget(null);
-      toast("success", "Number series deleted");
+      toast("success", tx("Number series deleted"));
     },
-    onError: (err) => toast("error", "Failed to delete", extractApiError(err)),
+    onError: (err) => toast("error", tx("Failed to delete"), extractApiError(err)),
   });
 
   const openEdit = (s: NumberSeries) => {
@@ -383,9 +384,9 @@ function NumberSeriesTab() {
       <ToastContainer toasts={toasts} onDismiss={dismiss} />
 
       <div className="mb-4 flex items-center justify-between">
-        <p className="text-sm text-gray-500">{series.length} number series</p>
+        <p className="text-sm text-gray-500">{series.length} {tx("number series")}</p>
         <PermissionGuard permission="utilities.manage">
-          <Button onClick={() => setCreateOpen(true)}>+ Add Series</Button>
+          <Button onClick={() => setCreateOpen(true)}>{tx("+ Add Series")}</Button>
         </PermissionGuard>
       </div>
 
@@ -395,19 +396,19 @@ function NumberSeriesTab() {
           data={series}
           emptyMessage="No number series configured."
           columns={[
-            { header: "Module",      accessor: (r) => <code className="text-xs bg-gray-100 px-1 rounded">{r.module}</code> },
-            { header: "Label",       accessor: (r) => r.label },
-            { header: "Prefix",      accessor: (r) => <Badge label={r.prefix} variant="blue" /> },
-            { header: "Current #",   accessor: (r) => String(r.current_number) },
-            { header: "Next Number", accessor: (r) => <span className="font-mono text-sm text-green-700">{previewNumber(r.prefix, r.padding, r.current_number, r.suffix)}</span> },
-            { header: "Status",      accessor: (r) => <Badge label={r.is_active ? "Active" : "Inactive"} variant={r.is_active ? "green" : "gray"} /> },
+            { header: tx("Module"),      accessor: (r) => <code className="text-xs bg-gray-100 px-1 rounded">{r.module}</code> },
+            { header: tx("Label"),       accessor: (r) => r.label },
+            { header: tx("Prefix"),      accessor: (r) => <Badge label={r.prefix} variant="blue" /> },
+            { header: tx("Current #"),   accessor: (r) => String(r.current_number) },
+            { header: tx("Next Number"), accessor: (r) => <span className="font-mono text-sm text-green-700">{previewNumber(r.prefix, r.padding, r.current_number, r.suffix)}</span> },
+            { header: tx("Status"),      accessor: (r) => <Badge label={r.is_active ? tx("Active") : tx("Inactive")} variant={r.is_active ? "green" : "gray"} /> },
             {
-              header: "Actions",
+              header: tx("Actions"),
               accessor: (r) => (
                 <div className="flex gap-2">
                   <PermissionGuard permission="utilities.manage">
-                    <Button variant="secondary" onClick={() => openEdit(r)}>Edit</Button>
-                    <Button variant="danger" onClick={() => setDeleteTarget(r)}>Delete</Button>
+                    <Button variant="secondary" onClick={() => openEdit(r)}>{tx("Edit")}</Button>
+                    <Button variant="danger" onClick={() => setDeleteTarget(r)}>{tx("Delete")}</Button>
                   </PermissionGuard>
                 </div>
               ),
@@ -416,68 +417,68 @@ function NumberSeriesTab() {
         />
       )}
 
-      <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="Add Number Series">
+      <Modal open={createOpen} onClose={() => setCreateOpen(false)} title={tx("Add Number Series")}>
         <div className="space-y-4">
-          <Input label="Module key" value={form.module} onChange={(e) => setForm((f) => ({ ...f, module: e.target.value }))} placeholder="e.g. purchase_order" />
-          <Input label="Label" value={form.label} onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))} placeholder="e.g. Purchase Order" />
+          <Input label={tx("Module key")} value={form.module} onChange={(e) => setForm((f) => ({ ...f, module: e.target.value }))} placeholder={tx("e.g. purchase_order")} />
+          <Input label={tx("Label")} value={form.label} onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))} placeholder={tx("e.g. Purchase Order")} />
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Prefix" value={form.prefix} onChange={(e) => setForm((f) => ({ ...f, prefix: e.target.value }))} placeholder="e.g. PO-" />
-            <Input label="Suffix (optional)" value={form.suffix ?? ""} onChange={(e) => setForm((f) => ({ ...f, suffix: e.target.value || null }))} placeholder="e.g. -KE" />
+            <Input label={tx("Prefix")} value={form.prefix} onChange={(e) => setForm((f) => ({ ...f, prefix: e.target.value }))} placeholder={tx("e.g. PO-")} />
+            <Input label={tx("Suffix (optional)")} value={form.suffix ?? ""} onChange={(e) => setForm((f) => ({ ...f, suffix: e.target.value || null }))} placeholder={tx("e.g. -KE")} />
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Start at" type="number" value={String(form.current_number ?? 0)} onChange={(e) => setForm((f) => ({ ...f, current_number: parseInt(e.target.value) || 0 }))} />
-            <Input label="Padding digits" type="number" value={String(form.padding ?? 4)} onChange={(e) => setForm((f) => ({ ...f, padding: parseInt(e.target.value) || 4 }))} />
+            <Input label={tx("Start at")} type="number" value={String(form.current_number ?? 0)} onChange={(e) => setForm((f) => ({ ...f, current_number: parseInt(e.target.value) || 0 }))} />
+            <Input label={tx("Padding digits")} type="number" value={String(form.padding ?? 4)} onChange={(e) => setForm((f) => ({ ...f, padding: parseInt(e.target.value) || 4 }))} />
           </div>
           {form.prefix && (
-            <p className="text-xs text-gray-500">Preview: <span className="font-mono text-green-700">{previewNumber(form.prefix, form.padding ?? 4, form.current_number ?? 0, form.suffix)}</span></p>
+            <p className="text-xs text-gray-500">{tx("Preview:")} <span className="font-mono text-green-700">{previewNumber(form.prefix, form.padding ?? 4, form.current_number ?? 0, form.suffix)}</span></p>
           )}
           <div className="flex justify-end gap-2">
-            <Button variant="secondary" onClick={() => setCreateOpen(false)}>Cancel</Button>
+            <Button variant="secondary" onClick={() => setCreateOpen(false)}>{tx("Cancel")}</Button>
             <Button
               onClick={() => createMutation.mutate(form)}
               disabled={!form.module || !form.label || !form.prefix}
               loading={createMutation.isPending}
-            >Save</Button>
+            >{tx("Save")}</Button>
           </div>
         </div>
       </Modal>
 
-      <Modal open={!!editTarget} onClose={() => setEditTarget(null)} title={`Edit: ${editTarget?.label}`}>
+      <Modal open={!!editTarget} onClose={() => setEditTarget(null)} title={tx("Edit: {label}", { label: editTarget?.label })}>
         <div className="space-y-4">
-          <Input label="Label" value={editData.label ?? ""} onChange={(e) => setEditData((d) => ({ ...d, label: e.target.value }))} />
+          <Input label={tx("Label")} value={editData.label ?? ""} onChange={(e) => setEditData((d) => ({ ...d, label: e.target.value }))} />
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Prefix" value={editData.prefix ?? ""} onChange={(e) => setEditData((d) => ({ ...d, prefix: e.target.value }))} />
-            <Input label="Suffix" value={editData.suffix ?? ""} onChange={(e) => setEditData((d) => ({ ...d, suffix: e.target.value || null }))} />
+            <Input label={tx("Prefix")} value={editData.prefix ?? ""} onChange={(e) => setEditData((d) => ({ ...d, prefix: e.target.value }))} />
+            <Input label={tx("Suffix")} value={editData.suffix ?? ""} onChange={(e) => setEditData((d) => ({ ...d, suffix: e.target.value || null }))} />
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Reset current #" type="number" value={String(editData.current_number ?? 0)} onChange={(e) => setEditData((d) => ({ ...d, current_number: parseInt(e.target.value) || 0 }))} />
-            <Input label="Padding digits" type="number" value={String(editData.padding ?? 4)} onChange={(e) => setEditData((d) => ({ ...d, padding: parseInt(e.target.value) || 4 }))} />
+            <Input label={tx("Reset current #")} type="number" value={String(editData.current_number ?? 0)} onChange={(e) => setEditData((d) => ({ ...d, current_number: parseInt(e.target.value) || 0 }))} />
+            <Input label={tx("Padding digits")} type="number" value={String(editData.padding ?? 4)} onChange={(e) => setEditData((d) => ({ ...d, padding: parseInt(e.target.value) || 4 }))} />
           </div>
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={editData.is_active ?? true} onChange={(e) => setEditData((d) => ({ ...d, is_active: e.target.checked }))} />
-            Active
+            {tx("Active")}
           </label>
           <div className="flex justify-end gap-2">
-            <Button variant="secondary" onClick={() => setEditTarget(null)}>Cancel</Button>
+            <Button variant="secondary" onClick={() => setEditTarget(null)}>{tx("Cancel")}</Button>
             <Button
               onClick={() => editTarget && updateMutation.mutate({ id: editTarget.id, data: editData })}
               loading={updateMutation.isPending}
-            >Save</Button>
+            >{tx("Save")}</Button>
           </div>
         </div>
       </Modal>
 
-      <Modal open={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="Delete Number Series">
+      <Modal open={!!deleteTarget} onClose={() => setDeleteTarget(null)} title={tx("Delete Number Series")}>
         <p className="text-sm text-gray-700 mb-4">
-          Delete series <strong>{deleteTarget?.label}</strong>? Document numbers already issued are not affected.
+          {tx("Delete series")} <strong>{deleteTarget?.label}</strong>{tx("? Document numbers already issued are not affected.")}
         </p>
         <div className="flex justify-end gap-2">
-          <Button variant="secondary" onClick={() => setDeleteTarget(null)}>Cancel</Button>
+          <Button variant="secondary" onClick={() => setDeleteTarget(null)}>{tx("Cancel")}</Button>
           <Button
             variant="danger"
             onClick={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
             loading={deleteMutation.isPending}
-          >Delete</Button>
+          >{tx("Delete")}</Button>
         </div>
       </Modal>
     </div>
@@ -506,9 +507,9 @@ function CurrenciesTab() {
       qc.invalidateQueries({ queryKey: ["utilities", "currencies"] });
       setCreateOpen(false);
       setForm({ code: "", name: "", symbol: "", exchange_rate: "1", is_base: false, is_active: true });
-      toast("success", "Currency created");
+      toast("success", tx("Currency created"));
     },
-    onError: (err) => toast("error", "Failed to create currency", extractApiError(err)),
+    onError: (err) => toast("error", tx("Failed to create currency"), extractApiError(err)),
   });
 
   const updateMutation = useMutation({
@@ -517,9 +518,9 @@ function CurrenciesTab() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["utilities", "currencies"] });
       setEditTarget(null);
-      toast("success", "Currency updated");
+      toast("success", tx("Currency updated"));
     },
-    onError: (err) => toast("error", "Update failed", extractApiError(err)),
+    onError: (err) => toast("error", tx("Update failed"), extractApiError(err)),
   });
 
   const deleteMutation = useMutation({
@@ -527,9 +528,9 @@ function CurrenciesTab() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["utilities", "currencies"] });
       setDeleteTarget(null);
-      toast("success", "Currency deleted");
+      toast("success", tx("Currency deleted"));
     },
-    onError: (err) => toast("error", "Failed to delete", extractApiError(err)),
+    onError: (err) => toast("error", tx("Failed to delete"), extractApiError(err)),
   });
 
   const openEdit = (c: Currency) => {
@@ -544,7 +545,7 @@ function CurrenciesTab() {
       <div className="mb-4 flex items-center justify-between">
         <p className="text-sm text-gray-500">{currencies.length} currencies</p>
         <PermissionGuard permission="utilities.manage">
-          <Button onClick={() => setCreateOpen(true)}>+ Add Currency</Button>
+          <Button onClick={() => setCreateOpen(true)}>{tx("+ Add Currency")}</Button>
         </PermissionGuard>
       </div>
 
@@ -554,22 +555,22 @@ function CurrenciesTab() {
           data={currencies}
           emptyMessage="No currencies configured."
           columns={[
-            { header: "Code",   accessor: (r) => <Badge label={r.code} variant="blue" /> },
-            { header: "Name",   accessor: (r) => r.name },
-            { header: "Symbol", accessor: (r) => <span className="font-mono">{r.symbol}</span> },
-            { header: "Rate",   accessor: (r) => <span className="font-mono text-sm">{r.exchange_rate}</span> },
-            { header: "Base",   accessor: (r) => r.is_base ? <Badge label="Base" variant="green" /> : <span className="text-gray-400">—</span> },
-            { header: "Status", accessor: (r) => <Badge label={r.is_active ? "Active" : "Inactive"} variant={r.is_active ? "green" : "gray"} /> },
+            { header: tx("Code"),   accessor: (r) => <Badge label={r.code} variant="blue" /> },
+            { header: tx("Name"),   accessor: (r) => r.name },
+            { header: tx("Symbol"), accessor: (r) => <span className="font-mono">{r.symbol}</span> },
+            { header: tx("Rate"),   accessor: (r) => <span className="font-mono text-sm">{r.exchange_rate}</span> },
+            { header: tx("Base"),   accessor: (r) => r.is_base ? <Badge label={tx("Base")} variant="green" /> : <span className="text-gray-400">—</span> },
+            { header: tx("Status"), accessor: (r) => <Badge label={r.is_active ? tx("Active") : tx("Inactive")} variant={r.is_active ? "green" : "gray"} /> },
             {
-              header: "Actions",
+              header: tx("Actions"),
               accessor: (r) => (
                 <div className="flex gap-2">
                   <PermissionGuard permission="utilities.edit">
-                    <Button variant="secondary" onClick={() => openEdit(r)}>Edit</Button>
+                    <Button variant="secondary" onClick={() => openEdit(r)}>{tx("Edit")}</Button>
                   </PermissionGuard>
                   <PermissionGuard permission="utilities.manage">
                     <Button variant="danger" onClick={() => setDeleteTarget(r)} disabled={r.is_base}>
-                      {r.is_base ? "Base" : "Delete"}
+                      {r.is_base ? tx("Base") : tx("Delete")}
                     </Button>
                   </PermissionGuard>
                 </div>
@@ -579,69 +580,69 @@ function CurrenciesTab() {
         />
       )}
 
-      <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="Add Currency">
+      <Modal open={createOpen} onClose={() => setCreateOpen(false)} title={tx("Add Currency")}>
         <div className="space-y-4">
-          <Input label="Code (ISO 4217)" value={form.code} onChange={(e) => setForm((f) => ({ ...f, code: e.target.value.toUpperCase() }))} placeholder="e.g. KES" maxLength={10} />
-          <Input label="Name" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="e.g. Kenyan Shilling" />
-          <Input label="Symbol" value={form.symbol} onChange={(e) => setForm((f) => ({ ...f, symbol: e.target.value }))} placeholder="e.g. KSh" />
-          <Input label="Exchange Rate (vs base)" type="number" step="any" value={form.exchange_rate} onChange={(e) => setForm((f) => ({ ...f, exchange_rate: e.target.value }))} />
+          <Input label={tx("Code (ISO 4217)")} value={form.code} onChange={(e) => setForm((f) => ({ ...f, code: e.target.value.toUpperCase() }))} placeholder={tx("e.g. KES")} maxLength={10} />
+          <Input label={tx("Name")} value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder={tx("e.g. Kenyan Shilling")} />
+          <Input label={tx("Symbol")} value={form.symbol} onChange={(e) => setForm((f) => ({ ...f, symbol: e.target.value }))} placeholder={tx("e.g. KSh")} />
+          <Input label={tx("Exchange Rate (vs base)")} type="number" step="any" value={form.exchange_rate} onChange={(e) => setForm((f) => ({ ...f, exchange_rate: e.target.value }))} />
           <div className="flex gap-6">
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={form.is_base ?? false} onChange={(e) => setForm((f) => ({ ...f, is_base: e.target.checked }))} />
-              Set as base currency
+              {tx("Set as base currency")}
             </label>
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={form.is_active ?? true} onChange={(e) => setForm((f) => ({ ...f, is_active: e.target.checked }))} />
-              Active
+              {tx("Active")}
             </label>
           </div>
           <div className="flex justify-end gap-2">
-            <Button variant="secondary" onClick={() => setCreateOpen(false)}>Cancel</Button>
+            <Button variant="secondary" onClick={() => setCreateOpen(false)}>{tx("Cancel")}</Button>
             <Button
               onClick={() => createMutation.mutate(form)}
               disabled={!form.code || !form.name || !form.symbol}
               loading={createMutation.isPending}
-            >Save</Button>
+            >{tx("Save")}</Button>
           </div>
         </div>
       </Modal>
 
-      <Modal open={!!editTarget} onClose={() => setEditTarget(null)} title={`Edit: ${editTarget?.code}`}>
+      <Modal open={!!editTarget} onClose={() => setEditTarget(null)} title={tx("Edit: {code}", { code: editTarget?.code })}>
         <div className="space-y-4">
-          <Input label="Name" value={editData.name ?? ""} onChange={(e) => setEditData((d) => ({ ...d, name: e.target.value }))} />
-          <Input label="Symbol" value={editData.symbol ?? ""} onChange={(e) => setEditData((d) => ({ ...d, symbol: e.target.value }))} />
-          <Input label="Exchange Rate" type="number" step="any" value={editData.exchange_rate ?? "1"} onChange={(e) => setEditData((d) => ({ ...d, exchange_rate: e.target.value }))} />
+          <Input label={tx("Name")} value={editData.name ?? ""} onChange={(e) => setEditData((d) => ({ ...d, name: e.target.value }))} />
+          <Input label={tx("Symbol")} value={editData.symbol ?? ""} onChange={(e) => setEditData((d) => ({ ...d, symbol: e.target.value }))} />
+          <Input label={tx("Exchange Rate")} type="number" step="any" value={editData.exchange_rate ?? "1"} onChange={(e) => setEditData((d) => ({ ...d, exchange_rate: e.target.value }))} />
           <div className="flex gap-6">
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={editData.is_base ?? false} onChange={(e) => setEditData((d) => ({ ...d, is_base: e.target.checked }))} />
-              Set as base currency
+              {tx("Set as base currency")}
             </label>
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={editData.is_active ?? true} onChange={(e) => setEditData((d) => ({ ...d, is_active: e.target.checked }))} />
-              Active
+              {tx("Active")}
             </label>
           </div>
           <div className="flex justify-end gap-2">
-            <Button variant="secondary" onClick={() => setEditTarget(null)}>Cancel</Button>
+            <Button variant="secondary" onClick={() => setEditTarget(null)}>{tx("Cancel")}</Button>
             <Button
               onClick={() => editTarget && updateMutation.mutate({ id: editTarget.id, data: editData })}
               loading={updateMutation.isPending}
-            >Save</Button>
+            >{tx("Save")}</Button>
           </div>
         </div>
       </Modal>
 
-      <Modal open={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="Delete Currency">
+      <Modal open={!!deleteTarget} onClose={() => setDeleteTarget(null)} title={tx("Delete Currency")}>
         <p className="text-sm text-gray-700 mb-4">
-          Delete currency <strong>{deleteTarget?.code} – {deleteTarget?.name}</strong>?
+          {tx("Delete currency")} <strong>{deleteTarget?.code} – {deleteTarget?.name}</strong>?
         </p>
         <div className="flex justify-end gap-2">
-          <Button variant="secondary" onClick={() => setDeleteTarget(null)}>Cancel</Button>
+          <Button variant="secondary" onClick={() => setDeleteTarget(null)}>{tx("Cancel")}</Button>
           <Button
             variant="danger"
             onClick={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
             loading={deleteMutation.isPending}
-          >Delete</Button>
+          >{tx("Delete")}</Button>
         </div>
       </Modal>
     </div>
@@ -657,9 +658,9 @@ export default function UtilitiesPage() {
     <RequirePermission permission="utilities.view">
       <div>
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Utilities</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Utilities")}</h1>
           <p className="text-sm text-gray-500 mt-1">
-            System configuration, unit-of-measure conversions, document numbering and currency management.
+            {tx("System configuration, unit-of-measure conversions, document numbering and currency management.")}
           </p>
         </div>
 

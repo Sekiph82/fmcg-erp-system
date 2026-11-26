@@ -2,30 +2,31 @@
 
 import Link from "next/link";
 import { AlertItem } from "@/lib/dashboard";
+import { tx, lx } from "@/lib/i18n/core";
 
-const severityConfig = {
+const severityConfig = lx(() => ({
   critical: {
     bg: "bg-red-50",
     border: "border-red-300",
-    badge: "bg-red-100 text-red-700",
+    badge: tx("bg-red-100 text-red-700"),
     dot: "bg-red-500",
     label: "CRITICAL",
   },
   medium: {
     bg: "bg-amber-50",
     border: "border-amber-300",
-    badge: "bg-amber-100 text-amber-700",
+    badge: tx("bg-amber-100 text-amber-700"),
     dot: "bg-amber-500",
     label: "WARNING",
   },
   low: {
     bg: "bg-blue-50",
     border: "border-blue-200",
-    badge: "bg-blue-100 text-blue-700",
+    badge: tx("bg-blue-100 text-blue-700"),
     dot: "bg-blue-400",
     label: "INFO",
   },
-};
+}));
 
 const moduleIcons: Record<string, string> = {
   production: "⚙️",
@@ -46,8 +47,8 @@ export function AlertsPanel({ alerts }: AlertsPanelProps) {
     return (
       <div className="flex flex-col items-center justify-center py-8 text-center">
         <div className="text-4xl mb-2">✅</div>
-        <p className="text-sm font-medium text-gray-700">All systems normal</p>
-        <p className="text-xs text-gray-400 mt-0.5">No active alerts</p>
+        <p className="text-sm font-medium text-gray-700">{tx("All systems normal")}</p>
+        <p className="text-xs text-gray-400 mt-0.5">{tx("No active alerts")}</p>
       </div>
     );
   }
@@ -81,7 +82,7 @@ export function AlertsPanel({ alerts }: AlertsPanelProps) {
               href={alert.action_url}
               className="shrink-0 text-xs font-medium text-indigo-600 hover:underline mt-0.5"
             >
-              View →
+              {tx("View →")}
             </Link>
           </div>
         );

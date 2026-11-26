@@ -4,6 +4,7 @@ import { EntityPicker } from "@/components/EntityPicker";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { mfApi, Reconciliation } from "@/lib/materialFlow";
+import { tx } from "@/lib/i18n/core";
 
 function VarianceBar({ pct }: { pct: number }) {
   const abs = Math.abs(pct);
@@ -40,37 +41,37 @@ export default function ReconciliationPage() {
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center gap-3">
-        <a href="/dashboard/material-flow" className="text-sm text-indigo-600 hover:underline">← Dashboard</a>
-        <h1 className="text-xl font-bold text-gray-900">Batch Reconciliation</h1>
+        <a href="/dashboard/material-flow" className="text-sm text-indigo-600 hover:underline">{tx("← Dashboard")}</a>
+        <h1 className="text-xl font-bold text-gray-900">{tx("Batch Reconciliation")}</h1>
       </div>
 
       <div className="bg-white rounded-lg border p-5">
-        <h2 className="font-semibold text-gray-800 mb-3">Load Production Order Reconciliation</h2>
+        <h2 className="font-semibold text-gray-800 mb-3">{tx("Load Production Order Reconciliation")}</h2>
         <div className="flex gap-3 items-end">
           <div className="flex-1 max-w-md">
-            <label className="block text-xs font-medium text-gray-600 mb-1">Production order</label>
-            <EntityPicker kind="production_order" label="Production order" value={orderId} onChange={setOrderId} />
+            <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Production order")}</label>
+            <EntityPicker kind="production_order" label={tx("Production order")} value={orderId} onChange={setOrderId} />
           </div>
           <button
             onClick={() => setFetchedOrderId(orderId)}
             disabled={!orderId}
             className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-indigo-700 disabled:opacity-50"
-          >Load</button>
+          >{tx("Load")}</button>
         </div>
       </div>
 
-      {isLoading && <div className="text-sm text-gray-400">Computing reconciliation…</div>}
+      {isLoading && <div className="text-sm text-gray-400">{tx("Computing reconciliation…")}</div>}
 
       {recon && (
         <>
           {/* Summary Cards */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             {[
-              { label: "Total Issued", value: recon.total_issued, color: "text-blue-700" },
-              { label: "Consumed", value: recon.total_consumed, color: "text-green-700" },
-              { label: "Returned", value: recon.total_returned, color: "text-teal-700" },
-              { label: "Scrapped", value: recon.total_scrapped, color: "text-orange-700" },
-              { label: "Variance", value: recon.total_variance, color: Number(recon.total_variance) !== 0 ? "text-red-600" : "text-gray-700" },
+              { label: tx("Total Issued"), value: recon.total_issued, color: "text-blue-700" },
+              { label: tx("Consumed"), value: recon.total_consumed, color: "text-green-700" },
+              { label: tx("Returned"), value: recon.total_returned, color: "text-teal-700" },
+              { label: tx("Scrapped"), value: recon.total_scrapped, color: "text-orange-700" },
+              { label: tx("Variance"), value: recon.total_variance, color: Number(recon.total_variance) !== 0 ? "text-red-600" : "text-gray-700" },
             ].map((c) => (
               <div key={c.label} className="bg-white rounded-lg border p-3 text-center">
                 <p className="text-xs text-gray-500">{c.label}</p>
@@ -83,7 +84,7 @@ export default function ReconciliationPage() {
           {recon.variance_pct !== undefined && recon.variance_pct !== null && (
             <div className="bg-white rounded-lg border p-4">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-medium text-gray-700">Overall Variance</h3>
+                <h3 className="text-sm font-medium text-gray-700">{tx("Overall Variance")}</h3>
                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                   recon.status === "CLOSED" ? "bg-green-100 text-green-700" :
                   recon.status === "OPEN" ? "bg-yellow-100 text-yellow-700" : "bg-blue-100 text-blue-700"
@@ -96,10 +97,10 @@ export default function ReconciliationPage() {
           {/* Line detail */}
           {recon.lines.length > 0 && (
             <div className="bg-white rounded-lg border overflow-x-auto">
-              <div className="px-4 py-3 border-b"><h2 className="font-semibold text-gray-900">Line Detail</h2></div>
+              <div className="px-4 py-3 border-b"><h2 className="font-semibold text-gray-900">{tx("Line Detail")}</h2></div>
               <table className="w-full text-sm">
                 <thead className="bg-gray-50">
-                  <tr>{["#", "Material", "BOM Qty", "Issued", "Consumed", "Returned", "Scrapped", "Variance", "Var%", "UOM"].map((h) => (
+                  <tr>{["#", tx("Material"), tx("BOM Qty"), tx("Issued"), tx("Consumed"), tx("Returned"), tx("Scrapped"), tx("Variance"), tx("Var%"), "UOM"].map((h) => (
                     <th key={h} className="px-3 py-2 text-left text-xs font-medium text-gray-600">{h}</th>
                   ))}</tr>
                 </thead>
@@ -128,14 +129,14 @@ export default function ReconciliationPage() {
           {/* Close reconciliation */}
           {recon.status !== "CLOSED" && (
             <div className="bg-white rounded-lg border p-5 space-y-3">
-              <h2 className="font-semibold text-gray-800">Close Reconciliation</h2>
+              <h2 className="font-semibold text-gray-800">{tx("Close Reconciliation")}</h2>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Variance Reason (required if variance exists)</label>
-                <textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={2} className="w-full border rounded px-3 py-2 text-sm" placeholder="Explain material variance…" />
+                <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Variance Reason (required if variance exists)")}</label>
+                <textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={2} className="w-full border rounded px-3 py-2 text-sm" placeholder={tx("Explain material variance…")} />
               </div>
               <div className="flex justify-end">
                 <button onClick={() => close.mutate()} disabled={close.isPending} className="bg-emerald-600 text-white px-5 py-2 rounded-lg text-sm hover:bg-emerald-700 disabled:opacity-50">
-                  {close.isPending ? "Closing…" : "Close Reconciliation"}
+                  {close.isPending ? tx("Closing…") : tx("Close Reconciliation")}
                 </button>
               </div>
             </div>
@@ -143,8 +144,8 @@ export default function ReconciliationPage() {
 
           {recon.status === "CLOSED" && (
             <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-sm text-green-700">
-              Reconciliation closed on {recon.closed_at ? new Date(recon.closed_at).toLocaleString() : "—"}.
-              {recon.variance_reason && <p className="mt-1 text-xs">Variance reason: {recon.variance_reason}</p>}
+              {tx("Reconciliation closed on")} {recon.closed_at ? new Date(recon.closed_at).toLocaleString() : "—"}.
+              {recon.variance_reason && <p className="mt-1 text-xs">{tx("Variance reason:")} {recon.variance_reason}</p>}
             </div>
           )}
         </>

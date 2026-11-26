@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { shelfLifeApi, LotShelfLifeProfile, SL_STATUS_BG, fmtDays } from "@/lib/shelfLife";
+import { tx } from "@/lib/i18n/core";
 
 export default function NearExpiryPage() {
   const [lots, setLots] = useState<LotShelfLifeProfile[]>([]);
@@ -19,19 +20,19 @@ export default function NearExpiryPage() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Near-Expiry Stock Board</h1>
-          <p className="text-sm text-gray-500">{lots.length} lots expiring within threshold</p>
+          <h1 className="text-xl font-bold text-gray-900">{tx("Near-Expiry Stock Board")}</h1>
+          <p className="text-sm text-gray-500">{lots.length} {tx("lots expiring within threshold")}</p>
         </div>
         <div className="flex gap-2 items-center">
-          <label className="text-sm text-gray-600">Within</label>
+          <label className="text-sm text-gray-600">{tx("Within")}</label>
           <select className="border rounded-lg px-3 py-2 text-sm"
             value={days} onChange={e => { setDays(Number(e.target.value)); load(Number(e.target.value)); }}>
-            {[7, 14, 30, 60, 90].map(d => <option key={d} value={d}>{d} days</option>)}
+            {[7, 14, 30, 60, 90].map(d => <option key={d} value={d}>{d} {tx("days")}</option>)}
           </select>
           <button onClick={() => { setGenerating(true); shelfLifeApi.generateAlerts().finally(() => { setGenerating(false); load(days); }) }}
             className="px-4 py-2 text-sm bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:opacity-50"
             disabled={generating}>
-            {generating ? "Generating…" : "Generate Alerts"}
+            {generating ? tx("Generating…") : tx("Generate Alerts")}
           </button>
         </div>
       </div>
@@ -39,9 +40,9 @@ export default function NearExpiryPage() {
       {/* Urgency bands */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label: "Critical (≤7d)", filter: (l: LotShelfLifeProfile) => (l.remaining_shelf_life_days ?? 0) <= 7, bg: "bg-red-50 border-red-200 text-red-800" },
-          { label: "Warning (8–14d)", filter: (l: LotShelfLifeProfile) => { const d = l.remaining_shelf_life_days ?? 0; return d > 7 && d <= 14; }, bg: "bg-amber-50 border-amber-200 text-amber-800" },
-          { label: "Monitor (15–30d)", filter: (l: LotShelfLifeProfile) => { const d = l.remaining_shelf_life_days ?? 0; return d > 14 && d <= 30; }, bg: "bg-yellow-50 border-yellow-200 text-yellow-800" },
+          { label: tx("Critical (≤7d)"), filter: (l: LotShelfLifeProfile) => (l.remaining_shelf_life_days ?? 0) <= 7, bg: "bg-red-50 border-red-200 text-red-800" },
+          { label: tx("Warning (8–14d)"), filter: (l: LotShelfLifeProfile) => { const d = l.remaining_shelf_life_days ?? 0; return d > 7 && d <= 14; }, bg: "bg-amber-50 border-amber-200 text-amber-800" },
+          { label: tx("Monitor (15–30d)"), filter: (l: LotShelfLifeProfile) => { const d = l.remaining_shelf_life_days ?? 0; return d > 14 && d <= 30; }, bg: "bg-yellow-50 border-yellow-200 text-yellow-800" },
         ].map(band => {
           const filtered = lots.filter(band.filter);
           return (
@@ -55,7 +56,7 @@ export default function NearExpiryPage() {
                     <span className="font-semibold">{fmtDays(l.remaining_shelf_life_days)}</span>
                   </div>
                 ))}
-                {filtered.length > 5 && <p className="text-xs opacity-70">+{filtered.length - 5} more</p>}
+                {filtered.length > 5 && <p className="text-xs opacity-70">+{filtered.length - 5} {tx("more")}</p>}
               </div>
             </div>
           );
@@ -66,16 +67,16 @@ export default function NearExpiryPage() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-xs uppercase text-gray-500">
             <tr>
-              {["Lot ID","Expiry Date","Remaining","% Shelf Life","Status","Manuf. Date","Blocked Issue","Blocked Ship"].map(h => (
+              {[tx("Lot ID"),tx("Expiry Date"),tx("Remaining"),tx("% Shelf Life"),tx("Status"),tx("Manuf. Date"),tx("Blocked Issue"),tx("Blocked Ship")].map(h => (
                 <th key={h} className="px-4 py-3 text-left font-medium">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {loading ? (
-              <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">Loading…</td></tr>
+              <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">{tx("Loading…")}</td></tr>
             ) : lots.length === 0 ? (
-              <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">No near-expiry lots within {days} days</td></tr>
+              <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">{tx("No near-expiry lots within")} {days} {tx("days")}</td></tr>
             ) : lots.map(l => (
               <tr key={l.id} className={`hover:bg-gray-50 ${(l.remaining_shelf_life_days ?? 99) <= 7 ? "bg-red-50" : (l.remaining_shelf_life_days ?? 99) <= 14 ? "bg-amber-50" : ""}`}>
                 <td className="px-4 py-3 font-mono text-xs">{l.lot_id.slice(0,12)}…</td>
@@ -94,8 +95,8 @@ export default function NearExpiryPage() {
                 </td>
                 <td className="px-4 py-3"><span className={`px-2 py-0.5 rounded text-xs ${SL_STATUS_BG[l.shelf_life_status]}`}>{l.shelf_life_status}</span></td>
                 <td className="px-4 py-3">{l.manufacturing_date || "—"}</td>
-                <td className="px-4 py-3">{l.blocked_for_issue_flag ? <span className="text-red-600 font-medium">Yes</span> : "No"}</td>
-                <td className="px-4 py-3">{l.blocked_for_shipment_flag ? <span className="text-red-600 font-medium">Yes</span> : "No"}</td>
+                <td className="px-4 py-3">{l.blocked_for_issue_flag ? <span className="text-red-600 font-medium">{tx("Yes")}</span> : tx("No")}</td>
+                <td className="px-4 py-3">{l.blocked_for_shipment_flag ? <span className="text-red-600 font-medium">{tx("Yes")}</span> : tx("No")}</td>
               </tr>
             ))}
           </tbody>

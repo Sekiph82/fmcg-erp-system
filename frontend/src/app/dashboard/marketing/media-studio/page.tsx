@@ -3,6 +3,7 @@
 // Everything produced here is a DRAFT until a second person approves it; nothing is published from this page.
 import { useCallback, useEffect, useRef, useState } from "react";
 import { apiClient } from "@/lib/api";
+import { tx } from "@/lib/i18n/core";
 
 const B = "/api/v1/media-studio";
 type Finding = { level: string; code: string; message: string };
@@ -94,82 +95,82 @@ export default function MediaStudioPage() {
   };
 
   return <main className="p-4 space-y-6 max-w-5xl">
-    <h1 className="text-xl font-semibold">Media studio</h1>
-    <p className="text-xs text-gray-500">AI images, narration, captions, posters, trims and large uploads. Everything created here is a draft until a second person approves it.</p>
-    {msg && <div role="status" className="border rounded p-2 text-sm bg-blue-50">{msg} <button className="underline text-xs" onClick={() => setMsg(null)}>dismiss</button></div>}
-    {st && <section className="grid gap-2 sm:grid-cols-3 text-xs" aria-label="Tool status">
-      <div className="border rounded p-2"><b>Images</b>: {st.images.status}{st.images.mode ? ` (${st.images.mode}, ${st.images.provider})` : ""}<br />Budget ${st.images.budget_usd.toFixed(2)}, used ${st.images.spent_this_month.toFixed(2)} in {st.images.calls_this_month} calls{st.images.detail && <><br />{st.images.detail}</>}</div>
-      <div className="border rounded p-2"><b>ffmpeg</b>: {st.tools.ffmpeg.status}{st.tools.ffmpeg.detail && <><br />{st.tools.ffmpeg.detail}</>}<br /><b>Narration</b>: {st.tools.tts.status}{st.tools.tts.engine ? ` (${st.tools.tts.engine})` : ""}<br />
-        {Object.entries(st.tools.tts.voices).map(([l, v]) => <span key={l} className="mr-2">{l.toUpperCase()}: {v.supported ? "yes" : "no"}</span>)}</div>
-      <div className="border rounded p-2"><b>Storage</b>: {st.storage.backend} {st.storage.status}<br />{mb(st.storage.used_bytes)} of {mb(st.storage.quota_bytes)}<br />Virus scan: {st.storage.scanner}{st.storage.scanner !== "clamav" && " (files stay quarantined until a scanner is configured)"}</div>
+    <h1 className="text-xl font-semibold">{tx("Media studio")}</h1>
+    <p className="text-xs text-gray-500">{tx("AI images, narration, captions, posters, trims and large uploads. Everything created here is a draft until a second person approves it.")}</p>
+    {msg && <div role="status" className="border rounded p-2 text-sm bg-blue-50">{msg} <button className="underline text-xs" onClick={() => setMsg(null)}>{tx("dismiss")}</button></div>}
+    {st && <section className="grid gap-2 sm:grid-cols-3 text-xs" aria-label={tx("Tool status")}>
+      <div className="border rounded p-2"><b>{tx("Images")}</b>: {st.images.status}{st.images.mode ? tx(" ({mode}, {provider})", { mode: st.images.mode, provider: st.images.provider }) : ""}<br />{tx("Budget $")}{st.images.budget_usd.toFixed(2)}{tx(", used $")}{st.images.spent_this_month.toFixed(2)} {tx("in")} {st.images.calls_this_month} {tx("calls")}{st.images.detail && <><br />{st.images.detail}</>}</div>
+      <div className="border rounded p-2"><b>{tx("ffmpeg")}</b>: {st.tools.ffmpeg.status}{st.tools.ffmpeg.detail && <><br />{st.tools.ffmpeg.detail}</>}<br /><b>{tx("Narration")}</b>: {st.tools.tts.status}{st.tools.tts.engine ? ` (${st.tools.tts.engine})` : ""}<br />
+        {Object.entries(st.tools.tts.voices).map(([l, v]) => <span key={l} className="mr-2">{l.toUpperCase()}: {v.supported ? tx("yes") : tx("no")}</span>)}</div>
+      <div className="border rounded p-2"><b>{tx("Storage")}</b>: {st.storage.backend} {st.storage.status}<br />{mb(st.storage.used_bytes)} {tx("of")} {mb(st.storage.quota_bytes)}<br />{tx("Virus scan:")} {st.storage.scanner}{st.storage.scanner !== "clamav" && tx(" (files stay quarantined until a scanner is configured)")}</div>
     </section>}
 
-    <section className="border rounded p-3 bg-white space-y-2 text-xs" aria-label="AI image">
-      <h2 className="font-semibold text-sm">AI image (draft)</h2>
-      <input aria-label="Image title" placeholder="Title, e.g. POVU AllClean counter visual" className="border rounded px-1 w-full" value={img.title} onChange={(e) => setImg({ ...img, title: e.target.value })} />
-      <textarea aria-label="Image prompt" rows={2} placeholder="Describe the image (at least 10 characters)" className="border rounded px-1 w-full" value={img.prompt} onChange={(e) => setImg({ ...img, prompt: e.target.value })} />
+    <section className="border rounded p-3 bg-white space-y-2 text-xs" aria-label={tx("AI image")}>
+      <h2 className="font-semibold text-sm">{tx("AI image (draft)")}</h2>
+      <input aria-label={tx("Image title")} placeholder={tx("Title, e.g. POVU AllClean counter visual")} className="border rounded px-1 w-full" value={img.title} onChange={(e) => setImg({ ...img, title: e.target.value })} />
+      <textarea aria-label={tx("Image prompt")} rows={2} placeholder={tx("Describe the image (at least 10 characters)")} className="border rounded px-1 w-full" value={img.prompt} onChange={(e) => setImg({ ...img, prompt: e.target.value })} />
       <div className="grid gap-2 sm:grid-cols-3">
-        <input aria-label="Text on the image" placeholder="Text on the image (claims need approved evidence)" className="border rounded px-1" value={img.overlay} onChange={(e) => setImg({ ...img, overlay: e.target.value })} />
-        <input aria-label="Product SKUs" placeholder="Product SKUs, comma separated" className="border rounded px-1" value={img.skus} onChange={(e) => setImg({ ...img, skus: e.target.value })} />
-        <select aria-label="Image size" className="border rounded px-1" value={img.size} onChange={(e) => setImg({ ...img, size: e.target.value })}><option>1024x1024</option><option>1536x1024</option><option>1024x1536</option></select>
+        <input aria-label={tx("Text on the image")} placeholder={tx("Text on the image (claims need approved evidence)")} className="border rounded px-1" value={img.overlay} onChange={(e) => setImg({ ...img, overlay: e.target.value })} />
+        <input aria-label={tx("Product SKUs")} placeholder={tx("Product SKUs, comma separated")} className="border rounded px-1" value={img.skus} onChange={(e) => setImg({ ...img, skus: e.target.value })} />
+        <select aria-label={tx("Image size")} className="border rounded px-1" value={img.size} onChange={(e) => setImg({ ...img, size: e.target.value })}><option>{tx("1024x1024")}</option><option>{tx("1536x1024")}</option><option>{tx("1024x1536")}</option></select>
       </div>
-      <button className="bg-indigo-600 text-white rounded px-3 py-1 disabled:opacity-50" disabled={busy || img.title.length < 1 || img.prompt.length < 10 || st?.images.status !== "AVAILABLE"} onClick={() => void makeImage()}>Generate image</button>
-      {st?.images.status !== "AVAILABLE" && <span className="ml-2 text-gray-500">Disabled: {st?.images.detail ?? "no image provider"}</span>}
+      <button className="bg-indigo-600 text-white rounded px-3 py-1 disabled:opacity-50" disabled={busy || img.title.length < 1 || img.prompt.length < 10 || st?.images.status !== "AVAILABLE"} onClick={() => void makeImage()}>{tx("Generate image")}</button>
+      {st?.images.status !== "AVAILABLE" && <span className="ml-2 text-gray-500">{tx("Disabled:")} {st?.images.detail ?? tx("no image provider")}</span>}
       <ul className="space-y-2 pt-2">{images.map((i) => <li key={i.id} className="border rounded p-2">
         <span className={`px-1 rounded ${badge(i.status)}`}>{i.status}</span> <b>{i.title}</b> · {i.mode} · {i.provider}{i.model ? `/${i.model}` : ""} · {i.size} · ${i.cost_estimate.toFixed(2)}
         {i.error && <div className="text-red-700">{i.error}</div>}
         {i.findings.map((f, n) => <div key={n} className="text-red-700">{f.message}</div>)}
-        {i.provenance.prompt_sha256 && <div className="text-gray-500">Provenance: prompt hash {i.provenance.prompt_sha256.slice(0, 12)}…, {i.provenance.generated_at}</div>}
-        {i.document_id && <div>Asset library document {i.document_id}</div>}
+        {i.provenance.prompt_sha256 && <div className="text-gray-500">{tx("Provenance: prompt hash")} {i.provenance.prompt_sha256.slice(0, 12)}…, {i.provenance.generated_at}</div>}
+        {i.document_id && <div>{tx("Asset library document")} {i.document_id}</div>}
         {i.status === "GENERATED" && <div className="space-x-2 pt-1">
-          <button className="border rounded px-2" onClick={() => void act(apiClient.post(`${B}/images/${i.id}/review`, { approve: true }), "Approved: usable in e-mail, social, CMS and ads.")}>Approve</button>
-          <button className="border rounded px-2" onClick={() => void act(apiClient.post(`${B}/images/${i.id}/review`, { approve: false }), "Discarded.")}>Discard</button></div>}
+          <button className="border rounded px-2" onClick={() => void act(apiClient.post(`${B}/images/${i.id}/review`, { approve: true }), "Approved: usable in e-mail, social, CMS and ads.")}>{tx("Approve")}</button>
+          <button className="border rounded px-2" onClick={() => void act(apiClient.post(`${B}/images/${i.id}/review`, { approve: false }), "Discarded.")}>{tx("Discard")}</button></div>}
       </li>)}</ul>
     </section>
 
-    <section className="border rounded p-3 bg-white space-y-2 text-xs" aria-label="Media jobs">
-      <h2 className="font-semibold text-sm">Narration, captions and video tools</h2>
+    <section className="border rounded p-3 bg-white space-y-2 text-xs" aria-label={tx("Media jobs")}>
+      <h2 className="font-semibold text-sm">{tx("Narration, captions and video tools")}</h2>
       <div className="grid gap-2 sm:grid-cols-4">
-        <select aria-label="Job kind" className="border rounded px-1" value={job.kind} onChange={(e) => setJob({ ...job, kind: e.target.value })}>{["NARRATION", "CAPTIONS", "POSTER", "TRIM", "TRANSCODE"].map((k) => <option key={k}>{k}</option>)}</select>
-        {job.kind !== "NARRATION" && <select aria-label="Source media" className="border rounded px-1 sm:col-span-2" value={job.source} onChange={(e) => setJob({ ...job, source: e.target.value })}><option value="">Pick a ready media file</option>
+        <select aria-label={tx("Job kind")} className="border rounded px-1" value={job.kind} onChange={(e) => setJob({ ...job, kind: e.target.value })}>{["NARRATION", "CAPTIONS", "POSTER", "TRIM", "TRANSCODE"].map((k) => <option key={k}>{k}</option>)}</select>
+        {job.kind !== "NARRATION" && <select aria-label={tx("Source media")} className="border rounded px-1 sm:col-span-2" value={job.source} onChange={(e) => setJob({ ...job, source: e.target.value })}><option value="">{tx("Pick a ready media file")}</option>
           {objs.filter((o) => o.status === "READY" && (o.mime.startsWith("video/") || o.mime.startsWith("audio/"))).map((o) => <option key={o.id} value={o.id}>{o.file_name} ({mb(o.size)})</option>)}</select>}
-        {(job.kind === "NARRATION" || job.kind === "CAPTIONS") && <select aria-label="Language" className="border rounded px-1" value={job.locale} onChange={(e) => setJob({ ...job, locale: e.target.value })}>
-          {["en", "sw", "tr"].map((l) => <option key={l} value={l}>{l.toUpperCase()}{job.kind === "NARRATION" && st && !st.tools.tts.voices[l]?.supported ? " (no voice)" : ""}</option>)}</select>}
-        {job.kind === "TRIM" && <><input aria-label="Start seconds" type="number" min={0} className="border rounded px-1" value={job.start} onChange={(e) => setJob({ ...job, start: e.target.value })} /><input aria-label="End seconds" type="number" min={0} className="border rounded px-1" value={job.end} onChange={(e) => setJob({ ...job, end: e.target.value })} /></>}
-        {job.kind === "POSTER" && <input aria-label="Poster time seconds" type="number" min={0} className="border rounded px-1" value={job.at} onChange={(e) => setJob({ ...job, at: e.target.value })} />}
-        {job.kind === "TRANSCODE" && <select aria-label="Preset" className="border rounded px-1" value={job.preset} onChange={(e) => setJob({ ...job, preset: e.target.value })}>{Object.entries(st?.tools.presets ?? { WAV: { available: true } }).map(([k, v]) => <option key={k} value={k} disabled={!v.available}>{k}{v.available ? "" : " (encoder missing)"}</option>)}</select>}
+        {(job.kind === "NARRATION" || job.kind === "CAPTIONS") && <select aria-label={tx("Language")} className="border rounded px-1" value={job.locale} onChange={(e) => setJob({ ...job, locale: e.target.value })}>
+          {[tx("en"), tx("sw"), tx("tr")].map((l) => <option key={l} value={l}>{l.toUpperCase()}{job.kind === "NARRATION" && st && !st.tools.tts.voices[l]?.supported ? tx(" (no voice)") : ""}</option>)}</select>}
+        {job.kind === "TRIM" && <><input aria-label={tx("Start seconds")} type="number" min={0} className="border rounded px-1" value={job.start} onChange={(e) => setJob({ ...job, start: e.target.value })} /><input aria-label={tx("End seconds")} type="number" min={0} className="border rounded px-1" value={job.end} onChange={(e) => setJob({ ...job, end: e.target.value })} /></>}
+        {job.kind === "POSTER" && <input aria-label={tx("Poster time seconds")} type="number" min={0} className="border rounded px-1" value={job.at} onChange={(e) => setJob({ ...job, at: e.target.value })} />}
+        {job.kind === "TRANSCODE" && <select aria-label={tx("Preset")} className="border rounded px-1" value={job.preset} onChange={(e) => setJob({ ...job, preset: e.target.value })}>{Object.entries(st?.tools.presets ?? { WAV: { available: true } }).map(([k, v]) => <option key={k} value={k} disabled={!v.available}>{k}{v.available ? "" : tx(" (encoder missing)")}</option>)}</select>}
       </div>
-      {(job.kind === "NARRATION" || job.kind === "CAPTIONS") && <textarea aria-label="Script" rows={3} placeholder={job.kind === "CAPTIONS" ? "Script of the media; cue times are estimated from sentence length" : "Text to read aloud"} className="border rounded px-1 w-full" value={job.text} onChange={(e) => setJob({ ...job, text: e.target.value })} />}
-      <button className="bg-indigo-600 text-white rounded px-3 py-1 disabled:opacity-50" disabled={(job.kind !== "NARRATION" && !job.source) || ((job.kind === "NARRATION" || job.kind === "CAPTIONS") && job.text.trim().length < 3)} onClick={() => void makeJob()}>Create job</button>
+      {(job.kind === "NARRATION" || job.kind === "CAPTIONS") && <textarea aria-label={tx("Script")} rows={3} placeholder={job.kind === "CAPTIONS" ? tx("Script of the media; cue times are estimated from sentence length") : tx("Text to read aloud")} className="border rounded px-1 w-full" value={job.text} onChange={(e) => setJob({ ...job, text: e.target.value })} />}
+      <button className="bg-indigo-600 text-white rounded px-3 py-1 disabled:opacity-50" disabled={(job.kind !== "NARRATION" && !job.source) || ((job.kind === "NARRATION" || job.kind === "CAPTIONS") && job.text.trim().length < 3)} onClick={() => void makeJob()}>{tx("Create job")}</button>
       <ul className="space-y-1 pt-2">{jobs.map((j) => <li key={j.id} className="border rounded p-2">
         <span className={`px-1 rounded ${badge(j.status)}`}>{j.status}</span> <b>{j.kind}</b>
-        {(j.status === "RUNNING" || j.status === "QUEUED") && <progress aria-label="Progress" className="ml-2 align-middle" max={1} value={j.progress} />} {Math.round(j.progress * 100)}%
+        {(j.status === "RUNNING" || j.status === "QUEUED") && <progress aria-label={tx("Progress")} className="ml-2 align-middle" max={1} value={j.progress} />} {Math.round(j.progress * 100)}%
         {j.error && <div className="text-red-700">{j.error}</div>}
-        {j.result?.timing != null && <div className="text-gray-500">{String(j.result.cues)} cues · {String(j.result.timing)}</div>}
+        {j.result?.timing != null && <div className="text-gray-500">{String(j.result.cues)} {tx("cues ·")} {String(j.result.timing)}</div>}
         <span className="space-x-2 ml-2">
-          {j.has_captions && ["vtt", "srt"].map((f) => <button key={f} className="underline" onClick={() => void save(j.id, f)}>{f.toUpperCase()}</button>)}
-          {(j.status === "QUEUED" || j.status === "RUNNING") && <button className="border rounded px-2" onClick={() => void act(apiClient.post(`${B}/jobs/${j.id}/cancel`), "Cancelled.")}>Cancel</button>}</span>
+          {j.has_captions && [tx("vtt"), tx("srt")].map((f) => <button key={f} className="underline" onClick={() => void save(j.id, f)}>{f.toUpperCase()}</button>)}
+          {(j.status === "QUEUED" || j.status === "RUNNING") && <button className="border rounded px-2" onClick={() => void act(apiClient.post(`${B}/jobs/${j.id}/cancel`), "Cancelled.")}>{tx("Cancel")}</button>}</span>
       </li>)}</ul>
     </section>
 
-    <section className="border rounded p-3 bg-white space-y-2 text-xs" aria-label="Storage">
-      <h2 className="font-semibold text-sm">Media files</h2>
-      <div className="space-x-2"><input ref={fileRef} aria-label="Choose media file" type="file" accept=".mp4,.m4v,.webm,.m4a,.mp3,.ogg,.wav,.png,.jpg,.jpeg,.webp" onChange={(e) => { const f = e.target.files?.[0]; if (f) void upload(f); }} />
-        {up && <span>{up.name}: {up.done}/{up.total} parts <progress aria-label="Upload progress" max={up.total} value={up.done} /> {up.session && up.file && <button className="border rounded px-2" onClick={() => void upload(up.file!, up.session)}>Resume</button>}
-          {up.session && <button className="border rounded px-2" onClick={() => void act(apiClient.delete(`${B}/storage/uploads/${up.session}`).then(() => setUp(null)), "Upload cancelled and cleaned up.")}>Cancel upload</button>}</span>}</div>
-      {preview && <div className="border rounded p-2">{preview.mime.startsWith("video/") ? <video controls className="max-h-64" src={preview.url} /> : preview.mime.startsWith("audio/") ? <audio controls src={preview.url} /> : <img alt="Preview" className="max-h-64" src={preview.url} />}
-        <button className="underline ml-2" onClick={() => setPreview(null)}>Close preview</button></div>}
+    <section className="border rounded p-3 bg-white space-y-2 text-xs" aria-label={tx("Storage")}>
+      <h2 className="font-semibold text-sm">{tx("Media files")}</h2>
+      <div className="space-x-2"><input ref={fileRef} aria-label={tx("Choose media file")} type="file" accept=".mp4,.m4v,.webm,.m4a,.mp3,.ogg,.wav,.png,.jpg,.jpeg,.webp" onChange={(e) => { const f = e.target.files?.[0]; if (f) void upload(f); }} />
+        {up && <span>{up.name}: {up.done}/{up.total} {tx("parts")} <progress aria-label={tx("Upload progress")} max={up.total} value={up.done} /> {up.session && up.file && <button className="border rounded px-2" onClick={() => void upload(up.file!, up.session)}>{tx("Resume")}</button>}
+          {up.session && <button className="border rounded px-2" onClick={() => void act(apiClient.delete(`${B}/storage/uploads/${up.session}`).then(() => setUp(null)), "Upload cancelled and cleaned up.")}>{tx("Cancel upload")}</button>}</span>}</div>
+      {preview && <div className="border rounded p-2">{preview.mime.startsWith("video/") ? <video controls className="max-h-64" src={preview.url} /> : preview.mime.startsWith("audio/") ? <audio controls src={preview.url} /> : <img alt={tx("Preview")} className="max-h-64" src={preview.url} />}
+        <button className="underline ml-2" onClick={() => setPreview(null)}>{tx("Close preview")}</button></div>}
       <ul className="space-y-1">{objs.map((o) => <li key={o.id} className="border rounded p-2">
-        <span className={`px-1 rounded ${badge(o.status)}`}>{o.status}</span> <b>{o.file_name}</b> · {mb(o.size)} · scan {o.scan_status} · {o.approval} · {o.backend}
+        <span className={`px-1 rounded ${badge(o.status)}`}>{o.status}</span> <b>{o.file_name}</b> · {mb(o.size)} {tx("· scan")} {o.scan_status} · {o.approval} · {o.backend}
         <span className="space-x-2 ml-2">
-          <button className="border rounded px-2 disabled:opacity-40" disabled={o.status !== "READY"} title={o.status !== "READY" ? "Only clean, ready files can be played" : ""} onClick={() => void play(o)}>Play</button>
-          {o.approval === "DRAFT" && o.status === "READY" && <button className="border rounded px-2" onClick={() => void act(apiClient.post(`${B}/storage/objects/${o.id}/approve`), "Approved.")}>Approve</button>}
-          <button className="border rounded px-2" onClick={() => void act(apiClient.post(`${B}/storage/objects/${o.id}/revoke`), "All issued links revoked.")}>Revoke links</button>
-          <button className="border rounded px-2" onClick={() => { if (confirm(`Delete ${o.file_name}? This removes the stored file.`)) void act(apiClient.delete(`${B}/storage/objects/${o.id}`), "Deleted."); }}>Delete</button></span>
+          <button className="border rounded px-2 disabled:opacity-40" disabled={o.status !== "READY"} title={o.status !== "READY" ? tx("Only clean, ready files can be played") : ""} onClick={() => void play(o)}>{tx("Play")}</button>
+          {o.approval === "DRAFT" && o.status === "READY" && <button className="border rounded px-2" onClick={() => void act(apiClient.post(`${B}/storage/objects/${o.id}/approve`), "Approved.")}>{tx("Approve")}</button>}
+          <button className="border rounded px-2" onClick={() => void act(apiClient.post(`${B}/storage/objects/${o.id}/revoke`), "All issued links revoked.")}>{tx("Revoke links")}</button>
+          <button className="border rounded px-2" onClick={() => { if (confirm(tx("Delete {file_name}? This removes the stored file.", { file_name: o.file_name }))) void act(apiClient.delete(`${B}/storage/objects/${o.id}`), "Deleted."); }}>{tx("Delete")}</button></span>
       </li>)}</ul>
       <div className="space-x-2 pt-1">
-        <button className="border rounded px-2" onClick={() => void act(apiClient.post(`${B}/storage/backups`), "Backup finished.")}>Back up now</button>
-        <button className="border rounded px-2" onClick={() => void act(apiClient.post(`${B}/storage/cleanup`).then((r) => say(`Cleanup: ${JSON.stringify(r.data)}`)), "Cleanup done.")}>Clean up expired uploads</button></div>
+        <button className="border rounded px-2" onClick={() => void act(apiClient.post(`${B}/storage/backups`), "Backup finished.")}>{tx("Back up now")}</button>
+        <button className="border rounded px-2" onClick={() => void act(apiClient.post(`${B}/storage/cleanup`).then((r) => say(`Cleanup: ${JSON.stringify(r.data)}`)), "Cleanup done.")}>{tx("Clean up expired uploads")}</button></div>
     </section>
   </main>;
 }

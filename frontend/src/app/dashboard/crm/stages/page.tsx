@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { PipelineSelect } from "@/components/PipelineSelect";
 import { crmApi, CRMStage, STAGE_TYPE_LABELS, CRMStageType } from "@/lib/crm_pipeline";
+import { tx } from "@/lib/i18n/core";
 
 export default function StageConfigPage() {
   const [stages, setStages] = useState<CRMStage[]>([]);
@@ -44,15 +45,15 @@ export default function StageConfigPage() {
     <div className="p-6 space-y-4">
       <PipelineSelect value={pipelineId} onChange={setPipelineId} allowCreate />
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-gray-900">Pipeline Stage Configuration</h1>
+        <h1 className="text-xl font-bold text-gray-900">{tx("Pipeline Stage Configuration")}</h1>
         <div className="flex gap-2">
           <button onClick={handleSeed} disabled={seeding}
             className="px-3 py-1.5 text-sm border rounded-lg hover:bg-gray-50 disabled:opacity-50">
-            {seeding ? "Seeding…" : "Seed Defaults"}
+            {seeding ? tx("Seeding…") : tx("Seed Defaults")}
           </button>
           <button onClick={() => setShowCreate(true)}
             className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-            + New Stage
+            {tx("+ New Stage")}
           </button>
         </div>
       </div>
@@ -61,21 +62,21 @@ export default function StageConfigPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b bg-gray-50 text-xs text-gray-600">
-              <th className="px-3 py-2 text-left">Seq</th>
-              <th className="px-3 py-2 text-left">Color</th>
-              <th className="px-3 py-2 text-left">Code</th>
-              <th className="px-3 py-2 text-left">Name</th>
-              <th className="px-3 py-2 text-left">Type</th>
-              <th className="px-3 py-2 text-left">Default Prob %</th>
-              <th className="px-3 py-2 text-left">Active</th>
-              <th className="px-3 py-2 text-left">Actions</th>
+              <th className="px-3 py-2 text-left">{tx("Seq")}</th>
+              <th className="px-3 py-2 text-left">{tx("Color")}</th>
+              <th className="px-3 py-2 text-left">{tx("Code")}</th>
+              <th className="px-3 py-2 text-left">{tx("Name")}</th>
+              <th className="px-3 py-2 text-left">{tx("Type")}</th>
+              <th className="px-3 py-2 text-left">{tx("Default Prob %")}</th>
+              <th className="px-3 py-2 text-left">{tx("Active")}</th>
+              <th className="px-3 py-2 text-left">{tx("Actions")}</th>
             </tr>
           </thead>
           <tbody>
-            {loading && <tr><td colSpan={8} className="px-3 py-6 text-center text-gray-400">Loading…</td></tr>}
+            {loading && <tr><td colSpan={8} className="px-3 py-6 text-center text-gray-400">{tx("Loading…")}</td></tr>}
             {!loading && stages.length === 0 && (
               <tr><td colSpan={8} className="px-3 py-6 text-center text-gray-400">
-                No stages configured. Click &quot;Seed Defaults&quot; to add default stages.
+                {tx("No stages configured. Click \"Seed Defaults\" to add default stages.")}
               </td></tr>
             )}
             {stages.map(stage => (
@@ -90,13 +91,13 @@ export default function StageConfigPage() {
                 <td className="px-3 py-2 text-gray-700">{stage.default_probability}%</td>
                 <td className="px-3 py-2">
                   <span className={`px-2 py-0.5 rounded-full text-xs ${stage.active_flag ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
-                    {stage.active_flag ? "Active" : "Inactive"}
+                    {stage.active_flag ? tx("Active") : tx("Inactive")}
                   </span>
                 </td>
                 <td className="px-3 py-2">
                   <button onClick={() => handleToggle(stage)}
                     className="text-xs text-blue-600 hover:underline">
-                    {stage.active_flag ? "Deactivate" : "Activate"}
+                    {stage.active_flag ? tx("Deactivate") : tx("Activate")}
                   </button>
                 </td>
               </tr>
@@ -108,11 +109,11 @@ export default function StageConfigPage() {
       {showCreate && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md space-y-3">
-            <h2 className="font-semibold text-lg">New Pipeline Stage</h2>
-            <input placeholder="Stage Code (e.g. QUALIFIED)" value={form.stage_code}
+            <h2 className="font-semibold text-lg">{tx("New Pipeline Stage")}</h2>
+            <input placeholder={tx("Stage Code (e.g. QUALIFIED)")} value={form.stage_code}
               onChange={e => setForm(f => ({ ...f, stage_code: e.target.value.toUpperCase() }))}
               className="w-full border rounded-lg px-3 py-2 text-sm font-mono" />
-            <input placeholder="Stage Name" value={form.stage_name}
+            <input placeholder={tx("Stage Name")} value={form.stage_name}
               onChange={e => setForm(f => ({ ...f, stage_name: e.target.value }))}
               className="w-full border rounded-lg px-3 py-2 text-sm" />
             <select value={form.stage_type} onChange={e => setForm(f => ({ ...f, stage_type: e.target.value as CRMStageType }))}
@@ -120,15 +121,15 @@ export default function StageConfigPage() {
               {Object.entries(STAGE_TYPE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
             <div className="flex gap-2">
-              <input type="number" placeholder="Default Probability %" value={form.default_probability}
+              <input type="number" placeholder={tx("Default Probability %")} value={form.default_probability}
                 onChange={e => setForm(f => ({ ...f, default_probability: +e.target.value }))}
                 className="flex-1 border rounded-lg px-3 py-2 text-sm" min={0} max={100} />
-              <input type="number" placeholder="Sequence No" value={form.sequence_no}
+              <input type="number" placeholder={tx("Sequence No")} value={form.sequence_no}
                 onChange={e => setForm(f => ({ ...f, sequence_no: +e.target.value }))}
                 className="flex-1 border rounded-lg px-3 py-2 text-sm" />
             </div>
             <div className="flex items-center gap-2">
-              <label className="text-sm text-gray-600">Color:</label>
+              <label className="text-sm text-gray-600">{tx("Color:")}</label>
               <input type="color" value={form.color_code}
                 onChange={e => setForm(f => ({ ...f, color_code: e.target.value }))}
                 className="h-8 w-16 border rounded cursor-pointer" />
@@ -136,9 +137,9 @@ export default function StageConfigPage() {
             <div className="flex gap-2 pt-1">
               <button onClick={handleCreate} disabled={saving || !form.stage_code || !form.stage_name}
                 className="flex-1 bg-blue-600 text-white py-2 rounded-lg text-sm disabled:opacity-50">
-                {saving ? "Saving…" : "Create Stage"}
+                {saving ? tx("Saving…") : tx("Create Stage")}
               </button>
-              <button onClick={() => setShowCreate(false)} className="flex-1 border rounded-lg py-2 text-sm">Cancel</button>
+              <button onClick={() => setShowCreate(false)} className="flex-1 border rounded-lg py-2 text-sm">{tx("Cancel")}</button>
             </div>
           </div>
         </div>

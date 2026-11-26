@@ -9,6 +9,7 @@ import {
   OperationalLogFilters,
 } from "@/lib/logs";
 import { RequirePermission } from "@/components/PermissionGuard";
+import { tx } from "@/lib/i18n/core";
 
 type Tab = "operational" | "mpesa" | "security";
 
@@ -59,33 +60,33 @@ function OperationalTab({ mpesaOnly }: { mpesaOnly?: boolean }) {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {!mpesaOnly && (
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">Module</label>
+              <label className="block text-xs font-medium text-gray-500 mb-1">{tx("Module")}</label>
               <select
                 className="w-full border rounded px-2 py-1.5 text-sm"
                 value={filters.module_name ?? ""}
                 onChange={(e) => set("module_name", e.target.value || undefined)}
               >
                 {MODULE_OPTIONS.map((m) => (
-                  <option key={m} value={m}>{m || "All Modules"}</option>
+                  <option key={m} value={m}>{m || tx("All Modules")}</option>
                 ))}
               </select>
             </div>
           )}
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Status</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1">{tx("Status")}</label>
             <select
               className="w-full border rounded px-2 py-1.5 text-sm"
               value={filters.status ?? ""}
               onChange={(e) => set("status", e.target.value || undefined)}
             >
-              <option value="">All</option>
-              <option value="SUCCESS">Success</option>
-              <option value="FAILED">Failed</option>
-              <option value="PENDING">Pending</option>
+              <option value="">{tx("All")}</option>
+              <option value="SUCCESS">{tx("Success")}</option>
+              <option value="FAILED">{tx("Failed")}</option>
+              <option value="PENDING">{tx("Pending")}</option>
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">From</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1">{tx("From")}</label>
             <input
               type="date"
               className="w-full border rounded px-2 py-1.5 text-sm"
@@ -94,7 +95,7 @@ function OperationalTab({ mpesaOnly }: { mpesaOnly?: boolean }) {
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">To</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1">{tx("To")}</label>
             <input
               type="date"
               className="w-full border rounded px-2 py-1.5 text-sm"
@@ -110,10 +111,10 @@ function OperationalTab({ mpesaOnly }: { mpesaOnly?: boolean }) {
               checked={filters.error_only ?? false}
               onChange={(e) => set("error_only", e.target.checked || undefined)}
             />
-            Errors only
+            {tx("Errors only")}
           </label>
           <span className="text-xs text-gray-400 ml-auto">
-            {data?.total ?? 0} records
+            {data?.total ?? 0} {tx("records")}
           </span>
         </div>
       </div>
@@ -121,19 +122,19 @@ function OperationalTab({ mpesaOnly }: { mpesaOnly?: boolean }) {
       {/* Table */}
       <div className="bg-white rounded-lg border overflow-hidden">
         {isLoading ? (
-          <p className="p-8 text-center text-gray-400 text-sm">Loading…</p>
+          <p className="p-8 text-center text-gray-400 text-sm">{tx("Loading…")}</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-gray-50 border-b text-xs text-gray-500 uppercase">
                 <tr>
-                  <th className="px-4 py-2 text-left">Time</th>
-                  {!mpesaOnly && <th className="px-4 py-2 text-left">Module</th>}
-                  <th className="px-4 py-2 text-left">Entity</th>
-                  <th className="px-4 py-2 text-left">Action</th>
-                  <th className="px-4 py-2 text-left">Status</th>
-                  <th className="px-4 py-2 text-left">By</th>
-                  <th className="px-4 py-2 text-left">Error</th>
+                  <th className="px-4 py-2 text-left">{tx("Time")}</th>
+                  {!mpesaOnly && <th className="px-4 py-2 text-left">{tx("Module")}</th>}
+                  <th className="px-4 py-2 text-left">{tx("Entity")}</th>
+                  <th className="px-4 py-2 text-left">{tx("Action")}</th>
+                  <th className="px-4 py-2 text-left">{tx("Status")}</th>
+                  <th className="px-4 py-2 text-left">{tx("By")}</th>
+                  <th className="px-4 py-2 text-left">{tx("Error")}</th>
                   <th className="px-4 py-2" />
                 </tr>
               </thead>
@@ -159,7 +160,7 @@ function OperationalTab({ mpesaOnly }: { mpesaOnly?: boolean }) {
                             className="text-xs text-indigo-600 hover:underline"
                             onClick={() => setExpanded(expanded === row.id ? null : row.id)}
                           >
-                            {expanded === row.id ? "Hide" : "Payload"}
+                            {expanded === row.id ? tx("Hide") : tx("Payload")}
                           </button>
                         )}
                       </td>
@@ -169,13 +170,13 @@ function OperationalTab({ mpesaOnly }: { mpesaOnly?: boolean }) {
                         <td colSpan={mpesaOnly ? 7 : 8} className="px-4 py-3">
                           <div className="grid grid-cols-2 gap-4 text-xs font-mono">
                             <div>
-                              <p className="font-sans font-semibold text-gray-500 mb-1">Request</p>
+                              <p className="font-sans font-semibold text-gray-500 mb-1">{tx("Request")}</p>
                               <pre className="bg-white border rounded p-2 overflow-x-auto text-gray-700 max-h-40">
                                 {JSON.stringify(row.request_payload, null, 2)}
                               </pre>
                             </div>
                             <div>
-                              <p className="font-sans font-semibold text-gray-500 mb-1">Response</p>
+                              <p className="font-sans font-semibold text-gray-500 mb-1">{tx("Response")}</p>
                               <pre className="bg-white border rounded p-2 overflow-x-auto text-gray-700 max-h-40">
                                 {JSON.stringify(row.response_payload, null, 2)}
                               </pre>
@@ -187,7 +188,7 @@ function OperationalTab({ mpesaOnly }: { mpesaOnly?: boolean }) {
                   </>
                 ))}
                 {(data?.items ?? []).length === 0 && (
-                  <tr><td colSpan={mpesaOnly ? 7 : 8} className="p-8 text-center text-gray-400">No logs found</td></tr>
+                  <tr><td colSpan={mpesaOnly ? 7 : 8} className="p-8 text-center text-gray-400">{tx("No logs found")}</td></tr>
                 )}
               </tbody>
             </table>
@@ -203,17 +204,17 @@ function OperationalTab({ mpesaOnly }: { mpesaOnly?: boolean }) {
             onClick={() => set("skip", Math.max(0, (filters.skip ?? 0) - (filters.limit ?? 100)))}
             className="px-3 py-1 border rounded disabled:opacity-40"
           >
-            Prev
+            {tx("Prev")}
           </button>
           <span className="text-gray-500">
-            {(filters.skip ?? 0) + 1}–{Math.min((filters.skip ?? 0) + (filters.limit ?? 100), data.total)} of {data.total}
+            {(filters.skip ?? 0) + 1}–{Math.min((filters.skip ?? 0) + (filters.limit ?? 100), data.total)} {tx("of")} {data.total}
           </span>
           <button
             disabled={(filters.skip ?? 0) + (filters.limit ?? 100) >= data.total}
             onClick={() => set("skip", (filters.skip ?? 0) + (filters.limit ?? 100))}
             className="px-3 py-1 border rounded disabled:opacity-40"
           >
-            Next
+            {tx("Next")}
           </button>
         </div>
       )}
@@ -243,37 +244,37 @@ function SecurityTab() {
       <div className="bg-white rounded-lg border p-4">
         <div className="grid grid-cols-3 gap-3">
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Event Type</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1">{tx("Event Type")}</label>
             <input
               className="w-full border rounded px-2 py-1.5 text-sm"
-              placeholder="e.g. LOGIN_SUCCESS"
+              placeholder={tx("e.g. LOGIN_SUCCESS")}
               value={eventType}
               onChange={(e) => setEventType(e.target.value)}
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">From</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1">{tx("From")}</label>
             <input type="date" className="w-full border rounded px-2 py-1.5 text-sm" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">To</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1">{tx("To")}</label>
             <input type="date" className="w-full border rounded px-2 py-1.5 text-sm" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
           </div>
         </div>
-        <p className="text-xs text-gray-400 mt-2">{logs.length} records</p>
+        <p className="text-xs text-gray-400 mt-2">{logs.length} {tx("records")}</p>
       </div>
 
       <div className="bg-white rounded-lg border overflow-hidden">
         {isLoading ? (
-          <p className="p-8 text-center text-gray-400 text-sm">Loading…</p>
+          <p className="p-8 text-center text-gray-400 text-sm">{tx("Loading…")}</p>
         ) : (
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b text-xs text-gray-500 uppercase">
               <tr>
-                <th className="px-4 py-2 text-left">Time</th>
-                <th className="px-4 py-2 text-left">Event</th>
-                <th className="px-4 py-2 text-left">Actor</th>
-                <th className="px-4 py-2 text-left">Target</th>
+                <th className="px-4 py-2 text-left">{tx("Time")}</th>
+                <th className="px-4 py-2 text-left">{tx("Event")}</th>
+                <th className="px-4 py-2 text-left">{tx("Actor")}</th>
+                <th className="px-4 py-2 text-left">{tx("Target")}</th>
                 <th className="px-4 py-2 text-left">IP</th>
               </tr>
             </thead>
@@ -295,7 +296,7 @@ function SecurityTab() {
                 </tr>
               ))}
               {logs.length === 0 && (
-                <tr><td colSpan={5} className="p-8 text-center text-gray-400">No security events</td></tr>
+                <tr><td colSpan={5} className="p-8 text-center text-gray-400">{tx("No security events")}</td></tr>
               )}
             </tbody>
           </table>
@@ -310,23 +311,23 @@ function LogsContent() {
   const [tab, setTab] = useState<Tab>("operational");
 
   const TABS: { key: Tab; label: string }[] = [
-    { key: "operational", label: "Operational" },
-    { key: "mpesa", label: "M-Pesa" },
-    { key: "security", label: "Security" },
+    { key: "operational", label: tx("Operational") },
+    { key: "mpesa", label: tx("M-Pesa") },
+    { key: "security", label: tx("Security") },
   ];
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">System Logs</h1>
-          <p className="text-sm text-gray-500 mt-1">Operational, M-Pesa, and security audit trail</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("System Logs")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{tx("Operational, M-Pesa, and security audit trail")}</p>
         </div>
         <a
           href={logsApi.exportUrl({ limit: 5000 })}
           className="px-3 py-1.5 border rounded text-sm text-indigo-600 hover:border-indigo-300"
         >
-          Export CSV
+          {tx("Export CSV")}
         </a>
       </div>
 

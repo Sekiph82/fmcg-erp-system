@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { recruitmentApi, Candidate, CandidateSource } from "@/lib/recruitment";
+import { tx } from "@/lib/i18n/core";
 
 const SOURCES: CandidateSource[] = ["portal", "referral", "agency", "manual", "linkedin", "job_portal"];
 
@@ -21,19 +22,19 @@ export default function CandidatesPage() {
     <div className="p-6 space-y-5 text-slate-200">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-white">Candidates</h1>
-          <p className="text-slate-500 text-sm mt-0.5">{candidates.length} candidates</p>
+          <h1 className="text-xl font-bold text-white">{tx("Candidates")}</h1>
+          <p className="text-slate-500 text-sm mt-0.5">{candidates.length} {tx("candidates")}</p>
         </div>
         <Link href="/dashboard/hr?tab=recruitment&drawer=create"
-          className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium">+ Add Candidate</Link>
+          className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium">{tx("+ Add Candidate")}</Link>
       </div>
 
       <div className="flex gap-3">
-        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name, email, skills…"
+        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={tx("Search name, email, skills…")}
           className="bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 w-64" />
         <select value={source} onChange={(e) => setSource(e.target.value)}
           className="bg-[#0d1829] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none">
-          <option value="">All Sources</option>
+          <option value="">{tx("All Sources")}</option>
           {SOURCES.map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
       </div>
@@ -41,7 +42,7 @@ export default function CandidatesPage() {
       <div className="glass-table">
         <table className="w-full text-sm">
           <thead><tr className="border-b border-white/[0.07]">
-            {["Code", "Name", "Email", "Source", "Current Title", "Exp (yrs)", "Skills"].map((h) => (
+            {[tx("Code"), tx("Name"), tx("Email"), tx("Source"), tx("Current Title"), tx("Exp (yrs)"), tx("Skills")].map((h) => (
               <th key={h} className="px-4 py-3 text-[10px] text-slate-500 uppercase tracking-widest text-left">{h}</th>
             ))}
           </tr></thead>
@@ -59,7 +60,7 @@ export default function CandidatesPage() {
                 <td className="px-4 py-3 text-slate-500 text-xs max-w-[150px] truncate">{c.skills_tags || "—"}</td>
               </tr>
             ))}
-            {candidates.length === 0 && <tr><td colSpan={7} className="px-4 py-8 text-center text-slate-600">No candidates found</td></tr>}
+            {candidates.length === 0 && <tr><td colSpan={7} className="px-4 py-8 text-center text-slate-600">{tx("No candidates found")}</td></tr>}
           </tbody>
         </table>
       </div>

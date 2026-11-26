@@ -11,6 +11,7 @@ import { PlansPanel } from "./PlansPanel";
 import { SpecsPanel } from "./SpecsPanel";
 import { SupplierAuditsPanel } from "./SupplierAuditsPanel";
 import { ReadOnlyNotice, useQualityPermissions } from "./shared";
+import { tx } from "@/lib/i18n/core";
 
 const SECTIONS = [
   { key: "specs", label: "Specifications & change", Panel: SpecsPanel },
@@ -32,14 +33,14 @@ export function QAEnterpriseWorkspace() {
   return (
     <div data-testid="qa-enterprise-workspace" className="space-y-4">
       <div>
-        <h2 className="text-lg font-semibold text-gray-900">QA governance</h2>
-        <p className="text-sm text-gray-500">Specifications, QC plans, sampling and SPC, concessions, quality cost, laboratory evidence, supplier audits and CAPA links.</p>
+        <h2 className="text-lg font-semibold text-gray-900">{tx("QA governance")}</h2>
+        <p className="text-sm text-gray-500">{tx("Specifications, QC plans, sampling and SPC, concessions, quality cost, laboratory evidence, supplier audits and CAPA links.")}</p>
       </div>
       {!canView ? (
-        <ReadOnlyNotice>QA governance requires quality.view.</ReadOnlyNotice>
+        <ReadOnlyNotice>{tx("QA governance requires quality.view.")}</ReadOnlyNotice>
       ) : (
         <>
-          <div role="tablist" aria-label="QA governance sections" className="flex flex-wrap gap-2 border-b border-gray-200 pb-2">
+          <div role="tablist" aria-label={tx("QA governance sections")} className="flex flex-wrap gap-2 border-b border-gray-200 pb-2">
             {SECTIONS.map((s) => (
               <button key={s.key} type="button" role="tab" aria-selected={active === s.key} onClick={() => setActive(s.key)}
                 className={`rounded-lg px-3 py-1.5 text-sm font-medium ${active === s.key ? "bg-indigo-600 text-white" : "text-gray-600 hover:bg-gray-100"}`}>

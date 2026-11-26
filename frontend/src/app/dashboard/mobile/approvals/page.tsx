@@ -2,6 +2,7 @@
 import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { mobileApi, MobileApprovalItem } from "@/lib/mobile_api";
+import { tx } from "@/lib/i18n/core";
 
 const API_BASE = "/api/v1/approvals";
 
@@ -58,13 +59,13 @@ export default function MobileApprovalsPage() {
   return (
     <div className="p-4 space-y-4 max-w-2xl mx-auto">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-gray-900">Approval Inbox</h1>
+        <h1 className="text-xl font-bold text-gray-900">{tx("Approval Inbox")}</h1>
         <button
           onClick={load}
           disabled={loading}
           className="text-sm text-blue-600 hover:text-blue-800 disabled:opacity-50"
         >
-          Refresh
+          {tx("Refresh")}
         </button>
       </div>
 
@@ -73,11 +74,11 @@ export default function MobileApprovalsPage() {
       )}
 
       {loading ? (
-        <p className="text-gray-500 text-sm">Loading approvals…</p>
+        <p className="text-gray-500 text-sm">{tx("Loading approvals…")}</p>
       ) : items.length === 0 ? (
         <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
-          <p className="text-green-700 font-semibold">All clear</p>
-          <p className="text-green-600 text-sm mt-1">No pending approvals in your inbox.</p>
+          <p className="text-green-700 font-semibold">{tx("All clear")}</p>
+          <p className="text-green-600 text-sm mt-1">{tx("No pending approvals in your inbox.")}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -88,7 +89,7 @@ export default function MobileApprovalsPage() {
                 <div>
                   <p className="font-semibold text-gray-900 text-sm leading-snug">{item.title}</p>
                   <p className="text-xs text-gray-500 mt-0.5">
-                    {item.reference_type} · Requested by {item.requested_by}
+                    {item.reference_type} {tx("· Requested by")} {item.requested_by}
                   </p>
                 </div>
                 {item.amount !== null && (
@@ -103,7 +104,7 @@ export default function MobileApprovalsPage() {
               {/* Comment input */}
               <input
                 type="text"
-                placeholder="Comment (optional)"
+                placeholder={tx("Comment (optional)")}
                 value={comment[item.request_id] ?? ""}
                 onChange={(e) =>
                   setComment((prev) => ({ ...prev, [item.request_id]: e.target.value }))
@@ -118,14 +119,14 @@ export default function MobileApprovalsPage() {
                   disabled={acting !== null}
                   className="flex-1 bg-green-600 hover:bg-green-700 text-white text-sm font-medium py-2 rounded disabled:opacity-50"
                 >
-                  {acting === item.request_id + "approve" ? "Approving…" : "Approve"}
+                  {acting === item.request_id + "approve" ? tx("Approving…") : tx("Approve")}
                 </button>
                 <button
                   onClick={() => handle(item.request_id, "reject")}
                   disabled={acting !== null}
                   className="flex-1 bg-red-600 hover:bg-red-700 text-white text-sm font-medium py-2 rounded disabled:opacity-50"
                 >
-                  {acting === item.request_id + "reject" ? "Rejecting…" : "Reject"}
+                  {acting === item.request_id + "reject" ? tx("Rejecting…") : tx("Reject")}
                 </button>
               </div>
             </div>
@@ -134,7 +135,7 @@ export default function MobileApprovalsPage() {
       )}
 
       <p className="text-xs text-gray-400 text-center">
-        {items.length} pending · Mobile Approvals View
+        {items.length} {tx("pending · Mobile Approvals View")}
       </p>
     </div>
   );

@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { expensesApi, ExpenseCategory } from "@/lib/expenses";
+import { tx } from "@/lib/i18n/core";
 
 interface LineForm {
   expense_category_id: string; expense_date: string; description: string;
@@ -48,20 +49,20 @@ export default function NewClaimPage() {
 
   return (
     <div className="p-6 space-y-6 text-slate-200 max-w-4xl">
-      <h1 className="text-xl font-bold text-white">New Expense Claim</h1>
+      <h1 className="text-xl font-bold text-white">{tx("New Expense Claim")}</h1>
 
       <div className="glow-card p-5 space-y-4">
-        <h2 className="text-sm font-semibold text-white">Claim Details</h2>
+        <h2 className="text-sm font-semibold text-white">{tx("Claim Details")}</h2>
         <div className="grid grid-cols-2 gap-4">
-          <div><label className={labelCls}>Claim Date</label><input type="date" value={form.claim_date} onChange={(e) => setForm({ ...form, claim_date: e.target.value })} className={inputCls} /></div>
-          <div><label className={labelCls}>Reimbursement Method</label>
+          <div><label className={labelCls}>{tx("Claim Date")}</label><input type="date" value={form.claim_date} onChange={(e) => setForm({ ...form, claim_date: e.target.value })} className={inputCls} /></div>
+          <div><label className={labelCls}>{tx("Reimbursement Method")}</label>
             <select value={form.reimbursement_method} onChange={(e) => setForm({ ...form, reimbursement_method: e.target.value })} className={selectCls}>
-              {["payroll", "ap", "bank", "cash", "manual"].map((m) => <option key={m} value={m}>{m.toUpperCase()}</option>)}
+              {[tx("payroll"), tx("ap"), tx("bank"), tx("cash"), tx("manual")].map((m) => <option key={m} value={m}>{m.toUpperCase()}</option>)}
             </select>
           </div>
-          <div><label className={labelCls}>Period Start</label><input type="date" value={form.period_start} onChange={(e) => setForm({ ...form, period_start: e.target.value })} className={inputCls} /></div>
-          <div><label className={labelCls}>Period End</label><input type="date" value={form.period_end} onChange={(e) => setForm({ ...form, period_end: e.target.value })} className={inputCls} /></div>
-          <div className="col-span-2"><label className={labelCls}>Notes</label>
+          <div><label className={labelCls}>{tx("Period Start")}</label><input type="date" value={form.period_start} onChange={(e) => setForm({ ...form, period_start: e.target.value })} className={inputCls} /></div>
+          <div><label className={labelCls}>{tx("Period End")}</label><input type="date" value={form.period_end} onChange={(e) => setForm({ ...form, period_end: e.target.value })} className={inputCls} /></div>
+          <div className="col-span-2"><label className={labelCls}>{tx("Notes")}</label>
             <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2} className={inputCls} />
           </div>
         </div>
@@ -69,30 +70,30 @@ export default function NewClaimPage() {
 
       <div className="glow-card p-5 space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-white">Expense Lines</h2>
-          <button onClick={addLine} className="px-3 py-1.5 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-slate-300 text-xs">+ Add Line</button>
+          <h2 className="text-sm font-semibold text-white">{tx("Expense Lines")}</h2>
+          <button onClick={addLine} className="px-3 py-1.5 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-slate-300 text-xs">{tx("+ Add Line")}</button>
         </div>
 
         {lines.map((line, i) => (
           <div key={i} className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-4 space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-slate-500">Line {i + 1}</span>
-              {lines.length > 1 && <button onClick={() => removeLine(i)} className="text-xs text-red-400 hover:text-red-300">Remove</button>}
+              <span className="text-xs font-medium text-slate-500">{tx("Line")} {i + 1}</span>
+              {lines.length > 1 && <button onClick={() => removeLine(i)} className="text-xs text-red-400 hover:text-red-300">{tx("Remove")}</button>}
             </div>
             <div className="grid grid-cols-3 gap-3">
-              <div><label className={labelCls}>Category *</label>
+              <div><label className={labelCls}>{tx("Category *")}</label>
                 <select value={line.expense_category_id} onChange={(e) => updateLine(i, "expense_category_id", e.target.value)} className={selectCls}>
-                  <option value="">Select…</option>
+                  <option value="">{tx("Select…")}</option>
                   {categories.map((c) => <option key={c.expense_category_id} value={c.expense_category_id}>{c.category_name}</option>)}
                 </select>
               </div>
-              <div><label className={labelCls}>Date *</label><input type="date" value={line.expense_date} onChange={(e) => updateLine(i, "expense_date", e.target.value)} className={inputCls} /></div>
-              <div><label className={labelCls}>Amount (KES) *</label><input type="number" value={line.claimed_amount} onChange={(e) => updateLine(i, "claimed_amount", e.target.value)} placeholder="0.00" className={inputCls} /></div>
-              <div className="col-span-2"><label className={labelCls}>Description *</label><input type="text" value={line.description} onChange={(e) => updateLine(i, "description", e.target.value)} className={inputCls} /></div>
-              <div><label className={labelCls}>Vendor</label><input type="text" value={line.vendor_name} onChange={(e) => updateLine(i, "vendor_name", e.target.value)} className={inputCls} /></div>
-              <div><label className={labelCls}>Receipt No</label><input type="text" value={line.receipt_no} onChange={(e) => updateLine(i, "receipt_no", e.target.value)} className={inputCls} /></div>
-              <div><label className={labelCls}>Payment Method</label><input type="text" value={line.payment_method_used} onChange={(e) => updateLine(i, "payment_method_used", e.target.value)} placeholder="Cash / Card / M-Pesa" className={inputCls} /></div>
-              <div><label className={labelCls}>Receipt / Doc URL</label><input type="text" value={line.attachment_ref} onChange={(e) => updateLine(i, "attachment_ref", e.target.value)} placeholder="https://…" className={inputCls} /></div>
+              <div><label className={labelCls}>{tx("Date *")}</label><input type="date" value={line.expense_date} onChange={(e) => updateLine(i, "expense_date", e.target.value)} className={inputCls} /></div>
+              <div><label className={labelCls}>{tx("Amount (KES) *")}</label><input type="number" value={line.claimed_amount} onChange={(e) => updateLine(i, "claimed_amount", e.target.value)} placeholder="0.00" className={inputCls} /></div>
+              <div className="col-span-2"><label className={labelCls}>{tx("Description *")}</label><input type="text" value={line.description} onChange={(e) => updateLine(i, "description", e.target.value)} className={inputCls} /></div>
+              <div><label className={labelCls}>{tx("Vendor")}</label><input type="text" value={line.vendor_name} onChange={(e) => updateLine(i, "vendor_name", e.target.value)} className={inputCls} /></div>
+              <div><label className={labelCls}>{tx("Receipt No")}</label><input type="text" value={line.receipt_no} onChange={(e) => updateLine(i, "receipt_no", e.target.value)} className={inputCls} /></div>
+              <div><label className={labelCls}>{tx("Payment Method")}</label><input type="text" value={line.payment_method_used} onChange={(e) => updateLine(i, "payment_method_used", e.target.value)} placeholder={tx("Cash / Card / M-Pesa")} className={inputCls} /></div>
+              <div><label className={labelCls}>{tx("Receipt / Doc URL")}</label><input type="text" value={line.attachment_ref} onChange={(e) => updateLine(i, "attachment_ref", e.target.value)} placeholder="https://…" className={inputCls} /></div>
             </div>
           </div>
         ))}
@@ -101,7 +102,7 @@ export default function NewClaimPage() {
       {error && <p className="text-sm text-red-400">{error}</p>}
       <button onClick={handleSubmit} disabled={saving}
         className="px-6 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium disabled:opacity-50">
-        {saving ? "Saving…" : "Save Claim"}
+        {saving ? tx("Saving…") : tx("Save Claim")}
       </button>
     </div>
   );

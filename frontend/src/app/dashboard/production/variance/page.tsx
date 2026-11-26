@@ -6,6 +6,7 @@ import {
   productionCostApi, fmtKES,
   VarianceDetailRow, WorkCenterUtilRow,
 } from "@/lib/productionCosting";
+import { tx } from "@/lib/i18n/core";
 
 const today = new Date().toISOString().slice(0, 10);
 const monthAgo = new Date(Date.now() - 30 * 86400 * 1000).toISOString().slice(0, 10);
@@ -56,18 +57,18 @@ export default function VariancePage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Production Variance & Capacity</h1>
-        <p className="text-sm text-gray-500 mt-1">Standard vs actual cost by component · work center utilization</p>
+        <h1 className="text-2xl font-bold text-gray-900">{tx("Production Variance & Capacity")}</h1>
+        <p className="text-sm text-gray-500 mt-1">{tx("Standard vs actual cost by component · work center utilization")}</p>
       </div>
 
       {/* Date filters */}
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-2">
-          <label className="text-xs text-gray-500">From</label>
+          <label className="text-xs text-gray-500">{tx("From")}</label>
           <input type="date" className="border rounded px-3 py-1.5 text-sm" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
         </div>
         <div className="flex items-center gap-2">
-          <label className="text-xs text-gray-500">To</label>
+          <label className="text-xs text-gray-500">{tx("To")}</label>
           <input type="date" className="border rounded px-3 py-1.5 text-sm" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
         </div>
       </div>
@@ -80,7 +81,7 @@ export default function VariancePage() {
             className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px capitalize ${tab === t ? "border-indigo-600 text-indigo-600" : "border-transparent text-gray-500 hover:text-gray-700"}`}
             onClick={() => setTab(t)}
           >
-            {t === "variance" ? "Variance Detail" : "Work Center Utilization"}
+            {t === "variance" ? tx("Variance Detail") : tx("Work Center Utilization")}
           </button>
         ))}
       </div>
@@ -90,10 +91,10 @@ export default function VariancePage() {
           {/* Variance summary */}
           <div className="grid grid-cols-4 gap-4">
             {[
-              { label: "Material Variance", value: totalVarMat },
-              { label: "Labor Variance",    value: totalVarLab },
-              { label: "Machine Variance",  value: totalVarMach },
-              { label: "Total Variance",    value: totalVar },
+              { label: tx("Material Variance"), value: totalVarMat },
+              { label: tx("Labor Variance"),    value: totalVarLab },
+              { label: tx("Machine Variance"),  value: totalVarMach },
+              { label: tx("Total Variance"),    value: totalVar },
             ].map((k) => (
               <div key={k.label} className="bg-white rounded-lg border p-4">
                 <p className="text-xs text-gray-500 mb-1">{k.label}</p>
@@ -104,29 +105,29 @@ export default function VariancePage() {
 
           <div className="bg-white rounded-lg border overflow-x-auto">
             <div className="px-5 py-3 border-b font-semibold text-gray-800">
-              Order-Level Variance ({varRows.length} orders)
+              {tx("Order-Level Variance (")}{varRows.length} {tx("orders)")}
             </div>
             <p className="px-5 py-2 text-xs text-gray-500 border-b">
-              Yield-loss exposure is informational and excluded from total variance. An amount appears only when every standard-bearing record has a matching material cost and UOM.
+              {tx("Yield-loss exposure is informational and excluded from total variance. An amount appears only when every standard-bearing record has a matching material cost and UOM.")}
             </p>
             {varLoading ? (
-              <p className="px-5 py-8 text-center text-gray-400">Loading…</p>
+              <p className="px-5 py-8 text-center text-gray-400">{tx("Loading…")}</p>
             ) : (
               <table className="w-full text-sm min-w-[900px]">
                 <thead>
                   <tr className="border-b bg-gray-50 text-xs text-gray-500 uppercase">
-                    <th className="px-4 py-2 text-left">Order</th>
-                    <th className="px-4 py-2 text-left">Product</th>
-                    <th className="px-4 py-2 text-left">Status</th>
-                    <th className="px-4 py-2 text-right">Std Mat</th>
-                    <th className="px-4 py-2 text-right">Act Mat</th>
-                    <th className="px-4 py-2 text-right">Mat Var</th>
-                    <th className="px-4 py-2 text-right">Std Labor</th>
-                    <th className="px-4 py-2 text-right">Act Labor</th>
-                    <th className="px-4 py-2 text-right">Labor Var</th>
-                    <th className="px-4 py-2 text-right">Total Var</th>
-                    <th className="px-4 py-2 text-right">Var %</th>
-                    <th className="px-4 py-2 text-right">Yield Loss Exposure</th>
+                    <th className="px-4 py-2 text-left">{tx("Order")}</th>
+                    <th className="px-4 py-2 text-left">{tx("Product")}</th>
+                    <th className="px-4 py-2 text-left">{tx("Status")}</th>
+                    <th className="px-4 py-2 text-right">{tx("Std Mat")}</th>
+                    <th className="px-4 py-2 text-right">{tx("Act Mat")}</th>
+                    <th className="px-4 py-2 text-right">{tx("Mat Var")}</th>
+                    <th className="px-4 py-2 text-right">{tx("Std Labor")}</th>
+                    <th className="px-4 py-2 text-right">{tx("Act Labor")}</th>
+                    <th className="px-4 py-2 text-right">{tx("Labor Var")}</th>
+                    <th className="px-4 py-2 text-right">{tx("Total Var")}</th>
+                    <th className="px-4 py-2 text-right">{tx("Var %")}</th>
+                    <th className="px-4 py-2 text-right">{tx("Yield Loss Exposure")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -149,13 +150,13 @@ export default function VariancePage() {
                       <td className={`px-4 py-2 text-right text-xs font-medium ${(r.variance_pct ?? 0) > 5 ? "text-red-600" : (r.variance_pct ?? 0) < -5 ? "text-emerald-600" : "text-gray-500"}`}>
                         {r.variance_pct != null ? `${r.variance_pct > 0 ? "+" : ""}${r.variance_pct.toFixed(1)}%` : "—"}
                       </td>
-                      <td className="px-4 py-2 text-right text-gray-600" title={`${r.yield_loss_priced_record_count} priced of ${r.yield_loss_standard_record_count} standard-bearing records; ${r.yield_loss_unpriced_record_count} unpriced`}>
+                      <td className="px-4 py-2 text-right text-gray-600" title={tx("{yield_loss_priced_record_count} priced of {yield_loss_standard_record_count} standard-bearing records; {yield_loss_unpriced_record_count} unpriced", { yield_loss_priced_record_count: r.yield_loss_priced_record_count, yield_loss_standard_record_count: r.yield_loss_standard_record_count, yield_loss_unpriced_record_count: r.yield_loss_unpriced_record_count })}>
                         {fmtKES(r.yield_loss_cost_variance)}
                       </td>
                     </tr>
                   ))}
                   {varRows.length === 0 && (
-                    <tr><td colSpan={12} className="px-5 py-8 text-center text-gray-400">No variance data for selected period</td></tr>
+                    <tr><td colSpan={12} className="px-5 py-8 text-center text-gray-400">{tx("No variance data for selected period")}</td></tr>
                   )}
                 </tbody>
               </table>
@@ -167,22 +168,22 @@ export default function VariancePage() {
       {tab === "utilization" && (
         <div className="bg-white rounded-lg border">
           <div className="px-5 py-3 border-b font-semibold text-gray-800">
-            Work Center Utilization — {dateFrom} to {dateTo}
+            {tx("Work Center Utilization —")} {dateFrom} {tx("to")} {dateTo}
           </div>
           {utilLoading ? (
-            <p className="px-5 py-8 text-center text-gray-400">Loading…</p>
+            <p className="px-5 py-8 text-center text-gray-400">{tx("Loading…")}</p>
           ) : (
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-gray-50 text-xs text-gray-500 uppercase">
-                  <th className="px-4 py-2 text-left">Work Center</th>
-                  <th className="px-4 py-2 text-left">Code</th>
-                  <th className="px-4 py-2 text-right">Capacity Hrs</th>
-                  <th className="px-4 py-2 text-right">Actual Hrs</th>
-                  <th className="px-4 py-2 text-left">Utilization</th>
-                  <th className="px-4 py-2 text-right">Orders</th>
-                  <th className="px-4 py-2 text-right">Labor Cost</th>
-                  <th className="px-4 py-2 text-right">Machine Cost</th>
+                  <th className="px-4 py-2 text-left">{tx("Work Center")}</th>
+                  <th className="px-4 py-2 text-left">{tx("Code")}</th>
+                  <th className="px-4 py-2 text-right">{tx("Capacity Hrs")}</th>
+                  <th className="px-4 py-2 text-right">{tx("Actual Hrs")}</th>
+                  <th className="px-4 py-2 text-left">{tx("Utilization")}</th>
+                  <th className="px-4 py-2 text-right">{tx("Orders")}</th>
+                  <th className="px-4 py-2 text-right">{tx("Labor Cost")}</th>
+                  <th className="px-4 py-2 text-right">{tx("Machine Cost")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
@@ -190,8 +191,8 @@ export default function VariancePage() {
                   <tr key={r.work_center_id} className="hover:bg-gray-50">
                     <td className="px-4 py-2.5 font-medium text-gray-800">{r.work_center_name}</td>
                     <td className="px-4 py-2.5 font-mono text-gray-500 text-xs">{r.work_center_code}</td>
-                    <td className="px-4 py-2.5 text-right text-gray-600">{r.capacity_hours?.toFixed(0) ?? "—"} h</td>
-                    <td className="px-4 py-2.5 text-right text-gray-600">{r.actual_hours_used.toFixed(1)} h</td>
+                    <td className="px-4 py-2.5 text-right text-gray-600">{r.capacity_hours?.toFixed(0) ?? "—"} {tx("h")}</td>
+                    <td className="px-4 py-2.5 text-right text-gray-600">{r.actual_hours_used.toFixed(1)} {tx("h")}</td>
                     <td className="px-4 py-2.5"><UtilBar pct={r.utilization_pct} /></td>
                     <td className="px-4 py-2.5 text-right text-gray-600">{r.completed_orders}</td>
                     <td className="px-4 py-2.5 text-right text-gray-600">{fmtKES(r.labor_cost_incurred)}</td>
@@ -199,7 +200,7 @@ export default function VariancePage() {
                   </tr>
                 ))}
                 {utilRows.length === 0 && (
-                  <tr><td colSpan={8} className="px-5 py-8 text-center text-gray-400">No work center data for selected period</td></tr>
+                  <tr><td colSpan={8} className="px-5 py-8 text-center text-gray-400">{tx("No work center data for selected period")}</td></tr>
                 )}
               </tbody>
             </table>

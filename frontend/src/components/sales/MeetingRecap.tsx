@@ -2,6 +2,7 @@
 // M47.S01.T009 meeting prep brief (stored facts) and recap from a transcript; follow-up tasks only on approval.
 import { useCallback, useEffect, useState } from "react";
 import { apiClient } from "@/lib/api";
+import { tx } from "@/lib/i18n/core";
 
 type Item = { quote: string; owner?: string | null; speaker?: string | null; due_in_days?: number | null };
 type Recap = { status: string; engine?: string; recap?: { decisions: Item[]; action_items: Item[] }; task_ids?: string[] };
@@ -31,35 +32,35 @@ export function MeetingRecap({ meetingId, canChange }: { meetingId: string; canC
     apiClient.post(`${base}/transcript`, f).then((r) => { setRecap(r.data); setPick([]); setMsg(null); }).catch((e) => setMsg(err(e)));
   };
   const approve = () => apiClient.post(`${base}/recap/approve`, { action_items: pick })
-    .then((r) => { setRecap(r.data); setMsg(`Recap approved; ${r.data.task_ids.length} follow-up task(s) created.`); }).catch((e) => setMsg(err(e)));
+    .then((r) => { setRecap(r.data); setMsg(tx("Recap approved; {length} follow-up task(s) created.", { length: r.data.task_ids.length })); }).catch((e) => setMsg(err(e)));
   return (
     <div className="mt-3 border-t pt-3 grid md:grid-cols-2 gap-3 text-xs">
       <div>
-        <b>Prep brief (stored facts only)</b>
-        {!brief ? <p className="text-gray-500">No brief.</p> : <>
+        <b>{tx("Prep brief (stored facts only)")}</b>
+        {!brief ? <p className="text-gray-500">{tx("No brief.")}</p> : <>
           {brief.note && <p className="text-gray-500">{brief.note}</p>}
-          <p>Open deals: {brief.open_deals.map((d) => `${d.name} (${d.currency} ${d.expected_revenue})`).join("; ") || "none"}</p>
-          <p>Last orders: {brief.last_orders.map((o) => `${o.order_no} ${o.date} ${o.currency} ${o.net_total}`).join("; ") || "none"}</p>
-          <p>Open tickets: {brief.open_tickets.map((t) => `${t.ticket_no} ${t.subject}`).join("; ") || "none"}</p>
-          {brief.hidden.length > 0 && <p className="text-gray-500">Not shown (no permission): {brief.hidden.join(", ")}</p>}
+          <p>{tx("Open deals:")} {brief.open_deals.map((d) => `${d.name} (${d.currency} ${d.expected_revenue})`).join("; ") || tx("none")}</p>
+          <p>{tx("Last orders:")} {brief.last_orders.map((o) => `${o.order_no} ${o.date} ${o.currency} ${o.net_total}`).join("; ") || tx("none")}</p>
+          <p>{tx("Open tickets:")} {brief.open_tickets.map((t) => `${t.ticket_no} ${t.subject}`).join("; ") || tx("none")}</p>
+          {brief.hidden.length > 0 && <p className="text-gray-500">{tx("Not shown (no permission):")} {brief.hidden.join(", ")}</p>}
         </>}
       </div>
       <div className="space-y-1">
-        <b>Recap</b>
+        <b>{tx("Recap")}</b>
         {recap?.recap && <>
-          <p className="text-gray-500">{recap.status === "APPROVED" ? "Approved" : "Draft"} · {recap.engine === "ai" ? "AI (quotes checked)" : "rules"}</p>
-          <p>Decisions: {recap.recap.decisions.map((d) => `“${d.quote}”`).join(" ") || "none found"}</p>
+          <p className="text-gray-500">{recap.status === "APPROVED" ? tx("Approved") : tx("Draft")} · {recap.engine === "ai" ? tx("AI (quotes checked)") : tx("rules")}</p>
+          <p>{tx("Decisions:")} {recap.recap.decisions.map((d) => `“${d.quote}”`).join(" ") || tx("none found")}</p>
           <ul>{recap.recap.action_items.map((a, i) => (
             <li key={i}><label className="flex gap-1 items-start">
               {recap.status !== "APPROVED" && canChange && <input type="checkbox" checked={pick.includes(i)} onChange={(e) => setPick(e.target.checked ? [...pick, i] : pick.filter((x) => x !== i))} />}
-              “{a.quote}”{a.owner ? ` — ${a.owner}` : ""}{a.due_in_days != null ? ` (in ${a.due_in_days} d)` : ""}</label></li>))}</ul>
-          {recap.status !== "APPROVED" && canChange && <button className="border rounded px-2 py-1" onClick={approve}>Approve and create {pick.length} task(s)</button>}
+              “{a.quote}”{a.owner ? ` — ${a.owner}` : ""}{a.due_in_days != null ? tx(" (in {due_in_days} d)", { due_in_days: a.due_in_days }) : ""}</label></li>))}</ul>
+          {recap.status !== "APPROVED" && canChange && <button className="border rounded px-2 py-1" onClick={approve}>{tx("Approve and create")} {pick.length} {tx("task(s)")}</button>}
         </>}
         {canChange && recap?.status !== "APPROVED" && <div className="space-y-1">
-          <textarea className="border rounded w-full px-2 py-1" rows={3} placeholder="Paste the transcript…" value={text} onChange={(e) => setText(e.target.value)} />
+          <textarea className="border rounded w-full px-2 py-1" rows={3} placeholder={tx("Paste the transcript…")} value={text} onChange={(e) => setText(e.target.value)} />
           <input type="file" accept=".txt,.vtt,audio/*" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
-          <label className="flex items-center gap-1"><input type="checkbox" checked={consented} onChange={(e) => setConsented(e.target.checked)} />All participants agreed to recording and transcription (needed for audio and AI)</label>
-          <button className="border rounded px-2 py-1" onClick={upload}>Build recap</button>
+          <label className="flex items-center gap-1"><input type="checkbox" checked={consented} onChange={(e) => setConsented(e.target.checked)} />{tx("All participants agreed to recording and transcription (needed for audio and AI)")}</label>
+          <button className="border rounded px-2 py-1" onClick={upload}>{tx("Build recap")}</button>
         </div>}
         {msg && <p role="status">{msg}</p>}
       </div>

@@ -8,6 +8,7 @@ import {
   PLANNING_APPROVE_PERMISSIONS, PLANNING_CALCULATE_PERMISSIONS, PLANNING_EDIT_PERMISSIONS,
 } from "@/lib/planning";
 import { useAuth } from "@/context/AuthContext";
+import { tx } from "@/lib/i18n/core";
 
 export default function BottlenecksPage() {
   const qc = useQueryClient();
@@ -60,8 +61,8 @@ export default function BottlenecksPage() {
   return (
     <div className="p-6 space-y-5">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-gray-900">Bottleneck Explorer</h1>
-        <a href="/dashboard/planning" className="text-xs text-blue-600 hover:underline">← Planning Dashboard</a>
+        <h1 className="text-xl font-semibold text-gray-900">{tx("Bottleneck Explorer")}</h1>
+        <a href="/dashboard/planning" className="text-xs text-blue-600 hover:underline">{tx("← Planning Dashboard")}</a>
       </div>
 
       {/* Selector + actions */}
@@ -71,7 +72,7 @@ export default function BottlenecksPage() {
           value={selectedId || ""}
           onChange={(e) => setSelectedId(e.target.value || null)}
         >
-          <option value="">-- select scenario --</option>
+          <option value="">{tx("-- select scenario --")}</option>
           {scenarios.map((s) => (
             <option key={s.id} value={s.id}>{s.scenario_no} — {s.scenario_name}</option>
           ))}
@@ -82,7 +83,7 @@ export default function BottlenecksPage() {
             disabled={runAI.isPending}
             className="px-3 py-1.5 text-xs font-medium bg-purple-100 text-purple-700 hover:bg-purple-200 rounded-lg"
           >
-            {runAI.isPending ? "Running AI…" : "Run AI Agents"}
+            {runAI.isPending ? tx("Running AI…") : tx("Run AI Agents")}
           </button>
         )}
       </div>
@@ -94,9 +95,9 @@ export default function BottlenecksPage() {
             {/* Summary */}
             <div className="grid grid-cols-3 gap-3">
               {[
-                { label: "Open", value: open.length, color: open.length > 0 ? "text-red-600" : "text-green-600" },
-                { label: "Critical", value: open.filter((b) => b.severity === "CRITICAL").length, color: "text-red-700" },
-                { label: "Resolved", value: resolved.length, color: "text-green-600" },
+                { label: tx("Open"), value: open.length, color: open.length > 0 ? "text-red-600" : "text-green-600" },
+                { label: tx("Critical"), value: open.filter((b) => b.severity === "CRITICAL").length, color: "text-red-700" },
+                { label: tx("Resolved"), value: resolved.length, color: "text-green-600" },
               ].map((k) => (
                 <div key={k.label} className="bg-white rounded-xl border border-gray-100 shadow-sm p-3 text-center">
                   <p className="text-xs text-gray-400">{k.label}</p>
@@ -106,10 +107,10 @@ export default function BottlenecksPage() {
             </div>
 
             {isLoading ? (
-              <div className="text-center text-gray-400 py-8">Loading…</div>
+              <div className="text-center text-gray-400 py-8">{tx("Loading…")}</div>
             ) : open.length === 0 ? (
               <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-8 text-center text-sm text-gray-400">
-                No open bottlenecks detected.
+                {tx("No open bottlenecks detected.")}
               </div>
             ) : (
               open.map((bn) => (
@@ -123,22 +124,22 @@ export default function BottlenecksPage() {
                       <span className={`text-xs px-2 py-0.5 rounded font-medium ${BN_SEVERITY_COLOR[bn.severity]}`}>
                         {bn.severity}
                       </span>
-                      <p className="text-sm font-semibold text-gray-800">{bn.work_center_name || "Unknown WC"}</p>
+                      <p className="text-sm font-semibold text-gray-800">{bn.work_center_name || tx("Unknown WC")}</p>
                     </div>
                     <p className="text-lg font-bold text-red-600">{Number(bn.peak_utilization_pct).toFixed(0)}%</p>
                   </div>
 
                   <div className="grid grid-cols-3 gap-2 mt-3 text-xs text-gray-500">
                     <div>
-                      <p className="text-gray-400">Overloaded days</p>
-                      <p className="font-medium text-red-500">{bn.overloaded_days}d</p>
+                      <p className="text-gray-400">{tx("Overloaded days")}</p>
+                      <p className="font-medium text-red-500">{bn.overloaded_days}{tx("d")}</p>
                     </div>
                     <div>
-                      <p className="text-gray-400">Excess hours</p>
-                      <p className="font-medium text-red-500">{Number(bn.total_overload_hrs).toFixed(1)}h</p>
+                      <p className="text-gray-400">{tx("Excess hours")}</p>
+                      <p className="font-medium text-red-500">{Number(bn.total_overload_hrs).toFixed(1)}{tx("h")}</p>
                     </div>
                     <div>
-                      <p className="text-gray-400">Blocked ops</p>
+                      <p className="text-gray-400">{tx("Blocked ops")}</p>
                       <p className="font-medium">{bn.blocked_op_count}</p>
                     </div>
                   </div>
@@ -155,10 +156,10 @@ export default function BottlenecksPage() {
           <div className="space-y-4">
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
               <div className="px-5 py-4 border-b border-gray-50 flex items-center justify-between">
-                <h2 className="text-sm font-semibold text-gray-700">AI Recommendations ({aiRecs.length})</h2>
+                <h2 className="text-sm font-semibold text-gray-700">{tx("AI Recommendations (")}{aiRecs.length})</h2>
               </div>
               {aiRecs.length === 0 ? (
-                <div className="p-6 text-center text-sm text-gray-400">No recommendations yet. Run AI agents.</div>
+                <div className="p-6 text-center text-sm text-gray-400">{tx("No recommendations yet. Run AI agents.")}</div>
               ) : (
                 <div className="divide-y divide-gray-50">
                   {aiRecs.map((rec) => (
@@ -170,7 +171,7 @@ export default function BottlenecksPage() {
                               {AGENT_LABEL[rec.agent_type]}
                             </span>
                             {rec.confidence_score && (
-                              <span className="text-xs text-gray-400">{(Number(rec.confidence_score) * 100).toFixed(0)}% confidence</span>
+                              <span className="text-xs text-gray-400">{(Number(rec.confidence_score) * 100).toFixed(0)}{tx("% confidence")}</span>
                             )}
                           </div>
                           <p className="text-sm font-medium text-gray-800">{rec.title}</p>
@@ -184,13 +185,13 @@ export default function BottlenecksPage() {
                               onClick={() => actionAI.mutate({ recId: rec.id, status: "ACCEPTED" })}
                               className="px-2 py-1 text-xs bg-green-100 text-green-700 rounded hover:bg-green-200"
                             >
-                              Accept
+                              {tx("Accept")}
                             </button>
                             <button
                               onClick={() => actionAI.mutate({ recId: rec.id, status: "REJECTED" })}
                               className="px-2 py-1 text-xs bg-red-100 text-red-600 rounded hover:bg-red-200"
                             >
-                              Reject
+                              {tx("Reject")}
                             </button>
                           </div>
                         )}
@@ -214,17 +215,17 @@ export default function BottlenecksPage() {
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold">{viewBn.work_center_name || "Bottleneck Detail"}</h2>
+              <h2 className="text-lg font-semibold">{viewBn.work_center_name || tx("Bottleneck Detail")}</h2>
               <button onClick={() => setViewBn(null)} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
             </div>
             <div className="grid grid-cols-2 gap-4 mb-4">
               {[
-                { label: "Severity", value: viewBn.severity },
-                { label: "Peak Utilization", value: `${Number(viewBn.peak_utilization_pct).toFixed(1)}%` },
-                { label: "Overloaded Days", value: `${viewBn.overloaded_days}d` },
-                { label: "Excess Hours", value: `${Number(viewBn.total_overload_hrs).toFixed(1)}h` },
-                { label: "Blocked Ops", value: String(viewBn.blocked_op_count) },
-                { label: "Detected", value: viewBn.detected_at ? new Date(viewBn.detected_at).toLocaleString() : "—" },
+                { label: tx("Severity"), value: viewBn.severity },
+                { label: tx("Peak Utilization"), value: `${Number(viewBn.peak_utilization_pct).toFixed(1)}%` },
+                { label: tx("Overloaded Days"), value: `${viewBn.overloaded_days}d` },
+                { label: tx("Excess Hours"), value: `${Number(viewBn.total_overload_hrs).toFixed(1)}h` },
+                { label: tx("Blocked Ops"), value: String(viewBn.blocked_op_count) },
+                { label: tx("Detected"), value: viewBn.detected_at ? new Date(viewBn.detected_at).toLocaleString() : "—" },
               ].map((k) => (
                 <div key={k.label} className="bg-gray-50 rounded-lg p-3">
                   <p className="text-xs text-gray-400">{k.label}</p>
@@ -234,7 +235,7 @@ export default function BottlenecksPage() {
             </div>
             {viewBn.recommendation && (
               <div className="bg-blue-50 rounded-lg p-3 mb-4">
-                <p className="text-xs font-semibold text-blue-600 mb-1">Recommendation</p>
+                <p className="text-xs font-semibold text-blue-600 mb-1">{tx("Recommendation")}</p>
                 <p className="text-sm text-blue-800">{viewBn.recommendation}</p>
               </div>
             )}
@@ -244,7 +245,7 @@ export default function BottlenecksPage() {
                 disabled={resolvebn.isPending}
                 className="w-full bg-green-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-40"
               >
-                {resolvebn.isPending ? "Resolving…" : "Mark as Resolved"}
+                {resolvebn.isPending ? tx("Resolving…") : tx("Mark as Resolved")}
               </button>
             )}
           </div>

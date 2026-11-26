@@ -35,6 +35,7 @@ import {
   type CompressorStatus,
 } from "@/lib/compressor";
 import { importApi, type ImportResult } from "@/lib/importApi";
+import { tx } from "@/lib/i18n/core";
 
 // ── Palette ─────────────────────────────────────────────────────────────────
 const SKY    = "#38bdf8";
@@ -109,18 +110,18 @@ function ImportModal({ module, label, onClose }: { module: string; label: string
         qc.invalidateQueries({ queryKey: ["cpr-kpis"] });
       }
     } catch (e: unknown) {
-      setErr(e instanceof Error ? e.message : "Unknown error");
+      setErr(e instanceof Error ? e.message : tx("Unknown error"));
     } finally { setBusy(false); }
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
       <div className="bg-slate-800 border border-slate-700 rounded-xl w-full max-w-lg p-6 space-y-4">
-        <h3 className="text-white font-semibold text-lg">Import {label}</h3>
+        <h3 className="text-white font-semibold text-lg">{tx("Import")} {label}</h3>
         <div className="space-y-2">
           <button onClick={() => importApi.downloadTemplate(module)}
             className="text-xs text-sky-400 hover:text-sky-300 underline">
-            Download CSV template
+            {tx("Download CSV template")}
           </button>
           <input type="file" accept=".csv"
             onChange={e => setFile(e.target.files?.[0] ?? null)}
@@ -129,24 +130,24 @@ function ImportModal({ module, label, onClose }: { module: string; label: string
         {err && <p className="text-red-400 text-sm">{err}</p>}
         {result && (
           <div className="text-sm space-y-1">
-            <p className="text-slate-300">Rows: {result.total_rows} | Valid: {result.valid_rows} | Failed: {result.failed_rows}</p>
+            <p className="text-slate-300">{tx("Rows:")} {result.total_rows} {tx("| Valid:")} {result.valid_rows} {tx("| Failed:")} {result.failed_rows}</p>
             {result.errors.slice(0, 5).map((e, i) => (
-              <p key={i} className="text-red-400">Row {e.row}: {e.message}</p>
+              <p key={i} className="text-red-400">{tx("Row")} {e.row}: {e.message}</p>
             ))}
-            {result.imported && <p className="text-emerald-400 font-medium">Import complete.</p>}
+            {result.imported && <p className="text-emerald-400 font-medium">{tx("Import complete.")}</p>}
           </div>
         )}
         <div className="flex gap-2 pt-2">
           <button disabled={!file || busy} onClick={() => run(false)}
             className="px-3 py-1.5 text-sm bg-slate-700 hover:bg-slate-600 text-white rounded disabled:opacity-40">
-            {busy ? "…" : "Validate"}
+            {busy ? "…" : tx("Validate")}
           </button>
           <button disabled={!file || busy} onClick={() => run(true)}
             className="px-3 py-1.5 text-sm bg-sky-600 hover:bg-sky-500 text-white rounded disabled:opacity-40">
-            {busy ? "…" : "Import"}
+            {busy ? "…" : tx("Import")}
           </button>
           <button onClick={onClose} className="ml-auto px-3 py-1.5 text-sm text-slate-400 hover:text-white">
-            Close
+            {tx("Close")}
           </button>
         </div>
       </div>
@@ -297,23 +298,23 @@ export default function CompressorPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-white">Compressor &amp; Compressed Air</h1>
+          <h1 className="text-2xl font-semibold text-white">{tx("Compressor & Compressed Air")}</h1>
           <p className="text-sm text-slate-400 mt-0.5">
-            Operational records, KPI monitoring, and cost allocation for plant air systems
+            {tx("Operational records, KPI monitoring, and cost allocation for plant air systems")}
           </p>
         </div>
         <div className="flex gap-2">
           <button onClick={() => setImportModule("compressor_records")}
             className="px-3 py-1.5 text-sm bg-slate-700 hover:bg-slate-600 rounded text-slate-200">
-            Import Records
+            {tx("Import Records")}
           </button>
           <button onClick={() => setImportModule("air_transactions")}
             className="px-3 py-1.5 text-sm bg-slate-700 hover:bg-slate-600 rounded text-slate-200">
-            Import Transactions
+            {tx("Import Transactions")}
           </button>
           <button onClick={() => { setForm(emptyForm()); setCreateOpen(true); }}
             className="px-3 py-1.5 text-sm bg-sky-600 hover:bg-sky-500 rounded text-white">
-            + Add Record
+            {tx("+ Add Record")}
           </button>
         </div>
       </div>
@@ -333,31 +334,31 @@ export default function CompressorPage() {
             </div>
           ))}
           <div>
-            <label className="text-xs text-slate-400 block mb-1">Compressor</label>
+            <label className="text-xs text-slate-400 block mb-1">{tx("Compressor")}</label>
             <select value={assetId} onChange={e => setAssetId(e.target.value)}
               className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-sm text-white">
-              <option value="">All</option>
+              <option value="">{tx("All")}</option>
               {assets.map(a => <option key={a.id} value={a.id}>{a.asset_no} — {a.name}</option>)}
             </select>
           </div>
           <div>
-            <label className="text-xs text-slate-400 block mb-1">Department</label>
+            <label className="text-xs text-slate-400 block mb-1">{tx("Department")}</label>
             <input type="text" value={department} onChange={e => setDepartment(e.target.value)}
-              placeholder="e.g. Utilities"
+              placeholder={tx("e.g. Utilities")}
               className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-sm text-white placeholder-slate-500" />
           </div>
           <div>
-            <label className="text-xs text-slate-400 block mb-1">Shift</label>
+            <label className="text-xs text-slate-400 block mb-1">{tx("Shift")}</label>
             <select value={shiftRef} onChange={e => setShiftRef(e.target.value)}
               className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-sm text-white">
-              <option value="">All</option>
-              {["A","B","C","Day","Night"].map(s => <option key={s}>{s}</option>)}
+              <option value="">{tx("All")}</option>
+              {["A","B","C",tx("Day"),tx("Night")].map(s => <option key={s}>{s}</option>)}
             </select>
           </div>
           <div>
-            <label className="text-xs text-slate-400 block mb-1">Line</label>
+            <label className="text-xs text-slate-400 block mb-1">{tx("Line")}</label>
             <input type="text" value={prodLine} onChange={e => setProdLine(e.target.value)}
-              placeholder="e.g. LINE-01"
+              placeholder={tx("e.g. LINE-01")}
               className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-sm text-white placeholder-slate-500" />
           </div>
         </div>
@@ -365,61 +366,61 @@ export default function CompressorPage() {
 
       {/* KPI strip */}
       {kpisLoading ? (
-        <div className="text-slate-400 text-sm">Loading KPIs…</div>
+        <div className="text-slate-400 text-sm">{tx("Loading KPIs…")}</div>
       ) : K && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-          <KPICard label="Air Generated"
+          <KPICard label={tx("Air Generated")}
             value={`${n(K.total_air_nm3, 0)} Nm³`}
             accent="border-sky-500/40" />
-          <KPICard label="Electricity Used"
+          <KPICard label={tx("Electricity Used")}
             value={`${n(K.total_electricity_kwh, 1)} kWh`}
             accent="border-yellow-500/40" />
-          <KPICard label="Specific Energy"
+          <KPICard label={tx("Specific Energy")}
             value={K.specific_energy_kwh_nm3 != null ? `${n(K.specific_energy_kwh_nm3, 4)} kWh/Nm³` : "—"}
             sub="Target: < 0.12 kWh/Nm³"
             flag={K.flag_poor_efficiency}
             flagMsg="Above 0.12 — check leaks/idle"
             accent="border-orange-500/40" />
-          <KPICard label="Utilisation"
+          <KPICard label={tx("Utilisation")}
             value={K.utilization_pct != null ? `${n(K.utilization_pct, 1)}%` : "—"}
             sub={K.total_runtime_hours != null ? `${n(K.total_runtime_hours, 1)} h runtime` : undefined}
             accent="border-green-500/40" />
-          <KPICard label="Idle Run Ratio"
+          <KPICard label={tx("Idle Run Ratio")}
             value={K.idle_run_ratio != null ? `${n(K.idle_run_ratio, 1)}%` : "—"}
             sub={K.total_idle_hours != null ? `${n(K.total_idle_hours, 1)} h idle` : undefined}
             flag={K.flag_high_idle}
             flagMsg="Above 20% — investigate demand"
             accent="border-amber-500/40" />
-          <KPICard label="Discharge Pressure"
+          <KPICard label={tx("Discharge Pressure")}
             value={K.avg_discharge_pressure_bar != null ? `${n(K.avg_discharge_pressure_bar, 2)} bar` : "—"}
             sub={K.avg_line_pressure_bar != null ? `Line: ${n(K.avg_line_pressure_bar, 2)} bar` : undefined}
             accent="border-blue-500/40" />
-          <KPICard label="Pressure Drop"
+          <KPICard label={tx("Pressure Drop")}
             value={K.avg_pressure_drop_bar != null ? `${n(K.avg_pressure_drop_bar, 3)} bar` : "—"}
             flag={K.flag_pressure_drop}
             flagMsg="Above 0.3 bar — check distribution"
             accent="border-violet-500/40" />
-          <KPICard label="Leak Estimate"
+          <KPICard label={tx("Leak Estimate")}
             value={K.avg_leak_pct != null ? `${n(K.avg_leak_pct, 1)}%` : "—"}
             sub={K.total_leak_nm3 != null ? `${n(K.total_leak_nm3, 0)} Nm³ lost` : undefined}
             flag={K.flag_leak_detected}
             flagMsg="Above 5% — schedule leak hunt"
             accent="border-red-500/40" />
-          <KPICard label="Night Consumption"
+          <KPICard label={tx("Night Consumption")}
             value={K.total_night_kwh != null ? `${n(K.total_night_kwh, 1)} kWh` : "—"}
             sub={K.night_pct != null ? `${n(K.night_pct, 1)}% of total` : undefined}
             flag={K.flag_high_night}
             flagMsg="Above 15% of total — check auto-stop"
             accent="border-teal-500/40" />
-          <KPICard label="Air Cost / Nm³"
+          <KPICard label={tx("Air Cost / Nm³")}
             value={K.air_cost_per_nm3 != null ? `$${n(K.air_cost_per_nm3, 4)}` : "—"}
             sub={K.air_cost_total != null ? `Total: $${n(K.air_cost_total, 0)}` : undefined}
             accent="border-emerald-500/40" />
-          <KPICard label="Dryer Dew Point"
+          <KPICard label={tx("Dryer Dew Point")}
             value={K.avg_dryer_dew_point_c != null ? `${n(K.avg_dryer_dew_point_c, 1)} °C` : "—"}
             sub="Target: ≤ −20 °C PDP"
             accent="border-slate-600" />
-          <KPICard label="Records / Anomalies"
+          <KPICard label={tx("Records / Anomalies")}
             value={`${K.record_count}`}
             sub={`${K.anomaly_count} anomalies · ${K.maintenance_count} maint · ${K.start_stop_total} starts`}
             accent="border-slate-600" />
@@ -428,9 +429,9 @@ export default function CompressorPage() {
 
       {/* Daily trend — air + electricity */}
       <div className="bg-slate-800 border border-slate-700 rounded-lg p-4 space-y-3">
-        <h2 className="text-sm font-medium text-slate-200">Daily Trend — Air Volume &amp; Electricity</h2>
+        <h2 className="text-sm font-medium text-slate-200">{tx("Daily Trend — Air Volume & Electricity")}</h2>
         {trendData.length === 0 ? (
-          <p className="text-slate-500 text-sm py-8 text-center">No data in selected range</p>
+          <p className="text-slate-500 text-sm py-8 text-center">{tx("No data in selected range")}</p>
         ) : (
           <ResponsiveContainer width="100%" height={240}>
             <AreaChart data={trendData} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
@@ -461,7 +462,7 @@ export default function CompressorPage() {
       {/* Specific energy trend */}
       {trendData.some(t => t.se != null) && (
         <div className="bg-slate-800 border border-slate-700 rounded-lg p-4 space-y-3">
-          <h2 className="text-sm font-medium text-slate-200">Specific Energy — kWh/Nm³</h2>
+          <h2 className="text-sm font-medium text-slate-200">{tx("Specific Energy — kWh/Nm³")}</h2>
           <ResponsiveContainer width="100%" height={160}>
             <LineChart data={trendData} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
@@ -480,9 +481,9 @@ export default function CompressorPage() {
 
         {/* Shift */}
         <div className="bg-slate-800 border border-slate-700 rounded-lg p-4 space-y-3">
-          <h2 className="text-sm font-medium text-slate-200">Shift Analysis</h2>
+          <h2 className="text-sm font-medium text-slate-200">{tx("Shift Analysis")}</h2>
           {shiftData.length === 0 ? (
-            <p className="text-slate-500 text-sm py-6 text-center">No shift data</p>
+            <p className="text-slate-500 text-sm py-6 text-center">{tx("No shift data")}</p>
           ) : (
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={shiftData} layout="vertical" margin={{ top: 0, right: 16, left: 40, bottom: 0 }}>
@@ -502,7 +503,7 @@ export default function CompressorPage() {
         {/* Breakdown */}
         <div className="bg-slate-800 border border-slate-700 rounded-lg p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-medium text-slate-200">Air Consumption Breakdown</h2>
+            <h2 className="text-sm font-medium text-slate-200">{tx("Air Consumption Breakdown")}</h2>
             <select value={bdDim} onChange={e => setBdDim(e.target.value as typeof bdDim)}
               className="text-xs bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white">
               {(["department","line","machine","building_area","shift"] as const).map(d => (
@@ -511,7 +512,7 @@ export default function CompressorPage() {
             </select>
           </div>
           {bdData.length === 0 ? (
-            <p className="text-slate-500 text-sm py-6 text-center">No transaction data</p>
+            <p className="text-slate-500 text-sm py-6 text-center">{tx("No transaction data")}</p>
           ) : (
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={bdData} layout="vertical" margin={{ top: 0, right: 16, left: 60, bottom: 0 }}>
@@ -530,10 +531,10 @@ export default function CompressorPage() {
             <table className="w-full text-xs mt-2">
               <thead>
                 <tr className="text-slate-400 text-left">
-                  <th className="pb-1">Group</th>
-                  <th className="pb-1 text-right">Nm³</th>
+                  <th className="pb-1">{tx("Group")}</th>
+                  <th className="pb-1 text-right">{tx("Nm³")}</th>
                   <th className="pb-1 text-right">%</th>
-                  <th className="pb-1 text-right">Cost</th>
+                  <th className="pb-1 text-right">{tx("Cost")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -554,35 +555,35 @@ export default function CompressorPage() {
       {/* Records table */}
       <div className="bg-slate-800 border border-slate-700 rounded-lg overflow-hidden">
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700">
-          <h2 className="text-sm font-medium text-slate-200">Compressor Operational Records</h2>
+          <h2 className="text-sm font-medium text-slate-200">{tx("Compressor Operational Records")}</h2>
           <button
             onClick={() => downloadCompressorCsv(scope as Record<string, string | number | boolean | undefined>, "compressor_records.csv")}
             className="text-xs text-slate-400 hover:text-white px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded">
-            Export CSV
+            {tx("Export CSV")}
           </button>
         </div>
 
         {recsLoading ? (
-          <div className="p-6 text-slate-400 text-sm">Loading records…</div>
+          <div className="p-6 text-slate-400 text-sm">{tx("Loading records…")}</div>
         ) : records.length === 0 ? (
-          <div className="p-6 text-slate-500 text-sm text-center">No records found</div>
+          <div className="p-6 text-slate-500 text-sm text-center">{tx("No records found")}</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-slate-900/40">
                 <tr className="text-xs text-slate-400 text-left">
-                  <th className="px-4 py-2">Record No.</th>
-                  <th className="px-4 py-2">Asset</th>
-                  <th className="px-4 py-2">Date/Time</th>
-                  <th className="px-4 py-2">Shift</th>
-                  <th className="px-4 py-2 text-right">Air (Nm³)</th>
+                  <th className="px-4 py-2">{tx("Record No.")}</th>
+                  <th className="px-4 py-2">{tx("Asset")}</th>
+                  <th className="px-4 py-2">{tx("Date/Time")}</th>
+                  <th className="px-4 py-2">{tx("Shift")}</th>
+                  <th className="px-4 py-2 text-right">{tx("Air (Nm³)")}</th>
                   <th className="px-4 py-2 text-right">kWh</th>
-                  <th className="px-4 py-2 text-right">SE (kWh/Nm³)</th>
-                  <th className="px-4 py-2 text-right">Load %</th>
-                  <th className="px-4 py-2 text-right">Idle %</th>
-                  <th className="px-4 py-2">Dryer</th>
-                  <th className="px-4 py-2">Status</th>
-                  <th className="px-4 py-2 text-center">Flags</th>
+                  <th className="px-4 py-2 text-right">{tx("SE (kWh/Nm³)")}</th>
+                  <th className="px-4 py-2 text-right">{tx("Load %")}</th>
+                  <th className="px-4 py-2 text-right">{tx("Idle %")}</th>
+                  <th className="px-4 py-2">{tx("Dryer")}</th>
+                  <th className="px-4 py-2">{tx("Status")}</th>
+                  <th className="px-4 py-2 text-center">{tx("Flags")}</th>
                   <th className="px-4 py-2"></th>
                 </tr>
               </thead>
@@ -628,16 +629,16 @@ export default function CompressorPage() {
                         <StatusBadge status={rec.status as CompressorStatus} />
                       </td>
                       <td className="px-4 py-2 text-center text-sm">
-                        {rec.is_anomaly       && <span title="Anomaly" className="text-red-400 mr-1">⚠</span>}
-                        {rec.leak_test_done   && <span title="Leak test done" className="text-amber-400 mr-1">🔍</span>}
-                        {rec.maintenance_flag && <span title="Maintenance" className="text-violet-400">🔧</span>}
+                        {rec.is_anomaly       && <span title={tx("Anomaly")} className="text-red-400 mr-1">⚠</span>}
+                        {rec.leak_test_done   && <span title={tx("Leak test done")} className="text-amber-400 mr-1">🔍</span>}
+                        {rec.maintenance_flag && <span title={tx("Maintenance")} className="text-violet-400">🔧</span>}
                       </td>
                       <td className="px-4 py-2" onClick={e => e.stopPropagation()}>
                         <div className="flex gap-2 justify-end">
                           <button onClick={() => { setForm({ ...rec }); setEditRec(rec); }}
-                            className="text-xs text-sky-400 hover:text-sky-300">Edit</button>
+                            className="text-xs text-sky-400 hover:text-sky-300">{tx("Edit")}</button>
                           <button onClick={() => setDeleteRec(rec)}
-                            className="text-xs text-red-400 hover:text-red-300">Delete</button>
+                            className="text-xs text-red-400 hover:text-red-300">{tx("Delete")}</button>
                         </div>
                       </td>
                     </tr>
@@ -648,12 +649,12 @@ export default function CompressorPage() {
           </div>
         )}
         <div className="flex items-center justify-between px-4 py-2 border-t border-slate-700 text-xs text-slate-400">
-          <span>Showing {recPage * REC_LIMIT + 1}–{recPage * REC_LIMIT + records.length}</span>
+          <span>{tx("Showing")} {recPage * REC_LIMIT + 1}–{recPage * REC_LIMIT + records.length}</span>
           <div className="flex gap-2">
             <button disabled={recPage === 0} onClick={() => setRecPage(p => p - 1)}
-              className="px-2 py-1 bg-slate-700 rounded disabled:opacity-40">Prev</button>
+              className="px-2 py-1 bg-slate-700 rounded disabled:opacity-40">{tx("Prev")}</button>
             <button disabled={records.length < REC_LIMIT} onClick={() => setRecPage(p => p + 1)}
-              className="px-2 py-1 bg-slate-700 rounded disabled:opacity-40">Next</button>
+              className="px-2 py-1 bg-slate-700 rounded disabled:opacity-40">{tx("Next")}</button>
           </div>
         </div>
       </div>
@@ -675,18 +676,18 @@ export default function CompressorPage() {
               <div className="flex gap-2 flex-wrap">
                 {viewRec.is_anomaly && (
                   <span className="px-2 py-0.5 bg-red-500/10 border border-red-500/20 text-red-400 text-xs rounded">
-                    Anomaly: {viewRec.anomaly_note ?? "flagged"}
+                    {tx("Anomaly:")} {viewRec.anomaly_note ?? tx("flagged")}
                   </span>
                 )}
                 {viewRec.maintenance_flag && (
                   <span className="px-2 py-0.5 bg-violet-500/10 border border-violet-500/20 text-violet-400 text-xs rounded">
-                    Maintenance flag
+                    {tx("Maintenance flag")}
                   </span>
                 )}
                 {viewRec.leak_test_done && (
                   <span className="px-2 py-0.5 bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs rounded">
-                    Leak test done
-                    {viewRec.leak_estimation_pct != null ? ` — ${viewRec.leak_estimation_pct}% estimated` : ""}
+                    {tx("Leak test done")}
+                    {viewRec.leak_estimation_pct != null ? tx(" — {leak_estimation_pct}% estimated", { leak_estimation_pct: viewRec.leak_estimation_pct }) : ""}
                   </span>
                 )}
               </div>
@@ -728,8 +729,8 @@ export default function CompressorPage() {
             </div>
             <div className="flex justify-end gap-2 pt-2">
               <button onClick={() => { setForm({ ...viewRec }); setEditRec(viewRec); setViewRec(null); }}
-                className="px-3 py-1.5 text-sm bg-sky-600 hover:bg-sky-500 text-white rounded">Edit</button>
-              <button onClick={() => setViewRec(null)} className="px-3 py-1.5 text-sm text-slate-400 hover:text-white">Close</button>
+                className="px-3 py-1.5 text-sm bg-sky-600 hover:bg-sky-500 text-white rounded">{tx("Edit")}</button>
+              <button onClick={() => setViewRec(null)} className="px-3 py-1.5 text-sm text-slate-400 hover:text-white">{tx("Close")}</button>
             </div>
           </div>
         </div>
@@ -740,51 +741,51 @@ export default function CompressorPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className="bg-slate-800 border border-slate-700 rounded-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-6 space-y-5">
             <h3 className="text-white font-semibold text-lg">
-              {editRec ? "Edit Compressor Record" : "New Compressor Record"}
+              {editRec ? tx("Edit Compressor Record") : tx("New Compressor Record")}
             </h3>
 
             {/* Identity */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-xs text-slate-400 block mb-1">Compressor Asset *</label>
+                <label className="text-xs text-slate-400 block mb-1">{tx("Compressor Asset *")}</label>
                 <select value={form.asset_id ?? ""}
                   onChange={e => fSet("asset_id", e.target.value)}
                   className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-sm text-white">
-                  <option value="">Select asset…</option>
+                  <option value="">{tx("Select asset…")}</option>
                   {assets.map(a => <option key={a.id} value={a.id}>{a.asset_no} — {a.name}</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-xs text-slate-400 block mb-1">Record Date/Time *</label>
+                <label className="text-xs text-slate-400 block mb-1">{tx("Record Date/Time *")}</label>
                 <input type="datetime-local" value={(form.record_datetime ?? "").slice(0, 16)}
                   onChange={e => fSet("record_datetime", e.target.value)}
                   className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-sm text-white" />
               </div>
               <div>
-                <label className="text-xs text-slate-400 block mb-1">Shift</label>
+                <label className="text-xs text-slate-400 block mb-1">{tx("Shift")}</label>
                 <select value={form.shift_ref ?? ""}
                   onChange={e => fSet("shift_ref", e.target.value || undefined)}
                   className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-sm text-white">
                   <option value="">—</option>
-                  {["A","B","C","Day","Night"].map(s => <option key={s}>{s}</option>)}
+                  {["A","B","C",tx("Day"),tx("Night")].map(s => <option key={s}>{s}</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-xs text-slate-400 block mb-1">Department</label>
+                <label className="text-xs text-slate-400 block mb-1">{tx("Department")}</label>
                 <input type="text" value={form.department ?? ""}
                   onChange={e => fSet("department", e.target.value || undefined)}
                   className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-sm text-white placeholder-slate-500"
-                  placeholder="e.g. Utilities" />
+                  placeholder={tx("e.g. Utilities")} />
               </div>
               <div>
-                <label className="text-xs text-slate-400 block mb-1">Production Line</label>
+                <label className="text-xs text-slate-400 block mb-1">{tx("Production Line")}</label>
                 <input type="text" value={form.production_line ?? ""}
                   onChange={e => fSet("production_line", e.target.value || undefined)}
                   className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-sm text-white placeholder-slate-500"
-                  placeholder="e.g. LINE-01" />
+                  placeholder={tx("e.g. LINE-01")} />
               </div>
               <div>
-                <label className="text-xs text-slate-400 block mb-1">Status</label>
+                <label className="text-xs text-slate-400 block mb-1">{tx("Status")}</label>
                 <select value={form.status ?? "RUNNING"}
                   onChange={e => fSet("status", e.target.value)}
                   className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-sm text-white">
@@ -797,7 +798,7 @@ export default function CompressorPage() {
 
             {/* Production & time */}
             <fieldset className="border border-slate-700 rounded p-3 space-y-3">
-              <legend className="text-xs text-slate-400 px-1">Air Production &amp; Time Breakdown</legend>
+              <legend className="text-xs text-slate-400 px-1">{tx("Air Production & Time Breakdown")}</legend>
               <div className="grid grid-cols-3 gap-3">
                 {[
                   ["Period Hours",       "period_hours"],
@@ -823,7 +824,7 @@ export default function CompressorPage() {
 
             {/* Pressure */}
             <fieldset className="border border-slate-700 rounded p-3 space-y-3">
-              <legend className="text-xs text-slate-400 px-1">Pressure Points (bar)</legend>
+              <legend className="text-xs text-slate-400 px-1">{tx("Pressure Points (bar)")}</legend>
               <div className="grid grid-cols-3 gap-3">
                 {[
                   ["Inlet",          "inlet_pressure_bar"],
@@ -846,10 +847,10 @@ export default function CompressorPage() {
 
             {/* Dryer & air quality */}
             <fieldset className="border border-slate-700 rounded p-3 space-y-3">
-              <legend className="text-xs text-slate-400 px-1">Dryer &amp; Air Quality</legend>
+              <legend className="text-xs text-slate-400 px-1">{tx("Dryer & Air Quality")}</legend>
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="text-xs text-slate-400 block mb-1">Dryer Status</label>
+                  <label className="text-xs text-slate-400 block mb-1">{tx("Dryer Status")}</label>
                   <select value={form.dryer_status ?? ""}
                     onChange={e => fSet("dryer_status", e.target.value || undefined)}
                     className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-sm text-white">
@@ -877,12 +878,12 @@ export default function CompressorPage() {
 
             {/* Leak & night */}
             <fieldset className="border border-slate-700 rounded p-3 space-y-3">
-              <legend className="text-xs text-slate-400 px-1">Leak Testing &amp; Night Consumption</legend>
+              <legend className="text-xs text-slate-400 px-1">{tx("Leak Testing & Night Consumption")}</legend>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <div className="flex items-center gap-2 col-span-1">
                   <input type="checkbox" id="leak_done" checked={!!form.leak_test_done}
                     onChange={e => fSet("leak_test_done", e.target.checked)} />
-                  <label htmlFor="leak_done" className="text-sm text-slate-300">Leak test done</label>
+                  <label htmlFor="leak_done" className="text-sm text-slate-300">{tx("Leak test done")}</label>
                 </div>
                 {[
                   ["Leak Estimate (%)",   "leak_estimation_pct"],
@@ -906,15 +907,15 @@ export default function CompressorPage() {
               <div className="flex items-center gap-2">
                 <input type="checkbox" id="maint" checked={!!form.maintenance_flag}
                   onChange={e => fSet("maintenance_flag", e.target.checked)} />
-                <label htmlFor="maint" className="text-sm text-slate-300">Maintenance flag</label>
+                <label htmlFor="maint" className="text-sm text-slate-300">{tx("Maintenance flag")}</label>
               </div>
               <div className="flex items-center gap-2">
                 <input type="checkbox" id="anomaly" checked={!!form.is_anomaly}
                   onChange={e => fSet("is_anomaly", e.target.checked)} />
-                <label htmlFor="anomaly" className="text-sm text-slate-300">Anomaly</label>
+                <label htmlFor="anomaly" className="text-sm text-slate-300">{tx("Anomaly")}</label>
               </div>
               <div className="col-span-2">
-                <label className="text-xs text-slate-400 block mb-1">Notes / Remarks</label>
+                <label className="text-xs text-slate-400 block mb-1">{tx("Notes / Remarks")}</label>
                 <textarea value={form.notes ?? ""}
                   onChange={e => fSet("notes", e.target.value || undefined)}
                   rows={2}
@@ -934,10 +935,10 @@ export default function CompressorPage() {
                 }}
                 disabled={createMut.isPending || updateMut.isPending}
                 className="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded text-sm disabled:opacity-40">
-                {(createMut.isPending || updateMut.isPending) ? "Saving…" : editRec ? "Save Changes" : "Create Record"}
+                {(createMut.isPending || updateMut.isPending) ? tx("Saving…") : editRec ? tx("Save Changes") : tx("Create Record")}
               </button>
               <button onClick={() => { setCreateOpen(false); setEditRec(null); }}
-                className="px-4 py-2 text-slate-400 hover:text-white text-sm">Cancel</button>
+                className="px-4 py-2 text-slate-400 hover:text-white text-sm">{tx("Cancel")}</button>
             </div>
           </div>
         </div>
@@ -947,17 +948,17 @@ export default function CompressorPage() {
       {deleteRec && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className="bg-slate-800 border border-slate-700 rounded-xl w-full max-w-sm p-6 space-y-4">
-            <h3 className="text-white font-semibold">Delete Record</h3>
+            <h3 className="text-white font-semibold">{tx("Delete Record")}</h3>
             <p className="text-sm text-slate-300">
-              Delete <span className="font-mono">{deleteRec.record_no}</span>? This cannot be undone.
+              {tx("Delete")} <span className="font-mono">{deleteRec.record_no}</span>{tx("? This cannot be undone.")}
             </p>
             <div className="flex gap-2">
               <button onClick={() => deleteMut.mutate(deleteRec.id)} disabled={deleteMut.isPending}
                 className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded text-sm disabled:opacity-40">
-                {deleteMut.isPending ? "Deleting…" : "Delete"}
+                {deleteMut.isPending ? tx("Deleting…") : tx("Delete")}
               </button>
               <button onClick={() => setDeleteRec(null)}
-                className="px-4 py-2 text-slate-400 hover:text-white text-sm">Cancel</button>
+                className="px-4 py-2 text-slate-400 hover:text-white text-sm">{tx("Cancel")}</button>
             </div>
           </div>
         </div>
@@ -965,10 +966,10 @@ export default function CompressorPage() {
 
       {/* Import modals */}
       {importModule === "compressor_records" && (
-        <ImportModal module="compressor_records" label="Compressor Records" onClose={() => setImportModule(null)} />
+        <ImportModal module="compressor_records" label={tx("Compressor Records")} onClose={() => setImportModule(null)} />
       )}
       {importModule === "air_transactions" && (
-        <ImportModal module="air_transactions" label="Air Consumption Transactions" onClose={() => setImportModule(null)} />
+        <ImportModal module="air_transactions" label={tx("Air Consumption Transactions")} onClose={() => setImportModule(null)} />
       )}
     </div>
   );

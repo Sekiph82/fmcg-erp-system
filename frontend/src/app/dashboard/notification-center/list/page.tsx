@@ -6,6 +6,7 @@ import {
   TYPE_COLOR, TYPE_ICON, PRIORITY_COLOR, STATUS_COLOR,
   NOTIFICATION_TYPES, PRIORITIES,
 } from "@/lib/notifications_center";
+import { tx } from "@/lib/i18n/core";
 
 export default function NotificationListPage() {
   const [notifications, setNotifications] = useState<NCNotification[]>([]);
@@ -40,7 +41,7 @@ export default function NotificationListPage() {
   };
 
   const markAllRead = async () => {
-    if (!filters.user_id) { alert("Enter a user ID to mark all read"); return; }
+    if (!filters.user_id) { alert(tx("Enter a user ID to mark all read")); return; }
     await notificationsApi.markAllRead(filters.user_id);
     load();
   };
@@ -68,77 +69,77 @@ export default function NotificationListPage() {
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Notifications</h1>
-          {unread > 0 && <p className="text-sm text-orange-600 mt-0.5">{unread} unread</p>}
+          <h1 className="text-xl font-bold text-gray-900">{tx("Notifications")}</h1>
+          {unread > 0 && <p className="text-sm text-orange-600 mt-0.5">{unread} {tx("unread")}</p>}
         </div>
         <div className="flex gap-2">
           <button onClick={markAllRead} className="rounded border px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50">
-            Mark All Read
+            {tx("Mark All Read")}
           </button>
           <button onClick={() => setShowCompose(true)}
             className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
-            + Send Notification
+            {tx("+ Send Notification")}
           </button>
         </div>
       </div>
 
       <div className="flex gap-2 flex-wrap">
-        <input className="border rounded px-2 py-1 text-sm w-32" placeholder="User ID…"
+        <input className="border rounded px-2 py-1 text-sm w-32" placeholder={tx("User ID…")}
           value={filters.user_id} onChange={(e) => setFilters({ ...filters, user_id: e.target.value })} />
         <select className="border rounded px-2 py-1 text-sm" value={filters.notification_type}
           onChange={(e) => setFilters({ ...filters, notification_type: e.target.value })}>
-          <option value="">All Types</option>
+          <option value="">{tx("All Types")}</option>
           {NOTIFICATION_TYPES.map(t => <option key={t} value={t}>{t.replace(/_/g," ")}</option>)}
         </select>
         <select className="border rounded px-2 py-1 text-sm" value={filters.priority}
           onChange={(e) => setFilters({ ...filters, priority: e.target.value })}>
-          <option value="">All Priorities</option>
+          <option value="">{tx("All Priorities")}</option>
           {PRIORITIES.map(p => <option key={p} value={p}>{p}</option>)}
         </select>
         <select className="border rounded px-2 py-1 text-sm" value={filters.read_flag}
           onChange={(e) => setFilters({ ...filters, read_flag: e.target.value as "" | "true" | "false" })}>
-          <option value="">All</option>
-          <option value="false">Unread</option>
-          <option value="true">Read</option>
+          <option value="">{tx("All")}</option>
+          <option value="false">{tx("Unread")}</option>
+          <option value="true">{tx("Read")}</option>
         </select>
-        <input className="border rounded px-2 py-1 text-sm w-28" placeholder="Module…"
+        <input className="border rounded px-2 py-1 text-sm w-28" placeholder={tx("Module…")}
           value={filters.module} onChange={(e) => setFilters({ ...filters, module: e.target.value })} />
       </div>
 
       {showCompose && (
         <div className="bg-white border rounded-lg p-4 shadow-sm space-y-3">
-          <h2 className="font-semibold text-gray-800">Send Notification</h2>
+          <h2 className="font-semibold text-gray-800">{tx("Send Notification")}</h2>
           <div className="grid grid-cols-2 gap-3">
-            <div><label className="text-xs text-gray-500">User *</label>
-              <EntityPicker kind="user" label="User" value={compose.user_id} onChange={(id) => setCompose({ ...compose, user_id: id })} /></div>
-            <div><label className="text-xs text-gray-500">Type</label>
+            <div><label className="text-xs text-gray-500">{tx("User *")}</label>
+              <EntityPicker kind="user" label={tx("User")} value={compose.user_id} onChange={(id) => setCompose({ ...compose, user_id: id })} /></div>
+            <div><label className="text-xs text-gray-500">{tx("Type")}</label>
               <select className="w-full border rounded px-2 py-1 text-sm mt-1" value={compose.notification_type}
                 onChange={(e) => setCompose({ ...compose, notification_type: e.target.value as NotificationType })}>
                 {NOTIFICATION_TYPES.map(t => <option key={t} value={t}>{t.replace(/_/g," ")}</option>)}
               </select></div>
-            <div><label className="text-xs text-gray-500">Priority</label>
+            <div><label className="text-xs text-gray-500">{tx("Priority")}</label>
               <select className="w-full border rounded px-2 py-1 text-sm mt-1" value={compose.priority}
                 onChange={(e) => setCompose({ ...compose, priority: e.target.value as NotificationPriority })}>
                 {PRIORITIES.map(p => <option key={p} value={p}>{p}</option>)}
               </select></div>
-            <div><label className="text-xs text-gray-500">Module</label>
+            <div><label className="text-xs text-gray-500">{tx("Module")}</label>
               <input className="w-full border rounded px-2 py-1 text-sm mt-1" value={compose.module}
                 onChange={(e) => setCompose({ ...compose, module: e.target.value })} /></div>
-            <div className="col-span-2"><label className="text-xs text-gray-500">Title *</label>
+            <div className="col-span-2"><label className="text-xs text-gray-500">{tx("Title *")}</label>
               <input className="w-full border rounded px-2 py-1 text-sm mt-1" value={compose.title}
                 onChange={(e) => setCompose({ ...compose, title: e.target.value })} /></div>
-            <div className="col-span-2"><label className="text-xs text-gray-500">Message *</label>
+            <div className="col-span-2"><label className="text-xs text-gray-500">{tx("Message *")}</label>
               <textarea className="w-full border rounded px-2 py-1 text-sm mt-1" rows={3} value={compose.message}
                 onChange={(e) => setCompose({ ...compose, message: e.target.value })} /></div>
           </div>
           <div className="flex gap-2">
-            <button onClick={send} className="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">Send</button>
-            <button onClick={() => setShowCompose(false)} className="rounded border px-4 py-1.5 text-sm text-gray-600 hover:bg-gray-50">Cancel</button>
+            <button onClick={send} className="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">{tx("Send")}</button>
+            <button onClick={() => setShowCompose(false)} className="rounded border px-4 py-1.5 text-sm text-gray-600 hover:bg-gray-50">{tx("Cancel")}</button>
           </div>
         </div>
       )}
 
-      {loading ? <p className="text-gray-500 text-sm">Loading…</p> : (
+      {loading ? <p className="text-gray-500 text-sm">{tx("Loading…")}</p> : (
         <div className="space-y-2">
           {notifications.map((n) => (
             <div
@@ -166,7 +167,7 @@ export default function NotificationListPage() {
               </div>
             </div>
           ))}
-          {notifications.length === 0 && <p className="text-gray-400 text-sm text-center py-8">No notifications found.</p>}
+          {notifications.length === 0 && <p className="text-gray-400 text-sm text-center py-8">{tx("No notifications found.")}</p>}
         </div>
       )}
 
@@ -188,27 +189,27 @@ export default function NotificationListPage() {
             <h2 className="font-bold text-gray-900">{selected.title}</h2>
             <p className="text-sm text-gray-700">{selected.message}</p>
             <div className="text-xs text-gray-400 space-y-0.5">
-              <p>User: {selected.user_id}</p>
-              {selected.module && <p>Module: {selected.module}</p>}
-              {selected.reference_type && <p>Ref: {selected.reference_type} #{selected.reference_id}</p>}
-              <p>Status: <span className={STATUS_COLOR[selected.status]}>{selected.status}</span></p>
-              <p>Created: {new Date(selected.created_at).toLocaleString()}</p>
-              {selected.read_at && <p>Read: {new Date(selected.read_at).toLocaleString()}</p>}
+              <p>{tx("User:")} {selected.user_id}</p>
+              {selected.module && <p>{tx("Module:")} {selected.module}</p>}
+              {selected.reference_type && <p>{tx("Ref:")} {selected.reference_type} #{selected.reference_id}</p>}
+              <p>{tx("Status:")} <span className={STATUS_COLOR[selected.status]}>{selected.status}</span></p>
+              <p>{tx("Created:")} {new Date(selected.created_at).toLocaleString()}</p>
+              {selected.read_at && <p>{tx("Read:")} {new Date(selected.read_at).toLocaleString()}</p>}
             </div>
             <div className="flex gap-2 pt-2">
               {!selected.read_flag && (
                 <button onClick={() => { markRead(selected.notification_id); setSelected(null); }}
                   className="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">
-                  Mark Read
+                  {tx("Mark Read")}
                 </button>
               )}
               <button onClick={() => del(selected.notification_id)}
                 className="rounded border border-red-200 px-4 py-1.5 text-sm text-red-600 hover:bg-red-50">
-                Delete
+                {tx("Delete")}
               </button>
               <button onClick={() => setSelected(null)}
                 className="rounded border px-4 py-1.5 text-sm text-gray-600 hover:bg-gray-50">
-                Close
+                {tx("Close")}
               </button>
             </div>
           </div>

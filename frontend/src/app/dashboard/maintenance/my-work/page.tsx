@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { apiClient } from "@/lib/api";
 import { EntityPicker } from "@/components/EntityPicker";
+import { tx } from "@/lib/i18n/core";
 
 interface WO { id: string; wo_no: string; status: string; scheduled_date: string; started_at: string | null; plan: string | null;
   checklist: string | null; asset: string; asset_no: string; photos: number }
@@ -26,12 +27,12 @@ export default function MyJobs() {
   return (
     <div className="p-4 sm:p-6 max-w-2xl mx-auto space-y-3">
       <div>
-        <h1 className="text-xl font-bold text-gray-900">My Jobs</h1>
-        <p className="text-xs text-gray-500">Breakdowns first, then planned maintenance assigned to you.</p>
+        <h1 className="text-xl font-bold text-gray-900">{tx("My Jobs")}</h1>
+        <p className="text-xs text-gray-500">{tx("Breakdowns first, then planned maintenance assigned to you.")}</p>
       </div>
       {msg && <p role="status" className={`text-sm rounded px-3 py-2 ${msg.ok ? "bg-emerald-50 text-emerald-800" : "bg-red-50 text-red-700"}`}>{msg.text}</p>}
-      {!data ? <p className="text-sm text-gray-500">Loading…</p> : jobs.length === 0 ? (
-        <p className="text-sm text-gray-500 bg-white border rounded-xl p-4">No jobs assigned to you right now.</p>
+      {!data ? <p className="text-sm text-gray-500">{tx("Loading…")}</p> : jobs.length === 0 ? (
+        <p className="text-sm text-gray-500 bg-white border rounded-xl p-4">{tx("No jobs assigned to you right now.")}</p>
       ) : jobs.map((j) => (
         <JobCard key={j.row.id} job={j} open={open === j.row.id} onToggle={() => setOpen(open === j.row.id ? null : j.row.id)}
           onDone={(text) => { setMsg({ ok: true, text }); load(); }} onFail={(text) => setMsg({ ok: false, text })} />
@@ -58,7 +59,7 @@ function JobCard({ job, open, onToggle, onDone, onFail }: { job: Job; open: bool
     <div className={`bg-white border rounded-xl ${isBd ? "border-red-200" : ""}`}>
       <button onClick={onToggle} aria-expanded={open} className="w-full text-left p-3 flex justify-between gap-2">
         <span className="min-w-0">
-          <span className="block font-medium text-gray-900">{isBd ? "Breakdown" : (r as WO).plan ?? "Planned maintenance"} — {r.asset}</span>
+          <span className="block font-medium text-gray-900">{isBd ? tx("Breakdown") : (r as WO).plan ?? tx("Planned maintenance")} — {r.asset}</span>
           <span className="block text-xs text-gray-500">{title} · {r.asset_no} · {isBd ? `${(r as BD).severity.toLowerCase()} · since ${new Date((r as BD).since).toLocaleString()}` : `due ${(r as WO).scheduled_date}`}</span>
         </span>
         <span className={`shrink-0 text-xs rounded-full px-2 py-0.5 h-fit ${started ? "bg-amber-100 text-amber-800" : "bg-gray-100 text-gray-700"}`}>{r.status.replace("_", " ").toLowerCase()}</span>
@@ -70,31 +71,31 @@ function JobCard({ job, open, onToggle, onDone, onFail }: { job: Job; open: bool
           )}
           {!started ? (
             <button disabled={busy} onClick={() => run(() => apiClient.post(`${base}/start`), `${title} started.`)}
-              className="w-full py-2.5 rounded-lg bg-blue-600 text-white disabled:opacity-50">Start job</button>
+              className="w-full py-2.5 rounded-lg bg-blue-600 text-white disabled:opacity-50">{tx("Start job")}</button>
           ) : (<>
             <div className="grid grid-cols-[1fr_5rem_auto] gap-2 items-end">
-              <div><label className="block text-xs text-gray-500 mb-1">Spare part used</label>
-                <EntityPicker kind="spare_part" label="Spare part" value={spare.id} onChange={(id) => setSpare({ ...spare, id })} /></div>
-              <div><label className="block text-xs text-gray-500 mb-1">Qty</label>
-                <input aria-label="Quantity" type="number" min="0.0001" step="any" value={spare.qty} onChange={(e) => setSpare({ ...spare, qty: e.target.value })} className="w-full border rounded px-2 py-2 text-sm" /></div>
+              <div><label className="block text-xs text-gray-500 mb-1">{tx("Spare part used")}</label>
+                <EntityPicker kind="spare_part" label={tx("Spare part")} value={spare.id} onChange={(id) => setSpare({ ...spare, id })} /></div>
+              <div><label className="block text-xs text-gray-500 mb-1">{tx("Qty")}</label>
+                <input aria-label={tx("Quantity")} type="number" min="0.0001" step="any" value={spare.qty} onChange={(e) => setSpare({ ...spare, qty: e.target.value })} className="w-full border rounded px-2 py-2 text-sm" /></div>
               <button disabled={busy || !spare.id} onClick={() => run(() => apiClient.post(`${base}/spares`, { spare_part_id: spare.id, quantity: spare.qty }).then(() => setSpare({ id: "", qty: "1" })), "Spare part recorded.")}
-                className="py-2 px-3 rounded-lg border text-sm disabled:opacity-50">Add</button>
+                className="py-2 px-3 rounded-lg border text-sm disabled:opacity-50">{tx("Add")}</button>
             </div>
-            <label className="block text-xs text-gray-500">Photo ({r.photos}/10)
+            <label className="block text-xs text-gray-500">{tx("Photo (")}{r.photos}/10)
               <input type="file" accept="image/jpeg,image/png" capture="environment" disabled={busy} className="block mt-1 text-sm"
                 onChange={(e) => { const f = e.target.files?.[0]; if (!f) return; const fd = new FormData(); fd.append("file", f);
                   run(() => apiClient.post(`${base}/photo`, fd), "Photo added."); e.target.value = ""; }} />
             </label>
             {isBd ? (<>
-              <textarea aria-label="Root cause" placeholder="Root cause" value={cause} onChange={(e) => setCause(e.target.value)} rows={2} className="w-full border rounded-lg px-3 py-2" />
-              <textarea aria-label="What was done" placeholder="What was done to fix it" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="w-full border rounded-lg px-3 py-2" />
+              <textarea aria-label={tx("Root cause")} placeholder={tx("Root cause")} value={cause} onChange={(e) => setCause(e.target.value)} rows={2} className="w-full border rounded-lg px-3 py-2" />
+              <textarea aria-label={tx("What was done")} placeholder={tx("What was done to fix it")} value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="w-full border rounded-lg px-3 py-2" />
               <button disabled={busy || cause.trim().length < 3 || notes.trim().length < 3}
                 onClick={() => run(() => apiClient.post(`${base}/resolve`, { root_cause: cause, corrective_action: notes }), `${title} resolved.`)}
-                className="w-full py-2.5 rounded-lg bg-emerald-600 text-white disabled:opacity-50">Machine fixed — close breakdown</button>
+                className="w-full py-2.5 rounded-lg bg-emerald-600 text-white disabled:opacity-50">{tx("Machine fixed — close breakdown")}</button>
             </>) : (<>
-              <textarea aria-label="Completion notes" placeholder="What was done, readings, anything to follow up" value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} className="w-full border rounded-lg px-3 py-2" />
+              <textarea aria-label={tx("Completion notes")} placeholder={tx("What was done, readings, anything to follow up")} value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} className="w-full border rounded-lg px-3 py-2" />
               <button disabled={busy || notes.trim().length < 3} onClick={() => run(() => apiClient.post(`${base}/complete`, { notes }), `${title} completed.`)}
-                className="w-full py-2.5 rounded-lg bg-emerald-600 text-white disabled:opacity-50">Complete job</button>
+                className="w-full py-2.5 rounded-lg bg-emerald-600 text-white disabled:opacity-50">{tx("Complete job")}</button>
             </>)}
           </>)}
         </div>

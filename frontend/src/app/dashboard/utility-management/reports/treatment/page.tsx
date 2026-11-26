@@ -7,6 +7,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
 import { reportsApi } from "@/lib/utilitiesReports";
+import { tx } from "@/lib/i18n/core";
 
 const today = new Date().toISOString().slice(0, 10);
 const mtdStart = today.slice(0, 8) + "01";
@@ -34,7 +35,7 @@ function DateFilter({ from, to, onFrom, onTo }: { from: string; to: string; onFr
   return (
     <div className="flex gap-3 items-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3">
       <input type="date" className={ic} value={from} onChange={e => onFrom(e.target.value)} />
-      <span className="text-gray-400 text-xs">to</span>
+      <span className="text-gray-400 text-xs">{tx("to")}</span>
       <input type="date" className={ic} value={to} onChange={e => onTo(e.target.value)} />
     </div>
   );
@@ -48,15 +49,15 @@ function ChemicalTab({ dateFrom, dateTo }: { dateFrom: string; dateTo: string })
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <KpiCard label="Total Dosed" value={fmt(d?.total_dosed)} unit="kg" />
-        <KpiCard label="Total Cost" value={fmt(d?.total_cost, 2)} unit="$" />
-        <KpiCard label="Overdose Events" value={d?.overdose_count == null ? "—" : String(d.overdose_count)} warn={(d?.overdose_count ?? 0) > 0} />
-        <KpiCard label="Underdose Events" value={d?.underdose_count == null ? "—" : String(d.underdose_count)} warn={(d?.underdose_count ?? 0) > 0} />
+        <KpiCard label={tx("Total Dosed")} value={fmt(d?.total_dosed)} unit="kg" />
+        <KpiCard label={tx("Total Cost")} value={fmt(d?.total_cost, 2)} unit="$" />
+        <KpiCard label={tx("Overdose Events")} value={d?.overdose_count == null ? "—" : String(d.overdose_count)} warn={(d?.overdose_count ?? 0) > 0} />
+        <KpiCard label={tx("Underdose Events")} value={d?.underdose_count == null ? "—" : String(d.underdose_count)} warn={(d?.underdose_count ?? 0) > 0} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-          <h3 className="text-sm font-semibold mb-4">By Chemical</h3>
+          <h3 className="text-sm font-semibold mb-4">{tx("By Chemical")}</h3>
           <ResponsiveContainer width="100%" height={200}>
             <PieChart>
               <Pie data={d?.by_chemical ?? []} dataKey="value" nameKey="label" cx="50%" cy="50%" outerRadius={75} label={({ name, pct: p }: any) => `${name} ${p ? p.toFixed(0) : ""}%`}>
@@ -67,7 +68,7 @@ function ChemicalTab({ dateFrom, dateTo }: { dateFrom: string; dateTo: string })
           </ResponsiveContainer>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-          <h3 className="text-sm font-semibold mb-4">By Treatment Area</h3>
+          <h3 className="text-sm font-semibold mb-4">{tx("By Treatment Area")}</h3>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={d?.by_area ?? []} layout="vertical" margin={{ top: 4, right: 16, left: 60, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -82,14 +83,14 @@ function ChemicalTab({ dateFrom, dateTo }: { dateFrom: string; dateTo: string })
 
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div className="px-4 py-3 flex justify-between border-b border-gray-100 dark:border-gray-700">
-          <span className="text-xs text-gray-500">{d?.rows.length ?? 0} records</span>
-          <button onClick={() => reportsApi.exportChemicalTreatment(params)} className="px-3 py-1 text-xs bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">Export CSV</button>
+          <span className="text-xs text-gray-500">{d?.rows.length ?? 0} {tx("records")}</span>
+          <button onClick={() => reportsApi.exportChemicalTreatment(params)} className="px-3 py-1 text-xs bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">{tx("Export CSV")}</button>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 dark:bg-gray-700 text-xs uppercase text-gray-500">
               <tr>
-                {["Record", "Chemical", "Category", "Area", "Qty", "Unit", "Target ppm", "Actual ppm", "Cost", "OD", "UD"].map(h => (
+                {[tx("Record"), tx("Chemical"), tx("Category"), tx("Area"), tx("Qty"), tx("Unit"), tx("Target ppm"), tx("Actual ppm"), tx("Cost"), "OD", "UD"].map(h => (
                   <th key={h} className="px-3 py-3 text-left font-medium whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -110,7 +111,7 @@ function ChemicalTab({ dateFrom, dateTo }: { dateFrom: string; dateTo: string })
                   <td className="px-3 py-2 text-center">{row.underdose_flag ? <span className="text-amber-500 font-bold text-xs">UD</span> : "—"}</td>
                 </tr>
               ))}
-              {!d?.rows.length && <tr><td colSpan={11} className="px-4 py-8 text-center text-gray-400">No records</td></tr>}
+              {!d?.rows.length && <tr><td colSpan={11} className="px-4 py-8 text-center text-gray-400">{tx("No records")}</td></tr>}
             </tbody>
           </table>
         </div>
@@ -127,17 +128,17 @@ function SolarTab({ dateFrom, dateTo }: { dateFrom: string; dateTo: string }) {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
-        <KpiCard label="Generated" value={fmt(d?.total_generated_kwh, 0)} unit="kWh" />
-        <KpiCard label="Self-Consumed" value={fmt(d?.total_self_consumption_kwh, 0)} unit="kWh" ok={(d?.total_self_consumption_kwh ?? 0) > 0} />
-        <KpiCard label="Grid Export" value={fmt(d?.total_grid_export_kwh, 0)} unit="kWh" />
-        <KpiCard label="Avg PR Ratio" value={fmt(d?.avg_pr_ratio, 3)} ok={(d?.avg_pr_ratio ?? 0) >= 0.75} />
-        <KpiCard label="Solar Contribution" value={pct(d?.avg_contribution_pct)} ok={(d?.avg_contribution_pct ?? 0) >= 10} />
+        <KpiCard label={tx("Generated")} value={fmt(d?.total_generated_kwh, 0)} unit="kWh" />
+        <KpiCard label={tx("Self-Consumed")} value={fmt(d?.total_self_consumption_kwh, 0)} unit="kWh" ok={(d?.total_self_consumption_kwh ?? 0) > 0} />
+        <KpiCard label={tx("Grid Export")} value={fmt(d?.total_grid_export_kwh, 0)} unit="kWh" />
+        <KpiCard label={tx("Avg PR Ratio")} value={fmt(d?.avg_pr_ratio, 3)} ok={(d?.avg_pr_ratio ?? 0) >= 0.75} />
+        <KpiCard label={tx("Solar Contribution")} value={pct(d?.avg_contribution_pct)} ok={(d?.avg_contribution_pct ?? 0) >= 10} />
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-sm font-semibold">Solar Generation vs Consumption</h3>
-          <button onClick={() => reportsApi.exportSolarGeneration(params)} className="px-3 py-1.5 text-xs bg-yellow-500 text-white rounded-lg hover:bg-yellow-600">Export CSV</button>
+          <h3 className="text-sm font-semibold">{tx("Solar Generation vs Consumption")}</h3>
+          <button onClick={() => reportsApi.exportSolarGeneration(params)} className="px-3 py-1.5 text-xs bg-yellow-500 text-white rounded-lg hover:bg-yellow-600">{tx("Export CSV")}</button>
         </div>
         <ResponsiveContainer width="100%" height={240}>
           <LineChart data={d?.trend ?? []} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
@@ -157,7 +158,7 @@ function SolarTab({ dateFrom, dateTo }: { dateFrom: string; dateTo: string }) {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 dark:bg-gray-700 text-xs uppercase text-gray-500">
               <tr>
-                {["Date", "Asset", "Generated", "Self-Used", "Grid Export", "Irradiance", "PR Ratio", "Inv Eff %", "Capacity %", "Contribution %"].map(h => (
+                {[tx("Date"), tx("Asset"), tx("Generated"), tx("Self-Used"), tx("Grid Export"), tx("Irradiance"), tx("PR Ratio"), tx("Inv Eff %"), tx("Capacity %"), tx("Contribution %")].map(h => (
                   <th key={h} className="px-3 py-3 text-left font-medium whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -177,7 +178,7 @@ function SolarTab({ dateFrom, dateTo }: { dateFrom: string; dateTo: string }) {
                   <td className="px-3 py-2 text-right">{pct(row.solar_contribution_pct)}</td>
                 </tr>
               ))}
-              {!d?.rows.length && <tr><td colSpan={10} className="px-4 py-8 text-center text-gray-400">No records</td></tr>}
+              {!d?.rows.length && <tr><td colSpan={10} className="px-4 py-8 text-center text-gray-400">{tx("No records")}</td></tr>}
             </tbody>
           </table>
         </div>
@@ -197,17 +198,17 @@ function WastewaterTab({ dateFrom, dateTo }: { dateFrom: string; dateTo: string 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
-        <KpiCard label="Compliant" value={d?.compliant_count == null ? "—" : String(d.compliant_count)} ok={(d?.compliant_count ?? 0) > 0} />
-        <KpiCard label="Non-Compliant" value={d?.non_compliant_count == null ? "—" : String(d.non_compliant_count)} warn={(d?.non_compliant_count ?? 0) > 0} />
-        <KpiCard label="Borderline" value={d?.borderline_count == null ? "—" : String(d.borderline_count)} warn={(d?.borderline_count ?? 0) > 0} />
-        <KpiCard label="Compliance Rate" value={pct(d?.compliance_rate_pct)} ok={(d?.compliance_rate_pct ?? 0) >= 95} warn={(d?.compliance_rate_pct ?? 100) < 80} />
-        <KpiCard label="Avg COD Removal" value={pct(d?.avg_cod_removal_pct)} ok={(d?.avg_cod_removal_pct ?? 0) >= 85} />
+        <KpiCard label={tx("Compliant")} value={d?.compliant_count == null ? "—" : String(d.compliant_count)} ok={(d?.compliant_count ?? 0) > 0} />
+        <KpiCard label={tx("Non-Compliant")} value={d?.non_compliant_count == null ? "—" : String(d.non_compliant_count)} warn={(d?.non_compliant_count ?? 0) > 0} />
+        <KpiCard label={tx("Borderline")} value={d?.borderline_count == null ? "—" : String(d.borderline_count)} warn={(d?.borderline_count ?? 0) > 0} />
+        <KpiCard label={tx("Compliance Rate")} value={pct(d?.compliance_rate_pct)} ok={(d?.compliance_rate_pct ?? 0) >= 95} warn={(d?.compliance_rate_pct ?? 100) < 80} />
+        <KpiCard label={tx("Avg COD Removal")} value={pct(d?.avg_cod_removal_pct)} ok={(d?.avg_cod_removal_pct ?? 0) >= 85} />
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-sm font-semibold">Compliance Trend</h3>
-          <button onClick={() => reportsApi.exportWastewaterCompliance(params)} className="px-3 py-1.5 text-xs bg-teal-600 text-white rounded-lg hover:bg-teal-700">Export CSV</button>
+          <h3 className="text-sm font-semibold">{tx("Compliance Trend")}</h3>
+          <button onClick={() => reportsApi.exportWastewaterCompliance(params)} className="px-3 py-1.5 text-xs bg-teal-600 text-white rounded-lg hover:bg-teal-700">{tx("Export CSV")}</button>
         </div>
         <ResponsiveContainer width="100%" height={220}>
           <LineChart data={d?.trend ?? []} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
@@ -227,7 +228,7 @@ function WastewaterTab({ dateFrom, dateTo }: { dateFrom: string; dateTo: string 
           <table className="w-full text-sm">
             <thead className="bg-gray-50 dark:bg-gray-700 text-xs uppercase text-gray-500">
               <tr>
-                {["Record", "DateTime", "Stage", "COD In", "COD Out", "COD Rmv %", "BOD In", "Eff pH", "DO", "Sludge", "Status"].map(h => (
+                {[tx("Record"), tx("DateTime"), tx("Stage"), tx("COD In"), tx("COD Out"), tx("COD Rmv %"), tx("BOD In"), tx("Eff pH"), "DO", tx("Sludge"), tx("Status")].map(h => (
                   <th key={h} className="px-3 py-3 text-left font-medium whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -248,7 +249,7 @@ function WastewaterTab({ dateFrom, dateTo }: { dateFrom: string; dateTo: string 
                   <td className={`px-3 py-2 ${statusColor(row.compliance_status)}`}>{row.compliance_status ?? "—"}</td>
                 </tr>
               ))}
-              {!d?.rows.length && <tr><td colSpan={11} className="px-4 py-8 text-center text-gray-400">No records</td></tr>}
+              {!d?.rows.length && <tr><td colSpan={11} className="px-4 py-8 text-center text-gray-400">{tx("No records")}</td></tr>}
             </tbody>
           </table>
         </div>
@@ -265,9 +266,9 @@ export default function TreatmentPage() {
   const [tab, setTab] = useState<Tab>("chemical");
 
   const tabs: { id: Tab; label: string; color: string }[] = [
-    { id: "chemical", label: "Chemical Treatment", color: "#34d399" },
-    { id: "solar", label: "Solar Generation", color: "#facc15" },
-    { id: "wastewater", label: "Wastewater Compliance", color: "#22c55e" },
+    { id: "chemical", label: tx("Chemical Treatment"), color: "#34d399" },
+    { id: "solar", label: tx("Solar Generation"), color: "#facc15" },
+    { id: "wastewater", label: tx("Wastewater Compliance"), color: "#22c55e" },
   ];
 
   return (
@@ -275,10 +276,10 @@ export default function TreatmentPage() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <div className="flex items-center gap-3 mb-1">
-            <Link href="/dashboard/utility-management/reports" className="text-sm text-gray-500 hover:text-blue-600">← Reports</Link>
+            <Link href="/dashboard/utility-management/reports" className="text-sm text-gray-500 hover:text-blue-600">{tx("← Reports")}</Link>
           </div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white" style={{ borderLeft: "4px solid #34d399", paddingLeft: 12 }}>
-            Treatment & Renewables
+            {tx("Treatment & Renewables")}
           </h1>
         </div>
         <DateFilter from={dateFrom} to={dateTo} onFrom={setDateFrom} onTo={setDateTo} />

@@ -4,6 +4,7 @@ import {
   chatterApi, ActivityOut, ActivityType, ReferenceType,
   TYPE_ICON, TYPE_BADGE, TYPE_COLOR, REF_LABEL, timeAgo,
 } from "@/lib/chatter";
+import { tx } from "@/lib/i18n/core";
 
 const ACTIVITY_TYPES: ActivityType[] = [
   "comment", "system_event", "status_change", "assignment",
@@ -42,27 +43,27 @@ export default function FeedPage() {
 
   return (
     <div className="p-6 space-y-4">
-      <h1 className="text-xl font-bold text-gray-900">Activity Feed</h1>
+      <h1 className="text-xl font-bold text-gray-900">{tx("Activity Feed")}</h1>
 
       <div className="flex gap-3 flex-wrap items-center">
         <select className="border rounded px-2 py-1.5 text-sm" value={filterType}
           onChange={e => setFilterType(e.target.value)}>
-          <option value="">All Types</option>
+          <option value="">{tx("All Types")}</option>
           {ACTIVITY_TYPES.map(t => (
             <option key={t} value={t} className="capitalize">{t.replace("_", " ")}</option>
           ))}
         </select>
         <select className="border rounded px-2 py-1.5 text-sm" value={filterRef}
           onChange={e => setFilterRef(e.target.value)}>
-          <option value="">All Modules</option>
+          <option value="">{tx("All Modules")}</option>
           {REF_TYPES.map(t => (
             <option key={t} value={t}>{REF_LABEL[t]}</option>
           ))}
         </select>
-        <span className="text-xs text-gray-500 ml-auto">{total} activities</span>
+        <span className="text-xs text-gray-500 ml-auto">{total} {tx("activities")}</span>
       </div>
 
-      {loading ? <p className="text-sm text-gray-500 text-center py-8">Loading…</p> : (
+      {loading ? <p className="text-sm text-gray-500 text-center py-8">{tx("Loading…")}</p> : (
         <div className="space-y-3">
           {activities.map(a => (
             <div key={a.activity_id}
@@ -87,10 +88,10 @@ export default function FeedPage() {
                     <p className="text-sm text-gray-600 mt-0.5 line-clamp-2">{a.message}</p>
                   )}
                   <div className="flex items-center gap-3 mt-1.5">
-                    <span className="text-xs text-gray-400">by {a.created_by ?? "System"}</span>
+                    <span className="text-xs text-gray-400">{tx("by")} {a.created_by ?? tx("System")}</span>
                     {a.comments.filter(c => !c.deleted_flag).length > 0 && (
                       <span className="text-xs text-gray-400">
-                        💬 {a.comments.filter(c => !c.deleted_flag).length} comment{a.comments.filter(c => !c.deleted_flag).length !== 1 ? "s" : ""}
+                        💬 {a.comments.filter(c => !c.deleted_flag).length} {tx("comment")}{a.comments.filter(c => !c.deleted_flag).length !== 1 ? tx("s") : ""}
                       </span>
                     )}
                     {a.attachments.length > 0 && (
@@ -101,14 +102,14 @@ export default function FeedPage() {
                         @{a.mentions.map(m => m.mentioned_user).join(" @")}
                       </span>
                     )}
-                    <span className="text-xs text-gray-300 ml-auto">ref: {a.reference_id.slice(0, 8)}…</span>
+                    <span className="text-xs text-gray-300 ml-auto">{tx("ref:")} {a.reference_id.slice(0, 8)}…</span>
                   </div>
                 </div>
               </div>
             </div>
           ))}
           {activities.length === 0 && (
-            <p className="text-sm text-gray-400 text-center py-12">No activities found.</p>
+            <p className="text-sm text-gray-400 text-center py-12">{tx("No activities found.")}</p>
           )}
         </div>
       )}
@@ -116,10 +117,10 @@ export default function FeedPage() {
       {pages > 1 && (
         <div className="flex items-center justify-center gap-3">
           <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-            className="rounded border px-3 py-1.5 text-sm hover:bg-gray-50 disabled:opacity-40">‹ Prev</button>
-          <span className="text-sm text-gray-600">Page {page} of {pages}</span>
+            className="rounded border px-3 py-1.5 text-sm hover:bg-gray-50 disabled:opacity-40">{tx("‹ Prev")}</button>
+          <span className="text-sm text-gray-600">{tx("Page")} {page} {tx("of")} {pages}</span>
           <button onClick={() => setPage(p => Math.min(pages, p + 1))} disabled={page === pages}
-            className="rounded border px-3 py-1.5 text-sm hover:bg-gray-50 disabled:opacity-40">Next ›</button>
+            className="rounded border px-3 py-1.5 text-sm hover:bg-gray-50 disabled:opacity-40">{tx("Next ›")}</button>
         </div>
       )}
     </div>

@@ -2,6 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { commissionsApi, TXN_STATUS_COLORS, PAYOUT_STATUS_COLORS } from "@/lib/commissions";
 import Link from "next/link";
+import { tx } from "@/lib/i18n/core";
 
 function KpiCard({ label, value, color = "text-white", sub }: { label: string; value: string | number; color?: string; sub?: string }) {
   return (
@@ -31,35 +32,35 @@ export default function CommissionsDashboard() {
     <div className="p-6 space-y-6 text-slate-200">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Sales Commission Tracking</h1>
-          <p className="text-slate-500 text-sm mt-0.5">Incentive engine — rules, calculations, payouts</p>
+          <h1 className="text-2xl font-bold text-white">{tx("Sales Commission Tracking")}</h1>
+          <p className="text-slate-500 text-sm mt-0.5">{tx("Incentive engine — rules, calculations, payouts")}</p>
         </div>
         <div className="flex gap-2">
           <button onClick={() => aiMut.mutate()} disabled={aiMut.isPending}
             className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium disabled:opacity-50">
-            {aiMut.isPending ? "Running AI…" : "Run AI"}
+            {aiMut.isPending ? tx("Running AI…") : tx("Run AI")}
           </button>
           <Link href="/dashboard/commissions/rules"
             className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium">
-            Manage Rules
+            {tx("Manage Rules")}
           </Link>
         </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <KpiCard label="Total Transactions" value={s?.total_txns ?? 0} />
-        <KpiCard label="Pending Approval" value={s?.pending ?? 0} color="text-amber-400" />
-        <KpiCard label="Approved" value={s?.approved ?? 0} color="text-blue-400" />
-        <KpiCard label="Total Commission" value={`KES ${(s?.total_commission ?? 0).toLocaleString()}`} color="text-emerald-400" />
-        <KpiCard label="Paid Out" value={`KES ${(s?.paid_commission ?? 0).toLocaleString()}`} color="text-white" />
+        <KpiCard label={tx("Total Transactions")} value={s?.total_txns ?? 0} />
+        <KpiCard label={tx("Pending Approval")} value={s?.pending ?? 0} color="text-amber-400" />
+        <KpiCard label={tx("Approved")} value={s?.approved ?? 0} color="text-blue-400" />
+        <KpiCard label={tx("Total Commission")} value={`KES ${(s?.total_commission ?? 0).toLocaleString()}`} color="text-emerald-400" />
+        <KpiCard label={tx("Paid Out")} value={`KES ${(s?.paid_commission ?? 0).toLocaleString()}`} color="text-white" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Pending approvals */}
         <div className="lg:col-span-2 glow-card p-5">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold text-white">Pending Approval</h2>
-            <Link href="/dashboard/commissions/transactions" className="text-xs text-indigo-400 hover:text-indigo-300">All transactions</Link>
+            <h2 className="text-sm font-semibold text-white">{tx("Pending Approval")}</h2>
+            <Link href="/dashboard/commissions/transactions" className="text-xs text-indigo-400 hover:text-indigo-300">{tx("All transactions")}</Link>
           </div>
           <div className="space-y-2">
             {txns.map((t) => (
@@ -74,7 +75,7 @@ export default function CommissionsDashboard() {
                 </div>
               </div>
             ))}
-            {txns.length === 0 && <p className="text-slate-600 text-sm text-center py-4">No pending transactions</p>}
+            {txns.length === 0 && <p className="text-slate-600 text-sm text-center py-4">{tx("No pending transactions")}</p>}
           </div>
         </div>
 
@@ -82,8 +83,8 @@ export default function CommissionsDashboard() {
           {/* Payouts */}
           <div className="glow-card p-4">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-semibold text-white">Draft Payouts</h2>
-              <Link href="/dashboard/commissions/payouts" className="text-xs text-indigo-400">View all</Link>
+              <h2 className="text-sm font-semibold text-white">{tx("Draft Payouts")}</h2>
+              <Link href="/dashboard/commissions/payouts" className="text-xs text-indigo-400">{tx("View all")}</Link>
             </div>
             <div className="space-y-2">
               {payouts.slice(0, 4).map((p) => (
@@ -95,15 +96,15 @@ export default function CommissionsDashboard() {
                   <span className="text-xs text-emerald-400 font-medium">KES {Number(p.net_commission).toLocaleString()}</span>
                 </div>
               ))}
-              {payouts.length === 0 && <p className="text-slate-600 text-xs">No draft payouts</p>}
+              {payouts.length === 0 && <p className="text-slate-600 text-xs">{tx("No draft payouts")}</p>}
             </div>
           </div>
 
           {/* AI */}
           <div className="glow-card p-4">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-semibold text-white">AI Insights</h2>
-              <Link href="/dashboard/commissions/ai" className="text-xs text-indigo-400">View all</Link>
+              <h2 className="text-sm font-semibold text-white">{tx("AI Insights")}</h2>
+              <Link href="/dashboard/commissions/ai" className="text-xs text-indigo-400">{tx("View all")}</Link>
             </div>
             <div className="space-y-2">
               {aiRecs.slice(0, 3).map((r) => (
@@ -112,7 +113,7 @@ export default function CommissionsDashboard() {
                   <p className="text-[10px] text-slate-500 mt-0.5 line-clamp-1">{r.body}</p>
                 </div>
               ))}
-              {aiRecs.length === 0 && <p className="text-slate-600 text-xs">No alerts</p>}
+              {aiRecs.length === 0 && <p className="text-slate-600 text-xs">{tx("No alerts")}</p>}
             </div>
           </div>
         </div>

@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { financeApi } from "@/lib/finance";
 import { Badge } from "@/components/ui/Badge";
+import { tx } from "@/lib/i18n/core";
 
 export default function ReceivablesPage() {
   const { data: receivables = [], isLoading } = useQuery({
@@ -25,41 +26,41 @@ export default function ReceivablesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Receivables</h1>
-        <p className="text-sm text-gray-500 mt-1">Outstanding customer invoices and collections</p>
+        <h1 className="text-2xl font-bold text-gray-900">{tx("Receivables")}</h1>
+        <p className="text-sm text-gray-500 mt-1">{tx("Outstanding customer invoices and collections")}</p>
       </div>
 
       {/* Summary */}
       <div className="grid grid-cols-4 gap-4">
         <div className="bg-white rounded-lg border p-5">
-          <p className="text-xs text-gray-500 uppercase tracking-wide">Total Outstanding</p>
+          <p className="text-xs text-gray-500 uppercase tracking-wide">{tx("Total Outstanding")}</p>
           <p className="text-2xl font-bold mt-1 text-orange-600">KES {total.toLocaleString(undefined, { minimumFractionDigits: 0 })}</p>
-          <p className="text-xs text-gray-400 mt-1">{receivables.length} invoices</p>
+          <p className="text-xs text-gray-400 mt-1">{receivables.length} {tx("invoices")}</p>
         </div>
         <div className="bg-white rounded-lg border p-5">
-          <p className="text-xs text-gray-500 uppercase tracking-wide">Overdue</p>
+          <p className="text-xs text-gray-500 uppercase tracking-wide">{tx("Overdue")}</p>
           <p className={`text-2xl font-bold mt-1 ${overdueAmount > 0 ? "text-red-600" : "text-gray-700"}`}>KES {overdueAmount.toLocaleString(undefined, { minimumFractionDigits: 0 })}</p>
-          <p className="text-xs text-gray-400 mt-1">{overdue.length} invoices past due</p>
+          <p className="text-xs text-gray-400 mt-1">{overdue.length} {tx("invoices past due")}</p>
         </div>
         <div className="bg-white rounded-lg border p-5">
-          <p className="text-xs text-gray-500 uppercase tracking-wide">Severely Overdue</p>
+          <p className="text-xs text-gray-500 uppercase tracking-wide">{tx("Severely Overdue")}</p>
           <p className="text-2xl font-bold mt-1 text-red-700">
             KES {agingBuckets["90+ days"].reduce((s, r) => s + r.outstanding, 0).toLocaleString(undefined, { minimumFractionDigits: 0 })}
           </p>
-          <p className="text-xs text-gray-400 mt-1">{agingBuckets["90+ days"].length} invoices 90+ days</p>
+          <p className="text-xs text-gray-400 mt-1">{agingBuckets["90+ days"].length} {tx("invoices 90+ days")}</p>
         </div>
         <div className="bg-white rounded-lg border p-5">
-          <p className="text-xs text-gray-500 uppercase tracking-wide">Current (Not Due)</p>
+          <p className="text-xs text-gray-500 uppercase tracking-wide">{tx("Current (Not Due)")}</p>
           <p className="text-2xl font-bold mt-1 text-green-700">
             KES {agingBuckets["Current"].reduce((s, r) => s + r.outstanding, 0).toLocaleString(undefined, { minimumFractionDigits: 0 })}
           </p>
-          <p className="text-xs text-gray-400 mt-1">{agingBuckets["Current"].length} invoices current</p>
+          <p className="text-xs text-gray-400 mt-1">{agingBuckets["Current"].length} {tx("invoices current")}</p>
         </div>
       </div>
 
       {/* Aging buckets */}
       <div className="bg-white rounded-lg border p-5">
-        <h2 className="font-semibold text-gray-800 mb-4">Aging Summary</h2>
+        <h2 className="font-semibold text-gray-800 mb-4">{tx("Aging Summary")}</h2>
         <div className="grid grid-cols-5 gap-4">
           {Object.entries(agingBuckets).map(([label, items]) => {
             const amount = items.reduce((s, r) => s + r.outstanding, 0);
@@ -71,7 +72,7 @@ export default function ReceivablesPage() {
                 <p className={`text-lg font-bold ${isOverdue && amount > 0 ? "text-red-600" : "text-gray-700"}`}>
                   KES {amount.toLocaleString(undefined, { minimumFractionDigits: 0 })}
                 </p>
-                <p className="text-xs text-gray-400">{items.length} inv · {pct.toFixed(0)}%</p>
+                <p className="text-xs text-gray-400">{items.length} {tx("inv ·")} {pct.toFixed(0)}%</p>
                 <div className="mt-2 h-1.5 bg-gray-100 rounded overflow-hidden">
                   <div
                     className={`h-full rounded ${isOverdue ? "bg-red-400" : "bg-green-400"}`}
@@ -87,22 +88,22 @@ export default function ReceivablesPage() {
       {/* Receivables table */}
       <div className="bg-white rounded-lg border">
         <div className="px-5 py-3 border-b">
-          <h2 className="font-semibold text-gray-800">Outstanding Invoices</h2>
+          <h2 className="font-semibold text-gray-800">{tx("Outstanding Invoices")}</h2>
         </div>
         {isLoading ? (
-          <p className="px-5 py-8 text-center text-gray-400">Loading…</p>
+          <p className="px-5 py-8 text-center text-gray-400">{tx("Loading…")}</p>
         ) : (
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-gray-50 text-xs text-gray-500 uppercase">
-                <th className="px-5 py-2 text-left">Invoice No</th>
-                <th className="px-5 py-2 text-left">Customer</th>
-                <th className="px-5 py-2 text-left">Invoice Date</th>
-                <th className="px-5 py-2 text-left">Due Date</th>
-                <th className="px-5 py-2 text-right">Total</th>
-                <th className="px-5 py-2 text-right">Paid</th>
-                <th className="px-5 py-2 text-right">Outstanding</th>
-                <th className="px-5 py-2 text-left">Age</th>
+                <th className="px-5 py-2 text-left">{tx("Invoice No")}</th>
+                <th className="px-5 py-2 text-left">{tx("Customer")}</th>
+                <th className="px-5 py-2 text-left">{tx("Invoice Date")}</th>
+                <th className="px-5 py-2 text-left">{tx("Due Date")}</th>
+                <th className="px-5 py-2 text-right">{tx("Total")}</th>
+                <th className="px-5 py-2 text-right">{tx("Paid")}</th>
+                <th className="px-5 py-2 text-right">{tx("Outstanding")}</th>
+                <th className="px-5 py-2 text-left">{tx("Age")}</th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -122,7 +123,7 @@ export default function ReceivablesPage() {
                     </td>
                     <td className="px-5 py-3">
                       {overdue ? (
-                        <Badge label={`${r.days_overdue}d overdue`} variant={severely ? "red" : "yellow"} />
+                        <Badge label={tx("{days_overdue}d overdue", { days_overdue: r.days_overdue })} variant={severely ? "red" : "yellow"} />
                       ) : (
                         <Badge label="Current" variant="green" />
                       )}
@@ -131,7 +132,7 @@ export default function ReceivablesPage() {
                 );
               })}
               {receivables.length === 0 && (
-                <tr><td colSpan={8} className="px-5 py-8 text-center text-gray-400">No outstanding receivables</td></tr>
+                <tr><td colSpan={8} className="px-5 py-8 text-center text-gray-400">{tx("No outstanding receivables")}</td></tr>
               )}
             </tbody>
           </table>

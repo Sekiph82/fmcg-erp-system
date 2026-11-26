@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
+import { tx } from "@/lib/i18n/core";
 
 const emptyForm: UserCreate = {
   email: "",
@@ -64,16 +65,16 @@ export default function UsersPage() {
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Users</h1>
-          <p className="text-sm text-gray-500 mt-1">{total} total</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Users")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{total} {tx("total")}</p>
         </div>
-        <Button onClick={() => setCreateOpen(true)}>+ Add User</Button>
+        <Button onClick={() => setCreateOpen(true)}>{tx("+ Add User")}</Button>
       </div>
 
       {/* Filters */}
       <div className="mb-4 flex flex-wrap gap-3">
         <Input
-          placeholder="Search name, email, username…"
+          placeholder={tx("Search name, email, username…")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="w-72"
@@ -83,9 +84,9 @@ export default function UsersPage() {
           onChange={(e) => setFilterActive(e.target.value)}
           className="rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
         >
-          <option value="all">All Status</option>
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
+          <option value="all">{tx("All Status")}</option>
+          <option value="active">{tx("Active")}</option>
+          <option value="inactive">{tx("Inactive")}</option>
         </select>
       </div>
 
@@ -100,7 +101,7 @@ export default function UsersPage() {
           data={users}
           columns={[
             {
-              header: "Name",
+              header: tx("Name"),
               accessor: (r) => (
                 <Link
                   href={`/dashboard/users/${r.id}`}
@@ -110,10 +111,10 @@ export default function UsersPage() {
                 </Link>
               ),
             },
-            { header: "Username", accessor: "username", className: "font-mono text-xs" },
-            { header: "Email", accessor: "email" },
+            { header: tx("Username"), accessor: "username", className: "font-mono text-xs" },
+            { header: tx("Email"), accessor: "email" },
             {
-              header: "Roles",
+              header: tx("Roles"),
               accessor: (r) => (
                 <div className="flex flex-wrap gap-1">
                   {r.roles.length === 0 ? (
@@ -132,19 +133,19 @@ export default function UsersPage() {
               ),
             },
             {
-              header: "Type",
+              header: tx("Type"),
               accessor: (r) =>
                 r.is_superuser ? (
-                  <Badge label="Superuser" variant="blue" />
+                  <Badge label={tx("Superuser")} variant="blue" />
                 ) : (
-                  <Badge label="User" variant="gray" />
+                  <Badge label={tx("User")} variant="gray" />
                 ),
             },
             {
-              header: "Status",
+              header: tx("Status"),
               accessor: (r) => (
                 <Badge
-                  label={r.is_active ? "Active" : "Inactive"}
+                  label={r.is_active ? tx("Active") : tx("Inactive")}
                   variant={r.is_active ? "green" : "red"}
                 />
               ),
@@ -156,7 +157,7 @@ export default function UsersPage() {
                   href={`/dashboard/users/${r.id}`}
                   className="text-xs text-indigo-500 hover:underline"
                 >
-                  Details →
+                  {tx("Details →")}
                 </Link>
               ),
             },
@@ -165,7 +166,7 @@ export default function UsersPage() {
       )}
 
       {/* Create Modal */}
-      <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="Create User">
+      <Modal open={createOpen} onClose={() => setCreateOpen(false)} title={tx("Create User")}>
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -175,27 +176,27 @@ export default function UsersPage() {
         >
           <div className="grid grid-cols-2 gap-4">
             <Input
-              label="Full Name *"
+              label={tx("Full Name *")}
               value={form.full_name}
               onChange={(e) => set("full_name", e.target.value)}
               required
             />
             <Input
-              label="Username *"
+              label={tx("Username *")}
               value={form.username}
               onChange={(e) => set("username", e.target.value)}
               required
             />
           </div>
           <Input
-            label="Email *"
+            label={tx("Email *")}
             type="email"
             value={form.email}
             onChange={(e) => set("email", e.target.value)}
             required
           />
           <Input
-            label="Password *"
+            label={tx("Password *")}
             type="password"
             value={form.password}
             onChange={(e) => set("password", e.target.value)}
@@ -209,7 +210,7 @@ export default function UsersPage() {
                 onChange={(e) => set("is_superuser", e.target.checked)}
                 className="rounded"
               />
-              Superuser
+              {tx("Superuser")}
             </label>
             <label className="flex items-center gap-2 text-sm text-gray-700">
               <input
@@ -218,18 +219,18 @@ export default function UsersPage() {
                 onChange={(e) => set("is_active", e.target.checked)}
                 className="rounded"
               />
-              Active
+              {tx("Active")}
             </label>
           </div>
           {createMutation.error && (
-            <p className="text-sm text-red-600">Failed to create user. Check inputs and try again.</p>
+            <p className="text-sm text-red-600">{tx("Failed to create user. Check inputs and try again.")}</p>
           )}
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" type="button" onClick={() => setCreateOpen(false)}>
-              Cancel
+              {tx("Cancel")}
             </Button>
             <Button type="submit" loading={createMutation.isPending}>
-              Create
+              {tx("Create")}
             </Button>
           </div>
         </form>

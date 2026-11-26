@@ -1,6 +1,7 @@
 "use client";
 
 import { DistributionSlice } from "@/lib/analytics";
+import { tx } from "@/lib/i18n/core";
 
 const PALETTE = [
   "#6366f1", "#10b981", "#f59e0b", "#ef4444",
@@ -24,7 +25,7 @@ export function DistributionBar({
   const total = items.reduce((s, d) => s + Math.max(d.count, d.value), 0);
 
   if (!items.length) {
-    return <div className="text-xs text-gray-400 text-center py-4">No data</div>;
+    return <div className="text-xs text-gray-400 text-center py-4">{tx("No data")}</div>;
   }
 
   return (

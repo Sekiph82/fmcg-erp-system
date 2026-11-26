@@ -10,6 +10,7 @@ import {
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/context/AuthContext";
+import { tx } from "@/lib/i18n/core";
 
 const clearanceBadge = (s?: ClearanceStatus) => {
   if (!s) return "gray";
@@ -153,24 +154,24 @@ export default function ArrivalsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Arrival & Customs Clearance</h1>
-        <p className="text-sm text-gray-500 mt-1">ETA alerts, port events and KRA customs clearance</p>
+        <h1 className="text-2xl font-bold text-gray-900">{tx("Arrival & Customs Clearance")}</h1>
+        <p className="text-sm text-gray-500 mt-1">{tx("ETA alerts, port events and KRA customs clearance")}</p>
       </div>
 
       {/* ETA alerts */}
       {alerts.length > 0 && (
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-          <p className="text-sm font-semibold text-amber-800 mb-2">Upcoming arrivals — next 21 days</p>
+          <p className="text-sm font-semibold text-amber-800 mb-2">{tx("Upcoming arrivals — next 21 days")}</p>
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
                 <tr className="text-amber-700 font-semibold border-b border-amber-200">
-                  <th className="text-left py-1 pr-4">Shipment</th>
-                  <th className="text-left pr-4">Vessel</th>
+                  <th className="text-left py-1 pr-4">{tx("Shipment")}</th>
+                  <th className="text-left pr-4">{tx("Vessel")}</th>
                   <th className="text-left pr-4">B/L</th>
                   <th className="text-left pr-4">ETA</th>
-                  <th className="text-right pr-4">Days</th>
-                  <th className="text-left">Status</th>
+                  <th className="text-right pr-4">{tx("Days")}</th>
+                  <th className="text-left">{tx("Status")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -181,7 +182,7 @@ export default function ArrivalsPage() {
                     <td className="pr-4 font-mono">{s.bl_number || "—"}</td>
                     <td className="pr-4 font-semibold">{s.eta}</td>
                     <td className={`pr-4 text-right font-bold ${s.days_to_eta != null && s.days_to_eta <= 5 ? "text-red-600" : "text-amber-700"}`}>
-                      {s.days_to_eta != null ? `${s.days_to_eta}d` : "—"}
+                      {s.days_to_eta != null ? tx("{days_to_eta}d", { days_to_eta: s.days_to_eta }) : "—"}
                     </td>
                     <td>{s.status.replace(/_/g, " ")}</td>
                   </tr>
@@ -194,10 +195,10 @@ export default function ArrivalsPage() {
 
       {/* Shipment selector */}
       <div className="flex items-center gap-3">
-        <label htmlFor="arrival-shipment-selector" className="text-sm font-medium text-gray-600">Shipment:</label>
+        <label htmlFor="arrival-shipment-selector" className="text-sm font-medium text-gray-600">{tx("Shipment:")}</label>
         <select id="arrival-shipment-selector" className="border rounded px-3 py-2 text-sm min-w-72" value={selectedId} onChange={(e) => setSelectedId(e.target.value)}>
-          <option value="">Select shipment to manage…</option>
-          {shipments.map((s) => <option key={s.id} value={s.id}>{s.shipment_no} — {s.vessel_name || s.carrier} — ETA: {s.eta || "?"}</option>)}
+          <option value="">{tx("Select shipment to manage…")}</option>
+          {shipments.map((s) => <option key={s.id} value={s.id}>{s.shipment_no} — {s.vessel_name || s.carrier} {tx("— ETA:")} {s.eta || "?"}</option>)}
         </select>
       </div>
 
@@ -221,11 +222,11 @@ export default function ArrivalsPage() {
           {tab === "arrival" && (
             <div className="bg-white rounded-lg border">
               <div className="px-5 py-3 border-b font-semibold text-gray-800">
-                Arrival — {selectedShipment?.shipment_no}
+                {tx("Arrival —")} {selectedShipment?.shipment_no}
               </div>
-              {arrLoading ? <p className="px-5 py-8 text-center text-gray-400">Loading…</p> : arrival ? (
+              {arrLoading ? <p className="px-5 py-8 text-center text-gray-400">{tx("Loading…")}</p> : arrival ? (
                 <ArrivalForm arrival={arrival} onSave={(d) => updateArrival.mutate(d)} loading={updateArrival.isPending} />
-              ) : <p className="px-5 py-5 text-center text-gray-400">No arrival timeline has been recorded yet.</p>}
+              ) : <p className="px-5 py-5 text-center text-gray-400">{tx("No arrival timeline has been recorded yet.")}</p>}
               {canViewClearance && selectedShipment && (
                 <ReceiptClosurePanel
                   shipmentStatus={selectedShipment.status}
@@ -247,22 +248,22 @@ export default function ArrivalsPage() {
             <div className="bg-white rounded-lg border">
               <div className="px-5 py-3 border-b flex items-center justify-between">
                 <div>
-                  <h2 className="font-semibold text-gray-800">Local Logistics Costs — {selectedShipment?.shipment_no}</h2>
-                  <p className="text-xs text-gray-400 mt-0.5">Kenya-side transport, clearing fees, port handling — M-Pesa supported</p>
+                  <h2 className="font-semibold text-gray-800">{tx("Local Logistics Costs —")} {selectedShipment?.shipment_no}</h2>
+                  <p className="text-xs text-gray-400 mt-0.5">{tx("Kenya-side transport, clearing fees, port handling — M-Pesa supported")}</p>
                 </div>
-                <Button onClick={() => setShowNewCost(true)}>+ Add Cost</Button>
+                <Button onClick={() => setShowNewCost(true)}>{tx("+ Add Cost")}</Button>
               </div>
               {lcLoading ? (
-                <p className="px-5 py-8 text-center text-gray-400">Loading…</p>
+                <p className="px-5 py-8 text-center text-gray-400">{tx("Loading…")}</p>
               ) : localCostSummary ? (
                 <LocalCostsPanel
                   summary={localCostSummary}
                   onMarkPaid={(id, ref, phone) => updateCost.mutate({ id, data: { payment_status: "PAID", mpesa_reference: ref || undefined, mpesa_phone: phone || undefined, paid_date: new Date().toISOString().split("T")[0] } })}
-                  onDelete={(id) => { if (confirm("Delete this cost record?")) deleteCost.mutate(id); }}
+                  onDelete={(id) => { if (confirm(tx("Delete this cost record?"))) deleteCost.mutate(id); }}
                   saving={updateCost.isPending || deleteCost.isPending}
                 />
               ) : (
-                <p className="px-5 py-8 text-center text-gray-400">No cost records yet — click &quot;+ Add Cost&quot; to start</p>
+                <p className="px-5 py-8 text-center text-gray-400">{tx("No cost records yet — click \"+ Add Cost\" to start")}</p>
               )}
             </div>
           )}
@@ -271,11 +272,11 @@ export default function ArrivalsPage() {
           {tab === "clearance" && (
             <div className="bg-white rounded-lg border">
               <div className="px-5 py-3 border-b flex items-center justify-between">
-                <h2 className="font-semibold text-gray-800">KRA Customs Clearance — {selectedShipment?.shipment_no}</h2>
-                {!clearance && canCreateClearance && <Button onClick={() => setShowNewClearance(true)}>Open Clearance</Button>}
+                <h2 className="font-semibold text-gray-800">{tx("KRA Customs Clearance —")} {selectedShipment?.shipment_no}</h2>
+                {!clearance && canCreateClearance && <Button onClick={() => setShowNewClearance(true)}>{tx("Open Clearance")}</Button>}
                 {clearance && <Badge label={clearance.status} variant={clearanceBadge(clearance.status)} />}
               </div>
-              {!canViewClearance ? <p className="px-5 py-8 text-center text-gray-500">You need logistics.view permission to see customs clearance.</p> : clLoading ? <p className="px-5 py-8 text-center text-gray-400">Loading…</p> : clearance ? (
+              {!canViewClearance ? <p className="px-5 py-8 text-center text-gray-500">{tx("You need logistics.view permission to see customs clearance.")}</p> : clLoading ? <p className="px-5 py-8 text-center text-gray-400">{tx("Loading…")}</p> : clearance ? (
                 <ClearanceForm
                   clearance={clearance}
                   milestones={clearanceMilestones}
@@ -288,7 +289,7 @@ export default function ArrivalsPage() {
                   milestoneError={recordClearanceMilestone.error instanceof Error ? recordClearanceMilestone.error.message : ""}
                 />
               ) : (
-                <p className="px-5 py-8 text-center text-gray-400">{canCreateClearance ? "No clearance record — click \"Open Clearance\" to start" : "No clearance record. You need logistics.create permission to open one."}</p>
+                <p className="px-5 py-8 text-center text-gray-400">{canCreateClearance ? tx("No clearance record — click \"Open Clearance\" to start") : tx("No clearance record. You need logistics.create permission to open one.")}</p>
               )}
             </div>
           )}
@@ -296,7 +297,7 @@ export default function ArrivalsPage() {
       )}
 
       {!selectedId && (
-        <div className="bg-white rounded-lg border p-12 text-center text-gray-400">Select a shipment to manage arrival and customs clearance</div>
+        <div className="bg-white rounded-lg border p-12 text-center text-gray-400">{tx("Select a shipment to manage arrival and customs clearance")}</div>
       )}
 
       {showNewClearance && selectedId && (
@@ -327,11 +328,11 @@ function ArrivalForm({ arrival, onSave, loading }: { arrival: ArrivalNotificatio
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
   const events = [
-    { key: "eta_revised", label: "Revised ETA", done: !!arrival.eta_revised },
-    { key: "ata", label: "Actual Arrival at Port (ATA)", done: !!arrival.ata },
-    { key: "port_discharge_date", label: "Port Discharge / Released", done: !!arrival.port_discharge_date },
-    { key: "customs_clearance_date", label: "Customs Cleared", done: !!arrival.customs_clearance_date },
-    { key: "delivery_date", label: "Delivered to Warehouse", done: !!arrival.delivery_date },
+    { key: "eta_revised", label: tx("Revised ETA"), done: !!arrival.eta_revised },
+    { key: "ata", label: tx("Actual Arrival at Port (ATA)"), done: !!arrival.ata },
+    { key: "port_discharge_date", label: tx("Port Discharge / Released"), done: !!arrival.port_discharge_date },
+    { key: "customs_clearance_date", label: tx("Customs Cleared"), done: !!arrival.customs_clearance_date },
+    { key: "delivery_date", label: tx("Delivered to Warehouse"), done: !!arrival.delivery_date },
   ];
 
   return (
@@ -359,18 +360,18 @@ function ArrivalForm({ arrival, onSave, loading }: { arrival: ArrivalNotificatio
           </div>
         ))}
         <div>
-          <label htmlFor="arrival-delivery-date" className="block text-xs font-medium text-gray-600 mb-1">Delivered to Warehouse</label>
+          <label htmlFor="arrival-delivery-date" className="block text-xs font-medium text-gray-600 mb-1">{tx("Delivered to Warehouse")}</label>
           <input id="arrival-delivery-date" type="date" className="w-full border rounded px-3 py-2 text-sm bg-gray-50" value={arrival.delivery_date ?? ""} disabled readOnly />
         </div>
       </div>
       <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
+        <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Notes")}</label>
         <textarea className="w-full border rounded px-3 py-2 text-sm" rows={2} value={form.notes} onChange={(e) => set("notes", e.target.value)} />
       </div>
       {canEdit && <div className="flex justify-end">
         <Button loading={loading} onClick={() => onSave(
           Object.fromEntries(Object.entries(form).map(([k, v]) => [k, v || undefined]))
-        )}>Save Arrival</Button>
+        )}>{tx("Save Arrival")}</Button>
       </div>}
     </div>
   );
@@ -398,40 +399,40 @@ function ReceiptClosurePanel({
 
   return (
     <section aria-labelledby="receipt-closure-heading" className="m-5 rounded-lg border bg-slate-50 p-4">
-      <h3 id="receipt-closure-heading" className="font-semibold text-gray-800">Kenya warehouse receipt closure</h3>
-      <p className="mt-1 text-xs text-gray-500">A shipment closes only against posted GRNs linked to its purchase orders. Closing records the GRN references, operator, and system time.</p>
-      {loading ? <p className="mt-3 text-sm text-gray-500">Loading receipt records…</p> : closure ? (
+      <h3 id="receipt-closure-heading" className="font-semibold text-gray-800">{tx("Kenya warehouse receipt closure")}</h3>
+      <p className="mt-1 text-xs text-gray-500">{tx("A shipment closes only against posted GRNs linked to its purchase orders. Closing records the GRN references, operator, and system time.")}</p>
+      {loading ? <p className="mt-3 text-sm text-gray-500">{tx("Loading receipt records…")}</p> : closure ? (
         <div className="mt-3 space-y-2">
-          <p className="text-sm font-medium text-green-700">Shipment receipt closed on {new Date(closure.closed_at).toLocaleString()} by {closure.closed_by_name || "recorded user"}.</p>
+          <p className="text-sm font-medium text-green-700">{tx("Shipment receipt closed on")} {new Date(closure.closed_at).toLocaleString()} {tx("by")} {closure.closed_by_name || tx("recorded user")}.</p>
           <ul className="list-disc pl-5 text-sm text-gray-700">
             {closure.grns.map((grn) => (
-              <li key={grn.id}>{grn.grn_no} · PO {grn.po_no} · {grn.received_date} · {grn.warehouse_name || "warehouse"}</li>
+              <li key={grn.id}>{grn.grn_no} {tx("· PO")} {grn.po_no} · {grn.received_date} · {grn.warehouse_name || tx("warehouse")}</li>
             ))}
           </ul>
         </div>
       ) : shipmentStatus !== "OUT_FOR_DELIVERY" ? (
-        <p className="mt-3 text-sm text-gray-600">Receipt closure becomes available after customs clearance and dispatch to the warehouse.</p>
+        <p className="mt-3 text-sm text-gray-600">{tx("Receipt closure becomes available after customs clearance and dispatch to the warehouse.")}</p>
       ) : optionsError ? (
-        <p role="alert" className="mt-3 text-sm text-red-700">Could not load posted GRNs: {optionsError}</p>
+        <p role="alert" className="mt-3 text-sm text-red-700">{tx("Could not load posted GRNs:")} {optionsError}</p>
       ) : options.length === 0 ? (
-        <p className="mt-3 text-sm text-gray-600">No unused posted GRNs are linked to this shipment yet. Post a warehouse receipt in Procurement first.</p>
+        <p className="mt-3 text-sm text-gray-600">{tx("No unused posted GRNs are linked to this shipment yet. Post a warehouse receipt in Procurement first.")}</p>
       ) : (
         <>
           <div className="mt-3 space-y-2">
             {options.map((grn) => (
               <label key={grn.id} className="flex items-start gap-2 rounded border bg-white p-2 text-sm">
                 <input type="checkbox" checked={selectedGRNs.includes(grn.id)} onChange={() => toggleGRN(grn.id)} disabled={!canEdit || saving} />
-                <span>{grn.grn_no} · PO {grn.po_no} · {grn.received_date} · {grn.warehouse_name || "warehouse"}</span>
+                <span>{grn.grn_no} {tx("· PO")} {grn.po_no} · {grn.received_date} · {grn.warehouse_name || tx("warehouse")}</span>
               </label>
             ))}
           </div>
-          {saveError && <p role="alert" className="mt-3 text-sm text-red-700">Receipt closure was not saved: {saveError}</p>}
+          {saveError && <p role="alert" className="mt-3 text-sm text-red-700">{tx("Receipt closure was not saved:")} {saveError}</p>}
           {canEdit && <div className="mt-3 flex justify-end">
             <Button loading={saving} disabled={selectedGRNs.length === 0 || saving} onClick={() => onClose(selectedGRNs)}>
-              Close receipt with selected GRNs
+              {tx("Close receipt with selected GRNs")}
             </Button>
           </div>}
-          {!canEdit && <p className="mt-3 text-sm text-gray-500">You need logistics.edit permission to close the receipt.</p>}
+          {!canEdit && <p className="mt-3 text-sm text-gray-500">{tx("You need logistics.edit permission to close the receipt.")}</p>}
         </>
       )}
     </section>
@@ -482,20 +483,20 @@ function ClearanceForm({
       <section aria-labelledby="clearance-timeline-heading" className="rounded-lg border bg-slate-50 p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h3 id="clearance-timeline-heading" className="font-semibold text-gray-800">Clearance milestone history</h3>
-            <p className="text-xs text-gray-500">Manual evidence references are recorded with the operator and system time; no customs authority integration is implied.</p>
+            <h3 id="clearance-timeline-heading" className="font-semibold text-gray-800">{tx("Clearance milestone history")}</h3>
+            <p className="text-xs text-gray-500">{tx("Manual evidence references are recorded with the operator and system time; no customs authority integration is implied.")}</p>
           </div>
           <Badge label={clearance.status.replace(/_/g, " ")} variant={clearanceBadge(clearance.status)} />
         </div>
-        {milestonesLoading ? <p className="mt-3 text-sm text-gray-500">Loading milestone history…</p> : milestones.length === 0 ? (
-          <p className="mt-3 text-sm text-gray-500">No milestone history is available. Current recorded status: <strong>{clearance.status.replace(/_/g, " ")}</strong>. Existing status may predate history capture.</p>
+        {milestonesLoading ? <p className="mt-3 text-sm text-gray-500">{tx("Loading milestone history…")}</p> : milestones.length === 0 ? (
+          <p className="mt-3 text-sm text-gray-500">{tx("No milestone history is available. Current recorded status:")} <strong>{clearance.status.replace(/_/g, " ")}</strong>{tx(". Existing status may predate history capture.")}</p>
         ) : (
           <ol className="mt-3 divide-y rounded border bg-white">
             {milestones.map((event) => (
               <li key={event.id} className="grid gap-1 p-3 text-sm md:grid-cols-[1fr_1fr_2fr]">
                 <span><strong>{event.previous_status.replace(/_/g, " ")}</strong> → <strong>{event.new_status.replace(/_/g, " ")}</strong></span>
                 <span className="text-gray-600">{new Date(event.effective_at).toLocaleString()} · {event.changed_by_name || event.changed_by_id}</span>
-                <span className="text-gray-600">Ref: <span className="font-mono">{event.source_reference}</span>{event.notes ? ` · ${event.notes}` : ""}</span>
+                <span className="text-gray-600">{tx("Ref:")} <span className="font-mono">{event.source_reference}</span>{event.notes ? ` · ${event.notes}` : ""}</span>
               </li>
             ))}
           </ol>
@@ -503,17 +504,17 @@ function ClearanceForm({
         {canEdit && NEXT_CLEARANCE_STATUSES[clearance.status].length > 0 && (
           <div className="mt-4 grid gap-3 border-t pt-4 md:grid-cols-4">
             <div>
-              <label htmlFor="clearance-next-status" className="mb-1 block text-xs font-medium text-gray-600">Next milestone</label>
+              <label htmlFor="clearance-next-status" className="mb-1 block text-xs font-medium text-gray-600">{tx("Next milestone")}</label>
               <select id="clearance-next-status" className="w-full rounded border px-3 py-2 text-sm" value={nextStatus} onChange={(event) => setNextStatus(event.target.value as ClearanceStatus | "")}>
                 {NEXT_CLEARANCE_STATUSES[clearance.status].map((candidate) => <option key={candidate} value={candidate}>{candidate.replace(/_/g, " ")}</option>)}
               </select>
             </div>
             <div>
-              <label htmlFor="clearance-source-reference" className="mb-1 block text-xs font-medium text-gray-600">Supporting reference</label>
-              <input id="clearance-source-reference" className="w-full rounded border px-3 py-2 text-sm font-mono" value={sourceReference} maxLength={200} onChange={(event) => setSourceReference(event.target.value)} placeholder="e.g. entered filing / receipt ref" required />
+              <label htmlFor="clearance-source-reference" className="mb-1 block text-xs font-medium text-gray-600">{tx("Supporting reference")}</label>
+              <input id="clearance-source-reference" className="w-full rounded border px-3 py-2 text-sm font-mono" value={sourceReference} maxLength={200} onChange={(event) => setSourceReference(event.target.value)} placeholder={tx("e.g. entered filing / receipt ref")} required />
             </div>
             <div>
-              <label htmlFor="clearance-milestone-notes" className="mb-1 block text-xs font-medium text-gray-600">Notes{nextStatus === "HELD" ? " (hold reason required)" : " (optional)"}</label>
+              <label htmlFor="clearance-milestone-notes" className="mb-1 block text-xs font-medium text-gray-600">{tx("Notes")}{nextStatus === "HELD" ? tx(" (hold reason required)") : tx(" (optional)")}</label>
               <input id="clearance-milestone-notes" className="w-full rounded border px-3 py-2 text-sm" value={milestoneNotes} maxLength={2000} onChange={(event) => setMilestoneNotes(event.target.value)} />
             </div>
             <div className="flex items-end">
@@ -526,47 +527,47 @@ function ClearanceForm({
                 } catch {
                   // Keep the reference and notes visible for retry after the inline error is shown.
                 }
-              }}>Record milestone</Button>
+              }}>{tx("Record milestone")}</Button>
             </div>
           </div>
         )}
-        {!canEdit && <p className="mt-3 text-xs text-gray-500">View-only access: logistics.edit permission is required to record milestones.</p>}
+        {!canEdit && <p className="mt-3 text-xs text-gray-500">{tx("View-only access: logistics.edit permission is required to record milestones.")}</p>}
         {milestoneError && <p role="alert" className="mt-3 rounded border border-red-200 bg-red-50 p-2 text-sm text-red-700">{milestoneError}</p>}
       </section>
       <div className="grid grid-cols-3 gap-3">
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">IDF / Entry No</label>
+          <label className="block text-xs font-medium text-gray-600 mb-1">{tx("IDF / Entry No")}</label>
           <input className="w-full border rounded px-3 py-2 text-sm font-mono" value={form.entry_no} disabled={!canEdit} onChange={(e) => set("entry_no", e.target.value)} />
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Clearing Agent</label>
+          <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Clearing Agent")}</label>
           <input className="w-full border rounded px-3 py-2 text-sm" value={form.agent_name} disabled={!canEdit} onChange={(e) => set("agent_name", e.target.value)} />
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">KRA PIN</label>
+          <label className="block text-xs font-medium text-gray-600 mb-1">{tx("KRA PIN")}</label>
           <input className="w-full border rounded px-3 py-2 text-sm font-mono" value={form.kra_pin} disabled={!canEdit} onChange={(e) => set("kra_pin", e.target.value)} />
         </div>
         <div className="rounded border bg-gray-50 p-2 text-sm">
-          <span className="block text-xs text-gray-500">Submitted</span>{clearance.submission_date || "Not recorded"}
+          <span className="block text-xs text-gray-500">{tx("Submitted")}</span>{clearance.submission_date || tx("Not recorded")}
         </div>
         <div className="rounded border bg-gray-50 p-2 text-sm">
-          <span className="block text-xs text-gray-500">Examination requested</span>{clearance.examination_date || "Not recorded"}
+          <span className="block text-xs text-gray-500">{tx("Examination requested")}</span>{clearance.examination_date || tx("Not recorded")}
         </div>
         <div className="rounded border bg-gray-50 p-2 text-sm">
-          <span className="block text-xs text-gray-500">Clearance recorded</span>{clearance.clearance_date || "Not recorded"}
+          <span className="block text-xs text-gray-500">{tx("Clearance recorded")}</span>{clearance.clearance_date || tx("Not recorded")}
         </div>
       </div>
 
       <div className="border-t pt-4">
-        <p className="text-xs font-semibold text-gray-600 mb-3 uppercase tracking-wide">Landed Cost & Duties (KES)</p>
+        <p className="text-xs font-semibold text-gray-600 mb-3 uppercase tracking-wide">{tx("Landed Cost & Duties (KES)")}</p>
         <div className="grid grid-cols-4 gap-3">
           {[
-            { key: "cif_value_usd", label: "CIF Value (USD)" },
-            { key: "import_duty", label: "Import Duty" },
-            { key: "vat", label: "VAT (16%)" },
-            { key: "idf_fee", label: "IDF Fee" },
-            { key: "railway_development_levy", label: "Railway Dev. Levy" },
-            { key: "other_charges", label: "Other Charges" },
+            { key: "cif_value_usd", label: tx("CIF Value (USD)") },
+            { key: "import_duty", label: tx("Import Duty") },
+            { key: "vat", label: tx("VAT (16%)") },
+            { key: "idf_fee", label: tx("IDF Fee") },
+            { key: "railway_development_levy", label: tx("Railway Dev. Levy") },
+            { key: "other_charges", label: tx("Other Charges") },
           ].map(({ key, label }) => (
             <div key={key}>
               <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
@@ -574,22 +575,22 @@ function ClearanceForm({
             </div>
           ))}
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Total Taxes (KES)</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Total Taxes (KES)")}</label>
             <input type="number" className="w-full border rounded px-3 py-2 text-sm font-semibold" value={form.total_taxes_kes || autoTotal.toFixed(2)} disabled={!canEdit} onChange={(e) => set("total_taxes_kes", e.target.value)} />
-            <p className="text-xs text-gray-400 mt-0.5">Auto: {autoTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+            <p className="text-xs text-gray-400 mt-0.5">{tx("Auto:")} {autoTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
           </div>
         </div>
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
+        <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Notes")}</label>
         <textarea className="w-full border rounded px-3 py-2 text-sm" rows={2} value={form.notes} disabled={!canEdit} onChange={(e) => set("notes", e.target.value)} />
       </div>
       {canEdit && <div className="flex justify-end">
         <Button loading={loading} onClick={() => onSave({
           ...form,
           ...Object.fromEntries(numFields.map((k) => [k, (form as Record<string,string>)[k] ? parseFloat((form as Record<string,string>)[k]) : undefined])),
-        })}>Save Clearance</Button>
+        })}>{tx("Save Clearance")}</Button>
       </div>}
     </div>
   );
@@ -633,15 +634,15 @@ function LocalCostsPanel({
       {/* Summary bar */}
       <div className="grid grid-cols-3 gap-3">
         <div className="rounded-lg bg-gray-50 border p-3 text-center">
-          <p className="text-xs text-gray-500 uppercase tracking-wide">Total</p>
+          <p className="text-xs text-gray-500 uppercase tracking-wide">{tx("Total")}</p>
           <p className="text-xl font-bold text-gray-900">KES {summary.total_kes.toLocaleString()}</p>
         </div>
         <div className="rounded-lg bg-emerald-50 border border-emerald-100 p-3 text-center">
-          <p className="text-xs text-emerald-600 uppercase tracking-wide">Paid</p>
+          <p className="text-xs text-emerald-600 uppercase tracking-wide">{tx("Paid")}</p>
           <p className="text-xl font-bold text-emerald-700">KES {summary.paid_kes.toLocaleString()}</p>
         </div>
         <div className="rounded-lg bg-amber-50 border border-amber-100 p-3 text-center">
-          <p className="text-xs text-amber-600 uppercase tracking-wide">Pending</p>
+          <p className="text-xs text-amber-600 uppercase tracking-wide">{tx("Pending")}</p>
           <p className="text-xl font-bold text-amber-700">KES {summary.pending_kes.toLocaleString()}</p>
         </div>
       </div>
@@ -650,19 +651,19 @@ function LocalCostsPanel({
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b bg-gray-50 text-xs text-gray-500 uppercase">
-            <th className="px-3 py-2 text-left">Type</th>
-            <th className="px-3 py-2 text-left">Description</th>
-            <th className="px-3 py-2 text-left">Vendor</th>
-            <th className="px-3 py-2 text-right">Amount (KES)</th>
-            <th className="px-3 py-2 text-center">Method</th>
-            <th className="px-3 py-2 text-left">M-Pesa Ref</th>
-            <th className="px-3 py-2 text-center">Status</th>
+            <th className="px-3 py-2 text-left">{tx("Type")}</th>
+            <th className="px-3 py-2 text-left">{tx("Description")}</th>
+            <th className="px-3 py-2 text-left">{tx("Vendor")}</th>
+            <th className="px-3 py-2 text-right">{tx("Amount (KES)")}</th>
+            <th className="px-3 py-2 text-center">{tx("Method")}</th>
+            <th className="px-3 py-2 text-left">{tx("M-Pesa Ref")}</th>
+            <th className="px-3 py-2 text-center">{tx("Status")}</th>
             <th className="px-3 py-2" />
           </tr>
         </thead>
         <tbody className="divide-y">
           {summary.by_type.length === 0 && (
-            <tr><td colSpan={8} className="px-3 py-8 text-center text-gray-400">No cost records</td></tr>
+            <tr><td colSpan={8} className="px-3 py-8 text-center text-gray-400">{tx("No cost records")}</td></tr>
           )}
           {summary.by_type.map((c) => (
             <>
@@ -686,10 +687,10 @@ function LocalCostsPanel({
                   <div className="flex gap-2 justify-end">
                     {c.payment_status !== "PAID" && (
                       <button className="text-xs text-emerald-600 hover:underline" onClick={() => setMarkingId(markingId === c.id ? null : c.id)}>
-                        Mark Paid
+                        {tx("Mark Paid")}
                       </button>
                     )}
-                    <button className="text-xs text-red-400 hover:underline" onClick={() => onDelete(c.id)}>Del</button>
+                    <button className="text-xs text-red-400 hover:underline" onClick={() => onDelete(c.id)}>{tx("Del")}</button>
                   </div>
                 </td>
               </tr>
@@ -697,18 +698,18 @@ function LocalCostsPanel({
                 <tr key={`${c.id}-mark`} className="bg-emerald-50">
                   <td colSpan={8} className="px-3 py-2">
                     <div className="flex items-center gap-3">
-                      <span className="text-xs font-medium text-gray-600">M-Pesa ref:</span>
-                      <input className="border rounded px-2 py-1 text-xs w-36" placeholder="Receipt no." value={ref} onChange={(e) => setRef(e.target.value)} />
-                      <span className="text-xs font-medium text-gray-600">Phone:</span>
+                      <span className="text-xs font-medium text-gray-600">{tx("M-Pesa ref:")}</span>
+                      <input className="border rounded px-2 py-1 text-xs w-36" placeholder={tx("Receipt no.")} value={ref} onChange={(e) => setRef(e.target.value)} />
+                      <span className="text-xs font-medium text-gray-600">{tx("Phone:")}</span>
                       <input className="border rounded px-2 py-1 text-xs w-32" placeholder="07XXXXXXXX" value={phone} onChange={(e) => setPhone(e.target.value)} />
                       <button
                         disabled={saving}
                         className="text-xs font-medium text-white bg-emerald-600 hover:bg-emerald-700 px-3 py-1 rounded disabled:opacity-50"
                         onClick={() => { onMarkPaid(c.id, ref, phone); setMarkingId(null); setRef(""); setPhone(""); }}
                       >
-                        Confirm Payment
+                        {tx("Confirm Payment")}
                       </button>
-                      <button className="text-xs text-gray-400 hover:underline" onClick={() => setMarkingId(null)}>Cancel</button>
+                      <button className="text-xs text-gray-400 hover:underline" onClick={() => setMarkingId(null)}>{tx("Cancel")}</button>
                     </div>
                   </td>
                 </tr>
@@ -736,11 +737,11 @@ function NewLocalCostModal({ onClose, onSubmit, loading }: { onClose: () => void
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4">
-        <h2 className="font-semibold text-lg">Add Local Logistics Cost</h2>
+        <h2 className="font-semibold text-lg">{tx("Add Local Logistics Cost")}</h2>
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Cost Type</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Cost Type")}</label>
               <select className="w-full border rounded px-3 py-2 text-sm" value={form.cost_type} onChange={(e) => set("cost_type", e.target.value)}>
                 {(Object.keys(COST_TYPE_LABELS) as LocalCostType[]).map((k) => (
                   <option key={k} value={k}>{COST_TYPE_LABELS[k]}</option>
@@ -748,41 +749,41 @@ function NewLocalCostModal({ onClose, onSubmit, loading }: { onClose: () => void
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Payment Method</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Payment Method")}</label>
               <select className="w-full border rounded px-3 py-2 text-sm" value={form.payment_method} onChange={(e) => set("payment_method", e.target.value)}>
-                <option value="MPESA">📱 M-Pesa</option>
-                <option value="BANK">🏦 Bank Transfer</option>
-                <option value="CASH">💵 Cash</option>
+                <option value="MPESA">{tx("📱 M-Pesa")}</option>
+                <option value="BANK">{tx("🏦 Bank Transfer")}</option>
+                <option value="CASH">{tx("💵 Cash")}</option>
               </select>
             </div>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Description</label>
-            <input className="w-full border rounded px-3 py-2 text-sm" value={form.description} onChange={(e) => set("description", e.target.value)} placeholder="e.g. Mombasa–Nairobi truck, SGR rail freight" />
+            <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Description")}</label>
+            <input className="w-full border rounded px-3 py-2 text-sm" value={form.description} onChange={(e) => set("description", e.target.value)} placeholder={tx("e.g. Mombasa–Nairobi truck, SGR rail freight")} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Vendor / Service Provider</label>
-              <input className="w-full border rounded px-3 py-2 text-sm" value={form.vendor_name} onChange={(e) => set("vendor_name", e.target.value)} placeholder="Company or person name" />
+              <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Vendor / Service Provider")}</label>
+              <input className="w-full border rounded px-3 py-2 text-sm" value={form.vendor_name} onChange={(e) => set("vendor_name", e.target.value)} placeholder={tx("Company or person name")} />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Amount (KES)</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Amount (KES)")}</label>
               <input type="number" className="w-full border rounded px-3 py-2 text-sm" value={form.amount_kes} onChange={(e) => set("amount_kes", e.target.value)} />
             </div>
           </div>
           {form.payment_method === "MPESA" && (
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">M-Pesa Phone (optional)</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">{tx("M-Pesa Phone (optional)")}</label>
               <input className="w-full border rounded px-3 py-2 text-sm" value={form.mpesa_phone} onChange={(e) => set("mpesa_phone", e.target.value)} placeholder="07XXXXXXXX" />
             </div>
           )}
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Notes")}</label>
             <textarea className="w-full border rounded px-3 py-2 text-sm" rows={2} value={form.notes} onChange={(e) => set("notes", e.target.value)} />
           </div>
         </div>
         <div className="flex gap-2 justify-end">
-          <Button variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button variant="secondary" onClick={onClose}>{tx("Cancel")}</Button>
           <Button loading={loading} onClick={() => onSubmit({
             cost_type: form.cost_type,
             description: form.description,
@@ -791,7 +792,7 @@ function NewLocalCostModal({ onClose, onSubmit, loading }: { onClose: () => void
             payment_method: form.payment_method,
             mpesa_phone: form.mpesa_phone || undefined,
             notes: form.notes || undefined,
-          })}>Save</Button>
+          })}>{tx("Save")}</Button>
         </div>
       </div>
     </div>
@@ -804,24 +805,24 @@ function NewClearanceModal({ shipmentId, onClose, onSubmit, loading }: { shipmen
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 space-y-4">
-        <h2 className="font-semibold text-lg">Open Customs Clearance</h2>
+        <h2 className="font-semibold text-lg">{tx("Open Customs Clearance")}</h2>
         <div className="space-y-3">
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Clearing Agent</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Clearing Agent")}</label>
             <input className="w-full border rounded px-3 py-2 text-sm" value={form.agent_name} onChange={(e) => set("agent_name", e.target.value)} />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">IDF / Entry No</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{tx("IDF / Entry No")}</label>
             <input className="w-full border rounded px-3 py-2 text-sm font-mono" value={form.entry_no} onChange={(e) => set("entry_no", e.target.value)} />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">KRA PIN</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{tx("KRA PIN")}</label>
             <input className="w-full border rounded px-3 py-2 text-sm font-mono" value={form.kra_pin} onChange={(e) => set("kra_pin", e.target.value)} />
           </div>
         </div>
         <div className="flex gap-2 justify-end">
-          <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button loading={loading} onClick={() => onSubmit({ shipment_id: shipmentId, ...form })}>Create</Button>
+          <Button variant="secondary" onClick={onClose}>{tx("Cancel")}</Button>
+          <Button loading={loading} onClick={() => onSubmit({ shipment_id: shipmentId, ...form })}>{tx("Create")}</Button>
         </div>
       </div>
     </div>

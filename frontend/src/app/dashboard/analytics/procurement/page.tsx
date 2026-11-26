@@ -11,6 +11,7 @@ import { ExceptionList } from "@/components/analytics/ExceptionList";
 import { ChartCard } from "@/components/analytics/ChartCard";
 import { DaysSelector } from "@/components/analytics/DaysSelector";
 import { RequirePermission } from "@/components/PermissionGuard";
+import { tx } from "@/lib/i18n/core";
 
 export default function ProcurementAnalyticsPage() {
   const [days, setDays] = useState(30);
@@ -25,22 +26,22 @@ export default function ProcurementAnalyticsPage() {
       <div className="max-w-2xl mx-auto space-y-5 pb-10">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Procurement Dashboard</h1>
-            <p className="text-xs text-gray-400 mt-0.5">PO status, delays &amp; supplier spend</p>
+            <h1 className="text-xl font-bold text-gray-900">{tx("Procurement Dashboard")}</h1>
+            <p className="text-xs text-gray-400 mt-0.5">{tx("PO status, delays & supplier spend")}</p>
           </div>
           <DaysSelector value={days} onChange={setDays} />
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <KPICard
-            label="Open PO Value"
+            label={tx("Open PO Value")}
             value={fmtKES(data?.open_po_value ?? 0)}
             subtext={`${data?.open_po_count ?? 0} open POs`}
             status="ok"
             loading={isLoading}
           />
           <KPICard
-            label="Purchase Delays"
+            label={tx("Purchase Delays")}
             value={data?.overdue_po_count ?? 0}
             subtext="POs past delivery date"
             status={(data?.overdue_po_count ?? 0) > 0 ? "critical" : "ok"}
@@ -48,7 +49,7 @@ export default function ProcurementAnalyticsPage() {
             loading={isLoading}
           />
           <KPICard
-            label="Pending PRs"
+            label={tx("Pending PRs")}
             value={data?.pending_pr_count ?? 0}
             subtext="Awaiting approval"
             status={(data?.pending_pr_count ?? 0) > 0 ? "warning" : "ok"}
@@ -56,7 +57,7 @@ export default function ProcurementAnalyticsPage() {
             loading={isLoading}
           />
           <KPICard
-            label="GRNs This Month"
+            label={tx("GRNs This Month")}
             value={data?.received_this_month ?? 0}
             subtext="Goods received"
             status="ok"
@@ -65,7 +66,7 @@ export default function ProcurementAnalyticsPage() {
         </div>
 
         {/* PO Value trend */}
-        <ChartCard title="PO Value Trend" subtitle={`Last ${days} days`}>
+        <ChartCard title={tx("PO Value Trend")} subtitle={`Last ${days} days`}>
           <LineChart
             series={[{ name: "PO Value", color: "#8b5cf6", data: data?.po_value_trend ?? [] }]}
             formatY={(v) => fmtKES(v)}
@@ -74,7 +75,7 @@ export default function ProcurementAnalyticsPage() {
         </ChartCard>
 
         {/* GRN trend */}
-        <ChartCard title="Goods Receipts" subtitle={`Last ${days} days`}>
+        <ChartCard title={tx("Goods Receipts")} subtitle={`Last ${days} days`}>
           <BarChart
             data={data?.grn_trend ?? []}
             color="#10b981"
@@ -83,7 +84,7 @@ export default function ProcurementAnalyticsPage() {
         </ChartCard>
 
         {/* Top suppliers */}
-        <ChartCard title="Top Suppliers by Spend">
+        <ChartCard title={tx("Top Suppliers by Spend")}>
           <DistributionBar
             data={data?.top_suppliers ?? []}
             formatValue={(v) => fmtKES(v)}
@@ -91,7 +92,7 @@ export default function ProcurementAnalyticsPage() {
         </ChartCard>
 
         {/* Exceptions */}
-        <ChartCard title="Exceptions">
+        <ChartCard title={tx("Exceptions")}>
           <ExceptionList items={data?.exceptions ?? []} title="" />
         </ChartCard>
       </div>

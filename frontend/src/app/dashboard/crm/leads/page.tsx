@@ -5,6 +5,7 @@ import {
   crmApi, CRMRecord, CRMStage, fmtCurrency,
   STATUS_LABELS, STATUS_COLORS, TEMPERATURE_LABELS, TEMPERATURE_COLORS, SOURCE_LABELS,
 } from "@/lib/crm_pipeline";
+import { tx } from "@/lib/i18n/core";
 
 export default function LeadsPage() {
   const [records, setRecords] = useState<CRMRecord[]>([]);
@@ -43,9 +44,9 @@ export default function LeadsPage() {
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-gray-900">Leads</h1>
+        <h1 className="text-xl font-bold text-gray-900">{tx("Leads")}</h1>
         <button onClick={() => setShowCreate(true)} className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-          + New Lead
+          {tx("+ New Lead")}
         </button>
       </div>
 
@@ -53,15 +54,15 @@ export default function LeadsPage() {
       <div className="flex flex-wrap gap-3 items-center">
         <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
           className="text-sm border rounded-lg px-2 py-1.5">
-          <option value="">All Statuses</option>
+          <option value="">{tx("All Statuses")}</option>
           {Object.entries(STATUS_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </select>
         <select value={tempFilter} onChange={e => setTempFilter(e.target.value)}
           className="text-sm border rounded-lg px-2 py-1.5">
-          <option value="">All Temperatures</option>
+          <option value="">{tx("All Temperatures")}</option>
           {Object.entries(TEMPERATURE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </select>
-        <span className="text-sm text-gray-500">{records.length} records</span>
+        <span className="text-sm text-gray-500">{records.length} {tx("records")}</span>
       </div>
 
       {/* Table */}
@@ -69,24 +70,24 @@ export default function LeadsPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b bg-gray-50 text-xs text-gray-600">
-              <th className="px-3 py-2 text-left">Code</th>
-              <th className="px-3 py-2 text-left">Company</th>
-              <th className="px-3 py-2 text-left">Contact</th>
-              <th className="px-3 py-2 text-left">Source</th>
-              <th className="px-3 py-2 text-left">Stage</th>
-              <th className="px-3 py-2 text-left">Temp</th>
-              <th className="px-3 py-2 text-left">Score</th>
-              <th className="px-3 py-2 text-left">Expected Rev</th>
-              <th className="px-3 py-2 text-left">Status</th>
-              <th className="px-3 py-2 text-left">Actions</th>
+              <th className="px-3 py-2 text-left">{tx("Code")}</th>
+              <th className="px-3 py-2 text-left">{tx("Company")}</th>
+              <th className="px-3 py-2 text-left">{tx("Contact")}</th>
+              <th className="px-3 py-2 text-left">{tx("Source")}</th>
+              <th className="px-3 py-2 text-left">{tx("Stage")}</th>
+              <th className="px-3 py-2 text-left">{tx("Temp")}</th>
+              <th className="px-3 py-2 text-left">{tx("Score")}</th>
+              <th className="px-3 py-2 text-left">{tx("Expected Rev")}</th>
+              <th className="px-3 py-2 text-left">{tx("Status")}</th>
+              <th className="px-3 py-2 text-left">{tx("Actions")}</th>
             </tr>
           </thead>
           <tbody>
             {loading && (
-              <tr><td colSpan={10} className="px-3 py-6 text-center text-gray-400">Loading…</td></tr>
+              <tr><td colSpan={10} className="px-3 py-6 text-center text-gray-400">{tx("Loading…")}</td></tr>
             )}
             {!loading && records.length === 0 && (
-              <tr><td colSpan={10} className="px-3 py-6 text-center text-gray-400">No leads found</td></tr>
+              <tr><td colSpan={10} className="px-3 py-6 text-center text-gray-400">{tx("No leads found")}</td></tr>
             )}
             {records.map(rec => (
               <tr key={rec.id} className="border-b hover:bg-gray-50">
@@ -121,7 +122,7 @@ export default function LeadsPage() {
                 </td>
                 <td className="px-3 py-2">
                   <Link href={`/dashboard/crm/records/${rec.id}`}
-                    className="text-blue-600 hover:underline text-xs">View</Link>
+                    className="text-blue-600 hover:underline text-xs">{tx("View")}</Link>
                 </td>
               </tr>
             ))}
@@ -133,17 +134,17 @@ export default function LeadsPage() {
       {showCreate && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md space-y-3">
-            <h2 className="font-semibold text-lg">New Lead</h2>
-            <input placeholder="Company Name *" value={form.company_name}
+            <h2 className="font-semibold text-lg">{tx("New Lead")}</h2>
+            <input placeholder={tx("Company Name *")} value={form.company_name}
               onChange={e => setForm(f => ({ ...f, company_name: e.target.value }))}
               className="w-full border rounded-lg px-3 py-2 text-sm" />
-            <input placeholder="Contact Person" value={form.contact_person_name}
+            <input placeholder={tx("Contact Person")} value={form.contact_person_name}
               onChange={e => setForm(f => ({ ...f, contact_person_name: e.target.value }))}
               className="w-full border rounded-lg px-3 py-2 text-sm" />
-            <input placeholder="Email" value={form.contact_email}
+            <input placeholder={tx("Email")} value={form.contact_email}
               onChange={e => setForm(f => ({ ...f, contact_email: e.target.value }))}
               className="w-full border rounded-lg px-3 py-2 text-sm" />
-            <input placeholder="Phone" value={form.contact_phone}
+            <input placeholder={tx("Phone")} value={form.contact_phone}
               onChange={e => setForm(f => ({ ...f, contact_phone: e.target.value }))}
               className="w-full border rounded-lg px-3 py-2 text-sm" />
             <select value={form.source_type}
@@ -151,16 +152,16 @@ export default function LeadsPage() {
               className="w-full border rounded-lg px-3 py-2 text-sm">
               {Object.entries(SOURCE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
-            <textarea placeholder="Notes" value={form.notes}
+            <textarea placeholder={tx("Notes")} value={form.notes}
               onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
               className="w-full border rounded-lg px-3 py-2 text-sm" rows={2} />
             <div className="flex gap-2 pt-1">
               <button onClick={handleCreate} disabled={saving || !form.company_name}
                 className="flex-1 bg-blue-600 text-white py-2 rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50">
-                {saving ? "Saving…" : "Create Lead"}
+                {saving ? tx("Saving…") : tx("Create Lead")}
               </button>
               <button onClick={() => setShowCreate(false)}
-                className="flex-1 border rounded-lg py-2 text-sm hover:bg-gray-50">Cancel</button>
+                className="flex-1 border rounded-lg py-2 text-sm hover:bg-gray-50">{tx("Cancel")}</button>
             </div>
           </div>
         </div>

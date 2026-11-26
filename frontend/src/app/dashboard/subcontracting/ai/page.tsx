@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { scApi, SCAIRecOut, SCAIAgentType, agentLabel, riskBadge, fmt } from "@/lib/subcontracting";
+import { tx } from "@/lib/i18n/core";
 
 const AGENT_COLORS: Record<SCAIAgentType, string> = {
   PERFORMANCE_ANALYZER: "bg-blue-50 border-blue-200 text-blue-900",
@@ -28,17 +29,17 @@ function RecCard({ rec, onAction }: { rec: SCAIRecOut; onAction: (id: string, no
               {rec.risk_level && (
                 <span className={`text-xs px-1.5 py-0.5 rounded border ${riskBadge(rec.risk_level)}`}>{rec.risk_level}</span>
               )}
-              <span className="text-xs opacity-60">Priority {rec.priority}</span>
-              {rec.is_actioned && <span className="text-xs bg-white bg-opacity-70 px-1.5 py-0.5 rounded text-green-700">Actioned ✓</span>}
+              <span className="text-xs opacity-60">{tx("Priority")} {rec.priority}</span>
+              {rec.is_actioned && <span className="text-xs bg-white bg-opacity-70 px-1.5 py-0.5 rounded text-green-700">{tx("Actioned ✓")}</span>}
             </div>
             <p className="font-semibold mt-0.5">{rec.title}</p>
-            {rec.order_no && <p className="text-xs opacity-70">Order: {rec.order_no}</p>}
-            {rec.supplier_name && <p className="text-xs opacity-70">Supplier: {rec.supplier_name}</p>}
+            {rec.order_no && <p className="text-xs opacity-70">{tx("Order:")} {rec.order_no}</p>}
+            {rec.supplier_name && <p className="text-xs opacity-70">{tx("Supplier:")} {rec.supplier_name}</p>}
           </div>
         </div>
         {rec.potential_saving && (
           <div className="shrink-0 text-right">
-            <p className="text-xs opacity-60">Potential Saving</p>
+            <p className="text-xs opacity-60">{tx("Potential Saving")}</p>
             <p className="font-bold">KES {fmt(rec.potential_saving, 0)}</p>
           </div>
         )}
@@ -47,18 +48,18 @@ function RecCard({ rec, onAction }: { rec: SCAIRecOut; onAction: (id: string, no
       {rec.rationale && (
         <>
           <button onClick={() => setExpanded(!expanded)} className="text-xs underline opacity-70">
-            {expanded ? "Hide rationale" : "Show rationale"}
+            {expanded ? tx("Hide rationale") : tx("Show rationale")}
           </button>
           {expanded && <p className="text-xs italic opacity-80 border-t border-current border-opacity-20 pt-2">{rec.rationale}</p>}
         </>
       )}
       {!rec.is_actioned && (
         <div className="flex gap-2 pt-1">
-          <input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Action notes…"
+          <input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={tx("Action notes…")}
             className="flex-1 border border-current border-opacity-30 rounded px-2 py-1 text-xs bg-white bg-opacity-50" />
           <button onClick={() => onAction(rec.id, notes)}
             className="px-3 py-1 text-xs bg-white bg-opacity-70 rounded border border-current border-opacity-30 hover:bg-opacity-100 font-medium">
-            Mark Actioned
+            {tx("Mark Actioned")}
           </button>
         </div>
       )}
@@ -73,7 +74,7 @@ export default function SCAIPage() {
   const { data: recs, isLoading } = useQuery({ queryKey: ["sc-ai-recs"], queryFn: () => scApi.listAIRecs() });
   const runAll = useMutation({
     mutationFn: () => scApi.runAI(),
-    onSuccess: (r) => { qc.invalidateQueries({ queryKey: ["sc-ai-recs"] }); alert(`${r.generated} recommendation(s) generated`); },
+    onSuccess: (r) => { qc.invalidateQueries({ queryKey: ["sc-ai-recs"] }); alert(tx("{generated} recommendation(s) generated", { generated: r.generated })); },
   });
   const action = useMutation({
     mutationFn: ({ id, notes }: { id: string; notes: string }) => scApi.actionAIRec(id, notes),
@@ -87,12 +88,12 @@ export default function SCAIPage() {
     <div className="p-6 space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900">Subcontracting AI Agents</h1>
-          <p className="text-sm text-gray-500">Performance analysis · Cost optimization · Risk detection</p>
+          <h1 className="text-xl font-semibold text-gray-900">{tx("Subcontracting AI Agents")}</h1>
+          <p className="text-sm text-gray-500">{tx("Performance analysis · Cost optimization · Risk detection")}</p>
         </div>
         <button onClick={() => runAll.mutate()} disabled={runAll.isPending}
           className="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-50">
-          {runAll.isPending ? "Running…" : "Run All AI Agents"}
+          {runAll.isPending ? tx("Running…") : tx("Run All AI Agents")}
         </button>
       </div>
 
@@ -101,9 +102,9 @@ export default function SCAIPage() {
           <div key={a} className={`border rounded-lg p-4 ${AGENT_COLORS[a]}`}>
             <p className="font-semibold text-sm">{AGENT_ICON[a]} {agentLabel(a)}</p>
             <p className="text-xs mt-1 opacity-80">
-              {a === "PERFORMANCE_ANALYZER" && "Detects poor yield, delays, and quality rejection issues per order."}
-              {a === "COST_OPTIMIZER" && "Flags high wastage costs and suggests cost-reduction strategies."}
-              {a === "RISK_DETECTOR" && "Predicts delivery delays, missing location configs, and material loss risk."}
+              {a === "PERFORMANCE_ANALYZER" && tx("Detects poor yield, delays, and quality rejection issues per order.")}
+              {a === "COST_OPTIMIZER" && tx("Flags high wastage costs and suggests cost-reduction strategies.")}
+              {a === "RISK_DETECTOR" && tx("Predicts delivery delays, missing location configs, and material loss risk.")}
             </p>
           </div>
         ))}
@@ -112,7 +113,7 @@ export default function SCAIPage() {
       <div className="flex gap-2">
         <button onClick={() => setFilterAgent("")}
           className={`px-3 py-1.5 text-xs rounded border ${!filterAgent ? "bg-gray-800 text-white border-gray-800" : "hover:bg-gray-50"}`}>
-          All ({recs?.length ?? 0})
+          {tx("All (")}{recs?.length ?? 0})
         </button>
         {agents.map((a) => (
           <button key={a} onClick={() => setFilterAgent(a)}
@@ -122,7 +123,7 @@ export default function SCAIPage() {
         ))}
       </div>
 
-      {isLoading && <div className="text-gray-400">Loading…</div>}
+      {isLoading && <div className="text-gray-400">{tx("Loading…")}</div>}
       {!isLoading && filtered.length === 0 && (
         <div className="text-center py-12 text-gray-400">No recommendations yet. Click &ldquo;Run All AI Agents&rdquo; to generate insights.</div>
       )}

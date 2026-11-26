@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { kpiApi } from "@/lib/utilityKpi";
+import { tx } from "@/lib/i18n/core";
 
 const today = new Date().toISOString().slice(0, 10);
 const mtdStart = today.slice(0, 8) + "01";
@@ -37,7 +38,7 @@ function DateFilter({ from, to, onFrom, onTo }: { from: string; to: string; onFr
   return (
     <div className="flex gap-3 items-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3">
       <input type="date" className={ic} value={from} onChange={e => onFrom(e.target.value)} />
-      <span className="text-gray-400 text-xs">to</span>
+      <span className="text-gray-400 text-xs">{tx("to")}</span>
       <input type="date" className={ic} value={to} onChange={e => onTo(e.target.value)} />
     </div>
   );
@@ -66,15 +67,15 @@ export default function BoilerKpiPage() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <div className="flex items-center gap-3 mb-1">
-            <Link href="/dashboard/utility-management/kpi-center" className="text-sm text-gray-500 hover:text-blue-600">← KPI Center</Link>
+            <Link href="/dashboard/utility-management/kpi-center" className="text-sm text-gray-500 hover:text-blue-600">{tx("← KPI Center")}</Link>
             <span className="text-gray-300">|</span>
-            <Link href="/dashboard/utility-management/steam" className="text-sm text-blue-600 hover:underline">Operational Records →</Link>
+            <Link href="/dashboard/utility-management/steam" className="text-sm text-blue-600 hover:underline">{tx("Operational Records →")}</Link>
           </div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white" style={{ borderLeft: "4px solid #f97316", paddingLeft: 12 }}>
-            Boiler / Steam KPI Dashboard
+            {tx("Boiler / Steam KPI Dashboard")}
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Track boiler efficiency, fuel consumption, steam generation, and condensate recovery.
+            {tx("Track boiler efficiency, fuel consumption, steam generation, and condensate recovery.")}
           </p>
         </div>
         <DateFilter from={dateFrom} to={dateTo} onFrom={setDateFrom} onTo={setDateTo} />
@@ -83,60 +84,60 @@ export default function BoilerKpiPage() {
       {/* KPI cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         <KpiCard
-          label="Steam Generated"
+          label={tx("Steam Generated")}
           value={fmt(kpi?.steam_ton_total, 2)}
           unit="t"
           sub={`${dateFrom} – ${dateTo}`}
         />
         <KpiCard
-          label="Fuel Consumed"
+          label={tx("Fuel Consumed")}
           value={fmt(kpi?.fuel_consumed_total, 2)}
           unit={kpi?.fuel_unit ?? "Nm³"}
         />
         <KpiCard
-          label="Gas per Ton Steam"
+          label={tx("Gas per Ton Steam")}
           value={fmt(kpi?.gas_per_ton_steam, 2)}
           unit={`${kpi?.fuel_unit ?? "Nm³"}/t`}
           warn={(kpi?.gas_per_ton_steam ?? 0) > 90}
         />
         <KpiCard
-          label="Boiler Efficiency"
+          label={tx("Boiler Efficiency")}
           value={pct(kpi?.boiler_efficiency_pct)}
           highlight={(kpi?.boiler_efficiency_pct ?? 0) >= 85}
           warn={(kpi?.boiler_efficiency_pct ?? 0) < 80 && (kpi?.boiler_efficiency_pct ?? 0) > 0}
           critical={(kpi?.boiler_efficiency_pct ?? 0) < 75 && (kpi?.boiler_efficiency_pct ?? 0) > 0}
         />
         <KpiCard
-          label="Condensate Recovery"
+          label={tx("Condensate Recovery")}
           value={pct(kpi?.condensate_recovery_pct)}
           highlight={(kpi?.condensate_recovery_pct ?? 0) >= 80}
           warn={(kpi?.condensate_recovery_pct ?? 0) < 60 && (kpi?.condensate_recovery_pct ?? 0) > 0}
         />
         <KpiCard
-          label="Blowdown Loss"
+          label={tx("Blowdown Loss")}
           value={pct(kpi?.blowdown_loss_pct)}
           highlight={(kpi?.blowdown_loss_pct ?? 0) <= 3}
           warn={(kpi?.blowdown_loss_pct ?? 0) > 5}
           critical={(kpi?.blowdown_loss_pct ?? 0) > 8}
         />
         <KpiCard
-          label="Feedwater Used"
+          label={tx("Feedwater Used")}
           value={fmt(kpi?.feedwater_m3_total, 1)}
           unit="m³"
         />
         <KpiCard
-          label="Burner Runtime"
+          label={tx("Burner Runtime")}
           value={fmt(kpi?.burner_runtime_hours, 1)}
           unit="h"
         />
         <KpiCard
-          label="Avg Boiler Load"
+          label={tx("Avg Boiler Load")}
           value={pct(kpi?.avg_boiler_load_pct)}
           highlight={(kpi?.avg_boiler_load_pct ?? 0) >= 70 && (kpi?.avg_boiler_load_pct ?? 0) <= 90}
           warn={(kpi?.avg_boiler_load_pct ?? 0) < 50 && (kpi?.avg_boiler_load_pct ?? 0) > 0}
         />
         <KpiCard
-          label="Anomaly Count"
+          label={tx("Anomaly Count")}
           value={kpi?.anomaly_count == null ? "—" : String(kpi.anomaly_count)}
           warn={(kpi?.anomaly_count ?? 0) > 0}
           critical={(kpi?.anomaly_count ?? 0) > 3}
@@ -145,7 +146,7 @@ export default function BoilerKpiPage() {
 
       {/* Trend chart */}
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Steam & Gas Daily Trend</h3>
+        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">{tx("Steam & Gas Daily Trend")}</h3>
         <ResponsiveContainer width="100%" height={260}>
           <LineChart data={trend} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" />
@@ -162,10 +163,10 @@ export default function BoilerKpiPage() {
       {/* Efficiency summary */}
       {kpi && (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Efficiency Summary</h3>
+          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">{tx("Efficiency Summary")}</h3>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
             <div className="space-y-1">
-              <p className="text-gray-500">Boiler Efficiency</p>
+              <p className="text-gray-500">{tx("Boiler Efficiency")}</p>
               <div className="flex items-center gap-2">
                 <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                   <div
@@ -177,7 +178,7 @@ export default function BoilerKpiPage() {
               </div>
             </div>
             <div className="space-y-1">
-              <p className="text-gray-500">Condensate Recovery</p>
+              <p className="text-gray-500">{tx("Condensate Recovery")}</p>
               <div className="flex items-center gap-2">
                 <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                   <div
@@ -189,7 +190,7 @@ export default function BoilerKpiPage() {
               </div>
             </div>
             <div className="space-y-1">
-              <p className="text-gray-500">Blowdown Loss (lower is better)</p>
+              <p className="text-gray-500">{tx("Blowdown Loss (lower is better)")}</p>
               <div className="flex items-center gap-2">
                 <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                   <div

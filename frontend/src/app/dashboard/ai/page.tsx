@@ -7,6 +7,7 @@ import Link from "next/link";
 import { aiApi, AIDashboard, AIPrediction, AIRecommendation, parseAIError } from "@/lib/aiApi";
 import { RequirePermission } from "@/components/PermissionGuard";
 import { PageHelpTooltip } from "@/components/help/PageHelpTooltip";
+import { tx } from "@/lib/i18n/core";
 
 const RISK_PILL: Record<string, string> = {
   low: "bg-green-100 text-green-700",
@@ -74,11 +75,11 @@ function AIDashboardTab() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["ai-dashboard"] }),
   });
 
-  if (isLoading) return <div className="p-8 text-gray-500">Loading AI dashboard…</div>;
+  if (isLoading) return <div className="p-8 text-gray-500">{tx("Loading AI dashboard…")}</div>;
   if (error) {
     const aiErr = parseAIError(error);
-    if (aiErr.status === 401) return <div className="p-8 text-yellow-600">Please log in to access AI features.</div>;
-    if (aiErr.status === 403) return <div className="p-8 text-orange-600">You do not have permission to use AI features.</div>;
+    if (aiErr.status === 401) return <div className="p-8 text-yellow-600">{tx("Please log in to access AI features.")}</div>;
+    if (aiErr.status === 403) return <div className="p-8 text-orange-600">{tx("You do not have permission to use AI features.")}</div>;
     return <div className="p-8 text-red-500">{aiErr.message}</div>;
   }
 
@@ -90,9 +91,9 @@ function AIDashboardTab() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">AI & Intelligence</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("AI & Intelligence")}</h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            Powered by{" "}
+            {tx("Powered by")}{" "}
             <span className={`font-semibold ${status?.configured ? "text-green-600" : "text-yellow-600"}`}>
               {status?.provider ?? "…"} / {status?.model ?? "…"}
             </span>
@@ -101,7 +102,7 @@ function AIDashboardTab() {
               {status?.ai_mode_label ?? status?.mode ?? ""}
             </span>
             {status?.fallback_active && (
-              <span className="ml-2 text-xs text-yellow-600">⚠ Mock mode — no API key configured</span>
+              <span className="ml-2 text-xs text-yellow-600">{tx("⚠ Mock mode — no API key configured")}</span>
             )}
           </p>
         </div>
@@ -112,34 +113,34 @@ function AIDashboardTab() {
             disabled={generatePreds.isPending}
             className="px-4 py-2 text-sm font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
           >
-            {generatePreds.isPending ? "Generating…" : "Generate Predictions"}
+            {generatePreds.isPending ? tx("Generating…") : tx("Generate Predictions")}
           </button>
           <button
             onClick={() => generateRecs.mutate()}
             disabled={generateRecs.isPending}
             className="px-4 py-2 text-sm font-medium bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
           >
-            {generateRecs.isPending ? "Generating…" : "Generate Recommendations"}
+            {generateRecs.isPending ? tx("Generating…") : tx("Generate Recommendations")}
           </button>
         </div>
       </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <KpiCard label="Active Predictions" value={stats?.active_predictions ?? 0} sub="not archived" color="text-indigo-600" />
-        <KpiCard label="Pending Recommendations" value={stats?.pending_recommendations ?? 0} sub="not actioned / dismissed" color="text-purple-600" />
-        <KpiCard label="Saved Formulations" value={stats?.saved_formulations ?? 0} sub="all versions" color="text-teal-600" />
-        <KpiCard label="Scenario Simulations" value={stats?.scenario_simulations ?? 0} sub="all time" color="text-orange-600" />
+        <KpiCard label={tx("Active Predictions")} value={stats?.active_predictions ?? 0} sub="not archived" color="text-indigo-600" />
+        <KpiCard label={tx("Pending Recommendations")} value={stats?.pending_recommendations ?? 0} sub="not actioned / dismissed" color="text-purple-600" />
+        <KpiCard label={tx("Saved Formulations")} value={stats?.saved_formulations ?? 0} sub="all versions" color="text-teal-600" />
+        <KpiCard label={tx("Scenario Simulations")} value={stats?.scenario_simulations ?? 0} sub="all time" color="text-orange-600" />
       </div>
 
       {/* Quick Links */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {[
-          { label: "Predictions", href: "/dashboard/ai/predictions", icon: "📈" },
-          { label: "Recommendations", href: "/dashboard/ai/recommendations", icon: "💡" },
-          { label: "Scenario Simulator", href: "/dashboard/ai/scenarios", icon: "🎯" },
-          { label: "Formulation Engine", href: "/dashboard/ai/formulations", icon: "🧪" },
-          { label: "AI Logs", href: "/dashboard/ai/logs", icon: "📋" },
+          { label: tx("Predictions"), href: "/dashboard/ai/predictions", icon: "📈" },
+          { label: tx("Recommendations"), href: "/dashboard/ai/recommendations", icon: "💡" },
+          { label: tx("Scenario Simulator"), href: "/dashboard/ai/scenarios", icon: "🎯" },
+          { label: tx("Formulation Engine"), href: "/dashboard/ai/formulations", icon: "🧪" },
+          { label: tx("AI Logs"), href: "/dashboard/ai/logs", icon: "📋" },
         ].map((l) => (
           <Link
             key={l.href}
@@ -156,12 +157,12 @@ function AIDashboardTab() {
         {/* Recent Predictions */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm">
           <div className="flex items-center justify-between px-5 py-4 border-b border-gray-50">
-            <h2 className="font-semibold text-gray-800">Recent Predictions</h2>
-            <Link href="/dashboard/ai/predictions" className="text-xs text-indigo-600 hover:underline">View all →</Link>
+            <h2 className="font-semibold text-gray-800">{tx("Recent Predictions")}</h2>
+            <Link href="/dashboard/ai/predictions" className="text-xs text-indigo-600 hover:underline">{tx("View all →")}</Link>
           </div>
           <div className="divide-y divide-gray-50">
             {data?.recent_predictions?.length === 0 && (
-              <p className="px-5 py-8 text-sm text-gray-400 text-center">No predictions yet. Click &quot;Generate Predictions&quot; above.</p>
+              <p className="px-5 py-8 text-sm text-gray-400 text-center">{tx("No predictions yet. Click \"Generate Predictions\" above.")}</p>
             )}
             {data?.recent_predictions?.map((p: AIPrediction) => (
               <div key={p.id} className="px-5 py-3 flex items-start justify-between gap-3">
@@ -178,7 +179,7 @@ function AIDashboardTab() {
                     </span>
                   )}
                   {p.confidence_score != null && (
-                    <span className="text-xs text-gray-400">{(p.confidence_score * 100).toFixed(0)}% conf.</span>
+                    <span className="text-xs text-gray-400">{(p.confidence_score * 100).toFixed(0)}{tx("% conf.")}</span>
                   )}
                 </div>
               </div>
@@ -189,12 +190,12 @@ function AIDashboardTab() {
         {/* Critical Recommendations */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm">
           <div className="flex items-center justify-between px-5 py-4 border-b border-gray-50">
-            <h2 className="font-semibold text-gray-800">Critical Recommendations</h2>
-            <Link href="/dashboard/ai/recommendations" className="text-xs text-purple-600 hover:underline">View all →</Link>
+            <h2 className="font-semibold text-gray-800">{tx("Critical Recommendations")}</h2>
+            <Link href="/dashboard/ai/recommendations" className="text-xs text-purple-600 hover:underline">{tx("View all →")}</Link>
           </div>
           <div className="divide-y divide-gray-50">
             {data?.critical_recommendations?.length === 0 && (
-              <p className="px-5 py-8 text-sm text-gray-400 text-center">No critical recommendations. Click &quot;Generate Recommendations&quot; above.</p>
+              <p className="px-5 py-8 text-sm text-gray-400 text-center">{tx("No critical recommendations. Click \"Generate Recommendations\" above.")}</p>
             )}
             {data?.critical_recommendations?.map((r: AIRecommendation) => (
               <div key={r.id} className="px-5 py-3 flex items-start justify-between gap-3">
@@ -213,13 +214,13 @@ function AIDashboardTab() {
                     onClick={() => actionRec.mutate(r.id)}
                     className="text-xs px-2 py-1 bg-green-50 text-green-700 rounded hover:bg-green-100"
                   >
-                    Action
+                    {tx("Action")}
                   </button>
                   <button
                     onClick={() => dismissRec.mutate(r.id)}
                     className="text-xs px-2 py-1 bg-gray-50 text-gray-500 rounded hover:bg-gray-100"
                   >
-                    Dismiss
+                    {tx("Dismiss")}
                   </button>
                 </div>
               </div>
@@ -246,18 +247,18 @@ const AIEvalsPage          = dynamic(() => import("@/app/dashboard/ai/evals/page
 
 export default function AIPage() {
   const tabs = [
-    { key: "dashboard",      label: "Dashboard",       permission: "ai.view", content: <AIDashboardTab /> },
-    { key: "chat",           label: "AI Chat",         permission: "ai.view", content: <AIChatPage /> },
-    { key: "predictions",    label: "Predictions",     permission: "ai.view", content: <AIPredictionsPage /> },
-    { key: "formulations",   label: "Formulations",    permission: "ai.view", content: <AIFormulationsPage /> },
-    { key: "recommendations",label: "Recommendations", permission: "ai.view", content: <AIRecommendationsPage /> },
-    { key: "scenarios",      label: "Scenarios",       permission: "ai.view", content: <AIScenariosPage /> },
-    { key: "compliance",     label: "Compliance",      permission: "ai.view", content: <AICompliancePage /> },
-    { key: "agents",         label: "Agents",          permission: "ai.view", content: <AIAgentsPage /> },
-    { key: "evals",          label: "Evaluations",     permission: "ai.view", content: <AIEvalsPage /> },
-    { key: "governance",     label: "Governance",      permission: "ai.view", content: <AIGovernancePage /> },
-    { key: "nl-command",     label: "NL Command",      permission: "ai.view", content: <AINLCommandPage /> },
-    { key: "logs",           label: "Logs",            permission: "ai.view", content: <AILogsPage /> },
+    { key: "dashboard",      label: tx("Dashboard"),       permission: "ai.view", content: <AIDashboardTab /> },
+    { key: "chat",           label: tx("AI Chat"),         permission: "ai.view", content: <AIChatPage /> },
+    { key: "predictions",    label: tx("Predictions"),     permission: "ai.view", content: <AIPredictionsPage /> },
+    { key: "formulations",   label: tx("Formulations"),    permission: "ai.view", content: <AIFormulationsPage /> },
+    { key: "recommendations",label: tx("Recommendations"), permission: "ai.view", content: <AIRecommendationsPage /> },
+    { key: "scenarios",      label: tx("Scenarios"),       permission: "ai.view", content: <AIScenariosPage /> },
+    { key: "compliance",     label: tx("Compliance"),      permission: "ai.view", content: <AICompliancePage /> },
+    { key: "agents",         label: tx("Agents"),          permission: "ai.view", content: <AIAgentsPage /> },
+    { key: "evals",          label: tx("Evaluations"),     permission: "ai.view", content: <AIEvalsPage /> },
+    { key: "governance",     label: tx("Governance"),      permission: "ai.view", content: <AIGovernancePage /> },
+    { key: "nl-command",     label: tx("NL Command"),      permission: "ai.view", content: <AINLCommandPage /> },
+    { key: "logs",           label: tx("Logs"),            permission: "ai.view", content: <AILogsPage /> },
   ];
   return (
     <ModuleWorkspace

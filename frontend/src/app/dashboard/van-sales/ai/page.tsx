@@ -1,6 +1,7 @@
 "use client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { vanSalesApi, SEVERITY_COLORS } from "@/lib/van_sales";
+import { tx } from "@/lib/i18n/core";
 
 const AGENT_LABELS: Record<string, string> = {
   ROUTE_OPTIMIZER: "Route Optimizer",
@@ -29,21 +30,21 @@ export default function VanSalesAIPage() {
     <div className="p-6 space-y-5 text-slate-200">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-white">AI Intelligence — Van Sales</h1>
-          <p className="text-slate-500 text-sm mt-0.5">3 AI agents monitoring route, sales, and risk</p>
+          <h1 className="text-xl font-bold text-white">{tx("AI Intelligence — Van Sales")}</h1>
+          <p className="text-slate-500 text-sm mt-0.5">{tx("3 AI agents monitoring route, sales, and risk")}</p>
         </div>
         <button onClick={() => runMut.mutate()} disabled={runMut.isPending}
           className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium disabled:opacity-50">
-          {runMut.isPending ? "Running…" : "Run AI Agents"}
+          {runMut.isPending ? tx("Running…") : tx("Run AI Agents")}
         </button>
       </div>
 
       {/* Agent descriptions */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {[
-          { key: "ROUTE_OPTIMIZER", desc: "Suggests better route sequencing, flags vans with high missed-visit rates, recommends visit priority based on customer value." },
-          { key: "SALES_ASSISTANT", desc: "Detects vans with no recent sales, suggests upsell opportunities, flags customers overdue for a reorder visit." },
-          { key: "RISK_MONITOR", desc: "Detects unusual discounts, stock discrepancies, missed collections, and unauthorized payment patterns." },
+          { key: "ROUTE_OPTIMIZER", desc: tx("Suggests better route sequencing, flags vans with high missed-visit rates, recommends visit priority based on customer value.") },
+          { key: "SALES_ASSISTANT", desc: tx("Detects vans with no recent sales, suggests upsell opportunities, flags customers overdue for a reorder visit.") },
+          { key: "RISK_MONITOR", desc: tx("Detects unusual discounts, stock discrepancies, missed collections, and unauthorized payment patterns.") },
         ].map((a) => (
           <div key={a.key} className="glow-card p-4">
             <p className="text-sm font-semibold text-indigo-300 mb-1">{AGENT_LABELS[a.key]}</p>
@@ -53,7 +54,7 @@ export default function VanSalesAIPage() {
       </div>
 
       <div className="space-y-3">
-        {isLoading && <p className="text-slate-500 text-sm">Loading…</p>}
+        {isLoading && <p className="text-slate-500 text-sm">{tx("Loading…")}</p>}
         {!isLoading && recs.length === 0 && (
           <div className="glow-card p-8 text-center text-slate-600">
             No AI recommendations — click &ldquo;Run AI Agents&rdquo; to generate insights.
@@ -74,9 +75,9 @@ export default function VanSalesAIPage() {
               {r.status === "PENDING" && (
                 <div className="flex gap-2 shrink-0">
                   <button onClick={() => ackMut.mutate({ id: r.id, status: "ACKNOWLEDGED" })}
-                    className="px-3 py-1.5 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-slate-300 text-xs">Ack</button>
+                    className="px-3 py-1.5 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-slate-300 text-xs">{tx("Ack")}</button>
                   <button onClick={() => ackMut.mutate({ id: r.id, status: "DISMISSED" })}
-                    className="px-3 py-1.5 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-slate-500 text-xs">Dismiss</button>
+                    className="px-3 py-1.5 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-slate-500 text-xs">{tx("Dismiss")}</button>
                 </div>
               )}
               {r.status !== "PENDING" && <span className="text-xs text-slate-600 shrink-0">{r.status}</span>}

@@ -2,6 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { tpmApi, fmtCurrency } from "@/lib/tpm";
 import Link from "next/link";
+import { tx } from "@/lib/i18n/core";
 
 export default function TPMROIPage() {
   const { data: rows = [], isLoading } = useQuery({
@@ -21,16 +22,16 @@ export default function TPMROIPage() {
   return (
     <div className="p-6 space-y-5">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">ROI / Post-Event Analysis</h1>
-        <p className="text-sm text-gray-500">Compare expected vs actual return on investment for completed promotions.</p>
+        <h1 className="text-2xl font-bold text-gray-900">{tx("ROI / Post-Event Analysis")}</h1>
+        <p className="text-sm text-gray-500">{tx("Compare expected vs actual return on investment for completed promotions.")}</p>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: "Avg Expected ROI",  value: `${avgExpectedROI.toFixed(1)}%`,  color: "text-blue-400" },
-          { label: "Avg Actual ROI",    value: `${avgActualROI.toFixed(1)}%`,    color: avgActualROI >= avgExpectedROI ? "text-green-400" : "text-red-400" },
-          { label: "Positive ROI Count",value: positiveROI,                       color: "text-teal-400" },
-          { label: "Total Actual Spend",value: fmtCurrency(totalActualSpend),    color: "text-orange-400" },
+          { label: tx("Avg Expected ROI"),  value: `${avgExpectedROI.toFixed(1)}%`,  color: "text-blue-400" },
+          { label: tx("Avg Actual ROI"),    value: `${avgActualROI.toFixed(1)}%`,    color: avgActualROI >= avgExpectedROI ? "text-green-400" : "text-red-400" },
+          { label: tx("Positive ROI Count"),value: positiveROI,                       color: "text-teal-400" },
+          { label: tx("Total Actual Spend"),value: fmtCurrency(totalActualSpend),    color: "text-orange-400" },
         ].map((k) => (
           <div key={k.label} className="glow-card p-4 text-center">
             <p className="text-xs text-gray-500">{k.label}</p>
@@ -43,21 +44,21 @@ export default function TPMROIPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-blue-900/30">
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Promotion</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Objective</th>
-              <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Actual Spend</th>
-              <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Expected Uplift %</th>
-              <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Actual Uplift %</th>
-              <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Expected ROI %</th>
-              <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Actual ROI %</th>
-              <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">ROI vs Plan</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Promotion")}</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Objective")}</th>
+              <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Actual Spend")}</th>
+              <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Expected Uplift %")}</th>
+              <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Actual Uplift %")}</th>
+              <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Expected ROI %")}</th>
+              <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Actual ROI %")}</th>
+              <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("ROI vs Plan")}</th>
             </tr>
           </thead>
           <tbody>
             {isLoading ? (
-              <tr><td colSpan={8} className="text-center py-10 text-gray-400">Loading…</td></tr>
+              <tr><td colSpan={8} className="text-center py-10 text-gray-400">{tx("Loading…")}</td></tr>
             ) : rows.length === 0 ? (
-              <tr><td colSpan={8} className="text-center py-10 text-gray-400">No completed promotions with performance data.</td></tr>
+              <tr><td colSpan={8} className="text-center py-10 text-gray-400">{tx("No completed promotions with performance data.")}</td></tr>
             ) : rows.map((r: any) => (
               <tr key={r.promotion_id} className="border-b border-blue-900/20 hover:bg-blue-950/20">
                 <td className="px-4 py-3">
@@ -87,10 +88,10 @@ export default function TPMROIPage() {
 
       {rows.length > 0 && (
         <div className="liquid-glass p-5 space-y-3">
-          <h2 className="text-sm font-semibold text-gray-700">Learnings Summary</h2>
+          <h2 className="text-sm font-semibold text-gray-700">{tx("Learnings Summary")}</h2>
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
-              <p className="text-xs text-gray-500 mb-2">Top Performers (actual ROI)</p>
+              <p className="text-xs text-gray-500 mb-2">{tx("Top Performers (actual ROI)")}</p>
               {rows.slice(0, 3).map((r: any) => (
                 <div key={r.promotion_id} className="flex justify-between py-1 border-b border-blue-900/20">
                   <span className="text-gray-300 text-xs truncate max-w-[200px]">{r.promotion_name}</span>
@@ -101,7 +102,7 @@ export default function TPMROIPage() {
               ))}
             </div>
             <div>
-              <p className="text-xs text-gray-500 mb-2">Underperformers</p>
+              <p className="text-xs text-gray-500 mb-2">{tx("Underperformers")}</p>
               {[...rows].reverse().slice(0, 3).map((r: any) => (
                 <div key={r.promotion_id} className="flex justify-between py-1 border-b border-blue-900/20">
                   <span className="text-gray-300 text-xs truncate max-w-[200px]">{r.promotion_name}</span>

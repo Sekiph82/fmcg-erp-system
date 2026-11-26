@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { trainingApi, EmployeeSkillRow, LEVEL_COLOR, CATEGORY_COLOR } from "@/lib/training";
+import { tx } from "@/lib/i18n/core";
 
 type ReportTab = "skill_gaps" | "completion" | "cert_expiry" | "cost";
 
@@ -26,15 +27,15 @@ export default function TrainingReportsPage() {
   useEffect(() => { run(); }, [tab]);
 
   const tabs: { key: ReportTab; label: string }[] = [
-    { key: "skill_gaps", label: "Skill Gap Report" },
-    { key: "completion", label: "Completion Report" },
-    { key: "cert_expiry", label: "Cert Expiry Report" },
-    { key: "cost", label: "Training Cost Report" },
+    { key: "skill_gaps", label: tx("Skill Gap Report") },
+    { key: "completion", label: tx("Completion Report") },
+    { key: "cert_expiry", label: tx("Cert Expiry Report") },
+    { key: "cost", label: tx("Training Cost Report") },
   ];
 
   return (
     <div className="p-6 space-y-4">
-      <h1 className="text-xl font-bold text-gray-900">Training Reports</h1>
+      <h1 className="text-xl font-bold text-gray-900">{tx("Training Reports")}</h1>
 
       <div className="flex gap-2 flex-wrap">
         {tabs.map(t => (
@@ -49,12 +50,12 @@ export default function TrainingReportsPage() {
         {tab === "skill_gaps" && (
           <div className="flex gap-2 items-end">
             <div>
-              <label className="text-xs text-gray-500">Department ID (optional)</label>
+              <label className="text-xs text-gray-500">{tx("Department ID (optional)")}</label>
               <input className="block border rounded px-2 py-1 text-sm mt-1 w-40" value={deptFilter}
                 onChange={(e) => setDeptFilter(e.target.value)} />
             </div>
             <button onClick={run} disabled={loading} className="rounded bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-50">
-              {loading ? "Loading…" : "Run"}
+              {loading ? tx("Loading…") : tx("Run")}
             </button>
           </div>
         )}
@@ -62,26 +63,26 @@ export default function TrainingReportsPage() {
         {tab === "cert_expiry" && (
           <div className="flex gap-2 items-end">
             <div>
-              <label className="text-xs text-gray-500">Expiring within (days)</label>
+              <label className="text-xs text-gray-500">{tx("Expiring within (days)")}</label>
               <input type="number" min={7} max={365} className="block border rounded px-2 py-1 text-sm mt-1 w-24"
                 value={certDays} onChange={(e) => setCertDays(Number(e.target.value))} />
             </div>
             <button onClick={run} disabled={loading} className="rounded bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-50">
-              {loading ? "Loading…" : "Run"}
+              {loading ? tx("Loading…") : tx("Run")}
             </button>
           </div>
         )}
 
-        {loading && <p className="text-gray-500 text-sm">Loading…</p>}
+        {loading && <p className="text-gray-500 text-sm">{tx("Loading…")}</p>}
 
         {!!data && tab === "skill_gaps" && (() => {
           const rows = data as EmployeeSkillRow[];
           return (
             <div>
-              <p className="text-sm text-gray-500 mb-2">{rows.length} skill gaps identified</p>
+              <p className="text-sm text-gray-500 mb-2">{rows.length} {tx("skill gaps identified")}</p>
               <table className="w-full text-sm">
                 <thead className="bg-gray-50"><tr>
-                  {["Employee","Skill","Category","Current","Required"].map(h=><th key={h} className="px-3 py-2 text-left text-xs font-semibold text-gray-600">{h}</th>)}
+                  {[tx("Employee"),tx("Skill"),tx("Category"),tx("Current"),tx("Required")].map(h=><th key={h} className="px-3 py-2 text-left text-xs font-semibold text-gray-600">{h}</th>)}
                 </tr></thead>
                 <tbody className="divide-y">
                   {rows.map(r => (
@@ -89,13 +90,13 @@ export default function TrainingReportsPage() {
                       <td className="px-3 py-2 font-medium">{r.employee_name ?? r.employee_id}</td>
                       <td className="px-3 py-2">{r.skill_name}</td>
                       <td className="px-3 py-2"><span className={`rounded-full px-2 py-0.5 text-xs ${CATEGORY_COLOR[r.skill_category]}`}>{r.skill_category}</span></td>
-                      <td className="px-3 py-2">{r.current_level ? <span className={`rounded px-1 text-xs ${LEVEL_COLOR[r.current_level]}`}>{r.current_level}</span> : <span className="text-gray-400">None</span>}</td>
+                      <td className="px-3 py-2">{r.current_level ? <span className={`rounded px-1 text-xs ${LEVEL_COLOR[r.current_level]}`}>{r.current_level}</span> : <span className="text-gray-400">{tx("None")}</span>}</td>
                       <td className="px-3 py-2">{r.required_level ? <span className={`rounded px-1 text-xs ${LEVEL_COLOR[r.required_level]}`}>{r.required_level}</span> : "—"}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-              {rows.length === 0 && <p className="text-gray-400 text-center py-4 text-sm">No gaps found.</p>}
+              {rows.length === 0 && <p className="text-gray-400 text-center py-4 text-sm">{tx("No gaps found.")}</p>}
             </div>
           );
         })()}
@@ -105,10 +106,10 @@ export default function TrainingReportsPage() {
           return (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               {[
-                { label: "Total", value: d.total },
-                { label: "Completed", value: d.completed, color: "text-green-700" },
-                { label: "Overdue", value: d.overdue, color: "text-red-700" },
-                { label: "Completion Rate", value: `${d.completion_rate_pct}%` },
+                { label: tx("Total"), value: d.total },
+                { label: tx("Completed"), value: d.completed, color: "text-green-700" },
+                { label: tx("Overdue"), value: d.overdue, color: "text-red-700" },
+                { label: tx("Completion Rate"), value: `${d.completion_rate_pct}%` },
               ].map(k => (
                 <div key={k.label} className="bg-gray-50 rounded p-3 text-center">
                   <p className={`text-2xl font-bold ${k.color ?? "text-gray-900"}`}>{k.value}</p>
@@ -124,7 +125,7 @@ export default function TrainingReportsPage() {
           return (
             <table className="w-full text-sm">
               <thead className="bg-gray-50"><tr>
-                {["Employee","Certificate","Expiry","Days Left","Status"].map(h=><th key={h} className="px-3 py-2 text-left text-xs font-semibold text-gray-600">{h}</th>)}
+                {[tx("Employee"),tx("Certificate"),tx("Expiry"),tx("Days Left"),tx("Status")].map(h=><th key={h} className="px-3 py-2 text-left text-xs font-semibold text-gray-600">{h}</th>)}
               </tr></thead>
               <tbody className="divide-y">
                 {rows.map(r => (
@@ -133,7 +134,7 @@ export default function TrainingReportsPage() {
                     <td className="px-3 py-2">{r.certificate_name}</td>
                     <td className="px-3 py-2 text-gray-600">{r.expiry_date ?? "—"}</td>
                     <td className={`px-3 py-2 font-semibold ${r.days_to_expiry != null && r.days_to_expiry <= 0 ? "text-red-600" : "text-yellow-700"}`}>
-                      {r.days_to_expiry != null ? (r.days_to_expiry <= 0 ? "EXPIRED" : `${r.days_to_expiry}d`) : "—"}
+                      {r.days_to_expiry != null ? (r.days_to_expiry <= 0 ? "EXPIRED" : tx("{days_to_expiry}d", { days_to_expiry: r.days_to_expiry })) : "—"}
                     </td>
                     <td className="px-3 py-2 capitalize">{r.status}</td>
                   </tr>
@@ -148,10 +149,10 @@ export default function TrainingReportsPage() {
           const total = rows.reduce((s, r) => s + r.total_cost, 0);
           return (
             <div>
-              <p className="text-sm font-semibold text-gray-700 mb-2">Total Training Cost: KES {total.toLocaleString()}</p>
+              <p className="text-sm font-semibold text-gray-700 mb-2">{tx("Total Training Cost: KES")} {total.toLocaleString()}</p>
               <table className="w-full text-sm">
                 <thead className="bg-gray-50"><tr>
-                  {["Program","Cost/Head","Enrolled","Total Cost"].map(h=><th key={h} className="px-3 py-2 text-left text-xs font-semibold text-gray-600">{h}</th>)}
+                  {[tx("Program"),tx("Cost/Head"),tx("Enrolled"),tx("Total Cost")].map(h=><th key={h} className="px-3 py-2 text-left text-xs font-semibold text-gray-600">{h}</th>)}
                 </tr></thead>
                 <tbody className="divide-y">
                   {rows.map(r => (

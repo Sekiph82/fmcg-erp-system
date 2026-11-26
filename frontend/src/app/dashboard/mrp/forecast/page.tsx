@@ -8,19 +8,20 @@ import {
   BarChart, Bar,
 } from "recharts";
 import { mrpApi, STATUS_COLOR, fmtQty, Forecast, ForecastSummary } from "@/lib/mrp";
+import { tx, lx } from "@/lib/i18n/core";
 
-const MODELS = [
-  { value: "EXPONENTIAL_SMOOTHING", label: "Exponential Smoothing" },
-  { value: "MOVING_AVG",            label: "Moving Average" },
-  { value: "WEIGHTED_MOVING_AVG",   label: "Weighted Moving Average" },
-  { value: "SEASONAL",              label: "Seasonal Index" },
-];
+const MODELS = lx(() => [
+  { value: "EXPONENTIAL_SMOOTHING", label: tx("Exponential Smoothing") },
+  { value: "MOVING_AVG",            label: tx("Moving Average") },
+  { value: "WEIGHTED_MOVING_AVG",   label: tx("Weighted Moving Average") },
+  { value: "SEASONAL",              label: tx("Seasonal Index") },
+]);
 
-const PERIODS = [
-  { value: "MONTHLY", label: "Monthly" },
-  { value: "WEEKLY",  label: "Weekly" },
-  { value: "DAILY",   label: "Daily" },
-];
+const PERIODS = lx(() => [
+  { value: "MONTHLY", label: tx("Monthly") },
+  { value: "WEEKLY",  label: tx("Weekly") },
+  { value: "DAILY",   label: tx("Daily") },
+]);
 
 function ForecastDetailPanel({ forecast }: { forecast: Forecast }) {
   const qc = useQueryClient();
@@ -51,11 +52,11 @@ function ForecastDetailPanel({ forecast }: { forecast: Forecast }) {
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
         <div className="flex justify-between items-start flex-wrap gap-3">
           <div>
-            <p className="text-xs text-gray-500">Product</p>
+            <p className="text-xs text-gray-500">{tx("Product")}</p>
             <p className="font-semibold">{forecast.product_name} <span className="text-gray-400 font-mono text-xs ml-2">{forecast.product_sku}</span></p>
             <div className="flex gap-3 mt-2 text-xs text-gray-500">
-              <span>Model: <b>{forecast.forecast_model}</b></span>
-              <span>Period: <b>{forecast.period_type}</b></span>
+              <span>{tx("Model:")} <b>{forecast.forecast_model}</b></span>
+              <span>{tx("Period:")} <b>{forecast.period_type}</b></span>
               <span>{forecast.start_date} → {forecast.end_date}</span>
               {forecast.mape != null && (
                 <span>MAPE: <b className={forecast.mape < 10 ? "text-green-600" : forecast.mape < 20 ? "text-yellow-600" : "text-red-600"}>
@@ -68,17 +69,17 @@ function ForecastDetailPanel({ forecast }: { forecast: Forecast }) {
             <button onClick={() => backfillMutation.mutate()}
               disabled={backfillMutation.isPending}
               className="px-3 py-1.5 text-xs bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
-              ↻ Backfill Actuals
+              {tx("↻ Backfill Actuals")}
             </button>
             {forecast.status !== "APPROVED" && (
               <button onClick={() => approveMutation.mutate()}
                 disabled={approveMutation.isPending}
                 className="px-3 py-1.5 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700">
-                ✓ Approve
+                {tx("✓ Approve")}
               </button>
             )}
             {forecast.status === "APPROVED" && (
-              <span className="px-3 py-1.5 text-xs bg-green-100 text-green-700 rounded-lg">✓ Approved</span>
+              <span className="px-3 py-1.5 text-xs bg-green-100 text-green-700 rounded-lg">{tx("✓ Approved")}</span>
             )}
           </div>
         </div>
@@ -86,7 +87,7 @@ function ForecastDetailPanel({ forecast }: { forecast: Forecast }) {
 
       {/* Chart */}
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-        <h3 className="text-sm font-semibold mb-4">Forecast vs Actual</h3>
+        <h3 className="text-sm font-semibold mb-4">{tx("Forecast vs Actual")}</h3>
         <ResponsiveContainer width="100%" height={220}>
           <LineChart data={chartData} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" />
@@ -107,7 +108,7 @@ function ForecastDetailPanel({ forecast }: { forecast: Forecast }) {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 dark:bg-gray-700 text-xs uppercase text-gray-500">
               <tr>
-                {["Period", "Forecast Qty", "Adjusted Qty", "Actual Qty", "Error %", "Flags", "Notes"].map(h => (
+                {[tx("Period"), tx("Forecast Qty"), tx("Adjusted Qty"), tx("Actual Qty"), tx("Error %"), tx("Flags"), tx("Notes")].map(h => (
                   <th key={h} className="px-3 py-3 text-left font-medium whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -127,8 +128,8 @@ function ForecastDetailPanel({ forecast }: { forecast: Forecast }) {
                     ) : "—"}
                   </td>
                   <td className="px-3 py-2">
-                    {l.is_spike && <span className="mr-1 px-1.5 py-0.5 rounded text-xs bg-orange-100 text-orange-700">⚡ Spike</span>}
-                    {l.is_outlier && <span className="px-1.5 py-0.5 rounded text-xs bg-red-100 text-red-700">⚠ Outlier</span>}
+                    {l.is_spike && <span className="mr-1 px-1.5 py-0.5 rounded text-xs bg-orange-100 text-orange-700">{tx("⚡ Spike")}</span>}
+                    {l.is_outlier && <span className="px-1.5 py-0.5 rounded text-xs bg-red-100 text-red-700">{tx("⚠ Outlier")}</span>}
                   </td>
                   <td className="px-3 py-2 text-xs text-gray-400">{l.notes ?? "—"}</td>
                 </tr>
@@ -190,18 +191,18 @@ export default function ForecastPage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6 space-y-6">
       <div className="flex items-center gap-3 mb-1">
-        <Link href="/dashboard/mrp" className="text-sm text-gray-500 hover:text-indigo-600">← MRP Dashboard</Link>
+        <Link href="/dashboard/mrp" className="text-sm text-gray-500 hover:text-indigo-600">{tx("← MRP Dashboard")}</Link>
       </div>
       <h1 className="text-2xl font-bold text-gray-900 dark:text-white" style={{ borderLeft: "4px solid #6366f1", paddingLeft: 12 }}>
-        Demand Forecasting
+        {tx("Demand Forecasting")}
       </h1>
 
       {/* Tabs */}
       <div className="flex gap-2">
         {[
-          { id: "list", label: "Forecast List" },
-          { id: "generate", label: "+ Generate Forecast" },
-          { id: "accuracy", label: "Accuracy (MAPE)" },
+          { id: "list", label: tx("Forecast List") },
+          { id: "generate", label: tx("+ Generate Forecast") },
+          { id: "accuracy", label: tx("Accuracy (MAPE)") },
         ].map(t => (
           <button key={t.id} onClick={() => setTab(t.id as any)}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
@@ -214,31 +215,31 @@ export default function ForecastPage() {
 
       {tab === "generate" && (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
-          <h3 className="text-sm font-semibold mb-4">Generate Statistical Forecast</h3>
+          <h3 className="text-sm font-semibold mb-4">{tx("Generate Statistical Forecast")}</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Product</label>
-              <EntityPicker kind="product" label="Product" value={productId} onChange={setProductId} />
+              <label className="block text-xs text-gray-500 mb-1">{tx("Product")}</label>
+              <EntityPicker kind="product" label={tx("Product")} value={productId} onChange={setProductId} />
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Forecast Model</label>
+              <label className="block text-xs text-gray-500 mb-1">{tx("Forecast Model")}</label>
               <select className={sel} value={model} onChange={e => setModel(e.target.value)}>
                 {MODELS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Period Type</label>
+              <label className="block text-xs text-gray-500 mb-1">{tx("Period Type")}</label>
               <select className={sel} value={periodType} onChange={e => setPeriodType(e.target.value)}>
                 {PERIODS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Periods Ahead</label>
+              <label className="block text-xs text-gray-500 mb-1">{tx("Periods Ahead")}</label>
               <input type="number" className={sel} min={1} max={24} value={periodsAhead}
                 onChange={e => setPeriodsAhead(Number(e.target.value))} />
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">History Periods</label>
+              <label className="block text-xs text-gray-500 mb-1">{tx("History Periods")}</label>
               <input type="number" className={sel} min={3} max={36} value={historyPeriods}
                 onChange={e => setHistoryPeriods(Number(e.target.value))} />
             </div>
@@ -248,13 +249,13 @@ export default function ForecastPage() {
             disabled={!productId || generateMutation.isPending}
             className="mt-4 px-5 py-2 rounded-lg text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-60"
           >
-            {generateMutation.isPending ? "⟳ Generating…" : "Generate Forecast"}
+            {generateMutation.isPending ? tx("⟳ Generating…") : tx("Generate Forecast")}
           </button>
           {generateMutation.isSuccess && (
-            <p className="mt-2 text-sm text-green-600">✓ Forecast generated successfully</p>
+            <p className="mt-2 text-sm text-green-600">{tx("✓ Forecast generated successfully")}</p>
           )}
           {generateMutation.isError && (
-            <p className="mt-2 text-sm text-red-600">✗ Failed — check product ID and sales history</p>
+            <p className="mt-2 text-sm text-red-600">{tx("✗ Failed — check product ID and sales history")}</p>
           )}
         </div>
       )}
@@ -265,7 +266,7 @@ export default function ForecastPage() {
             <table className="w-full text-sm">
               <thead className="bg-gray-50 dark:bg-gray-700 text-xs uppercase text-gray-500">
                 <tr>
-                  {["SKU", "Product", "Forecasts", "Avg MAPE", "Min MAPE", "Max MAPE", "Accuracy"].map(h => (
+                  {["SKU", tx("Product"), tx("Forecasts"), tx("Avg MAPE"), tx("Min MAPE"), tx("Max MAPE"), tx("Accuracy")].map(h => (
                     <th key={h} className="px-4 py-3 text-left font-medium">{h}</th>
                   ))}
                 </tr>
@@ -290,7 +291,7 @@ export default function ForecastPage() {
                   );
                 })}
                 {accuracy.length === 0 && (
-                  <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400">No accuracy data yet — backfill actuals on forecasts first</td></tr>
+                  <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400">{tx("No accuracy data yet — backfill actuals on forecasts first")}</td></tr>
                 )}
               </tbody>
             </table>
@@ -304,7 +305,7 @@ export default function ForecastPage() {
           <div className="lg:col-span-1">
             <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
               <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
-                <p className="text-sm font-semibold">{forecasts.length} Forecasts</p>
+                <p className="text-sm font-semibold">{forecasts.length} {tx("Forecasts")}</p>
               </div>
               <div className="divide-y divide-gray-100 dark:divide-gray-700 max-h-[600px] overflow-y-auto">
                 {forecasts.map(f => (
@@ -325,7 +326,7 @@ export default function ForecastPage() {
                         <span className={`block text-xs px-2 py-0.5 rounded-full ${STATUS_COLOR[f.status] ?? "bg-gray-100"}`}>{f.status}</span>
                         {f.mape != null && (
                           <span className={`text-xs mt-1 block ${Number(f.mape) < 10 ? "text-green-600" : Number(f.mape) < 20 ? "text-yellow-600" : "text-red-600"}`}>
-                            {Number(f.mape).toFixed(1)}% MAPE
+                            {Number(f.mape).toFixed(1)}{tx("% MAPE")}
                           </span>
                         )}
                       </div>
@@ -333,7 +334,7 @@ export default function ForecastPage() {
                   </button>
                 ))}
                 {forecasts.length === 0 && (
-                  <p className="px-4 py-6 text-center text-xs text-gray-400">No forecasts yet</p>
+                  <p className="px-4 py-6 text-center text-xs text-gray-400">{tx("No forecasts yet")}</p>
                 )}
               </div>
             </div>
@@ -345,7 +346,7 @@ export default function ForecastPage() {
               <ForecastDetailPanel forecast={selectedForecast} />
             ) : (
               <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-8 text-center text-gray-400">
-                Select a forecast to view details
+                {tx("Select a forecast to view details")}
               </div>
             )}
           </div>

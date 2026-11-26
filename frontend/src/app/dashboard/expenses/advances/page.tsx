@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { expensesApi, ExpenseAdvance, ADVANCE_STATUS_COLOR, fmtCurrency } from "@/lib/expenses";
+import { tx } from "@/lib/i18n/core";
 
 const inputCls = "w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500";
 const labelCls = "block text-[10px] text-slate-400 mb-1";
@@ -27,26 +28,26 @@ export default function AdvancesPage() {
     <div className="p-6 space-y-5 text-slate-200">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-white">Expense Advances</h1>
-          <p className="text-slate-500 text-sm mt-0.5">Unsettled balance: <span className="text-orange-400 font-semibold">{fmtCurrency(totalOpen)}</span></p>
+          <h1 className="text-xl font-bold text-white">{tx("Expense Advances")}</h1>
+          <p className="text-slate-500 text-sm mt-0.5">{tx("Unsettled balance:")} <span className="text-orange-400 font-semibold">{fmtCurrency(totalOpen)}</span></p>
         </div>
         <button onClick={() => setShowForm(!showForm)}
           className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium">
-          {showForm ? "Cancel" : "+ New Advance"}
+          {showForm ? tx("Cancel") : tx("+ New Advance")}
         </button>
       </div>
 
       {showForm && (
         <div className="glow-card p-5 space-y-3">
           <div className="grid grid-cols-3 gap-3">
-            <div><label className={labelCls}>Date</label><input type="date" value={form.advance_date} onChange={(e) => setForm({ ...form, advance_date: e.target.value })} className={inputCls} /></div>
-            <div><label className={labelCls}>Amount (KES)</label><input type="number" value={form.advance_amount} onChange={(e) => setForm({ ...form, advance_amount: e.target.value })} className={inputCls} /></div>
-            <div><label className={labelCls}>Due Date</label><input type="date" value={form.due_date} onChange={(e) => setForm({ ...form, due_date: e.target.value })} className={inputCls} /></div>
-            <div className="col-span-3"><label className={labelCls}>Purpose</label><input value={form.purpose} onChange={(e) => setForm({ ...form, purpose: e.target.value })} className={inputCls} /></div>
+            <div><label className={labelCls}>{tx("Date")}</label><input type="date" value={form.advance_date} onChange={(e) => setForm({ ...form, advance_date: e.target.value })} className={inputCls} /></div>
+            <div><label className={labelCls}>{tx("Amount (KES)")}</label><input type="number" value={form.advance_amount} onChange={(e) => setForm({ ...form, advance_amount: e.target.value })} className={inputCls} /></div>
+            <div><label className={labelCls}>{tx("Due Date")}</label><input type="date" value={form.due_date} onChange={(e) => setForm({ ...form, due_date: e.target.value })} className={inputCls} /></div>
+            <div className="col-span-3"><label className={labelCls}>{tx("Purpose")}</label><input value={form.purpose} onChange={(e) => setForm({ ...form, purpose: e.target.value })} className={inputCls} /></div>
           </div>
           <button onClick={handleCreate} disabled={saving}
             className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm disabled:opacity-50">
-            {saving ? "Saving…" : "Create Advance"}
+            {saving ? tx("Saving…") : tx("Create Advance")}
           </button>
         </div>
       )}
@@ -55,7 +56,7 @@ export default function AdvancesPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-white/[0.07]">
-              {["Advance No", "Date", "Amount", "Settled", "Balance", "Status", "Due", "Purpose"].map((h) => (
+              {[tx("Advance No"), tx("Date"), tx("Amount"), tx("Settled"), tx("Balance"), tx("Status"), tx("Due"), tx("Purpose")].map((h) => (
                 <th key={h} className={`px-4 py-3 text-[10px] text-slate-500 uppercase tracking-widest ${["Amount","Settled","Balance"].includes(h) ? "text-right" : "text-left"}`}>{h}</th>
               ))}
             </tr>
@@ -76,7 +77,7 @@ export default function AdvancesPage() {
                 </tr>
               );
             })}
-            {advances.length === 0 && <tr><td colSpan={8} className="px-4 py-8 text-center text-slate-600">No advances</td></tr>}
+            {advances.length === 0 && <tr><td colSpan={8} className="px-4 py-8 text-center text-slate-600">{tx("No advances")}</td></tr>}
           </tbody>
         </table>
       </div>

@@ -6,6 +6,7 @@ import { vanSalesApi, readOutbox, writeOutbox, isOffline } from "@/lib/van_sales
 import { newRef } from "@/lib/field";
 import { VanOutbox } from "@/components/van-sales/VanOutbox";
 import { useSearchParams } from "next/navigation";
+import { tx } from "@/lib/i18n/core";
 
 interface PosLine {
   item_id: string;
@@ -60,14 +61,14 @@ export default function POSPage() {
         setStep("payment");
         return;
       }
-      setError(e?.message ?? "Failed to create transaction");
+      setError(e?.message ?? tx("Failed to create transaction"));
     },
   });
 
   const payMut = useMutation({
     mutationFn: (data: any) => vanSalesApi.addPayment(createdTxn.id, data),
     onSuccess: () => { setStep("receipt"); qc.invalidateQueries({ queryKey: ["van-txns"] }); },
-    onError: (e: any) => setError(e?.message ?? "Payment failed"),
+    onError: (e: any) => setError(e?.message ?? tx("Payment failed")),
   });
 
   const addLine = () => setLines([...lines, { item_id: "", uom: "PCS", quantity: 1, unit_price: 0, discount_pct: 0, tax_pct: 16 }]);
@@ -76,9 +77,9 @@ export default function POSPage() {
 
   const handleConfirm = () => {
     setError("");
-    if (!selectedVan) { setError("Select a van"); return; }
-    if (!customerId) { setError("Enter customer ID"); return; }
-    if (lines.length === 0) { setError("Add at least one item"); return; }
+    if (!selectedVan) { setError(tx("Select a van")); return; }
+    if (!customerId) { setError(tx("Enter customer ID")); return; }
+    if (lines.length === 0) { setError(tx("Add at least one item")); return; }
     txnMut.mutate({
       customer_id: customerId,
       txn_type: txnType,
@@ -111,7 +112,7 @@ export default function POSPage() {
   return (
     <div className="p-4 max-w-xl mx-auto text-slate-200">
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-xl font-bold text-white">Mobile POS</h1>
+        <h1 className="text-xl font-bold text-white">{tx("Mobile POS")}</h1>
         <div className="flex gap-2">
           <button onClick={() => setTxnType("SALE")}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${txnType === "SALE" ? "bg-emerald-600 border-emerald-500 text-white" : "border-white/[0.08] text-slate-400"}`}>
@@ -130,18 +131,18 @@ export default function POSPage() {
         <div className="space-y-4">
           {/* Van selector */}
           <div>
-            <label className="text-xs text-slate-400 mb-1 block">Van</label>
+            <label className="text-xs text-slate-400 mb-1 block">{tx("Van")}</label>
             <select value={selectedVan} onChange={(e) => setSelectedVan(e.target.value)}
               className="w-full bg-[#0d1829] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500">
-              <option value="">Select van…</option>
-              {vans.map((v) => <option key={v.id} value={v.id}>{v.van_code} — {v.plate_number ?? "no plate"}</option>)}
+              <option value="">{tx("Select van…")}</option>
+              {vans.map((v) => <option key={v.id} value={v.id}>{v.van_code} — {v.plate_number ?? tx("no plate")}</option>)}
             </select>
           </div>
 
           {/* Customer */}
           <div>
-            <label className="text-xs text-slate-400 mb-1 block">Customer</label>
-            <EntityPicker kind="customer" label="Customer" value={customerId} onChange={setCustomerId} />
+            <label className="text-xs text-slate-400 mb-1 block">{tx("Customer")}</label>
+            <EntityPicker kind="customer" label={tx("Customer")} value={customerId} onChange={setCustomerId} />
           </div>
 
           {/* Lines */}
@@ -149,13 +150,13 @@ export default function POSPage() {
             {lines.map((l, i) => (
               <div key={i} className="glow-card p-3 space-y-2">
                 <div className="flex items-center justify-between">
-                  <p className="text-xs text-slate-400 font-semibold">Line {i + 1}</p>
+                  <p className="text-xs text-slate-400 font-semibold">{tx("Line")} {i + 1}</p>
                   <button onClick={() => removeLine(i)} className="text-red-400 text-xs hover:text-red-300">✕</button>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="text-[10px] text-slate-500">Product</label>
-                    <EntityPicker kind="product" label="Product" value={l.item_id} onChange={(id) => updateLine(i, "item_id", id)} />
+                    <label className="text-[10px] text-slate-500">{tx("Product")}</label>
+                    <EntityPicker kind="product" label={tx("Product")} value={l.item_id} onChange={(id) => updateLine(i, "item_id", id)} />
                   </div>
                   <div>
                     <label className="text-[10px] text-slate-500">UOM</label>
@@ -163,44 +164,44 @@ export default function POSPage() {
                       className="w-full bg-white/[0.04] border border-white/[0.08] rounded px-2 py-1.5 text-xs text-white focus:outline-none" />
                   </div>
                   <div>
-                    <label className="text-[10px] text-slate-500">Qty</label>
+                    <label className="text-[10px] text-slate-500">{tx("Qty")}</label>
                     <input type="number" value={l.quantity} onChange={(e) => updateLine(i, "quantity", parseFloat(e.target.value) || 0)}
                       className="w-full bg-white/[0.04] border border-white/[0.08] rounded px-2 py-1.5 text-xs text-white focus:outline-none" min={0.001} step={0.001} />
                   </div>
                   <div>
-                    <label className="text-[10px] text-slate-500">Unit Price</label>
+                    <label className="text-[10px] text-slate-500">{tx("Unit Price")}</label>
                     <input type="number" value={l.unit_price} onChange={(e) => updateLine(i, "unit_price", parseFloat(e.target.value) || 0)}
                       className="w-full bg-white/[0.04] border border-white/[0.08] rounded px-2 py-1.5 text-xs text-white focus:outline-none" min={0} />
                   </div>
                   <div>
-                    <label className="text-[10px] text-slate-500">Disc %</label>
+                    <label className="text-[10px] text-slate-500">{tx("Disc %")}</label>
                     <input type="number" value={l.discount_pct} onChange={(e) => updateLine(i, "discount_pct", parseFloat(e.target.value) || 0)}
                       className="w-full bg-white/[0.04] border border-white/[0.08] rounded px-2 py-1.5 text-xs text-white focus:outline-none" min={0} max={100} />
                   </div>
                   <div>
-                    <label className="text-[10px] text-slate-500">Tax %</label>
+                    <label className="text-[10px] text-slate-500">{tx("Tax %")}</label>
                     <input type="number" value={l.tax_pct} onChange={(e) => updateLine(i, "tax_pct", parseFloat(e.target.value) || 0)}
                       className="w-full bg-white/[0.04] border border-white/[0.08] rounded px-2 py-1.5 text-xs text-white focus:outline-none" min={0} />
                   </div>
                 </div>
                 <div className="text-right text-xs text-emerald-400 font-medium">
-                  Line Total: KES {calcLine(l).total.toFixed(2)}
+                  {tx("Line Total: KES")} {calcLine(l).total.toFixed(2)}
                 </div>
               </div>
             ))}
             <button onClick={addLine}
               className="w-full py-2 rounded-lg border border-dashed border-white/[0.15] text-slate-400 text-sm hover:border-indigo-500 hover:text-indigo-400 transition-colors">
-              + Add Item
+              {tx("+ Add Item")}
             </button>
           </div>
 
           {/* Summary */}
           {lines.length > 0 && (
             <div className="glow-card p-4 space-y-1 text-sm">
-              <div className="flex justify-between text-slate-400"><span>Subtotal</span><span>KES {totals.subtotal.toFixed(2)}</span></div>
-              <div className="flex justify-between text-amber-400"><span>Discount</span><span>- KES {totals.disc.toFixed(2)}</span></div>
-              <div className="flex justify-between text-slate-400"><span>Tax</span><span>KES {totals.tax.toFixed(2)}</span></div>
-              <div className="flex justify-between text-white font-bold text-base pt-1 border-t border-white/[0.07]"><span>Total</span><span>KES {totals.total.toFixed(2)}</span></div>
+              <div className="flex justify-between text-slate-400"><span>{tx("Subtotal")}</span><span>KES {totals.subtotal.toFixed(2)}</span></div>
+              <div className="flex justify-between text-amber-400"><span>{tx("Discount")}</span><span>{tx("- KES")} {totals.disc.toFixed(2)}</span></div>
+              <div className="flex justify-between text-slate-400"><span>{tx("Tax")}</span><span>KES {totals.tax.toFixed(2)}</span></div>
+              <div className="flex justify-between text-white font-bold text-base pt-1 border-t border-white/[0.07]"><span>{tx("Total")}</span><span>KES {totals.total.toFixed(2)}</span></div>
             </div>
           )}
 
@@ -208,7 +209,7 @@ export default function POSPage() {
 
           <button onClick={handleConfirm} disabled={txnMut.isPending}
             className={`w-full py-3 rounded-xl font-semibold text-white text-sm transition-colors disabled:opacity-50 ${txnType === "SALE" ? "bg-emerald-600 hover:bg-emerald-500" : "bg-red-600 hover:bg-red-500"}`}>
-            {txnMut.isPending ? "Processing…" : txnType === "SALE" ? "Confirm Sale" : "Confirm Return"}
+            {txnMut.isPending ? tx("Processing…") : txnType === "SALE" ? tx("Confirm Sale") : tx("Confirm Return")}
           </button>
         </div>
       )}
@@ -216,12 +217,12 @@ export default function POSPage() {
       {step === "payment" && createdTxn && (
         <div className="space-y-4">
           <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4">
-            <p className="text-sm text-emerald-300 font-semibold">Transaction Created: {createdTxn.txn_no}</p>
+            <p className="text-sm text-emerald-300 font-semibold">{tx("Transaction Created:")} {createdTxn.txn_no}</p>
             <p className="text-2xl font-bold text-white mt-2">KES {createdTxn.total_amount?.toLocaleString()}</p>
           </div>
 
           <div>
-            <label className="text-xs text-slate-400 mb-1 block">Payment Method</label>
+            <label className="text-xs text-slate-400 mb-1 block">{tx("Payment Method")}</label>
             <div className="grid grid-cols-3 gap-2">
               {["CASH", "MPESA", "CARD"].map((m) => (
                 <button key={m} onClick={() => setPayMethod(m)}
@@ -234,10 +235,10 @@ export default function POSPage() {
 
           {payMethod !== "CASH" && (
             <div>
-              <label className="text-xs text-slate-400 mb-1 block">Reference / Receipt No</label>
+              <label className="text-xs text-slate-400 mb-1 block">{tx("Reference / Receipt No")}</label>
               <input value={payRef} onChange={(e) => setPayRef(e.target.value)}
                 className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
-                placeholder={payMethod === "MPESA" ? "M-Pesa code" : "Reference"} />
+                placeholder={payMethod === "MPESA" ? tx("M-Pesa code") : tx("Reference")} />
             </div>
           )}
 
@@ -245,10 +246,10 @@ export default function POSPage() {
 
           <button onClick={handlePay} disabled={payMut.isPending}
             className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-semibold text-white text-sm disabled:opacity-50">
-            {payMut.isPending ? "Processing…" : `Collect KES ${createdTxn.total_amount?.toLocaleString()}`}
+            {payMut.isPending ? tx("Processing…") : `Collect KES ${createdTxn.total_amount?.toLocaleString()}`}
           </button>
 
-          <button onClick={reset} className="w-full py-2 text-slate-500 text-sm hover:text-slate-300">← Back to sale</button>
+          <button onClick={reset} className="w-full py-2 text-slate-500 text-sm hover:text-slate-300">{tx("← Back to sale")}</button>
         </div>
       )}
 
@@ -256,14 +257,14 @@ export default function POSPage() {
         <div className="space-y-4 text-center">
           <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-6">
             <p className="text-4xl mb-3">✅</p>
-            <p className="text-lg font-bold text-white">{createdTxn.offline ? "Payment saved on this device" : "Payment Complete"}</p>
+            <p className="text-lg font-bold text-white">{createdTxn.offline ? tx("Payment saved on this device") : tx("Payment Complete")}</p>
             <p className="text-sm text-slate-400 mt-1">{createdTxn.txn_no}</p>
             <p className="text-2xl font-bold text-emerald-400 mt-3">KES {createdTxn.total_amount?.toLocaleString()}</p>
-            <p className="text-xs text-slate-500 mt-2">via {payMethod}</p>
+            <p className="text-xs text-slate-500 mt-2">{tx("via")} {payMethod}</p>
           </div>
           <button onClick={reset}
             className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-semibold text-white text-sm">
-            New Transaction
+            {tx("New Transaction")}
           </button>
         </div>
       )}

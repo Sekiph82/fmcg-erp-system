@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import {
   secondarySalesApi, SellThroughRow, ProductSellThroughRow, AIInsightResult,
 } from "@/lib/secondarySales";
+import { tx } from "@/lib/i18n/core";
 
 const ST_BADGE: Record<string, string> = {
   FAST_MOVING: "bg-green-100 text-green-700",
@@ -57,18 +58,18 @@ export default function SellThroughAnalysisPage() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Sell-Through Analysis</h1>
-        <p className="text-sm text-gray-500 mt-1">Product velocity and market pull signals</p>
+        <h1 className="text-2xl font-bold text-gray-900">{tx("Sell-Through Analysis")}</h1>
+        <p className="text-sm text-gray-500 mt-1">{tx("Product velocity and market pull signals")}</p>
       </div>
 
       {/* Date filters */}
       <div className="flex gap-3 flex-wrap items-end">
         <div>
-          <label className="block text-xs text-gray-500 mb-1">From</label>
+          <label className="block text-xs text-gray-500 mb-1">{tx("From")}</label>
           <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="border rounded-lg px-3 py-2 text-sm" />
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">To</label>
+          <label className="block text-xs text-gray-500 mb-1">{tx("To")}</label>
           <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="border rounded-lg px-3 py-2 text-sm" />
         </div>
       </div>
@@ -77,10 +78,10 @@ export default function SellThroughAnalysisPage() {
       {!loading && (
         <div className="grid grid-cols-4 gap-3">
           {[
-            { label: "Total SKUs", value: sellThrough.length },
-            { label: "Fast Moving", value: sellThrough.filter((r) => r.status === "FAST_MOVING").length, color: "text-green-600" },
-            { label: "Slow Moving", value: sellThrough.filter((r) => r.status === "SLOW_MOVING").length, color: "text-yellow-600" },
-            { label: "At Risk (>60d stock)", value: sellThrough.filter((r) => r.days_of_stock != null && Number(r.days_of_stock) > 60).length, color: "text-red-600" },
+            { label: tx("Total SKUs"), value: sellThrough.length },
+            { label: tx("Fast Moving"), value: sellThrough.filter((r) => r.status === "FAST_MOVING").length, color: "text-green-600" },
+            { label: tx("Slow Moving"), value: sellThrough.filter((r) => r.status === "SLOW_MOVING").length, color: "text-yellow-600" },
+            { label: tx("At Risk (>60d stock)"), value: sellThrough.filter((r) => r.days_of_stock != null && Number(r.days_of_stock) > 60).length, color: "text-red-600" },
           ].map((k) => (
             <div key={k.label} className="bg-white rounded-lg border p-3">
               <p className="text-xs text-gray-500">{k.label}</p>
@@ -112,7 +113,7 @@ export default function SellThroughAnalysisPage() {
               onChange={(e) => setFilterStatus(e.target.value)}
               className="border rounded-lg px-3 py-2 text-sm"
             >
-              <option value="">All Statuses</option>
+              <option value="">{tx("All Statuses")}</option>
               {["FAST_MOVING", "NORMAL", "SLOW_MOVING", "NO_DATA"].map((s) => (
                 <option key={s} value={s}>{s.replace("_", " ")}</option>
               ))}
@@ -122,21 +123,21 @@ export default function SellThroughAnalysisPage() {
             <table className="w-full text-sm">
               <thead className="bg-gray-50 text-gray-600 uppercase text-xs">
                 <tr>
-                  <th className="px-4 py-3 text-left">Distributor</th>
+                  <th className="px-4 py-3 text-left">{tx("Distributor")}</th>
                   <th className="px-4 py-3 text-left">SKU</th>
-                  <th className="px-4 py-3 text-left">Product</th>
-                  <th className="px-4 py-3 text-right">Sell-Out</th>
-                  <th className="px-4 py-3 text-right">Stock</th>
-                  <th className="px-4 py-3 text-right">Days</th>
-                  <th className="px-4 py-3 text-right">ST %</th>
-                  <th className="px-4 py-3 text-left">Status</th>
+                  <th className="px-4 py-3 text-left">{tx("Product")}</th>
+                  <th className="px-4 py-3 text-right">{tx("Sell-Out")}</th>
+                  <th className="px-4 py-3 text-right">{tx("Stock")}</th>
+                  <th className="px-4 py-3 text-right">{tx("Days")}</th>
+                  <th className="px-4 py-3 text-right">{tx("ST %")}</th>
+                  <th className="px-4 py-3 text-left">{tx("Status")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {loading ? (
-                  <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">Loading…</td></tr>
+                  <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">{tx("Loading…")}</td></tr>
                 ) : filtered.length === 0 ? (
-                  <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">No data found</td></tr>
+                  <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">{tx("No data found")}</td></tr>
                 ) : (
                   filtered.map((r, i) => (
                     <tr key={i} className="hover:bg-gray-50">
@@ -167,17 +168,17 @@ export default function SellThroughAnalysisPage() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-gray-600 uppercase text-xs">
               <tr>
-                <th className="px-4 py-3 text-left">Rank</th>
+                <th className="px-4 py-3 text-left">{tx("Rank")}</th>
                 <th className="px-4 py-3 text-left">SKU</th>
-                <th className="px-4 py-3 text-left">Product</th>
-                <th className="px-4 py-3 text-right">Total Qty Sold</th>
-                <th className="px-4 py-3 text-right">Total Value</th>
-                <th className="px-4 py-3 text-right">Distributor Coverage</th>
+                <th className="px-4 py-3 text-left">{tx("Product")}</th>
+                <th className="px-4 py-3 text-right">{tx("Total Qty Sold")}</th>
+                <th className="px-4 py-3 text-right">{tx("Total Value")}</th>
+                <th className="px-4 py-3 text-right">{tx("Distributor Coverage")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {products.length === 0 ? (
-                <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">No product data yet</td></tr>
+                <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">{tx("No product data yet")}</td></tr>
               ) : (
                 products.map((p, i) => (
                   <tr key={p.product_id} className="hover:bg-gray-50">
@@ -199,14 +200,14 @@ export default function SellThroughAnalysisPage() {
       {tab === "promotion" && (
         <div className="space-y-4">
           <div className="bg-white rounded-lg border p-5">
-            <h2 className="font-semibold mb-4">Promotion Impact Analysis</h2>
+            <h2 className="font-semibold mb-4">{tx("Promotion Impact Analysis")}</h2>
             <div className="flex gap-4 items-end">
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Promo Start</label>
+                <label className="block text-xs text-gray-500 mb-1">{tx("Promo Start")}</label>
                 <input type="date" value={promoStart} onChange={(e) => setPromoStart(e.target.value)} className="border rounded-lg px-3 py-2 text-sm" />
               </div>
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Promo End</label>
+                <label className="block text-xs text-gray-500 mb-1">{tx("Promo End")}</label>
                 <input type="date" value={promoEnd} onChange={(e) => setPromoEnd(e.target.value)} className="border rounded-lg px-3 py-2 text-sm" />
               </div>
               <button
@@ -214,7 +215,7 @@ export default function SellThroughAnalysisPage() {
                 disabled={promoLoading || !promoStart || !promoEnd}
                 className="px-4 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
               >
-                {promoLoading ? "Analyzing…" : "Analyze"}
+                {promoLoading ? tx("Analyzing…") : tx("Analyze")}
               </button>
             </div>
           </div>
@@ -231,9 +232,9 @@ export default function SellThroughAnalysisPage() {
                 <div className="mt-4 overflow-x-auto">
                   <table className="w-full text-xs border-t pt-3">
                     <thead><tr className="text-gray-500">
-                      <th className="text-left py-1">Product</th>
-                      <th className="text-right py-1">Uplift %</th>
-                      <th className="text-left py-1">Result</th>
+                      <th className="text-left py-1">{tx("Product")}</th>
+                      <th className="text-right py-1">{tx("Uplift %")}</th>
+                      <th className="text-left py-1">{tx("Result")}</th>
                     </tr></thead>
                     <tbody>
                       {aiPromo.details.map((d, i) => (

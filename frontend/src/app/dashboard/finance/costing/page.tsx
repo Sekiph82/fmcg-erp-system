@@ -6,6 +6,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { financeApi, ProductCost, CostType } from "@/lib/finance";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { tx } from "@/lib/i18n/core";
 
 const costTypeColors: Record<CostType, string> = {
   RAW_MATERIAL: "text-blue-700",
@@ -52,15 +53,15 @@ export default function CostingPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Product Costing</h1>
-          <p className="text-sm text-gray-500 mt-1">Production cost rollup and unit cost analysis</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Product Costing")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{tx("Production cost rollup and unit cost analysis")}</p>
         </div>
-        <Button onClick={() => setShowRollup(true)}>Rollup Product Cost</Button>
+        <Button onClick={() => setShowRollup(true)}>{tx("Rollup Product Cost")}</Button>
       </div>
 
       {/* Period selector */}
       <div className="flex items-center gap-3">
-        <label className="text-sm font-medium text-gray-600">Period (YYYYMM):</label>
+        <label className="text-sm font-medium text-gray-600">{tx("Period (YYYYMM):")}</label>
         <input
           className="border rounded px-3 py-1.5 text-sm w-32"
           value={period}
@@ -69,28 +70,28 @@ export default function CostingPage() {
           maxLength={6}
         />
         {parsedPeriod && <span className="text-sm text-gray-500">{displayPeriod(period)}</span>}
-        <span className="ml-4 text-sm text-gray-500">Total production cost: <span className="font-semibold text-gray-800">KES {totalCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span></span>
+        <span className="ml-4 text-sm text-gray-500">{tx("Total production cost:")} <span className="font-semibold text-gray-800">KES {totalCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span></span>
       </div>
 
       {/* Product costs table */}
       <div className="bg-white rounded-lg border overflow-x-auto">
         {isLoading ? (
-          <p className="px-5 py-8 text-center text-gray-400">Loading…</p>
+          <p className="px-5 py-8 text-center text-gray-400">{tx("Loading…")}</p>
         ) : (
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-gray-50 text-xs text-gray-500 uppercase">
-                <th className="px-5 py-2 text-left">Product</th>
+                <th className="px-5 py-2 text-left">{tx("Product")}</th>
                 <th className="px-5 py-2 text-left">SKU</th>
-                <th className="px-5 py-2 text-right">Raw Material</th>
-                <th className="px-5 py-2 text-right">Packaging</th>
-                <th className="px-5 py-2 text-right">Labor</th>
-                <th className="px-5 py-2 text-right">Utility</th>
-                <th className="px-5 py-2 text-right">Overhead</th>
-                <th className="px-5 py-2 text-right">Units</th>
-                <th className="px-5 py-2 text-right">Std Cost/Unit</th>
-                <th className="px-5 py-2 text-right">Actual/Unit</th>
-                <th className="px-5 py-2 text-right">Variance</th>
+                <th className="px-5 py-2 text-right">{tx("Raw Material")}</th>
+                <th className="px-5 py-2 text-right">{tx("Packaging")}</th>
+                <th className="px-5 py-2 text-right">{tx("Labor")}</th>
+                <th className="px-5 py-2 text-right">{tx("Utility")}</th>
+                <th className="px-5 py-2 text-right">{tx("Overhead")}</th>
+                <th className="px-5 py-2 text-right">{tx("Units")}</th>
+                <th className="px-5 py-2 text-right">{tx("Std Cost/Unit")}</th>
+                <th className="px-5 py-2 text-right">{tx("Actual/Unit")}</th>
+                <th className="px-5 py-2 text-right">{tx("Variance")}</th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -116,7 +117,7 @@ export default function CostingPage() {
                 );
               })}
               {productCosts.length === 0 && (
-                <tr><td colSpan={11} className="px-5 py-8 text-center text-gray-400">No cost data for this period</td></tr>
+                <tr><td colSpan={11} className="px-5 py-8 text-center text-gray-400">{tx("No cost data for this period")}</td></tr>
               )}
             </tbody>
           </table>
@@ -128,7 +129,7 @@ export default function CostingPage() {
         {(Object.entries(costTypeColors) as [CostType, string][]).map(([k, c]) => (
           <span key={k} className={`font-medium ${c}`}>{k.replace("_", " ")}</span>
         ))}
-        <span className="ml-2">· Variance = Actual − Standard (positive = over budget)</span>
+        <span className="ml-2">{tx("· Variance = Actual − Standard (positive = over budget)")}</span>
       </div>
 
       {/* Rollup modal */}
@@ -152,22 +153,22 @@ function RollupModal({ defaultPeriod, onClose, onSubmit, loading }: { defaultPer
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 space-y-4">
         <div>
-          <h2 className="font-semibold text-lg">Rollup Product Cost</h2>
-          <p className="text-xs text-gray-500 mt-1">Aggregates all production cost entries for the product in the selected period.</p>
+          <h2 className="font-semibold text-lg">{tx("Rollup Product Cost")}</h2>
+          <p className="text-xs text-gray-500 mt-1">{tx("Aggregates all production cost entries for the product in the selected period.")}</p>
         </div>
         <div className="space-y-3">
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Product</label>
-            <EntityPicker kind="product" label="Product" value={productId} onChange={setProductId} />
+            <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Product")}</label>
+            <EntityPicker kind="product" label={tx("Product")} value={productId} onChange={setProductId} />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Period (YYYYMM)</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Period (YYYYMM)")}</label>
             <input className="w-full border rounded px-3 py-2 text-sm" value={periodYm} onChange={(e) => setPeriodYm(e.target.value)} maxLength={6} />
           </div>
         </div>
         <div className="flex gap-2 justify-end">
-          <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button loading={loading} onClick={() => onSubmit({ productId, periodYm })}>Run Rollup</Button>
+          <Button variant="secondary" onClick={onClose}>{tx("Cancel")}</Button>
+          <Button loading={loading} onClick={() => onSubmit({ productId, periodYm })}>{tx("Run Rollup")}</Button>
         </div>
       </div>
     </div>

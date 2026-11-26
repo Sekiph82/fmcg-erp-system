@@ -5,6 +5,10 @@ import { useState } from "react";
 import { AuthProvider } from "@/context/AuthContext";
 import { UnsavedChangesProvider } from "@/context/UnsavedChangesContext";
 import { ToastProvider } from "@/context/ToastContext";
+import { setApiMessageLocalizer } from "@/lib/api";
+import { txApi } from "@/lib/i18n/core";
+
+setApiMessageLocalizer(txApi);
 
 function makeQueryClient() {
   return new QueryClient({

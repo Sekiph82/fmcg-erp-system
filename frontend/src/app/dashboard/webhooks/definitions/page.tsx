@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { listEventDefinitions, EventDefinition } from "@/lib/webhooks";
+import { tx } from "@/lib/i18n/core";
 
 export default function EventDefinitionsPage() {
   const [defs, setDefs] = useState<EventDefinition[]>([]);
@@ -23,19 +24,19 @@ export default function EventDefinitionsPage() {
     return matchSearch && matchModule;
   });
 
-  if (loading) return <div className="p-8 text-gray-500">Loading...</div>;
+  if (loading) return <div className="p-8 text-gray-500">{tx("Loading...")}</div>;
 
   return (
     <div className="max-w-5xl mx-auto py-8 px-4 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Event Definitions</h1>
-        <p className="text-sm text-gray-500 mt-1">All event types registered in the system ({defs.length} total)</p>
+        <h1 className="text-2xl font-bold text-gray-900">{tx("Event Definitions")}</h1>
+        <p className="text-sm text-gray-500 mt-1">{tx("All event types registered in the system (")}{defs.length} {tx("total)")}</p>
       </div>
 
       <div className="flex gap-3">
         <input
           className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm"
-          placeholder="Search event code or name..."
+          placeholder={tx("Search event code or name...")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -44,7 +45,7 @@ export default function EventDefinitionsPage() {
           value={moduleFilter}
           onChange={(e) => setModuleFilter(e.target.value)}
         >
-          <option value="all">All modules</option>
+          <option value="all">{tx("All modules")}</option>
           {modules.map((m) => <option key={m} value={m}>{m}</option>)}
         </select>
       </div>
@@ -53,10 +54,10 @@ export default function EventDefinitionsPage() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
-              <th className="text-left px-4 py-3 font-medium text-gray-700">Event Code</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-700">Name</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-700">Module</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-700">Status</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-700">{tx("Event Code")}</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-700">{tx("Name")}</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-700">{tx("Module")}</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-700">{tx("Status")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -71,13 +72,13 @@ export default function EventDefinitionsPage() {
                 </td>
                 <td className="px-4 py-3">
                   <span className={`text-xs px-2 py-0.5 rounded font-medium ${d.active_flag ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
-                    {d.active_flag ? "Active" : "Inactive"}
+                    {d.active_flag ? tx("Active") : tx("Inactive")}
                   </span>
                 </td>
               </tr>
             ))}
             {filtered.length === 0 && (
-              <tr><td colSpan={4} className="px-4 py-8 text-center text-gray-400">No definitions found</td></tr>
+              <tr><td colSpan={4} className="px-4 py-8 text-center text-gray-400">{tx("No definitions found")}</td></tr>
             )}
           </tbody>
         </table>

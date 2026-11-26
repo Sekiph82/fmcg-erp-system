@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { marketingApi, AdPerformance, AdPlatform } from "@/lib/marketingApi";
 import { RequirePermission } from "@/components/PermissionGuard";
+import { tx } from "@/lib/i18n/core";
 
 const AD_PLATFORMS: AdPlatform[] = ["META", "GOOGLE", "TIKTOK", "TWITTER", "LINKEDIN", "YOUTUBE", "OTHER"];
 
@@ -37,17 +38,17 @@ export default function AdsPage() {
       <div className="min-h-screen bg-[#0b1120] p-6 text-white">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold">Ads Performance</h1>
-            <p className="text-slate-400 text-sm mt-1">{records.length} records</p>
+            <h1 className="text-2xl font-bold">{tx("Ads Performance")}</h1>
+            <p className="text-slate-400 text-sm mt-1">{records.length} {tx("records")}</p>
           </div>
           <Link href="/dashboard/marketing/ads/campaigns"
             className="px-4 py-2 rounded-lg border border-slate-600 text-sm font-medium text-white">
-            Campaign builder
+            {tx("Campaign builder")}
           </Link>
           <RequirePermission permission="ad_performance.edit">
             <Link href="/dashboard/marketing/ads/new"
               className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-sm font-medium text-white">
-              + Log Ad
+              {tx("+ Log Ad")}
             </Link>
           </RequirePermission>
         </div>
@@ -55,23 +56,23 @@ export default function AdsPage() {
         {/* KPIs */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
           <div className="rounded-xl bg-[#131c2e] border border-slate-700/50 p-4">
-            <p className="text-xs text-slate-400 mb-1">Spend (KES)</p>
+            <p className="text-xs text-slate-400 mb-1">{tx("Spend (KES)")}</p>
             <p className="text-xl font-bold text-red-400">{totals.spend.toLocaleString()}</p>
           </div>
           <div className="rounded-xl bg-[#131c2e] border border-slate-700/50 p-4">
-            <p className="text-xs text-slate-400 mb-1">Revenue (KES)</p>
+            <p className="text-xs text-slate-400 mb-1">{tx("Revenue (KES)")}</p>
             <p className="text-xl font-bold text-emerald-400">{totals.revenue.toLocaleString()}</p>
           </div>
           <div className="rounded-xl bg-[#131c2e] border border-slate-700/50 p-4">
             <p className="text-xs text-slate-400 mb-1">ROAS</p>
-            <p className={`text-xl font-bold ${Number(roas) >= 3 ? "text-emerald-400" : "text-yellow-400"}`}>{roas}x</p>
+            <p className={`text-xl font-bold ${Number(roas) >= 3 ? "text-emerald-400" : "text-yellow-400"}`}>{roas}{tx("x")}</p>
           </div>
           <div className="rounded-xl bg-[#131c2e] border border-slate-700/50 p-4">
-            <p className="text-xs text-slate-400 mb-1">Clicks</p>
+            <p className="text-xs text-slate-400 mb-1">{tx("Clicks")}</p>
             <p className="text-xl font-bold">{totals.clicks.toLocaleString()}</p>
           </div>
           <div className="rounded-xl bg-[#131c2e] border border-slate-700/50 p-4">
-            <p className="text-xs text-slate-400 mb-1">Conversions</p>
+            <p className="text-xs text-slate-400 mb-1">{tx("Conversions")}</p>
             <p className="text-xl font-bold">{totals.conversions.toLocaleString()}</p>
           </div>
         </div>
@@ -80,7 +81,7 @@ export default function AdsPage() {
         <div className="flex gap-2 mb-6 flex-wrap">
           <button onClick={() => setPlatform("")}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${!platform ? "bg-blue-600 border-blue-600 text-white" : "border-slate-700 text-slate-400 hover:border-slate-500"}`}>
-            All
+            {tx("All")}
           </button>
           {AD_PLATFORMS.map((p) => (
             <button key={p} onClick={() => setPlatform(p)}
@@ -91,13 +92,13 @@ export default function AdsPage() {
         </div>
 
         {isLoading ? (
-          <p className="text-slate-400">Loading...</p>
+          <p className="text-slate-400">{tx("Loading...")}</p>
         ) : (
           <div className="overflow-x-auto rounded-xl border border-slate-700/50">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-700/50 bg-[#131c2e]">
-                  {["Platform", "Ad Name", "Date", "Spend (KES)", "Revenue", "Impressions", "Clicks", "CTR %", "Conversions", ""].map((h) => (
+                  {[tx("Platform"), tx("Ad Name"), tx("Date"), tx("Spend (KES)"), tx("Revenue"), tx("Impressions"), tx("Clicks"), tx("CTR %"), tx("Conversions"), ""].map((h) => (
                     <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">{h}</th>
                   ))}
                 </tr>
@@ -123,7 +124,7 @@ export default function AdsPage() {
                     <td className="px-4 py-3">
                       <Link href={`/dashboard/marketing/ads/${a.id}`}
                         className="px-2 py-1 rounded bg-slate-700/50 hover:bg-slate-700 text-slate-300 text-xs">
-                        View
+                        {tx("View")}
                       </Link>
                     </td>
                   </tr>

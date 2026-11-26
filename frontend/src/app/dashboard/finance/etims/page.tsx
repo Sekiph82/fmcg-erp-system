@@ -16,6 +16,7 @@ import { Modal } from "@/components/ui/Modal";
 import { ToastContainer } from "@/components/ui/Toast";
 import { useToast } from "@/hooks/useToast";
 import { PageHelpTooltip } from "@/components/help/PageHelpTooltip";
+import { tx } from "@/lib/i18n/core";
 
 const ALL_STATUSES: ETimsStatus[] = [
   "DRAFT", "READY", "PENDING", "SUBMITTED", "ACCEPTED",
@@ -74,7 +75,7 @@ export default function ETimsPage() {
     onSuccess: (sub) => {
       invalidate();
       setSubmitInvoiceId("");
-      toast("success", `Submitted — status: ${sub.status}`);
+      toast("success", tx("Submitted — status: {status}", { status: sub.status }));
     },
     onError: (e) => toast("error", extractApiError(e)),
   });
@@ -84,7 +85,7 @@ export default function ETimsPage() {
     onSuccess: (sub) => {
       setRetryingId(null);
       invalidate();
-      toast("success", `Retry sent — status: ${sub.status}`);
+      toast("success", tx("Retry sent — status: {status}", { status: sub.status }));
     },
     onError: (e) => { setRetryingId(null); toast("error", extractApiError(e)); },
   });
@@ -96,7 +97,7 @@ export default function ETimsPage() {
       invalidate();
       setCancelTarget(null);
       setCancelReason("");
-      toast("success", "Submission cancelled");
+      toast("success", tx("Submission cancelled"));
     },
     onError: (e) => toast("error", extractApiError(e)),
   });
@@ -106,7 +107,7 @@ export default function ETimsPage() {
     onSuccess: (sub) => {
       setPollingId(null);
       invalidate();
-      toast("success", `Status polled — ${sub.status}`);
+      toast("success", tx("Status polled — {status}", { status: sub.status }));
     },
     onError: (e) => { setPollingId(null); toast("error", extractApiError(e)); },
   });
@@ -115,7 +116,7 @@ export default function ETimsPage() {
     mutationFn: () => etimsApi.health(),
     onSuccess: (h) => {
       setHealth(h);
-      toast("success", "Health check complete");
+      toast("success", tx("Health check complete"));
     },
     onError: (e) => toast("error", extractApiError(e)),
   });
@@ -159,27 +160,27 @@ export default function ETimsPage() {
       {/* Header */}
       <div>
         <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-bold text-gray-900">eTIMS — KRA e-Invoice</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("eTIMS — KRA e-Invoice")}</h1>
           <PageHelpTooltip topic="finance-etims" />
         </div>
         <p className="text-sm text-gray-400 mt-0.5">
-          Electronic Tax Invoice Management System — Kenya Revenue Authority
+          {tx("Electronic Tax Invoice Management System — Kenya Revenue Authority")}
         </p>
       </div>
 
       {/* Simulation banner */}
       <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
-        <strong>Integration Mode:</strong> Running in simulation mode — no live KRA calls.{" "}
+        <strong>{tx("Integration Mode:")}</strong> {tx("Running in simulation mode — no live KRA calls.")}{" "}
         <code className="bg-amber-100 px-1 rounded">production_execution_allowed = false</code>
       </div>
 
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: "Total Submissions", value: stats.total,    color: "text-gray-800" },
-          { label: "Accepted",          value: stats.accepted,  color: "text-green-700" },
-          { label: "Pending/Submitted", value: stats.pending,   color: "text-yellow-700" },
-          { label: "Rejected/Failed",   value: stats.rejected,  color: "text-red-700" },
+          { label: tx("Total Submissions"), value: stats.total,    color: "text-gray-800" },
+          { label: tx("Accepted"),          value: stats.accepted,  color: "text-green-700" },
+          { label: tx("Pending/Submitted"), value: stats.pending,   color: "text-yellow-700" },
+          { label: tx("Rejected/Failed"),   value: stats.rejected,  color: "text-red-700" },
         ].map((k) => (
           <div key={k.label} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
             <p className="text-xs font-semibold text-gray-400 uppercase">{k.label}</p>
@@ -191,39 +192,39 @@ export default function ETimsPage() {
       {/* Provider health */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="font-semibold text-gray-800">Provider Health</h2>
+          <h2 className="font-semibold text-gray-800">{tx("Provider Health")}</h2>
           <Button variant="secondary" loading={healthMut.isPending} onClick={() => healthMut.mutate()}>
-            Check Health
+            {tx("Check Health")}
           </Button>
         </div>
         {health && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
             <div>
-              <p className="text-xs text-gray-400 uppercase font-semibold">Provider</p>
+              <p className="text-xs text-gray-400 uppercase font-semibold">{tx("Provider")}</p>
               <p className="font-mono text-gray-700 mt-0.5">{health.provider ?? "—"}</p>
             </div>
             <div>
-              <p className="text-xs text-gray-400 uppercase font-semibold">Environment</p>
+              <p className="text-xs text-gray-400 uppercase font-semibold">{tx("Environment")}</p>
               <p className="font-mono text-gray-700 mt-0.5">{health.environment ?? "—"}</p>
             </div>
             <div>
-              <p className="text-xs text-gray-400 uppercase font-semibold">Live</p>
+              <p className="text-xs text-gray-400 uppercase font-semibold">{tx("Live")}</p>
               <p className="mt-0.5">
-                <Badge label={health.live ? "LIVE" : "Simulation"} variant={health.live ? "red" : "gray"} />
+                <Badge label={health.live ? "LIVE" : tx("Simulation")} variant={health.live ? "red" : "gray"} />
               </p>
             </div>
             <div>
-              <p className="text-xs text-gray-400 uppercase font-semibold">Production Allowed</p>
+              <p className="text-xs text-gray-400 uppercase font-semibold">{tx("Production Allowed")}</p>
               <p className="mt-0.5">
                 <Badge
-                  label={health.production_execution_allowed ? "YES" : "NO (safe)"}
+                  label={health.production_execution_allowed ? "YES" : tx("NO (safe)")}
                   variant={health.production_execution_allowed ? "red" : "green"}
                 />
               </p>
             </div>
             {(health.detail || health.note) && (
               <div className="col-span-2 md:col-span-4">
-                <p className="text-xs text-gray-400 uppercase font-semibold">Note</p>
+                <p className="text-xs text-gray-400 uppercase font-semibold">{tx("Note")}</p>
                 <p className="text-gray-500 text-xs mt-0.5">{health.detail ?? health.note}</p>
               </div>
             )}
@@ -233,25 +234,25 @@ export default function ETimsPage() {
 
       {/* Submit invoice form */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-        <h2 className="font-semibold text-gray-800 mb-3">Submit Invoice to KRA</h2>
+        <h2 className="font-semibold text-gray-800 mb-3">{tx("Submit Invoice to KRA")}</h2>
         <div className="flex gap-3 items-end">
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Invoice</label>
-            <EntityPicker kind="invoice" label="Invoice" className="w-80 max-w-full" value={submitInvoiceId} onChange={setSubmitInvoiceId} />
+            <label className="block text-xs font-medium text-gray-500 mb-1">{tx("Invoice")}</label>
+            <EntityPicker kind="invoice" label={tx("Invoice")} className="w-80 max-w-full" value={submitInvoiceId} onChange={setSubmitInvoiceId} />
           </div>
           <Button
             loading={submitMut.isPending}
             disabled={!submitInvoiceId || submitMut.isPending}
             onClick={() => submitInvoiceId && submitMut.mutate(submitInvoiceId)}
           >
-            Submit to KRA
+            {tx("Submit to KRA")}
           </Button>
         </div>
         {submitMut.data && (
           <div className="mt-3 bg-green-50 border border-green-200 rounded-lg p-3 text-sm">
-            <p className="font-semibold text-green-800">Status: {submitMut.data.status}</p>
+            <p className="font-semibold text-green-800">{tx("Status:")} {submitMut.data.status}</p>
             {submitMut.data.control_unit_invoice_no && (
-              <p className="text-green-700">TIMS No: {submitMut.data.control_unit_invoice_no}</p>
+              <p className="text-green-700">{tx("TIMS No:")} {submitMut.data.control_unit_invoice_no}</p>
             )}
             {submitMut.data.kra_response_message && (
               <p className="text-green-600 text-xs">{submitMut.data.kra_response_message}</p>
@@ -263,13 +264,13 @@ export default function ETimsPage() {
       {/* Submissions table */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-4">
-          <h2 className="font-semibold text-gray-800">Submissions</h2>
+          <h2 className="font-semibold text-gray-800">{tx("Submissions")}</h2>
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
             className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none"
           >
-            <option value="">All Statuses</option>
+            <option value="">{tx("All Statuses")}</option>
             {ALL_STATUSES.map((s) => (
               <option key={s} value={s}>{s}</option>
             ))}
@@ -280,22 +281,22 @@ export default function ETimsPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-100">
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Invoice</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Status</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Provider</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">TIMS No</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">KRA Response</th>
-                <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Attempts</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Last Attempt</th>
-                <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Actions</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{tx("Invoice")}</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{tx("Status")}</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{tx("Provider")}</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{tx("TIMS No")}</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{tx("KRA Response")}</th>
+                <th className="text-center px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{tx("Attempts")}</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{tx("Last Attempt")}</th>
+                <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{tx("Actions")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {isLoading && (
-                <tr><td colSpan={8} className="text-center py-8 text-gray-400">Loading…</td></tr>
+                <tr><td colSpan={8} className="text-center py-8 text-gray-400">{tx("Loading…")}</td></tr>
               )}
               {!isLoading && data.length === 0 && (
-                <tr><td colSpan={8} className="text-center py-8 text-gray-400">No eTIMS submissions yet.</td></tr>
+                <tr><td colSpan={8} className="text-center py-8 text-gray-400">{tx("No eTIMS submissions yet.")}</td></tr>
               )}
               {data.map((sub) => (
                 <Fragment key={sub.id}>
@@ -336,7 +337,7 @@ export default function ETimsPage() {
                           loading={retryingId === sub.id}
                           onClick={() => { setRetryingId(sub.id); retryMut.mutate(sub.id); }}
                         >
-                          Retry
+                          {tx("Retry")}
                         </Button>
                         <Button
                           variant="secondary"
@@ -344,7 +345,7 @@ export default function ETimsPage() {
                           disabled={sub.status === "CANCELLED"}
                           onClick={() => openCancel(sub)}
                         >
-                          Cancel
+                          {tx("Cancel")}
                         </Button>
                         <Button
                           variant="secondary"
@@ -353,7 +354,7 @@ export default function ETimsPage() {
                           loading={pollingId === sub.id}
                           onClick={() => { setPollingId(sub.id); pollMut.mutate(sub.id); }}
                         >
-                          Poll
+                          {tx("Poll")}
                         </Button>
                       </div>
                     </td>
@@ -363,30 +364,30 @@ export default function ETimsPage() {
                       <td colSpan={8} className="px-4 pb-2">
                         <details className="text-xs text-gray-500">
                           <summary className="cursor-pointer text-gray-400 hover:text-gray-600 py-1 select-none">
-                            Debug details
+                            {tx("Debug details")}
                           </summary>
                           <div className="mt-2 space-y-1 pl-2">
                             {sub.error_code && (
                               <p>
-                                <span className="font-semibold text-red-600">Error:</span>{" "}
+                                <span className="font-semibold text-red-600">{tx("Error:")}</span>{" "}
                                 [{sub.error_code}] {sub.error_message}
                               </p>
                             )}
                             {sub.provider_reference && (
                               <p>
-                                <span className="font-semibold">Provider ref:</span>{" "}
+                                <span className="font-semibold">{tx("Provider ref:")}</span>{" "}
                                 <span className="font-mono">{sub.provider_reference}</span>
                               </p>
                             )}
                             {sub.signed_invoice_hash && (
                               <p>
-                                <span className="font-semibold">Hash:</span>{" "}
+                                <span className="font-semibold">{tx("Hash:")}</span>{" "}
                                 <span className="font-mono break-all">{sub.signed_invoice_hash}</span>
                               </p>
                             )}
                             {sub.request_payload && (
                               <details className="mt-1">
-                                <summary className="cursor-pointer text-gray-400 select-none">Request payload</summary>
+                                <summary className="cursor-pointer text-gray-400 select-none">{tx("Request payload")}</summary>
                                 <pre className="mt-1 bg-gray-100 rounded p-2 overflow-x-auto text-xs">
                                   {JSON.stringify(sub.request_payload, null, 2)}
                                 </pre>
@@ -394,7 +395,7 @@ export default function ETimsPage() {
                             )}
                             {sub.response_payload && (
                               <details className="mt-1">
-                                <summary className="cursor-pointer text-gray-400 select-none">Response payload</summary>
+                                <summary className="cursor-pointer text-gray-400 select-none">{tx("Response payload")}</summary>
                                 <pre className="mt-1 bg-gray-100 rounded p-2 overflow-x-auto text-xs">
                                   {JSON.stringify(sub.response_payload, null, 2)}
                                 </pre>
@@ -418,34 +419,32 @@ export default function ETimsPage() {
         onClose={closeCancel}
         title={
           cancelTarget?.status === "ACCEPTED"
-            ? "Cancel Accepted Submission"
-            : "Cancel Submission"
+            ? tx("Cancel Accepted Submission")
+            : tx("Cancel Submission")
         }
       >
         {cancelTarget && (
           <div className="space-y-4">
             {cancelTarget.status === "ACCEPTED" && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-800">
-                <strong>Warning:</strong> This submission has been accepted by KRA. Cancelling may
-                require a credit note and may affect your VAT return. Proceed only if instructed by
-                your tax advisor.
+                <strong>{tx("Warning:")}</strong> {tx("This submission has been accepted by KRA. Cancelling may require a credit note and may affect your VAT return. Proceed only if instructed by your tax advisor.")}
               </div>
             )}
             <div>
               <label className="block text-xs font-medium text-gray-500 mb-1">
-                Cancellation Reason (required)
+                {tx("Cancellation Reason (required)")}
               </label>
               <textarea
                 value={cancelReason}
                 onChange={(e) => setCancelReason(e.target.value)}
                 rows={3}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-200"
-                placeholder="e.g. Customer request, data entry error…"
+                placeholder={tx("e.g. Customer request, data entry error…")}
               />
             </div>
             <div className="flex gap-3 justify-end">
               <Button variant="secondary" onClick={closeCancel}>
-                Keep Submission
+                {tx("Keep Submission")}
               </Button>
               <Button
                 variant="danger"
@@ -453,7 +452,7 @@ export default function ETimsPage() {
                 disabled={!cancelReason.trim() || cancelMut.isPending}
                 onClick={submitCancel}
               >
-                Confirm Cancel
+                {tx("Confirm Cancel")}
               </Button>
             </div>
           </div>

@@ -3,6 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { mfApi, TankOccupancy, TankStatus, QualityStatus, TANK_STATUS_COLORS, QUALITY_STATUS_COLORS } from "@/lib/materialFlow";
+import { tx } from "@/lib/i18n/core";
 
 function TankCard({ tank, onUpdate }: { tank: TankOccupancy; onUpdate: (id: string, d: object) => void }) {
   const fillPct = tank.fill_pct ?? (tank.capacity_max ? (tank.quantity_current / tank.capacity_max) * 100 : 0);
@@ -29,7 +30,7 @@ function TankCard({ tank, onUpdate }: { tank: TankOccupancy; onUpdate: (id: stri
           <div className={`h-2 rounded-full ${barColor}`} style={{ width: `${Math.min(fillPct, 100)}%` }} />
         </div>
         {tank.capacity_max && (
-          <p className="text-xs text-gray-400 mt-0.5">Capacity: {Number(tank.capacity_max).toLocaleString()} {tank.uom}</p>
+          <p className="text-xs text-gray-400 mt-0.5">{tx("Capacity:")} {Number(tank.capacity_max).toLocaleString()} {tank.uom}</p>
         )}
       </div>
 
@@ -42,20 +43,20 @@ function TankCard({ tank, onUpdate }: { tank: TankOccupancy; onUpdate: (id: stri
             <button
               onClick={() => onUpdate(tank.id, { tank_status: "QC_HOLD" as TankStatus, quality_status: "QC_HOLD" as QualityStatus })}
               className="text-xs text-orange-600 border border-orange-200 px-2 py-0.5 rounded hover:bg-orange-50"
-            >QC Hold</button>
+            >{tx("QC Hold")}</button>
           )}
           {tank.tank_status === "QC_HOLD" && (
             <button
               onClick={() => onUpdate(tank.id, { tank_status: "IN_USE" as TankStatus, quality_status: "RELEASED" as QualityStatus })}
               className="text-xs text-green-600 border border-green-200 px-2 py-0.5 rounded hover:bg-green-50"
-            >Release</button>
+            >{tx("Release")}</button>
           )}
         </div>
       </div>
 
       {(tank.product_name || tank.material_name) && (
         <p className="text-xs text-gray-400 border-t pt-2">
-          Contents: <span className="font-medium text-gray-600">{tank.product_name || tank.material_name}</span>
+          {tx("Contents:")} <span className="font-medium text-gray-600">{tank.product_name || tank.material_name}</span>
         </p>
       )}
     </div>
@@ -96,21 +97,21 @@ export default function TanksPage() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <a href="/dashboard/material-flow" className="text-sm text-indigo-600 hover:underline">← Dashboard</a>
-          <h1 className="text-xl font-bold text-gray-900">Tank Occupancy</h1>
+          <a href="/dashboard/material-flow" className="text-sm text-indigo-600 hover:underline">{tx("← Dashboard")}</a>
+          <h1 className="text-xl font-bold text-gray-900">{tx("Tank Occupancy")}</h1>
         </div>
         <button onClick={() => setShowAdd(true)} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">
-          + Add Tank
+          {tx("+ Add Tank")}
         </button>
       </div>
 
       {/* Summary */}
       <div className="grid grid-cols-4 gap-3">
         {[
-          { label: "Total Tanks", value: tankList.length },
-          { label: "In Use", value: inUse, color: "text-emerald-700" },
-          { label: "QC Hold", value: qcHold, color: qcHold > 0 ? "text-orange-600" : "text-gray-700" },
-          { label: "Empty", value: empty, color: "text-gray-600" },
+          { label: tx("Total Tanks"), value: tankList.length },
+          { label: tx("In Use"), value: inUse, color: "text-emerald-700" },
+          { label: tx("QC Hold"), value: qcHold, color: qcHold > 0 ? "text-orange-600" : "text-gray-700" },
+          { label: tx("Empty"), value: empty, color: "text-gray-600" },
         ].map((s) => (
           <div key={s.label} className="bg-white rounded-lg border p-3 text-center">
             <p className="text-xs text-gray-500">{s.label}</p>
@@ -125,7 +126,7 @@ export default function TanksPage() {
           <TankCard key={t.id} tank={t} onUpdate={(id, d) => updateTank.mutate({ id, d })} />
         ))}
         {tankList.length === 0 && (
-          <p className="col-span-4 text-sm text-gray-400 py-8 text-center">No tanks configured. Add one to start tracking occupancy.</p>
+          <p className="col-span-4 text-sm text-gray-400 py-8 text-center">{tx("No tanks configured. Add one to start tracking occupancy.")}</p>
         )}
       </div>
 
@@ -133,11 +134,11 @@ export default function TanksPage() {
       {showAdd && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-xl p-6 w-96 space-y-4">
-            <h2 className="font-bold text-gray-900">Add Tank / Container</h2>
+            <h2 className="font-bold text-gray-900">{tx("Add Tank / Container")}</h2>
             {[
-              { label: "Tank Code", field: "tank_code", placeholder: "TANK-001" },
-              { label: "Tank Name", field: "tank_name", placeholder: "Bulk Storage Tank 1" },
-              { label: "Capacity (max)", field: "capacity_max", placeholder: "5000" },
+              { label: tx("Tank Code"), field: "tank_code", placeholder: "TANK-001" },
+              { label: tx("Tank Name"), field: "tank_name", placeholder: tx("Bulk Storage Tank 1") },
+              { label: tx("Capacity (max)"), field: "capacity_max", placeholder: "5000" },
             ].map(({ label, field, placeholder }) => (
               <div key={field}>
                 <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
@@ -157,9 +158,9 @@ export default function TanksPage() {
               </select>
             </div>
             <div className="flex gap-2 justify-end pt-2">
-              <button onClick={() => setShowAdd(false)} className="px-4 py-2 text-sm text-gray-600 border rounded-lg hover:bg-gray-50">Cancel</button>
+              <button onClick={() => setShowAdd(false)} className="px-4 py-2 text-sm text-gray-600 border rounded-lg hover:bg-gray-50">{tx("Cancel")}</button>
               <button onClick={() => createTank.mutate()} disabled={!form.tank_code || !form.tank_name} className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
-                {createTank.isPending ? "Adding…" : "Add Tank"}
+                {createTank.isPending ? tx("Adding…") : tx("Add Tank")}
               </button>
             </div>
           </div>

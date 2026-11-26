@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { marketingApi, CustomerVisit, VisitType } from "@/lib/marketingApi";
 import { RequirePermission } from "@/components/PermissionGuard";
+import { tx } from "@/lib/i18n/core";
 
 const VISIT_TYPE_OPTIONS: VisitType[] = [
   "SALES", "MARKETING", "TRADE_AUDIT", "MERCHANDISING", "FEEDBACK", "STORE_CHECK",
@@ -35,12 +36,12 @@ export default function VisitsPage() {
       <div className="min-h-screen bg-[#0b1120] p-6 text-white">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold">Field Visits</h1>
-            <p className="text-slate-400 text-sm mt-1">{visits.length} visits recorded</p>
+            <h1 className="text-2xl font-bold">{tx("Field Visits")}</h1>
+            <p className="text-slate-400 text-sm mt-1">{visits.length} {tx("visits recorded")}</p>
           </div>
           <Link href="/dashboard/marketing/visits/new"
             className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-sm font-medium transition-colors">
-            + Log Visit
+            {tx("+ Log Visit")}
           </Link>
         </div>
 
@@ -50,19 +51,19 @@ export default function VisitsPage() {
             onChange={(e) => setTypeFilter(e.target.value)}
             className="bg-[#131c2e] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white"
           >
-            <option value="">All types</option>
+            <option value="">{tx("All types")}</option>
             {VISIT_TYPE_OPTIONS.map((t) => <option key={t} value={t}>{t.replace(/_/g, " ")}</option>)}
           </select>
         </div>
 
         {isLoading ? (
-          <p className="text-slate-400">Loading...</p>
+          <p className="text-slate-400">{tx("Loading...")}</p>
         ) : visits.length === 0 ? (
           <div className="text-center py-16">
-            <p className="text-slate-400 mb-4">No visits found.</p>
+            <p className="text-slate-400 mb-4">{tx("No visits found.")}</p>
             <Link href="/dashboard/marketing/visits/new"
               className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-sm font-medium">
-              Log your first visit
+              {tx("Log your first visit")}
             </Link>
           </div>
         ) : (
@@ -70,7 +71,7 @@ export default function VisitsPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-700/50 bg-[#131c2e]">
-                  {["Type", "Date", "Purpose", "Outcome", "Follow-up", ""].map((h) => (
+                  {[tx("Type"), tx("Date"), tx("Purpose"), tx("Outcome"), tx("Follow-up"), ""].map((h) => (
                     <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">{h}</th>
                   ))}
                 </tr>
@@ -88,7 +89,7 @@ export default function VisitsPage() {
                     <td className="px-4 py-3 text-slate-300 max-w-xs truncate">{v.outcome ?? "—"}</td>
                     <td className="px-4 py-3">
                       {v.followup_required ? (
-                        <span className="text-xs text-orange-400 font-medium">Required</span>
+                        <span className="text-xs text-orange-400 font-medium">{tx("Required")}</span>
                       ) : (
                         <span className="text-xs text-slate-500">—</span>
                       )}
@@ -96,7 +97,7 @@ export default function VisitsPage() {
                     <td className="px-4 py-3">
                       <Link href={`/dashboard/marketing/visits/${v.id}`}
                         className="px-2 py-1 rounded bg-slate-700 text-slate-300 hover:bg-slate-600 text-xs">
-                        View
+                        {tx("View")}
                       </Link>
                     </td>
                   </tr>

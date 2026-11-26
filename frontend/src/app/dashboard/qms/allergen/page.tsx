@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { qmsApi, AllergenValidationRecord } from "@/lib/qms";
+import { tx } from "@/lib/i18n/core";
 
 export default function AllergenValidationPage() {
   const [records, setRecords] = useState<AllergenValidationRecord[]>([]);
@@ -32,72 +33,72 @@ export default function AllergenValidationPage() {
     <div className="p-6 space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Allergen Validation</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Cleaning validation and allergen clearance between production runs</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Allergen Validation")}</h1>
+          <p className="text-sm text-gray-500 mt-0.5">{tx("Cleaning validation and allergen clearance between production runs")}</p>
         </div>
         <button onClick={() => setShowNew(true)}
           className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700">
-          + Record Validation
+          {tx("+ Record Validation")}
         </button>
       </div>
 
       <div className="grid grid-cols-3 gap-4">
         <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <p className="text-xs text-gray-500 uppercase tracking-wide">Passed</p>
+          <p className="text-xs text-gray-500 uppercase tracking-wide">{tx("Passed")}</p>
           <p className="text-2xl font-bold text-green-700">{passed}</p>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <p className="text-xs text-gray-500 uppercase tracking-wide">Failed</p>
+          <p className="text-xs text-gray-500 uppercase tracking-wide">{tx("Failed")}</p>
           <p className={`text-2xl font-bold ${failed > 0 ? "text-red-700" : "text-gray-800"}`}>{failed}</p>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <p className="text-xs text-gray-500 uppercase tracking-wide">Pending</p>
+          <p className="text-xs text-gray-500 uppercase tracking-wide">{tx("Pending")}</p>
           <p className={`text-2xl font-bold ${pending > 0 ? "text-amber-700" : "text-gray-800"}`}>{pending}</p>
         </div>
       </div>
 
       {showNew && (
         <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
-          <h3 className="font-semibold text-gray-800">Record Allergen Validation</h3>
+          <h3 className="font-semibold text-gray-800">{tx("Record Allergen Validation")}</h3>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs text-gray-500 block mb-1">Allergens Present</label>
+              <label className="text-xs text-gray-500 block mb-1">{tx("Allergens Present")}</label>
               <input className="border rounded-lg px-3 py-2 text-sm w-full"
-                placeholder="e.g. Gluten, Peanuts, Milk"
+                placeholder={tx("e.g. Gluten, Peanuts, Milk")}
                 value={form.allergens_present as string}
                 onChange={e => setForm(p => ({ ...p, allergens_present: e.target.value }))} />
             </div>
             <div>
-              <label className="text-xs text-gray-500 block mb-1">Swab Test Result</label>
+              <label className="text-xs text-gray-500 block mb-1">{tx("Swab Test Result")}</label>
               <input className="border rounded-lg px-3 py-2 text-sm w-full"
-                placeholder="Negative / <5 ppm / Positive"
+                placeholder={tx("Negative / <5 ppm / Positive")}
                 value={(form.swab_test_result as string) || ""}
                 onChange={e => setForm(p => ({ ...p, swab_test_result: e.target.value }))} />
             </div>
             <div className="col-span-2">
-              <label className="text-xs text-gray-500 block mb-1">Cleaning Method</label>
+              <label className="text-xs text-gray-500 block mb-1">{tx("Cleaning Method")}</label>
               <textarea className="border rounded-lg px-3 py-2 text-sm w-full" rows={2}
                 value={form.cleaning_method as string}
                 onChange={e => setForm(p => ({ ...p, cleaning_method: e.target.value }))} />
             </div>
             <div>
-              <label className="text-xs text-gray-500 block mb-1">Cleaning Completed At</label>
+              <label className="text-xs text-gray-500 block mb-1">{tx("Cleaning Completed At")}</label>
               <input type="datetime-local" className="border rounded-lg px-3 py-2 text-sm w-full"
                 value={(form.cleaning_completed_at as string) || ""}
                 onChange={e => setForm(p => ({ ...p, cleaning_completed_at: e.target.value }))} />
             </div>
             <div>
-              <label className="text-xs text-gray-500 block mb-1">Validation Result</label>
+              <label className="text-xs text-gray-500 block mb-1">{tx("Validation Result")}</label>
               <select className="border rounded-lg px-3 py-2 text-sm w-full"
                 value={form.validation_passed === undefined ? "" : String(form.validation_passed)}
                 onChange={e => setForm(p => ({ ...p, validation_passed: e.target.value === "" ? null : e.target.value === "true" }))}>
-                <option value="">Pending</option>
-                <option value="true">Passed</option>
-                <option value="false">Failed</option>
+                <option value="">{tx("Pending")}</option>
+                <option value="true">{tx("Passed")}</option>
+                <option value="false">{tx("Failed")}</option>
               </select>
             </div>
             <div className="col-span-2">
-              <label className="text-xs text-gray-500 block mb-1">Evidence Notes</label>
+              <label className="text-xs text-gray-500 block mb-1">{tx("Evidence Notes")}</label>
               <textarea className="border rounded-lg px-3 py-2 text-sm w-full" rows={2}
                 value={(form.evidence_notes as string) || ""}
                 onChange={e => setForm(p => ({ ...p, evidence_notes: e.target.value }))} />
@@ -106,11 +107,11 @@ export default function AllergenValidationPage() {
           <div className="flex gap-3">
             <button onClick={handleCreate}
               className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700">
-              Save
+              {tx("Save")}
             </button>
             <button onClick={() => setShowNew(false)}
               className="px-4 py-2 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200">
-              Cancel
+              {tx("Cancel")}
             </button>
           </div>
         </div>
@@ -118,14 +119,14 @@ export default function AllergenValidationPage() {
 
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         {loading ? (
-          <p className="px-5 py-8 text-gray-400 text-sm">Loading…</p>
+          <p className="px-5 py-8 text-gray-400 text-sm">{tx("Loading…")}</p>
         ) : records.length === 0 ? (
-          <p className="px-5 py-8 text-gray-400 text-sm">No allergen validation records yet</p>
+          <p className="px-5 py-8 text-gray-400 text-sm">{tx("No allergen validation records yet")}</p>
         ) : (
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-xs uppercase text-gray-500">
               <tr>
-                {["Validation #", "Previous Product", "Current Product", "Allergens", "Cleaning Method", "Swab Test", "Result", "Date"].map(h => (
+                {[tx("Validation #"), tx("Previous Product"), tx("Current Product"), tx("Allergens"), tx("Cleaning Method"), tx("Swab Test"), tx("Result"), tx("Date")].map(h => (
                   <th key={h} className="px-4 py-3 text-left font-medium">{h}</th>
                 ))}
               </tr>
@@ -140,9 +141,9 @@ export default function AllergenValidationPage() {
                   <td className="px-4 py-3 text-gray-500 text-xs max-w-xs truncate">{r.cleaning_method || "—"}</td>
                   <td className="px-4 py-3 text-gray-500">{r.swab_test_result || "—"}</td>
                   <td className="px-4 py-3">
-                    {r.validation_passed === true && <span className="px-2 py-0.5 bg-green-100 text-green-800 rounded text-xs">Passed</span>}
-                    {r.validation_passed === false && <span className="px-2 py-0.5 bg-red-100 text-red-800 rounded text-xs">Failed</span>}
-                    {r.validation_passed === null && <span className="px-2 py-0.5 bg-yellow-100 text-yellow-800 rounded text-xs">Pending</span>}
+                    {r.validation_passed === true && <span className="px-2 py-0.5 bg-green-100 text-green-800 rounded text-xs">{tx("Passed")}</span>}
+                    {r.validation_passed === false && <span className="px-2 py-0.5 bg-red-100 text-red-800 rounded text-xs">{tx("Failed")}</span>}
+                    {r.validation_passed === null && <span className="px-2 py-0.5 bg-yellow-100 text-yellow-800 rounded text-xs">{tx("Pending")}</span>}
                   </td>
                   <td className="px-4 py-3 text-gray-400 text-xs">{new Date(r.created_at).toLocaleDateString()}</td>
                 </tr>

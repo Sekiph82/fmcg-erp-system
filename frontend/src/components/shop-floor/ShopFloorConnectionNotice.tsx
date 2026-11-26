@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { tx } from "@/lib/i18n/core";
 
 export type ShopFloorConnectionState = "online" | "offline" | "reconnected";
 
@@ -50,10 +51,10 @@ export function ShopFloorConnectionNotice({
     >
       <p>
         {offline
-          ? "This device reports no network connection. Shop Floor changes are not saved offline. Reconnect before continuing."
+          ? tx("This device reports no network connection. Shop Floor changes are not saved offline. Reconnect before continuing.")
           : forceRefresh
-            ? "The previous action is not confirmed. Refresh Shop Floor state and revalidate your sign-in and permissions before continuing."
-            : "Connection restored. Refresh the latest Shop Floor state and revalidate your sign-in and permissions before continuing."}
+            ? tx("The previous action is not confirmed. Refresh Shop Floor state and revalidate your sign-in and permissions before continuing.")
+            : tx("Connection restored. Refresh the latest Shop Floor state and revalidate your sign-in and permissions before continuing.")}
       </p>
       {!offline && (
         <button
@@ -62,7 +63,7 @@ export function ShopFloorConnectionNotice({
           disabled={refreshing}
           className="mt-2 min-h-11 rounded-md border border-blue-500 px-3 font-semibold disabled:opacity-50"
         >
-          {refreshing ? "Refreshing Shop Floor state…" : "Refresh Shop Floor state"}
+          {refreshing ? tx("Refreshing Shop Floor state…") : tx("Refresh Shop Floor state")}
         </button>
       )}
     </div>

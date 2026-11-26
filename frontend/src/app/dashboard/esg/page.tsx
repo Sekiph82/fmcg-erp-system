@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { esgApi, ESGDashboard, EmissionSummary, ESGInsight } from "@/lib/esg";
 import Link from "next/link";
+import { tx } from "@/lib/i18n/core";
 
 const SCOPE_COLORS: Record<string, string> = {
   SCOPE1: "bg-red-100 text-red-700",
@@ -82,37 +83,37 @@ export default function ESGDashboardPage() {
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">ESG Dashboard</h1>
-          <p className="text-sm text-gray-500 mt-1">Environmental · Social · Governance reporting</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("ESG Dashboard")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{tx("Environmental · Social · Governance reporting")}</p>
         </div>
         <div className="flex gap-2 flex-wrap">
           <Link href="/dashboard/esg/activities" className="px-3 py-2 text-sm border rounded-lg hover:bg-gray-50">
-            Activities
+            {tx("Activities")}
           </Link>
           <Link href="/dashboard/esg/factors" className="px-3 py-2 text-sm border rounded-lg hover:bg-gray-50">
-            Emission Factors
+            {tx("Emission Factors")}
           </Link>
           <Link href="/dashboard/esg/targets" className="px-3 py-2 text-sm border rounded-lg hover:bg-gray-50">
-            Targets
+            {tx("Targets")}
           </Link>
           <Link href="/dashboard/esg/reports" className="px-3 py-2 text-sm border rounded-lg hover:bg-gray-50">
-            Reports
+            {tx("Reports")}
           </Link>
           <Link href="/dashboard/esg/intelligence" className="px-3 py-2 text-sm border rounded-lg hover:bg-gray-50">
-            Intelligence
+            {tx("Intelligence")}
           </Link>
           <button
             onClick={handleSeedFactors}
             className="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg"
           >
-            Seed Default Factors
+            {tx("Seed Default Factors")}
           </button>
           <button
             onClick={handleImportFleet}
             disabled={importLoading}
             className="px-3 py-2 text-sm bg-green-100 text-green-700 hover:bg-green-200 rounded-lg disabled:opacity-50"
           >
-            {importLoading ? "Importing…" : "Import Fleet Fuel"}
+            {importLoading ? tx("Importing…") : tx("Import Fleet Fuel")}
           </button>
         </div>
       </div>
@@ -126,11 +127,11 @@ export default function ESGDashboardPage() {
       {/* Date filters */}
       <div className="flex gap-3 items-end flex-wrap">
         <div>
-          <label className="block text-xs text-gray-500 mb-1">From</label>
+          <label className="block text-xs text-gray-500 mb-1">{tx("From")}</label>
           <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="border rounded-lg px-3 py-2 text-sm" />
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">To</label>
+          <label className="block text-xs text-gray-500 mb-1">{tx("To")}</label>
           <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="border rounded-lg px-3 py-2 text-sm" />
         </div>
         <button
@@ -138,7 +139,7 @@ export default function ESGDashboardPage() {
           disabled={aiLoading}
           className="px-4 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
         >
-          {aiLoading ? "Analyzing…" : "Run AI Analysis"}
+          {aiLoading ? tx("Analyzing…") : tx("Run AI Analysis")}
         </button>
       </div>
 
@@ -147,10 +148,10 @@ export default function ESGDashboardPage() {
         <>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: "Total Emissions", value: `${fmt(dashboard.total_emissions_kgco2e)} kg`, sub: `${(dashboard.total_emissions_kgco2e / 1000).toFixed(2)} tCO₂e`, color: "text-red-600" },
-              { label: "Scope 1 (Direct)", value: `${fmt(dashboard.scope1_kgco2e)} kg`, sub: "Direct combustion", color: "text-red-500" },
-              { label: "Scope 2 (Electricity)", value: `${fmt(dashboard.scope2_kgco2e)} kg`, sub: "Grid & generation", color: "text-orange-500" },
-              { label: "Scope 3 (Value Chain)", value: `${fmt(dashboard.scope3_kgco2e)} kg`, sub: "Upstream/downstream", color: "text-yellow-600" },
+              { label: tx("Total Emissions"), value: `${fmt(dashboard.total_emissions_kgco2e)} kg`, sub: `${(dashboard.total_emissions_kgco2e / 1000).toFixed(2)} tCO₂e`, color: "text-red-600" },
+              { label: tx("Scope 1 (Direct)"), value: `${fmt(dashboard.scope1_kgco2e)} kg`, sub: "Direct combustion", color: "text-red-500" },
+              { label: tx("Scope 2 (Electricity)"), value: `${fmt(dashboard.scope2_kgco2e)} kg`, sub: "Grid & generation", color: "text-orange-500" },
+              { label: tx("Scope 3 (Value Chain)"), value: `${fmt(dashboard.scope3_kgco2e)} kg`, sub: "Upstream/downstream", color: "text-yellow-600" },
             ].map((k) => (
               <div key={k.label} className="bg-white rounded-lg border p-4">
                 <p className="text-xs text-gray-500">{k.label}</p>
@@ -162,9 +163,9 @@ export default function ESGDashboardPage() {
 
           <div className="grid grid-cols-3 gap-4">
             {[
-              { label: "Total Energy", value: `${fmt(dashboard.total_energy_kwh)} kWh`, color: "text-blue-600" },
-              { label: "Total Water", value: `${fmt(dashboard.total_water_m3)} m³`, color: "text-cyan-600" },
-              { label: "Total Waste", value: `${fmt(dashboard.total_waste_kg)} kg`, color: "text-gray-600" },
+              { label: tx("Total Energy"), value: `${fmt(dashboard.total_energy_kwh)} kWh`, color: "text-blue-600" },
+              { label: tx("Total Water"), value: `${fmt(dashboard.total_water_m3)} m³`, color: "text-cyan-600" },
+              { label: tx("Total Waste"), value: `${fmt(dashboard.total_waste_kg)} kg`, color: "text-gray-600" },
             ].map((k) => (
               <div key={k.label} className="bg-white rounded-lg border p-4">
                 <p className="text-xs text-gray-500">{k.label}</p>
@@ -177,7 +178,7 @@ export default function ESGDashboardPage() {
           {dashboard.recycling_rate_pct != null && (
             <div className="bg-white rounded-lg border p-4">
               <div className="flex justify-between items-center mb-2">
-                <span className="text-sm font-medium text-gray-700">Recycling Rate</span>
+                <span className="text-sm font-medium text-gray-700">{tx("Recycling Rate")}</span>
                 <span className="text-lg font-bold text-green-600">{Number(dashboard.recycling_rate_pct).toFixed(1)}%</span>
               </div>
               <div className="w-full bg-gray-100 rounded-full h-2">
@@ -195,15 +196,15 @@ export default function ESGDashboardPage() {
       {summary.length > 0 && (
         <div className="bg-white rounded-lg border overflow-hidden">
           <div className="px-4 py-3 border-b">
-            <h2 className="font-semibold text-gray-800">Emissions by Scope</h2>
+            <h2 className="font-semibold text-gray-800">{tx("Emissions by Scope")}</h2>
           </div>
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-gray-600 uppercase text-xs">
               <tr>
-                <th className="px-4 py-3 text-left">Scope</th>
-                <th className="px-4 py-3 text-right">kgCO₂e</th>
-                <th className="px-4 py-3 text-right">tCO₂e</th>
-                <th className="px-4 py-3 text-right">Activities</th>
+                <th className="px-4 py-3 text-left">{tx("Scope")}</th>
+                <th className="px-4 py-3 text-right">{tx("kgCO₂e")}</th>
+                <th className="px-4 py-3 text-right">{tx("tCO₂e")}</th>
+                <th className="px-4 py-3 text-right">{tx("Activities")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">

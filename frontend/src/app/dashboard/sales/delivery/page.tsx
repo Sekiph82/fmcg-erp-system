@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
+import { tx } from "@/lib/i18n/core";
 
 const STATUS_COLORS: Record<TripStatus, "green" | "blue" | "yellow" | "gray" | "red"> = {
   PLANNED: "gray",
@@ -74,18 +75,18 @@ export default function DeliveryPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Delivery Planning</h1>
-          <p className="text-sm text-gray-500 mt-1">Vehicle trips · Route management · Status tracking</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Delivery Planning")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{tx("Vehicle trips · Route management · Status tracking")}</p>
         </div>
-        <Button onClick={() => setCreateOpen(true)}>+ New Trip</Button>
+        <Button onClick={() => setCreateOpen(true)}>{tx("+ New Trip")}</Button>
       </div>
 
       {/* KPIs */}
       <div className="grid grid-cols-3 gap-3 mb-6">
         {[
-          { label: "Planned", value: planned, color: "text-gray-700" },
-          { label: "In Transit", value: inTransit, color: "text-blue-600" },
-          { label: "Today's Trips", value: todayTrips, color: "text-indigo-600" },
+          { label: tx("Planned"), value: planned, color: "text-gray-700" },
+          { label: tx("In Transit"), value: inTransit, color: "text-blue-600" },
+          { label: tx("Today's Trips"), value: todayTrips, color: "text-indigo-600" },
         ].map((k) => (
           <div key={k.label} className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm text-center">
             <p className={`text-3xl font-bold ${k.color}`}>{k.value}</p>
@@ -117,7 +118,7 @@ export default function DeliveryPage() {
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" />
         </div>
       ) : trips.length === 0 ? (
-        <p className="text-gray-400 text-sm py-8 text-center">No trips found.</p>
+        <p className="text-gray-400 text-sm py-8 text-center">{tx("No trips found.")}</p>
       ) : (
         <div className="space-y-3">
           {trips.map((trip) => (
@@ -132,12 +133,12 @@ export default function DeliveryPage() {
                   <div>
                     <p className="font-semibold text-gray-900">{trip.trip_no}</p>
                     <p className="text-xs text-gray-500">
-                      {trip.trip_date} · {trip.driver_name ?? "No driver"} · {trip.vehicle_plate ?? "No plate"}
+                      {trip.trip_date} · {trip.driver_name ?? tx("No driver")} · {trip.vehicle_plate ?? tx("No plate")}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-gray-500">{trip.order_count} orders</span>
+                  <span className="text-xs text-gray-500">{trip.order_count} {tx("orders")}</span>
                   <Badge label={trip.status} variant={STATUS_COLORS[trip.status]} />
                 </div>
               </div>
@@ -147,7 +148,7 @@ export default function DeliveryPage() {
                     variant="secondary"
                     onClick={(e) => { e.stopPropagation(); updateStatus.mutate({ id: trip.id, status: "LOADING" }); }}
                   >
-                    Start Loading
+                    {tx("Start Loading")}
                   </Button>
                 </div>
               )}
@@ -156,7 +157,7 @@ export default function DeliveryPage() {
                   <Button
                     onClick={(e) => { e.stopPropagation(); updateStatus.mutate({ id: trip.id, status: "IN_TRANSIT" }); }}
                   >
-                    Dispatch Trip
+                    {tx("Dispatch Trip")}
                   </Button>
                 </div>
               )}
@@ -165,7 +166,7 @@ export default function DeliveryPage() {
                   <Button
                     onClick={(e) => { e.stopPropagation(); updateStatus.mutate({ id: trip.id, status: "COMPLETED" }); }}
                   >
-                    Mark Completed
+                    {tx("Mark Completed")}
                   </Button>
                 </div>
               )}
@@ -176,19 +177,19 @@ export default function DeliveryPage() {
 
       {/* Trip Detail Panel */}
       {selectedTrip && (
-        <Modal open={!!selectedTrip} onClose={() => setSelectedTrip(null)} title={`Trip: ${selectedTrip.trip_no}`}>
+        <Modal open={!!selectedTrip} onClose={() => setSelectedTrip(null)} title={tx("Trip: {trip_no}", { trip_no: selectedTrip.trip_no })}>
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3 text-sm">
-              <div><span className="text-gray-500">Date:</span> <span className="font-medium">{selectedTrip.trip_date}</span></div>
-              <div><span className="text-gray-500">Driver:</span> <span className="font-medium">{selectedTrip.driver_name ?? "—"}</span></div>
-              <div><span className="text-gray-500">Vehicle:</span> <span className="font-medium">{selectedTrip.vehicle_plate ?? "—"}</span></div>
-              <div><span className="text-gray-500">Phone:</span> <span className="font-medium">{selectedTrip.driver_phone ?? "—"}</span></div>
+              <div><span className="text-gray-500">{tx("Date:")}</span> <span className="font-medium">{selectedTrip.trip_date}</span></div>
+              <div><span className="text-gray-500">{tx("Driver:")}</span> <span className="font-medium">{selectedTrip.driver_name ?? "—"}</span></div>
+              <div><span className="text-gray-500">{tx("Vehicle:")}</span> <span className="font-medium">{selectedTrip.vehicle_plate ?? "—"}</span></div>
+              <div><span className="text-gray-500">{tx("Phone:")}</span> <span className="font-medium">{selectedTrip.driver_phone ?? "—"}</span></div>
             </div>
 
             <div>
-              <p className="text-sm font-semibold text-gray-700 mb-2">Delivery Orders ({selectedTrip.orders.length})</p>
+              <p className="text-sm font-semibold text-gray-700 mb-2">{tx("Delivery Orders (")}{selectedTrip.orders.length})</p>
               {selectedTrip.orders.length === 0 ? (
-                <p className="text-xs text-gray-400">No orders assigned.</p>
+                <p className="text-xs text-gray-400">{tx("No orders assigned.")}</p>
               ) : (
                 <div className="space-y-1.5">
                   {selectedTrip.orders.map((o) => (
@@ -211,7 +212,7 @@ export default function DeliveryPage() {
 
             {selectedTrip.route_notes && (
               <div>
-                <p className="text-xs text-gray-500 font-medium mb-1">Route Notes</p>
+                <p className="text-xs text-gray-500 font-medium mb-1">{tx("Route Notes")}</p>
                 <p className="text-sm text-gray-700 bg-gray-50 rounded-lg px-3 py-2">{selectedTrip.route_notes}</p>
               </div>
             )}
@@ -220,36 +221,36 @@ export default function DeliveryPage() {
       )}
 
       {/* Create Trip Modal */}
-      <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="New Delivery Trip">
+      <Modal open={createOpen} onClose={() => setCreateOpen(false)} title={tx("New Delivery Trip")}>
         <form onSubmit={(e) => { e.preventDefault(); create.mutate(form); }} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Trip No *" value={form.trip_no} onChange={(e) => setForm((f) => ({ ...f, trip_no: e.target.value }))} required />
-            <Input label="Date *" type="date" value={form.trip_date} onChange={(e) => setForm((f) => ({ ...f, trip_date: e.target.value }))} required />
+            <Input label={tx("Trip No *")} value={form.trip_no} onChange={(e) => setForm((f) => ({ ...f, trip_no: e.target.value }))} required />
+            <Input label={tx("Date *")} type="date" value={form.trip_date} onChange={(e) => setForm((f) => ({ ...f, trip_date: e.target.value }))} required />
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Vehicle Plate" value={form.vehicle_plate} onChange={(e) => setForm((f) => ({ ...f, vehicle_plate: e.target.value }))} />
-            <Input label="Vehicle Type" value={form.vehicle_type} onChange={(e) => setForm((f) => ({ ...f, vehicle_type: e.target.value }))} placeholder="MOTORBIKE / VAN / TRUCK" />
+            <Input label={tx("Vehicle Plate")} value={form.vehicle_plate} onChange={(e) => setForm((f) => ({ ...f, vehicle_plate: e.target.value }))} />
+            <Input label={tx("Vehicle Type")} value={form.vehicle_type} onChange={(e) => setForm((f) => ({ ...f, vehicle_type: e.target.value }))} placeholder={tx("MOTORBIKE / VAN / TRUCK")} />
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Driver Name" value={form.driver_name} onChange={(e) => setForm((f) => ({ ...f, driver_name: e.target.value }))} />
-            <Input label="Driver Phone" value={form.driver_phone} onChange={(e) => setForm((f) => ({ ...f, driver_phone: e.target.value }))} />
+            <Input label={tx("Driver Name")} value={form.driver_name} onChange={(e) => setForm((f) => ({ ...f, driver_name: e.target.value }))} />
+            <Input label={tx("Driver Phone")} value={form.driver_phone} onChange={(e) => setForm((f) => ({ ...f, driver_phone: e.target.value }))} />
           </div>
           <label className="block text-sm">
-            <span className="text-gray-700">Driver&apos;s app login</span>
+            <span className="text-gray-700">{tx("Driver's app login")}</span>
             <select className="mt-1 w-full border rounded px-3 py-2 text-sm" value={form.driver_user_id}
               onChange={(e) => {
                 const d = driverLogins.find((x) => x.id === e.target.value);
                 setForm((f) => ({ ...f, driver_user_id: e.target.value, driver_name: f.driver_name || d?.name || "" }));
               }}>
-              <option value="">None (driver has no app)</option>
+              <option value="">{tx("None (driver has no app)")}</option>
               {driverLogins.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
             </select>
-            <span className="text-xs text-gray-500">The trip appears in this person&apos;s Field App under My deliveries.</span>
+            <span className="text-xs text-gray-500">{tx("The trip appears in this person's Field App under My deliveries.")}</span>
           </label>
-          {create.error && <p className="text-sm text-red-600">Failed to create trip.</p>}
+          {create.error && <p className="text-sm text-red-600">{tx("Failed to create trip.")}</p>}
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" type="button" onClick={() => setCreateOpen(false)}>Cancel</Button>
-            <Button type="submit" loading={create.isPending}>Create Trip</Button>
+            <Button variant="secondary" type="button" onClick={() => setCreateOpen(false)}>{tx("Cancel")}</Button>
+            <Button type="submit" loading={create.isPending}>{tx("Create Trip")}</Button>
           </div>
         </form>
       </Modal>

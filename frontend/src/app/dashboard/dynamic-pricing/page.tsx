@@ -1,6 +1,7 @@
 "use client";
 import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
+import { tx } from "@/lib/i18n/core";
 
 interface Dashboard {
   total_competitor_observations: number;
@@ -153,8 +154,8 @@ export default function DynamicPricingPage() {
   return (
     <div className="p-6 space-y-6 max-w-6xl mx-auto">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Dynamic / AI Pricing Engine</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Competitor tracking, margin protection, and AI price recommendations</p>
+        <h1 className="text-2xl font-bold text-gray-900">{tx("Dynamic / AI Pricing Engine")}</h1>
+        <p className="text-sm text-gray-500 mt-0.5">{tx("Competitor tracking, margin protection, and AI price recommendations")}</p>
       </div>
 
       {error && <div className="bg-red-50 border border-red-200 rounded p-3 text-sm text-red-700">{error}</div>}
@@ -163,9 +164,9 @@ export default function DynamicPricingPage() {
       {dash && (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {[
-            { label: "Competitor Observations", value: dash.total_competitor_observations, color: "text-gray-800" },
-            { label: "Pending Recommendations", value: dash.pending_recommendations, color: "text-amber-600" },
-            { label: "Applied", value: dash.applied_recommendations, color: "text-green-600" },
+            { label: tx("Competitor Observations"), value: dash.total_competitor_observations, color: "text-gray-800" },
+            { label: tx("Pending Recommendations"), value: dash.pending_recommendations, color: "text-amber-600" },
+            { label: tx("Applied"), value: dash.applied_recommendations, color: "text-green-600" },
             { label: "Undercut Alerts", value: dash.competitor_undercut_alerts, color: "text-red-600" },
           ].map((k) => (
             <div key={k.label} className={`bg-white border rounded-lg p-4 shadow-sm ${k.label === "Undercut Alerts" && k.value > 0 ? "border-red-300 bg-red-50" : ""}`}>
@@ -189,10 +190,10 @@ export default function DynamicPricingPage() {
       {/* Recommendations tab */}
       {tab === "recs" && (
         <div className="space-y-3">
-          {loading && <p className="text-gray-400 text-sm">Loading…</p>}
+          {loading && <p className="text-gray-400 text-sm">{tx("Loading…")}</p>}
           {recs.length === 0 && !loading && (
             <div className="bg-gray-50 border rounded-lg p-6 text-center text-sm text-gray-400">
-              No recommendations yet. Use &quot;Generate Recommendation&quot; to run the pricing engine.
+              {tx("No recommendations yet. Use \"Generate Recommendation\" to run the pricing engine.")}
             </div>
           )}
           {recs.map((r) => (
@@ -210,20 +211,20 @@ export default function DynamicPricingPage() {
                     <span className={`text-xs rounded-full px-2 py-0.5 ${STATUS_COLOR[r.status] ?? "bg-gray-100"}`}>{r.status}</span>
                   </div>
                   <div className="flex gap-4 mt-1 text-xs text-gray-500 flex-wrap">
-                    {r.current_price !== null && <span>Current: KES {r.current_price.toLocaleString()}</span>}
-                    <span className="font-semibold text-blue-600">Recommended: KES {r.recommended_price.toLocaleString()}</span>
-                    {r.avg_competitor_price !== null && <span>Competitor avg: KES {r.avg_competitor_price.toLocaleString()}</span>}
-                    {r.margin_pct !== null && <span>Margin: {r.margin_pct.toFixed(1)}%</span>}
-                    {r.confidence_score !== null && <span>Confidence: {r.confidence_score}%</span>}
+                    {r.current_price !== null && <span>{tx("Current: KES")} {r.current_price.toLocaleString()}</span>}
+                    <span className="font-semibold text-blue-600">{tx("Recommended: KES")} {r.recommended_price.toLocaleString()}</span>
+                    {r.avg_competitor_price !== null && <span>{tx("Competitor avg: KES")} {r.avg_competitor_price.toLocaleString()}</span>}
+                    {r.margin_pct !== null && <span>{tx("Margin:")} {r.margin_pct.toFixed(1)}%</span>}
+                    {r.confidence_score !== null && <span>{tx("Confidence:")} {r.confidence_score}%</span>}
                   </div>
                   {r.rationale && <p className="text-xs text-gray-500 mt-1 leading-relaxed">{r.rationale}</p>}
                 </div>
                 {r.status === "PENDING" && (
                   <div className="flex gap-2 shrink-0">
                     <button onClick={() => applyRec(r.id)}
-                      className="text-xs bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded">Apply</button>
+                      className="text-xs bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded">{tx("Apply")}</button>
                     <button onClick={() => rejectRec(r.id)}
-                      className="text-xs border border-gray-300 text-gray-600 px-3 py-1.5 rounded hover:bg-gray-50">Reject</button>
+                      className="text-xs border border-gray-300 text-gray-600 px-3 py-1.5 rounded hover:bg-gray-50">{tx("Reject")}</button>
                   </div>
                 )}
               </div>
@@ -236,21 +237,21 @@ export default function DynamicPricingPage() {
       {tab === "competitors" && (
         <div className="bg-white border rounded-lg shadow-sm overflow-hidden">
           <div className="px-4 py-3 border-b bg-gray-50">
-            <h2 className="text-sm font-semibold text-gray-700">Recent Competitor Observations ({obs.length})</h2>
+            <h2 className="text-sm font-semibold text-gray-700">{tx("Recent Competitor Observations (")}{obs.length})</h2>
           </div>
           {obs.length === 0 ? (
-            <div className="p-6 text-sm text-gray-400 text-center">No observations yet. Use &quot;Log Price&quot; to record competitor prices.</div>
+            <div className="p-6 text-sm text-gray-400 text-center">{tx("No observations yet. Use \"Log Price\" to record competitor prices.")}</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 text-xs text-gray-500">
                   <tr>
-                    <th className="text-left px-4 py-2">Product</th>
-                    <th className="text-left px-4 py-2">Competitor</th>
-                    <th className="text-left px-4 py-2">Price</th>
-                    <th className="text-left px-4 py-2">Channel</th>
-                    <th className="text-left px-4 py-2">Date</th>
-                    <th className="text-left px-4 py-2">Location</th>
+                    <th className="text-left px-4 py-2">{tx("Product")}</th>
+                    <th className="text-left px-4 py-2">{tx("Competitor")}</th>
+                    <th className="text-left px-4 py-2">{tx("Price")}</th>
+                    <th className="text-left px-4 py-2">{tx("Channel")}</th>
+                    <th className="text-left px-4 py-2">{tx("Date")}</th>
+                    <th className="text-left px-4 py-2">{tx("Location")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -277,7 +278,7 @@ export default function DynamicPricingPage() {
       {/* Log price tab */}
       {tab === "log" && (
         <div className="bg-white border rounded-lg p-5 shadow-sm space-y-3 max-w-2xl">
-          <h2 className="text-sm font-semibold text-gray-700">Log Competitor Price Observation</h2>
+          <h2 className="text-sm font-semibold text-gray-700">{tx("Log Competitor Price Observation")}</h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {([
               ["Product Name *", "product_name", "e.g. POVU AllClean Multi-Purpose Cleaner 1 L Bottle"],
@@ -297,21 +298,21 @@ export default function DynamicPricingPage() {
               </div>
             ))}
             <div>
-              <label className="text-xs text-gray-500 block mb-1">Channel</label>
+              <label className="text-xs text-gray-500 block mb-1">{tx("Channel")}</label>
               <select value={logForm.channel} onChange={(e) => setLogForm((p) => ({ ...p, channel: e.target.value }))}
                 className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none">
                 {CHANNELS.map((c) => <option key={c} value={c}>{c.replace(/_/g, " ")}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-xs text-gray-500 block mb-1">Observed Date *</label>
+              <label className="text-xs text-gray-500 block mb-1">{tx("Observed Date *")}</label>
               <input type="date" value={logForm.observed_date}
                 onChange={(e) => setLogForm((p) => ({ ...p, observed_date: e.target.value }))}
                 className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none" />
             </div>
           </div>
           <button onClick={logPrice} disabled={saving || !logForm.product_name || !logForm.competitor_name || !logForm.price}
-            className="bg-blue-600 text-white text-sm px-4 py-2 rounded disabled:opacity-50">{saving ? "Logging…" : "Log Price"}</button>
+            className="bg-blue-600 text-white text-sm px-4 py-2 rounded disabled:opacity-50">{saving ? tx("Logging…") : tx("Log Price")}</button>
         </div>
       )}
 
@@ -319,8 +320,8 @@ export default function DynamicPricingPage() {
       {tab === "generate" && (
         <div className="max-w-2xl space-y-4">
           <div className="bg-white border rounded-lg p-5 shadow-sm space-y-3">
-            <h2 className="text-sm font-semibold text-gray-700">Generate Price Recommendation</h2>
-            <p className="text-xs text-gray-400">Compares your price against recent competitor data and margin rules to produce a recommendation.</p>
+            <h2 className="text-sm font-semibold text-gray-700">{tx("Generate Price Recommendation")}</h2>
+            <p className="text-xs text-gray-400">{tx("Compares your price against recent competitor data and margin rules to produce a recommendation.")}</p>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {([
                 ["Product Name *", "product_name", "e.g. POVU AllClean Multi-Purpose Cleaner 1 L Bottle"],
@@ -339,7 +340,7 @@ export default function DynamicPricingPage() {
                 </div>
               ))}
               <div>
-                <label className="text-xs text-gray-500 block mb-1">Channel</label>
+                <label className="text-xs text-gray-500 block mb-1">{tx("Channel")}</label>
                 <select value={genForm.channel} onChange={(e) => setGenForm((p) => ({ ...p, channel: e.target.value }))}
                   className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none">
                   {CHANNELS.map((c) => <option key={c} value={c}>{c.replace(/_/g, " ")}</option>)}
@@ -347,19 +348,19 @@ export default function DynamicPricingPage() {
               </div>
             </div>
             <button onClick={generate} disabled={saving || !genForm.product_name || !genForm.current_price}
-              className="bg-blue-600 text-white text-sm px-4 py-2 rounded disabled:opacity-50">{saving ? "Generating…" : "Generate Recommendation"}</button>
+              className="bg-blue-600 text-white text-sm px-4 py-2 rounded disabled:opacity-50">{saving ? tx("Generating…") : tx("Generate Recommendation")}</button>
           </div>
 
           {genResult && (
             <div className={`bg-white border rounded-lg p-4 shadow-sm space-y-2 ${genResult.trigger === "COMPETITOR_UNDERCUT" || genResult.trigger === "LOW_MARGIN" ? "border-amber-300" : "border-green-300"}`}>
               <p className="text-sm font-semibold text-gray-800">
-                Result: {genResult.trigger === "HOLD" ? "Hold — No Change Needed" : `Action Required — ${genResult.trigger?.replace(/_/g, " ")}`}
+                {tx("Result:")} {genResult.trigger === "HOLD" ? tx("Hold — No Change Needed") : `Action Required — ${genResult.trigger?.replace(/_/g, " ")}`}
               </p>
               <div className="flex gap-4 text-sm flex-wrap">
-                <span>Current: KES {genResult.current_price?.toLocaleString()}</span>
-                <span className="font-bold text-blue-700">Recommended: KES {genResult.recommended_price.toLocaleString()}</span>
-                {genResult.avg_competitor_price && <span>Competitor avg: KES {genResult.avg_competitor_price.toLocaleString()}</span>}
-                {genResult.confidence_score !== null && <span>Confidence: {genResult.confidence_score}%</span>}
+                <span>{tx("Current: KES")} {genResult.current_price?.toLocaleString()}</span>
+                <span className="font-bold text-blue-700">{tx("Recommended: KES")} {genResult.recommended_price.toLocaleString()}</span>
+                {genResult.avg_competitor_price && <span>{tx("Competitor avg: KES")} {genResult.avg_competitor_price.toLocaleString()}</span>}
+                {genResult.confidence_score !== null && <span>{tx("Confidence:")} {genResult.confidence_score}%</span>}
               </div>
               <p className="text-xs text-gray-500">{genResult.rationale}</p>
             </div>

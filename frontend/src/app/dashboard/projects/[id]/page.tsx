@@ -8,6 +8,7 @@ import {
   TASK_BAR_COLOR, TASK_STATUS_COLOR, STATUS_COLOR, fmtDate,
 } from "@/lib/projects";
 import { Button } from "@/components/ui/Button";
+import { tx } from "@/lib/i18n/core";
 
 // ── Gantt chart ───────────────────────────────────────────────────────────────
 
@@ -15,7 +16,7 @@ function GanttChart({ gantt }: { gantt: GanttResponse }) {
   const tasks = gantt.tasks.filter(t => t.start_date && t.due_date);
 
   if (tasks.length === 0) {
-    return <div className="p-6 text-center text-gray-400 text-sm">Add tasks with start and due dates to see the Gantt chart.</div>;
+    return <div className="p-6 text-center text-gray-400 text-sm">{tx("Add tasks with start and due dates to see the Gantt chart.")}</div>;
   }
 
   // Compute date range
@@ -101,7 +102,7 @@ function GanttChart({ gantt }: { gantt: GanttResponse }) {
             <div key={t.id} className="flex border-b hover:bg-gray-50 items-center" style={{ height: ROW_H }}>
               <div style={{ width: LABEL_W }} className="px-3 flex items-center gap-1">
                 {t.parent_task_id && <span className="w-2 shrink-0" />}
-                {isCritical && <span className="text-red-400 text-xs shrink-0" title="Critical path">★</span>}
+                {isCritical && <span className="text-red-400 text-xs shrink-0" title={tx("Critical path")}>★</span>}
                 <span className="text-xs text-gray-700 truncate">{t.title}</span>
               </div>
               <div style={{ width: CHART_WIDTH }} className="relative h-full">
@@ -165,40 +166,40 @@ function AddTaskModal({ projectId, onClose }: { projectId: string; onClose: () =
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-3">
         <div className="flex justify-between items-center">
-          <h2 className="text-lg font-bold">Add Task</h2>
+          <h2 className="text-lg font-bold">{tx("Add Task")}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">✕</button>
         </div>
 
         <div>
-          <label className="text-sm font-medium text-gray-700">Title *</label>
+          <label className="text-sm font-medium text-gray-700">{tx("Title *")}</label>
           <input className="w-full border rounded px-3 py-2 text-sm mt-1" value={form.title}
             onChange={e => setForm({ ...form, title: e.target.value })} />
         </div>
         <div>
-          <label className="text-sm font-medium text-gray-700">Description</label>
+          <label className="text-sm font-medium text-gray-700">{tx("Description")}</label>
           <textarea className="w-full border rounded px-3 py-2 text-sm mt-1" rows={2}
             value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="text-sm font-medium text-gray-700">Priority</label>
+            <label className="text-sm font-medium text-gray-700">{tx("Priority")}</label>
             <select className="w-full border rounded px-3 py-2 text-sm mt-1" value={form.priority}
               onChange={e => setForm({ ...form, priority: e.target.value as "LOW" | "MEDIUM" | "HIGH" })}>
               <option>LOW</option><option>MEDIUM</option><option>HIGH</option>
             </select>
           </div>
           <div>
-            <label className="text-sm font-medium text-gray-700">Est. Hours</label>
+            <label className="text-sm font-medium text-gray-700">{tx("Est. Hours")}</label>
             <input type="number" min={0} className="w-full border rounded px-3 py-2 text-sm mt-1" value={form.estimated_hours}
               onChange={e => setForm({ ...form, estimated_hours: e.target.value })} />
           </div>
           <div>
-            <label className="text-sm font-medium text-gray-700">Start Date</label>
+            <label className="text-sm font-medium text-gray-700">{tx("Start Date")}</label>
             <input type="date" className="w-full border rounded px-3 py-2 text-sm mt-1" value={form.start_date}
               onChange={e => setForm({ ...form, start_date: e.target.value })} />
           </div>
           <div>
-            <label className="text-sm font-medium text-gray-700">Due Date</label>
+            <label className="text-sm font-medium text-gray-700">{tx("Due Date")}</label>
             <input type="date" className="w-full border rounded px-3 py-2 text-sm mt-1" value={form.due_date}
               onChange={e => setForm({ ...form, due_date: e.target.value })} />
           </div>
@@ -206,13 +207,13 @@ function AddTaskModal({ projectId, onClose }: { projectId: string; onClose: () =
         <label className="flex items-center gap-2 text-sm text-gray-600">
           <input type="checkbox" checked={form.is_critical_path}
             onChange={e => setForm({ ...form, is_critical_path: e.target.checked })} />
-          Mark as Critical Path
+          {tx("Mark as Critical Path")}
         </label>
 
         <div className="flex gap-2 justify-end pt-2">
-          <Button variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button variant="secondary" onClick={onClose}>{tx("Cancel")}</Button>
           <Button onClick={() => mut.mutate()} disabled={!form.title || mut.isPending}>
-            {mut.isPending ? "Adding…" : "Add Task"}
+            {mut.isPending ? tx("Adding…") : tx("Add Task")}
           </Button>
         </div>
         {mut.isError && <p className="text-xs text-red-600">{(mut.error as Error).message}</p>}
@@ -253,7 +254,7 @@ export default function ProjectDetailPage() {
   });
 
   if (isLoading || !project) {
-    return <div className="p-8 text-center text-gray-400">Loading project…</div>;
+    return <div className="p-8 text-center text-gray-400">{tx("Loading project…")}</div>;
   }
 
   const doneCount = project.tasks.filter(t => t.status === "DONE").length;
@@ -284,8 +285,8 @@ export default function ProjectDetailPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-white rounded-xl border p-4 col-span-2">
           <div className="flex justify-between text-sm text-gray-600 mb-2">
-            <span>Overall Progress</span>
-            <span>{doneCount}/{totalCount} tasks done</span>
+            <span>{tx("Overall Progress")}</span>
+            <span>{doneCount}/{totalCount} {tx("tasks done")}</span>
           </div>
           <div className="bg-gray-200 rounded-full h-3">
             <div className="bg-blue-500 h-3 rounded-full transition-all" style={{ width: `${pct}%` }} />
@@ -293,16 +294,16 @@ export default function ProjectDetailPage() {
           <div className="text-xs text-gray-400 mt-1 text-right">{pct}%</div>
         </div>
         <div className="bg-white rounded-xl border p-4">
-          <div className="text-xs text-gray-500">Timeline</div>
+          <div className="text-xs text-gray-500">{tx("Timeline")}</div>
           <div className="text-sm font-medium mt-1">{fmtDate(project.start_date)}</div>
           <div className="text-xs text-gray-400">→ {fmtDate(project.end_date)}</div>
         </div>
         <div className="bg-white rounded-xl border p-4">
-          <div className="text-xs text-gray-500">Budget</div>
+          <div className="text-xs text-gray-500">{tx("Budget")}</div>
           <div className="text-sm font-medium mt-1">
             {project.budget != null ? `KES ${project.budget.toLocaleString()}` : "—"}
           </div>
-          <div className="text-xs text-gray-400">{project.milestone_count} milestones</div>
+          <div className="text-xs text-gray-400">{project.milestone_count} {tx("milestones")}</div>
         </div>
       </div>
 
@@ -311,7 +312,7 @@ export default function ProjectDetailPage() {
         {(["overview", "tasks", "gantt"] as const).map(t => (
           <button key={t} onClick={() => setTab(t)}
             className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px capitalize ${tab === t ? "border-blue-600 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700"}`}>
-            {t === "gantt" ? "Gantt Chart" : t.charAt(0).toUpperCase() + t.slice(1)}
+            {t === "gantt" ? tx("Gantt Chart") : t.charAt(0).toUpperCase() + t.slice(1)}
           </button>
         ))}
       </div>
@@ -319,9 +320,9 @@ export default function ProjectDetailPage() {
       {/* Overview tab */}
       {tab === "overview" && (
         <div className="space-y-4">
-          <h3 className="font-semibold text-gray-800">Milestones ({project.milestones.length})</h3>
+          <h3 className="font-semibold text-gray-800">{tx("Milestones (")}{project.milestones.length})</h3>
           {project.milestones.length === 0 ? (
-            <p className="text-sm text-gray-400">No milestones defined.</p>
+            <p className="text-sm text-gray-400">{tx("No milestones defined.")}</p>
           ) : (
             <div className="space-y-2">
               {project.milestones.map(m => (
@@ -331,7 +332,7 @@ export default function ProjectDetailPage() {
                   </span>
                   <div className="flex-1">
                     <div className="font-medium text-sm text-gray-900">{m.name}</div>
-                    <div className="text-xs text-gray-400">Due: {fmtDate(m.due_date)}</div>
+                    <div className="text-xs text-gray-400">{tx("Due:")} {fmtDate(m.due_date)}</div>
                   </div>
                 </div>
               ))}
@@ -344,17 +345,17 @@ export default function ProjectDetailPage() {
       {tab === "tasks" && (
         <div className="space-y-3">
           <div className="flex justify-between items-center">
-            <h3 className="font-semibold text-gray-800">Tasks ({project.tasks.length})</h3>
-            <Button onClick={() => setShowAddTask(true)}>+ Add Task</Button>
+            <h3 className="font-semibold text-gray-800">{tx("Tasks (")}{project.tasks.length})</h3>
+            <Button onClick={() => setShowAddTask(true)}>{tx("+ Add Task")}</Button>
           </div>
           {project.tasks.length === 0 ? (
-            <p className="text-sm text-gray-400">No tasks yet.</p>
+            <p className="text-sm text-gray-400">{tx("No tasks yet.")}</p>
           ) : (
             <div className="bg-white rounded-xl border overflow-hidden">
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 border-b">
                   <tr>
-                    {["Task", "Status", "Priority", "Assigned", "Due", "Est. Hours", "Action"].map(h => (
+                    {[tx("Task"), tx("Status"), tx("Priority"), tx("Assigned"), tx("Due"), tx("Est. Hours"), tx("Action")].map(h => (
                       <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{h}</th>
                     ))}
                   </tr>
@@ -377,13 +378,13 @@ export default function ProjectDetailPage() {
                       <td className="px-4 py-3 text-xs text-gray-600">{t.priority}</td>
                       <td className="px-4 py-3 text-xs text-gray-500">{t.assigned_to_name ?? "—"}</td>
                       <td className="px-4 py-3 text-xs text-gray-500">{fmtDate(t.due_date)}</td>
-                      <td className="px-4 py-3 text-xs text-gray-500">{t.estimated_hours ?? "—"}h</td>
+                      <td className="px-4 py-3 text-xs text-gray-500">{t.estimated_hours ?? "—"}{tx("h")}</td>
                       <td className="px-4 py-3">
                         {t.status !== "DONE" && (
                           <button disabled={completeTask.isPending}
                             onClick={() => completeTask.mutate(t.id)}
                             className="text-xs px-2 py-1 rounded bg-green-50 text-green-700 hover:bg-green-100">
-                            Done
+                            {tx("Done")}
                           </button>
                         )}
                       </td>
@@ -400,7 +401,7 @@ export default function ProjectDetailPage() {
       {tab === "gantt" && (
         <div className="bg-white rounded-xl border overflow-hidden">
           <div className="px-4 py-3 border-b bg-gray-50 flex justify-between items-center">
-            <h3 className="font-semibold text-gray-800">Gantt Chart</h3>
+            <h3 className="font-semibold text-gray-800">{tx("Gantt Chart")}</h3>
             <div className="flex gap-3 text-xs text-gray-500">
               {(["TODO", "IN_PROGRESS", "BLOCKED", "DONE"] as const).map(s => (
                 <div key={s} className="flex items-center gap-1">
@@ -409,14 +410,14 @@ export default function ProjectDetailPage() {
                 </div>
               ))}
               <div className="flex items-center gap-1">
-                <span className="text-red-400">★</span> Critical
+                <span className="text-red-400">★</span> {tx("Critical")}
               </div>
             </div>
           </div>
           {gantt ? (
             <GanttChart gantt={gantt} />
           ) : (
-            <div className="p-6 text-center text-gray-400">Loading Gantt data…</div>
+            <div className="p-6 text-center text-gray-400">{tx("Loading Gantt data…")}</div>
           )}
         </div>
       )}

@@ -8,16 +8,17 @@ import {
   mpsApi, MPSPlanSummary, MPSLine, MPSWhatIf, MPSScenarioComparison,
   WhatIfChange, MPSChangeType,
 } from "@/lib/mps";
+import { tx, lx } from "@/lib/i18n/core";
 
-const CHANGE_TYPES: { value: MPSChangeType; label: string; desc: string }[] = [
-  { value: "DELAY",      label: "Delay",        desc: "Shift dates forward (days)" },
-  { value: "QTY_ADJUST", label: "Adjust Qty",   desc: "Set new planned quantity" },
-  { value: "BATCH_SIZE", label: "Batch Size",   desc: "Change batch size (units)" },
-  { value: "LINE_CHANGE",label: "Change Line",  desc: "Move to different work center ID" },
-  { value: "SPLIT",      label: "Split Batch",  desc: "Split into two exact quantities; total must be conserved" },
-  { value: "MERGE",      label: "Merge Lines",  desc: "Combine two equivalent scheduled lines" },
-  { value: "SHIFT_ADD",  label: "Add Shift",    desc: "Add a specific non-overlapping shift interval" },
-];
+const CHANGE_TYPES: { value: MPSChangeType; label: string; desc: string }[] = lx(() => [
+  { value: "DELAY",      label: tx("Delay"),        desc: tx("Shift dates forward (days)") },
+  { value: "QTY_ADJUST", label: tx("Adjust Qty"),   desc: tx("Set new planned quantity") },
+  { value: "BATCH_SIZE", label: tx("Batch Size"),   desc: tx("Change batch size (units)") },
+  { value: "LINE_CHANGE",label: tx("Change Line"),  desc: tx("Move to different work center ID") },
+  { value: "SPLIT",      label: tx("Split Batch"),  desc: tx("Split into two exact quantities; total must be conserved") },
+  { value: "MERGE",      label: tx("Merge Lines"),  desc: tx("Combine two equivalent scheduled lines") },
+  { value: "SHIFT_ADD",  label: tx("Add Shift"),    desc: tx("Add a specific non-overlapping shift interval") },
+]);
 
 export default function WhatIfPage() {
   const qc = useQueryClient();
@@ -147,24 +148,24 @@ export default function WhatIfPage() {
   return (
     <div className="p-6 space-y-5">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-gray-900">What-If Simulation</h1>
-        <a href="/dashboard/mps" className="text-xs text-blue-600 hover:underline">← MPS Dashboard</a>
+        <h1 className="text-xl font-semibold text-gray-900">{tx("What-If Simulation")}</h1>
+        <a href="/dashboard/mps" className="text-xs text-blue-600 hover:underline">{tx("← MPS Dashboard")}</a>
       </div>
-      {plansLoading && <p role="status" aria-live="polite" className="text-sm text-gray-500">Loading plans…</p>}
-      {plansError && <p role="alert" className="text-sm text-red-700">Could not load MPS plans: {(plansError as Error).message}</p>}
-      {createScenario.error && <p role="alert" className="text-sm text-red-700">Scenario creation failed: {(createScenario.error as Error).message}</p>}
+      {plansLoading && <p role="status" aria-live="polite" className="text-sm text-gray-500">{tx("Loading plans…")}</p>}
+      {plansError && <p role="alert" className="text-sm text-red-700">{tx("Could not load MPS plans:")} {(plansError as Error).message}</p>}
+      {createScenario.error && <p role="alert" className="text-sm text-red-700">{tx("Scenario creation failed:")} {(createScenario.error as Error).message}</p>}
 
       {/* Plan selector */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-        <label htmlFor="whatif-plan" className="sr-only">Select MPS plan</label>
+        <label htmlFor="whatif-plan" className="sr-only">{tx("Select MPS plan")}</label>
         <select
           id="whatif-plan"
-          aria-label="Select MPS plan"
+          aria-label={tx("Select MPS plan")}
           className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm min-w-64"
           value={selectedPlanId || ""}
           onChange={(e) => setSelectedPlanId(e.target.value || null)}
         >
-          <option value="">-- select plan --</option>
+          <option value="">{tx("-- select plan --")}</option>
           {plans.map((p) => (
             <option key={p.id} value={p.id}>{p.plan_no} — {p.plan_name}</option>
           ))}
@@ -177,18 +178,18 @@ export default function WhatIfPage() {
           {/* Builder */}
           {hasPermission("mps.simulate") && <div className="space-y-4">
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-              <h2 className="text-sm font-semibold text-gray-700 mb-3">Build Scenario</h2>
+              <h2 className="text-sm font-semibold text-gray-700 mb-3">{tx("Build Scenario")}</h2>
               <div className="space-y-3">
                 <input
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
-                  placeholder="Scenario name *"
+                  placeholder={tx("Scenario name *")}
                   value={scenarioName}
                   onChange={(e) => setScenarioName(e.target.value)}
                 />
                 <textarea
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
                   rows={2}
-                  placeholder="Description (optional)"
+                  placeholder={tx("Description (optional)")}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                 />
@@ -196,7 +197,7 @@ export default function WhatIfPage() {
 
               {/* Change builder */}
               <div className="mt-4 bg-gray-50 rounded-lg p-3 space-y-3">
-                <p className="text-xs font-medium text-gray-600">Add Change</p>
+                <p className="text-xs font-medium text-gray-600">{tx("Add Change")}</p>
                 <div className="grid grid-cols-2 gap-2">
                   <select
                     className="border border-gray-200 rounded px-2 py-1.5 text-xs"
@@ -209,54 +210,54 @@ export default function WhatIfPage() {
                   </select>
                   {changeType === "MERGE" ? (
                     <select className="border border-gray-200 rounded px-2 py-1.5 text-xs" value={mergeLineId} onChange={(e) => setMergeLineId(e.target.value)}>
-                      <option value="">Select line to merge into selected line</option>
+                      <option value="">{tx("Select line to merge into selected line")}</option>
                       {lines.filter((line) => !selectedLines.has(line.id)).map((line) => (
                         <option key={line.id} value={line.id}>{line.line_no} — {line.product_name || line.product_id.slice(0, 12)}</option>
                       ))}
                     </select>
                   ) : changeType === "SPLIT" ? (
                     <>
-                      <input aria-label="First split quantity" className="border border-gray-200 rounded px-2 py-1.5 text-xs" placeholder="First exact quantity" value={changeValue} onChange={(e) => setChangeValue(e.target.value)} />
-                      <input aria-label="Second split quantity" className="border border-gray-200 rounded px-2 py-1.5 text-xs" placeholder="Second exact quantity" value={changeSecondaryValue} onChange={(e) => setChangeSecondaryValue(e.target.value)} />
+                      <input aria-label={tx("First split quantity")} className="border border-gray-200 rounded px-2 py-1.5 text-xs" placeholder={tx("First exact quantity")} value={changeValue} onChange={(e) => setChangeValue(e.target.value)} />
+                      <input aria-label={tx("Second split quantity")} className="border border-gray-200 rounded px-2 py-1.5 text-xs" placeholder={tx("Second exact quantity")} value={changeSecondaryValue} onChange={(e) => setChangeSecondaryValue(e.target.value)} />
                     </>
                   ) : changeType === "SHIFT_ADD" ? (
                     <>
-                      <input aria-label="Shift date" type="date" className="border border-gray-200 rounded px-2 py-1.5 text-xs" value={shiftDate} onChange={(e) => setShiftDate(e.target.value)} />
-                      <input aria-label="Additional shift start time" type="time" className="border border-gray-200 rounded px-2 py-1.5 text-xs" value={shiftStartTime} onChange={(e) => setShiftStartTime(e.target.value)} />
-                      <input aria-label="Additional shift end time" type="time" className="border border-gray-200 rounded px-2 py-1.5 text-xs" value={shiftEndTime} onChange={(e) => setShiftEndTime(e.target.value)} />
-                      <span className="col-span-2 text-xs text-gray-500">Added time: {shiftDurationHours() == null ? "choose a valid interval" : `${shiftDurationHours()} hours`}</span>
+                      <input aria-label={tx("Shift date")} type="date" className="border border-gray-200 rounded px-2 py-1.5 text-xs" value={shiftDate} onChange={(e) => setShiftDate(e.target.value)} />
+                      <input aria-label={tx("Additional shift start time")} type="time" className="border border-gray-200 rounded px-2 py-1.5 text-xs" value={shiftStartTime} onChange={(e) => setShiftStartTime(e.target.value)} />
+                      <input aria-label={tx("Additional shift end time")} type="time" className="border border-gray-200 rounded px-2 py-1.5 text-xs" value={shiftEndTime} onChange={(e) => setShiftEndTime(e.target.value)} />
+                      <span className="col-span-2 text-xs text-gray-500">{tx("Added time:")} {shiftDurationHours() == null ? tx("choose a valid interval") : `${shiftDurationHours()} hours`}</span>
                     </>
                   ) : (
                     changeType === "LINE_CHANGE" ? (
-                      <EntityPicker kind="work_center" label="New work center" value={changeValue} onChange={setChangeValue} />
+                      <EntityPicker kind="work_center" label={tx("New work center")} value={changeValue} onChange={setChangeValue} />
                     ) : (
                     <input
                       className="border border-gray-200 rounded px-2 py-1.5 text-xs"
-                      placeholder={changeType === "DELAY" ? "Days to delay" : "New value"}
+                      placeholder={changeType === "DELAY" ? tx("Days to delay") : tx("New value")}
                       value={changeValue}
                       onChange={(e) => setChangeValue(e.target.value)}
                     />)
                   )}
                 </div>
                 {["SPLIT", "MERGE", "SHIFT_ADD"].includes(changeType) && (
-                  <p className="text-xs text-gray-500">Choose exactly one target line. {changeType === "MERGE" ? "Both lines must share source, product, batch, campaign, feasibility, period, dates and work center." : changeType === "SPLIT" ? "Enter two positive quantities (up to 3 decimals) whose sum exactly equals the line quantity." : "Use a FINITE plan and a date inside the line schedule. The added start/end interval must not overlap configured shifts or another addition."}</p>
+                  <p className="text-xs text-gray-500">{tx("Choose exactly one target line.")} {changeType === "MERGE" ? tx("Both lines must share source, product, batch, campaign, feasibility, period, dates and work center.") : changeType === "SPLIT" ? tx("Enter two positive quantities (up to 3 decimals) whose sum exactly equals the line quantity.") : tx("Use a FINITE plan and a date inside the line schedule. The added start/end interval must not overlap configured shifts or another addition.")}</p>
                 )}
                 <p className="text-xs text-gray-400">
-                  {selectedLines.size} line(s) selected below
+                  {selectedLines.size} {tx("line(s) selected below")}
                 </p>
                 <button
                   onClick={addChange}
                   disabled={!canStageChange()}
                   className="w-full py-1.5 text-xs bg-indigo-600 text-white rounded-lg disabled:opacity-40 hover:bg-indigo-700"
                 >
-                  Add Change to Scenario
+                  {tx("Add Change to Scenario")}
                 </button>
               </div>
 
               {/* Changes list */}
               {changes.length > 0 && (
                 <div className="mt-3 space-y-1">
-                  <p className="text-xs font-medium text-gray-500 mb-1">{changes.length} change(s) staged:</p>
+                  <p className="text-xs font-medium text-gray-500 mb-1">{changes.length} {tx("change(s) staged:")}</p>
                   {changes.map((c, i) => (
                     <div key={i} className="flex items-center justify-between text-xs bg-blue-50 rounded px-2 py-1">
                       <span className="text-blue-700">{c.change_type}: {typeof c.new_value === "object" ? JSON.stringify(c.new_value) : String(c.new_value)}</span>
@@ -276,22 +277,22 @@ export default function WhatIfPage() {
                 disabled={!scenarioName || changes.length === 0 || createScenario.isPending}
                 className="mt-4 w-full bg-teal-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-teal-700 disabled:opacity-40"
               >
-                {createScenario.isPending ? "Computing…" : "Compute Impact"}
+                {createScenario.isPending ? tx("Computing…") : tx("Compute Impact")}
               </button>
             </div>
 
             {/* Lines selector */}
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
               <div className="px-4 py-3 border-b border-gray-50">
-                <p className="text-xs font-semibold text-gray-600">Select Lines for Change</p>
+                <p className="text-xs font-semibold text-gray-600">{tx("Select Lines for Change")}</p>
               </div>
               <div className="max-h-64 overflow-y-auto divide-y divide-gray-50">
                 {linesLoading ? (
-                  <p role="status" aria-live="polite" className="p-5 text-center text-sm text-gray-400">Loading lines…</p>
+                  <p role="status" aria-live="polite" className="p-5 text-center text-sm text-gray-400">{tx("Loading lines…")}</p>
                 ) : linesError ? (
-                  <p role="alert" className="p-5 text-center text-sm text-red-700">Could not load plan lines: {(linesError as Error).message}</p>
+                  <p role="alert" className="p-5 text-center text-sm text-red-700">{tx("Could not load plan lines:")} {(linesError as Error).message}</p>
                 ) : lines.length === 0 ? (
-                  <p className="p-5 text-center text-sm text-gray-400">No lines available for this plan.</p>
+                  <p className="p-5 text-center text-sm text-gray-400">{tx("No lines available for this plan.")}</p>
                 ) : lines.map((l) => (
                   <label
                     key={l.id}
@@ -325,31 +326,31 @@ export default function WhatIfPage() {
           {/* Scenarios list */}
           <div className="space-y-4">
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 space-y-3">
-              <h2 className="text-sm font-semibold text-gray-700">Compare saved snapshots</h2>
+              <h2 className="text-sm font-semibold text-gray-700">{tx("Compare saved snapshots")}</h2>
               <div className="flex flex-wrap gap-2">
-                <select aria-label="Baseline scenario" className="border rounded px-2 py-1 text-sm" value={baselineId} onChange={(e) => setBaselineId(e.target.value)}>
-                  <option value="">Baseline</option>{scenarios.map((s) => <option key={s.id} value={s.id}>{s.scenario_name}</option>)}
+                <select aria-label={tx("Baseline scenario")} className="border rounded px-2 py-1 text-sm" value={baselineId} onChange={(e) => setBaselineId(e.target.value)}>
+                  <option value="">{tx("Baseline")}</option>{scenarios.map((s) => <option key={s.id} value={s.id}>{s.scenario_name}</option>)}
                 </select>
-                <select aria-label="Candidate scenario" className="border rounded px-2 py-1 text-sm" value={candidateId} onChange={(e) => setCandidateId(e.target.value)}>
-                  <option value="">Candidate</option>{scenarios.map((s) => <option key={s.id} value={s.id}>{s.scenario_name}</option>)}
+                <select aria-label={tx("Candidate scenario")} className="border rounded px-2 py-1 text-sm" value={candidateId} onChange={(e) => setCandidateId(e.target.value)}>
+                  <option value="">{tx("Candidate")}</option>{scenarios.map((s) => <option key={s.id} value={s.id}>{s.scenario_name}</option>)}
                 </select>
-                <button disabled={!baselineId || !candidateId || baselineId === candidateId || compareScenarios.isPending} onClick={() => compareScenarios.mutate()} className="rounded bg-indigo-700 px-3 py-1 text-sm text-white disabled:opacity-50">Compare</button>
+                <button disabled={!baselineId || !candidateId || baselineId === candidateId || compareScenarios.isPending} onClick={() => compareScenarios.mutate()} className="rounded bg-indigo-700 px-3 py-1 text-sm text-white disabled:opacity-50">{tx("Compare")}</button>
               </div>
               {comparison && <div role="status" aria-live="polite" className="space-y-2 text-xs text-gray-600">
-                <p>Service level Δ {comparison.service_level_pct_delta.toFixed(1)} pp · Delayed lines Δ {comparison.delay_count_delta} lines</p>
-                <p>Material shortages Δ {comparison.material_status === "COMPLETE" && comparison.material_shortage_count_delta != null ? `${comparison.material_shortage_count_delta} lines` : "incomplete inputs"}
+                <p>{tx("Service level Δ")} {comparison.service_level_pct_delta.toFixed(1)} {tx("pp · Delayed lines Δ")} {comparison.delay_count_delta} {tx("lines")}</p>
+                <p>{tx("Material shortages Δ")} {comparison.material_status === "COMPLETE" && comparison.material_shortage_count_delta != null ? tx("{material_shortage_count_delta} lines", { material_shortage_count_delta: comparison.material_shortage_count_delta }) : tx("incomplete inputs")}
                   {comparison.material_shortage_quantity_by_uom_delta && ` · Quantity Δ ${Object.entries(comparison.material_shortage_quantity_by_uom_delta).map(([uom, quantity]) => `${quantity} ${uom}`).join(", ") || "0 by source UOM"}`}
                 </p>
-                <p>Capacity overload Δ {comparison.capacity_status === "COMPLETE" && comparison.capacity_overload_hours_delta != null ? `${comparison.capacity_overload_hours_delta.toFixed(3)} hours` : "incomplete inputs"}
-                  · Changeover Δ {comparison.changeover_status === "COMPLETE" && comparison.changeover_hours_delta != null ? `${comparison.changeover_hours_delta.toFixed(3)} hours` : "incomplete inputs"}
-                  · CIP Δ {comparison.cip_status === "COMPLETE" && comparison.cip_hours_delta != null ? `${comparison.cip_hours_delta.toFixed(3)} hours` : "incomplete inputs"}
+                <p>{tx("Capacity overload Δ")} {comparison.capacity_status === "COMPLETE" && comparison.capacity_overload_hours_delta != null ? `${comparison.capacity_overload_hours_delta.toFixed(3)} hours` : tx("incomplete inputs")}
+                  {tx("· Changeover Δ")} {comparison.changeover_status === "COMPLETE" && comparison.changeover_hours_delta != null ? `${comparison.changeover_hours_delta.toFixed(3)} hours` : tx("incomplete inputs")}
+                  {tx("· CIP Δ")} {comparison.cip_status === "COMPLETE" && comparison.cip_hours_delta != null ? `${comparison.cip_hours_delta.toFixed(3)} hours` : tx("incomplete inputs")}
                 </p>
-                <p>Estimated cost Δ {comparison.cost_delta_status === "COMPLETE" && comparison.cost_delta != null && comparison.cost_currency
+                <p>{tx("Estimated cost Δ")} {comparison.cost_delta_status === "COMPLETE" && comparison.cost_delta != null && comparison.cost_currency
                   ? `${comparison.cost_currency} ${comparison.cost_delta.toFixed(4)}`
-                  : `unknown (${comparison.cost_delta_status.replaceAll("_", " ").toLowerCase()})`} · Confidence: {comparison.confidence_status.replaceAll("_", " ").toLowerCase()}</p>
-                {comparison.unknowns.length > 0 && <p>Unknown inputs: {comparison.unknowns.join("; ")}</p>}
+                  : `unknown (${comparison.cost_delta_status.replaceAll("_", " ").toLowerCase()})`} {tx("· Confidence:")} {comparison.confidence_status.replaceAll("_", " ").toLowerCase()}</p>
+                {comparison.unknowns.length > 0 && <p>{tx("Unknown inputs:")} {comparison.unknowns.join("; ")}</p>}
                 <details>
-                  <summary className="cursor-pointer">KPI sources</summary>
+                  <summary className="cursor-pointer">{tx("KPI sources")}</summary>
                   <ul className="list-disc pl-5">
                     {Object.entries(comparison.metric_sources).map(([metric, source]) => <li key={metric}>{metric.replaceAll("_", " ")}: {source}</li>)}
                   </ul>
@@ -359,14 +360,14 @@ export default function WhatIfPage() {
             </div>
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
               <div className="px-5 py-4 border-b border-gray-50">
-                <h2 className="text-sm font-semibold text-gray-700">Scenarios ({scenarios.length})</h2>
+                <h2 className="text-sm font-semibold text-gray-700">{tx("Scenarios (")}{scenarios.length})</h2>
               </div>
               {scenariosLoading ? (
-                <div role="status" aria-live="polite" className="p-8 text-center text-sm text-gray-400">Loading scenarios…</div>
+                <div role="status" aria-live="polite" className="p-8 text-center text-sm text-gray-400">{tx("Loading scenarios…")}</div>
               ) : scenariosError ? (
-                <div role="alert" className="p-8 text-center text-sm text-red-700">Could not load scenarios: {(scenariosError as Error).message}</div>
+                <div role="alert" className="p-8 text-center text-sm text-red-700">{tx("Could not load scenarios:")} {(scenariosError as Error).message}</div>
               ) : scenarios.length === 0 ? (
-                <div className="p-8 text-center text-sm text-gray-400">No scenarios yet</div>
+                <div className="p-8 text-center text-sm text-gray-400">{tx("No scenarios yet")}</div>
               ) : (
                 <div className="divide-y divide-gray-50">
                   {scenarios.map((s) => (
@@ -389,12 +390,12 @@ export default function WhatIfPage() {
                           </span>
                         </span>
                         <span>
-                          Delays: <span className={impactColor(finiteMetric(s.impact_delay_count), true)}>
+                          {tx("Delays:")} <span className={impactColor(finiteMetric(s.impact_delay_count), true)}>
                             {finiteMetric(s.impact_delay_count) ?? "—"}
                           </span>
                         </span>
                         <span>
-                          Cost Δ: <span className={impactColor(finiteMetric(s.impact_cost_delta), true)}>
+                          {tx("Cost Δ:")} <span className={impactColor(finiteMetric(s.impact_cost_delta), true)}>
                             {finiteMetric(s.impact_cost_delta) != null
                               ? `${s.impact_cost_currency ? `${s.impact_cost_currency} ` : ""}${finiteMetric(s.impact_cost_delta)!.toLocaleString()}`
                               : "—"}
@@ -421,9 +422,9 @@ export default function WhatIfPage() {
 
             <div className="grid grid-cols-3 gap-3 mb-4">
               {[
-                { label: "Service Level", value: `${finiteMetric(viewScenario.impact_service_level_pct)?.toFixed(1) ?? "—"}%`, color: "text-blue-700" },
-                { label: "Delayed Lines", value: finiteMetric(viewScenario.impact_delay_count) ?? "—", color: Number(viewScenario.impact_delay_count) > 0 ? "text-red-600" : "text-green-600" },
-                { label: "Cost Delta", value: finiteMetric(viewScenario.impact_cost_delta) != null ? `${viewScenario.impact_cost_currency ? `${viewScenario.impact_cost_currency} ` : ""}${finiteMetric(viewScenario.impact_cost_delta)!.toLocaleString()}` : "—", color: Number(viewScenario.impact_cost_delta) > 0 ? "text-red-600" : "text-green-600" },
+                { label: tx("Service Level"), value: `${finiteMetric(viewScenario.impact_service_level_pct)?.toFixed(1) ?? "—"}%`, color: "text-blue-700" },
+                { label: tx("Delayed Lines"), value: finiteMetric(viewScenario.impact_delay_count) ?? "—", color: Number(viewScenario.impact_delay_count) > 0 ? "text-red-600" : "text-green-600" },
+                { label: tx("Cost Delta"), value: finiteMetric(viewScenario.impact_cost_delta) != null ? `${viewScenario.impact_cost_currency ? `${viewScenario.impact_cost_currency} ` : ""}${finiteMetric(viewScenario.impact_cost_delta)!.toLocaleString()}` : "—", color: Number(viewScenario.impact_cost_delta) > 0 ? "text-red-600" : "text-green-600" },
               ].map((k) => (
                 <div key={k.label} className="bg-gray-50 rounded-lg p-3">
                   <p className="text-xs text-gray-400">{k.label}</p>
@@ -437,7 +438,7 @@ export default function WhatIfPage() {
             )}
 
             <div>
-              <p className="text-xs font-semibold text-gray-500 mb-2">Changes ({viewScenario.changes.length})</p>
+              <p className="text-xs font-semibold text-gray-500 mb-2">{tx("Changes (")}{viewScenario.changes.length})</p>
               <div className="space-y-1 max-h-48 overflow-y-auto">
                 {(viewScenario.changes as WhatIfChange[]).map((c, i) => (
                   <div key={i} className="flex items-center justify-between text-xs bg-gray-50 rounded px-2 py-1.5">

@@ -5,13 +5,14 @@ import {
   imApi, IMAIRec, IMAIRecStatus, IMAIAgentType,
   AI_PRIORITY_COLOR, AI_AGENT_LABEL,
 } from "@/lib/invoice_match";
+import { tx, lx } from "@/lib/i18n/core";
 
-const STATUSES: { value: IMAIRecStatus | ""; label: string }[] = [
-  { value: "", label: "All" },
-  { value: "PENDING", label: "Pending" },
-  { value: "ACCEPTED", label: "Accepted" },
-  { value: "REJECTED", label: "Rejected" },
-];
+const STATUSES: { value: IMAIRecStatus | ""; label: string }[] = lx(() => [
+  { value: "", label: tx("All") },
+  { value: "PENDING", label: tx("Pending") },
+  { value: "ACCEPTED", label: tx("Accepted") },
+  { value: "REJECTED", label: tx("Rejected") },
+]);
 
 export default function IMAIPage() {
   const [statusFilter, setStatusFilter] = useState<IMAIRecStatus | "">("");
@@ -39,22 +40,22 @@ export default function IMAIPage() {
     <div className="p-6 space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">AI Recommendations</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("AI Recommendations")}</h1>
           {pending > 0 && (
             <p className="text-sm text-yellow-600 mt-1">
-              {pending} pending recommendation{pending !== 1 ? "s" : ""}
+              {pending} {tx("pending recommendation")}{pending !== 1 ? tx("s") : ""}
             </p>
           )}
         </div>
         <button onClick={() => runAI.mutate()} disabled={runAI.isPending}
           className="px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 disabled:opacity-50">
-          {runAI.isPending ? "Running…" : "Run All AI Agents"}
+          {runAI.isPending ? tx("Running…") : tx("Run All AI Agents")}
         </button>
       </div>
 
       {runAI.data && (
         <p className="text-sm text-green-700 bg-green-50 px-3 py-2 rounded">
-          Created {(runAI.data as { recommendations_created: number }).recommendations_created} new recommendation(s).
+          {tx("Created")} {(runAI.data as { recommendations_created: number }).recommendations_created} {tx("new recommendation(s).")}
         </p>
       )}
 
@@ -70,9 +71,9 @@ export default function IMAIPage() {
       </div>
 
       {isLoading ? (
-        <p className="text-gray-400">Loading…</p>
+        <p className="text-gray-400">{tx("Loading…")}</p>
       ) : recs.length === 0 ? (
-        <p className="text-gray-400 text-sm">No recommendations. Run AI agents to generate insights.</p>
+        <p className="text-gray-400 text-sm">{tx("No recommendations. Run AI agents to generate insights.")}</p>
       ) : (
         <div className="space-y-3">
           {recs.map((rec) => (
@@ -94,28 +95,28 @@ export default function IMAIPage() {
                     </span>
                     {rec.confidence_score != null && (
                       <span className="text-xs text-gray-400">
-                        Confidence: {Math.round(Number(rec.confidence_score) * 100)}%
+                        {tx("Confidence:")} {Math.round(Number(rec.confidence_score) * 100)}%
                       </span>
                     )}
                   </div>
                   <p className="text-sm font-semibold text-gray-900">{rec.title}</p>
                   {rec.explanation && <p className="text-sm text-gray-600">{rec.explanation}</p>}
                   {rec.impact_summary && (
-                    <p className="text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded">Impact: {rec.impact_summary}</p>
+                    <p className="text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded">{tx("Impact:")} {rec.impact_summary}</p>
                   )}
                   {rec.suggested_action && (
-                    <p className="text-xs text-blue-700 bg-blue-50 px-2 py-1 rounded">Suggestion: {rec.suggested_action}</p>
+                    <p className="text-xs text-blue-700 bg-blue-50 px-2 py-1 rounded">{tx("Suggestion:")} {rec.suggested_action}</p>
                   )}
                 </div>
                 {rec.status === "PENDING" && (
                   <div className="flex gap-2 shrink-0">
                     <button onClick={() => action.mutate({ id: rec.id, status: "ACCEPTED" })}
                       className="px-3 py-1 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700">
-                      Accept
+                      {tx("Accept")}
                     </button>
                     <button onClick={() => action.mutate({ id: rec.id, status: "REJECTED" })}
                       className="px-3 py-1 text-xs border rounded-lg text-red-600 hover:bg-red-50">
-                      Reject
+                      {tx("Reject")}
                     </button>
                   </div>
                 )}

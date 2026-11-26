@@ -8,6 +8,7 @@ import {
   STATUS_COLOR, FEASIBILITY_COLOR,
 } from "@/lib/mps";
 import { useAuth } from "@/context/AuthContext";
+import { tx } from "@/lib/i18n/core";
 
 function Badge({ label, color }: { label: string; color: string }) {
   return <span className={`px-2 py-0.5 rounded text-xs font-medium ${color}`}>{label}</span>;
@@ -99,24 +100,24 @@ export default function PlanningBoardPage() {
   return (
     <div className="p-6 space-y-5">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-gray-900">Production Planning Board</h1>
-        <a href="/dashboard/mps" className="text-sm text-blue-600 hover:underline">← MPS Dashboard</a>
+        <h1 className="text-xl font-semibold text-gray-900">{tx("Production Planning Board")}</h1>
+        <a href="/dashboard/mps" className="text-sm text-blue-600 hover:underline">{tx("← MPS Dashboard")}</a>
       </div>
-      {plansLoading && <p role="status" aria-live="polite" className="text-sm text-gray-500">Loading plans…</p>}
-      {plansError && <p role="alert" className="text-sm text-red-700">Could not load MPS plans: {(plansError as Error).message}</p>}
-      {actionError && <p role="alert" className="text-sm text-red-700">MPS action failed: {(actionError as Error).message}</p>}
+      {plansLoading && <p role="status" aria-live="polite" className="text-sm text-gray-500">{tx("Loading plans…")}</p>}
+      {plansError && <p role="alert" className="text-sm text-red-700">{tx("Could not load MPS plans:")} {(plansError as Error).message}</p>}
+      {actionError && <p role="alert" className="text-sm text-red-700">{tx("MPS action failed:")} {(actionError as Error).message}</p>}
 
       {/* Plan selector */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
         <div className="flex flex-wrap items-center gap-3">
-          <label htmlFor="planning-board-plan" className="text-sm font-medium text-gray-600">Select Plan:</label>
+          <label htmlFor="planning-board-plan" className="text-sm font-medium text-gray-600">{tx("Select Plan:")}</label>
           <select
             id="planning-board-plan"
             className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm min-w-64"
             value={selectedPlanId || ""}
             onChange={(e) => setSelectedPlanId(e.target.value || null)}
           >
-            <option value="">-- choose a plan --</option>
+            <option value="">{tx("-- choose a plan --")}</option>
             {plans.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.plan_no} — {p.plan_name} [{p.status}]
@@ -130,35 +131,35 @@ export default function PlanningBoardPage() {
                 onClick={() => setShowGenModal(true)}
                 className="px-3 py-1.5 text-xs font-medium bg-gray-100 hover:bg-gray-200 rounded-lg"
               >
-                Generate from MRP
+                {tx("Generate from MRP")}
               </button>}
               {hasPermission("mps.calculate") && <button
                 onClick={() => runCapacity.mutate()}
                 disabled={runCapacity.isPending}
                 className="px-3 py-1.5 text-xs font-medium bg-orange-100 text-orange-700 hover:bg-orange-200 rounded-lg"
               >
-                {runCapacity.isPending ? "Running…" : "Run Capacity"}
+                {runCapacity.isPending ? tx("Running…") : tx("Run Capacity")}
               </button>}
               {hasPermission("mps.calculate") && <button
                 onClick={() => runCampaigns.mutate()}
                 disabled={runCampaigns.isPending}
                 className="px-3 py-1.5 text-xs font-medium bg-purple-100 text-purple-700 hover:bg-purple-200 rounded-lg"
               >
-                {runCampaigns.isPending ? "Running…" : "Group Campaigns"}
+                {runCampaigns.isPending ? tx("Running…") : tx("Group Campaigns")}
               </button>}
               {hasPermission("mps.ai") && <button
                 onClick={() => runAI.mutate()}
                 disabled={runAI.isPending}
                 className="px-3 py-1.5 text-xs font-medium bg-indigo-100 text-indigo-700 hover:bg-indigo-200 rounded-lg"
               >
-                {runAI.isPending ? "Analyzing…" : "Run AI"}
+                {runAI.isPending ? tx("Analyzing…") : tx("Run AI")}
               </button>}
               {hasPermission("mps.approve") && selectedPlan?.status === "DRAFT" && (
                 <button
                   onClick={() => approvePlan.mutate()}
                   className="px-3 py-1.5 text-xs font-medium bg-blue-600 text-white hover:bg-blue-700 rounded-lg"
                 >
-                  Approve Plan
+                  {tx("Approve Plan")}
                 </button>
               )}
               {hasPermission("mps.release") && selectedPlan?.status === "APPROVED" && (
@@ -166,7 +167,7 @@ export default function PlanningBoardPage() {
                   onClick={() => setShowReleaseModal(true)}
                   className="px-3 py-1.5 text-xs font-medium bg-green-600 text-white hover:bg-green-700 rounded-lg"
                 >
-                  Release Plan
+                  {tx("Release Plan")}
                 </button>
               )}
             </div>
@@ -176,10 +177,10 @@ export default function PlanningBoardPage() {
         {/* Feasibility summary bar */}
         {selectedPlanId && lines.length > 0 && (
           <div className="mt-3 flex gap-4 text-xs text-gray-500">
-            <span className="text-green-600 font-medium">{feasCounts.feasible} Feasible</span>
-            <span className="text-red-600 font-medium">{feasCounts.overloaded} Overloaded</span>
-            <span className="text-gray-400">{feasCounts.pending} Pending</span>
-            <span className="ml-auto text-gray-400">{feasCounts.total} total lines</span>
+            <span className="text-green-600 font-medium">{feasCounts.feasible} {tx("Feasible")}</span>
+            <span className="text-red-600 font-medium">{feasCounts.overloaded} {tx("Overloaded")}</span>
+            <span className="text-gray-400">{feasCounts.pending} {tx("Pending")}</span>
+            <span className="ml-auto text-gray-400">{feasCounts.total} {tx("total lines")}</span>
           </div>
         )}
       </div>
@@ -188,19 +189,19 @@ export default function PlanningBoardPage() {
       {selectedPlanId && (
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
           {linesLoading ? (
-            <div role="status" aria-live="polite" className="p-8 text-center text-gray-400 text-sm">Loading lines…</div>
+            <div role="status" aria-live="polite" className="p-8 text-center text-gray-400 text-sm">{tx("Loading lines…")}</div>
           ) : linesError ? (
-            <div role="alert" className="p-8 text-center text-red-700 text-sm">Could not load plan lines: {(linesError as Error).message}</div>
+            <div role="alert" className="p-8 text-center text-red-700 text-sm">{tx("Could not load plan lines:")} {(linesError as Error).message}</div>
           ) : lines.length === 0 ? (
             <div className="p-8 text-center text-gray-400 text-sm">
-              No lines yet. Generate from MRP to populate.
+              {tx("No lines yet. Generate from MRP to populate.")}
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-gray-50">
                   <tr>
-                    {["Line No", "Product", "Period", "Net Req", "Planned Qty", "Work Center", "Req Hrs", "Start", "End", "Priority", "Status", ""].map((h) => (
+                    {[tx("Line No"), tx("Product"), tx("Period"), tx("Net Req"), tx("Planned Qty"), tx("Work Center"), tx("Req Hrs"), tx("Start"), tx("End"), tx("Priority"), tx("Status"), ""].map((h) => (
                       <th key={h} className="px-3 py-2.5 text-left text-xs font-medium text-gray-500 whitespace-nowrap">
                         {h}
                       </th>
@@ -238,7 +239,7 @@ export default function PlanningBoardPage() {
                           onClick={() => setEditLine(l)}
                           className="text-xs text-blue-600 hover:underline"
                         >
-                          Edit
+                          {tx("Edit")}
                         </button>
                       </td>}
                     </tr>
@@ -254,22 +255,22 @@ export default function PlanningBoardPage() {
       {showGenModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
-            <h2 className="text-lg font-semibold mb-4">Generate Lines from MRP</h2>
+            <h2 className="text-lg font-semibold mb-4">{tx("Generate Lines from MRP")}</h2>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">MRP run *</label>
-                <EntityPicker kind="mrp_run" label="MRP run" value={genForm.mrp_run_id} onChange={(id) => setGenForm((f) => ({ ...f, mrp_run_id: id }))} />
+                <label className="block text-xs font-medium text-gray-500 mb-1">{tx("MRP run *")}</label>
+                <EntityPicker kind="mrp_run" label={tx("MRP run")} value={genForm.mrp_run_id} onChange={(id) => setGenForm((f) => ({ ...f, mrp_run_id: id }))} />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Period Type</label>
+                <label className="block text-xs font-medium text-gray-500 mb-1">{tx("Period Type")}</label>
                 <select
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
                   value={genForm.period_type}
                   onChange={(e) => setGenForm({ ...genForm, period_type: e.target.value })}
                 >
-                  <option value="WEEKLY">Weekly</option>
-                  <option value="MONTHLY">Monthly</option>
-                  <option value="DAILY">Daily</option>
+                  <option value="WEEKLY">{tx("Weekly")}</option>
+                  <option value="MONTHLY">{tx("Monthly")}</option>
+                  <option value="DAILY">{tx("Daily")}</option>
                 </select>
               </div>
             </div>
@@ -279,10 +280,10 @@ export default function PlanningBoardPage() {
                 disabled={!genForm.mrp_run_id || generateFromMrp.isPending}
                 className="flex-1 bg-blue-600 text-white py-2 rounded-lg text-sm font-medium disabled:opacity-40"
               >
-                {generateFromMrp.isPending ? "Generating…" : "Generate"}
+                {generateFromMrp.isPending ? tx("Generating…") : tx("Generate")}
               </button>
               <button onClick={() => setShowGenModal(false)} className="px-4 border border-gray-200 rounded-lg text-sm">
-                Cancel
+                {tx("Cancel")}
               </button>
             </div>
           </div>
@@ -293,20 +294,20 @@ export default function PlanningBoardPage() {
       {showReleaseModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
-            <h2 className="text-lg font-semibold mb-2">Release Plan</h2>
+            <h2 className="text-lg font-semibold mb-2">{tx("Release Plan")}</h2>
             <p className="text-sm text-gray-500 mb-4">
-              This will create Production Orders for all feasible lines. Choose the target warehouse.
+              {tx("This will create Production Orders for all feasible lines. Choose the target warehouse.")}
             </p>
-            <EntityPicker kind="warehouse" label="Target warehouse" value={releaseWarehouseId} onChange={setReleaseWarehouseId} />
+            <EntityPicker kind="warehouse" label={tx("Target warehouse")} value={releaseWarehouseId} onChange={setReleaseWarehouseId} />
             <div className="flex gap-3 mt-4">
               <button
                 onClick={() => releasePlan.mutate()}
                 disabled={!releaseWarehouseId || releasePlan.isPending}
                 className="flex-1 bg-green-600 text-white py-2 rounded-lg text-sm font-medium disabled:opacity-40"
               >
-                {releasePlan.isPending ? "Releasing…" : "Release Plan"}
+                {releasePlan.isPending ? tx("Releasing…") : tx("Release Plan")}
               </button>
-              <button onClick={() => setShowReleaseModal(false)} className="px-4 border border-gray-200 rounded-lg text-sm">Cancel</button>
+              <button onClick={() => setShowReleaseModal(false)} className="px-4 border border-gray-200 rounded-lg text-sm">{tx("Cancel")}</button>
             </div>
           </div>
         </div>
@@ -316,11 +317,11 @@ export default function PlanningBoardPage() {
       {editLine && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
-            <h2 className="text-lg font-semibold mb-1">Override Line</h2>
+            <h2 className="text-lg font-semibold mb-1">{tx("Override Line")}</h2>
             <p className="text-xs text-gray-400 mb-4">{editLine.line_no} — {editLine.product_name}</p>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Planned Qty</label>
+                <label className="block text-xs font-medium text-gray-500 mb-1">{tx("Planned Qty")}</label>
                 <input
                   type="number"
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
@@ -329,7 +330,7 @@ export default function PlanningBoardPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Priority Score (0–100)</label>
+                <label className="block text-xs font-medium text-gray-500 mb-1">{tx("Priority Score (0–100)")}</label>
                 <input
                   type="number"
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
@@ -338,7 +339,7 @@ export default function PlanningBoardPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Start Date</label>
+                <label className="block text-xs font-medium text-gray-500 mb-1">{tx("Start Date")}</label>
                 <input
                   type="date"
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
@@ -347,7 +348,7 @@ export default function PlanningBoardPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Remarks</label>
+                <label className="block text-xs font-medium text-gray-500 mb-1">{tx("Remarks")}</label>
                 <textarea
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
                   rows={2}
@@ -373,9 +374,9 @@ export default function PlanningBoardPage() {
                 disabled={updateLine.isPending}
                 className="flex-1 bg-blue-600 text-white py-2 rounded-lg text-sm font-medium disabled:opacity-40"
               >
-                {updateLine.isPending ? "Saving…" : "Save Override"}
+                {updateLine.isPending ? tx("Saving…") : tx("Save Override")}
               </button>
-              <button onClick={() => setEditLine(null)} className="px-4 border border-gray-200 rounded-lg text-sm">Cancel</button>
+              <button onClick={() => setEditLine(null)} className="px-4 border border-gray-200 rounded-lg text-sm">{tx("Cancel")}</button>
             </div>
           </div>
         </div>

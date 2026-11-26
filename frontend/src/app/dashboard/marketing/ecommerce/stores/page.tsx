@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { marketingApi, MktStore, StorePlatform, StoreStatus, STORE_STATUS_COLORS } from "@/lib/marketingApi";
 import { RequirePermission } from "@/components/PermissionGuard";
+import { tx } from "@/lib/i18n/core";
 
 const PLATFORMS: StorePlatform[] = [
   "JUMIA", "KILIMALL", "SHOPIFY", "WOOCOMMERCE", "AMAZON",
@@ -30,13 +31,13 @@ export default function EcommerceStoresPage() {
       <div className="min-h-screen bg-[#0b1120] p-6 text-white">
         <div className="mb-6 flex items-start justify-between">
           <div>
-            <h1 className="text-2xl font-bold">E-commerce Stores</h1>
-            <p className="text-slate-400 text-sm mt-1">{stores.length} stores connected</p>
+            <h1 className="text-2xl font-bold">{tx("E-commerce Stores")}</h1>
+            <p className="text-slate-400 text-sm mt-1">{stores.length} {tx("stores connected")}</p>
           </div>
           <RequirePermission permission="stores.create">
             <button onClick={() => router.push("/dashboard/marketing?tab=ecommerce&drawer=create")}
               className="px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-sm font-medium">
-              + Add Store
+              {tx("+ Add Store")}
             </button>
           </RequirePermission>
         </div>
@@ -44,20 +45,20 @@ export default function EcommerceStoresPage() {
         <div className="flex gap-3 mb-6 flex-wrap">
           <select value={platform} onChange={(e) => setPlatform(e.target.value)}
             className="bg-[#131c2e] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
-            <option value="">All platforms</option>
+            <option value="">{tx("All platforms")}</option>
             {PLATFORMS.map((p) => <option key={p} value={p}>{p}</option>)}
           </select>
           <select value={status} onChange={(e) => setStatus(e.target.value)}
             className="bg-[#131c2e] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
-            <option value="">All statuses</option>
+            <option value="">{tx("All statuses")}</option>
             {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
 
         {isLoading ? (
-          <p className="text-slate-400">Loading...</p>
+          <p className="text-slate-400">{tx("Loading...")}</p>
         ) : stores.length === 0 ? (
-          <p className="text-slate-400 text-center py-16">No stores found.</p>
+          <p className="text-slate-400 text-center py-16">{tx("No stores found.")}</p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {stores.map((s: MktStore) => (
@@ -74,10 +75,10 @@ export default function EcommerceStoresPage() {
                   <a href={s.url} target="_blank" rel="noreferrer"
                     className="text-xs text-blue-400 hover:underline truncate">{s.url}</a>
                 )}
-                {s.owner && <p className="text-xs text-slate-500">Owner: {s.owner}</p>}
+                {s.owner && <p className="text-xs text-slate-500">{tx("Owner:")} {s.owner}</p>}
                 <div className="mt-auto pt-1">
                   <button onClick={() => router.push(`/dashboard/marketing/ecommerce/stores/${s.id}`)}
-                    className="text-xs text-sky-400 hover:text-sky-300">View →</button>
+                    className="text-xs text-sky-400 hover:text-sky-300">{tx("View →")}</button>
                 </div>
               </div>
             ))}

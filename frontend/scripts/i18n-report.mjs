@@ -18,9 +18,19 @@ const CUSTOMER = ["src/app/portal", "src/app/chat", "src/app/kb", "src/app/book"
   // M47.S01.T003 shared quotation / e-signature and shared sales document
   "src/app/d/[token]/page.tsx", "src/app/docs/[token]/page.tsx"];
 
-const catalogs = readdirSync(msgDir).filter((f) => f.endsWith(".json")).map((f) => ({ file: f, data: JSON.parse(readFileSync(join(msgDir, f), "utf8")) }));
+// M51.S01.T008: staff_ui.json / backend_messages.json are keyed by the English text and used by tx(); reported separately below.
+const TX_FILES = ["staff_ui.json", "backend_messages.json"];
+const catalogs = readdirSync(msgDir).filter((f) => f.endsWith(".json") && !TX_FILES.includes(f)).map((f) => ({ file: f, data: JSON.parse(readFileSync(join(msgDir, f), "utf8")) }));
 const en = Object.assign({}, ...catalogs.map((c) => c.data.en));
-const report = { catalogs: {}, missing_in_catalog: [], unknown_keys_in_code: [], hardcoded_formatting: [] };
+const report = { catalogs: {}, missing_in_catalog: [], unknown_keys_in_code: [], hardcoded_formatting: [], tx_catalogs: {}, staff_literals_remaining: null };
+
+for (const f of TX_FILES) {
+  const d = JSON.parse(readFileSync(join(msgDir, f), "utf8"));
+  const keys = Object.keys(d.en);
+  report.tx_catalogs[f] = { keys: keys.length, missing_sw: keys.filter((k) => !String(d.sw?.[k] ?? "").trim()).length, missing_tr: keys.filter((k) => !String(d.tr?.[k] ?? "").trim()).length };
+}
+// untranslated literals still in staff files (module-level constants etc.), per area; see scripts/i18n-codemod.mjs
+report.staff_literals_remaining = (await import("./i18n-codemod.mjs")).report();
 
 for (const { file, data } of catalogs) {
   const r = { keys: Object.keys(data.en).length };

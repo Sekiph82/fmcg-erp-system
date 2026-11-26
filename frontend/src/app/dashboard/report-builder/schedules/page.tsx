@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { reportBuilderApi, Schedule, Report, ScheduleFrequency, ExportFormat } from "@/lib/report_builder";
+import { tx } from "@/lib/i18n/core";
 
 const FREQS: ScheduleFrequency[] = ["daily","weekly","monthly","custom"];
 const FORMATS: ExportFormat[] = ["csv","xlsx","json"];
@@ -21,7 +22,7 @@ export default function SchedulesPage() {
   useEffect(() => { load(); }, []);
 
   const create = async () => {
-    if (!form.report_id) { alert("Select a report"); return; }
+    if (!form.report_id) { alert(tx("Select a report")); return; }
     await reportBuilderApi.createSchedule(form.report_id, {
       frequency: form.frequency,
       run_time: form.run_time,
@@ -42,53 +43,53 @@ export default function SchedulesPage() {
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-gray-900">Report Schedules</h1>
+        <h1 className="text-xl font-bold text-gray-900">{tx("Report Schedules")}</h1>
         <button onClick={() => setShowForm(true)}
           className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
-          + Schedule Report
+          {tx("+ Schedule Report")}
         </button>
       </div>
 
       {showForm && (
         <div className="bg-white border rounded-lg p-4 shadow-sm space-y-3">
-          <h2 className="font-semibold text-gray-800">Schedule Report</h2>
+          <h2 className="font-semibold text-gray-800">{tx("Schedule Report")}</h2>
           <div className="grid grid-cols-2 gap-3">
-            <div className="col-span-2"><label className="text-xs text-gray-500">Report *</label>
+            <div className="col-span-2"><label className="text-xs text-gray-500">{tx("Report *")}</label>
               <select className="w-full border rounded px-2 py-1 text-sm mt-1" value={form.report_id}
                 onChange={(e) => setForm({ ...form, report_id: e.target.value })}>
-                <option value="">Select report…</option>
+                <option value="">{tx("Select report…")}</option>
                 {reports.map(r => <option key={r.report_id} value={r.report_id}>{r.report_name}</option>)}
               </select></div>
-            <div><label className="text-xs text-gray-500">Frequency</label>
+            <div><label className="text-xs text-gray-500">{tx("Frequency")}</label>
               <select className="w-full border rounded px-2 py-1 text-sm mt-1" value={form.frequency}
                 onChange={(e) => setForm({ ...form, frequency: e.target.value as ScheduleFrequency })}>
                 {FREQS.map(f => <option key={f} value={f}>{f}</option>)}
               </select></div>
-            <div><label className="text-xs text-gray-500">Run Time</label>
+            <div><label className="text-xs text-gray-500">{tx("Run Time")}</label>
               <input type="time" className="w-full border rounded px-2 py-1 text-sm mt-1" value={form.run_time}
                 onChange={(e) => setForm({ ...form, run_time: e.target.value })} /></div>
-            <div><label className="text-xs text-gray-500">Export Format</label>
+            <div><label className="text-xs text-gray-500">{tx("Export Format")}</label>
               <select className="w-full border rounded px-2 py-1 text-sm mt-1" value={form.export_format}
                 onChange={(e) => setForm({ ...form, export_format: e.target.value as ExportFormat })}>
                 {FORMATS.map(f => <option key={f} value={f}>{f.toUpperCase()}</option>)}
               </select></div>
-            <div><label className="text-xs text-gray-500">Recipients (comma-separated emails)</label>
-              <input className="w-full border rounded px-2 py-1 text-sm mt-1" placeholder="user@example.com, …"
+            <div><label className="text-xs text-gray-500">{tx("Recipients (comma-separated emails)")}</label>
+              <input className="w-full border rounded px-2 py-1 text-sm mt-1" placeholder={tx("user@example.com, …")}
                 value={form.recipients} onChange={(e) => setForm({ ...form, recipients: e.target.value })} /></div>
           </div>
           <div className="flex gap-2">
-            <button onClick={create} className="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">Schedule</button>
-            <button onClick={() => setShowForm(false)} className="rounded border px-4 py-1.5 text-sm text-gray-600 hover:bg-gray-50">Cancel</button>
+            <button onClick={create} className="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">{tx("Schedule")}</button>
+            <button onClick={() => setShowForm(false)} className="rounded border px-4 py-1.5 text-sm text-gray-600 hover:bg-gray-50">{tx("Cancel")}</button>
           </div>
         </div>
       )}
 
-      {loading ? <p className="text-gray-500 text-sm">Loading…</p> : (
+      {loading ? <p className="text-gray-500 text-sm">{tx("Loading…")}</p> : (
         <div className="bg-white border rounded-lg shadow-sm overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b">
               <tr>
-                {["Report","Frequency","Run Time","Format","Recipients","Last Run","Next Run","Actions"].map(h=>(
+                {[tx("Report"),tx("Frequency"),tx("Run Time"),tx("Format"),tx("Recipients"),tx("Last Run"),tx("Next Run"),tx("Actions")].map(h=>(
                   <th key={h} className="px-4 py-2 text-left text-xs font-semibold text-gray-600">{h}</th>
                 ))}
               </tr>
@@ -104,13 +105,13 @@ export default function SchedulesPage() {
                   <td className="px-4 py-2 text-gray-400 text-xs">{s.last_run_at ? new Date(s.last_run_at).toLocaleString() : "—"}</td>
                   <td className="px-4 py-2 text-gray-400 text-xs">{s.next_run_at ? new Date(s.next_run_at).toLocaleString() : "—"}</td>
                   <td className="px-4 py-2">
-                    <button onClick={() => deactivate(s.schedule_id)} className="text-xs text-red-500 hover:underline">Deactivate</button>
+                    <button onClick={() => deactivate(s.schedule_id)} className="text-xs text-red-500 hover:underline">{tx("Deactivate")}</button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-          {schedules.length === 0 && <p className="text-center text-gray-400 py-8 text-sm">No active schedules.</p>}
+          {schedules.length === 0 && <p className="text-center text-gray-400 py-8 text-sm">{tx("No active schedules.")}</p>}
         </div>
       )}
     </div>

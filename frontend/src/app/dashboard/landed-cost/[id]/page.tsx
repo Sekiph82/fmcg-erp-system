@@ -7,6 +7,7 @@ import {
   lcApi, LC_STATUS_COLOR, COST_TYPE_LABEL, ALLOC_METHOD_LABEL,
   LandedCostOut, fmtCurrency,
 } from "@/lib/landed_cost";
+import { tx } from "@/lib/i18n/core";
 
 export default function LandedCostDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -63,8 +64,8 @@ export default function LandedCostDetailPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["lc-doc", id] }),
   });
 
-  if (isLoading) return <div className="p-8 text-gray-500">Loading…</div>;
-  if (error || !doc) return <div className="p-8 text-red-500">Document not found.</div>;
+  if (isLoading) return <div className="p-8 text-gray-500">{tx("Loading…")}</div>;
+  if (error || !doc) return <div className="p-8 text-red-500">{tx("Document not found.")}</div>;
 
   const costLines      = doc.cost_lines      ?? [];
   const grnLinks       = doc.grn_links       ?? [];
@@ -83,7 +84,7 @@ export default function LandedCostDetailPage() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">{doc.lc_no}</h1>
           <p className="text-sm text-gray-500">
-            {doc.vendor_name ?? "No vendor"} · {doc.bill_no ?? "No bill no"} · {doc.bill_date ?? ""}
+            {doc.vendor_name ?? tx("No vendor")} · {doc.bill_no ?? tx("No bill no")} · {doc.bill_date ?? ""}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -94,26 +95,26 @@ export default function LandedCostDetailPage() {
             <button onClick={() => allocate.mutate()}
               disabled={allocate.isPending}
               className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
-              {allocate.isPending ? "…" : "Run Allocation"}
+              {allocate.isPending ? "…" : tx("Run Allocation")}
             </button>
           )}
           {canPost && (
             <button onClick={() => post.mutate()}
               disabled={post.isPending}
               className="px-3 py-1.5 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50">
-              {post.isPending ? "…" : "Post"}
+              {post.isPending ? "…" : tx("Post")}
             </button>
           )}
           <button onClick={() => runAI.mutate()}
             disabled={runAI.isPending}
             className="px-3 py-1.5 text-xs border rounded-lg hover:bg-gray-50 text-purple-600 disabled:opacity-50">
-            {runAI.isPending ? "…" : "Run AI"}
+            {runAI.isPending ? "…" : tx("Run AI")}
           </button>
           {canCancel && (
             <button onClick={() => cancel.mutate()}
               disabled={cancel.isPending}
               className="px-3 py-1.5 text-xs text-red-600 border border-red-300 rounded-lg hover:bg-red-50 disabled:opacity-50">
-              Cancel
+              {tx("Cancel")}
             </button>
           )}
         </div>
@@ -122,10 +123,10 @@ export default function LandedCostDetailPage() {
       {/* Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: "Currency / FX", value: `${doc.currency_code} @ ${doc.exchange_rate} · ${doc.exchange_rate_source ?? "legacy source unknown"} · ${doc.exchange_rate_date ?? "legacy date unknown"}` },
-          { label: "Method",       value: ALLOC_METHOD_LABEL[doc.allocation_method] ?? doc.allocation_method },
-          { label: "Total (FC)",   value: fmtCurrency(doc.total_lc_amount_fc, doc.currency_code) },
-          { label: "Total (Base)", value: fmtCurrency(doc.total_lc_amount_base) },
+          { label: tx("Currency / FX"), value: `${doc.currency_code} @ ${doc.exchange_rate} · ${doc.exchange_rate_source ?? "legacy source unknown"} · ${doc.exchange_rate_date ?? "legacy date unknown"}` },
+          { label: tx("Method"),       value: ALLOC_METHOD_LABEL[doc.allocation_method] ?? doc.allocation_method },
+          { label: tx("Total (FC)"),   value: fmtCurrency(doc.total_lc_amount_fc, doc.currency_code) },
+          { label: tx("Total (Base)"), value: fmtCurrency(doc.total_lc_amount_base) },
         ].map((c) => (
           <div key={c.label} className="bg-white border rounded-xl p-4">
             <p className="text-xs text-gray-500">{c.label}</p>
@@ -138,25 +139,25 @@ export default function LandedCostDetailPage() {
         <section className="rounded-xl border bg-white p-5 space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <h2 className="text-sm font-semibold text-gray-800">Accounting reconciliation &amp; audit trail</h2>
-              <p className="mt-1 text-xs text-gray-500">Read-only checks against source allocations, posting events, batches, inventory adjustments, and journal entries.</p>
+              <h2 className="text-sm font-semibold text-gray-800">{tx("Accounting reconciliation & audit trail")}</h2>
+              <p className="mt-1 text-xs text-gray-500">{tx("Read-only checks against source allocations, posting events, batches, inventory adjustments, and journal entries.")}</p>
             </div>
             <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
               reconciliation.data?.status === "RECONCILED" ? "bg-green-100 text-green-700"
                 : reconciliation.data?.status === "EXCEPTIONS" ? "bg-red-100 text-red-700"
                   : "bg-amber-100 text-amber-800"
             }`}>
-              {reconciliation.isLoading ? "Checking…" : reconciliation.data?.status ?? "Unavailable"}
+              {reconciliation.isLoading ? tx("Checking…") : reconciliation.data?.status ?? tx("Unavailable")}
             </span>
           </div>
           {reconciliation.error instanceof Error && (
-            <p role="alert" className="text-sm text-red-600">Could not load reconciliation: {reconciliation.error.message}</p>
+            <p role="alert" className="text-sm text-red-600">{tx("Could not load reconciliation:")} {reconciliation.error.message}</p>
           )}
           {reconciliation.data && (
             <>
               <div className="space-y-2">
                 {reconciliation.data.checks.length === 0 ? (
-                  <p className="text-sm text-gray-500">No allocation or variance checks are available yet.</p>
+                  <p className="text-sm text-gray-500">{tx("No allocation or variance checks are available yet.")}</p>
                 ) : reconciliation.data.checks.map((check) => (
                   <div key={check.check_id} className="flex flex-col gap-1 border-b pb-2 last:border-0 md:flex-row md:items-start md:justify-between">
                     <div>
@@ -173,9 +174,9 @@ export default function LandedCostDetailPage() {
                 ))}
               </div>
               <div>
-                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Recorded activity</h3>
+                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">{tx("Recorded activity")}</h3>
                 {reconciliation.data.audit_entries.length === 0 ? (
-                  <p className="text-sm text-gray-500">No posting activity has been recorded.</p>
+                  <p className="text-sm text-gray-500">{tx("No posting activity has been recorded.")}</p>
                 ) : (
                   <ol className="space-y-2">
                     {reconciliation.data.audit_entries.map((entry) => (
@@ -188,7 +189,7 @@ export default function LandedCostDetailPage() {
                           {entry.amount_base != null && <span className="text-[11px] text-gray-600">{fmtCurrency(entry.amount_base, entry.currency ?? undefined)}</span>}
                         </div>
                         <p className="text-xs text-gray-500">{entry.description}</p>
-                        {entry.actor_id && <p className="text-[10px] text-gray-400">Recorded by {entry.actor_id}</p>}
+                        {entry.actor_id && <p className="text-[10px] text-gray-400">{tx("Recorded by")} {entry.actor_id}</p>}
                         <p className="break-all font-mono text-[10px] text-gray-400">
                           {[entry.event_id && `event ${entry.event_id}`, entry.posting_batch_id && `batch ${entry.posting_batch_id}`, entry.journal_entry_id && `journal ${entry.journal_entry_id}`].filter(Boolean).join(" · ")}
                         </p>
@@ -197,7 +198,7 @@ export default function LandedCostDetailPage() {
                   </ol>
                 )}
               </div>
-              <p className="text-[11px] text-gray-400">Generated {new Date(reconciliation.data.generated_at).toLocaleString()}. This report reads current records and does not alter them.</p>
+              <p className="text-[11px] text-gray-400">{tx("Generated")} {new Date(reconciliation.data.generated_at).toLocaleString()}{tx(". This report reads current records and does not alter them.")}</p>
             </>
           )}
         </section>
@@ -206,13 +207,13 @@ export default function LandedCostDetailPage() {
       {/* Cost Lines */}
       <div className="bg-white border rounded-xl overflow-hidden">
         <div className="px-5 py-3 border-b bg-gray-50">
-          <h2 className="text-sm font-semibold text-gray-700">Cost Components ({costLines.length})</h2>
-          <p className="mt-1 text-xs text-gray-500">Header totals are translated into the document currency; each line keeps its own currency and saved Finance rate snapshot.</p>
+          <h2 className="text-sm font-semibold text-gray-700">{tx("Cost Components (")}{costLines.length})</h2>
+          <p className="mt-1 text-xs text-gray-500">{tx("Header totals are translated into the document currency; each line keeps its own currency and saved Finance rate snapshot.")}</p>
         </div>
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
             <tr>
-              {["Type", "Description", "Vendor", "Estimated (FC)", "Actual (FC)", "Variance (FC)", "Variance (Base)", "Actual Source", "Ccy", "Rate", "Booked Base", "In Valuation", "Actual / Posting"].map((h) => (
+              {[tx("Type"), tx("Description"), tx("Vendor"), tx("Estimated (FC)"), tx("Actual (FC)"), tx("Variance (FC)"), tx("Variance (Base)"), tx("Actual Source"), tx("Ccy"), tx("Rate"), tx("Booked Base"), tx("In Valuation"), tx("Actual / Posting")].map((h) => (
                 <th key={h} className="px-4 py-2 text-left font-medium">{h}</th>
               ))}
             </tr>
@@ -233,13 +234,13 @@ export default function LandedCostDetailPage() {
                 <td className="px-4 py-2 text-gray-500 text-xs">{cl.currency_code}</td>
                 <td className="px-4 py-2 text-gray-500 text-xs">
                   <div>{Number(cl.exchange_rate ?? 1).toFixed(6)}</div>
-                  <div>{cl.exchange_rate_date ?? "Legacy date unknown"}</div>
-                  <div>{cl.exchange_rate_source ?? "Legacy source unknown"}</div>
+                  <div>{cl.exchange_rate_date ?? tx("Legacy date unknown")}</div>
+                  <div>{cl.exchange_rate_source ?? tx("Legacy source unknown")}</div>
                 </td>
                 <td className="px-4 py-2 font-medium">{fmtCurrency(cl.amount_base)}</td>
                 <td className="px-4 py-2">
                   <span className={`text-xs px-2 py-0.5 rounded-full ${cl.is_included_in_valuation ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
-                    {cl.is_included_in_valuation ? "Yes" : "No"}
+                    {cl.is_included_in_valuation ? tx("Yes") : tx("No")}
                   </span>
                 </td>
                 <td className="px-4 py-2">
@@ -248,8 +249,8 @@ export default function LandedCostDetailPage() {
                       <input
                         type="number"
                         step="0.0001"
-                        aria-label={`Actual amount for ${cl.cost_type}`}
-                        placeholder="Actual amount"
+                        aria-label={tx("Actual amount for {cost_type}", { cost_type: cl.cost_type })}
+                        placeholder={tx("Actual amount")}
                         value={actualInputs[cl.id]?.amount ?? ""}
                         onChange={(event) => setActualInputs((current) => ({
                           ...current,
@@ -260,8 +261,8 @@ export default function LandedCostDetailPage() {
                       <input
                         type="text"
                         maxLength={200}
-                        aria-label={`Actual source reference for ${cl.cost_type}`}
-                        placeholder="Invoice / source reference"
+                        aria-label={tx("Actual source reference for {cost_type}", { cost_type: cl.cost_type })}
+                        placeholder={tx("Invoice / source reference")}
                         value={actualInputs[cl.id]?.reference ?? ""}
                         onChange={(event) => setActualInputs((current) => ({
                           ...current,
@@ -278,36 +279,36 @@ export default function LandedCostDetailPage() {
                         disabled={recordActual.isPending || !actualInputs[cl.id]?.amount || !actualInputs[cl.id]?.reference.trim()}
                         className="rounded bg-indigo-600 px-2 py-1 text-xs text-white disabled:opacity-50"
                       >
-                        {recordActual.isPending ? "Saving…" : "Record actual"}
+                        {recordActual.isPending ? tx("Saving…") : tx("Record actual")}
                       </button>
                     </div>
                   ) : cl.actual_record?.variance_status === "PENDING" && doc.status === "POSTED" && hasPermission("finance.post") ? (
                     <div className="flex min-w-44 flex-col gap-1">
-                      <span className="text-xs text-amber-700">Variance awaits posting</span>
+                      <span className="text-xs text-amber-700">{tx("Variance awaits posting")}</span>
                       <button
                         onClick={() => postActualVariance.mutate(cl.id)}
                         disabled={postActualVariance.isPending}
                         className="rounded bg-indigo-600 px-2 py-1 text-xs text-white disabled:opacity-50"
                       >
-                        {postActualVariance.isPending ? "Posting…" : "Post variance"}
+                        {postActualVariance.isPending ? tx("Posting…") : tx("Post variance")}
                       </button>
                     </div>
                   ) : cl.actual_record ? (
                     <span title={`Recorded ${new Date(cl.actual_record.recorded_at).toLocaleString()}`}>
                       {cl.actual_record.variance_status === "POSTED"
-                        ? `Posted (${cl.actual_record.variance_postings.length} entries)`
+                        ? tx("Posted ({length} entries)", { length: cl.actual_record.variance_postings.length })
                         : cl.actual_record.variance_status === "NOT_REQUIRED"
-                          ? "No variance due"
+                          ? tx("No variance due")
                           : cl.actual_record.variance_status === "PENDING"
-                            ? "Pending finance posting"
-                            : "Recorded"}
+                            ? tx("Pending finance posting")
+                            : tx("Recorded")}
                     </span>
                   ) : "—"}
                 </td>
               </tr>
             ))}
             {costLines.length === 0 && (
-              <tr><td colSpan={13} className="px-4 py-4 text-center text-gray-400">No cost lines.</td></tr>
+              <tr><td colSpan={13} className="px-4 py-4 text-center text-gray-400">{tx("No cost lines.")}</td></tr>
             )}
           </tbody>
         </table>
@@ -315,7 +316,7 @@ export default function LandedCostDetailPage() {
 
       {canRecordActual && (
         <p className="text-xs text-gray-500">
-          Actual entries require finance posting permission and a source reference. Before posting, recording an actual resets validation and clears stale allocations; after posting, it records the variance without changing the posted allocation or journal.
+          {tx("Actual entries require finance posting permission and a source reference. Before posting, recording an actual resets validation and clears stale allocations; after posting, it records the variance without changing the posted allocation or journal.")}
         </p>
       )}
       {recordActual.error instanceof Error && (
@@ -328,15 +329,15 @@ export default function LandedCostDetailPage() {
       {/* GRN Links */}
       <div className="bg-white border rounded-xl overflow-hidden">
         <div className="px-5 py-3 border-b bg-gray-50">
-          <h2 className="text-sm font-semibold text-gray-700">Linked GRNs ({grnLinks.length})</h2>
+          <h2 className="text-sm font-semibold text-gray-700">{tx("Linked GRNs (")}{grnLinks.length})</h2>
         </div>
         {grnLinks.length === 0 ? (
-          <p className="px-5 py-4 text-sm text-gray-400">No GRNs linked.</p>
+          <p className="px-5 py-4 text-sm text-gray-400">{tx("No GRNs linked.")}</p>
         ) : (
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
               <tr>
-                {["GRN No", "PO No", "GRN Value (Base)", "Total Qty", "Allocation Share %"].map((h) => (
+                {[tx("GRN No"), tx("PO No"), tx("GRN Value (Base)"), tx("Total Qty"), tx("Allocation Share %")].map((h) => (
                   <th key={h} className="px-4 py-2 text-left font-medium">{h}</th>
                 ))}
               </tr>
@@ -360,12 +361,12 @@ export default function LandedCostDetailPage() {
       {allocationLines.length > 0 && (
         <div className="bg-white border rounded-xl overflow-hidden">
           <div className="px-5 py-3 border-b bg-gray-50">
-            <h2 className="text-sm font-semibold text-gray-700">Allocation Results ({allocationLines.length} lines)</h2>
+            <h2 className="text-sm font-semibold text-gray-700">{tx("Allocation Results (")}{allocationLines.length} {tx("lines)")}</h2>
           </div>
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
               <tr>
-                {["Material", "Lot", "Qty", "Basis Used", "PO Value", "Share %", "Allocated Amount", "Per Unit LC", "Posted"].map((h) => (
+                {[tx("Material"), tx("Lot"), tx("Qty"), tx("Basis Used"), tx("PO Value"), tx("Share %"), tx("Allocated Amount"), tx("Per Unit LC"), tx("Posted")].map((h) => (
                   <th key={h} className="px-4 py-2 text-left font-medium">{h}</th>
                 ))}
               </tr>
@@ -383,7 +384,7 @@ export default function LandedCostDetailPage() {
                   <td className="px-4 py-2 text-gray-600 text-xs">{al.per_unit_lc_cost != null ? Number(al.per_unit_lc_cost).toFixed(6) : "—"}</td>
                   <td className="px-4 py-2">
                     <span className={`text-xs px-2 py-0.5 rounded-full ${al.is_posted ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
-                      {al.is_posted ? "Yes" : "No"}
+                      {al.is_posted ? tx("Yes") : tx("No")}
                     </span>
                   </td>
                 </tr>
@@ -395,7 +396,7 @@ export default function LandedCostDetailPage() {
 
       {doc.notes && (
         <div className="bg-white border rounded-xl p-5">
-          <p className="text-xs text-gray-500 mb-1">Notes</p>
+          <p className="text-xs text-gray-500 mb-1">{tx("Notes")}</p>
           <p className="text-sm text-gray-700">{doc.notes}</p>
         </div>
       )}

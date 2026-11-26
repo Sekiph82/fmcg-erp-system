@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   crmApi, fmtCurrency, type CRMStage, type CRMTerritory, type ForecastDetail, type ForecastFilters, type ForecastSnapshot,
 } from "@/lib/crm_pipeline";
+import { tx } from "@/lib/i18n/core";
 
 function errorText(e: unknown) {
   const detail = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
@@ -60,32 +61,32 @@ export default function ForecastPage() {
     <div className="p-6 space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Revenue Forecast</h1>
-          <p className="text-sm text-gray-500">Open opportunities by expected close month, weighted by probability. Currencies are never added together.</p>
+          <h1 className="text-xl font-bold text-gray-900">{tx("Revenue Forecast")}</h1>
+          <p className="text-sm text-gray-500">{tx("Open opportunities by expected close month, weighted by probability. Currencies are never added together.")}</p>
         </div>
-        <form aria-label="Forecast filters" className="flex flex-wrap items-end gap-2" onSubmit={(e) => e.preventDefault()}>
-          <label className="text-xs text-gray-500">Horizon
-            <select aria-label="Horizon" value={filters.months_ahead} onChange={(e) => setFilters({ ...filters, months_ahead: +e.target.value })}
+        <form aria-label={tx("Forecast filters")} className="flex flex-wrap items-end gap-2" onSubmit={(e) => e.preventDefault()}>
+          <label className="text-xs text-gray-500">{tx("Horizon")}
+            <select aria-label={tx("Horizon")} value={filters.months_ahead} onChange={(e) => setFilters({ ...filters, months_ahead: +e.target.value })}
               className="block text-sm border rounded-lg px-2 py-1.5">
-              {[3, 6, 12].map((m) => <option key={m} value={m}>{m} months</option>)}
+              {[3, 6, 12].map((m) => <option key={m} value={m}>{m} {tx("months")}</option>)}
             </select>
           </label>
-          <label className="text-xs text-gray-500">Stage
-            <select aria-label="Stage" value={filters.stage_id ?? ""} onChange={(e) => setFilters({ ...filters, stage_id: e.target.value || undefined })}
+          <label className="text-xs text-gray-500">{tx("Stage")}
+            <select aria-label={tx("Stage")} value={filters.stage_id ?? ""} onChange={(e) => setFilters({ ...filters, stage_id: e.target.value || undefined })}
               className="block text-sm border rounded-lg px-2 py-1.5">
-              <option value="">All stages</option>
+              <option value="">{tx("All stages")}</option>
               {stages.map((s) => <option key={s.id} value={s.id}>{s.stage_name}</option>)}
             </select>
           </label>
-          <label className="text-xs text-gray-500">Territory
-            <select aria-label="Territory" value={filters.territory_id ?? ""} onChange={(e) => setFilters({ ...filters, territory_id: e.target.value || undefined })}
+          <label className="text-xs text-gray-500">{tx("Territory")}
+            <select aria-label={tx("Territory")} value={filters.territory_id ?? ""} onChange={(e) => setFilters({ ...filters, territory_id: e.target.value || undefined })}
               className="block text-sm border rounded-lg px-2 py-1.5">
-              <option value="">All territories</option>
+              <option value="">{tx("All territories")}</option>
               {territories.map((t) => <option key={t.id} value={t.id}>{t.territory_name}</option>)}
             </select>
           </label>
-          <label className="text-xs text-gray-500">Owner (rep id)
-            <input aria-label="Owner" value={filters.assigned_rep_id ?? ""} onChange={(e) => setFilters({ ...filters, assigned_rep_id: e.target.value || undefined })}
+          <label className="text-xs text-gray-500">{tx("Owner (rep id)")}
+            <input aria-label={tx("Owner")} value={filters.assigned_rep_id ?? ""} onChange={(e) => setFilters({ ...filters, assigned_rep_id: e.target.value || undefined })}
               className="block text-sm border rounded-lg px-2 py-1.5 w-32" />
           </label>
         </form>
@@ -94,21 +95,21 @@ export default function ForecastPage() {
       {error && <p role="alert" className="rounded-lg p-3 text-sm bg-red-50 border border-red-200 text-red-700">{error}</p>}
       {viewing && (
         <p className="rounded-lg p-3 text-sm bg-amber-50 border border-amber-200 text-amber-800">
-          Viewing snapshot {viewing.label ?? ""} taken {new Date(viewing.taken_at).toLocaleString()}.{" "}
-          <button className="underline" onClick={() => setViewing(null)}>Back to live forecast</button>
+          {tx("Viewing snapshot")} {viewing.label ?? ""} {tx("taken")} {new Date(viewing.taken_at).toLocaleString()}.{" "}
+          <button className="underline" onClick={() => setViewing(null)}>{tx("Back to live forecast")}</button>
         </p>
       )}
 
       <div className="bg-white rounded-xl border shadow-sm p-4 overflow-x-auto">
-        <h2 className="font-semibold text-gray-800 mb-3">Monthly forecast</h2>
+        <h2 className="font-semibold text-gray-800 mb-3">{tx("Monthly forecast")}</h2>
         {loading && !viewing ? (
-          <div className="text-gray-400 py-4 text-center">Loading…</div>
+          <div className="text-gray-400 py-4 text-center">{tx("Loading…")}</div>
         ) : !shown || currencies.length === 0 ? (
-          <div className="text-gray-400 py-4 text-center">No open opportunities with an expected close date in this range.</div>
+          <div className="text-gray-400 py-4 text-center">{tx("No open opportunities with an expected close date in this range.")}</div>
         ) : (
           <table className="w-full text-sm">
             <thead><tr className="text-left text-xs text-gray-500">
-              <th className="py-1">Month</th><th>Currency</th><th className="text-right">Expected</th><th className="text-right">Weighted</th><th className="text-right">Deals</th>
+              <th className="py-1">{tx("Month")}</th><th>{tx("Currency")}</th><th className="text-right">{tx("Expected")}</th><th className="text-right">{tx("Weighted")}</th><th className="text-right">{tx("Deals")}</th>
             </tr></thead>
             <tbody>
               {shown.rows?.filter((r) => r.deal_count > 0).map((r) => (
@@ -126,12 +127,12 @@ export default function ForecastPage() {
 
       <div className="grid md:grid-cols-2 gap-4">
         <div className="bg-white rounded-xl border shadow-sm p-4">
-          <h2 className="font-semibold text-gray-800 mb-3">By stage</h2>
-          {(shown?.by_stage ?? []).length === 0 ? <p className="text-sm text-gray-400">No data.</p> : (
+          <h2 className="font-semibold text-gray-800 mb-3">{tx("By stage")}</h2>
+          {(shown?.by_stage ?? []).length === 0 ? <p className="text-sm text-gray-400">{tx("No data.")}</p> : (
             <ul className="space-y-1 text-sm">
               {shown!.by_stage!.map((s) => (
                 <li key={`${s.stage}-${s.currency}`} className="flex justify-between gap-2">
-                  <span>{s.stage} · {s.deal_count} deals</span>
+                  <span>{s.stage} · {s.deal_count} {tx("deals")}</span>
                   <span className="font-medium">{fmtCurrency(s.weighted_revenue, s.currency)}</span>
                 </li>
               ))}
@@ -139,25 +140,25 @@ export default function ForecastPage() {
           )}
           {(shown?.overdue_open ?? []).map((o) => (
             <p key={o.currency} className="mt-3 text-xs text-amber-700">
-              {o.deal_count} open deal(s) are past their close date ({fmtCurrency(o.expected_revenue, o.currency)}) and are not in the monthly rows.
+              {o.deal_count} {tx("open deal(s) are past their close date (")}{fmtCurrency(o.expected_revenue, o.currency)}{tx(") and are not in the monthly rows.")}
             </p>
           ))}
         </div>
         <div className="bg-white rounded-xl border shadow-sm p-4">
-          <h2 className="font-semibold text-gray-800 mb-3">Snapshots</h2>
+          <h2 className="font-semibold text-gray-800 mb-3">{tx("Snapshots")}</h2>
           <div className="flex gap-2 mb-3">
-            <input aria-label="Snapshot label" placeholder="Label (e.g. Q4 commit)" value={label} onChange={(e) => setLabel(e.target.value)}
+            <input aria-label={tx("Snapshot label")} placeholder={tx("Label (e.g. Q4 commit)")} value={label} onChange={(e) => setLabel(e.target.value)}
               className="flex-1 text-sm border rounded-lg px-2 py-1.5" />
             <button onClick={saveSnapshot} disabled={!detail} className="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-lg disabled:opacity-50">
-              Save snapshot
+              {tx("Save snapshot")}
             </button>
           </div>
-          {snapshots.length === 0 ? <p className="text-sm text-gray-400">No snapshots yet.</p> : (
+          {snapshots.length === 0 ? <p className="text-sm text-gray-400">{tx("No snapshots yet.")}</p> : (
             <ul className="space-y-1 text-sm">
               {snapshots.map((s) => (
                 <li key={s.id} className="flex justify-between gap-2">
-                  <span>{s.label ?? "Untitled"} · {new Date(s.taken_at).toLocaleString()}</span>
-                  <button className="text-indigo-600 underline" onClick={async () => setViewing(await crmApi.getForecastSnapshot(s.id))}>View</button>
+                  <span>{s.label ?? tx("Untitled")} · {new Date(s.taken_at).toLocaleString()}</span>
+                  <button className="text-indigo-600 underline" onClick={async () => setViewing(await crmApi.getForecastSnapshot(s.id))}>{tx("View")}</button>
                 </li>
               ))}
             </ul>

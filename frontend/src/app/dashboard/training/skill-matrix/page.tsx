@@ -4,6 +4,7 @@ import {
   trainingApi, EmployeeSkillRow, Skill, SkillCategory, SkillLevel,
   CATEGORY_COLOR, LEVEL_COLOR,
 } from "@/lib/training";
+import { tx } from "@/lib/i18n/core";
 
 const CATEGORIES: SkillCategory[] = ["technical","soft","safety","compliance","management"];
 const LEVELS: SkillLevel[] = ["basic","intermediate","advanced","expert"];
@@ -62,34 +63,34 @@ export default function SkillMatrixPage() {
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <h1 className="text-xl font-bold text-gray-900">Skill Matrix</h1>
+        <h1 className="text-xl font-bold text-gray-900">{tx("Skill Matrix")}</h1>
         <div className="flex gap-2">
           {showSeedBtn && (
             <button onClick={seed} className="rounded border border-gray-300 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50">
-              Seed Default Skills
+              {tx("Seed Default Skills")}
             </button>
           )}
           <button onClick={() => setShowForm(true)} className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
-            + Add Skill Profile
+            {tx("+ Add Skill Profile")}
           </button>
         </div>
       </div>
 
       <div className="flex gap-3 flex-wrap items-center">
-        <input className="border rounded px-2 py-1 text-sm w-40" placeholder="Employee ID…"
+        <input className="border rounded px-2 py-1 text-sm w-40" placeholder={tx("Employee ID…")}
           value={empFilter} onChange={(e) => setEmpFilter(e.target.value)} />
-        <input className="border rounded px-2 py-1 text-sm w-40" placeholder="Department ID…"
+        <input className="border rounded px-2 py-1 text-sm w-40" placeholder={tx("Department ID…")}
           value={deptFilter} onChange={(e) => setDeptFilter(e.target.value)} />
         <label className="flex items-center gap-2 text-sm text-gray-600">
           <input type="checkbox" checked={gapsOnly} onChange={(e) => setGapsOnly(e.target.checked)} />
-          Gaps only
+          {tx("Gaps only")}
         </label>
-        <span className="text-xs text-gray-500">{displayed.length} records</span>
+        <span className="text-xs text-gray-500">{displayed.length} {tx("records")}</span>
       </div>
 
       {showForm && (
         <div className="bg-white border rounded-lg p-4 shadow-sm space-y-3">
-          <h2 className="font-semibold text-gray-800">Add / Update Skill Profile</h2>
+          <h2 className="font-semibold text-gray-800">{tx("Add / Update Skill Profile")}</h2>
           <div className="grid grid-cols-2 gap-3">
             {(["employee_id","employee_name","department_id"] as const).map((f) => (
               <div key={f}>
@@ -99,51 +100,51 @@ export default function SkillMatrixPage() {
               </div>
             ))}
             <div>
-              <label className="text-xs text-gray-500">Skill *</label>
+              <label className="text-xs text-gray-500">{tx("Skill *")}</label>
               <select className="w-full border rounded px-2 py-1 text-sm mt-1" value={form.skill_id}
                 onChange={(e) => setForm({ ...form, skill_id: e.target.value })}>
-                <option value="">Select skill…</option>
+                <option value="">{tx("Select skill…")}</option>
                 {skills.map(s => <option key={s.skill_id} value={s.skill_id}>{s.skill_name} ({s.category})</option>)}
               </select>
             </div>
             <div>
-              <label className="text-xs text-gray-500">Current Level</label>
+              <label className="text-xs text-gray-500">{tx("Current Level")}</label>
               <select className="w-full border rounded px-2 py-1 text-sm mt-1" value={form.current_level}
                 onChange={(e) => setForm({ ...form, current_level: e.target.value as SkillLevel })}>
-                <option value="">Not assessed</option>
+                <option value="">{tx("Not assessed")}</option>
                 {LEVELS.map(l => <option key={l} value={l}>{l}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-xs text-gray-500">Required Level</label>
+              <label className="text-xs text-gray-500">{tx("Required Level")}</label>
               <select className="w-full border rounded px-2 py-1 text-sm mt-1" value={form.required_level}
                 onChange={(e) => setForm({ ...form, required_level: e.target.value as SkillLevel })}>
-                <option value="">Not set</option>
+                <option value="">{tx("Not set")}</option>
                 {LEVELS.map(l => <option key={l} value={l}>{l}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-xs text-gray-500">Last Assessed Date</label>
+              <label className="text-xs text-gray-500">{tx("Last Assessed Date")}</label>
               <input type="date" className="w-full border rounded px-2 py-1 text-sm mt-1"
                 value={form.last_assessed_date} onChange={(e) => setForm({ ...form, last_assessed_date: e.target.value })} />
             </div>
           </div>
           <div className="flex gap-2">
-            <button onClick={saveProfile} className="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">Save</button>
-            <button onClick={() => setShowForm(false)} className="rounded border px-4 py-1.5 text-sm text-gray-600 hover:bg-gray-50">Cancel</button>
+            <button onClick={saveProfile} className="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">{tx("Save")}</button>
+            <button onClick={() => setShowForm(false)} className="rounded border px-4 py-1.5 text-sm text-gray-600 hover:bg-gray-50">{tx("Cancel")}</button>
           </div>
         </div>
       )}
 
       {loading ? (
-        <p className="text-gray-500 text-sm">Loading…</p>
+        <p className="text-gray-500 text-sm">{tx("Loading…")}</p>
       ) : (
         <div className="space-y-4">
           {Object.entries(byEmployee).map(([empId, rows]) => (
             <div key={empId} className="bg-white border rounded-lg shadow-sm overflow-hidden">
               <div className="bg-gray-50 px-4 py-2 border-b flex items-center justify-between">
                 <span className="font-semibold text-gray-800">{rows[0].employee_name ?? empId}</span>
-                <span className="text-xs text-gray-500">{rows[0].department_id ?? "—"} · {rows.filter(r=>r.has_gap).length} gap(s)</span>
+                <span className="text-xs text-gray-500">{rows[0].department_id ?? "—"} · {rows.filter(r=>r.has_gap).length} {tx("gap(s)")}</span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 p-3">
                 {rows.map((row) => (
@@ -154,26 +155,26 @@ export default function SkillMatrixPage() {
                     </div>
                     <div className="flex gap-2">
                       <div>
-                        <span className="text-gray-500">Current: </span>
+                        <span className="text-gray-500">{tx("Current:")} </span>
                         {row.current_level ? (
                           <span className={`rounded px-1 ${LEVEL_COLOR[row.current_level]}`}>{row.current_level}</span>
                         ) : <span className="text-gray-400">—</span>}
                       </div>
                       <div>
-                        <span className="text-gray-500">Required: </span>
+                        <span className="text-gray-500">{tx("Required:")} </span>
                         {row.required_level ? (
                           <span className={`rounded px-1 ${LEVEL_COLOR[row.required_level]}`}>{row.required_level}</span>
                         ) : <span className="text-gray-400">—</span>}
                       </div>
                     </div>
-                    {row.has_gap && <p className="text-red-600 font-semibold mt-1">⚠ Gap</p>}
+                    {row.has_gap && <p className="text-red-600 font-semibold mt-1">{tx("⚠ Gap")}</p>}
                   </div>
                 ))}
               </div>
             </div>
           ))}
           {Object.keys(byEmployee).length === 0 && (
-            <p className="text-gray-400 text-sm text-center py-8">No skill profiles found. Add profiles or seed default skills.</p>
+            <p className="text-gray-400 text-sm text-center py-8">{tx("No skill profiles found. Add profiles or seed default skills.")}</p>
           )}
         </div>
       )}

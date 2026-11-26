@@ -2,6 +2,7 @@
 // M45.S01.T013 sales document library: approved catalogues/proposals, share links with expiry, views and downloads.
 import { useCallback, useEffect, useState } from "react";
 import { apiClient } from "@/lib/api";
+import { tx } from "@/lib/i18n/core";
 
 type Doc = { id: string; title: string; version: number; status: string; file_name: string | null; scan: string; links: number };
 type Link = { id: string; label: string | null; pin_version: boolean; expires_at: string; revoked: boolean; views: number; downloads: number; last_activity: string | null };
@@ -21,23 +22,23 @@ export default function SalesDocsPage() {
   const revoke = (id: string) => apiClient.post(`/api/v1/sales-docs/links/${id}/revoke`).then(() => cur && open(cur)).catch((e) => setMsg(err(e)));
   return (
     <div className="p-4 space-y-3 text-sm">
-      <h2 className="text-lg font-semibold">Sales documents</h2>
-      <p className="text-xs text-gray-500">Upload and approve documents in Documents with the category &quot;Sales document&quot;. Only approved files that passed the malware scan can be downloaded by customers.</p>
+      <h2 className="text-lg font-semibold">{tx("Sales documents")}</h2>
+      <p className="text-xs text-gray-500">{tx("Upload and approve documents in Documents with the category \"Sales document\". Only approved files that passed the malware scan can be downloaded by customers.")}</p>
       {msg && <p role="status" className="text-xs text-red-600">{msg}</p>}
-      <ul className="divide-y bg-white border rounded">{docs.length === 0 ? <li className="p-2 text-xs text-gray-500">No sales documents yet.</li> : docs.map((d) =>
+      <ul className="divide-y bg-white border rounded">{docs.length === 0 ? <li className="p-2 text-xs text-gray-500">{tx("No sales documents yet.")}</li> : docs.map((d) =>
         <li key={d.id} className={`p-2 text-xs flex flex-wrap justify-between gap-2 cursor-pointer ${cur?.id === d.id ? "bg-indigo-50" : ""}`} onClick={() => open(d)}>
-          <span><b>{d.title}</b> v{d.version} · {d.status.toLowerCase()} · {d.file_name ?? "no file"}</span><span>scan {d.scan.toLowerCase().replace("_", " ")} · {d.links} links</span></li>)}</ul>
+          <span><b>{d.title}</b> {tx("v")}{d.version} · {d.status.toLowerCase()} · {d.file_name ?? tx("no file")}</span><span>{tx("scan")} {d.scan.toLowerCase().replace("_", " ")} · {d.links} {tx("links")}</span></li>)}</ul>
       {cur && <section className="border rounded p-3 bg-white space-y-2">
         <h3 className="font-semibold">{cur.title}</h3>
         <div className="flex flex-wrap gap-2 items-end text-xs">
-          <label>Days<input aria-label="Days valid" type="number" min={1} max={90} className="border rounded px-1 block w-16" value={form.days} onChange={(e) => setForm({ ...form, days: +e.target.value })} /></label>
-          <label>For<input aria-label="Shared with" className="border rounded px-1 block" placeholder="e.g. Duka Moja buyer" value={form.label} onChange={(e) => setForm({ ...form, label: e.target.value })} /></label>
-          <label className="flex items-center gap-1"><input type="checkbox" checked={form.pin_version} onChange={(e) => setForm({ ...form, pin_version: e.target.checked })} />Keep this version (otherwise always the newest approved)</label>
-          <button className="bg-indigo-600 text-white rounded px-3 py-1" onClick={share}>Create link</button></div>
-        {url && <p className="text-xs break-all bg-amber-50 border rounded p-2">Send this link (shown once): <b>{url}</b></p>}
+          <label>{tx("Days")}<input aria-label={tx("Days valid")} type="number" min={1} max={90} className="border rounded px-1 block w-16" value={form.days} onChange={(e) => setForm({ ...form, days: +e.target.value })} /></label>
+          <label>{tx("For")}<input aria-label={tx("Shared with")} className="border rounded px-1 block" placeholder={tx("e.g. Duka Moja buyer")} value={form.label} onChange={(e) => setForm({ ...form, label: e.target.value })} /></label>
+          <label className="flex items-center gap-1"><input type="checkbox" checked={form.pin_version} onChange={(e) => setForm({ ...form, pin_version: e.target.checked })} />{tx("Keep this version (otherwise always the newest approved)")}</label>
+          <button className="bg-indigo-600 text-white rounded px-3 py-1" onClick={share}>{tx("Create link")}</button></div>
+        {url && <p className="text-xs break-all bg-amber-50 border rounded p-2">{tx("Send this link (shown once):")} <b>{url}</b></p>}
         <ul className="text-xs divide-y">{links.map((l) => <li key={l.id} className="py-1 flex flex-wrap justify-between gap-2">
-          <span>{l.label ?? "link"} · {l.views} views · {l.downloads} downloads{l.last_activity ? ` · last ${new Date(l.last_activity).toLocaleString()}` : ""} · {l.revoked ? "withdrawn" : `until ${new Date(l.expires_at).toLocaleDateString()}`}{l.pin_version ? " · pinned" : ""}</span>
-          {!l.revoked && <button className="text-red-600 underline" onClick={() => revoke(l.id)}>Withdraw</button>}</li>)}</ul>
+          <span>{l.label ?? tx("link")} · {l.views} {tx("views ·")} {l.downloads} {tx("downloads")}{l.last_activity ? ` · last ${new Date(l.last_activity).toLocaleString()}` : ""} · {l.revoked ? tx("withdrawn") : `until ${new Date(l.expires_at).toLocaleDateString()}`}{l.pin_version ? tx(" · pinned") : ""}</span>
+          {!l.revoked && <button className="text-red-600 underline" onClick={() => revoke(l.id)}>{tx("Withdraw")}</button>}</li>)}</ul>
       </section>}
     </div>
   );

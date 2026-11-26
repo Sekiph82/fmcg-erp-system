@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { taxApi, RegulatoryStatusRow, TaxSummaryRow } from "@/lib/tax_regulatory";
 import { Badge } from "@/components/ui/Badge";
 import Link from "next/link";
+import { tx } from "@/lib/i18n/core";
 
 const STATUS_VARIANT: Record<string, "green" | "red" | "yellow" | "gray" | "blue"> = {
   COMPLIANT: "green",
@@ -35,24 +36,24 @@ export default function TaxDashboardPage() {
   const pendingCount = regStatus.filter((r: RegulatoryStatusRow) => r.status === "PENDING").reduce((s: number, r: RegulatoryStatusRow) => s + r.count, 0);
 
   const kpis = [
-    { label: "Total Tax Posted (KES)", value: totalTax.toLocaleString(undefined, { maximumFractionDigits: 0 }), color: "text-indigo-600" },
-    { label: "Non-Compliant Flags", value: nonCompliant, color: nonCompliant > 0 ? "text-red-600" : "text-green-600" },
-    { label: "Pending Flags", value: pendingCount, color: "text-yellow-600" },
-    { label: "Expiring (30 days)", value: expiringFlags.length, color: expiringFlags.length > 0 ? "text-orange-600" : "text-green-600" },
+    { label: tx("Total Tax Posted (KES)"), value: totalTax.toLocaleString(undefined, { maximumFractionDigits: 0 }), color: "text-indigo-600" },
+    { label: tx("Non-Compliant Flags"), value: nonCompliant, color: nonCompliant > 0 ? "text-red-600" : "text-green-600" },
+    { label: tx("Pending Flags"), value: pendingCount, color: "text-yellow-600" },
+    { label: tx("Expiring (30 days)"), value: expiringFlags.length, color: expiringFlags.length > 0 ? "text-orange-600" : "text-green-600" },
   ];
 
   const quickLinks = [
-    { href: "/dashboard/tax/rules", label: "Tax Rules & Categories", desc: "Country VAT, excise, WHT rules" },
-    { href: "/dashboard/tax/regulatory", label: "Regulatory Flags", desc: "Compliance, licenses, certifications" },
-    { href: "/dashboard/tax/transactions", label: "Transaction Taxes", desc: "Applied taxes on POs/SOs/invoices" },
-    { href: "/dashboard/tax/reports", label: "Tax Reports", desc: "Summary by country and type" },
+    { href: "/dashboard/tax/rules", label: tx("Tax Rules & Categories"), desc: tx("Country VAT, excise, WHT rules") },
+    { href: "/dashboard/tax/regulatory", label: tx("Regulatory Flags"), desc: tx("Compliance, licenses, certifications") },
+    { href: "/dashboard/tax/transactions", label: tx("Transaction Taxes"), desc: tx("Applied taxes on POs/SOs/invoices") },
+    { href: "/dashboard/tax/reports", label: tx("Tax Reports"), desc: tx("Summary by country and type") },
   ];
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Tax & Regulatory</h1>
-        <p className="text-sm text-gray-500 mt-1">Kenya & Turkey tax rules, compliance flags, and transaction tax tracking</p>
+        <h1 className="text-2xl font-bold text-gray-900">{tx("Tax & Regulatory")}</h1>
+        <p className="text-sm text-gray-500 mt-1">{tx("Kenya & Turkey tax rules, compliance flags, and transaction tax tracking")}</p>
       </div>
 
       {/* KPI tiles */}
@@ -69,7 +70,7 @@ export default function TaxDashboardPage() {
       {expiringFlags.length > 0 && (
         <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
           <p className="font-semibold text-orange-800 text-sm mb-2">
-            {expiringFlags.length} regulatory certificate(s) expiring within 30 days
+            {expiringFlags.length} {tx("regulatory certificate(s) expiring within 30 days")}
           </p>
           <div className="space-y-1">
             {expiringFlags.slice(0, 5).map((f) => (
@@ -77,7 +78,7 @@ export default function TaxDashboardPage() {
                 <span className="font-mono text-xs">{f.country_code}</span>
                 <span>{f.flag_type.replace(/_/g, " ")}</span>
                 {f.license_no && <span className="text-orange-500">{f.license_no}</span>}
-                <span className="ml-auto text-xs">Expires: {f.expiry_date}</span>
+                <span className="ml-auto text-xs">{tx("Expires:")} {f.expiry_date}</span>
               </div>
             ))}
           </div>
@@ -87,16 +88,16 @@ export default function TaxDashboardPage() {
       {/* Tax summary */}
       {taxSummary.length > 0 && (
         <div className="bg-white rounded-lg border">
-          <div className="px-5 py-3 border-b font-semibold text-gray-800">Tax Summary (Confirmed + Posted)</div>
+          <div className="px-5 py-3 border-b font-semibold text-gray-800">{tx("Tax Summary (Confirmed + Posted)")}</div>
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-gray-50 text-xs text-gray-500 uppercase">
-                <th className="px-5 py-2 text-left">Country</th>
-                <th className="px-5 py-2 text-left">Tax Type</th>
-                <th className="px-5 py-2 text-left">Currency</th>
-                <th className="px-5 py-2 text-right">Taxable Amount</th>
-                <th className="px-5 py-2 text-right">Tax Amount</th>
-                <th className="px-5 py-2 text-right">Transactions</th>
+                <th className="px-5 py-2 text-left">{tx("Country")}</th>
+                <th className="px-5 py-2 text-left">{tx("Tax Type")}</th>
+                <th className="px-5 py-2 text-left">{tx("Currency")}</th>
+                <th className="px-5 py-2 text-right">{tx("Taxable Amount")}</th>
+                <th className="px-5 py-2 text-right">{tx("Tax Amount")}</th>
+                <th className="px-5 py-2 text-right">{tx("Transactions")}</th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -118,15 +119,15 @@ export default function TaxDashboardPage() {
       {/* Regulatory status */}
       {regStatus.length > 0 && (
         <div className="bg-white rounded-lg border">
-          <div className="px-5 py-3 border-b font-semibold text-gray-800">Regulatory Compliance Status</div>
+          <div className="px-5 py-3 border-b font-semibold text-gray-800">{tx("Regulatory Compliance Status")}</div>
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-gray-50 text-xs text-gray-500 uppercase">
-                <th className="px-5 py-2 text-left">Country</th>
-                <th className="px-5 py-2 text-left">Flag Type</th>
-                <th className="px-5 py-2 text-left">Status</th>
-                <th className="px-5 py-2 text-right">Count</th>
-                <th className="px-5 py-2 text-right">Expiring Soon</th>
+                <th className="px-5 py-2 text-left">{tx("Country")}</th>
+                <th className="px-5 py-2 text-left">{tx("Flag Type")}</th>
+                <th className="px-5 py-2 text-left">{tx("Status")}</th>
+                <th className="px-5 py-2 text-right">{tx("Count")}</th>
+                <th className="px-5 py-2 text-right">{tx("Expiring Soon")}</th>
               </tr>
             </thead>
             <tbody className="divide-y">

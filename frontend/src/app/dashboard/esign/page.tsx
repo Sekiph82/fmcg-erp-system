@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/Button";
 import { PermissionGuard, RequirePermission } from "@/components/PermissionGuard";
 import { PageHelpTooltip } from "@/components/help/PageHelpTooltip";
 import { ProviderSignaturesTab } from "@/components/esign/ProviderSignature";
+import { tx } from "@/lib/i18n/core";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -121,7 +122,7 @@ function SignaturePad({ onSave, onCancel }: { onSave: (data: string) => void; on
 
   return (
     <div className="flex flex-col gap-3">
-      <p className="text-sm text-gray-600">Draw your signature below:</p>
+      <p className="text-sm text-gray-600">{tx("Draw your signature below:")}</p>
       <canvas
         ref={canvasRef}
         width={500}
@@ -137,9 +138,9 @@ function SignaturePad({ onSave, onCancel }: { onSave: (data: string) => void; on
         onTouchEnd={endDraw}
       />
       <div className="flex gap-2 justify-end">
-        <button onClick={clear} className="text-xs text-gray-500 underline">Clear</button>
-        <Button variant="secondary" onClick={onCancel}>Cancel</Button>
-        <Button onClick={save} disabled={!hasStrokes}>Sign Document</Button>
+        <button onClick={clear} className="text-xs text-gray-500 underline">{tx("Clear")}</button>
+        <Button variant="secondary" onClick={onCancel}>{tx("Cancel")}</Button>
+        <Button onClick={save} disabled={!hasStrokes}>{tx("Sign Document")}</Button>
       </div>
     </div>
   );
@@ -195,26 +196,26 @@ function CreateModal({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6 flex flex-col gap-4">
-        <h2 className="text-lg font-bold text-gray-900">New Signature Request</h2>
+        <h2 className="text-lg font-bold text-gray-900">{tx("New Signature Request")}</h2>
 
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-600">Document Type</label>
+            <label className="text-xs font-medium text-gray-600">{tx("Document Type")}</label>
             <select
               className="border rounded-lg px-3 py-2 text-sm"
               value={form.document_type}
               onChange={(e) => setForm({ ...form, document_type: e.target.value })}
             >
-              {["contract", "quotation", "delivery_note", "agreement", "nda", "purchase_order", "other"].map(
+              {[tx("contract"), tx("quotation"), "delivery_note", tx("agreement"), tx("nda"), "purchase_order", tx("other")].map(
                 (t) => <option key={t} value={t}>{t.replace("_", " ").toUpperCase()}</option>
               )}
             </select>
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-gray-600">Document Reference *</label>
+            <label className="text-xs font-medium text-gray-600">{tx("Document Reference *")}</label>
             <input
               className="border rounded-lg px-3 py-2 text-sm"
-              placeholder="e.g. Contract CT-2024-001"
+              placeholder={tx("e.g. Contract CT-2024-001")}
               value={form.document_ref}
               onChange={(e) => setForm({ ...form, document_ref: e.target.value })}
             />
@@ -222,28 +223,28 @@ function CreateModal({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-gray-600">Subject *</label>
+          <label className="text-xs font-medium text-gray-600">{tx("Subject *")}</label>
           <input
             className="border rounded-lg px-3 py-2 text-sm"
-            placeholder="Please sign: Supply Agreement 2025"
+            placeholder={tx("Please sign: Supply Agreement 2025")}
             value={form.subject}
             onChange={(e) => setForm({ ...form, subject: e.target.value })}
           />
         </div>
 
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-gray-600">Message (optional)</label>
+          <label className="text-xs font-medium text-gray-600">{tx("Message (optional)")}</label>
           <textarea
             className="border rounded-lg px-3 py-2 text-sm resize-none"
             rows={2}
-            placeholder="Please review and sign the attached document."
+            placeholder={tx("Please review and sign the attached document.")}
             value={form.message}
             onChange={(e) => setForm({ ...form, message: e.target.value })}
           />
         </div>
 
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-gray-600">Expires At (optional)</label>
+          <label className="text-xs font-medium text-gray-600">{tx("Expires At (optional)")}</label>
           <input
             type="datetime-local"
             className="border rounded-lg px-3 py-2 text-sm"
@@ -253,10 +254,10 @@ function CreateModal({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className="flex flex-col gap-2">
-          <label className="text-xs font-medium text-gray-600">Add Signers *</label>
+          <label className="text-xs font-medium text-gray-600">{tx("Add Signers *")}</label>
           <input
             className="border rounded-lg px-3 py-2 text-sm"
-            placeholder="Search users by name..."
+            placeholder={tx("Search users by name...")}
             value={signerSearch}
             onChange={(e) => setSignerSearch(e.target.value)}
           />
@@ -272,7 +273,7 @@ function CreateModal({ onClose }: { onClose: () => void }) {
                 >
                   <span>{u.full_name} <span className="text-gray-400">({u.email})</span></span>
                   {selectedSigners.some((s) => s.id === u.id) && (
-                    <span className="text-blue-600 text-xs font-semibold">✓ Added</span>
+                    <span className="text-blue-600 text-xs font-semibold">{tx("✓ Added")}</span>
                   )}
                 </button>
               ))}
@@ -303,7 +304,7 @@ function CreateModal({ onClose }: { onClose: () => void }) {
         )}
 
         <div className="flex gap-2 justify-end pt-2">
-          <Button variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button variant="secondary" onClick={onClose}>{tx("Cancel")}</Button>
           <Button
             onClick={() => mut.mutate()}
             disabled={
@@ -313,7 +314,7 @@ function CreateModal({ onClose }: { onClose: () => void }) {
               selectedSigners.length === 0
             }
           >
-            {mut.isPending ? "Creating…" : "Send for Signature"}
+            {mut.isPending ? tx("Creating…") : tx("Send for Signature")}
           </Button>
         </div>
       </div>
@@ -345,7 +346,7 @@ function SignModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 flex flex-col gap-4">
         <div>
-          <h2 className="text-lg font-bold text-gray-900">Sign Document</h2>
+          <h2 className="text-lg font-bold text-gray-900">{tx("Sign Document")}</h2>
           <p className="text-sm text-gray-500 mt-0.5">{req.document_ref}</p>
           <p className="text-sm text-gray-700 mt-1">{req.subject}</p>
           {req.message && <p className="text-sm text-gray-500 mt-1 italic">{req.message}</p>}
@@ -355,12 +356,12 @@ function SignModal({
         )}
         {mine?.has_signature ? (
           <div className="flex flex-col gap-3">
-            <p className="text-sm text-gray-600">Your signature registered by IT will be applied:</p>
+            <p className="text-sm text-gray-600">{tx("Your signature registered by IT will be applied:")}</p>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={mine.signature_image} alt="Your registered signature" className="max-h-32 border rounded-lg bg-white p-2 self-start" />
+            <img src={mine.signature_image} alt={tx("Your registered signature")} className="max-h-32 border rounded-lg bg-white p-2 self-start" />
             <div className="flex gap-2 justify-end">
-              <Button variant="secondary" onClick={onClose}>Cancel</Button>
-              <Button onClick={() => mut.mutate("")} disabled={mut.isPending}>Sign with my signature</Button>
+              <Button variant="secondary" onClick={onClose}>{tx("Cancel")}</Button>
+              <Button onClick={() => mut.mutate("")} disabled={mut.isPending}>{tx("Sign with my signature")}</Button>
             </div>
           </div>
         ) : (
@@ -388,31 +389,31 @@ function DeclineModal({ req, onClose }: { req: SignatureRequest; onClose: () => 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 flex flex-col gap-4">
-        <h2 className="text-lg font-bold text-gray-900">Decline Signature</h2>
+        <h2 className="text-lg font-bold text-gray-900">{tx("Decline Signature")}</h2>
         <p className="text-sm text-gray-600">
-          You are declining: <strong>{req.document_ref}</strong>
+          {tx("You are declining:")} <strong>{req.document_ref}</strong>
         </p>
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-gray-600">Reason (optional)</label>
+          <label className="text-xs font-medium text-gray-600">{tx("Reason (optional)")}</label>
           <textarea
             className="border rounded-lg px-3 py-2 text-sm resize-none"
             rows={3}
             value={reason}
             onChange={(e) => setReason(e.target.value)}
-            placeholder="Explain why you are declining..."
+            placeholder={tx("Explain why you are declining...")}
           />
         </div>
         {mut.isError && (
           <p className="text-sm text-red-600">{String((mut.error as Error).message)}</p>
         )}
         <div className="flex gap-2 justify-end">
-          <Button variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button variant="secondary" onClick={onClose}>{tx("Cancel")}</Button>
           <Button
             onClick={() => mut.mutate()}
             disabled={mut.isPending}
             className="bg-red-600 hover:bg-red-700"
           >
-            {mut.isPending ? "Declining…" : "Confirm Decline"}
+            {mut.isPending ? tx("Declining…") : tx("Confirm Decline")}
           </Button>
         </div>
       </div>
@@ -464,13 +465,13 @@ function RequestRow({
               onClick={() => onSign(req)}
               className="text-xs bg-blue-600 text-white px-2 py-1 rounded-md hover:bg-blue-700"
             >
-              Sign
+              {tx("Sign")}
             </button>
             <button
               onClick={() => onDecline(req)}
               className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-md hover:bg-red-200"
             >
-              Decline
+              {tx("Decline")}
             </button>
           </div>
         )}
@@ -487,7 +488,7 @@ function SignersPopover({ req }: { req: SignatureRequest }) {
       {req.signature_records.map((r) => (
         <div key={r.id} className="flex items-center gap-1.5">
           <StatusBadge s={r.status} />
-          <span>{r.signer_name ?? r.signer_id ?? "Unknown"}</span>
+          <span>{r.signer_name ?? r.signer_id ?? tx("Unknown")}</span>
           {r.signed_at && <span className="text-gray-400">· {fmtDate(r.signed_at)}</span>}
         </div>
       ))}
@@ -532,15 +533,15 @@ function ESignPageInner() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Electronic Signatures</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Manage and track document signing requests</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Electronic Signatures")}</h1>
+          <p className="text-sm text-gray-500 mt-0.5">{tx("Manage and track document signing requests")}</p>
         </div>
         <div className="flex items-center gap-2">
           <PageHelpTooltip topic="esign" />
           <PermissionGuard permission="esign.admin">
-            <a href="/dashboard/esign/signatures" className="text-sm underline text-indigo-700">Employee signatures (IT)</a>
+            <a href="/dashboard/esign/signatures" className="text-sm underline text-indigo-700">{tx("Employee signatures (IT)")}</a>
           </PermissionGuard>
-          <Button onClick={() => setShowCreate(true)}>+ New Request</Button>
+          <Button onClick={() => setShowCreate(true)}>{tx("+ New Request")}</Button>
         </div>
       </div>
 
@@ -549,12 +550,12 @@ function ESignPageInner() {
       {/* KPI Cards */}
       {stats && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-          <KpiCard label="Total" value={stats.total_requests} />
-          <KpiCard label="Pending" value={stats.pending} color="text-yellow-600" />
-          <KpiCard label="Signed" value={stats.signed} color="text-green-600" />
-          <KpiCard label="Declined" value={stats.declined} color="text-red-600" />
-          <KpiCard label="Expired" value={stats.expired} color="text-gray-500" />
-          <KpiCard label="My Pending" value={stats.my_pending_signatures} color="text-blue-600" />
+          <KpiCard label={tx("Total")} value={stats.total_requests} />
+          <KpiCard label={tx("Pending")} value={stats.pending} color="text-yellow-600" />
+          <KpiCard label={tx("Signed")} value={stats.signed} color="text-green-600" />
+          <KpiCard label={tx("Declined")} value={stats.declined} color="text-red-600" />
+          <KpiCard label={tx("Expired")} value={stats.expired} color="text-gray-500" />
+          <KpiCard label={tx("My Pending")} value={stats.my_pending_signatures} color="text-blue-600" />
         </div>
       )}
 
@@ -569,7 +570,7 @@ function ESignPageInner() {
                 tab === t ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
               }`}
             >
-              {t === "mine" ? "Pending for Me" : t === "all" ? "All Requests" : "DocuSign / Adobe Sign"}
+              {t === "mine" ? tx("Pending for Me") : t === "all" ? tx("All Requests") : tx("DocuSign / Adobe Sign")}
             </button>
           ))}
         </div>
@@ -579,11 +580,11 @@ function ESignPageInner() {
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
           >
-            <option value="">All Statuses</option>
-            <option value="PENDING">Pending</option>
-            <option value="SIGNED">Signed</option>
-            <option value="DECLINED">Declined</option>
-            <option value="EXPIRED">Expired</option>
+            <option value="">{tx("All Statuses")}</option>
+            <option value="PENDING">{tx("Pending")}</option>
+            <option value="SIGNED">{tx("Signed")}</option>
+            <option value="DECLINED">{tx("Declined")}</option>
+            <option value="EXPIRED">{tx("Expired")}</option>
           </select>
         )}
       </div>
@@ -593,24 +594,24 @@ function ESignPageInner() {
       {/* Requests Table */}
       <div hidden={tab === "providers"} className="bg-white rounded-xl border overflow-x-auto">
         {loading ? (
-          <div className="p-8 text-center text-gray-400 text-sm">Loading…</div>
+          <div className="p-8 text-center text-gray-400 text-sm">{tx("Loading…")}</div>
         ) : requests.length === 0 ? (
           <div className="p-10 text-center text-gray-400 text-sm">
-            {tab === "mine" ? "No documents waiting for your signature." : "No signature requests found."}
+            {tab === "mine" ? tx("No documents waiting for your signature.") : tx("No signature requests found.")}
           </div>
         ) : (
           <table className="w-full text-left">
             <thead>
               <tr className="border-b bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                <th className="px-4 py-3">Request No</th>
-                <th className="px-4 py-3">Document</th>
-                <th className="px-4 py-3">Subject</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Progress</th>
-                <th className="px-4 py-3">Created</th>
-                <th className="px-4 py-3">Expires</th>
-                <th className="px-4 py-3">Requester</th>
-                <th className="px-4 py-3">Actions</th>
+                <th className="px-4 py-3">{tx("Request No")}</th>
+                <th className="px-4 py-3">{tx("Document")}</th>
+                <th className="px-4 py-3">{tx("Subject")}</th>
+                <th className="px-4 py-3">{tx("Status")}</th>
+                <th className="px-4 py-3">{tx("Progress")}</th>
+                <th className="px-4 py-3">{tx("Created")}</th>
+                <th className="px-4 py-3">{tx("Expires")}</th>
+                <th className="px-4 py-3">{tx("Requester")}</th>
+                <th className="px-4 py-3">{tx("Actions")}</th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -631,7 +632,7 @@ function ESignPageInner() {
       {/* Signers detail section for pending-for-me */}
       {tab === "mine" && requests.length > 0 && (
         <div className="flex flex-col gap-3">
-          <h2 className="text-sm font-semibold text-gray-700">Signer Details</h2>
+          <h2 className="text-sm font-semibold text-gray-700">{tx("Signer Details")}</h2>
           {requests.map((req) => (
             <div key={req.id} className="bg-white rounded-xl border p-4">
               <div className="flex items-center justify-between mb-2">
@@ -669,16 +670,16 @@ function MySignatureCard() {
   const { data } = useQuery({ queryKey: ["esign-my-signature"], queryFn: esignApi.mySignature });
   if (!data) return null;
   return (
-    <div className="bg-white rounded-xl border p-4 flex items-center gap-4" aria-label="My signature">
+    <div className="bg-white rounded-xl border p-4 flex items-center gap-4" aria-label={tx("My signature")}>
       <div className="text-sm">
-        <div className="font-semibold text-gray-900">My signature</div>
+        <div className="font-semibold text-gray-900">{tx("My signature")}</div>
         <div className="text-xs text-gray-500">{data.has_signature
           ? `Registered by IT on ${new Date(data.registered_at!).toLocaleDateString()} — applied automatically when you sign.`
-          : "No signature on file yet. IT registers it for you; until then you can draw one when signing."}</div>
+          : tx("No signature on file yet. IT registers it for you; until then you can draw one when signing.")}</div>
       </div>
       {data.has_signature && (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={data.signature_image} alt="My registered signature" className="max-h-16 border rounded bg-white p-1" />
+        <img src={data.signature_image} alt={tx("My registered signature")} className="max-h-16 border rounded bg-white p-1" />
       )}
     </div>
   );

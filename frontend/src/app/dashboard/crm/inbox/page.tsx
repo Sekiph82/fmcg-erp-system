@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { crmApi, type InboxItem } from "@/lib/crm_pipeline";
 import { useAuth } from "@/context/AuthContext";
+import { tx } from "@/lib/i18n/core";
 
 function errorText(e: unknown) {
   const detail = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
@@ -46,10 +47,9 @@ export default function CRMInboxPage() {
   return (
     <div className="p-6 space-y-4">
       <div>
-        <h1 className="text-xl font-bold text-gray-900">Conversations Inbox</h1>
+        <h1 className="text-xl font-bold text-gray-900">{tx("Conversations Inbox")}</h1>
         <p className="text-sm text-gray-500">
-          Customer e-mails, WhatsApp chats and support tickets in one list. You see your own mailbox, the shared WhatsApp
-          number with CRM access, tickets with quality access, and anything assigned to you. {counts.open} open · {counts.unread} unread.
+          {tx("Customer e-mails, WhatsApp chats and support tickets in one list. You see your own mailbox, the shared WhatsApp number with CRM access, tickets with quality access, and anything assigned to you.")} {counts.open} {tx("open ·")} {counts.unread} {tx("unread.")}
         </p>
       </div>
       {error && <p role="alert" className="rounded-lg p-3 text-sm bg-red-50 border border-red-200 text-red-700">{error}</p>}
@@ -59,19 +59,19 @@ export default function CRMInboxPage() {
           <button key={k} onClick={() => setView(k)} aria-pressed={view === k}
             className={`px-3 py-1.5 text-sm rounded-lg border ${view === k ? "bg-blue-600 text-white border-blue-600" : "bg-white"}`}>{label}</button>
         ))}
-        <select aria-label="Channel" value={channel} onChange={(e) => setChannel(e.target.value)} className={input}>
-          <option value="">All channels</option>
+        <select aria-label={tx("Channel")} value={channel} onChange={(e) => setChannel(e.target.value)} className={input}>
+          <option value="">{tx("All channels")}</option>
           {Object.entries(CHANNEL_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </select>
-        <label className="text-sm flex items-center gap-1"><input type="checkbox" checked={closed} onChange={(e) => setClosed(e.target.checked)} /> Closed</label>
+        <label className="text-sm flex items-center gap-1"><input type="checkbox" checked={closed} onChange={(e) => setClosed(e.target.checked)} /> {tx("Closed")}</label>
       </div>
 
       <div className="bg-white rounded-xl border shadow-sm overflow-x-auto">
-        {loading ? <p className="p-4 text-sm text-gray-400">Loading…</p> : items.length === 0 ? (
-          <p className="p-4 text-sm text-gray-400">No conversations here.</p>
+        {loading ? <p className="p-4 text-sm text-gray-400">{tx("Loading…")}</p> : items.length === 0 ? (
+          <p className="p-4 text-sm text-gray-400">{tx("No conversations here.")}</p>
         ) : (
           <table className="w-full text-sm">
-            <thead><tr className="text-left text-xs text-gray-500"><th className="p-2">Channel</th><th>Conversation</th><th>Last message</th><th>Reply due</th><th>Assignee</th><th>Status</th><th /></tr></thead>
+            <thead><tr className="text-left text-xs text-gray-500"><th className="p-2">{tx("Channel")}</th><th>{tx("Conversation")}</th><th>{tx("Last message")}</th><th>{tx("Reply due")}</th><th>{tx("Assignee")}</th><th>{tx("Status")}</th><th /></tr></thead>
             <tbody>
               {items.map((c) => (
                 <tr key={c.id} className={`border-t ${c.unread ? "font-semibold" : ""}`}>
@@ -86,23 +86,23 @@ export default function CRMInboxPage() {
                   </td>
                   <td>
                     {canEdit ? (
-                      <select aria-label={`Assignee for ${c.subject}`} value={c.assignee_id ?? ""} className={input}
+                      <select aria-label={tx("Assignee for {subject}", { subject: c.subject })} value={c.assignee_id ?? ""} className={input}
                         onChange={(e) => act(() => crmApi.updateInbox(c.id, { assignee_id: e.target.value }))}>
-                        <option value="">Unassigned</option>
+                        <option value="">{tx("Unassigned")}</option>
                         {people.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                       </select>
                     ) : nameOf(c.assignee_id)}
                   </td>
                   <td>
                     {canEdit && c.channel !== "TICKET" && c.channel !== "CHAT" ? (
-                      <select aria-label={`Status for ${c.subject}`} value={c.status} className={input}
+                      <select aria-label={tx("Status for {subject}", { subject: c.subject })} value={c.status} className={input}
                         onChange={(e) => act(() => crmApi.updateInbox(c.id, { status: e.target.value }))}>
                         {["OPEN", "PENDING", "CLOSED"].map((s) => <option key={s} value={s}>{s}</option>)}
                       </select>
                     ) : c.status}
                   </td>
                   <td className="pr-2 whitespace-nowrap">
-                    {c.unread && <button className="text-xs underline font-normal" onClick={() => act(() => crmApi.markInboxRead(c.id))}>Mark read</button>}
+                    {c.unread && <button className="text-xs underline font-normal" onClick={() => act(() => crmApi.markInboxRead(c.id))}>{tx("Mark read")}</button>}
                   </td>
                 </tr>
               ))}

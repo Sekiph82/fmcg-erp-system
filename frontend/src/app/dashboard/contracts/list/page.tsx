@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { contractsApi, STATUS_COLORS, PARTY_COLORS, CONTRACT_TYPE_LABELS, ContractStatus, PartyType } from "@/lib/contracts";
 import Link from "next/link";
+import { tx } from "@/lib/i18n/core";
 
 const STATUSES: ContractStatus[] = ["DRAFT","UNDER_REVIEW","APPROVED","ACTIVE","EXPIRED","TERMINATED","ARCHIVED"];
 const PARTIES: PartyType[] = ["CUSTOMER","DISTRIBUTOR","SUPPLIER"];
@@ -24,12 +25,12 @@ export default function ContractListPage() {
     <div className="p-6 space-y-5 text-slate-200">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-white">All Contracts</h1>
-          <p className="text-slate-500 text-sm mt-0.5">{contracts.length} contracts</p>
+          <h1 className="text-xl font-bold text-white">{tx("All Contracts")}</h1>
+          <p className="text-slate-500 text-sm mt-0.5">{contracts.length} {tx("contracts")}</p>
         </div>
         <Link href="/dashboard/contracts/new"
           className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium">
-          + New Contract
+          {tx("+ New Contract")}
         </Link>
       </div>
 
@@ -37,14 +38,14 @@ export default function ContractListPage() {
         {["", ...PARTIES].map((p) => (
           <button key={p} onClick={() => setPartyFilter(p)}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${partyFilter === p ? "bg-indigo-600 border-indigo-500 text-white" : "border-white/[0.08] text-slate-400 hover:border-white/20"}`}>
-            {p || "All Parties"}
+            {p || tx("All Parties")}
           </button>
         ))}
         <div className="w-px h-6 bg-white/[0.07] self-center" />
         {["", ...STATUSES].map((s) => (
           <button key={s} onClick={() => setStatusFilter(s)}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${statusFilter === s ? "bg-indigo-600 border-indigo-500 text-white" : "border-white/[0.08] text-slate-400 hover:border-white/20"}`}>
-            {s || "All Status"}
+            {s || tx("All Status")}
           </button>
         ))}
       </div>
@@ -53,19 +54,19 @@ export default function ContractListPage() {
         <table className="w-full text-sm">
           <thead className="bg-white/[0.03] text-slate-500 text-xs uppercase tracking-wider">
             <tr>
-              <th className="px-4 py-3 text-left">Code</th>
-              <th className="px-4 py-3 text-left">Name</th>
-              <th className="px-4 py-3 text-left">Type</th>
-              <th className="px-4 py-3 text-left">Party</th>
-              <th className="px-4 py-3 text-left">Start</th>
-              <th className="px-4 py-3 text-left">End</th>
-              <th className="px-4 py-3 text-left">Status</th>
-              <th className="px-4 py-3 text-left">Ver</th>
+              <th className="px-4 py-3 text-left">{tx("Code")}</th>
+              <th className="px-4 py-3 text-left">{tx("Name")}</th>
+              <th className="px-4 py-3 text-left">{tx("Type")}</th>
+              <th className="px-4 py-3 text-left">{tx("Party")}</th>
+              <th className="px-4 py-3 text-left">{tx("Start")}</th>
+              <th className="px-4 py-3 text-left">{tx("End")}</th>
+              <th className="px-4 py-3 text-left">{tx("Status")}</th>
+              <th className="px-4 py-3 text-left">{tx("Ver")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-white/[0.04]">
-            {isLoading && <tr><td colSpan={8} className="text-center py-8 text-slate-600">Loading…</td></tr>}
-            {!isLoading && contracts.length === 0 && <tr><td colSpan={8} className="text-center py-8 text-slate-600">No contracts</td></tr>}
+            {isLoading && <tr><td colSpan={8} className="text-center py-8 text-slate-600">{tx("Loading…")}</td></tr>}
+            {!isLoading && contracts.length === 0 && <tr><td colSpan={8} className="text-center py-8 text-slate-600">{tx("No contracts")}</td></tr>}
             {contracts.map((c) => (
               <tr key={c.id} className="hover:bg-white/[0.02]">
                 <td className="px-4 py-3 font-mono text-xs text-indigo-300">
@@ -81,7 +82,7 @@ export default function ContractListPage() {
                 <td className="px-4 py-3">
                   <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[c.status]}`}>{c.status}</span>
                 </td>
-                <td className="px-4 py-3 text-slate-500 text-xs">v{c.current_version}</td>
+                <td className="px-4 py-3 text-slate-500 text-xs">{tx("v")}{c.current_version}</td>
               </tr>
             ))}
           </tbody>

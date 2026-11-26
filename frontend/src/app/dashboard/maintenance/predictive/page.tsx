@@ -9,6 +9,7 @@ import {
 } from "@/lib/maintenance";
 import { useMemo, useState } from "react";
 import { RequirePermission, PermissionGuard } from "@/components/PermissionGuard";
+import { tx } from "@/lib/i18n/core";
 
 const RISK_PILL: Record<MaintenancePredictionRisk, string> = {
   LOW: "bg-green-100 text-green-700 border-green-200",
@@ -85,7 +86,7 @@ export default function PredictiveMaintenancePage() {
       setError(null);
       qc.invalidateQueries({ queryKey: ["maintenance-predictions"] });
     },
-    onError: (err) => setError(err instanceof Error ? err.message : "Failed to generate predictions"),
+    onError: (err) => setError(err instanceof Error ? err.message : tx("Failed to generate predictions")),
   });
 
   const review = useMutation({
@@ -99,13 +100,13 @@ export default function PredictiveMaintenancePage() {
       if (variables.status === "REVIEWED") setStatusFilter("REVIEWED");
       qc.invalidateQueries({ queryKey: ["maintenance-predictions"] });
     },
-    onError: (err) => setError(err instanceof Error ? err.message : "Failed to review prediction"),
+    onError: (err) => setError(err instanceof Error ? err.message : tx("Failed to review prediction")),
   });
 
   const createWorkOrder = useMutation({
     mutationFn: () => {
       if (!actionPrediction || !actionPlanId || !actionScheduledDate) {
-        throw new Error("Select an active maintenance plan and scheduled date.");
+        throw new Error(tx("Select an active maintenance plan and scheduled date."));
       }
       return maintenanceApi.createPredictionWorkOrder(actionPrediction.id, {
         plan_id: actionPlanId,
@@ -120,7 +121,7 @@ export default function PredictiveMaintenancePage() {
       qc.invalidateQueries({ queryKey: ["maintenance-predictions"] });
       qc.invalidateQueries({ queryKey: ["maintenance-work-orders"] });
     },
-    onError: (err) => setError(err instanceof Error ? err.message : "Failed to plan maintenance work order"),
+    onError: (err) => setError(err instanceof Error ? err.message : tx("Failed to plan maintenance work order")),
   });
 
   const predictions = useMemo(() => predictionsQuery.data ?? [], [predictionsQuery.data]);
@@ -139,9 +140,9 @@ export default function PredictiveMaintenancePage() {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Predictive Maintenance</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Predictive Maintenance")}</h1>
           <p className="text-sm text-gray-500 mt-1">
-            Rule-based failure predictions from IoT sensor trends, machine states, alerts, and breakdown history.
+            {tx("Rule-based failure predictions from IoT sensor trends, machine states, alerts, and breakdown history.")}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -150,7 +151,7 @@ export default function PredictiveMaintenancePage() {
             onChange={(event) => setHorizonDays(Number(event.target.value))}
             className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white"
           >
-            {[14, 30, 60, 90].map((days) => <option key={days} value={days}>{days} days</option>)}
+            {[14, 30, 60, 90].map((days) => <option key={days} value={days}>{days} {tx("days")}</option>)}
           </select>
           <PermissionGuard permission="maintenance.predict">
           <button
@@ -158,38 +159,38 @@ export default function PredictiveMaintenancePage() {
             disabled={generate.isPending}
             className="px-4 py-2 text-sm font-medium bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
           >
-            {generate.isPending ? "Analyzing..." : "Generate Predictions"}
+            {generate.isPending ? tx("Analyzing...") : tx("Generate Predictions")}
           </button>
           </PermissionGuard>
         </div>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard label="Predictions" value={predictions.length} sub="current filter" color="text-indigo-600" />
-        <KpiCard label="Open" value={summary.open} sub="awaiting review" color={summary.open ? "text-blue-600" : "text-gray-700"} />
-        <KpiCard label="High Risk" value={summary.critical} sub="high or critical" color={summary.critical ? "text-red-600" : "text-gray-700"} />
-        <KpiCard label="Avg Confidence" value={`${(summary.avgConfidence * 100).toFixed(0)}%`} sub={`${summary.dueSoon} due within 14 days`} color="text-teal-600" />
+        <KpiCard label={tx("Predictions")} value={predictions.length} sub="current filter" color="text-indigo-600" />
+        <KpiCard label={tx("Open")} value={summary.open} sub="awaiting review" color={summary.open ? "text-blue-600" : "text-gray-700"} />
+        <KpiCard label={tx("High Risk")} value={summary.critical} sub="high or critical" color={summary.critical ? "text-red-600" : "text-gray-700"} />
+        <KpiCard label={tx("Avg Confidence")} value={`${(summary.avgConfidence * 100).toFixed(0)}%`} sub={`${summary.dueSoon} due within 14 days`} color="text-teal-600" />
       </div>
 
       <div className="bg-white rounded-lg border p-4 flex flex-wrap items-end gap-3">
         <div>
-          <label className="block text-xs font-semibold text-gray-500 mb-1">Status</label>
+          <label className="block text-xs font-semibold text-gray-500 mb-1">{tx("Status")}</label>
           <select
             value={statusFilter}
             onChange={(event) => setStatusFilter(event.target.value as MaintenancePredictionStatus | "")}
             className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white"
           >
-            {STATUS_OPTIONS.map((status) => <option key={status || "ALL"} value={status}>{status ? label(status) : "All statuses"}</option>)}
+            {STATUS_OPTIONS.map((status) => <option key={status || "ALL"} value={status}>{status ? label(status) : tx("All statuses")}</option>)}
           </select>
         </div>
         <div>
-          <label className="block text-xs font-semibold text-gray-500 mb-1">Risk</label>
+          <label className="block text-xs font-semibold text-gray-500 mb-1">{tx("Risk")}</label>
           <select
             value={riskFilter}
             onChange={(event) => setRiskFilter(event.target.value as MaintenancePredictionRisk | "")}
             className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white"
           >
-            {RISK_OPTIONS.map((risk) => <option key={risk || "ALL"} value={risk}>{risk || "All risks"}</option>)}
+            {RISK_OPTIONS.map((risk) => <option key={risk || "ALL"} value={risk}>{risk || tx("All risks")}</option>)}
           </select>
         </div>
         <button
@@ -197,7 +198,7 @@ export default function PredictiveMaintenancePage() {
           disabled={predictionsQuery.isFetching}
           className="px-3 py-2 text-sm border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 disabled:opacity-50"
         >
-          Refresh
+          {tx("Refresh")}
         </button>
       </div>
 
@@ -209,14 +210,14 @@ export default function PredictiveMaintenancePage() {
 
       <div className="bg-white rounded-lg border overflow-hidden">
         <div className="px-5 py-3 border-b flex items-center justify-between">
-          <h2 className="font-semibold text-gray-800">Prediction Queue</h2>
-          {predictionsQuery.isFetching && <span className="text-xs text-gray-400">Refreshing...</span>}
+          <h2 className="font-semibold text-gray-800">{tx("Prediction Queue")}</h2>
+          {predictionsQuery.isFetching && <span className="text-xs text-gray-400">{tx("Refreshing...")}</span>}
         </div>
         {predictionsQuery.isLoading ? (
-          <p className="px-5 py-8 text-center text-gray-400">Loading predictions...</p>
+          <p className="px-5 py-8 text-center text-gray-400">{tx("Loading predictions...")}</p>
         ) : predictions.length === 0 ? (
           <p className="px-5 py-8 text-center text-gray-400">
-            No predictions found. Run generation after IoT readings, machine state events, alerts, or breakdown history are available.
+            {tx("No predictions found. Run generation after IoT readings, machine state events, alerts, or breakdown history are available.")}
           </p>
         ) : (
           <div className="divide-y">
@@ -243,20 +244,20 @@ export default function PredictiveMaintenancePage() {
                     </div>
                     <div className="text-right">
                       <p className={`text-xl font-bold ${dueDays <= 7 ? "text-red-600" : dueDays <= 14 ? "text-orange-600" : "text-gray-900"}`}>
-                        {dueDays >= 0 ? `${dueDays}d` : "Overdue"}
+                        {dueDays >= 0 ? tx("{dueDays}d", { dueDays }) : tx("Overdue")}
                       </p>
-                      <p className="text-xs text-gray-400">Predicted {formatDate(prediction.predicted_failure_date)}</p>
+                      <p className="text-xs text-gray-400">{tx("Predicted")} {formatDate(prediction.predicted_failure_date)}</p>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                     <div className="lg:col-span-2">
-                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Recommended Action</p>
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">{tx("Recommended Action")}</p>
                       <p className="text-sm text-gray-800">{prediction.recommended_action}</p>
                       <p className="text-xs text-gray-500 mt-2">{prediction.evidence_summary}</p>
                     </div>
                     <div>
-                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Confidence</p>
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">{tx("Confidence")}</p>
                       <div className="h-2 bg-gray-100 rounded overflow-hidden">
                         <div className="h-full bg-indigo-500" style={{ width: `${Math.round(prediction.confidence * 100)}%` }} />
                       </div>
@@ -268,7 +269,7 @@ export default function PredictiveMaintenancePage() {
                     <div className="flex flex-wrap gap-2">
                       {Object.entries(metrics).map(([metric, data]) => (
                         <span key={metric} className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-700">
-                          {metric}: {data.trend_pct?.toFixed(1)}% trend, {data.readings ?? 0} readings
+                          {metric}: {data.trend_pct?.toFixed(1)}{tx("% trend,")} {data.readings ?? 0} {tx("readings")}
                         </span>
                       ))}
                     </div>
@@ -281,21 +282,21 @@ export default function PredictiveMaintenancePage() {
                         value={reviewNotes[prediction.id] ?? ""}
                         onChange={(event) => setReviewNotes((prev) => ({ ...prev, [prediction.id]: event.target.value }))}
                         className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                        placeholder="Review note"
+                        placeholder={tx("Review note")}
                       />
                       <button
                         onClick={() => review.mutate({ id: prediction.id, status: "REVIEWED" })}
                         disabled={review.isPending}
                         className="px-3 py-2 text-sm font-medium border border-indigo-200 text-indigo-700 rounded-lg hover:bg-indigo-50 disabled:opacity-50"
                       >
-                        Mark Reviewed
+                        {tx("Mark Reviewed")}
                       </button>
                       <button
                         onClick={() => review.mutate({ id: prediction.id, status: "DISMISSED" })}
                         disabled={review.isPending}
                         className="px-3 py-2 text-sm font-medium border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 disabled:opacity-50"
                       >
-                        Dismiss
+                        {tx("Dismiss")}
                       </button>
                     </div>
                     </PermissionGuard>
@@ -311,16 +312,16 @@ export default function PredictiveMaintenancePage() {
                           }}
                           className="mt-3 px-3 py-2 text-sm font-medium bg-green-600 text-white rounded-lg hover:bg-green-700"
                         >
-                          Plan PM work order
+                          {tx("Plan PM work order")}
                         </button>
                       </PermissionGuard>
                     </PermissionGuard>
                   )}
                   {prediction.work_order_id && (
-                    <p className="mt-3 text-xs text-green-700">Linked PM work order: {prediction.work_order_id}</p>
+                    <p className="mt-3 text-xs text-green-700">{tx("Linked PM work order:")} {prediction.work_order_id}</p>
                   )}
                   {prediction.status === "WORK_ORDER_CREATED" && !prediction.work_order_id && (
-                    <p className="mt-3 text-xs text-amber-700">Legacy status has no linked work order; reconcile this prediction before taking another action.</p>
+                    <p className="mt-3 text-xs text-amber-700">{tx("Legacy status has no linked work order; reconcile this prediction before taking another action.")}</p>
                   )}
                 </div>
               );
@@ -333,36 +334,36 @@ export default function PredictiveMaintenancePage() {
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
         <div className="w-full max-w-lg space-y-4 rounded-xl bg-white p-6 shadow-xl">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">Plan maintenance action</h2>
+            <h2 className="text-lg font-semibold text-gray-900">{tx("Plan maintenance action")}</h2>
             <p className="mt-1 text-sm text-gray-600">
               {actionPrediction.asset_name ?? actionPrediction.machine_name ?? actionPrediction.machine_id}: {actionPrediction.recommended_action}
             </p>
           </div>
           {!actionPrediction.asset_id ? (
-            <p className="text-sm text-red-700">This prediction has no linked asset, so it cannot create a preventive work order.</p>
+            <p className="text-sm text-red-700">{tx("This prediction has no linked asset, so it cannot create a preventive work order.")}</p>
           ) : actionPlansQuery.isLoading ? (
-            <p className="text-sm text-gray-500">Loading active plans…</p>
+            <p className="text-sm text-gray-500">{tx("Loading active plans…")}</p>
           ) : actionPlansQuery.isError ? (
-            <p className="text-sm text-red-700">Active maintenance plans could not be loaded. Retry before scheduling work.</p>
+            <p className="text-sm text-red-700">{tx("Active maintenance plans could not be loaded. Retry before scheduling work.")}</p>
           ) : (actionPlansQuery.data ?? []).length === 0 ? (
-            <p className="text-sm text-amber-700">No active maintenance plan exists for this asset. Create a plan before scheduling work.</p>
+            <p className="text-sm text-amber-700">{tx("No active maintenance plan exists for this asset. Create a plan before scheduling work.")}</p>
           ) : (
             <>
               <div>
-                <label className="mb-1 block text-xs font-medium text-gray-600">Active plan *</label>
+                <label className="mb-1 block text-xs font-medium text-gray-600">{tx("Active plan *")}</label>
                 <select
                   value={actionPlanId}
                   onChange={(event) => setActionPlanId(event.target.value)}
                   className="w-full rounded border px-3 py-2 text-sm"
                 >
-                  <option value="">Select a plan…</option>
+                  <option value="">{tx("Select a plan…")}</option>
                   {(actionPlansQuery.data ?? []).map((plan) => (
                     <option key={plan.id} value={plan.id}>{plan.name}</option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-gray-600">Scheduled date *</label>
+                <label className="mb-1 block text-xs font-medium text-gray-600">{tx("Scheduled date *")}</label>
                 <input
                   type="date"
                   value={actionScheduledDate}
@@ -377,14 +378,14 @@ export default function PredictiveMaintenancePage() {
               onClick={() => setActionPrediction(null)}
               className="rounded border px-3 py-2 text-sm text-gray-700"
             >
-              Cancel
+              {tx("Cancel")}
             </button>
             <button
               onClick={() => createWorkOrder.mutate()}
               disabled={!actionPlanId || !actionScheduledDate || createWorkOrder.isPending || !actionPrediction.asset_id || !(actionPlansQuery.data ?? []).length}
               className="rounded bg-green-600 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
             >
-              {createWorkOrder.isPending ? "Planning…" : "Create PM work order"}
+              {createWorkOrder.isPending ? tx("Planning…") : tx("Create PM work order")}
             </button>
           </div>
         </div>

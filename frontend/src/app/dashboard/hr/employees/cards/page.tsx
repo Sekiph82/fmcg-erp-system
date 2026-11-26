@@ -10,6 +10,7 @@ import { Modal } from "@/components/ui/Modal";
 import { BusinessCardPanel } from "@/components/BusinessCardPanel";
 import { cardsApi, download, type CardRow } from "@/lib/businessCards";
 import { extractApiError } from "@/lib/sales";
+import { tx } from "@/lib/i18n/core";
 
 function chunk<T>(a: T[], n: number): T[][] {
   const out: T[][] = [];
@@ -20,7 +21,7 @@ function chunk<T>(a: T[], n: number): T[][] {
 function Front({ c }: { c: CardRow }) {
   return (
     <div className="bc bc-front">
-      <img src={`${c.assets_base}/logo.webp`} alt="Povu" className="bc-logo" />
+      <img src={`${c.assets_base}/logo.webp`} alt={tx("Povu")} className="bc-logo" />
       <div>
         <p className="bc-name">{c.name}</p>
         <p className="bc-title">{c.title_en || c.role}</p>
@@ -38,7 +39,7 @@ function Back({ c, qr }: { c: CardRow; qr?: string }) {
   return (
     <div className="bc bc-back">
       {qr ? <img src={qr} alt="" className="bc-qr" /> : <span className="bc-qr" />}
-      <p className="bc-scan">Scan to save my contact</p>
+      <p className="bc-scan">{tx("Scan to save my contact")}</p>
       <p className="bc-url">{c.url.replace(/^https?:\/\//, "")}</p>
     </div>
   );
@@ -77,42 +78,42 @@ function CardsContent() {
       <style>{PRINT_CSS}</style>
       <div className="flex flex-wrap items-center justify-between gap-2 no-print">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Business cards</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Business cards")}</h1>
           <p className="text-sm text-gray-500 mt-1">
-            Every employee gets a card and QR code automatically. {live.length} live of {rows.length} shown.
+            {tx("Every employee gets a card and QR code automatically.")} {live.length} {tx("live of")} {rows.length} {tx("shown.")}
           </p>
         </div>
         <div className="flex gap-2">
-          <Link href="/dashboard/hr/employees" className="px-3 py-2 border rounded text-sm">Employees</Link>
-          <button type="button" onClick={zip} disabled={!live.length} className="px-3 py-2 border rounded text-sm disabled:opacity-50">QR codes (ZIP)</button>
-          <button type="button" onClick={print} disabled={!live.length} className="px-3 py-2 rounded text-sm bg-indigo-600 text-white disabled:opacity-50">Print cards</button>
+          <Link href="/dashboard/hr/employees" className="px-3 py-2 border rounded text-sm">{tx("Employees")}</Link>
+          <button type="button" onClick={zip} disabled={!live.length} className="px-3 py-2 border rounded text-sm disabled:opacity-50">{tx("QR codes (ZIP)")}</button>
+          <button type="button" onClick={print} disabled={!live.length} className="px-3 py-2 rounded text-sm bg-indigo-600 text-white disabled:opacity-50">{tx("Print cards")}</button>
         </div>
       </div>
 
       <div className="flex flex-wrap gap-3 no-print">
-        <input aria-label="Search name or code" placeholder="Search name or code..." value={search} onChange={(e) => setSearch(e.target.value)} className="border rounded px-3 py-2 text-sm w-56" />
-        <select aria-label="Department" value={department} onChange={(e) => setDepartment(e.target.value)} className="border rounded px-3 py-2 text-sm">
-          <option value="">All departments</option>
+        <input aria-label={tx("Search name or code")} placeholder={tx("Search name or code...")} value={search} onChange={(e) => setSearch(e.target.value)} className="border rounded px-3 py-2 text-sm w-56" />
+        <select aria-label={tx("Department")} value={department} onChange={(e) => setDepartment(e.target.value)} className="border rounded px-3 py-2 text-sm">
+          <option value="">{tx("All departments")}</option>
           {departments.map((d) => <option key={d}>{d}</option>)}
         </select>
-        <select aria-label="Card status" value={status} onChange={(e) => setStatus(e.target.value)} className="border rounded px-3 py-2 text-sm">
-          <option value="">All cards</option>
-          <option value="PUBLISHED">Published</option>
-          <option value="REVOKED">Closed</option>
+        <select aria-label={tx("Card status")} value={status} onChange={(e) => setStatus(e.target.value)} className="border rounded px-3 py-2 text-sm">
+          <option value="">{tx("All cards")}</option>
+          <option value="PUBLISHED">{tx("Published")}</option>
+          <option value="REVOKED">{tx("Closed")}</option>
         </select>
       </div>
       {err && <p role="alert" className="text-sm text-red-600 no-print">{err}</p>}
 
       <div className="bg-white border rounded-lg overflow-x-auto no-print">
-        {isLoading ? <p className="p-6 text-sm text-gray-400 text-center">Loading...</p> : rows.length === 0 ? (
-          <p className="p-6 text-sm text-gray-400 text-center">No cards found</p>
+        {isLoading ? <p className="p-6 text-sm text-gray-400 text-center">{tx("Loading...")}</p> : rows.length === 0 ? (
+          <p className="p-6 text-sm text-gray-400 text-center">{tx("No cards found")}</p>
         ) : (
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-gray-50 text-xs text-gray-500 uppercase">
-                <th className="px-4 py-2 text-left">Name</th><th className="px-4 py-2 text-left">Title</th>
-                <th className="px-4 py-2 text-left">Department</th><th className="px-4 py-2 text-left">Card</th>
-                <th className="px-4 py-2 text-left">Photo</th><th className="px-4 py-2 text-left">Address</th><th />
+                <th className="px-4 py-2 text-left">{tx("Name")}</th><th className="px-4 py-2 text-left">{tx("Title")}</th>
+                <th className="px-4 py-2 text-left">{tx("Department")}</th><th className="px-4 py-2 text-left">{tx("Card")}</th>
+                <th className="px-4 py-2 text-left">{tx("Photo")}</th><th className="px-4 py-2 text-left">{tx("Address")}</th><th />
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -122,11 +123,11 @@ function CardsContent() {
                   <td className="px-4 py-3 text-gray-600">{r.title_en || r.role}</td>
                   <td className="px-4 py-3 text-gray-600">{r.department}</td>
                   <td className="px-4 py-3">
-                    <span className={`px-2 py-0.5 rounded text-xs ${r.live ? "bg-emerald-100 text-emerald-800" : "bg-red-100 text-red-700"}`}>{r.live ? "Live" : "Closed"}</span>
+                    <span className={`px-2 py-0.5 rounded text-xs ${r.live ? "bg-emerald-100 text-emerald-800" : "bg-red-100 text-red-700"}`}>{r.live ? tx("Live") : tx("Closed")}</span>
                   </td>
-                  <td className="px-4 py-3 text-gray-600">{r.has_photo ? "Yes" : "—"}</td>
+                  <td className="px-4 py-3 text-gray-600">{r.has_photo ? tx("Yes") : "—"}</td>
                   <td className="px-4 py-3 text-xs text-gray-500">/kartvizit/{r.slug}</td>
-                  <td className="px-4 py-3 text-right"><button type="button" onClick={() => setOpen(r)} className="text-xs text-indigo-600 hover:underline">Manage</button></td>
+                  <td className="px-4 py-3 text-right"><button type="button" onClick={() => setOpen(r)} className="text-xs text-indigo-600 hover:underline">{tx("Manage")}</button></td>
                 </tr>
               ))}
             </tbody>
@@ -134,7 +135,7 @@ function CardsContent() {
         )}
       </div>
 
-      <Modal open={!!open} onClose={() => setOpen(null)} title={open ? `Business card — ${open.name}` : ""}>
+      <Modal open={!!open} onClose={() => setOpen(null)} title={open ? tx("Business card — {name}", { name: open.name }) : ""}>
         {open && <BusinessCardPanel employeeId={open.employee_id} />}
       </Modal>
 

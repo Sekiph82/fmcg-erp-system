@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
 import { marketingApi, Campaign, CampaignStatus, CampaignType, CAMPAIGN_STATUS_COLORS } from "@/lib/marketingApi";
 import { RequirePermission } from "@/components/PermissionGuard";
+import { tx } from "@/lib/i18n/core";
 
 const CAMPAIGN_TYPES: CampaignType[] = [
   "TRADE", "DIGITAL", "RETAIL", "DISTRIBUTOR", "LAUNCH",
@@ -53,7 +54,7 @@ export default function CampaignDetailPage() {
       setEditing(false);
     },
     onError: (err: unknown) => {
-      setSaveError((err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ?? "Save failed.");
+      setSaveError((err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ?? tx("Save failed."));
     },
   });
 
@@ -82,8 +83,8 @@ export default function CampaignDetailPage() {
     setEditing(true);
   }
 
-  if (isLoading) return <div className="min-h-screen bg-[#0b1120] p-6 text-slate-400">Loading...</div>;
-  if (!campaign) return <div className="min-h-screen bg-[#0b1120] p-6 text-red-400">Campaign not found.</div>;
+  if (isLoading) return <div className="min-h-screen bg-[#0b1120] p-6 text-slate-400">{tx("Loading...")}</div>;
+  if (!campaign) return <div className="min-h-screen bg-[#0b1120] p-6 text-red-400">{tx("Campaign not found.")}</div>;
 
   return (
     <RequirePermission permission="campaigns.view">
@@ -92,7 +93,7 @@ export default function CampaignDetailPage() {
         <div className="flex items-start justify-between mb-6">
           <div>
             <a href="/dashboard/marketing/campaigns" className="text-sm text-slate-400 hover:text-white mb-1 inline-block">
-              ← Campaigns
+              {tx("← Campaigns")}
             </a>
             <h1 className="text-2xl font-bold">{campaign.campaign_name}</h1>
             <div className="flex items-center gap-3 mt-1">
@@ -110,18 +111,18 @@ export default function CampaignDetailPage() {
               <>
                 <button onClick={startEdit}
                   className="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-sm font-medium transition-colors">
-                  Edit
+                  {tx("Edit")}
                 </button>
                 {campaign.approval_status === "PENDING" && (
                   <button onClick={() => approveMut.mutate()}
                     className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-sm font-medium transition-colors">
-                    Approve
+                    {tx("Approve")}
                   </button>
                 )}
                 <button
-                  onClick={() => { if (confirm("Delete this campaign?")) deleteMut.mutate(); }}
+                  onClick={() => { if (confirm(tx("Delete this campaign?"))) deleteMut.mutate(); }}
                   className="px-3 py-1.5 rounded-lg bg-red-600/20 text-red-400 hover:bg-red-600/40 text-sm font-medium transition-colors">
-                  Delete
+                  {tx("Delete")}
                 </button>
               </>
             )}
@@ -133,22 +134,22 @@ export default function CampaignDetailPage() {
           <div className="space-y-6">
             {/* Core Info */}
             <div className="rounded-xl bg-[#131c2e] border border-slate-700/50 p-5">
-              <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">Campaign Details</h2>
+              <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">{tx("Campaign Details")}</h2>
               <div className="grid grid-cols-2 gap-4 text-sm">
-                <div><p className="text-xs text-slate-500 mb-0.5">Type</p><p>{campaign.campaign_type}</p></div>
-                <div><p className="text-xs text-slate-500 mb-0.5">Region</p><p>{campaign.region ?? "—"}</p></div>
-                <div><p className="text-xs text-slate-500 mb-0.5">Country</p><p>{campaign.country ?? "—"}</p></div>
-                <div><p className="text-xs text-slate-500 mb-0.5">Dates</p><p>{campaign.start_date} → {campaign.end_date}</p></div>
+                <div><p className="text-xs text-slate-500 mb-0.5">{tx("Type")}</p><p>{campaign.campaign_type}</p></div>
+                <div><p className="text-xs text-slate-500 mb-0.5">{tx("Region")}</p><p>{campaign.region ?? "—"}</p></div>
+                <div><p className="text-xs text-slate-500 mb-0.5">{tx("Country")}</p><p>{campaign.country ?? "—"}</p></div>
+                <div><p className="text-xs text-slate-500 mb-0.5">{tx("Dates")}</p><p>{campaign.start_date} → {campaign.end_date}</p></div>
               </div>
               {campaign.objective && (
                 <div className="mt-4">
-                  <p className="text-xs text-slate-500 mb-0.5">Objective</p>
+                  <p className="text-xs text-slate-500 mb-0.5">{tx("Objective")}</p>
                   <p className="text-sm text-slate-300">{campaign.objective}</p>
                 </div>
               )}
               {campaign.notes && (
                 <div className="mt-4">
-                  <p className="text-xs text-slate-500 mb-0.5">Notes</p>
+                  <p className="text-xs text-slate-500 mb-0.5">{tx("Notes")}</p>
                   <p className="text-sm text-slate-400">{campaign.notes}</p>
                 </div>
               )}
@@ -156,24 +157,24 @@ export default function CampaignDetailPage() {
 
             {/* Financials */}
             <div className="rounded-xl bg-[#131c2e] border border-slate-700/50 p-5">
-              <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">Financials</h2>
+              <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">{tx("Financials")}</h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="text-sm">
-                  <p className="text-xs text-slate-500 mb-0.5">Budget</p>
+                  <p className="text-xs text-slate-500 mb-0.5">{tx("Budget")}</p>
                   <p className="font-semibold">{campaign.budget ? `KES ${Number(campaign.budget).toLocaleString()}` : "—"}</p>
                 </div>
                 <div className="text-sm">
-                  <p className="text-xs text-slate-500 mb-0.5">Expected Revenue</p>
+                  <p className="text-xs text-slate-500 mb-0.5">{tx("Expected Revenue")}</p>
                   <p className="font-semibold">{campaign.expected_revenue ? `KES ${Number(campaign.expected_revenue).toLocaleString()}` : "—"}</p>
                 </div>
                 <div className="text-sm">
-                  <p className="text-xs text-slate-500 mb-0.5">Actual Revenue</p>
+                  <p className="text-xs text-slate-500 mb-0.5">{tx("Actual Revenue")}</p>
                   <p className={`font-semibold ${campaign.actual_revenue ? "text-emerald-400" : ""}`}>
                     {campaign.actual_revenue ? `KES ${Number(campaign.actual_revenue).toLocaleString()}` : "—"}
                   </p>
                 </div>
                 <div className="text-sm">
-                  <p className="text-xs text-slate-500 mb-0.5">Actual ROI</p>
+                  <p className="text-xs text-slate-500 mb-0.5">{tx("Actual ROI")}</p>
                   <p className={`font-semibold ${campaign.actual_roi && Number(campaign.actual_roi) >= 1 ? "text-emerald-400" : "text-orange-400"}`}>
                     {campaign.actual_roi ? `${Number(campaign.actual_roi).toFixed(2)}x` : "—"}
                   </p>
@@ -185,14 +186,14 @@ export default function CampaignDetailPage() {
             {promotions.length > 0 && (
               <div className="rounded-xl bg-[#131c2e] border border-slate-700/50 p-5">
                 <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">
-                  Linked Promotions ({promotions.length})
+                  {tx("Linked Promotions (")}{promotions.length})
                 </h2>
                 <div className="space-y-2">
                   {promotions.map((p) => (
                     <div key={p.id} className="flex items-center justify-between py-2 border-b border-slate-800 last:border-0">
                       <div>
                         <p className="text-sm font-medium">{p.promotion_name}</p>
-                        <p className="text-xs text-slate-400">{p.promotion_type} · {p.region ?? "No region"}</p>
+                        <p className="text-xs text-slate-400">{p.promotion_type} · {p.region ?? tx("No region")}</p>
                       </div>
                       <span className={`text-xs font-medium ${p.status === "ACTIVE" ? "text-emerald-400" : "text-slate-400"}`}>
                         {p.status}
@@ -214,12 +215,12 @@ export default function CampaignDetailPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Campaign Name</label>
+                <label className="block text-xs text-slate-400 mb-1">{tx("Campaign Name")}</label>
                 <input value={editForm.campaign_name ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, campaign_name: e.target.value }))}
                   className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white" />
               </div>
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Type</label>
+                <label className="block text-xs text-slate-400 mb-1">{tx("Type")}</label>
                 <select value={editForm.campaign_type ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, campaign_type: e.target.value as CampaignType }))}
                   className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
                   {CAMPAIGN_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
@@ -229,14 +230,14 @@ export default function CampaignDetailPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Status</label>
+                <label className="block text-xs text-slate-400 mb-1">{tx("Status")}</label>
                 <select value={editForm.status ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, status: e.target.value as CampaignStatus }))}
                   className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
                   {CAMPAIGN_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Region</label>
+                <label className="block text-xs text-slate-400 mb-1">{tx("Region")}</label>
                 <input value={editForm.region ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, region: e.target.value }))}
                   className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white" />
               </div>
@@ -244,12 +245,12 @@ export default function CampaignDetailPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Start Date</label>
+                <label className="block text-xs text-slate-400 mb-1">{tx("Start Date")}</label>
                 <input type="date" value={editForm.start_date ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, start_date: e.target.value }))}
                   className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white" />
               </div>
               <div>
-                <label className="block text-xs text-slate-400 mb-1">End Date</label>
+                <label className="block text-xs text-slate-400 mb-1">{tx("End Date")}</label>
                 <input type="date" value={editForm.end_date ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, end_date: e.target.value }))}
                   className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white" />
               </div>
@@ -257,26 +258,26 @@ export default function CampaignDetailPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Actual Revenue (KES)</label>
+                <label className="block text-xs text-slate-400 mb-1">{tx("Actual Revenue (KES)")}</label>
                 <input type="number" value={editForm.actual_revenue ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, actual_revenue: e.target.value as unknown as string }))}
                   className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white" />
               </div>
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Actual ROI (multiplier)</label>
+                <label className="block text-xs text-slate-400 mb-1">{tx("Actual ROI (multiplier)")}</label>
                 <input type="number" step="0.01" value={editForm.actual_roi ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, actual_roi: e.target.value as unknown as string }))}
-                  placeholder="e.g. 2.5"
+                  placeholder={tx("e.g. 2.5")}
                   className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white" />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Objective</label>
+              <label className="block text-xs text-slate-400 mb-1">{tx("Objective")}</label>
               <textarea value={editForm.objective ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, objective: e.target.value }))}
                 rows={2} className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white resize-none" />
             </div>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Notes</label>
+              <label className="block text-xs text-slate-400 mb-1">{tx("Notes")}</label>
               <textarea value={editForm.notes ?? ""} onChange={(e) => setEditForm((f) => ({ ...f, notes: e.target.value }))}
                 rows={2} className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white resize-none" />
             </div>
@@ -284,11 +285,11 @@ export default function CampaignDetailPage() {
             <div className="flex gap-3 pt-2">
               <button onClick={() => updateMut.mutate()} disabled={updateMut.isPending}
                 className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-sm font-medium disabled:opacity-50 transition-colors">
-                {updateMut.isPending ? "Saving..." : "Save Changes"}
+                {updateMut.isPending ? tx("Saving...") : tx("Save Changes")}
               </button>
               <button onClick={() => setEditing(false)}
                 className="px-5 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-sm font-medium transition-colors">
-                Cancel
+                {tx("Cancel")}
               </button>
             </div>
           </div>

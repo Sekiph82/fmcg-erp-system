@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { faApi, DEPR_METHOD_LABEL, DepreciationMethod } from "@/lib/fixed_assets";
+import { tx } from "@/lib/i18n/core";
 
 interface RowForm {
   asset_code: string;
@@ -56,28 +57,27 @@ export default function FALegacyImportPage() {
 
   return (
     <div className="p-6 space-y-5">
-      <h1 className="text-2xl font-bold text-gray-900">Legacy Asset Import</h1>
+      <h1 className="text-2xl font-bold text-gray-900">{tx("Legacy Asset Import")}</h1>
       <p className="text-sm text-gray-500 max-w-2xl">
-        Import existing assets with their opening accumulated depreciation and NBV balances.
-        Assets will be created in ACTIVE status with legacy-import flag for audit purposes.
+        {tx("Import existing assets with their opening accumulated depreciation and NBV balances. Assets will be created in ACTIVE status with legacy-import flag for audit purposes.")}
       </p>
 
       <div className="glass-panel p-4 flex items-center gap-4">
         <div className="flex flex-col gap-1">
-          <label className="text-xs text-gray-500">As-of Date (opening balance date)</label>
+          <label className="text-xs text-gray-500">{tx("As-of Date (opening balance date)")}</label>
           <input type="date" value={asOfDate} onChange={(e) => setAsOfDate(e.target.value)}
             className="rounded-lg border border-gray-300 px-3 py-2 text-sm" />
         </div>
-        <button onClick={addRow} className="glow-button-secondary self-end">+ Add Row</button>
+        <button onClick={addRow} className="glow-button-secondary self-end">{tx("+ Add Row")}</button>
       </div>
 
       <div className="space-y-3">
         {rows.map((row, i) => (
           <div key={i} className="liquid-glass p-4 space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-gray-500 uppercase">Row {i + 1}</span>
+              <span className="text-xs font-semibold text-gray-500 uppercase">{tx("Row")} {i + 1}</span>
               {rows.length > 1 && (
-                <button onClick={() => removeRow(i)} className="text-xs text-red-500 hover:text-red-700">Remove</button>
+                <button onClick={() => removeRow(i)} className="text-xs text-red-500 hover:text-red-700">{tx("Remove")}</button>
               )}
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -100,16 +100,16 @@ export default function FALegacyImportPage() {
                 </div>
               ))}
               <div className="flex flex-col gap-1">
-                <label className="text-xs text-gray-500">Category</label>
+                <label className="text-xs text-gray-500">{tx("Category")}</label>
                 <select value={row.asset_category_id}
                   onChange={(e) => updateRow(i, "asset_category_id", e.target.value)}
                   className="rounded-lg border border-gray-300 px-3 py-2 text-sm">
-                  <option value="">— Select —</option>
+                  <option value="">{tx("— Select —")}</option>
                   {cats.map((c) => <option key={c.id} value={c.id}>{c.category_name}</option>)}
                 </select>
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-xs text-gray-500">Depreciation Method</label>
+                <label className="text-xs text-gray-500">{tx("Depreciation Method")}</label>
                 <select value={row.depreciation_method}
                   onChange={(e) => updateRow(i, "depreciation_method", e.target.value as DepreciationMethod)}
                   className="rounded-lg border border-gray-300 px-3 py-2 text-sm">
@@ -126,23 +126,23 @@ export default function FALegacyImportPage() {
         disabled={importMut.isPending || rows.some(r => !r.asset_code || !r.asset_name || !r.asset_category_id)}
         className="glow-button"
       >
-        {importMut.isPending ? "Importing…" : `Import ${rows.length} Asset${rows.length > 1 ? "s" : ""}`}
+        {importMut.isPending ? tx("Importing…") : `Import ${rows.length} Asset${rows.length > 1 ? "s" : ""}`}
       </button>
 
       {result && (
         <div className="liquid-glass p-5 space-y-3">
-          <h2 className="text-sm font-semibold text-gray-700">Import Result</h2>
+          <h2 className="text-sm font-semibold text-gray-700">{tx("Import Result")}</h2>
           <div className="grid grid-cols-3 gap-4 text-center">
             <div className="glow-card p-3">
-              <p className="text-xs text-gray-500">Total</p>
+              <p className="text-xs text-gray-500">{tx("Total")}</p>
               <p className="text-xl font-bold text-blue-600">{result.total}</p>
             </div>
             <div className="glow-card p-3">
-              <p className="text-xs text-gray-500">Succeeded</p>
+              <p className="text-xs text-gray-500">{tx("Succeeded")}</p>
               <p className="text-xl font-bold text-green-600">{result.succeeded}</p>
             </div>
             <div className="glow-card p-3">
-              <p className="text-xs text-gray-500">Failed</p>
+              <p className="text-xs text-gray-500">{tx("Failed")}</p>
               <p className="text-xl font-bold text-red-600">{result.failed.length}</p>
             </div>
           </div>

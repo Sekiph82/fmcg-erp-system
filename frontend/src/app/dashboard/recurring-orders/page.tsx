@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { subscriptionApi, STATUS_COLORS, GEN_STATUS_COLORS, RECURRENCE_LABELS } from "@/lib/subscription";
 import Link from "next/link";
 import { useState } from "react";
+import { tx } from "@/lib/i18n/core";
 
 function StatCard({ label, value, color }: { label: string; value: number; color: string }) {
   return (
@@ -43,8 +44,8 @@ export default function RecurringOrdersDashboard() {
     <div className="p-6 space-y-6 text-slate-200">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Recurring Orders</h1>
-          <p className="text-slate-500 text-sm mt-0.5">Subscription & recurring order engine</p>
+          <h1 className="text-2xl font-bold text-white">{tx("Recurring Orders")}</h1>
+          <p className="text-slate-500 text-sm mt-0.5">{tx("Subscription & recurring order engine")}</p>
         </div>
         <div className="flex gap-2">
           <button
@@ -52,29 +53,29 @@ export default function RecurringOrdersDashboard() {
             disabled={schedulerMut.isPending}
             className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium disabled:opacity-50"
           >
-            {schedulerMut.isPending ? "Running..." : "Run Scheduler"}
+            {schedulerMut.isPending ? tx("Running...") : tx("Run Scheduler")}
           </button>
           <Link
             href="/dashboard/recurring-orders/templates/new"
             className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium"
           >
-            + New Template
+            {tx("+ New Template")}
           </Link>
         </div>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard label="Total Templates" value={s?.total ?? 0} color="text-white" />
-        <StatCard label="Active" value={s?.active ?? 0} color="text-emerald-400" />
-        <StatCard label="Paused" value={s?.paused ?? 0} color="text-amber-400" />
-        <StatCard label="Expired" value={s?.expired ?? 0} color="text-red-400" />
+        <StatCard label={tx("Total Templates")} value={s?.total ?? 0} color="text-white" />
+        <StatCard label={tx("Active")} value={s?.active ?? 0} color="text-emerald-400" />
+        <StatCard label={tx("Paused")} value={s?.paused ?? 0} color="text-amber-400" />
+        <StatCard label={tx("Expired")} value={s?.expired ?? 0} color="text-red-400" />
       </div>
 
       {/* Scheduler result */}
       {schedulerMut.data && (
         <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-300">
-          Scheduler ran: {schedulerMut.data.generated} generated · {schedulerMut.data.skipped} skipped · {schedulerMut.data.failed} failed
+          {tx("Scheduler ran:")} {schedulerMut.data.generated} {tx("generated ·")} {schedulerMut.data.skipped} {tx("skipped ·")} {schedulerMut.data.failed} {tx("failed")}
         </div>
       )}
 
@@ -82,8 +83,8 @@ export default function RecurringOrdersDashboard() {
         {/* Recent templates */}
         <div className="glow-card p-5">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold text-white">Recent Templates</h2>
-            <Link href="/dashboard/recurring-orders/templates" className="text-xs text-indigo-400 hover:text-indigo-300">View all</Link>
+            <h2 className="text-sm font-semibold text-white">{tx("Recent Templates")}</h2>
+            <Link href="/dashboard/recurring-orders/templates" className="text-xs text-indigo-400 hover:text-indigo-300">{tx("View all")}</Link>
           </div>
           <div className="space-y-2">
             {templates.map((t) => (
@@ -99,7 +100,7 @@ export default function RecurringOrdersDashboard() {
               </Link>
             ))}
             {templates.length === 0 && (
-              <p className="text-sm text-slate-600 text-center py-4">No templates yet</p>
+              <p className="text-sm text-slate-600 text-center py-4">{tx("No templates yet")}</p>
             )}
           </div>
         </div>
@@ -107,8 +108,8 @@ export default function RecurringOrdersDashboard() {
         {/* Generation stats */}
         <div className="glow-card p-5">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold text-white">Generation Stats (30 days)</h2>
-            <Link href="/dashboard/recurring-orders/reports" className="text-xs text-indigo-400 hover:text-indigo-300">Reports</Link>
+            <h2 className="text-sm font-semibold text-white">{tx("Generation Stats (30 days)")}</h2>
+            <Link href="/dashboard/recurring-orders/reports" className="text-xs text-indigo-400 hover:text-indigo-300">{tx("Reports")}</Link>
           </div>
           <div className="space-y-2">
             {genReport.map((r: any) => (
@@ -120,7 +121,7 @@ export default function RecurringOrdersDashboard() {
               </div>
             ))}
             {genReport.length === 0 && (
-              <p className="text-sm text-slate-600 text-center py-4">No generation data</p>
+              <p className="text-sm text-slate-600 text-center py-4">{tx("No generation data")}</p>
             )}
           </div>
         </div>
@@ -130,8 +131,8 @@ export default function RecurringOrdersDashboard() {
       {aiRecs.length > 0 && (
         <div className="glow-card p-5">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold text-white">AI Insights</h2>
-            <Link href="/dashboard/recurring-orders/ai" className="text-xs text-indigo-400 hover:text-indigo-300">View all</Link>
+            <h2 className="text-sm font-semibold text-white">{tx("AI Insights")}</h2>
+            <Link href="/dashboard/recurring-orders/ai" className="text-xs text-indigo-400 hover:text-indigo-300">{tx("View all")}</Link>
           </div>
           <div className="space-y-2">
             {aiRecs.slice(0, 3).map((r) => (

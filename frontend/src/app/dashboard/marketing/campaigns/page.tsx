@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { marketingApi, Campaign, CampaignStatus, CAMPAIGN_STATUS_COLORS } from "@/lib/marketingApi";
 import { RequirePermission } from "@/components/PermissionGuard";
+import { tx } from "@/lib/i18n/core";
 
 const STATUS_OPTIONS: CampaignStatus[] = [
   "DRAFT", "PLANNED", "ACTIVE", "PAUSED", "COMPLETED", "CANCELLED",
@@ -50,14 +51,14 @@ export default function CampaignsPage() {
       <div className="min-h-screen bg-[#0b1120] p-6 text-white">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold">Campaigns</h1>
-            <p className="text-slate-400 text-sm mt-1">{campaigns.length} campaigns</p>
+            <h1 className="text-2xl font-bold">{tx("Campaigns")}</h1>
+            <p className="text-slate-400 text-sm mt-1">{campaigns.length} {tx("campaigns")}</p>
           </div>
           <Link
             href="/dashboard/marketing/campaigns/new"
             className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-sm font-medium transition-colors"
           >
-            + New Campaign
+            {tx("+ New Campaign")}
           </Link>
         </div>
 
@@ -68,7 +69,7 @@ export default function CampaignsPage() {
             onChange={(e) => setStatusFilter(e.target.value)}
             className="bg-[#131c2e] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white"
           >
-            <option value="">All statuses</option>
+            <option value="">{tx("All statuses")}</option>
             {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
           {regions.length > 0 && (
@@ -77,7 +78,7 @@ export default function CampaignsPage() {
               onChange={(e) => setRegionFilter(e.target.value)}
               className="bg-[#131c2e] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white"
             >
-              <option value="">All regions</option>
+              <option value="">{tx("All regions")}</option>
               {regions.map((r) => <option key={r} value={r}>{r}</option>)}
             </select>
           )}
@@ -85,13 +86,13 @@ export default function CampaignsPage() {
 
         {/* Table */}
         {isLoading ? (
-          <p className="text-slate-400">Loading...</p>
+          <p className="text-slate-400">{tx("Loading...")}</p>
         ) : campaigns.length === 0 ? (
           <div className="text-center py-16">
-            <p className="text-slate-400 mb-4">No campaigns found.</p>
+            <p className="text-slate-400 mb-4">{tx("No campaigns found.")}</p>
             <Link href="/dashboard/marketing/campaigns/new"
               className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-sm font-medium">
-              Create your first campaign
+              {tx("Create your first campaign")}
             </Link>
           </div>
         ) : (
@@ -99,7 +100,7 @@ export default function CampaignsPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-700/50 bg-[#131c2e]">
-                  {["Code", "Name", "Type", "Status", "Region", "Budget", "Actual Rev", "ROI", "Dates", "Approval", ""].map((h) => (
+                  {[tx("Code"), tx("Name"), tx("Type"), tx("Status"), tx("Region"), tx("Budget"), tx("Actual Rev"), "ROI", tx("Dates"), tx("Approval"), ""].map((h) => (
                     <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap">
                       {h}
                     </th>
@@ -132,7 +133,7 @@ export default function CampaignsPage() {
                     <td className="px-4 py-3">
                       {c.actual_roi ? (
                         <span className={Number(c.actual_roi) >= 1 ? "text-emerald-400" : "text-orange-400"}>
-                          {Number(c.actual_roi).toFixed(2)}x
+                          {Number(c.actual_roi).toFixed(2)}{tx("x")}
                         </span>
                       ) : "—"}
                     </td>
@@ -148,21 +149,21 @@ export default function CampaignsPage() {
                       <div className="flex gap-1.5">
                         <Link href={`/dashboard/marketing/campaigns/${c.id}`}
                           className="px-2 py-1 rounded bg-slate-700 text-slate-300 hover:bg-slate-600 text-xs">
-                          View
+                          {tx("View")}
                         </Link>
                         {c.approval_status === "PENDING" && (
                           <button
                             onClick={() => approveMut.mutate(c.id)}
                             className="px-2 py-1 rounded bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/40 text-xs"
                           >
-                            Approve
+                            {tx("Approve")}
                           </button>
                         )}
                         <button
-                          onClick={() => { if (confirm(`Delete "${c.campaign_name}"?`)) deleteMut.mutate(c.id); }}
+                          onClick={() => { if (confirm(tx("Delete \"{campaign_name}\"?", { campaign_name: c.campaign_name }))) deleteMut.mutate(c.id); }}
                           className="px-2 py-1 rounded bg-red-600/20 text-red-400 hover:bg-red-600/40 text-xs"
                         >
-                          Del
+                          {tx("Del")}
                         </button>
                       </div>
                     </td>

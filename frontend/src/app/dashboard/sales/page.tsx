@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { salesApi } from "@/lib/sales";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { tx } from "@/lib/i18n/core";
 
 function SalesDashboardTab() {
   const router = useRouter();
@@ -29,22 +30,22 @@ function SalesDashboardTab() {
   const overdueItems = outstanding.filter((r) => r.days_overdue && r.days_overdue > 0);
 
   const tiles = [
-    { label: "Total Orders", value: summary?.total_orders ?? "—", sub: `${summary?.confirmed_orders ?? 0} active`, color: "text-gray-900", href: "/dashboard/sales/orders" },
-    { label: "Order Value", value: summary ? `KES ${Number(summary.total_order_value).toLocaleString(undefined, { minimumFractionDigits: 0 })}` : "—", sub: "confirmed orders", color: "text-blue-700", href: "/dashboard/sales/orders" },
-    { label: "Total Invoiced", value: summary ? `KES ${Number(summary.total_invoiced).toLocaleString(undefined, { minimumFractionDigits: 0 })}` : "—", sub: "all invoices", color: "text-gray-900", href: "/dashboard/sales/invoices" },
-    { label: "Collected", value: summary ? `KES ${Number(summary.total_collected).toLocaleString(undefined, { minimumFractionDigits: 0 })}` : "—", sub: "payments received", color: "text-green-700", href: "/dashboard/sales/invoices" },
-    { label: "Outstanding", value: summary ? `KES ${Number(summary.outstanding_balance).toLocaleString(undefined, { minimumFractionDigits: 0 })}` : "—", sub: "to be collected", color: "text-orange-600", href: "/dashboard/sales/invoices" },
-    { label: "Overdue Invoices", value: summary?.overdue_invoices ?? "—", sub: "past due date", color: summary?.overdue_invoices ? "text-red-600" : "text-gray-900", href: "/dashboard/sales/invoices?status=OVERDUE" },
+    { label: tx("Total Orders"), value: summary?.total_orders ?? "—", sub: `${summary?.confirmed_orders ?? 0} active`, color: "text-gray-900", href: "/dashboard/sales/orders" },
+    { label: tx("Order Value"), value: summary ? `KES ${Number(summary.total_order_value).toLocaleString(undefined, { minimumFractionDigits: 0 })}` : "—", sub: "confirmed orders", color: "text-blue-700", href: "/dashboard/sales/orders" },
+    { label: tx("Total Invoiced"), value: summary ? `KES ${Number(summary.total_invoiced).toLocaleString(undefined, { minimumFractionDigits: 0 })}` : "—", sub: "all invoices", color: "text-gray-900", href: "/dashboard/sales/invoices" },
+    { label: tx("Collected"), value: summary ? `KES ${Number(summary.total_collected).toLocaleString(undefined, { minimumFractionDigits: 0 })}` : "—", sub: "payments received", color: "text-green-700", href: "/dashboard/sales/invoices" },
+    { label: tx("Outstanding"), value: summary ? `KES ${Number(summary.outstanding_balance).toLocaleString(undefined, { minimumFractionDigits: 0 })}` : "—", sub: "to be collected", color: "text-orange-600", href: "/dashboard/sales/invoices" },
+    { label: tx("Overdue Invoices"), value: summary?.overdue_invoices ?? "—", sub: "past due date", color: summary?.overdue_invoices ? "text-red-600" : "text-gray-900", href: "/dashboard/sales/invoices?status=OVERDUE" },
   ];
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Sales & Distribution</h1>
-          <p className="text-sm text-gray-500 mt-1">Order to invoice workflow</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Sales & Distribution")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{tx("Order to invoice workflow")}</p>
         </div>
-        <Button onClick={() => router.push("/dashboard/sales/orders")}>New Sales Order</Button>
+        <Button onClick={() => router.push("/dashboard/sales/orders")}>{tx("New Sales Order")}</Button>
       </div>
 
       {/* Summary tiles */}
@@ -66,15 +67,15 @@ function SalesDashboardTab() {
       {overdueItems.length > 0 && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-semibold text-red-800">{overdueItems.length} Overdue Invoice(s)</p>
-            <Button variant="secondary" onClick={() => router.push("/dashboard/sales/invoices")}>View All</Button>
+            <p className="text-sm font-semibold text-red-800">{overdueItems.length} {tx("Overdue Invoice(s)")}</p>
+            <Button variant="secondary" onClick={() => router.push("/dashboard/sales/invoices")}>{tx("View All")}</Button>
           </div>
           <div className="space-y-1">
             {overdueItems.slice(0, 5).map((r) => (
               <div key={r.invoice_id} className="flex flex-wrap justify-between gap-x-3 text-xs text-red-700">
                 <span className="font-medium">{r.invoice_no}</span>
                 <span>{r.customer_name}</span>
-                <span>{r.days_overdue}d overdue</span>
+                <span>{r.days_overdue}{tx("d overdue")}</span>
                 <span className="font-semibold">KES {Number(r.outstanding_balance).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
               </div>
             ))}
@@ -85,10 +86,10 @@ function SalesDashboardTab() {
       {/* Quick links */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: "Manage Orders", desc: "Create, confirm, allocate", href: "/dashboard/sales/orders" },
-          { label: "Customers", desc: "Customer master data", href: "/dashboard/sales/customers" },
-          { label: "Dispatch Board", desc: "Pick, pack and dispatch", href: "/dashboard/sales/shipments" },
-          { label: "Invoice & AR", desc: "Invoice and payment tracking", href: "/dashboard/sales/invoices" },
+          { label: tx("Manage Orders"), desc: tx("Create, confirm, allocate"), href: "/dashboard/sales/orders" },
+          { label: tx("Customers"), desc: tx("Customer master data"), href: "/dashboard/sales/customers" },
+          { label: tx("Dispatch Board"), desc: tx("Pick, pack and dispatch"), href: "/dashboard/sales/shipments" },
+          { label: tx("Invoice & AR"), desc: tx("Invoice and payment tracking"), href: "/dashboard/sales/invoices" },
         ].map((link) => (
           <button
             key={link.href}
@@ -105,8 +106,8 @@ function SalesDashboardTab() {
       {recentOrders.length > 0 && (
         <div className="bg-white rounded-lg border">
           <div className="px-6 py-4 border-b flex items-center justify-between">
-            <h2 className="font-semibold text-gray-900">Recent Orders</h2>
-            <Button variant="secondary" onClick={() => router.push("/dashboard/sales/orders")}>View All</Button>
+            <h2 className="font-semibold text-gray-900">{tx("Recent Orders")}</h2>
+            <Button variant="secondary" onClick={() => router.push("/dashboard/sales/orders")}>{tx("View All")}</Button>
           </div>
           <div className="divide-y">
             {recentOrders.slice(0, 8).map((so) => {
@@ -165,32 +166,32 @@ const PortalPage            = dynamic(() => import("@/app/dashboard/portal/page"
 
 export default function SalesPage() {
   const tabs = [
-    { key: "overview",       label: "Overview",        permission: "sales.view", content: <SalesDashboardTab /> },
-    { key: "orders",         label: "Orders",          permission: "sales.view", content: <SalesOrdersPage /> },
-    { key: "invoices",       label: "Invoices",        permission: "sales.view", content: <SalesInvoicesPage /> },
-    { key: "customers",      label: "Customers",       permission: "sales.view", content: <SalesCustomersPage /> },
-    { key: "quotes",         label: "Quotes",          permission: "sales.view", content: <SalesQuotesPage /> },
-    { key: "shipments",      label: "Shipments",       permission: "sales.view", content: <SalesShipmentsPage /> },
-    { key: "delivery",       label: "Delivery",        permission: "sales.view", exact: true, content: <SalesDeliveryPage /> },
-    { key: "collections",    label: "Collections",     permission: "sales.view", exact: true, content: <SalesCollectionsPage /> },
-    { key: "returns",        label: "Returns",         permission: "sales.view", exact: true, content: <SalesReturnsPage /> },
-    { key: "pricing",        label: "Pricing",         permission: "sales.view", exact: true, content: <SalesPricingPage /> },
-    { key: "price-lists",    label: "Price Lists",     permission: "sales.view", content: <PriceListsPage /> },
-    { key: "dynamic-pricing",label: "Dynamic Pricing", permission: "sales.view", content: <DynamicPricingPage /> },
-    { key: "contracts",      label: "Contracts",       permission: "sales.view", content: <ContractsPage /> },
-    { key: "recurring",      label: "Recurring",       permission: "sales.view", content: <RecurringOrdersPage /> },
-    { key: "commissions",    label: "Commissions",     permission: "sales.view", content: <CommissionsPage /> },
-    { key: "secondary",      label: "Secondary Sales", permission: "sales.view", content: <SecondarySalesPage /> },
-    { key: "van-sales",      label: "Van Sales",       permission: "sales.view", content: <VanSalesPage /> },
-    { key: "distributors",   label: "Distributors",    permission: "sales.view", exact: true, content: <SalesDistributorsPage /> },
-    { key: "field-sales",    label: "Field Sales",     permission: "sales.view", exact: true, content: <SalesFieldSalesPage /> },
-    { key: "margin",         label: "Margin",          permission: "sales.view", content: <SalesMarginPage /> },
-    { key: "portal",         label: "Customer Portal", permission: "sales.view", exact: true, content: <PortalPage /> },
-    { key: "reports",        label: "Reports",         permission: "sales.view", exact: true, content: <SalesReportsPage /> },
+    { key: "overview",       label: tx("Overview"),        permission: "sales.view", content: <SalesDashboardTab /> },
+    { key: "orders",         label: tx("Orders"),          permission: "sales.view", content: <SalesOrdersPage /> },
+    { key: "invoices",       label: tx("Invoices"),        permission: "sales.view", content: <SalesInvoicesPage /> },
+    { key: "customers",      label: tx("Customers"),       permission: "sales.view", content: <SalesCustomersPage /> },
+    { key: "quotes",         label: tx("Quotes"),          permission: "sales.view", content: <SalesQuotesPage /> },
+    { key: "shipments",      label: tx("Shipments"),       permission: "sales.view", content: <SalesShipmentsPage /> },
+    { key: "delivery",       label: tx("Delivery"),        permission: "sales.view", exact: true, content: <SalesDeliveryPage /> },
+    { key: "collections",    label: tx("Collections"),     permission: "sales.view", exact: true, content: <SalesCollectionsPage /> },
+    { key: "returns",        label: tx("Returns"),         permission: "sales.view", exact: true, content: <SalesReturnsPage /> },
+    { key: "pricing",        label: tx("Pricing"),         permission: "sales.view", exact: true, content: <SalesPricingPage /> },
+    { key: "price-lists",    label: tx("Price Lists"),     permission: "sales.view", content: <PriceListsPage /> },
+    { key: "dynamic-pricing",label: tx("Dynamic Pricing"), permission: "sales.view", content: <DynamicPricingPage /> },
+    { key: "contracts",      label: tx("Contracts"),       permission: "sales.view", content: <ContractsPage /> },
+    { key: "recurring",      label: tx("Recurring"),       permission: "sales.view", content: <RecurringOrdersPage /> },
+    { key: "commissions",    label: tx("Commissions"),     permission: "sales.view", content: <CommissionsPage /> },
+    { key: "secondary",      label: tx("Secondary Sales"), permission: "sales.view", content: <SecondarySalesPage /> },
+    { key: "van-sales",      label: tx("Van Sales"),       permission: "sales.view", content: <VanSalesPage /> },
+    { key: "distributors",   label: tx("Distributors"),    permission: "sales.view", exact: true, content: <SalesDistributorsPage /> },
+    { key: "field-sales",    label: tx("Field Sales"),     permission: "sales.view", exact: true, content: <SalesFieldSalesPage /> },
+    { key: "margin",         label: tx("Margin"),          permission: "sales.view", content: <SalesMarginPage /> },
+    { key: "portal",         label: tx("Customer Portal"), permission: "sales.view", exact: true, content: <PortalPage /> },
+    { key: "reports",        label: tx("Reports"),         permission: "sales.view", exact: true, content: <SalesReportsPage /> },
   ];
   return (
     <ModuleWorkspace
-      title="Sales"
+      title={tx("Sales")}
       description="Orders, invoices, customers, pricing, collections, van sales"
       permission="sales.view"
       tabs={tabs}

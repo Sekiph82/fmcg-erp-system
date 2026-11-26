@@ -9,6 +9,7 @@ import {
   InfluencerPlatform, InfluencerStatus, ContentType, INFLUENCER_STATUS_COLORS,
 } from "@/lib/marketingApi";
 import { RequirePermission } from "@/components/PermissionGuard";
+import { tx } from "@/lib/i18n/core";
 
 const PLATFORMS: InfluencerPlatform[] = ["INSTAGRAM", "TIKTOK", "YOUTUBE", "FACEBOOK", "X", "OTHER"];
 const STATUSES: InfluencerStatus[] = ["PROSPECT", "ACTIVE", "INACTIVE", "BLOCKED"];
@@ -115,8 +116,8 @@ export default function InfluencerDetailPage() {
     setEditing(true);
   };
 
-  if (isLoading) return <div className="p-8 text-slate-400">Loading...</div>;
-  if (!inf) return <div className="p-8 text-red-400">Influencer not found.</div>;
+  if (isLoading) return <div className="p-8 text-slate-400">{tx("Loading...")}</div>;
+  if (!inf) return <div className="p-8 text-red-400">{tx("Influencer not found.")}</div>;
 
   const totalAttributedRevenue = attributions.reduce((s, a) => s + Number(a.attributed_revenue ?? 0), 0);
   const totalConversions = attributions.reduce((s, a) => s + a.conversions, 0);
@@ -127,13 +128,13 @@ export default function InfluencerDetailPage() {
         {/* Header */}
         <div className="mb-6">
           <button onClick={() => router.back()} className="text-slate-400 hover:text-white text-sm mb-2">
-            ← Influencers
+            {tx("← Influencers")}
           </button>
           <div className="flex items-start justify-between">
             <div>
               <h1 className="text-2xl font-bold">{inf.influencer_name}</h1>
               <p className="text-slate-400 text-sm mt-1">
-                {inf.platform}{inf.handle && ` · @${inf.handle}`}{inf.region && ` · ${inf.region}`}
+                {inf.platform}{inf.handle && tx(" · @{handle}", { handle: inf.handle })}{inf.region && ` · ${inf.region}`}
               </p>
             </div>
             <span className={`text-sm font-semibold ${INFLUENCER_STATUS_COLORS[inf.status as InfluencerStatus]}`}>
@@ -145,19 +146,19 @@ export default function InfluencerDetailPage() {
         {/* KPI strip */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
           <div className="rounded-xl bg-[#131c2e] border border-slate-700/50 p-3">
-            <p className="text-xs text-slate-400 mb-0.5">Followers</p>
+            <p className="text-xs text-slate-400 mb-0.5">{tx("Followers")}</p>
             <p className="text-lg font-bold">{fmt(inf.followers_count)}</p>
           </div>
           <div className="rounded-xl bg-[#131c2e] border border-slate-700/50 p-3">
-            <p className="text-xs text-slate-400 mb-0.5">Engagement</p>
+            <p className="text-xs text-slate-400 mb-0.5">{tx("Engagement")}</p>
             <p className="text-lg font-bold">{inf.engagement_rate ? `${Number(inf.engagement_rate).toFixed(2)}%` : "—"}</p>
           </div>
           <div className="rounded-xl bg-[#131c2e] border border-slate-700/50 p-3">
-            <p className="text-xs text-slate-400 mb-0.5">Campaign Links</p>
+            <p className="text-xs text-slate-400 mb-0.5">{tx("Campaign Links")}</p>
             <p className="text-lg font-bold">{links.length}</p>
           </div>
           <div className="rounded-xl bg-[#131c2e] border border-slate-700/50 p-3">
-            <p className="text-xs text-slate-400 mb-0.5">Attributed Revenue</p>
+            <p className="text-xs text-slate-400 mb-0.5">{tx("Attributed Revenue")}</p>
             <p className="text-lg font-bold text-emerald-400">
               {totalAttributedRevenue > 0 ? `KES ${totalAttributedRevenue.toLocaleString()}` : "—"}
             </p>
@@ -186,18 +187,18 @@ export default function InfluencerDetailPage() {
             {!editing ? (
               <div className="bg-[#131c2e] border border-slate-700/50 rounded-xl p-6">
                 <div className="grid grid-cols-2 gap-x-8 gap-y-5 mb-6">
-                  <Field label="Name" value={inf.influencer_name} />
-                  <Field label="Platform" value={inf.platform} />
-                  <Field label="Handle" value={inf.handle ? `@${inf.handle}` : null} />
-                  <Field label="Category" value={inf.category} />
-                  <Field label="Region" value={inf.region} />
-                  <Field label="Status" value={inf.status} />
-                  <Field label="Contact" value={inf.contact_info} />
-                  <Field label="Created" value={inf.created_at ? new Date(inf.created_at).toLocaleDateString() : null} />
+                  <Field label={tx("Name")} value={inf.influencer_name} />
+                  <Field label={tx("Platform")} value={inf.platform} />
+                  <Field label={tx("Handle")} value={inf.handle ? `@${inf.handle}` : null} />
+                  <Field label={tx("Category")} value={inf.category} />
+                  <Field label={tx("Region")} value={inf.region} />
+                  <Field label={tx("Status")} value={inf.status} />
+                  <Field label={tx("Contact")} value={inf.contact_info} />
+                  <Field label={tx("Created")} value={inf.created_at ? new Date(inf.created_at).toLocaleDateString() : null} />
                 </div>
                 {inf.notes && (
                   <div className="border-t border-slate-700/50 pt-4">
-                    <p className="text-xs text-slate-400 mb-1">Notes</p>
+                    <p className="text-xs text-slate-400 mb-1">{tx("Notes")}</p>
                     <p className="text-sm text-slate-300">{inf.notes}</p>
                   </div>
                 )}
@@ -205,12 +206,12 @@ export default function InfluencerDetailPage() {
                   <RequirePermission permission="influencers.edit">
                     <button onClick={startEdit}
                       className="px-3 py-1.5 rounded-lg border border-slate-600 text-slate-300 hover:bg-slate-700 text-sm">
-                      Edit
+                      {tx("Edit")}
                     </button>
                     <button
-                      onClick={() => { if (confirm("Delete this influencer?")) deleteMut.mutate(); }}
+                      onClick={() => { if (confirm(tx("Delete this influencer?"))) deleteMut.mutate(); }}
                       className="px-3 py-1.5 rounded-lg bg-red-900/30 hover:bg-red-900/50 text-red-400 text-sm">
-                      Delete
+                      {tx("Delete")}
                     </button>
                   </RequirePermission>
                 </div>
@@ -219,13 +220,13 @@ export default function InfluencerDetailPage() {
               <div className="bg-[#131c2e] border border-slate-700/50 rounded-xl p-6 space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs text-slate-400 mb-1">Name</label>
+                    <label className="block text-xs text-slate-400 mb-1">{tx("Name")}</label>
                     <input type="text" value={editForm.influencer_name ?? ""}
                       onChange={(e) => setEditForm((f) => ({ ...f, influencer_name: e.target.value }))}
                       className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white" />
                   </div>
                   <div>
-                    <label className="block text-xs text-slate-400 mb-1">Platform</label>
+                    <label className="block text-xs text-slate-400 mb-1">{tx("Platform")}</label>
                     <select value={editForm.platform}
                       onChange={(e) => setEditForm((f) => ({ ...f, platform: e.target.value as InfluencerPlatform }))}
                       className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
@@ -235,13 +236,13 @@ export default function InfluencerDetailPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs text-slate-400 mb-1">Handle</label>
+                    <label className="block text-xs text-slate-400 mb-1">{tx("Handle")}</label>
                     <input type="text" value={editForm.handle ?? ""}
                       onChange={(e) => setEditForm((f) => ({ ...f, handle: e.target.value }))}
                       className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white" />
                   </div>
                   <div>
-                    <label className="block text-xs text-slate-400 mb-1">Status</label>
+                    <label className="block text-xs text-slate-400 mb-1">{tx("Status")}</label>
                     <select value={editForm.status}
                       onChange={(e) => setEditForm((f) => ({ ...f, status: e.target.value as InfluencerStatus }))}
                       className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
@@ -251,20 +252,20 @@ export default function InfluencerDetailPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs text-slate-400 mb-1">Followers</label>
+                    <label className="block text-xs text-slate-400 mb-1">{tx("Followers")}</label>
                     <input type="number" value={editForm.followers_count ?? ""}
                       onChange={(e) => setEditForm((f) => ({ ...f, followers_count: parseInt(e.target.value) || undefined }))}
                       className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white" />
                   </div>
                   <div>
-                    <label className="block text-xs text-slate-400 mb-1">Engagement %</label>
+                    <label className="block text-xs text-slate-400 mb-1">{tx("Engagement %")}</label>
                     <input type="number" step="0.01" value={editForm.engagement_rate ?? ""}
                       onChange={(e) => setEditForm((f) => ({ ...f, engagement_rate: e.target.value as unknown as string | null }))}
                       className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white" />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs text-slate-400 mb-1">Notes</label>
+                  <label className="block text-xs text-slate-400 mb-1">{tx("Notes")}</label>
                   <textarea value={editForm.notes ?? ""}
                     onChange={(e) => setEditForm((f) => ({ ...f, notes: e.target.value }))}
                     rows={3}
@@ -272,10 +273,10 @@ export default function InfluencerDetailPage() {
                 </div>
                 <div className="flex justify-end gap-3">
                   <button onClick={() => setEditing(false)}
-                    className="px-4 py-2 rounded-lg border border-slate-600 text-slate-300 hover:bg-slate-800 text-sm">Cancel</button>
+                    className="px-4 py-2 rounded-lg border border-slate-600 text-slate-300 hover:bg-slate-800 text-sm">{tx("Cancel")}</button>
                   <button onClick={() => updateMut.mutate()} disabled={updateMut.isPending}
                     className="px-5 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-sm font-medium">
-                    {updateMut.isPending ? "Saving..." : "Save"}
+                    {updateMut.isPending ? tx("Saving...") : tx("Save")}
                   </button>
                 </div>
               </div>
@@ -287,11 +288,11 @@ export default function InfluencerDetailPage() {
         {tab === "campaigns" && (
           <div className="bg-[#131c2e] border border-slate-700/50 rounded-xl p-6">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider">Campaign Links</h2>
+              <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider">{tx("Campaign Links")}</h2>
               <RequirePermission permission="influencers.create">
                 <button onClick={() => setShowLinkForm((v) => !v)}
                   className="px-3 py-1.5 rounded-lg bg-purple-600/20 hover:bg-purple-600/40 text-purple-400 text-sm">
-                  {showLinkForm ? "Cancel" : "+ Link Campaign"}
+                  {showLinkForm ? tx("Cancel") : tx("+ Link Campaign")}
                 </button>
               </RequirePermission>
             </div>
@@ -300,11 +301,11 @@ export default function InfluencerDetailPage() {
               <div className="mb-5 p-4 bg-[#0b1120] rounded-lg border border-slate-700/50 space-y-3">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs text-slate-400 mb-1">Campaign *</label>
-                    <EntityPicker kind="campaign" label="Campaign" required value={linkForm.campaign_id} onChange={(id) => setLinkForm((f) => ({ ...f, campaign_id: id }))} />
+                    <label className="block text-xs text-slate-400 mb-1">{tx("Campaign *")}</label>
+                    <EntityPicker kind="campaign" label={tx("Campaign")} required value={linkForm.campaign_id} onChange={(id) => setLinkForm((f) => ({ ...f, campaign_id: id }))} />
                   </div>
                   <div>
-                    <label className="block text-xs text-slate-400 mb-1">Content Type</label>
+                    <label className="block text-xs text-slate-400 mb-1">{tx("Content Type")}</label>
                     <select value={linkForm.content_type}
                       onChange={(e) => setLinkForm((f) => ({ ...f, content_type: e.target.value as ContentType }))}
                       className="w-full bg-[#0d1527] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
@@ -314,20 +315,20 @@ export default function InfluencerDetailPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs text-slate-400 mb-1">Agreed Fee (KES)</label>
+                    <label className="block text-xs text-slate-400 mb-1">{tx("Agreed Fee (KES)")}</label>
                     <input type="number" step="0.01" value={linkForm.agreed_fee}
                       onChange={(e) => setLinkForm((f) => ({ ...f, agreed_fee: e.target.value }))}
                       className="w-full bg-[#0d1527] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white" />
                   </div>
                   <div>
-                    <label className="block text-xs text-slate-400 mb-1">Expected Posts</label>
+                    <label className="block text-xs text-slate-400 mb-1">{tx("Expected Posts")}</label>
                     <input type="number" min="0" value={linkForm.expected_posts}
                       onChange={(e) => setLinkForm((f) => ({ ...f, expected_posts: e.target.value }))}
                       className="w-full bg-[#0d1527] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white" />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs text-slate-400 mb-1">Tracking Link</label>
+                  <label className="block text-xs text-slate-400 mb-1">{tx("Tracking Link")}</label>
                   <input type="text" value={linkForm.tracking_link}
                     onChange={(e) => setLinkForm((f) => ({ ...f, tracking_link: e.target.value }))}
                     placeholder="https://…"
@@ -337,14 +338,14 @@ export default function InfluencerDetailPage() {
                   <button onClick={() => createLinkMut.mutate()}
                     disabled={!linkForm.campaign_id || createLinkMut.isPending}
                     className="px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-sm font-medium">
-                    {createLinkMut.isPending ? "Saving…" : "Add Link"}
+                    {createLinkMut.isPending ? tx("Saving…") : tx("Add Link")}
                   </button>
                 </div>
               </div>
             )}
 
             {links.length === 0 ? (
-              <p className="text-slate-500 text-sm">No campaign links yet.</p>
+              <p className="text-slate-500 text-sm">{tx("No campaign links yet.")}</p>
             ) : (
               <div className="space-y-3">
                 {links.map((l: InfluencerCampaignLink) => (
@@ -356,18 +357,18 @@ export default function InfluencerDetailPage() {
                       </div>
                       {l.performance_score && (
                         <span className="px-2 py-0.5 rounded bg-emerald-600/20 text-emerald-400 text-xs font-medium">
-                          Score: {Number(l.performance_score).toFixed(1)}
+                          {tx("Score:")} {Number(l.performance_score).toFixed(1)}
                         </span>
                       )}
                     </div>
                     <div className="grid grid-cols-4 gap-3 text-xs">
-                      <div><p className="text-slate-500">Agreed Fee</p><p>{l.agreed_fee ? `KES ${Number(l.agreed_fee).toLocaleString()}` : "—"}</p></div>
-                      <div><p className="text-slate-500">Posts</p><p>{l.actual_posts ?? "—"}/{l.expected_posts ?? "—"}</p></div>
-                      <div><p className="text-slate-500">Impressions</p><p>{fmt(l.impressions)}</p></div>
-                      <div><p className="text-slate-500">Conversions</p><p>{l.conversions ?? "—"}</p></div>
+                      <div><p className="text-slate-500">{tx("Agreed Fee")}</p><p>{l.agreed_fee ? `KES ${Number(l.agreed_fee).toLocaleString()}` : "—"}</p></div>
+                      <div><p className="text-slate-500">{tx("Posts")}</p><p>{l.actual_posts ?? "—"}/{l.expected_posts ?? "—"}</p></div>
+                      <div><p className="text-slate-500">{tx("Impressions")}</p><p>{fmt(l.impressions)}</p></div>
+                      <div><p className="text-slate-500">{tx("Conversions")}</p><p>{l.conversions ?? "—"}</p></div>
                     </div>
                     {l.attributed_revenue && (
-                      <p className="text-xs text-emerald-400 mt-2">Revenue: KES {Number(l.attributed_revenue).toLocaleString()}</p>
+                      <p className="text-xs text-emerald-400 mt-2">{tx("Revenue: KES")} {Number(l.attributed_revenue).toLocaleString()}</p>
                     )}
                   </div>
                 ))}
@@ -380,9 +381,9 @@ export default function InfluencerDetailPage() {
         {tab === "attribution" && (
           <div className="bg-[#131c2e] border border-slate-700/50 rounded-xl p-6">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider">Attribution Records</h2>
+              <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider">{tx("Attribution Records")}</h2>
               <div className="text-right">
-                <p className="text-xs text-slate-400">Total Attributed Revenue</p>
+                <p className="text-xs text-slate-400">{tx("Total Attributed Revenue")}</p>
                 <p className="text-lg font-bold text-emerald-400">
                   KES {totalAttributedRevenue.toLocaleString()}
                 </p>
@@ -390,13 +391,13 @@ export default function InfluencerDetailPage() {
             </div>
 
             {attributions.length === 0 ? (
-              <p className="text-slate-500 text-sm">No attribution records.</p>
+              <p className="text-slate-500 text-sm">{tx("No attribution records.")}</p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-slate-700/50">
-                      {["Date", "Clicks", "Conversions", "Orders", "Revenue", "Tracking Link"].map((h) => (
+                      {[tx("Date"), tx("Clicks"), tx("Conversions"), tx("Orders"), tx("Revenue"), tx("Tracking Link")].map((h) => (
                         <th key={h} className="text-left px-3 py-2 text-xs text-slate-400">{h}</th>
                       ))}
                     </tr>
@@ -419,8 +420,7 @@ export default function InfluencerDetailPage() {
                   </tbody>
                 </table>
                 <div className="mt-3 text-xs text-slate-500">
-                  Total conversions: {totalConversions} ·
-                  CPC avg: {totalConversions > 0 ? `KES ${(totalAttributedRevenue / totalConversions).toFixed(2)}` : "—"}
+                  {tx("Total conversions:")} {totalConversions} {tx("· CPC avg:")} {totalConversions > 0 ? `KES ${(totalAttributedRevenue / totalConversions).toFixed(2)}` : "—"}
                 </div>
               </div>
             )}

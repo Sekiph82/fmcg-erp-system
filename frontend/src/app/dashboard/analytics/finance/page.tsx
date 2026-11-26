@@ -9,6 +9,7 @@ import { ExceptionList } from "@/components/analytics/ExceptionList";
 import { ChartCard } from "@/components/analytics/ChartCard";
 import { DaysSelector } from "@/components/analytics/DaysSelector";
 import { RequirePermission } from "@/components/PermissionGuard";
+import { tx } from "@/lib/i18n/core";
 
 export default function FinanceAnalyticsPage() {
   const [days, setDays] = useState(30);
@@ -23,27 +24,27 @@ export default function FinanceAnalyticsPage() {
       <div className="max-w-2xl mx-auto space-y-5 pb-10">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Finance Dashboard</h1>
-            <p className="text-xs text-gray-400 mt-0.5">Cash, receivables &amp; payables</p>
+            <h1 className="text-xl font-bold text-gray-900">{tx("Finance Dashboard")}</h1>
+            <p className="text-xs text-gray-400 mt-0.5">{tx("Cash, receivables & payables")}</p>
           </div>
           <DaysSelector value={days} onChange={setDays} />
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <KPICard
-            label="Cash on Hand"
+            label={tx("Cash on Hand")}
             value={fmtKES(data?.cash_on_hand ?? 0)}
             status="ok"
             loading={isLoading}
           />
           <KPICard
-            label="Bank Balance"
+            label={tx("Bank Balance")}
             value={fmtKES(data?.bank_balance ?? 0)}
             status="ok"
             loading={isLoading}
           />
           <KPICard
-            label="Open Receivables"
+            label={tx("Open Receivables")}
             value={fmtKES(data?.open_receivables ?? 0)}
             subtext="Issued + partially paid"
             status={(data?.open_receivables ?? 0) > 0 ? "warning" : "ok"}
@@ -51,7 +52,7 @@ export default function FinanceAnalyticsPage() {
             loading={isLoading}
           />
           <KPICard
-            label="Overdue Receivables"
+            label={tx("Overdue Receivables")}
             value={fmtKES(data?.overdue_receivables ?? 0)}
             subtext="Past due"
             status={(data?.overdue_receivables ?? 0) > 0 ? "critical" : "ok"}
@@ -59,14 +60,14 @@ export default function FinanceAnalyticsPage() {
             loading={isLoading}
           />
           <KPICard
-            label="Open Payables"
+            label={tx("Open Payables")}
             value={fmtKES(data?.open_payables ?? 0)}
             subtext="Unpaid POs"
             status="ok"
             loading={isLoading}
           />
           <KPICard
-            label="MTD Net"
+            label={tx("MTD Net")}
             value={fmtKES((data?.mtd_revenue ?? 0) - (data?.mtd_expenses ?? 0))}
             subtext={`Rev: ${fmtKES(data?.mtd_revenue ?? 0)}`}
             status={
@@ -77,7 +78,7 @@ export default function FinanceAnalyticsPage() {
         </div>
 
         {/* Cash flow trend */}
-        <ChartCard title="Cash Flow" subtitle={`Last ${days} days`}>
+        <ChartCard title={tx("Cash Flow")} subtitle={`Last ${days} days`}>
           <LineChart
             series={[
               { name: "Receipts", color: "#10b981", data: data?.cash_receipts_trend ?? [] },
@@ -88,7 +89,7 @@ export default function FinanceAnalyticsPage() {
         </ChartCard>
 
         {/* Exceptions */}
-        <ChartCard title="Exceptions">
+        <ChartCard title={tx("Exceptions")}>
           <ExceptionList items={data?.exceptions ?? []} title="" />
         </ChartCard>
       </div>

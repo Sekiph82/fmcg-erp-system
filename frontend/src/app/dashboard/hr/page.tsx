@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { hrApi } from "@/lib/hr";
 import { RequirePermission } from "@/components/PermissionGuard";
+import { tx } from "@/lib/i18n/core";
 
 function HRContent() {
   const router = useRouter();
@@ -40,28 +41,28 @@ function HRContent() {
 
   const tiles = [
     {
-      label: "Active Employees",
+      label: tx("Active Employees"),
       value: activeEmployees.toString(),
       sub: `${employees.length} total`,
       color: "text-indigo-700",
       href: "/dashboard/hr/employees",
     },
     {
-      label: "Present Today",
+      label: tx("Present Today"),
       value: presentToday.toString(),
       sub: `${absentToday} absent · ${lateToday} late`,
       color: presentToday > 0 ? "text-green-700" : "text-gray-500",
       href: "/dashboard/hr/attendance",
     },
     {
-      label: "Pending Leave",
+      label: tx("Pending Leave"),
       value: pendingLeave.toString(),
       sub: "awaiting approval",
       color: pendingLeave > 0 ? "text-orange-600" : "text-gray-500",
       href: "/dashboard/hr/leave",
     },
     {
-      label: "Draft Payrolls",
+      label: tx("Draft Payrolls"),
       value: draftPayrolls.toString(),
       sub: `${payrollPeriods.length} total periods`,
       color: draftPayrolls > 0 ? "text-yellow-600" : "text-gray-500",
@@ -70,17 +71,17 @@ function HRContent() {
   ];
 
   const sections = [
-    { label: "Employees", desc: "Employee master records, roles, departments", href: "/dashboard/hr/employees" },
-    { label: "Shift Planning", desc: "Shift templates and employee assignments", href: "/dashboard/hr/shifts" },
-    { label: "Attendance", desc: "Daily attendance records — present, absent, late, leave", href: "/dashboard/hr/attendance" },
-    { label: "Leave Management", desc: "Leave requests and approval workflow", href: "/dashboard/hr/leave" },
+    { label: tx("Employees"), desc: tx("Employee master records, roles, departments"), href: "/dashboard/hr/employees" },
+    { label: tx("Shift Planning"), desc: tx("Shift templates and employee assignments"), href: "/dashboard/hr/shifts" },
+    { label: tx("Attendance"), desc: tx("Daily attendance records — present, absent, late, leave"), href: "/dashboard/hr/attendance" },
+    { label: tx("Leave Management"), desc: tx("Leave requests and approval workflow"), href: "/dashboard/hr/leave" },
   ];
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Human Resources</h1>
-        <p className="text-sm text-gray-500 mt-1">Employees · Shifts · Attendance · Leave · Payroll</p>
+        <h1 className="text-2xl font-bold text-gray-900">{tx("Human Resources")}</h1>
+        <p className="text-sm text-gray-500 mt-1">{tx("Employees · Shifts · Attendance · Leave · Payroll")}</p>
       </div>
 
       <div className="grid grid-cols-4 gap-4">
@@ -127,22 +128,22 @@ const HRExpensesPage     = dynamic(() => import("@/app/dashboard/expenses/page")
 
 export default function HRPage() {
   const tabs = [
-    { key: "overview",     label: "Overview",     permission: "hr.view", content: <HRContent /> },
-    { key: "employees",    label: "Employees",    permission: "hr.view", content: <HREmployeesPage /> },
-    { key: "attendance",   label: "Attendance",   permission: "hr.view", content: <HRAttendancePage /> },
-    { key: "leave",        label: "Leave",        permission: "hr.view", content: <HRLeavePage /> },
-    { key: "payroll",      label: "Payroll",      permission: "payroll.view", content: <HRPayrollPage /> },
-    { key: "shifts",       label: "Shifts",       permission: "hr.view", content: <HRShiftsPage /> },
-    { key: "recruitment",  label: "Recruitment",  permission: "hr.view", content: <RecruitmentPage /> },
+    { key: "overview",     label: tx("Overview"),     permission: "hr.view", content: <HRContent /> },
+    { key: "employees",    label: tx("Employees"),    permission: "hr.view", content: <HREmployeesPage /> },
+    { key: "attendance",   label: tx("Attendance"),   permission: "hr.view", content: <HRAttendancePage /> },
+    { key: "leave",        label: tx("Leave"),        permission: "hr.view", content: <HRLeavePage /> },
+    { key: "payroll",      label: tx("Payroll"),      permission: "payroll.view", content: <HRPayrollPage /> },
+    { key: "shifts",       label: tx("Shifts"),       permission: "hr.view", content: <HRShiftsPage /> },
+    { key: "recruitment",  label: tx("Recruitment"),  permission: "hr.view", content: <RecruitmentPage /> },
     { key: "ess",          label: "ESS",          permission: "self.my_hr", content: <ESSPage /> },
-    { key: "appraisals",   label: "Appraisals",   permission: "hr.view", content: <AppraisalsPage /> },
-    { key: "training",     label: "Training",     permission: "hr.view", content: <TrainingPage /> },
-    { key: "timesheets",   label: "Timesheets",   permission: "hr.view", content: <TimesheetsPage /> },
-    { key: "expenses",     label: "Expenses",     permission: "hr.view", content: <HRExpensesPage /> },
+    { key: "appraisals",   label: tx("Appraisals"),   permission: "hr.view", content: <AppraisalsPage /> },
+    { key: "training",     label: tx("Training"),     permission: "hr.view", content: <TrainingPage /> },
+    { key: "timesheets",   label: tx("Timesheets"),   permission: "hr.view", content: <TimesheetsPage /> },
+    { key: "expenses",     label: tx("Expenses"),     permission: "hr.view", content: <HRExpensesPage /> },
   ];
   return (
     <ModuleWorkspace
-      title="HR & Payroll"
+      title={tx("HR & Payroll")}
       description="Employees, attendance, leave, payroll, recruitment, training"
       permission="hr.view"
       tabs={tabs}

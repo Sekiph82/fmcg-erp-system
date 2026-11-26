@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { planningApi, ScenarioSummary, CapacityBoard, utilColor } from "@/lib/planning";
+import { tx } from "@/lib/i18n/core";
 
 function UtilBar({ pct }: { pct: number }) {
   const w = Math.min(100, pct);
@@ -41,8 +42,8 @@ export default function PlanningCapacityPage() {
   return (
     <div className="p-6 space-y-5">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-gray-900">Capacity Board</h1>
-        <a href="/dashboard/planning" className="text-xs text-blue-600 hover:underline">← Planning Dashboard</a>
+        <h1 className="text-xl font-semibold text-gray-900">{tx("Capacity Board")}</h1>
+        <a href="/dashboard/planning" className="text-xs text-blue-600 hover:underline">{tx("← Planning Dashboard")}</a>
       </div>
 
       {/* Selector */}
@@ -52,7 +53,7 @@ export default function PlanningCapacityPage() {
           value={selectedId || ""}
           onChange={(e) => setSelectedId(e.target.value || null)}
         >
-          <option value="">-- select scenario --</option>
+          <option value="">{tx("-- select scenario --")}</option>
           {scenarios.map((s) => (
             <option key={s.id} value={s.id}>{s.scenario_no} — {s.scenario_name}</option>
           ))}
@@ -61,7 +62,7 @@ export default function PlanningCapacityPage() {
 
       {/* Legend */}
       <div className="flex items-center gap-4 text-xs text-gray-500">
-        <span>Utilization:</span>
+        <span>{tx("Utilization:")}</span>
         {[["< 60%", "bg-green-400"], ["60–85%", "bg-yellow-400"], ["85–100%", "bg-orange-400"], ["> 100%", "bg-red-500"]].map(([label, c]) => (
           <div key={label} className="flex items-center gap-1">
             <div className={`w-3 h-3 rounded ${c}`} />
@@ -76,9 +77,9 @@ export default function PlanningCapacityPage() {
           {board && (
             <div className="grid grid-cols-3 gap-4">
               {[
-                { label: "Work Centers", value: board.rows.length },
-                { label: "Total Operations", value: board.total_ops },
-                { label: "Avg Utilization", value: `${board.avg_utilization_pct.toFixed(1)}%` },
+                { label: tx("Work Centers"), value: board.rows.length },
+                { label: tx("Total Operations"), value: board.total_ops },
+                { label: tx("Avg Utilization"), value: `${board.avg_utilization_pct.toFixed(1)}%` },
               ].map((k) => (
                 <div key={k.label} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
                   <p className="text-xs text-gray-400 font-medium">{k.label}</p>
@@ -92,15 +93,15 @@ export default function PlanningCapacityPage() {
           {board && board.overload_alerts.length > 0 && (
             <div className="bg-red-50 border border-red-200 rounded-xl p-4">
               <h2 className="text-sm font-semibold text-red-700 mb-2">
-                Overload Alerts ({board.overload_alerts.length})
+                {tx("Overload Alerts (")}{board.overload_alerts.length})
               </h2>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                 {board.overload_alerts.map((a, i) => (
                   <div key={i} className="bg-white border border-red-100 rounded-lg p-3">
                     <p className="text-xs font-medium text-gray-700">{a.work_center}</p>
                     <p className="text-xs text-gray-400">{a.date}</p>
-                    <p className="text-sm font-bold text-red-600 mt-1">+{a.overload_hours.toFixed(1)} hrs</p>
-                    <p className="text-xs text-orange-600">{a.utilization_pct.toFixed(0)}% utilization</p>
+                    <p className="text-sm font-bold text-red-600 mt-1">+{a.overload_hours.toFixed(1)} {tx("hrs")}</p>
+                    <p className="text-xs text-orange-600">{a.utilization_pct.toFixed(0)}{tx("% utilization")}</p>
                   </div>
                 ))}
               </div>
@@ -109,10 +110,10 @@ export default function PlanningCapacityPage() {
 
           {/* Heatmap Grid */}
           {isLoading ? (
-            <div className="text-center text-gray-400 py-8">Loading capacity board…</div>
+            <div className="text-center text-gray-400 py-8">{tx("Loading capacity board…")}</div>
           ) : !board || board.rows.length === 0 ? (
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-8 text-center text-sm text-gray-400">
-              No capacity data. Run the scheduling engine on a scenario first.
+              {tx("No capacity data. Run the scheduling engine on a scenario first.")}
             </div>
           ) : (
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
@@ -120,10 +121,10 @@ export default function PlanningCapacityPage() {
                 <table className="w-full text-xs">
                   <thead className="bg-gray-50 sticky top-0">
                     <tr>
-                      <th className="px-4 py-2 text-left font-medium text-gray-500 whitespace-nowrap min-w-[180px]">Work Center</th>
-                      <th className="px-3 py-2 text-left font-medium text-gray-400 min-w-[120px]">Peak</th>
-                      <th className="px-3 py-2 text-left font-medium text-gray-400">Over</th>
-                      <th className="px-3 py-2 text-left font-medium text-gray-400">Co.Hrs</th>
+                      <th className="px-4 py-2 text-left font-medium text-gray-500 whitespace-nowrap min-w-[180px]">{tx("Work Center")}</th>
+                      <th className="px-3 py-2 text-left font-medium text-gray-400 min-w-[120px]">{tx("Peak")}</th>
+                      <th className="px-3 py-2 text-left font-medium text-gray-400">{tx("Over")}</th>
+                      <th className="px-3 py-2 text-left font-medium text-gray-400">{tx("Co.Hrs")}</th>
                       {allDates.map((d) => (
                         <th key={d} className="px-1 py-2 text-center font-medium text-gray-400 min-w-[44px]">
                           {d.slice(5)}
@@ -142,7 +143,7 @@ export default function PlanningCapacityPage() {
                           </td>
                           <td className="px-3 py-2 text-center">
                             {row.overloaded_days > 0
-                              ? <span className="text-red-600 font-medium">{row.overloaded_days}d</span>
+                              ? <span className="text-red-600 font-medium">{row.overloaded_days}{tx("d")}</span>
                               : <span className="text-green-500">✓</span>}
                           </td>
                           <td className="px-3 py-2 text-center text-orange-500">

@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { faApi } from "@/lib/fixed_assets";
+import { tx } from "@/lib/i18n/core";
 
 export default function FATransferPage() {
   const params = useSearchParams();
@@ -43,36 +44,36 @@ export default function FATransferPage() {
     <div className="p-6">
       <div className="liquid-glass p-6 max-w-md mx-auto text-center space-y-4">
         <div className="text-4xl">✅</div>
-        <h2 className="text-xl font-bold text-gray-900">Transfer Recorded</h2>
-        <Link href="/dashboard/fixed-assets/assets" className="glow-button inline-block">Back to Assets</Link>
+        <h2 className="text-xl font-bold text-gray-900">{tx("Transfer Recorded")}</h2>
+        <Link href="/dashboard/fixed-assets/assets" className="glow-button inline-block">{tx("Back to Assets")}</Link>
       </div>
     </div>
   );
 
   return (
     <div className="p-6 space-y-5 max-w-xl">
-      <h1 className="text-2xl font-bold text-gray-900">Asset Transfer</h1>
+      <h1 className="text-2xl font-bold text-gray-900">{tx("Asset Transfer")}</h1>
 
       <div className="liquid-glass p-5 space-y-4">
         <div className="flex flex-col gap-1">
-          <label className="text-xs text-gray-500">Asset</label>
+          <label className="text-xs text-gray-500">{tx("Asset")}</label>
           <select value={assetId} onChange={(e) => setAssetId(e.target.value)}
             className="rounded-lg border border-gray-300 px-3 py-2 text-sm">
-            <option value="">— Select asset —</option>
+            <option value="">{tx("— Select asset —")}</option>
             {assets.map((a) => <option key={a.id} value={a.id}>{a.asset_code} — {a.asset_name}</option>)}
           </select>
         </div>
 
         {asset && (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs space-y-1">
-            <p><span className="text-gray-500">Current Location:</span> {asset.location ?? "—"}</p>
-            <p><span className="text-gray-500">Cost Center:</span> {asset.cost_center ?? "—"}</p>
-            <p><span className="text-gray-500">Department:</span> {asset.department ?? "—"}</p>
+            <p><span className="text-gray-500">{tx("Current Location:")}</span> {asset.location ?? "—"}</p>
+            <p><span className="text-gray-500">{tx("Cost Center:")}</span> {asset.cost_center ?? "—"}</p>
+            <p><span className="text-gray-500">{tx("Department:")}</span> {asset.department ?? "—"}</p>
           </div>
         )}
 
         <div className="flex flex-col gap-1">
-          <label className="text-xs text-gray-500">Effective Date</label>
+          <label className="text-xs text-gray-500">{tx("Effective Date")}</label>
           <input type="date" value={effectiveDate} onChange={(e) => setEffectiveDate(e.target.value)}
             className="rounded-lg border border-gray-300 px-3 py-2 text-sm" />
         </div>
@@ -93,7 +94,7 @@ export default function FATransferPage() {
         </div>
 
         <div className="flex flex-col gap-1">
-          <label className="text-xs text-gray-500">Reason</label>
+          <label className="text-xs text-gray-500">{tx("Reason")}</label>
           <textarea value={reason} onChange={(e) => setReason(e.target.value)}
             className="rounded-lg border border-gray-300 px-3 py-2 text-sm" rows={2} />
         </div>
@@ -103,7 +104,7 @@ export default function FATransferPage() {
           disabled={!assetId || transfer.isPending}
           className="glow-button w-full"
         >
-          {transfer.isPending ? "Recording…" : "Record Transfer"}
+          {transfer.isPending ? tx("Recording…") : tx("Record Transfer")}
         </button>
       </div>
     </div>

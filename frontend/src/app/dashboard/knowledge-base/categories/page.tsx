@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { kbApi, KBCategory } from "@/lib/knowledge_base";
+import { tx } from "@/lib/i18n/core";
 
 interface CategoryForm {
   name: string;
@@ -38,7 +39,7 @@ export default function KBCategoriesPage() {
       const cats = await kbApi.listCategories();
       setCategories(cats);
     } catch {
-      setError("Failed to load categories.");
+      setError(tx("Failed to load categories."));
     } finally {
       setLoading(false);
     }
@@ -47,7 +48,7 @@ export default function KBCategoriesPage() {
   useEffect(() => { load(); }, []);
 
   const handleCreate = async () => {
-    if (!form.name.trim()) { setSaveError("Name is required."); return; }
+    if (!form.name.trim()) { setSaveError(tx("Name is required.")); return; }
     setSaving(true); setSaveError("");
     try {
       await kbApi.createCategory({
@@ -61,7 +62,7 @@ export default function KBCategoriesPage() {
       setForm(EMPTY_FORM);
       await load();
     } catch {
-      setSaveError("Failed to create category.");
+      setSaveError(tx("Failed to create category."));
     } finally {
       setSaving(false);
     }
@@ -74,7 +75,7 @@ export default function KBCategoriesPage() {
   };
 
   const handleEdit = async () => {
-    if (!editId || !editForm.name.trim()) { setEditError("Name is required."); return; }
+    if (!editId || !editForm.name.trim()) { setEditError(tx("Name is required.")); return; }
     setEditSaving(true); setEditError("");
     try {
       await kbApi.updateCategory(editId, {
@@ -87,7 +88,7 @@ export default function KBCategoriesPage() {
       setEditId(null);
       await load();
     } catch {
-      setEditError("Failed to update category.");
+      setEditError(tx("Failed to update category."));
     } finally {
       setEditSaving(false);
     }
@@ -99,38 +100,38 @@ export default function KBCategoriesPage() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
-            <a href="/dashboard/knowledge-base" className="hover:underline text-blue-600">Knowledge Base</a>
+            <a href="/dashboard/knowledge-base" className="hover:underline text-blue-600">{tx("Knowledge Base")}</a>
             <span>/</span>
-            <span>Categories</span>
+            <span>{tx("Categories")}</span>
           </div>
-          <h1 className="text-xl font-bold text-gray-900">Knowledge Base Categories</h1>
-          <p className="text-xs text-gray-500 mt-0.5">Organise articles into categories.</p>
+          <h1 className="text-xl font-bold text-gray-900">{tx("Knowledge Base Categories")}</h1>
+          <p className="text-xs text-gray-500 mt-0.5">{tx("Organise articles into categories.")}</p>
         </div>
         <button
           onClick={() => { setShowCreate(true); setSaveError(""); setForm(EMPTY_FORM); }}
           className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
         >
-          + New Category
+          {tx("+ New Category")}
         </button>
       </div>
 
       {/* Create form */}
       {showCreate && (
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-5 space-y-3">
-          <h2 className="text-sm font-semibold text-blue-900">New Category</h2>
+          <h2 className="text-sm font-semibold text-blue-900">{tx("New Category")}</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-medium text-gray-600 block mb-1">Name *</label>
+              <label className="text-xs font-medium text-gray-600 block mb-1">{tx("Name *")}</label>
               <input
                 type="text"
                 value={form.name}
                 onChange={e => setForm(f => ({ ...f, name: e.target.value, slug: slugify(e.target.value) }))}
-                placeholder="e.g. HR Policies"
+                placeholder={tx("e.g. HR Policies")}
                 className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-600 block mb-1">Slug</label>
+              <label className="text-xs font-medium text-gray-600 block mb-1">{tx("Slug")}</label>
               <input
                 type="text"
                 value={form.slug}
@@ -140,17 +141,17 @@ export default function KBCategoriesPage() {
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-600 block mb-1">Icon (emoji)</label>
+              <label className="text-xs font-medium text-gray-600 block mb-1">{tx("Icon (emoji)")}</label>
               <input
                 type="text"
                 value={form.icon}
                 onChange={e => setForm(f => ({ ...f, icon: e.target.value }))}
-                placeholder="e.g. 📄"
+                placeholder={tx("e.g. 📄")}
                 className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-600 block mb-1">Display Order</label>
+              <label className="text-xs font-medium text-gray-600 block mb-1">{tx("Display Order")}</label>
               <input
                 type="number"
                 value={form.display_order}
@@ -160,12 +161,12 @@ export default function KBCategoriesPage() {
               />
             </div>
             <div className="sm:col-span-2">
-              <label className="text-xs font-medium text-gray-600 block mb-1">Description</label>
+              <label className="text-xs font-medium text-gray-600 block mb-1">{tx("Description")}</label>
               <input
                 type="text"
                 value={form.description}
                 onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                placeholder="Short description (optional)"
+                placeholder={tx("Short description (optional)")}
                 className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
               />
             </div>
@@ -174,11 +175,11 @@ export default function KBCategoriesPage() {
           <div className="flex gap-2">
             <button onClick={handleCreate} disabled={saving}
               className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">
-              {saving ? "Saving…" : "Create Category"}
+              {saving ? tx("Saving…") : tx("Create Category")}
             </button>
             <button onClick={() => setShowCreate(false)}
               className="rounded border px-4 py-2 text-sm text-gray-600 hover:bg-gray-50">
-              Cancel
+              {tx("Cancel")}
             </button>
           </div>
         </div>
@@ -188,23 +189,23 @@ export default function KBCategoriesPage() {
       {error ? (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700">{error}</div>
       ) : loading ? (
-        <p className="text-sm text-gray-500">Loading…</p>
+        <p className="text-sm text-gray-500">{tx("Loading…")}</p>
       ) : categories.length === 0 ? (
         <div className="bg-white border rounded-xl p-10 text-center text-gray-400 text-sm">
-          No categories yet. Create one to get started.
+          {tx("No categories yet. Create one to get started.")}
         </div>
       ) : (
         <div className="bg-white border rounded-xl overflow-hidden shadow-sm">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-gray-600 uppercase text-xs">
               <tr>
-                <th className="px-4 py-3 text-left">Icon</th>
-                <th className="px-4 py-3 text-left">Name</th>
-                <th className="px-4 py-3 text-left">Slug</th>
-                <th className="px-4 py-3 text-left">Description</th>
-                <th className="px-4 py-3 text-right">Articles</th>
-                <th className="px-4 py-3 text-right">Order</th>
-                <th className="px-4 py-3 text-left">Actions</th>
+                <th className="px-4 py-3 text-left">{tx("Icon")}</th>
+                <th className="px-4 py-3 text-left">{tx("Name")}</th>
+                <th className="px-4 py-3 text-left">{tx("Slug")}</th>
+                <th className="px-4 py-3 text-left">{tx("Description")}</th>
+                <th className="px-4 py-3 text-right">{tx("Articles")}</th>
+                <th className="px-4 py-3 text-right">{tx("Order")}</th>
+                <th className="px-4 py-3 text-left">{tx("Actions")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -241,9 +242,9 @@ export default function KBCategoriesPage() {
                       <div className="flex gap-2 items-center">
                         <button onClick={handleEdit} disabled={editSaving}
                           className="text-xs text-blue-600 hover:underline disabled:opacity-50">
-                          {editSaving ? "Saving…" : "Save"}
+                          {editSaving ? tx("Saving…") : tx("Save")}
                         </button>
-                        <button onClick={() => setEditId(null)} className="text-xs text-gray-500 hover:underline">Cancel</button>
+                        <button onClick={() => setEditId(null)} className="text-xs text-gray-500 hover:underline">{tx("Cancel")}</button>
                         {editError && <span className="text-xs text-red-600">{editError}</span>}
                       </div>
                     </td>
@@ -264,7 +265,7 @@ export default function KBCategoriesPage() {
                     <td className="px-4 py-3">
                       <button onClick={() => startEdit(c)}
                         className="text-xs text-blue-600 hover:underline">
-                        Edit
+                        {tx("Edit")}
                       </button>
                     </td>
                   </tr>

@@ -7,6 +7,7 @@ import {
   Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
 import { reportsApi, type DailyConsumptionReport, type DailySummaryReport } from "@/lib/utilitiesReports";
+import { tx } from "@/lib/i18n/core";
 
 const today = new Date().toISOString().slice(0, 10);
 const mtdStart = today.slice(0, 8) + "01";
@@ -32,7 +33,7 @@ function DateFilter({ from, to, onFrom, onTo }: { from: string; to: string; onFr
   return (
     <div className="flex gap-3 items-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 flex-wrap">
       <input type="date" className={ic} value={from} onChange={e => onFrom(e.target.value)} />
-      <span className="text-gray-400 text-xs">to</span>
+      <span className="text-gray-400 text-xs">{tx("to")}</span>
       <input type="date" className={ic} value={to} onChange={e => onTo(e.target.value)} />
     </div>
   );
@@ -48,12 +49,12 @@ function SummaryView({ dateFrom, dateTo }: { dateFrom: string; dateTo: string })
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-        <KpiCard label="Total Cost" value={fmt(d?.total_cost, 2)} unit="$" />
-        <KpiCard label="Utility Types" value={d ? String(d.rows.length) : "—"} />
+        <KpiCard label={tx("Total Cost")} value={fmt(d?.total_cost, 2)} unit="$" />
+        <KpiCard label={tx("Utility Types")} value={d ? String(d.rows.length) : "—"} />
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Cost Trend</h3>
+        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">{tx("Cost Trend")}</h3>
         <ResponsiveContainer width="100%" height={220}>
           <LineChart data={d?.trend ?? []} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" />
@@ -69,7 +70,7 @@ function SummaryView({ dateFrom, dateTo }: { dateFrom: string; dateTo: string })
         <table className="w-full text-sm">
           <thead className="bg-gray-50 dark:bg-gray-700 text-xs uppercase text-gray-500">
             <tr>
-              {["Utility Type", "Quantity", "Unit", "Total Cost", "Avg Daily", "Tx Count"].map(h => (
+              {[tx("Utility Type"), tx("Quantity"), tx("Unit"), tx("Total Cost"), tx("Avg Daily"), tx("Tx Count")].map(h => (
                 <th key={h} className="px-4 py-3 text-left font-medium">{h}</th>
               ))}
             </tr>
@@ -86,7 +87,7 @@ function SummaryView({ dateFrom, dateTo }: { dateFrom: string; dateTo: string })
               </tr>
             ))}
             {!d?.rows.length && (
-              <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">No data for selected range</td></tr>
+              <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">{tx("No data for selected range")}</td></tr>
             )}
           </tbody>
         </table>
@@ -113,19 +114,19 @@ function ConsumptionView({ dateFrom, dateTo, utilityType, dept, shift }: {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-        <KpiCard label="Total Quantity" value={fmt(d?.total_quantity)} unit={d?.unit ?? ""} />
-        <KpiCard label="Total Cost" value={fmt(d?.total_cost, 2)} unit="$" />
-        <KpiCard label="Records" value={d ? String(d.rows.length) : "—"} />
+        <KpiCard label={tx("Total Quantity")} value={fmt(d?.total_quantity)} unit={d?.unit ?? ""} />
+        <KpiCard label={tx("Total Cost")} value={fmt(d?.total_cost, 2)} unit="$" />
+        <KpiCard label={tx("Records")} value={d ? String(d.rows.length) : "—"} />
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Daily Consumption Trend</h3>
+          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">{tx("Daily Consumption Trend")}</h3>
           <button
             onClick={() => reportsApi.exportDailyConsumption(params)}
             className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
-            Export CSV
+            {tx("Export CSV")}
           </button>
         </div>
         <ResponsiveContainer width="100%" height={240}>
@@ -144,13 +145,13 @@ function ConsumptionView({ dateFrom, dateTo, utilityType, dept, shift }: {
 
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700 text-xs text-gray-500">
-          {d?.rows.length ?? 0} rows
+          {d?.rows.length ?? 0} {tx("rows")}
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 dark:bg-gray-700 text-xs uppercase text-gray-500">
               <tr>
-                {["Date", "Utility", "Quantity", "Unit", "Cost", "Dept", "Shift", "Tx#"].map(h => (
+                {[tx("Date"), tx("Utility"), tx("Quantity"), tx("Unit"), tx("Cost"), tx("Dept"), tx("Shift"), tx("Tx#")].map(h => (
                   <th key={h} className="px-4 py-3 text-left font-medium whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -169,7 +170,7 @@ function ConsumptionView({ dateFrom, dateTo, utilityType, dept, shift }: {
                 </tr>
               ))}
               {!d?.rows.length && (
-                <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">No data for selected range</td></tr>
+                <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">{tx("No data for selected range")}</td></tr>
               )}
             </tbody>
           </table>
@@ -195,10 +196,10 @@ export default function DailyConsumptionPage() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <div className="flex items-center gap-3 mb-1">
-            <Link href="/dashboard/utility-management/reports" className="text-sm text-gray-500 hover:text-blue-600">← Reports</Link>
+            <Link href="/dashboard/utility-management/reports" className="text-sm text-gray-500 hover:text-blue-600">{tx("← Reports")}</Link>
           </div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white" style={{ borderLeft: "4px solid #60a5fa", paddingLeft: 12 }}>
-            Daily Consumption Report
+            {tx("Daily Consumption Report")}
           </h1>
         </div>
         <DateFilter from={dateFrom} to={dateTo} onFrom={setDateFrom} onTo={setDateTo} />
@@ -207,16 +208,16 @@ export default function DailyConsumptionPage() {
       {/* Filters */}
       <div className="flex gap-3 flex-wrap items-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3">
         <div className="flex rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600">
-          <button onClick={() => setView("detail")} className={`px-4 py-2 text-sm ${view === "detail" ? "bg-blue-600 text-white" : "bg-white dark:bg-gray-700 text-gray-600"}`}>Detail</button>
-          <button onClick={() => setView("summary")} className={`px-4 py-2 text-sm ${view === "summary" ? "bg-blue-600 text-white" : "bg-white dark:bg-gray-700 text-gray-600"}`}>Summary</button>
+          <button onClick={() => setView("detail")} className={`px-4 py-2 text-sm ${view === "detail" ? "bg-blue-600 text-white" : "bg-white dark:bg-gray-700 text-gray-600"}`}>{tx("Detail")}</button>
+          <button onClick={() => setView("summary")} className={`px-4 py-2 text-sm ${view === "summary" ? "bg-blue-600 text-white" : "bg-white dark:bg-gray-700 text-gray-600"}`}>{tx("Summary")}</button>
         </div>
         {view === "detail" && (
           <>
             <select className={sel} value={utilityType} onChange={e => setUtilityType(e.target.value)}>
-              {UTILITY_TYPES.map(t => <option key={t} value={t}>{t || "All Utilities"}</option>)}
+              {UTILITY_TYPES.map(t => <option key={t} value={t}>{t || tx("All Utilities")}</option>)}
             </select>
-            <input placeholder="Department" className={sel} value={dept} onChange={e => setDept(e.target.value)} />
-            <input placeholder="Shift (e.g. A)" className={sel} value={shift} onChange={e => setShift(e.target.value)} />
+            <input placeholder={tx("Department")} className={sel} value={dept} onChange={e => setDept(e.target.value)} />
+            <input placeholder={tx("Shift (e.g. A)")} className={sel} value={shift} onChange={e => setShift(e.target.value)} />
           </>
         )}
       </div>

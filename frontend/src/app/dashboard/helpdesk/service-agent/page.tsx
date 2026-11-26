@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api";
+import { tx } from "@/lib/i18n/core";
 
 const API = "/api/v1/service-desk/agent";
 const errText = (e: unknown) => (e as { response?: { data?: { detail?: string } } }).response?.data?.detail ?? "Request failed.";
@@ -32,10 +33,10 @@ export default function ServiceAgentQA() {
   return (
     <div className="p-4 space-y-4 max-w-6xl">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl font-semibold">Service agent quality</h1>
-        <label className="text-sm flex items-center gap-2">Period
+        <h1 className="text-xl font-semibold">{tx("Service agent quality")}</h1>
+        <label className="text-sm flex items-center gap-2">{tx("Period")}
           <select value={days} onChange={(e) => setDays(Number(e.target.value))} className="border rounded px-2 py-1">
-            {[7, 30, 90, 365].map((d) => <option key={d} value={d}>{d} days</option>)}
+            {[7, 30, 90, 365].map((d) => <option key={d} value={d}>{d} {tx("days")}</option>)}
           </select></label>
       </div>
       <div className="flex flex-wrap gap-2" role="tablist">
@@ -55,7 +56,7 @@ function BreakDown({ title, rows }: { title: string; rows: Record<string, Row> }
   return (
     <div className="overflow-x-auto">
       <table className="text-sm w-full"><caption className="text-left font-medium mb-1">{title}</caption>
-        <thead><tr className="text-left text-gray-500"><th className="pr-3">Name</th><th className="pr-3">Turns</th><th className="pr-3">Grounded answers</th><th className="pr-3">Abstained</th><th className="pr-3">Escalated</th><th>CSAT</th></tr></thead>
+        <thead><tr className="text-left text-gray-500"><th className="pr-3">{tx("Name")}</th><th className="pr-3">{tx("Turns")}</th><th className="pr-3">{tx("Grounded answers")}</th><th className="pr-3">{tx("Abstained")}</th><th className="pr-3">{tx("Escalated")}</th><th>CSAT</th></tr></thead>
         <tbody>{Object.entries(rows).map(([k, r]) => (
           <tr key={k} className="border-t"><td className="pr-3">{k}</td><td className="pr-3">{r.turns}</td><td className="pr-3">{r.answered} ({pct(r.grounded_rate)})</td><td className="pr-3">{r.abstained}</td><td className="pr-3">{r.escalated}</td><td>{r.csat ?? "-"}</td></tr>))}</tbody>
       </table>
@@ -67,7 +68,7 @@ function MetricsTab({ days }: { days: number }) {
   const q = useQuery({ queryKey: ["sa-metrics", days], queryFn: () => apiClient.get<Metrics>(`${API}/metrics?days=${days}`).then((r) => r.data), retry: false });
   const [text, setText] = useState("");
   const retest = useMutation({ mutationFn: () => apiClient.post<{ grounded: boolean; citations: { slug: string; title: string; version: number; kind: string }[] }>(`${API}/retest`, { question: text }).then((r) => r.data) });
-  if (q.isLoading) return <p className="text-sm text-gray-500">Loading...</p>;
+  if (q.isLoading) return <p className="text-sm text-gray-500">{tx("Loading...")}</p>;
   if (q.isError) return <p role="alert" className="text-sm text-red-600">{errText(q.error)}</p>;
   const m = q.data!;
   const card = (label: string, value: string, hint?: string) => (
@@ -84,16 +85,16 @@ function MetricsTab({ days }: { days: number }) {
         {card("Reviewed answers correct", pct(m.accuracy.correct_rate), `${m.accuracy.reviewed} reviewed; citations ok ${pct(m.accuracy.citation_ok_rate)}`)}
         {card("Safety escalations", String(m.safety_escalations))}
       </div>
-      <p className="text-xs text-gray-500">Outcomes: {Object.entries(m.outcomes).map(([k, v]) => `${k} ${v}`).join(", ") || "none"}. Answer modes: {Object.entries(m.modes).map(([k, v]) => `${k} ${v}`).join(", ") || "none"}. Safety chats are never counted as resolved.</p>
-      <BreakDown title="By topic" rows={m.by_topic} />
-      <BreakDown title="By language" rows={m.by_language} />
+      <p className="text-xs text-gray-500">{tx("Outcomes:")} {Object.entries(m.outcomes).map(([k, v]) => `${k} ${v}`).join(", ") || tx("none")}{tx(". Answer modes:")} {Object.entries(m.modes).map(([k, v]) => `${k} ${v}`).join(", ") || tx("none")}{tx(". Safety chats are never counted as resolved.")}</p>
+      <BreakDown title={tx("By topic")} rows={m.by_topic} />
+      <BreakDown title={tx("By language")} rows={m.by_language} />
       <div className="border rounded-lg p-3 space-y-2">
-        <p className="text-sm font-medium">Re-test a question against the approved articles (no model call, nothing stored)</p>
-        <div className="flex gap-2"><input aria-label="Question to re-test" value={text} maxLength={500} onChange={(e) => setText(e.target.value)} className="flex-1 border rounded px-2 py-1 text-sm" />
-          <button disabled={text.trim().length < 2 || retest.isPending} onClick={() => retest.mutate()} title={text.trim().length < 2 ? "Type a question first" : ""} className="px-3 py-1 rounded bg-indigo-600 text-white text-sm disabled:opacity-50">Re-test</button></div>
+        <p className="text-sm font-medium">{tx("Re-test a question against the approved articles (no model call, nothing stored)")}</p>
+        <div className="flex gap-2"><input aria-label={tx("Question to re-test")} value={text} maxLength={500} onChange={(e) => setText(e.target.value)} className="flex-1 border rounded px-2 py-1 text-sm" />
+          <button disabled={text.trim().length < 2 || retest.isPending} onClick={() => retest.mutate()} title={text.trim().length < 2 ? tx("Type a question first") : ""} className="px-3 py-1 rounded bg-indigo-600 text-white text-sm disabled:opacity-50">{tx("Re-test")}</button></div>
         {retest.data && (retest.data.grounded
-          ? <ul className="text-sm list-disc pl-5">{retest.data.citations.map((c) => <li key={c.slug}>{c.title} <span className="text-gray-400">(v{c.version}, {c.kind}, /kb/{c.slug})</span></li>)}</ul>
-          : <p className="text-sm text-amber-700">Not grounded: the agent would abstain and hand over to a person.</p>)}
+          ? <ul className="text-sm list-disc pl-5">{retest.data.citations.map((c) => <li key={c.slug}>{c.title} <span className="text-gray-400">{tx("(v")}{c.version}, {c.kind}{tx(", /kb/")}{c.slug})</span></li>)}</ul>
+          : <p className="text-sm text-amber-700">{tx("Not grounded: the agent would abstain and hand over to a person.")}</p>)}
         <Err msg={retest.isError ? errText(retest.error) : null} />
       </div>
     </div>
@@ -115,22 +116,22 @@ function ClustersTab({ days }: { days: number }) {
   const ready = f.title.trim().length >= 3 && f.content_md.trim().length > 0;
   return (
     <div className="space-y-3">
-      <p className="text-sm text-gray-600">Questions the agent could not ground in approved articles (and answers customers rated 1-2), grouped by topic words.</p>
-      {(q.data ?? []).length === 0 && <p className="text-sm text-gray-500">No unresolved questions in this period.</p>}
+      <p className="text-sm text-gray-600">{tx("Questions the agent could not ground in approved articles (and answers customers rated 1-2), grouped by topic words.")}</p>
+      {(q.data ?? []).length === 0 && <p className="text-sm text-gray-500">{tx("No unresolved questions in this period.")}</p>}
       {(q.data ?? []).map((c) => (
         <div key={c.key} className="border rounded-lg p-3 space-y-2">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="font-medium">{c.key} <span className="text-gray-400 text-sm">{c.count} questions, {Object.entries(c.languages).map(([l, n]) => `${l} ${n}`).join(", ")}</span></p>
-            {c.proposal ? <span className="text-xs px-2 py-0.5 rounded bg-gray-100">Proposal {c.proposal.status.toLowerCase()}</span>
-              : <button onClick={() => { setOpen(open === c.key ? null : c.key); setErr(null); }} className="px-3 py-1 rounded bg-indigo-600 text-white text-sm">Propose article</button>}
+            <p className="font-medium">{c.key} <span className="text-gray-400 text-sm">{c.count} {tx("questions,")} {Object.entries(c.languages).map(([l, n]) => `${l} ${n}`).join(", ")}</span></p>
+            {c.proposal ? <span className="text-xs px-2 py-0.5 rounded bg-gray-100">{tx("Proposal")} {c.proposal.status.toLowerCase()}</span>
+              : <button onClick={() => { setOpen(open === c.key ? null : c.key); setErr(null); }} className="px-3 py-1 rounded bg-indigo-600 text-white text-sm">{tx("Propose article")}</button>}
           </div>
           <ul className="text-sm text-gray-600 list-disc pl-5">{c.samples.map((s, i) => <li key={i} className="break-words">{s}</li>)}</ul>
           {open === c.key && (
             <div className="space-y-2 border-t pt-2">
-              <input aria-label="Article title" placeholder="Article title" value={f.title} maxLength={300} onChange={(e) => setF({ ...f, title: e.target.value })} className="w-full border rounded px-2 py-1 text-sm" />
-              <input aria-label="Short summary" placeholder="Short summary (shown to customers)" value={f.summary} maxLength={1000} onChange={(e) => setF({ ...f, summary: e.target.value })} className="w-full border rounded px-2 py-1 text-sm" />
-              <textarea aria-label="Article content" placeholder="Article content (markdown). Must be accurate: customers will see it and the agent will cite it." rows={5} value={f.content_md} onChange={(e) => setF({ ...f, content_md: e.target.value })} className="w-full border rounded px-2 py-1 text-sm" />
-              <button disabled={!ready || propose.isPending} title={ready ? "" : "Add a title (3+ characters) and the article content"} onClick={() => propose.mutate(c.key)} className="px-3 py-1 rounded bg-indigo-600 text-white text-sm disabled:opacity-50">Submit for approval</button>
+              <input aria-label={tx("Article title")} placeholder={tx("Article title")} value={f.title} maxLength={300} onChange={(e) => setF({ ...f, title: e.target.value })} className="w-full border rounded px-2 py-1 text-sm" />
+              <input aria-label={tx("Short summary")} placeholder={tx("Short summary (shown to customers)")} value={f.summary} maxLength={1000} onChange={(e) => setF({ ...f, summary: e.target.value })} className="w-full border rounded px-2 py-1 text-sm" />
+              <textarea aria-label={tx("Article content")} placeholder={tx("Article content (markdown). Must be accurate: customers will see it and the agent will cite it.")} rows={5} value={f.content_md} onChange={(e) => setF({ ...f, content_md: e.target.value })} className="w-full border rounded px-2 py-1 text-sm" />
+              <button disabled={!ready || propose.isPending} title={ready ? "" : tx("Add a title (3+ characters) and the article content")} onClick={() => propose.mutate(c.key)} className="px-3 py-1 rounded bg-indigo-600 text-white text-sm disabled:opacity-50">{tx("Submit for approval")}</button>
               <Err msg={err} />
             </div>)}
         </div>))}
@@ -151,21 +152,21 @@ function GapsTab() {
   if (q.isError) return <p role="alert" className="text-sm text-red-600">{errText(q.error)}</p>;
   return (
     <div className="space-y-3">
-      <p className="text-sm text-gray-600">Approving publishes the article to the public help centre, where the agent can cite it. A second person must approve; service administrators only.</p>
-      {(q.data ?? []).length === 0 && <p className="text-sm text-gray-500">No proposals yet.</p>}
+      <p className="text-sm text-gray-600">{tx("Approving publishes the article to the public help centre, where the agent can cite it. A second person must approve; service administrators only.")}</p>
+      {(q.data ?? []).length === 0 && <p className="text-sm text-gray-500">{tx("No proposals yet.")}</p>}
       {(q.data ?? []).map((g) => (
         <div key={g.id} className="border rounded-lg p-3 space-y-2">
           <div className="flex flex-wrap justify-between gap-2"><p className="font-medium break-words">{g.title}</p>
-            <span className="text-xs px-2 py-0.5 rounded bg-gray-100">{g.status.toLowerCase()} - by {g.created_by}{g.decided_by ? `, decided by ${g.decided_by}` : ""}</span></div>
-          <p className="text-xs text-gray-500">{g.count} customer questions in cluster {g.cluster_key}</p>
+            <span className="text-xs px-2 py-0.5 rounded bg-gray-100">{g.status.toLowerCase()} {tx("- by")} {g.created_by}{g.decided_by ? tx(", decided by {decided_by}", { decided_by: g.decided_by }) : ""}</span></div>
+          <p className="text-xs text-gray-500">{g.count} {tx("customer questions in cluster")} {g.cluster_key}</p>
           <pre className="text-xs bg-gray-50 rounded p-2 whitespace-pre-wrap break-words">{g.content_md}</pre>
           {g.status === "PROPOSED" && (
             <div className="flex flex-wrap items-center gap-2">
-              <input aria-label="Decision note" placeholder="Note (optional)" maxLength={500} value={note[g.id] ?? ""} onChange={(e) => setNote({ ...note, [g.id]: e.target.value })} className="border rounded px-2 py-1 text-sm flex-1 min-w-40" />
-              <button disabled={decide.isPending} onClick={() => decide.mutate({ id: g.id, approve: true })} className="px-3 py-1 rounded bg-emerald-600 text-white text-sm disabled:opacity-50">Approve and publish</button>
-              <button disabled={decide.isPending} onClick={() => decide.mutate({ id: g.id, approve: false })} className="px-3 py-1 rounded border text-sm disabled:opacity-50">Reject</button>
+              <input aria-label={tx("Decision note")} placeholder={tx("Note (optional)")} maxLength={500} value={note[g.id] ?? ""} onChange={(e) => setNote({ ...note, [g.id]: e.target.value })} className="border rounded px-2 py-1 text-sm flex-1 min-w-40" />
+              <button disabled={decide.isPending} onClick={() => decide.mutate({ id: g.id, approve: true })} className="px-3 py-1 rounded bg-emerald-600 text-white text-sm disabled:opacity-50">{tx("Approve and publish")}</button>
+              <button disabled={decide.isPending} onClick={() => decide.mutate({ id: g.id, approve: false })} className="px-3 py-1 rounded border text-sm disabled:opacity-50">{tx("Reject")}</button>
             </div>)}
-          {g.article_id && <p className="text-xs text-emerald-700">Published as a help article.</p>}
+          {g.article_id && <p className="text-xs text-emerald-700">{tx("Published as a help article.")}</p>}
           <Err msg={err[g.id] ?? null} />
         </div>))}
     </div>
@@ -187,19 +188,19 @@ function ReviewsTab() {
   return (
     <div className="space-y-3">
       <p className="text-sm text-gray-600">Check each answer against the cited article. Any verdict other than &ldquo;Correct&rdquo; needs a note.</p>
-      {(q.data ?? []).length === 0 && <p className="text-sm text-gray-500">Nothing waiting for review.</p>}
+      {(q.data ?? []).length === 0 && <p className="text-sm text-gray-500">{tx("Nothing waiting for review.")}</p>}
       {(q.data ?? []).map((t) => {
         const hasNote = (note[t.id] ?? "").trim().length > 0;
         return (
           <div key={t.id} className="border rounded-lg p-3 space-y-2">
-            <p className="text-xs text-gray-400">{t.lang} - {t.topic} - {t.mode === "LLM" ? "model answer" : "extractive answer"}</p>
-            <p className="text-sm"><b>Customer:</b> {t.question}</p>
+            <p className="text-xs text-gray-400">{t.lang} - {t.topic} - {t.mode === "LLM" ? tx("model answer") : tx("extractive answer")}</p>
+            <p className="text-sm"><b>{tx("Customer:")}</b> {t.question}</p>
             <pre className="text-xs bg-gray-50 rounded p-2 whitespace-pre-wrap break-words">{t.answer}</pre>
-            <p className="text-xs">Cited: {t.citations.map((c) => <a key={c} href={c} target="_blank" rel="noreferrer" className="text-indigo-600 underline mr-2">{c}</a>)}</p>
-            <input aria-label="Review note" placeholder="Note (required unless correct)" maxLength={1000} value={note[t.id] ?? ""} onChange={(e) => setNote({ ...note, [t.id]: e.target.value })} className="w-full border rounded px-2 py-1 text-sm" />
+            <p className="text-xs">{tx("Cited:")} {t.citations.map((c) => <a key={c} href={c} target="_blank" rel="noreferrer" className="text-indigo-600 underline mr-2">{c}</a>)}</p>
+            <input aria-label={tx("Review note")} placeholder={tx("Note (required unless correct)")} maxLength={1000} value={note[t.id] ?? ""} onChange={(e) => setNote({ ...note, [t.id]: e.target.value })} className="w-full border rounded px-2 py-1 text-sm" />
             <div className="flex flex-wrap gap-2">{verdicts.map(([v, label]) => {
               const blocked = v !== "CORRECT" && !hasNote;
-              return <button key={v} disabled={blocked || review.isPending} title={blocked ? "Add a note first" : ""} onClick={() => review.mutate({ id: t.id, verdict: v })}
+              return <button key={v} disabled={blocked || review.isPending} title={blocked ? tx("Add a note first") : ""} onClick={() => review.mutate({ id: t.id, verdict: v })}
                 className={`px-3 py-1 rounded text-sm disabled:opacity-50 ${v === "CORRECT" ? "bg-emerald-600 text-white" : "border"}`}>{label}</button>;
             })}</div>
             <Err msg={err[t.id] ?? null} />
@@ -214,13 +215,13 @@ function SafetyTab({ days }: { days: number }) {
   if (q.isError) return <p role="alert" className="text-sm text-red-600">{errText(q.error)}</p>;
   return (
     <div className="space-y-2">
-      <p className="text-sm text-gray-600">Customer chats that reported a possible product-safety problem. Each created an escalated safety complaint (and, for signed-in customers, a critical ticket on the lot). Quality owns the follow-up in Consumer Complaints.</p>
-      {(q.data ?? []).length === 0 && <p className="text-sm text-gray-500">No safety reports in this period.</p>}
+      <p className="text-sm text-gray-600">{tx("Customer chats that reported a possible product-safety problem. Each created an escalated safety complaint (and, for signed-in customers, a critical ticket on the lot). Quality owns the follow-up in Consumer Complaints.")}</p>
+      {(q.data ?? []).length === 0 && <p className="text-sm text-gray-500">{tx("No safety reports in this period.")}</p>}
       <div className="overflow-x-auto"><table className="text-sm w-full">
-        <thead><tr className="text-left text-gray-500"><th className="pr-3">When</th><th className="pr-3">Complaint</th><th className="pr-3">Status</th><th className="pr-3">Product</th><th className="pr-3">Lot</th><th>Regulatory report</th></tr></thead>
+        <thead><tr className="text-left text-gray-500"><th className="pr-3">{tx("When")}</th><th className="pr-3">{tx("Complaint")}</th><th className="pr-3">{tx("Status")}</th><th className="pr-3">{tx("Product")}</th><th className="pr-3">{tx("Lot")}</th><th>{tx("Regulatory report")}</th></tr></thead>
         <tbody>{(q.data ?? []).map((s) => (
           <tr key={s.turn_id} className="border-t"><td className="pr-3">{new Date(s.at).toLocaleString()}</td><td className="pr-3">{s.complaint_ref ?? "-"}</td><td className="pr-3">{s.complaint_status ?? "-"}</td>
-            <td className="pr-3">{s.product ?? "-"}</td><td className="pr-3">{s.lot_number ?? "not stated"}</td><td>{s.regulatory_report_required ? "required" : "-"}</td></tr>))}</tbody>
+            <td className="pr-3">{s.product ?? "-"}</td><td className="pr-3">{s.lot_number ?? tx("not stated")}</td><td>{s.regulatory_report_required ? tx("required") : "-"}</td></tr>))}</tbody>
       </table></div>
     </div>
   );

@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { qmsApi, HazardAnalysis, RISK_BG, HazardType, RiskLevel } from "@/lib/qms";
+import { tx } from "@/lib/i18n/core";
 
 const HAZARD_COLORS: Record<string, string> = {
   BIOLOGICAL: "bg-red-100 text-red-800",
@@ -45,16 +46,16 @@ export default function HACCPPage() {
     <div className="p-6 space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">HACCP — Hazard Analysis</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Identify and assess hazards at each process step</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("HACCP — Hazard Analysis")}</h1>
+          <p className="text-sm text-gray-500 mt-0.5">{tx("Identify and assess hazards at each process step")}</p>
         </div>
         <div className="flex gap-3">
           <a href="/dashboard/qms/ccp" className="px-4 py-2 bg-teal-600 text-white text-sm rounded-lg hover:bg-teal-700">
-            CCP Monitoring →
+            {tx("CCP Monitoring →")}
           </a>
           <button onClick={() => setShowNew(true)}
             className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700">
-            + Add Hazard
+            {tx("+ Add Hazard")}
           </button>
         </div>
       </div>
@@ -62,10 +63,10 @@ export default function HACCPPage() {
       {/* Summary */}
       <div className="grid grid-cols-4 gap-4">
         {[
-          { label: "Total Hazards", value: total },
-          { label: "CCP-linked", value: ccps, color: "text-teal-700" },
-          { label: "Critical Risk", value: critical, color: critical > 0 ? "text-red-700" : "text-green-700" },
-          { label: "High Risk", value: high, color: high > 0 ? "text-orange-700" : "text-gray-800" },
+          { label: tx("Total Hazards"), value: total },
+          { label: tx("CCP-linked"), value: ccps, color: "text-teal-700" },
+          { label: tx("Critical Risk"), value: critical, color: critical > 0 ? "text-red-700" : "text-green-700" },
+          { label: tx("High Risk"), value: high, color: high > 0 ? "text-orange-700" : "text-gray-800" },
         ].map(k => (
           <div key={k.label} className="bg-white rounded-xl border border-gray-200 p-4">
             <p className="text-xs text-gray-500 uppercase tracking-wide">{k.label}</p>
@@ -76,65 +77,65 @@ export default function HACCPPage() {
 
       {showNew && (
         <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
-          <h3 className="font-semibold text-gray-800">New Hazard Analysis Record</h3>
+          <h3 className="font-semibold text-gray-800">{tx("New Hazard Analysis Record")}</h3>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs text-gray-500 block mb-1">Process Step *</label>
+              <label className="text-xs text-gray-500 block mb-1">{tx("Process Step *")}</label>
               <input className="border rounded-lg px-3 py-2 text-sm w-full"
-                placeholder="e.g. Pasteurization, Mixing, Filling…"
+                placeholder={tx("e.g. Pasteurization, Mixing, Filling…")}
                 value={form.process_step as string}
                 onChange={e => setForm(p => ({ ...p, process_step: e.target.value }))} />
             </div>
             <div>
-              <label className="text-xs text-gray-500 block mb-1">Hazard Type *</label>
+              <label className="text-xs text-gray-500 block mb-1">{tx("Hazard Type *")}</label>
               <select className="border rounded-lg px-3 py-2 text-sm w-full"
                 value={form.hazard_type as string}
                 onChange={e => setForm(p => ({ ...p, hazard_type: e.target.value }))}>
-                <option value="BIOLOGICAL">Biological</option>
-                <option value="CHEMICAL">Chemical</option>
-                <option value="PHYSICAL">Physical</option>
-                <option value="ALLERGEN">Allergen</option>
-                <option value="RADIOLOGICAL">Radiological</option>
+                <option value="BIOLOGICAL">{tx("Biological")}</option>
+                <option value="CHEMICAL">{tx("Chemical")}</option>
+                <option value="PHYSICAL">{tx("Physical")}</option>
+                <option value="ALLERGEN">{tx("Allergen")}</option>
+                <option value="RADIOLOGICAL">{tx("Radiological")}</option>
               </select>
             </div>
             <div className="col-span-2">
-              <label className="text-xs text-gray-500 block mb-1">Hazard Description *</label>
+              <label className="text-xs text-gray-500 block mb-1">{tx("Hazard Description *")}</label>
               <textarea className="border rounded-lg px-3 py-2 text-sm w-full" rows={2}
                 value={form.hazard_description as string}
                 onChange={e => setForm(p => ({ ...p, hazard_description: e.target.value }))} />
             </div>
             <div>
-              <label className="text-xs text-gray-500 block mb-1">Likelihood (1-5)</label>
+              <label className="text-xs text-gray-500 block mb-1">{tx("Likelihood (1-5)")}</label>
               <input type="number" min={1} max={5} className="border rounded-lg px-3 py-2 text-sm w-full"
                 value={(form.likelihood_score as number) || ""}
                 onChange={e => setForm(p => ({ ...p, likelihood_score: parseInt(e.target.value) }))} />
             </div>
             <div>
-              <label className="text-xs text-gray-500 block mb-1">Severity (1-5)</label>
+              <label className="text-xs text-gray-500 block mb-1">{tx("Severity (1-5)")}</label>
               <input type="number" min={1} max={5} className="border rounded-lg px-3 py-2 text-sm w-full"
                 value={(form.severity_score as number) || ""}
                 onChange={e => setForm(p => ({ ...p, severity_score: parseInt(e.target.value) }))} />
             </div>
             <div>
-              <label className="text-xs text-gray-500 block mb-1">Risk Level</label>
+              <label className="text-xs text-gray-500 block mb-1">{tx("Risk Level")}</label>
               <select className="border rounded-lg px-3 py-2 text-sm w-full"
                 value={form.risk_level as string}
                 onChange={e => setForm(p => ({ ...p, risk_level: e.target.value }))}>
-                <option value="LOW">Low</option>
-                <option value="MEDIUM">Medium</option>
-                <option value="HIGH">High</option>
-                <option value="CRITICAL">Critical</option>
+                <option value="LOW">{tx("Low")}</option>
+                <option value="MEDIUM">{tx("Medium")}</option>
+                <option value="HIGH">{tx("High")}</option>
+                <option value="CRITICAL">{tx("Critical")}</option>
               </select>
             </div>
             <div className="flex items-center gap-4">
               <label className="flex items-center gap-2 text-sm mt-4">
                 <input type="checkbox" checked={form.is_ccp as boolean}
                   onChange={e => setForm(p => ({ ...p, is_ccp: e.target.checked }))} />
-                Is a Critical Control Point (CCP)
+                {tx("Is a Critical Control Point (CCP)")}
               </label>
             </div>
             <div className="col-span-2">
-              <label className="text-xs text-gray-500 block mb-1">Control Measure *</label>
+              <label className="text-xs text-gray-500 block mb-1">{tx("Control Measure *")}</label>
               <textarea className="border rounded-lg px-3 py-2 text-sm w-full" rows={2}
                 value={form.control_measure as string}
                 onChange={e => setForm(p => ({ ...p, control_measure: e.target.value }))} />
@@ -143,11 +144,11 @@ export default function HACCPPage() {
           <div className="flex gap-3">
             <button onClick={handleCreate}
               className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700">
-              Save Hazard
+              {tx("Save Hazard")}
             </button>
             <button onClick={() => setShowNew(false)}
               className="px-4 py-2 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200">
-              Cancel
+              {tx("Cancel")}
             </button>
           </div>
         </div>
@@ -155,14 +156,14 @@ export default function HACCPPage() {
 
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         {loading ? (
-          <p className="px-5 py-8 text-gray-400 text-sm">Loading…</p>
+          <p className="px-5 py-8 text-gray-400 text-sm">{tx("Loading…")}</p>
         ) : hazards.length === 0 ? (
-          <p className="px-5 py-8 text-gray-400 text-sm">No hazard analyses recorded yet</p>
+          <p className="px-5 py-8 text-gray-400 text-sm">{tx("No hazard analyses recorded yet")}</p>
         ) : (
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-xs uppercase text-gray-500">
               <tr>
-                {["Hazard #", "Process Step", "Hazard Type", "Description", "Risk", "Score", "Control Measure", "CCP"].map(h => (
+                {[tx("Hazard #"), tx("Process Step"), tx("Hazard Type"), tx("Description"), tx("Risk"), tx("Score"), tx("Control Measure"), "CCP"].map(h => (
                   <th key={h} className="px-4 py-3 text-left font-medium">{h}</th>
                 ))}
               </tr>

@@ -2,6 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { brApi, BRStatement, STATUS_COLOR } from "@/lib/bank_reconciliation";
+import { tx } from "@/lib/i18n/core";
 
 export default function BRDashboardPage() {
   const { data, isLoading } = useQuery({
@@ -12,30 +13,30 @@ export default function BRDashboardPage() {
   if (isLoading || !data) return (
     <div className="p-6 flex items-center gap-3 text-gray-400">
       <div className="w-5 h-5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
-      Loading…
+      {tx("Loading…")}
     </div>
   );
 
   const kpis = [
-    { label: "Bank Accounts",     value: data.total_accounts,   color: "text-blue-700" },
-    { label: "In Reconciliation", value: data.statements_in_recon,     color: "text-yellow-700" },
-    { label: "Unmatched Lines",   value: data.unmatched_items,  color: "text-red-700" },
-    { label: "Partially Matched", value: data.partially_matched_items, color: "text-orange-700" },
-    { label: "Unmatched Amount",  value: `${data.total_unmatched_amount.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, color: "text-red-600" },
-    { label: "Locked Statements", value: data.statements_locked, color: "text-purple-700" },
+    { label: tx("Bank Accounts"),     value: data.total_accounts,   color: "text-blue-700" },
+    { label: tx("In Reconciliation"), value: data.statements_in_recon,     color: "text-yellow-700" },
+    { label: tx("Unmatched Lines"),   value: data.unmatched_items,  color: "text-red-700" },
+    { label: tx("Partially Matched"), value: data.partially_matched_items, color: "text-orange-700" },
+    { label: tx("Unmatched Amount"),  value: `${data.total_unmatched_amount.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, color: "text-red-600" },
+    { label: tx("Locked Statements"), value: data.statements_locked, color: "text-purple-700" },
   ];
 
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Bank Reconciliation</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{tx("Bank Reconciliation")}</h1>
         <div className="flex gap-2">
           <Link href="/dashboard/bank-reconciliation/import" className="glow-button">
-            Import Statement
+            {tx("Import Statement")}
           </Link>
           <Link href="/dashboard/bank-reconciliation/statements" className="glow-button-secondary">
-            All Statements
+            {tx("All Statements")}
           </Link>
         </div>
       </div>
@@ -53,16 +54,16 @@ export default function BRDashboardPage() {
       {/* Quick links */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { href: "/dashboard/bank-reconciliation/open-items", label: "Open Items Aging",  icon: "⏱" },
-          { href: "/dashboard/bank-reconciliation/balance",    label: "Bank vs Ledger",    icon: "⚖️" },
-          { href: "/dashboard/bank-reconciliation/rules",      label: "Matching Rules",    icon: "⚡" },
-          { href: "/dashboard/bank-reconciliation/ai",         label: "AI Insights",       icon: "🤖", badge: data.pending_ai_recs },
+          { href: "/dashboard/bank-reconciliation/open-items", label: tx("Open Items Aging"),  icon: "⏱" },
+          { href: "/dashboard/bank-reconciliation/balance",    label: tx("Bank vs Ledger"),    icon: "⚖️" },
+          { href: "/dashboard/bank-reconciliation/rules",      label: tx("Matching Rules"),    icon: "⚡" },
+          { href: "/dashboard/bank-reconciliation/ai",         label: tx("AI Insights"),       icon: "🤖", badge: data.pending_ai_recs },
         ].map((q) => (
           <Link key={q.href} href={q.href} className="liquid-glass glow-hover p-4 flex items-center gap-3">
             <span className="text-2xl">{q.icon}</span>
             <div>
               <p className="text-sm font-medium text-gray-800">{q.label}</p>
-              {q.badge ? <p className="text-xs text-yellow-600">{q.badge} pending</p> : null}
+              {q.badge ? <p className="text-xs text-yellow-600">{q.badge} {tx("pending")}</p> : null}
             </div>
           </Link>
         ))}
@@ -71,16 +72,16 @@ export default function BRDashboardPage() {
       {/* Recent statements */}
       <div className="glass-table overflow-hidden">
         <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-gray-700">Recent Statements</h2>
+          <h2 className="text-sm font-semibold text-gray-700">{tx("Recent Statements")}</h2>
           <Link href="/dashboard/bank-reconciliation/statements" className="text-xs text-blue-600 hover:underline">
-            View all
+            {tx("View all")}
           </Link>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr>
-                {["Statement No", "Period", "Opening", "Closing", "Lines", "Status", ""].map((h) => (
+                {[tx("Statement No"), tx("Period"), tx("Opening"), tx("Closing"), tx("Lines"), tx("Status"), ""].map((h) => (
                   <th key={h} className="px-4 py-3 text-left font-medium">{h}</th>
                 ))}
               </tr>
@@ -107,7 +108,7 @@ export default function BRDashboardPage() {
                   <td className="px-4 py-3">
                     <Link href={`/dashboard/bank-reconciliation/statements/${s.id}`}
                       className="text-blue-600 hover:underline text-xs">
-                      Open
+                      {tx("Open")}
                     </Link>
                   </td>
                 </tr>
@@ -119,7 +120,7 @@ export default function BRDashboardPage() {
                       <svg className="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
-                      <span className="text-sm">No statements yet.</span>
+                      <span className="text-sm">{tx("No statements yet.")}</span>
                     </div>
                   </td>
                 </tr>

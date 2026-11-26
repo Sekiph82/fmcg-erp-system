@@ -3,6 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { moApi, ProductionTeam, OperatorProfile, ShiftTeamComparisonGroup } from "@/lib/machineOperator";
+import { tx } from "@/lib/i18n/core";
 
 function utcDate(offsetDays = 0) {
   const value = new Date();
@@ -15,18 +16,18 @@ function ComparisonTable({ title, groups }: { title: string; groups: ShiftTeamCo
     <section className="bg-white rounded-lg border p-5 space-y-3">
       <h2 className="font-semibold text-gray-900">{title}</h2>
       {!groups.length ? (
-        <p className="text-sm text-gray-500">No recorded facts for this period.</p>
+        <p className="text-sm text-gray-500">{tx("No recorded facts for this period.")}</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead className="text-left text-xs text-gray-500 border-b">
               <tr>
-                <th className="py-2 pr-4">Group</th>
-                <th className="py-2 pr-4">Approved labor</th>
-                <th className="py-2 pr-4">Unapproved logs</th>
-                <th className="py-2 pr-4">Recorded runtime</th>
-                <th className="py-2 pr-4">Completed output allocation</th>
-                <th className="py-2">Source records</th>
+                <th className="py-2 pr-4">{tx("Group")}</th>
+                <th className="py-2 pr-4">{tx("Approved labor")}</th>
+                <th className="py-2 pr-4">{tx("Unapproved logs")}</th>
+                <th className="py-2 pr-4">{tx("Recorded runtime")}</th>
+                <th className="py-2 pr-4">{tx("Completed output allocation")}</th>
+                <th className="py-2">{tx("Source records")}</th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -37,41 +38,41 @@ function ComparisonTable({ title, groups }: { title: string; groups: ShiftTeamCo
                     <div className="font-mono text-xs text-gray-500">{group.group_code}</div>
                   </td>
                   <td className="py-3 pr-4">
-                    {group.approved_labor_hours.toFixed(2)} h
-                    <div className="text-xs text-gray-500">{group.approved_labor_log_count} logs</div>
+                    {group.approved_labor_hours.toFixed(2)} {tx("h")}
+                    <div className="text-xs text-gray-500">{group.approved_labor_log_count} {tx("logs")}</div>
                   </td>
                   <td className="py-3 pr-4">{group.unapproved_labor_log_count}</td>
                   <td className="py-3 pr-4">
-                    {group.recorded_runtime_minutes.toFixed(1)} min
-                    <div className="text-xs text-gray-500">{group.runtime_log_count} logs</div>
+                    {group.recorded_runtime_minutes.toFixed(1)} {tx("min")}
+                    <div className="text-xs text-gray-500">{group.runtime_log_count} {tx("logs")}</div>
                     {group.runtime_by_activity.map((activity) => (
                       <div key={activity.activity_type} className="text-xs text-gray-500">
-                        {activity.activity_type}: {activity.duration_minutes.toFixed(1)} min
+                        {activity.activity_type}: {activity.duration_minutes.toFixed(1)} {tx("min")}
                       </div>
                     ))}
                     {!!group.unavailable_runtime_log_ids.length && (
-                      <div className="text-xs text-amber-700">{group.unavailable_runtime_log_ids.length} open/invalid intervals unavailable</div>
+                      <div className="text-xs text-amber-700">{group.unavailable_runtime_log_ids.length} {tx("open/invalid intervals unavailable")}</div>
                     )}
                   </td>
                   <td className="py-3 pr-4">
                     {group.output_by_uom.length ? group.output_by_uom.map((output) => (
                       <div key={output.uom}>
                         {output.allocated_output_quantity.toLocaleString()} {output.uom}
-                        <div className="text-xs text-gray-500">allocated from {output.labor_minutes_for_completed_orders.toFixed(1)} approved labor min</div>
+                        <div className="text-xs text-gray-500">{tx("allocated from")} {output.labor_minutes_for_completed_orders.toFixed(1)} {tx("approved labor min")}</div>
                       </div>
-                    )) : <span className="text-gray-400">Unavailable / no attributable completed output</span>}
+                    )) : <span className="text-gray-400">{tx("Unavailable / no attributable completed output")}</span>}
                   </td>
                   <td className="py-3">
                     <details>
-                      <summary className="cursor-pointer text-indigo-700">View IDs</summary>
+                      <summary className="cursor-pointer text-indigo-700">{tx("View IDs")}</summary>
                       <div className="mt-2 max-w-sm space-y-1 break-all text-[11px] text-gray-500">
-                        <div>Labor: {group.source_labor_log_ids.join(", ") || "none"}</div>
-                        <div>Runtime: {group.source_runtime_log_ids.join(", ") || "none"}</div>
+                        <div>{tx("Labor:")} {group.source_labor_log_ids.join(", ") || tx("none")}</div>
+                        <div>{tx("Runtime:")} {group.source_runtime_log_ids.join(", ") || tx("none")}</div>
                         {group.output_by_uom.map((output) => (
                           <div key={`${output.uom}-orders`}>
-                            {output.uom} work orders: {output.source_work_order_ids.join(", ") || "none"}
-                            <br />Output labor logs: {output.source_labor_log_ids.join(", ") || "none"}
-                            <br />Allocation denominator logs: {output.allocation_labor_log_ids.join(", ") || "none"}
+                            {output.uom} {tx("work orders:")} {output.source_work_order_ids.join(", ") || tx("none")}
+                            <br />{tx("Output labor logs:")} {output.source_labor_log_ids.join(", ") || tx("none")}
+                            <br />{tx("Allocation denominator logs:")} {output.allocation_labor_log_ids.join(", ") || tx("none")}
                           </div>
                         ))}
                       </div>
@@ -132,10 +133,10 @@ export default function TeamsPage() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <a href="/dashboard/machine-ops" className="text-sm text-indigo-600 hover:underline">← Dashboard</a>
-          <h1 className="text-xl font-bold text-gray-900">Production Teams</h1>
+          <a href="/dashboard/machine-ops" className="text-sm text-indigo-600 hover:underline">{tx("← Dashboard")}</a>
+          <h1 className="text-xl font-bold text-gray-900">{tx("Production Teams")}</h1>
         </div>
-        <button onClick={() => setShowCreate(true)} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">+ Add Team</button>
+        <button onClick={() => setShowCreate(true)} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">{tx("+ Add Team")}</button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -151,47 +152,47 @@ export default function TeamsPage() {
                 <p className="text-xs text-gray-500 font-mono">{t.team_code}</p>
               </div>
               <span className={`text-xs px-2 py-0.5 rounded-full ${t.active_flag ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
-                {t.active_flag ? "Active" : "Inactive"}
+                {t.active_flag ? tx("Active") : tx("Inactive")}
               </span>
             </div>
-            <p className="text-xs text-gray-400 mt-2">{t.member_count ?? 0} members</p>
+            <p className="text-xs text-gray-400 mt-2">{t.member_count ?? 0} {tx("members")}</p>
           </div>
         ))}
-        {!(teams?.length) && <p className="col-span-3 text-sm text-gray-400 py-4">No teams configured yet.</p>}
+        {!(teams?.length) && <p className="col-span-3 text-sm text-gray-400 py-4">{tx("No teams configured yet.")}</p>}
       </div>
 
       <section className="space-y-3">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">Shift &amp; team comparisons</h2>
-            <p className="text-xs text-gray-500">Calculated from recorded production, labor and runtime facts; missing assignments stay unassigned.</p>
+            <h2 className="text-lg font-semibold text-gray-900">{tx("Shift & team comparisons")}</h2>
+            <p className="text-xs text-gray-500">{tx("Calculated from recorded production, labor and runtime facts; missing assignments stay unassigned.")}</p>
           </div>
           <div className="flex gap-3">
-            <label className="text-xs text-gray-600">From
+            <label className="text-xs text-gray-600">{tx("From")}
               <input type="date" value={dateFrom} max={dateTo} onChange={(event) => setDateFrom(event.target.value)} className="ml-2 rounded border px-2 py-1 text-sm" />
             </label>
-            <label className="text-xs text-gray-600">To
+            <label className="text-xs text-gray-600">{tx("To")}
               <input type="date" value={dateTo} min={dateFrom} onChange={(event) => setDateTo(event.target.value)} className="ml-2 rounded border px-2 py-1 text-sm" />
             </label>
           </div>
         </div>
-        {comparisonsLoading && <p className="text-sm text-gray-500">Loading recorded comparisons…</p>}
-        {comparisonsError && <p role="alert" className="text-sm text-red-700">Could not load comparisons. Check the selected date range and your production view access.</p>}
+        {comparisonsLoading && <p className="text-sm text-gray-500">{tx("Loading recorded comparisons…")}</p>}
+        {comparisonsError && <p role="alert" className="text-sm text-red-700">{tx("Could not load comparisons. Check the selected date range and your production view access.")}</p>}
         {comparisons && (
           <>
             <div className="flex flex-wrap gap-4 text-xs text-gray-500">
-              <span>UTC period: {comparisons.period_start} through {comparisons.period_end}</span>
-              <span>{comparisons.unavailable_output_work_order_ids.length} completed work orders lack a usable output basis</span>
+              <span>{tx("UTC period:")} {comparisons.period_start} {tx("through")} {comparisons.period_end}</span>
+              <span>{comparisons.unavailable_output_work_order_ids.length} {tx("completed work orders lack a usable output basis")}</span>
             </div>
-            <ComparisonTable title="By team" groups={comparisons.teams} />
-            <ComparisonTable title="By shift" groups={comparisons.shifts} />
+            <ComparisonTable title={tx("By team")} groups={comparisons.teams} />
+            <ComparisonTable title={tx("By shift")} groups={comparisons.shifts} />
             <details className="rounded-lg border bg-white p-4 text-xs text-gray-600">
-              <summary className="cursor-pointer font-medium">Calculation and data notes</summary>
+              <summary className="cursor-pointer font-medium">{tx("Calculation and data notes")}</summary>
               <ul className="mt-2 list-disc space-y-1 pl-5">
                 {comparisons.data_notes.map((note) => <li key={note}>{note}</li>)}
               </ul>
               {!!comparisons.unavailable_output_work_order_ids.length && (
-                <p className="mt-2 break-all">Unavailable work-order IDs: {comparisons.unavailable_output_work_order_ids.join(", ")}</p>
+                <p className="mt-2 break-all">{tx("Unavailable work-order IDs:")} {comparisons.unavailable_output_work_order_ids.join(", ")}</p>
               )}
             </details>
           </>
@@ -201,22 +202,22 @@ export default function TeamsPage() {
       {selectedTeam && (
         <div className="bg-white rounded-lg border p-5 space-y-4">
           <div className="flex justify-between">
-            <h2 className="font-semibold text-gray-900">Team: {selectedTeam.team_name}</h2>
+            <h2 className="font-semibold text-gray-900">{tx("Team:")} {selectedTeam.team_name}</h2>
             <button onClick={() => setSelectedTeam(null)} className="text-xs text-gray-400 hover:text-gray-600">✕</button>
           </div>
           <div className="flex gap-3 items-end">
             <div className="flex-1">
-              <label className="block text-xs font-medium text-gray-600 mb-1">Add Operator</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Add Operator")}</label>
               <select value={addMemberForm.operator_id} onChange={(e) => setAddMemberForm((p) => ({ ...p, operator_id: e.target.value }))} className="w-full border rounded px-3 py-2 text-sm">
-                <option value="">— select operator —</option>
+                <option value="">{tx("— select operator —")}</option>
                 {(operators || []).map((op) => <option key={op.id} value={op.id}>{op.operator_code} — {op.full_name}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Role</label>
-              <input value={addMemberForm.role_in_team} onChange={(e) => setAddMemberForm((p) => ({ ...p, role_in_team: e.target.value }))} className="border rounded px-3 py-2 text-sm" placeholder="Operator / Lead" />
+              <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Role")}</label>
+              <input value={addMemberForm.role_in_team} onChange={(e) => setAddMemberForm((p) => ({ ...p, role_in_team: e.target.value }))} className="border rounded px-3 py-2 text-sm" placeholder={tx("Operator / Lead")} />
             </div>
-            <button onClick={() => addMember.mutate()} disabled={!addMemberForm.operator_id} className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700 disabled:opacity-50">Add</button>
+            <button onClick={() => addMember.mutate()} disabled={!addMemberForm.operator_id} className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700 disabled:opacity-50">{tx("Add")}</button>
           </div>
         </div>
       )}
@@ -224,10 +225,10 @@ export default function TeamsPage() {
       {showCreate && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-xl p-6 w-96 space-y-4">
-            <h2 className="font-bold text-gray-900">Create Production Team</h2>
+            <h2 className="font-bold text-gray-900">{tx("Create Production Team")}</h2>
             {[
-              { label: "Team Code *", field: "team_code", placeholder: "TEAM-A" },
-              { label: "Team Name *", field: "team_name", placeholder: "Morning Shift A" },
+              { label: tx("Team Code *"), field: "team_code", placeholder: "TEAM-A" },
+              { label: tx("Team Name *"), field: "team_name", placeholder: tx("Morning Shift A") },
             ].map(({ label, field, placeholder }) => (
               <div key={field}>
                 <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
@@ -235,9 +236,9 @@ export default function TeamsPage() {
               </div>
             ))}
             <div className="flex gap-2 justify-end pt-2">
-              <button onClick={() => setShowCreate(false)} className="px-4 py-2 text-sm text-gray-600 border rounded-lg hover:bg-gray-50">Cancel</button>
+              <button onClick={() => setShowCreate(false)} className="px-4 py-2 text-sm text-gray-600 border rounded-lg hover:bg-gray-50">{tx("Cancel")}</button>
               <button onClick={() => createTeam.mutate()} disabled={!form.team_code || !form.team_name} className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
-                {createTeam.isPending ? "Saving…" : "Create Team"}
+                {createTeam.isPending ? tx("Saving…") : tx("Create Team")}
               </button>
             </div>
           </div>

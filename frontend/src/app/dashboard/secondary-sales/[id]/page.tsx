@@ -6,6 +6,7 @@ import {
   SecondarySalesDetail,
   SecondarySalesStatus,
 } from "@/lib/secondarySales";
+import { tx } from "@/lib/i18n/core";
 
 const STATUS_COLORS: Record<SecondarySalesStatus, string> = {
   PENDING: "bg-yellow-100 text-yellow-800",
@@ -38,7 +39,7 @@ export default function SecondarySalesDetailPage() {
       if (status === 404) {
         setError("not_found");
       } else {
-        setError("Failed to load secondary sales record.");
+        setError(tx("Failed to load secondary sales record."));
       }
     } finally {
       setLoading(false);
@@ -53,14 +54,14 @@ export default function SecondarySalesDetailPage() {
       await secondarySalesApi.process(id);
       await load();
     } catch {
-      setActionError("Failed to process record.");
+      setActionError(tx("Failed to process record."));
     } finally {
       setActionLoading(false);
     }
   };
 
   const handleReject = async () => {
-    if (!rejectReason.trim()) { setActionError("Rejection reason required."); return; }
+    if (!rejectReason.trim()) { setActionError(tx("Rejection reason required.")); return; }
     setActionLoading(true); setActionError("");
     try {
       await secondarySalesApi.reject(id, rejectReason.trim());
@@ -68,7 +69,7 @@ export default function SecondarySalesDetailPage() {
       setRejectReason("");
       await load();
     } catch {
-      setActionError("Failed to reject record.");
+      setActionError(tx("Failed to reject record."));
     } finally {
       setActionLoading(false);
     }
@@ -78,9 +79,9 @@ export default function SecondarySalesDetailPage() {
     return (
       <div className="p-6">
         <a href="/dashboard/secondary-sales" className="text-sm text-blue-600 hover:underline">
-          ← Secondary Sales
+          {tx("← Secondary Sales")}
         </a>
-        <p className="mt-6 text-sm text-gray-500">Loading…</p>
+        <p className="mt-6 text-sm text-gray-500">{tx("Loading…")}</p>
       </div>
     );
   }
@@ -89,11 +90,11 @@ export default function SecondarySalesDetailPage() {
     return (
       <div className="p-6">
         <a href="/dashboard/secondary-sales" className="text-sm text-blue-600 hover:underline">
-          ← Secondary Sales
+          {tx("← Secondary Sales")}
         </a>
         <div className="mt-8 text-center">
-          <p className="text-lg font-medium text-gray-700">Record not found</p>
-          <p className="text-sm text-gray-500 mt-1">No secondary sales upload with ID <span className="font-mono text-xs bg-gray-100 px-1 rounded">{id}</span></p>
+          <p className="text-lg font-medium text-gray-700">{tx("Record not found")}</p>
+          <p className="text-sm text-gray-500 mt-1">{tx("No secondary sales upload with ID")} <span className="font-mono text-xs bg-gray-100 px-1 rounded">{id}</span></p>
         </div>
       </div>
     );
@@ -103,7 +104,7 @@ export default function SecondarySalesDetailPage() {
     return (
       <div className="p-6">
         <a href="/dashboard/secondary-sales" className="text-sm text-blue-600 hover:underline">
-          ← Secondary Sales
+          {tx("← Secondary Sales")}
         </a>
         <div className="mt-6 bg-red-50 border border-red-200 rounded-lg p-4 text-sm text-red-700">{error}</div>
       </div>
@@ -122,7 +123,7 @@ export default function SecondarySalesDetailPage() {
       {/* Breadcrumb */}
       <div>
         <a href="/dashboard/secondary-sales" className="text-sm text-blue-600 hover:underline">
-          ← Secondary Sales
+          {tx("← Secondary Sales")}
         </a>
       </div>
 
@@ -131,7 +132,7 @@ export default function SecondarySalesDetailPage() {
         <div>
           <h1 className="text-xl font-bold text-gray-900 font-mono">{record.reference_no}</h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            {record.distributor_name || "Unknown Distributor"} · {record.period_from} – {record.period_to}
+            {record.distributor_name || tx("Unknown Distributor")} · {record.period_from} – {record.period_to}
           </p>
         </div>
         <span className={`px-3 py-1 rounded-full text-sm font-medium ${STATUS_COLORS[record.status]}`}>
@@ -142,10 +143,10 @@ export default function SecondarySalesDetailPage() {
       {/* KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: "Total Lines", value: record.total_lines },
-          { label: "Total Value", value: `KES ${record.total_value.toLocaleString()}` },
-          { label: "Valid Lines", value: validLines, color: "text-green-600" },
-          { label: "Invalid Lines", value: invalidLines, color: invalidLines > 0 ? "text-red-600" : "text-gray-700" },
+          { label: tx("Total Lines"), value: record.total_lines },
+          { label: tx("Total Value"), value: `KES ${record.total_value.toLocaleString()}` },
+          { label: tx("Valid Lines"), value: validLines, color: "text-green-600" },
+          { label: tx("Invalid Lines"), value: invalidLines, color: invalidLines > 0 ? "text-red-600" : "text-gray-700" },
         ].map(k => (
           <div key={k.label} className="bg-white border rounded-lg p-4 shadow-sm">
             <p className="text-xs text-gray-500">{k.label}</p>
@@ -156,15 +157,15 @@ export default function SecondarySalesDetailPage() {
 
       {/* Detail card */}
       <div className="bg-white border rounded-xl p-5 shadow-sm">
-        <h2 className="text-sm font-semibold text-gray-800 mb-4">Upload Details</h2>
+        <h2 className="text-sm font-semibold text-gray-800 mb-4">{tx("Upload Details")}</h2>
         <dl className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-3 text-sm">
           {[
-            { label: "Reference", value: record.reference_no },
-            { label: "Upload Source", value: record.upload_source },
-            { label: "Upload Date", value: record.upload_date ? new Date(record.upload_date).toLocaleDateString() : "—" },
-            { label: "Period From", value: record.period_from },
-            { label: "Period To", value: record.period_to },
-            { label: "Distributor ID", value: record.distributor_id },
+            { label: tx("Reference"), value: record.reference_no },
+            { label: tx("Upload Source"), value: record.upload_source },
+            { label: tx("Upload Date"), value: record.upload_date ? new Date(record.upload_date).toLocaleDateString() : "—" },
+            { label: tx("Period From"), value: record.period_from },
+            { label: tx("Period To"), value: record.period_to },
+            { label: tx("Distributor ID"), value: record.distributor_id },
           ].map(f => (
             <div key={f.label}>
               <dt className="text-xs text-gray-500">{f.label}</dt>
@@ -174,13 +175,13 @@ export default function SecondarySalesDetailPage() {
         </dl>
         {record.notes && (
           <div className="mt-4 pt-4 border-t">
-            <p className="text-xs text-gray-500 mb-1">Notes</p>
+            <p className="text-xs text-gray-500 mb-1">{tx("Notes")}</p>
             <p className="text-sm text-gray-700">{record.notes}</p>
           </div>
         )}
         {record.validation_errors && (
           <div className="mt-4 pt-4 border-t">
-            <p className="text-xs text-red-500 mb-1">Validation Errors</p>
+            <p className="text-xs text-red-500 mb-1">{tx("Validation Errors")}</p>
             <p className="text-sm text-red-700 bg-red-50 p-2 rounded">{record.validation_errors}</p>
           </div>
         )}
@@ -189,7 +190,7 @@ export default function SecondarySalesDetailPage() {
       {/* Actions */}
       {(canProcess || canReject) && (
         <div className="bg-white border rounded-xl p-5 shadow-sm">
-          <h2 className="text-sm font-semibold text-gray-800 mb-3">Actions</h2>
+          <h2 className="text-sm font-semibold text-gray-800 mb-3">{tx("Actions")}</h2>
           <div className="flex gap-3 flex-wrap items-start">
             {canProcess && (
               <button
@@ -197,7 +198,7 @@ export default function SecondarySalesDetailPage() {
                 disabled={actionLoading}
                 className="rounded bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
               >
-                {actionLoading ? "Processing…" : "Process Upload"}
+                {actionLoading ? tx("Processing…") : tx("Process Upload")}
               </button>
             )}
             {canReject && !showRejectForm && (
@@ -206,7 +207,7 @@ export default function SecondarySalesDetailPage() {
                 disabled={actionLoading}
                 className="rounded border border-red-300 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
               >
-                Reject
+                {tx("Reject")}
               </button>
             )}
             {showRejectForm && (
@@ -215,7 +216,7 @@ export default function SecondarySalesDetailPage() {
                   type="text"
                   value={rejectReason}
                   onChange={e => setRejectReason(e.target.value)}
-                  placeholder="Rejection reason…"
+                  placeholder={tx("Rejection reason…")}
                   className="border rounded px-3 py-2 text-sm focus:ring-2 focus:ring-red-500 outline-none"
                 />
                 <button
@@ -223,13 +224,13 @@ export default function SecondarySalesDetailPage() {
                   disabled={actionLoading}
                   className="rounded bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
                 >
-                  {actionLoading ? "Rejecting…" : "Confirm Reject"}
+                  {actionLoading ? tx("Rejecting…") : tx("Confirm Reject")}
                 </button>
                 <button
                   onClick={() => { setShowRejectForm(false); setRejectReason(""); }}
                   className="rounded border px-3 py-2 text-sm text-gray-600 hover:bg-gray-50"
                 >
-                  Cancel
+                  {tx("Cancel")}
                 </button>
               </div>
             )}
@@ -241,27 +242,27 @@ export default function SecondarySalesDetailPage() {
       {/* Lines table */}
       <div>
         <h2 className="text-sm font-semibold text-gray-800 mb-3">
-          Sales Lines
+          {tx("Sales Lines")}
           {record.lines.length > 0 && (
-            <span className="ml-2 text-xs font-normal text-gray-500">({record.lines.length} total)</span>
+            <span className="ml-2 text-xs font-normal text-gray-500">({record.lines.length} {tx("total)")}</span>
           )}
         </h2>
         {record.lines.length === 0 ? (
-          <div className="bg-white border rounded-lg p-8 text-center text-gray-400 text-sm">No lines in this upload.</div>
+          <div className="bg-white border rounded-lg p-8 text-center text-gray-400 text-sm">{tx("No lines in this upload.")}</div>
         ) : (
           <div className="bg-white border rounded-xl overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 text-gray-600 uppercase text-xs">
                   <tr>
-                    <th className="px-4 py-3 text-left">Retailer</th>
-                    <th className="px-4 py-3 text-left">Product</th>
+                    <th className="px-4 py-3 text-left">{tx("Retailer")}</th>
+                    <th className="px-4 py-3 text-left">{tx("Product")}</th>
                     <th className="px-4 py-3 text-left">SKU</th>
-                    <th className="px-4 py-3 text-right">Qty Sold</th>
-                    <th className="px-4 py-3 text-right">Unit Price</th>
-                    <th className="px-4 py-3 text-right">Total Value</th>
-                    <th className="px-4 py-3 text-left">Sale Date</th>
-                    <th className="px-4 py-3 text-left">Valid</th>
+                    <th className="px-4 py-3 text-right">{tx("Qty Sold")}</th>
+                    <th className="px-4 py-3 text-right">{tx("Unit Price")}</th>
+                    <th className="px-4 py-3 text-right">{tx("Total Value")}</th>
+                    <th className="px-4 py-3 text-left">{tx("Sale Date")}</th>
+                    <th className="px-4 py-3 text-left">{tx("Valid")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">

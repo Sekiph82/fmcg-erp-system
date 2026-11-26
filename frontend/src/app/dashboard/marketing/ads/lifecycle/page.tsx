@@ -5,6 +5,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { apiClient } from "@/lib/api";
+import { tx } from "@/lib/i18n/core";
 
 type Provider = "meta" | "google" | "linkedin" | "tiktok";
 const LABEL: Record<Provider, string> = { meta: "Meta", google: "Google Ads", linkedin: "LinkedIn", tiktok: "TikTok" };
@@ -61,20 +62,18 @@ export default function AdsLifecycle() {
   return (
     <div className="p-4 space-y-4 text-sm">
       <div className="flex flex-wrap items-center gap-3">
-        <h2 className="text-lg font-semibold">Advertising lifecycle</h2>
-        <Link href="/dashboard/marketing/ads/campaigns" className="text-xs underline">Campaign builder and account controls</Link>
-        <Link href="/dashboard/crm/ads" className="text-xs underline">Ads reporting</Link>
-        <label className="text-xs ml-auto">Reporting window
-          <select className={`${input} ml-1`} value={days} onChange={(e) => setDays(Number(e.target.value))} aria-label="Reporting window">
-            {[7, 30, 90].map((d) => <option key={d} value={d}>{d} days</option>)}
+        <h2 className="text-lg font-semibold">{tx("Advertising lifecycle")}</h2>
+        <Link href="/dashboard/marketing/ads/campaigns" className="text-xs underline">{tx("Campaign builder and account controls")}</Link>
+        <Link href="/dashboard/crm/ads" className="text-xs underline">{tx("Ads reporting")}</Link>
+        <label className="text-xs ml-auto">{tx("Reporting window")}
+          <select className={`${input} ml-1`} value={days} onChange={(e) => setDays(Number(e.target.value))} aria-label={tx("Reporting window")}>
+            {[7, 30, 90].map((d) => <option key={d} value={d}>{d} {tx("days")}</option>)}
           </select>
         </label>
       </div>
-      <p className="text-xs text-gray-500">Objects are created paused and changed only after a second person approves the exact change. SIMULATED means
-        nothing reached a real platform (or only the local simulator did); LIVE needs the egress, ADS_LIVE_MUTATIONS, admin activation and credentials switches.
-        Reporting comes from the performance sync and exists at campaign level only.</p>
+      <p className="text-xs text-gray-500">{tx("Objects are created paused and changed only after a second person approves the exact change. SIMULATED means nothing reached a real platform (or only the local simulator did); LIVE needs the egress, ADS_LIVE_MUTATIONS, admin activation and credentials switches. Reporting comes from the performance sync and exists at campaign level only.")}</p>
       {msg && <p role="status" className="text-xs border rounded p-2 bg-gray-50 text-gray-900">{msg}</p>}
-      {rows.length === 0 && <p className="text-xs text-gray-500">No ad accounts yet. Add one under Ads reporting.</p>}
+      {rows.length === 0 && <p className="text-xs text-gray-500">{tx("No ad accounts yet. Add one under Ads reporting.")}</p>}
       {rows.map((r) => <AccountBlock key={r.account.id} r={r} wiz={wizard.find((w) => w.provider === r.account.provider)}
         canApprove={canApprove} busy={busy} run={run} />)}
     </div>
@@ -90,14 +89,14 @@ function AccountBlock({ r, wiz, canApprove, busy, run }: { r: Row; wiz?: Wizard;
       <div className="flex flex-wrap items-center gap-2">
         <h3 className="font-semibold">{LABEL[r.account.provider]} · {r.account.name} ({r.account.currency})</h3>
         <span className={`text-[10px] font-semibold px-2 py-0.5 rounded ${c.mode === "LIVE" ? "bg-red-600 text-white" : "bg-amber-100 text-amber-900"}`}>{c.mode}</span>
-        <span className="text-xs text-gray-500">Activation: {c.activated ? `on (${c.activated_by})` : "off"} · Caps {c.daily_cap ?? "not set"}/day, {c.monthly_cap ?? "not set"}/month</span>
-        {r.member && <button className={btn} disabled={busy} onClick={() => run(() => apiClient.post(`/api/v1/ads/accounts/${r.account.id}/sync?days=7`), "Reporting synced.")}>Sync reporting</button>}
-        {r.member && wiz && <button className={btn} onClick={() => setOpen(!open)}>{open ? "Close wizard" : "New campaign"}</button>}
+        <span className="text-xs text-gray-500">{tx("Activation:")} {c.activated ? tx("on ({activated_by})", { activated_by: c.activated_by }) : tx("off")} {tx("· Caps")} {c.daily_cap ?? tx("not set")}/day, {c.monthly_cap ?? tx("not set")}/month</span>
+        {r.member && <button className={btn} disabled={busy} onClick={() => run(() => apiClient.post(`/api/v1/ads/accounts/${r.account.id}/sync?days=7`), "Reporting synced.")}>{tx("Sync reporting")}</button>}
+        {r.member && wiz && <button className={btn} onClick={() => setOpen(!open)}>{open ? tx("Close wizard") : tx("New campaign")}</button>}
       </div>
-      {!r.member && <p role="alert" className="text-xs border border-red-300 bg-red-50 text-red-900 rounded p-2">Refused for you: {r.refusal}</p>}
+      {!r.member && <p role="alert" className="text-xs border border-red-300 bg-red-50 text-red-900 rounded p-2">{tx("Refused for you:")} {r.refusal}</p>}
       {c.live_blockers.length > 0 && <ul className="text-xs text-amber-800 list-disc ml-5">{c.live_blockers.map((b) => <li key={b}>{b}</li>)}</ul>}
       {r.member && open && wiz && <Wizard r={r} wiz={wiz} busy={busy} run={run} done={() => setOpen(false)} />}
-      {r.member && r.campaigns.length === 0 && <p className="text-xs text-gray-500">No campaigns on this account.</p>}
+      {r.member && r.campaigns.length === 0 && <p className="text-xs text-gray-500">{tx("No campaigns on this account.")}</p>}
       {r.campaigns.map((cm) => <CampaignBlock key={cm.id} cm={cm} canApprove={canApprove} busy={busy} run={run} />)}
     </section>
   );
@@ -122,13 +121,13 @@ function Wizard({ r, wiz, busy, run, done }: { r: Row; wiz: Wizard; busy: boolea
     <form className="border rounded p-2 space-y-2 bg-gray-50" onSubmit={(e) => { e.preventDefault();
       run(async () => { await apiClient.post("/api/v1/ads/campaigns", { account_id: r.account.id, idempotency_key: key(), name, objective, daily_budget: budget, spec: build() }); done(); },
         "Draft created. Validate it, then request approval."); }}>
-      <p className="text-xs text-gray-600">Offered types: {wiz.objectives.join(", ")}. Not offered: {wiz.not_offered}</p>
+      <p className="text-xs text-gray-600">{tx("Offered types:")} {wiz.objectives.join(", ")}{tx(". Not offered:")} {wiz.not_offered}</p>
       {wiz.budget_note && <p className="text-xs text-gray-600">{wiz.budget_note}</p>}
       <div className="flex flex-wrap gap-2 items-end">
-        <label className="text-xs">Name<input className={`${input} block w-56`} value={name} onChange={(e) => setName(e.target.value)} required maxLength={150} /></label>
-        <label className="text-xs">Type<select className={`${input} block`} value={objective} onChange={(e) => setObjective(e.target.value)}>
+        <label className="text-xs">{tx("Name")}<input className={`${input} block w-56`} value={name} onChange={(e) => setName(e.target.value)} required maxLength={150} /></label>
+        <label className="text-xs">{tx("Type")}<select className={`${input} block`} value={objective} onChange={(e) => setObjective(e.target.value)}>
           {wiz.objectives.map((o) => <option key={o}>{o}</option>)}</select></label>
-        <label className="text-xs">Daily budget ({r.account.currency})<input className={`${input} block w-28`} type="number" min="0.01" step="0.01" value={budget}
+        <label className="text-xs">{tx("Daily budget (")}{r.account.currency})<input className={`${input} block w-28`} type="number" min="0.01" step="0.01" value={budget}
           onChange={(e) => setBudget(e.target.value)} required /></label>
       </div>
       <div className="grid sm:grid-cols-2 gap-2">
@@ -141,7 +140,7 @@ function Wizard({ r, wiz, busy, run, done }: { r: Row; wiz: Wizard; busy: boolea
           </label>
         ))}
       </div>
-      <button className={btn} disabled={busy || !name || !budget}>Create draft</button>
+      <button className={btn} disabled={busy || !name || !budget}>{tx("Create draft")}</button>
     </form>
   );
 }
@@ -164,23 +163,23 @@ function CampaignBlock({ cm, canApprove, busy, run }: { cm: Campaign; canApprove
       <div className="flex flex-wrap items-center gap-2">
         <span className="font-medium">{cm.name}</span><span className={chip(cm.status)}>{cm.status}</span>
         <span className={`text-[10px] px-2 py-0.5 rounded ${cm.mode === "LIVE" ? "bg-red-600 text-white" : "bg-amber-100 text-amber-900"}`}>{cm.mode}</span>
-        <span className="text-xs text-gray-500">{cm.objective} · {cm.daily_budget}/day (version {cm.budget_version}, sent {cm.budget_pushed}) · {cm.transport === "http" ? "adapter calls the configured endpoint" : "nothing is sent (offline)"}</span>
+        <span className="text-xs text-gray-500">{cm.objective} · {cm.daily_budget}{tx("/day (version")} {cm.budget_version}{tx(", sent")} {cm.budget_pushed}) · {cm.transport === "http" ? tx("adapter calls the configured endpoint") : tx("nothing is sent (offline)")}</span>
       </div>
-      {cm.last_error && <p className="text-xs text-red-700">Last error: {cm.last_error}</p>}
-      {cm.validation && <p className="text-xs">{cm.validation.ok ? "Validation passed." : `Validation: ${cm.validation.problems.join(" ")}`}</p>}
+      {cm.last_error && <p className="text-xs text-red-700">{tx("Last error:")} {cm.last_error}</p>}
+      {cm.validation && <p className="text-xs">{cm.validation.ok ? tx("Validation passed.") : `Validation: ${cm.validation.problems.join(" ")}`}</p>}
       <div className="flex flex-wrap gap-1 items-center">
         {ACTION.map(([a, label]) => <button key={a} className={btn} disabled={busy || cm.actions[a] !== null} title={cm.actions[a] ?? ""}
           onClick={() => run(() => call(a), `${label}: done.`)}>{label}</button>)}
         <button className={btn} disabled={busy || !pending || !canApprove || cm.actions.approve !== null} title={cm.actions.approve ?? ""}
-          onClick={() => pending && run(() => apiClient.post(`/api/v1/ads/approvals/${pending.id}/decide`, { ok: true }), "Approved.")}>Approve {pending?.action.toLowerCase() ?? ""}</button>
+          onClick={() => pending && run(() => apiClient.post(`/api/v1/ads/approvals/${pending.id}/decide`, { ok: true }), "Approved.")}>{tx("Approve")} {pending?.action.toLowerCase() ?? ""}</button>
         <button className={btn} disabled={busy || !pending || !canApprove || cm.actions.approve !== null} title={cm.actions.approve ?? ""}
-          onClick={() => pending && run(() => apiClient.post(`/api/v1/ads/approvals/${pending.id}/decide`, { ok: false }), "Rejected.")}>Reject</button>
-        <input aria-label="New daily budget" className={`${input} w-24`} type="number" min="0.01" step="0.01" placeholder="New budget" value={budget} onChange={(e) => setBudget(e.target.value)} />
+          onClick={() => pending && run(() => apiClient.post(`/api/v1/ads/approvals/${pending.id}/decide`, { ok: false }), "Rejected.")}>{tx("Reject")}</button>
+        <input aria-label={tx("New daily budget")} className={`${input} w-24`} type="number" min="0.01" step="0.01" placeholder={tx("New budget")} value={budget} onChange={(e) => setBudget(e.target.value)} />
         <button className={btn} disabled={busy || !budget || cm.actions.edit_budget !== null} title={cm.actions.edit_budget ?? ""}
-          onClick={() => run(() => apiClient.post(`${base}/budget`, { daily_budget: budget }), "New budget version saved; it needs approval.")}>Save budget version</button>
+          onClick={() => run(() => apiClient.post(`${base}/budget`, { daily_budget: budget }), "New budget version saved; it needs approval.")}>{tx("Save budget version")}</button>
       </div>
       <table className="w-full text-xs">
-        <thead><tr className="text-left text-gray-500"><th>Object</th><th>Provider status</th><th>Schedule</th><th>Reporting</th><th /></tr></thead>
+        <thead><tr className="text-left text-gray-500"><th>{tx("Object")}</th><th>{tx("Provider status")}</th><th>{tx("Schedule")}</th><th>{tx("Reporting")}</th><th /></tr></thead>
         <tbody>{cm.nodes.map((n) => <NodeRow key={n.id} n={n} canApprove={canApprove} busy={busy} run={run} />)}</tbody>
       </table>
     </div>
@@ -203,38 +202,38 @@ function NodeRow({ n, canApprove, busy, run }: { n: Node; canApprove: boolean; b
   return (
     <>
       <tr className="border-t align-top">
-        <td className="py-1"><div className="font-medium">{n.label}</div><div>{n.name}</div><div className="text-gray-400">{n.provider_id ?? "not on the provider yet"}</div></td>
-        <td>{n.provider_status ?? n.status}{n.last_read_at && <div className="text-gray-400">read {new Date(n.last_read_at).toLocaleString()}</div>}{n.last_error && <div className="text-red-700">{n.last_error}</div>}</td>
+        <td className="py-1"><div className="font-medium">{n.label}</div><div>{n.name}</div><div className="text-gray-400">{n.provider_id ?? tx("not on the provider yet")}</div></td>
+        <td>{n.provider_status ?? n.status}{n.last_read_at && <div className="text-gray-400">{tx("read")} {new Date(n.last_read_at).toLocaleString()}</div>}{n.last_error && <div className="text-red-700">{n.last_error}</div>}</td>
         <td>{schedule(n)}</td>
         <td>{rp.available ? (rp.rows ? `${rp.impressions} imp · ${rp.clicks} clicks · spend ${rp.spend} · CTR ${rp.ctr ?? "n/a"} · CPC ${rp.cpc ?? "n/a"} (to ${rp.last_day})` : rp.note) : <span className="text-gray-400">{rp.reason}</span>}</td>
         <td className="whitespace-nowrap">
-          <button className={btn} disabled={busy || !n.provider_id} title={n.provider_id ? "" : "Not on the provider yet."}
-            onClick={() => run(async () => { const r = await apiClient.post(`/api/v1/ads-lifecycle/nodes/${n.id}/readback`); if (r.data.simulated) throw new Error(r.data.note); }, "Read back from the provider.")}>Read back</button>{" "}
-          <button className={btn} disabled={busy || n.edit_disabled !== null} title={n.edit_disabled ?? ""} onClick={() => setOpen(!open)}>Edit</button>
+          <button className={btn} disabled={busy || !n.provider_id} title={n.provider_id ? "" : tx("Not on the provider yet.")}
+            onClick={() => run(async () => { const r = await apiClient.post(`/api/v1/ads-lifecycle/nodes/${n.id}/readback`); if (r.data.simulated) throw new Error(r.data.note); }, "Read back from the provider.")}>{tx("Read back")}</button>{" "}
+          <button className={btn} disabled={busy || n.edit_disabled !== null} title={n.edit_disabled ?? ""} onClick={() => setOpen(!open)}>{tx("Edit")}</button>
         </td>
       </tr>
       {open && n.editable.length > 0 && (
         <tr><td colSpan={5} className="pb-2">
           <form className="flex flex-wrap gap-2 items-end bg-gray-50 p-2 rounded" onSubmit={(e) => { e.preventDefault();
             run(async () => { await apiClient.post(`/api/v1/ads-lifecycle/nodes/${n.id}/edits`, body); setOpen(false); setF({}); }, "Edit requested; a second person must approve it."); }}>
-            {n.editable.includes("name") && <label className="text-xs">Name<input className={`${input} block w-56`} value={f.name ?? ""} onChange={(e) => setF({ ...f, name: e.target.value })} /></label>}
-            {n.editable.includes("start_date") && <label className="text-xs">Start date<input type="date" className={`${input} block`} value={f.start_date ?? ""} onChange={(e) => setF({ ...f, start_date: e.target.value })} /></label>}
-            {n.editable.includes("end_date") && <label className="text-xs">End date<input type="date" className={`${input} block`} value={f.end_date ?? ""} onChange={(e) => setF({ ...f, end_date: e.target.value })} /></label>}
-            {n.unverified.length > 0 && <span className="text-xs text-amber-800">The platform&apos;s update fields for {n.unverified.join(", ")} are unverified; it may refuse.</span>}
-            <button className={btn} disabled={busy || Object.keys(body).length === 0}>Request edit</button>
+            {n.editable.includes("name") && <label className="text-xs">{tx("Name")}<input className={`${input} block w-56`} value={f.name ?? ""} onChange={(e) => setF({ ...f, name: e.target.value })} /></label>}
+            {n.editable.includes("start_date") && <label className="text-xs">{tx("Start date")}<input type="date" className={`${input} block`} value={f.start_date ?? ""} onChange={(e) => setF({ ...f, start_date: e.target.value })} /></label>}
+            {n.editable.includes("end_date") && <label className="text-xs">{tx("End date")}<input type="date" className={`${input} block`} value={f.end_date ?? ""} onChange={(e) => setF({ ...f, end_date: e.target.value })} /></label>}
+            {n.unverified.length > 0 && <span className="text-xs text-amber-800">{tx("The platform's update fields for")} {n.unverified.join(", ")} {tx("are unverified; it may refuse.")}</span>}
+            <button className={btn} disabled={busy || Object.keys(body).length === 0}>{tx("Request edit")}</button>
           </form>
         </td></tr>
       )}
       {n.edits.slice(-3).map((e) => (
         <tr key={e.id}><td colSpan={5} className="pb-1 pl-4 text-xs">
-          <span className={chip(e.status)}>{e.status}</span> {Object.entries(e.fields).map(([k, v]) => `${k}: ${v}`).join(" · ")} · by {e.requested_by}{e.decided_by ? `, decided by ${e.decided_by}` : ""}
-          {e.read_back?.diffs && e.read_back.diffs.length > 0 && <span className="text-red-700"> · read-back differs: {e.read_back.diffs.join("; ")}</span>}
+          <span className={chip(e.status)}>{e.status}</span> {Object.entries(e.fields).map(([k, v]) => `${k}: ${v}`).join(" · ")} {tx("· by")} {e.requested_by}{e.decided_by ? tx(", decided by {decided_by}", { decided_by: e.decided_by }) : ""}
+          {e.read_back?.diffs && e.read_back.diffs.length > 0 && <span className="text-red-700"> {tx("· read-back differs:")} {e.read_back.diffs.join("; ")}</span>}
           {e.last_error && <span className="text-red-700"> · {e.last_error}</span>}{" "}
           {e.status === "PENDING_APPROVAL" && <>
-            <button className={btn} disabled={busy || !canApprove} title={canApprove ? "" : "Needs marketing.approve."} onClick={() => run(() => apiClient.post(`/api/v1/ads-lifecycle/edits/${e.id}/decide`, { ok: true }), "Edit approved.")}>Approve</button>{" "}
-            <button className={btn} disabled={busy || !canApprove} onClick={() => run(() => apiClient.post(`/api/v1/ads-lifecycle/edits/${e.id}/decide`, { ok: false }), "Edit rejected.")}>Reject</button></>}
-          {["APPROVED", "FAILED"].includes(e.status) && <button className={btn} disabled={busy} onClick={() => run(() => apiClient.post(`/api/v1/ads-lifecycle/edits/${e.id}/apply`), "Edit sent; status read back.")}>Apply</button>}
-          {["UNKNOWN", "UNCONFIRMED", "FAILED"].includes(e.status) && <button className={btn} disabled={busy} onClick={() => run(() => apiClient.post(`/api/v1/ads-lifecycle/edits/${e.id}/reconcile`), "Reconciled by read-back.")}>Reconcile</button>}
+            <button className={btn} disabled={busy || !canApprove} title={canApprove ? "" : tx("Needs marketing.approve.")} onClick={() => run(() => apiClient.post(`/api/v1/ads-lifecycle/edits/${e.id}/decide`, { ok: true }), "Edit approved.")}>{tx("Approve")}</button>{" "}
+            <button className={btn} disabled={busy || !canApprove} onClick={() => run(() => apiClient.post(`/api/v1/ads-lifecycle/edits/${e.id}/decide`, { ok: false }), "Edit rejected.")}>{tx("Reject")}</button></>}
+          {["APPROVED", "FAILED"].includes(e.status) && <button className={btn} disabled={busy} onClick={() => run(() => apiClient.post(`/api/v1/ads-lifecycle/edits/${e.id}/apply`), "Edit sent; status read back.")}>{tx("Apply")}</button>}
+          {["UNKNOWN", "UNCONFIRMED", "FAILED"].includes(e.status) && <button className={btn} disabled={busy} onClick={() => run(() => apiClient.post(`/api/v1/ads-lifecycle/edits/${e.id}/reconcile`), "Reconciled by read-back.")}>{tx("Reconcile")}</button>}
         </td></tr>
       ))}
     </>

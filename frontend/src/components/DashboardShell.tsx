@@ -14,7 +14,7 @@ import { useCommandPalette } from "@/hooks/useCommandPalette";
 import { useUnsavedChangesContext } from "@/context/UnsavedChangesContext";
 import { PostingRulesFirstLogin } from "./PostingRulesFirstLogin";
 import LanguageSwitcher from "./LanguageSwitcher";
-import { useI18n } from "@/lib/i18n";
+import { useI18n, enableTx } from "@/lib/i18n";
 
 interface DashboardShellProps {
   children: React.ReactNode;
@@ -23,7 +23,12 @@ interface DashboardShellProps {
 export function DashboardShell({ children }: DashboardShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  // M51.S01.T008: tx() stays English until hydration so server and first client render agree; after that the whole
+  // dashboard tree is keyed by locale, so a locale change re-renders every tx() literal. English users never remount.
+  const [txReady, setTxReady] = useState(false);
+  useEffect(() => { enableTx(); setTxReady(true); }, []);
+  const contentKey = txReady ? locale : "en";
   const { isDirty, confirmLeave } = useUnsavedChangesContext();
   const router = useRouter();
   const pathname = usePathname();
@@ -78,7 +83,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
   }, [isDirty, confirmLeave]);
 
   return (
-    <div className="flex h-screen h-dvh bg-[#030d1a] overflow-hidden" data-testid="dashboard-shell">
+    <div key={contentKey} className="flex h-screen h-dvh bg-[#030d1a] overflow-hidden" data-testid="dashboard-shell">
       {/* Mobile overlay backdrop */}
       {mobileOpen && (
         <div

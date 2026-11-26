@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { essSelf, ESSNotification, NOTIF_TYPE_ICON } from "@/lib/ess";
+import { tx } from "@/lib/i18n/core";
 
 
 export default function NotificationsPage() {
@@ -18,17 +19,17 @@ export default function NotificationsPage() {
     <div className="p-6 space-y-4 text-slate-200">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-white">Notifications</h1>
-          {unreadCount > 0 && <p className="text-slate-500 text-sm mt-0.5">{unreadCount} unread</p>}
+          <h1 className="text-xl font-bold text-white">{tx("Notifications")}</h1>
+          {unreadCount > 0 && <p className="text-slate-500 text-sm mt-0.5">{unreadCount} {tx("unread")}</p>}
         </div>
         <div className="flex gap-3 items-center">
           <label className="flex items-center gap-2 text-sm text-slate-400 cursor-pointer">
             <input type="checkbox" checked={unreadOnly} onChange={(e) => setUnreadOnly(e.target.checked)} className="accent-indigo-500" />
-            Unread only
+            {tx("Unread only")}
           </label>
           {unreadCount > 0 && (
             <button onClick={handleMarkAll} className="px-3 py-1.5 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-slate-400 text-xs">
-              Mark all read
+              {tx("Mark all read")}
             </button>
           )}
         </div>
@@ -46,7 +47,7 @@ export default function NotificationsPage() {
               </div>
               <p className="text-xs text-slate-500 mt-0.5">{n.body}</p>
               {!n.read_flag && (
-                <button onClick={() => handleMarkRead(n.notification_id)} className="text-xs text-indigo-400 hover:text-indigo-300 mt-1">Mark as read</button>
+                <button onClick={() => handleMarkRead(n.notification_id)} className="text-xs text-indigo-400 hover:text-indigo-300 mt-1">{tx("Mark as read")}</button>
               )}
             </div>
             {!n.read_flag && <div className="w-2 h-2 rounded-full bg-indigo-500 shrink-0 mt-2" />}
@@ -54,7 +55,7 @@ export default function NotificationsPage() {
         ))}
         {notifications.length === 0 && (
           <div className="glow-card p-8 text-center text-slate-600">
-            {unreadOnly ? "No unread notifications" : "No notifications"}
+            {unreadOnly ? tx("No unread notifications") : tx("No notifications")}
           </div>
         )}
       </div>

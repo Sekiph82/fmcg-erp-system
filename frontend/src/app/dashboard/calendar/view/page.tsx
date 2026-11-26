@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { calendarApi, CalendarEvent, EVENT_COLOR } from "@/lib/calendar";
+import { tx } from "@/lib/i18n/core";
 
 type ViewMode = "week" | "month" | "day";
 
@@ -100,7 +101,7 @@ export default function CalendarViewPage() {
   return (
     <div className="p-4 space-y-3">
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <h1 className="text-xl font-bold text-gray-900">Calendar</h1>
+        <h1 className="text-xl font-bold text-gray-900">{tx("Calendar")}</h1>
         <div className="flex items-center gap-2">
           <div className="flex rounded border overflow-hidden text-sm">
             {(["day", "week", "month"] as ViewMode[]).map(v => (
@@ -111,16 +112,16 @@ export default function CalendarViewPage() {
             ))}
           </div>
           <button onClick={() => navigate(-1)} className="rounded border px-2 py-1 text-sm hover:bg-gray-50">‹</button>
-          <button onClick={() => setAnchor(new Date())} className="rounded border px-2 py-1 text-sm hover:bg-gray-50">Today</button>
+          <button onClick={() => setAnchor(new Date())} className="rounded border px-2 py-1 text-sm hover:bg-gray-50">{tx("Today")}</button>
           <button onClick={() => navigate(1)} className="rounded border px-2 py-1 text-sm hover:bg-gray-50">›</button>
           <a href="/dashboard/calendar/new-event"
-            className="rounded bg-blue-600 px-3 py-1 text-sm font-medium text-white hover:bg-blue-700">+ Event</a>
+            className="rounded bg-blue-600 px-3 py-1 text-sm font-medium text-white hover:bg-blue-700">{tx("+ Event")}</a>
         </div>
       </div>
 
       <p className="text-sm font-medium text-gray-700">{title}</p>
 
-      {loading && <p className="text-sm text-gray-500 py-8 text-center">Loading…</p>}
+      {loading && <p className="text-sm text-gray-500 py-8 text-center">{tx("Loading…")}</p>}
 
       {!loading && view === "week" && (
         <div className="bg-white border rounded-lg overflow-hidden">
@@ -196,7 +197,7 @@ export default function CalendarViewPage() {
                       {e.event_title}
                     </div>
                   ))}
-                  {dayEvs.length > 3 && <p className="text-xs text-gray-400">+{dayEvs.length - 3} more</p>}
+                  {dayEvs.length > 3 && <p className="text-xs text-gray-400">+{dayEvs.length - 3} {tx("more")}</p>}
                 </div>
               );
             })}
@@ -248,18 +249,18 @@ export default function CalendarViewPage() {
               <button onClick={() => setSelected(null)} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
             </div>
             <div className="space-y-1.5 text-sm text-gray-600">
-              <p><span className="font-medium">Type:</span> {selected.event_type}</p>
-              <p><span className="font-medium">Status:</span> {selected.status}</p>
-              <p><span className="font-medium">Start:</span> {new Date(selected.start_datetime).toLocaleString()}</p>
-              <p><span className="font-medium">End:</span> {new Date(selected.end_datetime).toLocaleString()}</p>
-              {selected.location && <p><span className="font-medium">Location:</span> {selected.location}</p>}
-              {selected.description && <p><span className="font-medium">Description:</span> {selected.description}</p>}
+              <p><span className="font-medium">{tx("Type:")}</span> {selected.event_type}</p>
+              <p><span className="font-medium">{tx("Status:")}</span> {selected.status}</p>
+              <p><span className="font-medium">{tx("Start:")}</span> {new Date(selected.start_datetime).toLocaleString()}</p>
+              <p><span className="font-medium">{tx("End:")}</span> {new Date(selected.end_datetime).toLocaleString()}</p>
+              {selected.location && <p><span className="font-medium">{tx("Location:")}</span> {selected.location}</p>}
+              {selected.description && <p><span className="font-medium">{tx("Description:")}</span> {selected.description}</p>}
               {selected.participants.length > 0 && (
-                <p><span className="font-medium">Participants:</span> {selected.participants.map(p => p.participant_name || p.participant_email).join(", ")}</p>
+                <p><span className="font-medium">{tx("Participants:")}</span> {selected.participants.map(p => p.participant_name || p.participant_email).join(", ")}</p>
               )}
             </div>
             <div className="flex justify-end mt-4">
-              <button onClick={() => setSelected(null)} className="rounded border px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50">Close</button>
+              <button onClick={() => setSelected(null)} className="rounded border px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50">{tx("Close")}</button>
             </div>
           </div>
         </div>

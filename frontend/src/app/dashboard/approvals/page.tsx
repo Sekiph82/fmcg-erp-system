@@ -8,6 +8,7 @@ import {
 } from "@/lib/approvals";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { tx } from "@/lib/i18n/core";
 
 const MODULE_LABELS: Record<ApprovalModule, string> = {
   PURCHASE_ORDER:       "Purchase Order",
@@ -88,17 +89,17 @@ export default function ApprovalsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Approval Workflow</h1>
-        <p className="text-sm text-gray-500 mt-1">Multi-level approval engine for POs, Budgets, Expenses and more</p>
+        <h1 className="text-2xl font-bold text-gray-900">{tx("Approval Workflow")}</h1>
+        <p className="text-sm text-gray-500 mt-1">{tx("Multi-level approval engine for POs, Budgets, Expenses and more")}</p>
       </div>
 
       {/* Summary */}
       <div className="grid grid-cols-4 gap-3">
         {[
-          { label: "My Pending",   value: inbox.filter((r) => r.status === "PENDING").length,   color: "text-amber-700" },
-          { label: "Escalated",    value: inbox.filter((r) => r.status === "ESCALATED").length, color: "text-orange-700" },
-          { label: "Active Rules", value: rules.filter((r) => r.is_active).length,              color: "text-indigo-700" },
-          { label: "Total Inbox",  value: inbox.length,                                          color: "text-gray-700" },
+          { label: tx("My Pending"),   value: inbox.filter((r) => r.status === "PENDING").length,   color: "text-amber-700" },
+          { label: tx("Escalated"),    value: inbox.filter((r) => r.status === "ESCALATED").length, color: "text-orange-700" },
+          { label: tx("Active Rules"), value: rules.filter((r) => r.is_active).length,              color: "text-indigo-700" },
+          { label: tx("Total Inbox"),  value: inbox.length,                                          color: "text-gray-700" },
         ].map((k) => (
           <div key={k.label} className="bg-white rounded-lg border p-3 text-center">
             <p className="text-xs text-gray-500 mb-1">{k.label}</p>
@@ -130,21 +131,21 @@ export default function ApprovalsPage() {
           {/* Request list */}
           <div className="col-span-2 bg-white rounded-lg border">
             <div className="px-5 py-3 border-b font-semibold text-gray-800">
-              {tab === "inbox" ? "Pending — Requires My Action" : "All Approval Requests"}
+              {tab === "inbox" ? tx("Pending — Requires My Action") : tx("All Approval Requests")}
             </div>
             {isLoading ? (
-              <p className="px-5 py-8 text-center text-gray-400">Loading…</p>
+              <p className="px-5 py-8 text-center text-gray-400">{tx("Loading…")}</p>
             ) : (
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b bg-gray-50 text-xs text-gray-500 uppercase">
-                    <th className="px-4 py-2 text-left">Ref</th>
-                    <th className="px-4 py-2 text-left">Module</th>
-                    <th className="px-4 py-2 text-right">Amount</th>
-                    <th className="px-4 py-2 text-center">Level</th>
-                    <th className="px-4 py-2 text-left">Status</th>
-                    <th className="px-4 py-2 text-left">Submitted</th>
-                    <th className="px-4 py-2 text-left">By</th>
+                    <th className="px-4 py-2 text-left">{tx("Ref")}</th>
+                    <th className="px-4 py-2 text-left">{tx("Module")}</th>
+                    <th className="px-4 py-2 text-right">{tx("Amount")}</th>
+                    <th className="px-4 py-2 text-center">{tx("Level")}</th>
+                    <th className="px-4 py-2 text-left">{tx("Status")}</th>
+                    <th className="px-4 py-2 text-left">{tx("Submitted")}</th>
+                    <th className="px-4 py-2 text-left">{tx("By")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -165,7 +166,7 @@ export default function ApprovalsPage() {
                   ))}
                   {displayList.length === 0 && (
                     <tr><td colSpan={7} className="px-5 py-8 text-center text-gray-400">
-                      {tab === "inbox" ? "Inbox empty — no pending approvals" : "No approval requests"}
+                      {tab === "inbox" ? tx("Inbox empty — no pending approvals") : tx("No approval requests")}
                     </td></tr>
                   )}
                 </tbody>
@@ -204,18 +205,18 @@ export default function ApprovalsPage() {
 
                 {/* Steps timeline */}
                 <div>
-                  <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Approval Steps</p>
+                  <p className="text-xs font-semibold text-gray-500 uppercase mb-2">{tx("Approval Steps")}</p>
                   <div className="space-y-2">
                     {selected.steps.map((s) => (
                       <div key={s.id} className={`text-xs border rounded p-2 ${s.level === selected.current_level && s.status === "PENDING" ? "border-amber-300 bg-amber-50" : ""}`}>
                         <div className="flex items-center gap-2 justify-between">
-                          <span className="font-medium">Level {s.level}</span>
+                          <span className="font-medium">{tx("Level")} {s.level}</span>
                           <StatusBadge status={s.status} />
                         </div>
-                        <p className="text-gray-500 mt-1">Role: {s.required_role}</p>
+                        <p className="text-gray-500 mt-1">{tx("Role:")} {s.required_role}</p>
                         {s.sla_deadline && <p className="text-gray-400">SLA: {fmtDate(s.sla_deadline)}</p>}
                         {s.action_by_name && <p className="text-gray-600">{s.action_by_name} · {fmtDate(s.action_at)}</p>}
-                        {s.rejection_reason && <p className="text-red-600 mt-1">Reason: {s.rejection_reason}</p>}
+                        {s.rejection_reason && <p className="text-red-600 mt-1">{tx("Reason:")} {s.rejection_reason}</p>}
                         {s.notes && <p className="text-gray-500 italic">{s.notes}</p>}
                       </div>
                     ))}
@@ -230,20 +231,20 @@ export default function ApprovalsPage() {
                       loading={approve.isPending}
                       className="flex-1"
                     >
-                      Approve
+                      {tx("Approve")}
                     </Button>
                     <Button
                       variant="secondary"
                       onClick={() => setRejectModal(selected.id)}
                       className="flex-1"
                     >
-                      Reject
+                      {tx("Reject")}
                     </Button>
                   </div>
                 ) : null}
               </>
             ) : (
-              <p className="text-center text-gray-400 text-sm py-12">Select a request to view details</p>
+              <p className="text-center text-gray-400 text-sm py-12">{tx("Select a request to view details")}</p>
             )}
           </div>
         </div>
@@ -253,22 +254,22 @@ export default function ApprovalsPage() {
       {tab === "rules" && (
         <div className="bg-white rounded-lg border">
           <div className="px-5 py-3 border-b flex items-center justify-between">
-            <h2 className="font-semibold text-gray-800">Approval Rules ({rules.length})</h2>
-            <Button onClick={() => setNewRuleModal(true)}>+ Add Rule</Button>
+            <h2 className="font-semibold text-gray-800">{tx("Approval Rules (")}{rules.length})</h2>
+            <Button onClick={() => setNewRuleModal(true)}>{tx("+ Add Rule")}</Button>
           </div>
           {rulesLoading ? (
-            <p className="px-5 py-8 text-center text-gray-400">Loading…</p>
+            <p className="px-5 py-8 text-center text-gray-400">{tx("Loading…")}</p>
           ) : (
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-gray-50 text-xs text-gray-500 uppercase">
-                  <th className="px-4 py-2 text-left">Module</th>
-                  <th className="px-4 py-2 text-center">Level</th>
-                  <th className="px-4 py-2 text-left">Required Role</th>
-                  <th className="px-4 py-2 text-right">Amount Min</th>
-                  <th className="px-4 py-2 text-right">Amount Max</th>
-                  <th className="px-4 py-2 text-right">SLA (h)</th>
-                  <th className="px-4 py-2 text-center">Active</th>
+                  <th className="px-4 py-2 text-left">{tx("Module")}</th>
+                  <th className="px-4 py-2 text-center">{tx("Level")}</th>
+                  <th className="px-4 py-2 text-left">{tx("Required Role")}</th>
+                  <th className="px-4 py-2 text-right">{tx("Amount Min")}</th>
+                  <th className="px-4 py-2 text-right">{tx("Amount Max")}</th>
+                  <th className="px-4 py-2 text-right">{tx("SLA (h)")}</th>
+                  <th className="px-4 py-2 text-center">{tx("Active")}</th>
                   <th className="px-4 py-2" />
                 </tr>
               </thead>
@@ -279,23 +280,23 @@ export default function ApprovalsPage() {
                     <td className="px-4 py-2.5 text-center font-bold text-indigo-600">{r.level}</td>
                     <td className="px-4 py-2.5 font-mono text-xs text-gray-700">{r.required_role}</td>
                     <td className="px-4 py-2.5 text-right text-gray-600">{fmtAmt(r.amount_min)}</td>
-                    <td className="px-4 py-2.5 text-right text-gray-600">{r.amount_max != null ? fmtAmt(r.amount_max) : "No limit"}</td>
-                    <td className="px-4 py-2.5 text-right text-gray-600">{r.sla_hours}h</td>
+                    <td className="px-4 py-2.5 text-right text-gray-600">{r.amount_max != null ? fmtAmt(r.amount_max) : tx("No limit")}</td>
+                    <td className="px-4 py-2.5 text-right text-gray-600">{r.sla_hours}{tx("h")}</td>
                     <td className="px-4 py-2.5 text-center">
                       <button
                         className={`text-xs px-2 py-0.5 rounded font-medium ${r.is_active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}
                         onClick={() => toggleRule.mutate({ id: r.id, is_active: !r.is_active })}
                       >
-                        {r.is_active ? "Active" : "Inactive"}
+                        {r.is_active ? tx("Active") : tx("Inactive")}
                       </button>
                     </td>
                     <td className="px-4 py-2.5">
-                      <button className="text-xs text-red-500 hover:underline" onClick={() => deleteRule.mutate(r.id)}>Delete</button>
+                      <button className="text-xs text-red-500 hover:underline" onClick={() => deleteRule.mutate(r.id)}>{tx("Delete")}</button>
                     </td>
                   </tr>
                 ))}
                 {rules.length === 0 && (
-                  <tr><td colSpan={8} className="px-5 py-8 text-center text-gray-400">No rules — add rules to enable approval routing</td></tr>
+                  <tr><td colSpan={8} className="px-5 py-8 text-center text-gray-400">{tx("No rules — add rules to enable approval routing")}</td></tr>
                 )}
               </tbody>
             </table>
@@ -307,25 +308,25 @@ export default function ApprovalsPage() {
       {rejectModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 space-y-4">
-            <h2 className="font-semibold text-lg">Reject Approval</h2>
+            <h2 className="font-semibold text-lg">{tx("Reject Approval")}</h2>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Reason (required)</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Reason (required)")}</label>
               <textarea
                 className="w-full border rounded px-3 py-2 text-sm"
                 rows={3}
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
-                placeholder="Explain why this is rejected…"
+                placeholder={tx("Explain why this is rejected…")}
               />
             </div>
             <div className="flex gap-2 justify-end">
-              <Button variant="secondary" onClick={() => { setRejectModal(null); setRejectReason(""); }}>Cancel</Button>
+              <Button variant="secondary" onClick={() => { setRejectModal(null); setRejectReason(""); }}>{tx("Cancel")}</Button>
               <Button
                 loading={reject.isPending}
                 onClick={() => { if (rejectReason.trim()) reject.mutate({ id: rejectModal, reason: rejectReason }); }}
                 disabled={!rejectReason.trim()}
               >
-                Reject
+                {tx("Reject")}
               </Button>
             </div>
           </div>
@@ -382,46 +383,46 @@ function NewRuleModal({ onClose, onSave }: { onClose: () => void; onSave: () => 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 space-y-4">
-        <h2 className="font-semibold text-lg">New Approval Rule</h2>
+        <h2 className="font-semibold text-lg">{tx("New Approval Rule")}</h2>
         <div className="space-y-3">
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Module</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Module")}</label>
             <select className="w-full border rounded px-3 py-2 text-sm" value={form.module} onChange={(e) => set("module", e.target.value)}>
               {MODULES.map((m) => <option key={m} value={m}>{m.replace(/_/g, " ")}</option>)}
             </select>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Level</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Level")}</label>
               <input type="number" min="1" max="5" className="w-full border rounded px-3 py-2 text-sm" value={form.level} onChange={(e) => set("level", e.target.value)} />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">SLA (hours)</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">{tx("SLA (hours)")}</label>
               <input type="number" className="w-full border rounded px-3 py-2 text-sm" value={form.sla_hours} onChange={(e) => set("sla_hours", e.target.value)} />
             </div>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Required Role</label>
-            <input className="w-full border rounded px-3 py-2 text-sm" value={form.required_role} onChange={(e) => set("required_role", e.target.value)} placeholder="e.g. finance_manager" />
+            <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Required Role")}</label>
+            <input className="w-full border rounded px-3 py-2 text-sm" value={form.required_role} onChange={(e) => set("required_role", e.target.value)} placeholder={tx("e.g. finance_manager")} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Amount Min (KES)</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Amount Min (KES)")}</label>
               <input type="number" className="w-full border rounded px-3 py-2 text-sm" value={form.amount_min} onChange={(e) => set("amount_min", e.target.value)} />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Amount Max (blank = no limit)</label>
-              <input type="number" className="w-full border rounded px-3 py-2 text-sm" value={form.amount_max} onChange={(e) => set("amount_max", e.target.value)} placeholder="Unlimited" />
+              <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Amount Max (blank = no limit)")}</label>
+              <input type="number" className="w-full border rounded px-3 py-2 text-sm" value={form.amount_max} onChange={(e) => set("amount_max", e.target.value)} placeholder={tx("Unlimited")} />
             </div>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Description</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Description")}</label>
             <input className="w-full border rounded px-3 py-2 text-sm" value={form.description} onChange={(e) => set("description", e.target.value)} />
           </div>
         </div>
         <div className="flex gap-2 justify-end">
-          <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button loading={saving} onClick={save} disabled={!form.required_role.trim()}>Save Rule</Button>
+          <Button variant="secondary" onClick={onClose}>{tx("Cancel")}</Button>
+          <Button loading={saving} onClick={save} disabled={!form.required_role.trim()}>{tx("Save Rule")}</Button>
         </div>
       </div>
     </div>

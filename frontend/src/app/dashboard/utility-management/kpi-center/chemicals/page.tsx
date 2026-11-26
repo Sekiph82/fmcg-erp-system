@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { kpiApi } from "@/lib/utilityKpi";
+import { tx } from "@/lib/i18n/core";
 
 const today = new Date().toISOString().slice(0, 10);
 const mtdStart = today.slice(0, 8) + "01";
@@ -34,7 +35,7 @@ function DateFilter({ from, to, onFrom, onTo }: { from: string; to: string; onFr
   return (
     <div className="flex gap-3 items-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3">
       <input type="date" className={ic} value={from} onChange={e => onFrom(e.target.value)} />
-      <span className="text-gray-400 text-xs">to</span>
+      <span className="text-gray-400 text-xs">{tx("to")}</span>
       <input type="date" className={ic} value={to} onChange={e => onTo(e.target.value)} />
     </div>
   );
@@ -71,15 +72,15 @@ export default function ChemicalsKpiPage() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <div className="flex items-center gap-3 mb-1">
-            <Link href="/dashboard/utility-management/kpi-center" className="text-sm text-gray-500 hover:text-blue-600">← KPI Center</Link>
+            <Link href="/dashboard/utility-management/kpi-center" className="text-sm text-gray-500 hover:text-blue-600">{tx("← KPI Center")}</Link>
             <span className="text-gray-300">|</span>
-            <Link href="/dashboard/utility-management/chemical-treatment" className="text-sm text-blue-600 hover:underline">Operational Records →</Link>
+            <Link href="/dashboard/utility-management/chemical-treatment" className="text-sm text-blue-600 hover:underline">{tx("Operational Records →")}</Link>
           </div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white" style={{ borderLeft: "4px solid #34d399", paddingLeft: 12 }}>
-            Treatment Chemicals KPI Dashboard
+            {tx("Treatment Chemicals KPI Dashboard")}
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Track chemical costs and consumption across boiler, cooling, and wastewater treatment.
+            {tx("Track chemical costs and consumption across boiler, cooling, and wastewater treatment.")}
           </p>
         </div>
         <DateFilter from={dateFrom} to={dateTo} onFrom={setDateFrom} onTo={setDateTo} />
@@ -88,36 +89,36 @@ export default function ChemicalsKpiPage() {
       {/* KPI cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         <KpiCard
-          label="Total Chemical Cost"
+          label={tx("Total Chemical Cost")}
           value={fmtCcy(kpi?.total_cost)}
           sub={`${dateFrom} – ${dateTo}`}
         />
         <KpiCard
-          label="Cost per Day"
+          label={tx("Cost per Day")}
           value={fmtCcy(kpi?.cost_per_day)}
           unit="/day"
         />
         <KpiCard
-          label="Total Consumed"
+          label={tx("Total Consumed")}
           value={fmt(kpi?.total_consumed_kg, 1)}
           unit="kg"
         />
         <KpiCard
-          label="Distinct Chemicals"
+          label={tx("Distinct Chemicals")}
           value={kpi?.distinct_chemicals == null ? "—" : String(kpi.distinct_chemicals)}
         />
         <KpiCard
-          label="Boiler Chemicals"
+          label={tx("Boiler Chemicals")}
           value={fmtCcy(kpi?.boiler_cost)}
           sub="Antiscalant, biocide, etc."
         />
         <KpiCard
-          label="Cooling Treatment"
+          label={tx("Cooling Treatment")}
           value={fmtCcy(kpi?.cooling_cost)}
           sub="Corrosion inhibitors, biocide"
         />
         <KpiCard
-          label="WWTP Chemicals"
+          label={tx("WWTP Chemicals")}
           value={fmtCcy(kpi?.wwtp_cost)}
           sub="Coagulants, flocculants, pH"
         />
@@ -127,7 +128,7 @@ export default function ChemicalsKpiPage() {
       {pieData.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Cost by Treatment Category</h3>
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">{tx("Cost by Treatment Category")}</h3>
             <ResponsiveContainer width="100%" height={240}>
               <PieChart>
                 <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90} label={({ name, percent }) => `${name} ${(((percent as number) ?? 0) * 100).toFixed(0)}%`}>
@@ -139,7 +140,7 @@ export default function ChemicalsKpiPage() {
           </div>
 
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Cost Breakdown Detail</h3>
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">{tx("Cost Breakdown Detail")}</h3>
             <div className="space-y-3 mt-2">
               {pieData.map((item, i) => (
                 <div key={item.name} className="flex items-center justify-between text-sm">
@@ -154,17 +155,17 @@ export default function ChemicalsKpiPage() {
                 </div>
               ))}
               <div className="border-t border-gray-200 dark:border-gray-700 pt-2 flex justify-between font-semibold text-sm">
-                <span className="text-gray-700 dark:text-gray-300">Total</span>
+                <span className="text-gray-700 dark:text-gray-300">{tx("Total")}</span>
                 <span>{fmtCcy(kpi?.total_cost)}</span>
               </div>
             </div>
-            <p className="text-xs text-gray-400 mt-3">Period: {days} days · Avg {fmtCcy(kpi?.cost_per_day)}/day</p>
+            <p className="text-xs text-gray-400 mt-3">{tx("Period:")} {days} {tx("days · Avg")} {fmtCcy(kpi?.cost_per_day)}/day</p>
           </div>
         </div>
       )}
 
       {kpiQ.isLoading && (
-        <div className="flex justify-center py-12 text-gray-400 text-sm">Loading chemical KPIs...</div>
+        <div className="flex justify-center py-12 text-gray-400 text-sm">{tx("Loading chemical KPIs...")}</div>
       )}
     </div>
   );

@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { devPortalApi, ApiKeyOut, ApiKeyCreated, ApiClientApplication } from "@/lib/api_portal_api";
+import { tx } from "@/lib/i18n/core";
 
 const SCOPE_OPTS = ["read", "write", "read,write", "admin"];
 
@@ -36,7 +37,7 @@ export default function ApiKeysPage() {
         setApplications(nextApplications);
         setForm((current) => ({ ...current, application_id: current.application_id || nextApplications.find((item) => item.is_active)?.client_id || "" }));
       })
-      .catch((reason) => setError(reason instanceof Error ? reason.message : "API keys could not be loaded."))
+      .catch((reason) => setError(reason instanceof Error ? reason.message : tx("API keys could not be loaded.")))
       .finally(() => setLoading(false));
   };
 
@@ -64,7 +65,7 @@ export default function ApiKeysPage() {
   };
 
   const revoke = async (keyId: string) => {
-    if (!confirm("Revoke this API key? This cannot be undone.")) return;
+    if (!confirm(tx("Revoke this API key? This cannot be undone."))) return;
     setRevoking(keyId);
     try {
       await devPortalApi.revokeKey(keyId);
@@ -85,7 +86,7 @@ export default function ApiKeysPage() {
 
   const rotate = async () => {
     if (!rotateTarget) return;
-    if (!confirm("Rotate this API key now? The current key will stop working immediately and cannot be restored.")) return;
+    if (!confirm(tx("Rotate this API key now? The current key will stop working immediately and cannot be restored."))) return;
     setRevoking(rotateTarget.key_id);
     setError(null);
     try {
@@ -97,7 +98,7 @@ export default function ApiKeysPage() {
       setRotateTarget(null);
       load();
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "API key could not be rotated.");
+      setError(reason instanceof Error ? reason.message : tx("API key could not be rotated."));
     } finally {
       setRevoking(null);
     }
@@ -121,31 +122,31 @@ export default function ApiKeysPage() {
     <div className="w-full min-w-0 p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">API Keys</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Generate and manage your developer API keys</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("API Keys")}</h1>
+          <p className="text-sm text-gray-500 mt-0.5">{tx("Generate and manage your developer API keys")}</p>
         </div>
         <button
           onClick={() => { setShowForm(true); setNewKey(null); }}
           className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded"
         >
-          + Generate Key
+          {tx("+ Generate Key")}
         </button>
       </div>
 
       {error && <div className="bg-red-50 border border-red-200 rounded p-3 text-sm text-red-700">{error}</div>}
 
       <p className="rounded border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
-        API keys are managed here, but API requests still use the ERP sign-in session. OAuth token issuance and API-key authentication are not enabled by this registry.
+        {tx("API keys are managed here, but API requests still use the ERP sign-in session. OAuth token issuance and API-key authentication are not enabled by this registry.")}
       </p>
       <p className="rounded border border-gray-200 bg-gray-50 p-3 text-sm text-gray-700">
-        Scope policy: read-only, read/write, or admin-only. Admin credentials require a superuser. Per-key limits default to 60 requests per minute and can be set from 1 to 1,000; these values are stored as policy metadata and are not enforced until API-key authentication is enabled.
+        {tx("Scope policy: read-only, read/write, or admin-only. Admin credentials require a superuser. Per-key limits default to 60 requests per minute and can be set from 1 to 1,000; these values are stored as policy metadata and are not enforced until API-key authentication is enabled.")}
       </p>
 
       {/* Newly created key banner */}
       {newKey && (
         <div className="bg-amber-50 border border-amber-300 rounded-lg p-4 space-y-2">
           <p className="text-sm font-semibold text-amber-800">
-            Key created — copy it now. It will NOT be shown again.
+            {tx("Key created — copy it now. It will NOT be shown again.")}
           </p>
           <div className="flex items-center gap-2 bg-white border border-amber-200 rounded px-3 py-2">
             <code className="font-mono text-xs text-gray-800 flex-1 break-all">{newKey.raw_key}</code>
@@ -153,22 +154,22 @@ export default function ApiKeysPage() {
               onClick={copyKey}
               className="text-xs text-blue-600 hover:text-blue-800 shrink-0 font-medium"
             >
-              {copied ? "Copied!" : "Copy"}
+              {copied ? tx("Copied!") : tx("Copy")}
             </button>
           </div>
-          <button onClick={() => setNewKey(null)} className="text-xs text-gray-500 underline">Dismiss</button>
+          <button onClick={() => setNewKey(null)} className="text-xs text-gray-500 underline">{tx("Dismiss")}</button>
         </div>
       )}
 
       {rotateTarget && (
         <div className="bg-white border border-blue-200 rounded-lg p-4 shadow-sm space-y-3">
-          <h2 className="text-sm font-semibold text-gray-700">Rotate {rotateTarget.key_name} and set policy</h2>
+          <h2 className="text-sm font-semibold text-gray-700">{tx("Rotate")} {rotateTarget.key_name} {tx("and set policy")}</h2>
           <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded p-2">
-            Rotation immediately revokes the current key. Copy the replacement once it is shown. Policy values are stored but are not enforced by API-key authentication yet.
+            {tx("Rotation immediately revokes the current key. Copy the replacement once it is shown. Policy values are stored but are not enforced by API-key authentication yet.")}
           </p>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <label className="text-xs text-gray-500">
-              Scope policy
+              {tx("Scope policy")}
               <select
                 value={rotationScopes}
                 onChange={(event) => setRotationScopes(event.target.value)}
@@ -176,10 +177,10 @@ export default function ApiKeysPage() {
               >
                 {SCOPE_OPTS.map((scope) => <option key={scope} value={scope}>{scope}</option>)}
               </select>
-              <span className="mt-1 block">Admin scope can only be issued by a superuser.</span>
+              <span className="mt-1 block">{tx("Admin scope can only be issued by a superuser.")}</span>
             </label>
             <label className="text-xs text-gray-500">
-              Rate limit (1–1,000 req/min)
+              {tx("Rate limit (1–1,000 req/min)")}
               <input
                 type="number"
                 min={1}
@@ -196,14 +197,14 @@ export default function ApiKeysPage() {
               disabled={revoking === rotateTarget.key_id || !Number.isInteger(rotationRate) || rotationRate < 1 || rotationRate > 1000}
               className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded disabled:opacity-50"
             >
-              {revoking === rotateTarget.key_id ? "Rotating…" : "Rotate key"}
+              {revoking === rotateTarget.key_id ? tx("Rotating…") : tx("Rotate key")}
             </button>
             <button
               onClick={() => setRotateTarget(null)}
               disabled={revoking === rotateTarget.key_id}
               className="border border-gray-300 text-sm text-gray-600 px-4 py-2 rounded hover:bg-gray-50 disabled:opacity-50"
             >
-              Cancel
+              {tx("Cancel")}
             </button>
           </div>
         </div>
@@ -212,33 +213,33 @@ export default function ApiKeysPage() {
       {/* Create form */}
       {showForm && (
         <div className="bg-white border rounded-lg p-4 shadow-sm space-y-3">
-          <h2 className="text-sm font-semibold text-gray-700">New API Key</h2>
+          <h2 className="text-sm font-semibold text-gray-700">{tx("New API Key")}</h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
-              <label className="text-xs text-gray-500 block mb-1">Application *</label>
+              <label className="text-xs text-gray-500 block mb-1">{tx("Application *")}</label>
               <select
                 value={form.application_id}
                 onChange={(e) => setForm((p) => ({ ...p, application_id: e.target.value }))}
                 className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm"
               >
-                <option value="">Select application</option>
+                <option value="">{tx("Select application")}</option>
                 {applications.filter((application) => application.is_active).map((application) => (
                   <option key={application.client_id} value={application.client_id}>{application.name} ({application.environment})</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="text-xs text-gray-500 block mb-1">Key Name *</label>
+              <label className="text-xs text-gray-500 block mb-1">{tx("Key Name *")}</label>
               <input
                 type="text"
-                placeholder="e.g. Production Frontend"
+                placeholder={tx("e.g. Production Frontend")}
                 value={form.key_name}
                 onChange={(e) => setForm((p) => ({ ...p, key_name: e.target.value }))}
                 className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
             </div>
             <div>
-              <label className="text-xs text-gray-500 block mb-1">Scopes</label>
+              <label className="text-xs text-gray-500 block mb-1">{tx("Scopes")}</label>
               <select
                 value={form.scopes}
                 onChange={(e) => setForm((p) => ({ ...p, scopes: e.target.value }))}
@@ -248,7 +249,7 @@ export default function ApiKeysPage() {
               </select>
             </div>
             <div>
-              <label className="text-xs text-gray-500 block mb-1">Rate Limit (1–1,000 req/min; default 60)</label>
+              <label className="text-xs text-gray-500 block mb-1">{tx("Rate Limit (1–1,000 req/min; default 60)")}</label>
               <input
                 type="number"
                 min={1}
@@ -259,10 +260,10 @@ export default function ApiKeysPage() {
               />
             </div>
             <div>
-              <label className="text-xs text-gray-500 block mb-1">Description</label>
+              <label className="text-xs text-gray-500 block mb-1">{tx("Description")}</label>
               <input
                 type="text"
-                placeholder="Optional"
+                placeholder={tx("Optional")}
                 value={form.description}
                 onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
                 className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
@@ -275,13 +276,13 @@ export default function ApiKeysPage() {
               disabled={creating || !form.application_id || !form.key_name.trim()}
               className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded disabled:opacity-50"
             >
-              {creating ? "Generating…" : "Generate Key"}
+              {creating ? tx("Generating…") : tx("Generate Key")}
             </button>
             <button
               onClick={() => setShowForm(false)}
               className="border border-gray-300 text-sm text-gray-600 px-4 py-2 rounded hover:bg-gray-50"
             >
-              Cancel
+              {tx("Cancel")}
             </button>
           </div>
         </div>
@@ -290,25 +291,25 @@ export default function ApiKeysPage() {
       {/* Keys table */}
       <div className="bg-white border rounded-lg shadow-sm overflow-hidden">
         <div className="px-4 py-3 border-b bg-gray-50">
-          <h2 className="text-sm font-semibold text-gray-700">All API Keys</h2>
+          <h2 className="text-sm font-semibold text-gray-700">{tx("All API Keys")}</h2>
         </div>
         {loading ? (
-          <div className="p-6 text-sm text-gray-400 text-center">Loading…</div>
+          <div className="p-6 text-sm text-gray-400 text-center">{tx("Loading…")}</div>
         ) : keys.length === 0 ? (
-          <div className="p-6 text-sm text-gray-400 text-center">No API keys yet.</div>
+          <div className="p-6 text-sm text-gray-400 text-center">{tx("No API keys yet.")}</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-gray-50 text-xs text-gray-500">
                 <tr>
-                  <th className="text-left px-4 py-2">Name</th>
-                  <th className="text-left px-4 py-2">Application</th>
-                  <th className="text-left px-4 py-2">Prefix</th>
-                  <th className="text-left px-4 py-2">Scopes</th>
-                  <th className="text-left px-4 py-2">Rate Limit</th>
-                  <th className="text-left px-4 py-2">Status</th>
-                  <th className="text-left px-4 py-2">Created</th>
-                  <th className="text-left px-4 py-2">Last Used</th>
+                  <th className="text-left px-4 py-2">{tx("Name")}</th>
+                  <th className="text-left px-4 py-2">{tx("Application")}</th>
+                  <th className="text-left px-4 py-2">{tx("Prefix")}</th>
+                  <th className="text-left px-4 py-2">{tx("Scopes")}</th>
+                  <th className="text-left px-4 py-2">{tx("Rate Limit")}</th>
+                  <th className="text-left px-4 py-2">{tx("Status")}</th>
+                  <th className="text-left px-4 py-2">{tx("Created")}</th>
+                  <th className="text-left px-4 py-2">{tx("Last Used")}</th>
                   <th className="px-4 py-2"></th>
                 </tr>
               </thead>
@@ -317,7 +318,7 @@ export default function ApiKeysPage() {
                   <tr key={k.key_id} className={!k.is_active ? "opacity-50" : ""}>
                     <td className="px-4 py-2.5 font-medium text-gray-900">{k.key_name}</td>
                     <td className="px-4 py-2.5 text-gray-600">
-                      {applications.find((application) => application.client_id === k.application_id)?.name || (k.application_id ? "Application unavailable" : "Legacy unlinked key")}
+                      {applications.find((application) => application.client_id === k.application_id)?.name || (k.application_id ? tx("Application unavailable") : tx("Legacy unlinked key"))}
                     </td>
                     <td className="px-4 py-2.5 font-mono text-xs text-gray-600">{k.key_prefix}…</td>
                     <td className="px-4 py-2.5">
@@ -328,28 +329,28 @@ export default function ApiKeysPage() {
                     <td className="px-4 py-2.5 text-gray-600">{k.rate_limit_per_min}/min</td>
                     <td className="px-4 py-2.5">
                       {k.is_active && (!k.expires_at || new Date(k.expires_at).getTime() > Date.now()) ? (
-                        <span className="text-green-700 bg-green-100 text-xs rounded-full px-2 py-0.5">Active</span>
+                        <span className="text-green-700 bg-green-100 text-xs rounded-full px-2 py-0.5">{tx("Active")}</span>
                       ) : k.is_active ? (
-                        <span className="text-amber-700 bg-amber-100 text-xs rounded-full px-2 py-0.5">Expired</span>
+                        <span className="text-amber-700 bg-amber-100 text-xs rounded-full px-2 py-0.5">{tx("Expired")}</span>
                       ) : (
-                        <span className="text-gray-500 bg-gray-100 text-xs rounded-full px-2 py-0.5">Revoked</span>
+                        <span className="text-gray-500 bg-gray-100 text-xs rounded-full px-2 py-0.5">{tx("Revoked")}</span>
                       )}
                     </td>
                     <td className="px-4 py-2.5 text-gray-500">{fmtDate(k.created_at)}</td>
                     <td className="px-4 py-2.5 text-gray-500">{fmtDate(k.last_used_at)}</td>
                     <td className="px-4 py-2.5">
                       {k.is_active && k.expires_at && new Date(k.expires_at).getTime() <= Date.now() && (
-                        <span className="mr-2 text-xs text-amber-700">Expired — create a replacement</span>
+                        <span className="mr-2 text-xs text-amber-700">{tx("Expired — create a replacement")}</span>
                       )}
                       {k.is_active && (
                         <div className="flex gap-3">
                           {(!k.expires_at || new Date(k.expires_at).getTime() > Date.now()) && (
                             <button onClick={() => openRotation(k)} disabled={revoking === k.key_id} className="text-blue-600 hover:text-blue-800 text-xs disabled:opacity-50">
-                              Set policy & rotate
+                              {tx("Set policy & rotate")}
                             </button>
                           )}
                           <button onClick={() => revoke(k.key_id)} disabled={revoking === k.key_id} className="text-red-600 hover:text-red-800 text-xs disabled:opacity-50">
-                            {revoking === k.key_id ? "Revoking…" : "Revoke"}
+                            {revoking === k.key_id ? tx("Revoking…") : tx("Revoke")}
                           </button>
                         </div>
                       )}

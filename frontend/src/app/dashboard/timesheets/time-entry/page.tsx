@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { timesheetsApi, ActivityType, ACTIVITY_TYPES } from "@/lib/timesheets";
+import { tx } from "@/lib/i18n/core";
 
 interface LineForm {
   work_date: string;
@@ -66,7 +67,7 @@ export default function TimeEntryPage() {
 
   const submit = async () => {
     if (!header.employee_id || !header.period_start) {
-      setError("Employee ID and period start are required.");
+      setError(tx("Employee ID and period start are required."));
       return;
     }
     setError("");
@@ -98,7 +99,7 @@ export default function TimeEntryPage() {
       }
       router.push("/dashboard/timesheets/my-timesheets");
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Error saving timesheet");
+      setError(e instanceof Error ? e.message : tx("Error saving timesheet"));
     } finally {
       setSaving(false);
     }
@@ -106,21 +107,21 @@ export default function TimeEntryPage() {
 
   return (
     <div className="p-6 space-y-6 max-w-5xl">
-      <h1 className="text-xl font-bold text-gray-900">New Timesheet — Time Entry</h1>
+      <h1 className="text-xl font-bold text-gray-900">{tx("New Timesheet — Time Entry")}</h1>
 
       {error && <div className="bg-red-50 border border-red-200 text-red-700 rounded p-3 text-sm">{error}</div>}
 
       <div className="bg-white border rounded-lg p-4 shadow-sm space-y-3">
-        <h2 className="font-semibold text-gray-800">Period & Employee</h2>
+        <h2 className="font-semibold text-gray-800">{tx("Period & Employee")}</h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <div>
-            <label className="text-xs text-gray-500">Period Start (Monday) *</label>
+            <label className="text-xs text-gray-500">{tx("Period Start (Monday) *")}</label>
             <input type="date" className="w-full border rounded px-2 py-1 text-sm mt-1"
               value={header.period_start}
               onChange={(e) => setHeader({ ...header, period_start: e.target.value, period_end: getSundayOfWeek(e.target.value) })} />
           </div>
           <div>
-            <label className="text-xs text-gray-500">Period End (Sunday)</label>
+            <label className="text-xs text-gray-500">{tx("Period End (Sunday)")}</label>
             <input type="date" className="w-full border rounded px-2 py-1 text-sm mt-1 bg-gray-50"
               value={header.period_end} readOnly />
           </div>
@@ -132,7 +133,7 @@ export default function TimeEntryPage() {
             </div>
           ))}
           <div className="col-span-2 sm:col-span-3">
-            <label className="text-xs text-gray-500">Notes</label>
+            <label className="text-xs text-gray-500">{tx("Notes")}</label>
             <textarea className="w-full border rounded px-2 py-1 text-sm mt-1" rows={2}
               value={header.notes} onChange={(e) => setHeader({ ...header, notes: e.target.value })} />
           </div>
@@ -142,8 +143,8 @@ export default function TimeEntryPage() {
       <div className="bg-white border rounded-lg p-4 shadow-sm space-y-3">
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="font-semibold text-gray-800">Time Lines</h2>
-            <p className="text-xs text-gray-500 mt-0.5">Total: <strong>{totalHours.toFixed(1)}h</strong> · Overtime: <strong className="text-orange-600">{otHours.toFixed(1)}h</strong></p>
+            <h2 className="font-semibold text-gray-800">{tx("Time Lines")}</h2>
+            <p className="text-xs text-gray-500 mt-0.5">{tx("Total:")} <strong>{totalHours.toFixed(1)}{tx("h")}</strong> {tx("· Overtime:")} <strong className="text-orange-600">{otHours.toFixed(1)}{tx("h")}</strong></p>
           </div>
           <div className="flex gap-2">
             {weekDays.map(d => (
@@ -154,7 +155,7 @@ export default function TimeEntryPage() {
             ))}
             <button onClick={() => setLines([...lines, emptyLine()])}
               className="rounded border border-blue-200 px-2 py-0.5 text-xs text-blue-600 hover:bg-blue-50">
-              + Blank
+              {tx("+ Blank")}
             </button>
           </div>
         </div>
@@ -163,7 +164,7 @@ export default function TimeEntryPage() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b text-xs">
               <tr>
-                {["Date","Activity","Project","Task","Cost Center","Hours","OT","Billable","Notes",""].map(h=>(
+                {[tx("Date"),tx("Activity"),tx("Project"),tx("Task"),tx("Cost Center"),tx("Hours"),"OT",tx("Billable"),tx("Notes"),""].map(h=>(
                   <th key={h} className="px-2 py-1 text-left text-gray-600">{h}</th>
                 ))}
               </tr>
@@ -183,17 +184,17 @@ export default function TimeEntryPage() {
                   </td>
                   <td className="px-1 py-1">
                     <input className="border rounded px-1 py-0.5 text-xs w-24"
-                      placeholder="Project" value={l.project_name}
+                      placeholder={tx("Project")} value={l.project_name}
                       onChange={(e) => updateLine(i, "project_name", e.target.value)} />
                   </td>
                   <td className="px-1 py-1">
                     <input className="border rounded px-1 py-0.5 text-xs w-24"
-                      placeholder="Task" value={l.task_name}
+                      placeholder={tx("Task")} value={l.task_name}
                       onChange={(e) => updateLine(i, "task_name", e.target.value)} />
                   </td>
                   <td className="px-1 py-1">
                     <input className="border rounded px-1 py-0.5 text-xs w-24"
-                      placeholder="Cost Center" value={l.cost_center_name}
+                      placeholder={tx("Cost Center")} value={l.cost_center_name}
                       onChange={(e) => updateLine(i, "cost_center_name", e.target.value)} />
                   </td>
                   <td className="px-1 py-1">
@@ -211,7 +212,7 @@ export default function TimeEntryPage() {
                   </td>
                   <td className="px-1 py-1">
                     <input className="border rounded px-1 py-0.5 text-xs w-24"
-                      placeholder="Notes" value={l.notes}
+                      placeholder={tx("Notes")} value={l.notes}
                       onChange={(e) => updateLine(i, "notes", e.target.value)} />
                   </td>
                   <td className="px-1 py-1">
@@ -228,10 +229,10 @@ export default function TimeEntryPage() {
       <div className="flex gap-2">
         <button onClick={submit} disabled={saving}
           className="rounded bg-blue-600 px-6 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">
-          {saving ? "Saving…" : "Save Timesheet"}
+          {saving ? tx("Saving…") : tx("Save Timesheet")}
         </button>
         <button onClick={() => router.back()} className="rounded border px-6 py-2 text-sm text-gray-600 hover:bg-gray-50">
-          Cancel
+          {tx("Cancel")}
         </button>
       </div>
     </div>

@@ -1,6 +1,7 @@
 "use client";
 import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
+import { tx } from "@/lib/i18n/core";
 
 interface Dash { total_observations: number; observations_last_30d: number; oos_incidents_30d: number; avg_shelf_share_30d: number | null; market_share_estimates: number; }
 interface ShelfSummary { category: string; avg_shelf_share_pct: number | null; observations: number; oos_rate_pct: number; competitor_promo_rate_pct: number; }
@@ -90,8 +91,8 @@ export default function MarketIntelligencePage() {
   return (
     <div className="p-6 space-y-6 max-w-6xl mx-auto">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Market Intelligence</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Shelf share, market share, competitor activity from field observations</p>
+        <h1 className="text-2xl font-bold text-gray-900">{tx("Market Intelligence")}</h1>
+        <p className="text-sm text-gray-500 mt-0.5">{tx("Shelf share, market share, competitor activity from field observations")}</p>
       </div>
 
       {error && <div className="bg-red-50 border border-red-200 rounded p-3 text-sm text-red-700">{error}</div>}
@@ -100,11 +101,11 @@ export default function MarketIntelligencePage() {
       {dash && (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
           {[
-            { label: "Total Observations", value: dash.total_observations, color: "text-gray-800" },
-            { label: "Last 30d", value: dash.observations_last_30d, color: "text-blue-600" },
-            { label: "OOS Incidents (30d)", value: dash.oos_incidents_30d, color: "text-red-600" },
-            { label: "Avg Shelf Share %", value: dash.avg_shelf_share_30d !== null ? `${dash.avg_shelf_share_30d}%` : "—", color: "text-green-600" },
-            { label: "Share Estimates", value: dash.market_share_estimates, color: "text-gray-600" },
+            { label: tx("Total Observations"), value: dash.total_observations, color: "text-gray-800" },
+            { label: tx("Last 30d"), value: dash.observations_last_30d, color: "text-blue-600" },
+            { label: tx("OOS Incidents (30d)"), value: dash.oos_incidents_30d, color: "text-red-600" },
+            { label: tx("Avg Shelf Share %"), value: dash.avg_shelf_share_30d !== null ? `${dash.avg_shelf_share_30d}%` : "—", color: "text-green-600" },
+            { label: tx("Share Estimates"), value: dash.market_share_estimates, color: "text-gray-600" },
           ].map((k) => (
             <div key={k.label} className="bg-white border rounded-lg p-3 shadow-sm">
               <p className="text-xs text-gray-500">{k.label}</p>
@@ -128,19 +129,19 @@ export default function MarketIntelligencePage() {
       {tab === "shelf" && (
         <div className="bg-white border rounded-lg shadow-sm overflow-hidden">
           <div className="px-4 py-3 border-b bg-gray-50">
-            <h2 className="text-sm font-semibold text-gray-700">Shelf Share by Category (Last 90 days)</h2>
+            <h2 className="text-sm font-semibold text-gray-700">{tx("Shelf Share by Category (Last 90 days)")}</h2>
           </div>
           {shelf.length === 0 ? (
-            <div className="p-6 text-sm text-gray-400 text-center">No shelf share data. Log observations using &quot;Log Observation&quot;.</div>
+            <div className="p-6 text-sm text-gray-400 text-center">{tx("No shelf share data. Log observations using \"Log Observation\".")}</div>
           ) : (
             <table className="w-full text-sm">
               <thead className="bg-gray-50 text-xs text-gray-500">
                 <tr>
-                  <th className="text-left px-4 py-2">Category</th>
-                  <th className="text-left px-4 py-2">Avg Shelf Share</th>
-                  <th className="text-left px-4 py-2">Observations</th>
-                  <th className="text-left px-4 py-2">OOS Rate</th>
-                  <th className="text-left px-4 py-2">Comp. Promo Rate</th>
+                  <th className="text-left px-4 py-2">{tx("Category")}</th>
+                  <th className="text-left px-4 py-2">{tx("Avg Shelf Share")}</th>
+                  <th className="text-left px-4 py-2">{tx("Observations")}</th>
+                  <th className="text-left px-4 py-2">{tx("OOS Rate")}</th>
+                  <th className="text-left px-4 py-2">{tx("Comp. Promo Rate")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
@@ -175,29 +176,29 @@ export default function MarketIntelligencePage() {
       {tab === "obs" && (
         <div className="bg-white border rounded-lg shadow-sm overflow-hidden">
           <div className="px-4 py-3 border-b bg-gray-50">
-            <h2 className="text-sm font-semibold text-gray-700">Field Observations ({obs.length})</h2>
+            <h2 className="text-sm font-semibold text-gray-700">{tx("Field Observations (")}{obs.length})</h2>
           </div>
           {obs.length === 0 ? (
-            <div className="p-6 text-sm text-gray-400 text-center">No observations yet.</div>
+            <div className="p-6 text-sm text-gray-400 text-center">{tx("No observations yet.")}</div>
           ) : (
             <div className="divide-y">
               {obs.map((o) => (
                 <div key={o.id} className={`px-4 py-3 ${o.our_oos_flag ? "bg-red-50" : ""}`}>
                   <div className="flex items-center gap-3 flex-wrap">
                     {o.our_oos_flag && <span className="text-xs bg-red-500 text-white rounded px-2 py-0.5 font-bold">OOS</span>}
-                    {o.competitor_promo_active && <span className="text-xs bg-amber-100 text-amber-700 rounded px-2 py-0.5">Comp. Promo</span>}
+                    {o.competitor_promo_active && <span className="text-xs bg-amber-100 text-amber-700 rounded px-2 py-0.5">{tx("Comp. Promo")}</span>}
                     <span className="font-medium text-gray-900 text-sm">{o.outlet_name}</span>
                     <span className="text-xs text-gray-400">{o.outlet_type.replace(/_/g, " ")} · {o.location ?? ""}</span>
                     <span className="text-xs text-gray-400">{o.observation_date}</span>
                   </div>
                   <div className="flex gap-4 mt-1 text-xs text-gray-500 flex-wrap">
-                    <span>Category: {o.category}</span>
+                    <span>{tx("Category:")} {o.category}</span>
                     {o.our_shelf_share_pct !== null && (
                       <span className={`font-semibold ${o.our_shelf_share_pct >= 30 ? "text-green-600" : o.our_shelf_share_pct >= 15 ? "text-amber-500" : "text-red-500"}`}>
-                        Shelf share: {o.our_shelf_share_pct}% ({o.our_facings}/{o.total_facings} facings)
+                        {tx("Shelf share:")} {o.our_shelf_share_pct}% ({o.our_facings}/{o.total_facings} {tx("facings)")}
                       </span>
                     )}
-                    {o.our_promo_active && <span className="text-blue-600">Our promo active</span>}
+                    {o.our_promo_active && <span className="text-blue-600">{tx("Our promo active")}</span>}
                   </div>
                 </div>
               ))}
@@ -210,20 +211,20 @@ export default function MarketIntelligencePage() {
       {tab === "share" && (
         <div className="bg-white border rounded-lg shadow-sm overflow-hidden">
           <div className="px-4 py-3 border-b bg-gray-50">
-            <h2 className="text-sm font-semibold text-gray-700">Market Share Estimates ({shares.length})</h2>
+            <h2 className="text-sm font-semibold text-gray-700">{tx("Market Share Estimates (")}{shares.length})</h2>
           </div>
           {shares.length === 0 ? (
-            <div className="p-6 text-sm text-gray-400 text-center">No market share data. Use &quot;Log Market Share&quot;.</div>
+            <div className="p-6 text-sm text-gray-400 text-center">{tx("No market share data. Use \"Log Market Share\".")}</div>
           ) : (
             <table className="w-full text-sm">
               <thead className="bg-gray-50 text-xs text-gray-500">
                 <tr>
-                  <th className="text-left px-4 py-2">Category</th>
-                  <th className="text-left px-4 py-2">Period</th>
-                  <th className="text-left px-4 py-2">Our Share</th>
-                  <th className="text-left px-4 py-2">Market Value (KES)</th>
-                  <th className="text-left px-4 py-2">Source</th>
-                  <th className="text-left px-4 py-2">Competitors</th>
+                  <th className="text-left px-4 py-2">{tx("Category")}</th>
+                  <th className="text-left px-4 py-2">{tx("Period")}</th>
+                  <th className="text-left px-4 py-2">{tx("Our Share")}</th>
+                  <th className="text-left px-4 py-2">{tx("Market Value (KES)")}</th>
+                  <th className="text-left px-4 py-2">{tx("Source")}</th>
+                  <th className="text-left px-4 py-2">{tx("Competitors")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
@@ -250,7 +251,7 @@ export default function MarketIntelligencePage() {
       {/* Log observation form */}
       {tab === "log" && (
         <div className="bg-white border rounded-lg p-5 shadow-sm space-y-4 max-w-2xl">
-          <h2 className="text-sm font-semibold text-gray-700">Log Field Observation</h2>
+          <h2 className="text-sm font-semibold text-gray-700">{tx("Log Field Observation")}</h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {([["Outlet Name *","outlet_name","e.g. Naivas Karen"],["Category *","category","e.g. Liquid detergents"],["Our Brand","our_brand","e.g. POVU"],["Observer","observer_name","e.g. Field Rep"],["Location","location","e.g. Nairobi, Karen"],["Our Facings","our_facings","e.g. 6"],["Total Facings","total_facings","e.g. 20"],["Notes","notes","Optional"]] as const).map(([label,key,ph]) => (
               <div key={key}>
@@ -261,14 +262,14 @@ export default function MarketIntelligencePage() {
               </div>
             ))}
             <div>
-              <label className="text-xs text-gray-500 block mb-1">Outlet Type</label>
+              <label className="text-xs text-gray-500 block mb-1">{tx("Outlet Type")}</label>
               <select value={obsForm.outlet_type} onChange={(e) => setObsForm((p) => ({ ...p, outlet_type: e.target.value }))}
                 className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none">
                 {OUTLET_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-xs text-gray-500 block mb-1">Date *</label>
+              <label className="text-xs text-gray-500 block mb-1">{tx("Date *")}</label>
               <input type="date" value={obsForm.observation_date}
                 onChange={(e) => setObsForm((p) => ({ ...p, observation_date: e.target.value }))}
                 className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none" />
@@ -284,14 +285,14 @@ export default function MarketIntelligencePage() {
             ))}
           </div>
           <button onClick={logObs} disabled={saving || !obsForm.outlet_name || !obsForm.category}
-            className="bg-blue-600 text-white text-sm px-4 py-2 rounded disabled:opacity-50">{saving ? "Saving…" : "Log Observation"}</button>
+            className="bg-blue-600 text-white text-sm px-4 py-2 rounded disabled:opacity-50">{saving ? tx("Saving…") : tx("Log Observation")}</button>
         </div>
       )}
 
       {/* Log market share form */}
       {tab === "logshare" && (
         <div className="bg-white border rounded-lg p-5 shadow-sm space-y-3 max-w-lg">
-          <h2 className="text-sm font-semibold text-gray-700">Log Market Share Estimate</h2>
+          <h2 className="text-sm font-semibold text-gray-700">{tx("Log Market Share Estimate")}</h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {([["Category *","category","e.g. Liquid detergents"],["Our Brand","our_brand","e.g. POVU"],["Our Share %","our_share_pct","e.g. 18.5"],["Market Value (KES)","total_market_value_kes","e.g. 50000000"],["Source","source","field | nielsen | IRI | manual"],["Notes","notes","Optional"]] as const).map(([label,key,ph]) => (
               <div key={key}>
@@ -302,14 +303,14 @@ export default function MarketIntelligencePage() {
               </div>
             ))}
             <div>
-              <label className="text-xs text-gray-500 block mb-1">Period Month *</label>
+              <label className="text-xs text-gray-500 block mb-1">{tx("Period Month *")}</label>
               <input type="month" value={shareForm.period_month}
                 onChange={(e) => setShareForm((p) => ({ ...p, period_month: e.target.value }))}
                 className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none" />
             </div>
           </div>
           <button onClick={logShare} disabled={saving || !shareForm.category}
-            className="bg-blue-600 text-white text-sm px-4 py-2 rounded disabled:opacity-50">{saving ? "Saving…" : "Log Market Share"}</button>
+            className="bg-blue-600 text-white text-sm px-4 py-2 rounded disabled:opacity-50">{saving ? tx("Saving…") : tx("Log Market Share")}</button>
         </div>
       )}
     </div>

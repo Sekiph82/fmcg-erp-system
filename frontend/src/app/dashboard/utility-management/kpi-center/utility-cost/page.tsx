@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend } from "recharts";
 import { kpiApi } from "@/lib/utilityKpi";
+import { tx } from "@/lib/i18n/core";
 
 const today = new Date().toISOString().slice(0, 10);
 const mtdStart = today.slice(0, 8) + "01";
@@ -37,7 +38,7 @@ function DateFilter({ from, to, onFrom, onTo }: { from: string; to: string; onFr
   return (
     <div className="flex gap-3 items-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3">
       <input type="date" className={ic} value={from} onChange={e => onFrom(e.target.value)} />
-      <span className="text-gray-400 text-xs">to</span>
+      <span className="text-gray-400 text-xs">{tx("to")}</span>
       <input type="date" className={ic} value={to} onChange={e => onTo(e.target.value)} />
     </div>
   );
@@ -91,15 +92,15 @@ export default function UtilityCostKpiPage() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <div className="flex items-center gap-3 mb-1">
-            <Link href="/dashboard/utility-management/kpi-center" className="text-sm text-gray-500 hover:text-blue-600">← KPI Center</Link>
+            <Link href="/dashboard/utility-management/kpi-center" className="text-sm text-gray-500 hover:text-blue-600">{tx("← KPI Center")}</Link>
             <span className="text-gray-300">|</span>
-            <Link href="/dashboard/utility-management/billing" className="text-sm text-blue-600 hover:underline">Billing Records →</Link>
+            <Link href="/dashboard/utility-management/billing" className="text-sm text-blue-600 hover:underline">{tx("Billing Records →")}</Link>
           </div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white" style={{ borderLeft: "4px solid #94a3b8", paddingLeft: 12 }}>
-            Utility Cost KPI Dashboard
+            {tx("Utility Cost KPI Dashboard")}
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Full cost overview across all utility types — bills, cost per ton, and unpaid amounts.
+            {tx("Full cost overview across all utility types — bills, cost per ton, and unpaid amounts.")}
           </p>
         </div>
         <DateFilter from={dateFrom} to={dateTo} onFrom={setDateFrom} onTo={setDateTo} />
@@ -110,13 +111,13 @@ export default function UtilityCostKpiPage() {
         <div className="rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-300 dark:border-amber-700 p-4 flex items-center gap-3">
           <span className="text-amber-500 text-xl">💰</span>
           <div className="text-sm">
-            <p className="font-semibold text-amber-800 dark:text-amber-300">Outstanding Payments</p>
+            <p className="font-semibold text-amber-800 dark:text-amber-300">{tx("Outstanding Payments")}</p>
             <p className="text-amber-700 dark:text-amber-400">
-              {fmtCcy(kpi?.unpaid_amount, cc)} ({unpaidPct.toFixed(1)}% of period total) pending payment across {kpi?.total_bills} bill(s).
+              {fmtCcy(kpi?.unpaid_amount, cc)} ({unpaidPct.toFixed(1)}{tx("% of period total) pending payment across")} {kpi?.total_bills} {tx("bill(s).")}
             </p>
           </div>
           <Link href="/dashboard/utility-management/billing" className="ml-auto text-xs bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300 px-3 py-1.5 rounded-lg hover:bg-amber-200 transition-colors">
-            View Bills →
+            {tx("View Bills →")}
           </Link>
         </div>
       )}
@@ -124,47 +125,47 @@ export default function UtilityCostKpiPage() {
       {/* KPI cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         <KpiCard
-          label="Total Utility Cost"
+          label={tx("Total Utility Cost")}
           value={fmtCcy(kpi?.total_cost, cc)}
           sub={`${dateFrom} – ${dateTo}`}
         />
         <KpiCard
-          label="Cost per Ton"
+          label={tx("Cost per Ton")}
           value={fmtCcy(kpi?.cost_per_ton, cc)}
           unit="/t"
           sub="Based on production volume"
         />
         <KpiCard
-          label="Cost per Batch"
+          label={tx("Cost per Batch")}
           value={fmtCcy(kpi?.cost_per_batch, cc)}
           unit="/batch"
         />
         <KpiCard
-          label="Total Bills"
+          label={tx("Total Bills")}
           value={kpi?.total_bills == null ? "—" : String(kpi.total_bills)}
         />
         <KpiCard
-          label="Electricity Cost"
+          label={tx("Electricity Cost")}
           value={fmtCcy(kpi?.electricity_cost, cc)}
         />
         <KpiCard
-          label="Water Cost"
+          label={tx("Water Cost")}
           value={fmtCcy(kpi?.water_cost, cc)}
         />
         <KpiCard
-          label="Gas Cost"
+          label={tx("Gas Cost")}
           value={fmtCcy(kpi?.gas_cost, cc)}
         />
         <KpiCard
-          label="Steam Cost"
+          label={tx("Steam Cost")}
           value={fmtCcy(kpi?.steam_cost, cc)}
         />
         <KpiCard
-          label="Other Costs"
+          label={tx("Other Costs")}
           value={fmtCcy(kpi?.other_cost, cc)}
         />
         <KpiCard
-          label="Unpaid Amount"
+          label={tx("Unpaid Amount")}
           value={fmtCcy(kpi?.unpaid_amount, cc)}
           critical={(kpi?.unpaid_amount ?? 0) > 0}
           sub={unpaidPct > 0 ? `${unpaidPct.toFixed(1)}% of total` : undefined}
@@ -176,7 +177,7 @@ export default function UtilityCostKpiPage() {
         {/* Pie chart */}
         {pieData.length > 0 && (
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Cost Distribution by Utility</h3>
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">{tx("Cost Distribution by Utility")}</h3>
             <ResponsiveContainer width="100%" height={240}>
               <PieChart>
                 <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90}
@@ -192,7 +193,7 @@ export default function UtilityCostKpiPage() {
         {/* Bar chart */}
         {barData.length > 0 && (
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Cost by Utility Type</h3>
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">{tx("Cost by Utility Type")}</h3>
             <ResponsiveContainer width="100%" height={240}>
               <BarChart data={barData} layout="vertical" margin={{ top: 4, right: 20, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} />
@@ -214,7 +215,7 @@ export default function UtilityCostKpiPage() {
 
       {/* Daily cost trend */}
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Daily Total Utility Cost Trend</h3>
+        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">{tx("Daily Total Utility Cost Trend")}</h3>
         <ResponsiveContainer width="100%" height={220}>
           <BarChart data={trend} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" />

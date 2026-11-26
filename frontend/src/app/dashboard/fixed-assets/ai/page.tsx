@@ -2,6 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { faApi, FAAIRecommendation, FAIAgentType, FAIRecStatus } from "@/lib/fixed_assets";
 import { useState } from "react";
+import { tx } from "@/lib/i18n/core";
 
 const AGENT_LABEL: Record<FAIAgentType, string> = {
   RISK_MONITOR:           "Asset Risk Monitor",
@@ -38,8 +39,8 @@ export default function FAAIPage() {
     <div className="p-6 space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">AI Agents — Fixed Assets</h1>
-          <p className="text-sm text-gray-500">Risk Monitor · Depreciation Review · Capitalization Checker</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("AI Agents — Fixed Assets")}</h1>
+          <p className="text-sm text-gray-500">{tx("Risk Monitor · Depreciation Review · Capitalization Checker")}</p>
         </div>
         <div className="flex gap-2">
           <select
@@ -47,28 +48,28 @@ export default function FAAIPage() {
             onChange={(e) => setStatusFilter(e.target.value as FAIRecStatus | "")}
             className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
           >
-            <option value="">All Statuses</option>
+            <option value="">{tx("All Statuses")}</option>
             {(["PENDING","ACKNOWLEDGED","ACTIONED","DISMISSED"] as FAIRecStatus[]).map(s => (
               <option key={s} value={s}>{s}</option>
             ))}
           </select>
           <button onClick={() => runAgents.mutate()} disabled={runAgents.isPending} className="glow-button">
-            {runAgents.isPending ? "Running…" : "Run AI Agents"}
+            {runAgents.isPending ? tx("Running…") : tx("Run AI Agents")}
           </button>
         </div>
       </div>
 
       {runAgents.isSuccess && (
         <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-700">
-          ✓ AI agents completed. New recommendations generated.
+          {tx("✓ AI agents completed. New recommendations generated.")}
         </div>
       )}
 
       <div className="space-y-3">
         {isLoading ? (
-          <div className="text-gray-400 text-sm p-6 text-center">Loading…</div>
+          <div className="text-gray-400 text-sm p-6 text-center">{tx("Loading…")}</div>
         ) : recs.length === 0 ? (
-          <div className="liquid-glass p-8 text-center text-gray-400">No recommendations found.</div>
+          <div className="liquid-glass p-8 text-center text-gray-400">{tx("No recommendations found.")}</div>
         ) : recs.map((rec) => (
           <div key={rec.id} className="liquid-glass p-4 space-y-2">
             <div className="flex items-start justify-between gap-3">
@@ -93,11 +94,11 @@ export default function FAAIPage() {
             {rec.status === "PENDING" && (
               <div className="flex gap-2">
                 <button onClick={() => ack.mutate({ id: rec.id, status: "ACKNOWLEDGED" })}
-                  className="glow-button-secondary text-xs !py-1">Acknowledge</button>
+                  className="glow-button-secondary text-xs !py-1">{tx("Acknowledge")}</button>
                 <button onClick={() => ack.mutate({ id: rec.id, status: "ACTIONED" })}
-                  className="glow-button text-xs !py-1">Mark Actioned</button>
+                  className="glow-button text-xs !py-1">{tx("Mark Actioned")}</button>
                 <button onClick={() => ack.mutate({ id: rec.id, status: "DISMISSED" })}
-                  className="text-xs text-gray-400 hover:text-gray-600 px-2">Dismiss</button>
+                  className="text-xs text-gray-400 hover:text-gray-600 px-2">{tx("Dismiss")}</button>
               </div>
             )}
           </div>

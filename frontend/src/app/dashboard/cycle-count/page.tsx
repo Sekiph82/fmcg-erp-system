@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getDashboard, Dashboard } from "@/lib/cycleCount";
 import { PageHelpTooltip } from "@/components/help/PageHelpTooltip";
+import { tx } from "@/lib/i18n/core";
 
 export default function CycleCountDashboardPage() {
   const [data, setData] = useState<Dashboard | null>(null);
@@ -14,34 +15,34 @@ export default function CycleCountDashboardPage() {
   }, []);
 
   const navLinks = [
-    { href: "/dashboard/cycle-count/plans",    label: "Count Plans",       desc: "ABC/random/location strategies" },
-    { href: "/dashboard/cycle-count/tasks",    label: "Count Tasks",       desc: "Daily task queue" },
-    { href: "/dashboard/cycle-count/entries",  label: "Count Entries",     desc: "Record physical counts" },
-    { href: "/dashboard/cycle-count/variances", label: "Variance Review",  desc: "Approve/reject adjustments" },
-    { href: "/dashboard/cycle-count/reports",  label: "Reports & AI",      desc: "Accuracy, variance, AI insights" },
+    { href: "/dashboard/cycle-count/plans",    label: tx("Count Plans"),       desc: tx("ABC/random/location strategies") },
+    { href: "/dashboard/cycle-count/tasks",    label: tx("Count Tasks"),       desc: tx("Daily task queue") },
+    { href: "/dashboard/cycle-count/entries",  label: tx("Count Entries"),     desc: tx("Record physical counts") },
+    { href: "/dashboard/cycle-count/variances", label: tx("Variance Review"),  desc: tx("Approve/reject adjustments") },
+    { href: "/dashboard/cycle-count/reports",  label: tx("Reports & AI"),      desc: tx("Accuracy, variance, AI insights") },
   ];
 
-  if (loading) return <div className="p-8 text-gray-500">Loading...</div>;
+  if (loading) return <div className="p-8 text-gray-500">{tx("Loading...")}</div>;
 
   const kpis = data ? [
-    { label: "Active Plans",       value: data.active_plans,         color: "text-green-700" },
-    { label: "Tasks Today",        value: data.tasks_today,          color: "text-gray-900" },
-    { label: "Overdue",            value: data.tasks_overdue,        color: "text-red-600",  alert: data.tasks_overdue > 0 },
-    { label: "Pending",            value: data.tasks_pending,        color: "text-gray-900" },
-    { label: "Done Today",         value: data.tasks_completed_today, color: "text-green-700" },
-    { label: "Accuracy (7d)",      value: `${data.accuracy_pct_7d}%`, color: data.accuracy_pct_7d >= 98 ? "text-green-700" : "text-amber-600" },
-    { label: "Open Variances",     value: data.open_variances,       color: "text-amber-600", alert: data.open_variances > 0 },
-    { label: "Pending Adj.",       value: data.pending_adjustments,  color: "text-indigo-700", alert: data.pending_adjustments > 0 },
+    { label: tx("Active Plans"),       value: data.active_plans,         color: "text-green-700" },
+    { label: tx("Tasks Today"),        value: data.tasks_today,          color: "text-gray-900" },
+    { label: tx("Overdue"),            value: data.tasks_overdue,        color: "text-red-600",  alert: data.tasks_overdue > 0 },
+    { label: tx("Pending"),            value: data.tasks_pending,        color: "text-gray-900" },
+    { label: tx("Done Today"),         value: data.tasks_completed_today, color: "text-green-700" },
+    { label: tx("Accuracy (7d)"),      value: `${data.accuracy_pct_7d}%`, color: data.accuracy_pct_7d >= 98 ? "text-green-700" : "text-amber-600" },
+    { label: tx("Open Variances"),     value: data.open_variances,       color: "text-amber-600", alert: data.open_variances > 0 },
+    { label: tx("Pending Adj."),       value: data.pending_adjustments,  color: "text-indigo-700", alert: data.pending_adjustments > 0 },
   ] : [];
 
   return (
     <div className="max-w-5xl mx-auto py-8 px-4 space-y-6">
       <div>
         <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-bold text-gray-900">Cycle Count</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Cycle Count")}</h1>
           <PageHelpTooltip topic="inventory-cycle-count" />
         </div>
-        <p className="text-sm text-gray-500 mt-1">Inventory accuracy through scheduled periodic counting</p>
+        <p className="text-sm text-gray-500 mt-1">{tx("Inventory accuracy through scheduled periodic counting")}</p>
       </div>
 
       <div className="grid grid-cols-4 sm:grid-cols-8 gap-3">
@@ -64,7 +65,7 @@ export default function CycleCountDashboardPage() {
 
       {data && data.recent_variances.length > 0 && (
         <div className="bg-white rounded-2xl border border-amber-200 p-6">
-          <h2 className="text-sm font-semibold text-amber-700 mb-3">Recent Variances (Outside Tolerance)</h2>
+          <h2 className="text-sm font-semibold text-amber-700 mb-3">{tx("Recent Variances (Outside Tolerance)")}</h2>
           <div className="space-y-2">
             {data.recent_variances.map((v, i) => (
               <div key={i} className="flex items-center justify-between text-sm">

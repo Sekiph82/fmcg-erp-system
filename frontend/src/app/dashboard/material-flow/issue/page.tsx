@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { mfApi, Consumption, FlowTransaction, Reservation, ReservationLine, FLOW_STATUS_COLORS } from "@/lib/materialFlow";
+import { tx } from "@/lib/i18n/core";
 
 function outstanding(line: ReservationLine): number {
   return Math.max(0, Number(line.quantity_reserved) - Number(line.quantity_issued));
@@ -95,7 +96,7 @@ export default function IssuePage() {
   const issue = useMutation({
     mutationFn: () => {
       if (!selectedReservation || requestLines.length === 0) {
-        throw new Error("Select a reservation line and enter a positive issue quantity.");
+        throw new Error(tx("Select a reservation line and enter a positive issue quantity."));
       }
       const key = idempotencyKey || window.crypto.randomUUID();
       if (!idempotencyKey) setIdempotencyKey(key);
@@ -109,7 +110,7 @@ export default function IssuePage() {
         : mfApi.issueReservedMaterials(selectedReservation.id, payload);
     },
     onSuccess: (transaction) => {
-      setSuccessMessage(`Material issue ${transaction.flow_no} was posted.`);
+      setSuccessMessage(tx("Material issue {flow_no} was posted.", { flow_no: transaction.flow_no }));
       setErrorMessage("");
       setReservationId("");
       setQuantities({});
@@ -120,13 +121,13 @@ export default function IssuePage() {
       qc.invalidateQueries({ queryKey: ["mf-dashboard"] });
     },
     onError: () => {
-      setErrorMessage("The issue was not confirmed. Check the reservation status, outstanding quantity, lot quality, and warehouse access. Retrying the same request reuses its safety key.");
+      setErrorMessage(tx("The issue was not confirmed. Check the reservation status, outstanding quantity, lot quality, and warehouse access. Retrying the same request reuses its safety key."));
     },
   });
   const recordPackagingConsumption = useMutation({
     mutationFn: () => {
       if (!selectedConsumption || !selectedConsumption.transaction.production_order_id) {
-        throw new Error("Select a posted packaging issue line.");
+        throw new Error(tx("Select a posted packaging issue line."));
       }
       const key = consumptionIdempotencyKey || window.crypto.randomUUID();
       if (!consumptionIdempotencyKey) setConsumptionIdempotencyKey(key);
@@ -142,13 +143,13 @@ export default function IssuePage() {
       setConsumptionQuantity("");
       setConsumptionNotes("");
       setConsumptionIdempotencyKey("");
-      setSuccessMessage("Packaging consumption was linked to the production order.");
+      setSuccessMessage(tx("Packaging consumption was linked to the production order."));
       setErrorMessage("");
       qc.invalidateQueries({ queryKey: ["mf-consumptions"] });
       qc.invalidateQueries({ queryKey: ["mf-dashboard"] });
     },
     onError: () => {
-      setErrorMessage("Packaging consumption was not recorded. Check the issue line, order state, remaining quantity, and warehouse access.");
+      setErrorMessage(tx("Packaging consumption was not recorded. Check the issue line, order state, remaining quantity, and warehouse access."));
     },
   });
   const returnMaterial = useMutation({
@@ -164,7 +165,7 @@ export default function IssuePage() {
       });
     },
     onSuccess: (transaction, variables) => {
-      setSuccessMessage(`Excess material return ${transaction.flow_no} was posted and blocked pending review.`);
+      setSuccessMessage(tx("Excess material return {flow_no} was posted and blocked pending review.", { flow_no: transaction.flow_no }));
       setErrorMessage("");
       setReturnQuantities((current) => ({ ...current, [variables.issueLineId]: "" }));
       setReturnKeys((current) => {
@@ -178,7 +179,7 @@ export default function IssuePage() {
       qc.invalidateQueries({ queryKey: ["mf-dashboard"] });
     },
     onError: () => {
-      setErrorMessage("The return was not posted. Check that the quantity is unused, the original issue is valid, and you have access to its warehouse. Retrying reuses the same safety key.");
+      setErrorMessage(tx("The return was not posted. Check that the quantity is unused, the original issue is valid, and you have access to its warehouse. Retrying reuses the same safety key."));
     },
   });
   const scrapMaterial = useMutation({
@@ -195,7 +196,7 @@ export default function IssuePage() {
       });
     },
     onSuccess: (transaction, variables) => {
-      setSuccessMessage(`Scrap event ${transaction.flow_no} was recorded against the issued material; warehouse stock was not deducted a second time.`);
+      setSuccessMessage(tx("Scrap event {flow_no} was recorded against the issued material; warehouse stock was not deducted a second time.", { flow_no: transaction.flow_no }));
       setErrorMessage("");
       setScrapQuantities((current) => ({ ...current, [variables.issueLineId]: "" }));
       setScrapKeys((current) => {
@@ -209,15 +210,15 @@ export default function IssuePage() {
       qc.invalidateQueries({ queryKey: ["mf-dashboard"] });
     },
     onError: () => {
-      setErrorMessage("The scrap/spillage record was not posted. Check remaining issued quantity, order state, and warehouse access. Retrying reuses the same safety key.");
+      setErrorMessage(tx("The scrap/spillage record was not posted. Check remaining issued quantity, order state, and warehouse access. Retrying reuses the same safety key."));
     },
   });
 
   return (
     <div className="space-y-6 p-6">
       <div className="flex items-center gap-3">
-        <a href="/dashboard/material-flow" className="text-sm text-indigo-600 hover:underline">← Dashboard</a>
-        <h1 className="text-xl font-bold text-gray-900">Issue Reserved Materials</h1>
+        <a href="/dashboard/material-flow" className="text-sm text-indigo-600 hover:underline">{tx("← Dashboard")}</a>
+        <h1 className="text-xl font-bold text-gray-900">{tx("Issue Reserved Materials")}</h1>
       </div>
 
       {successMessage && <div role="status" className="rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-700">{successMessage}</div>}
@@ -225,23 +226,23 @@ export default function IssuePage() {
 
       <section className="space-y-4 rounded-lg border bg-white p-5">
         <div>
-          <h2 className="font-semibold text-gray-800">New material issue</h2>
-          <p className="mt-1 text-xs text-gray-500">Only material already reserved for a released production order can be issued. Stock and reservation balances post together.</p>
+          <h2 className="font-semibold text-gray-800">{tx("New material issue")}</h2>
+          <p className="mt-1 text-xs text-gray-500">{tx("Only material already reserved for a released production order can be issued. Stock and reservation balances post together.")}</p>
         </div>
         <div className="grid gap-4 md:grid-cols-2">
           <label className="text-xs font-medium text-gray-600">
-            Issue category
+            {tx("Issue category")}
             <select
               value={issueType}
               onChange={(event) => { setIssueType(event.target.value as "RAW_ISSUE" | "PKG_ISSUE"); setQuantities({}); setIdempotencyKey(""); }}
               className="mt-1 w-full rounded border px-3 py-2 text-sm font-normal text-gray-900"
             >
-              <option value="RAW_ISSUE">Raw material</option>
-              <option value="PKG_ISSUE">Packaging material</option>
+              <option value="RAW_ISSUE">{tx("Raw material")}</option>
+              <option value="PKG_ISSUE">{tx("Packaging material")}</option>
             </select>
           </label>
           <label className="text-xs font-medium text-gray-600">
-            Reservation
+            {tx("Reservation")}
             <select
               value={reservationId}
               onChange={(event) => {
@@ -252,7 +253,7 @@ export default function IssuePage() {
               }}
               className="mt-1 w-full rounded border px-3 py-2 text-sm font-normal text-gray-900"
             >
-              <option value="">Select an active reservation</option>
+              <option value="">{tx("Select an active reservation")}</option>
               {reservations.map((reservation) => (
                 <option key={reservation.id} value={reservation.id}>
                   {reservation.reservation_no} · {reservation.status}
@@ -261,12 +262,12 @@ export default function IssuePage() {
             </select>
           </label>
           <label className="text-xs font-medium text-gray-600">
-            Notes
+            {tx("Notes")}
             <input
               value={notes}
               onChange={(event) => setNotes(event.target.value)}
               className="mt-1 w-full rounded border px-3 py-2 text-sm font-normal text-gray-900"
-              placeholder="Optional issue note"
+              placeholder={tx("Optional issue note")}
             />
           </label>
         </div>
@@ -276,21 +277,21 @@ export default function IssuePage() {
             <table className="w-full text-sm">
               <thead className="bg-gray-50 text-left text-xs text-gray-600">
                 <tr>
-                  <th className="px-3 py-2">Material</th>
-                  <th className="px-3 py-2">Lot</th>
-                  <th className="px-3 py-2 text-right">Outstanding</th>
+                  <th className="px-3 py-2">{tx("Material")}</th>
+                  <th className="px-3 py-2">{tx("Lot")}</th>
+                  <th className="px-3 py-2 text-right">{tx("Outstanding")}</th>
                   <th className="px-3 py-2">UOM</th>
-                  <th className="px-3 py-2">Issue quantity</th>
+                  <th className="px-3 py-2">{tx("Issue quantity")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
                 {selectedLines.map((line) => (
                   <tr key={line.id}>
                     <td className="px-3 py-2">
-                      <div>{line.material_name || line.material_id || "Material"}</div>
-                      <div className="font-mono text-[11px] text-gray-500">Line {line.line_no}</div>
+                      <div>{line.material_name || line.material_id || tx("Material")}</div>
+                      <div className="font-mono text-[11px] text-gray-500">{tx("Line")} {line.line_no}</div>
                     </td>
-                    <td className="px-3 py-2 font-mono text-xs">{line.lot_number || "Untracked lot"}</td>
+                    <td className="px-3 py-2 font-mono text-xs">{line.lot_number || tx("Untracked lot")}</td>
                     <td className="px-3 py-2 text-right">{outstanding(line).toLocaleString()}</td>
                     <td className="px-3 py-2 text-xs">{line.uom}</td>
                     <td className="px-3 py-2">
@@ -302,7 +303,7 @@ export default function IssuePage() {
                         value={quantities[line.id] || ""}
                         onChange={(event) => setQuantities((current) => ({ ...current, [line.id]: event.target.value }))}
                         className="w-32 rounded border px-2 py-1 text-right text-sm"
-                        aria-label={`Issue quantity for reservation line ${line.line_no}`}
+                        aria-label={tx("Issue quantity for reservation line {line_no}", { line_no: line.line_no })}
                       />
                     </td>
                   </tr>
@@ -318,34 +319,34 @@ export default function IssuePage() {
             disabled={!selectedReservation || requestLines.length === 0 || issue.isPending}
             className="rounded-lg bg-blue-600 px-5 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
           >
-            {issue.isPending ? "Posting…" : issueType === "PKG_ISSUE" ? "Post packaging issue" : "Post raw-material issue"}
+            {issue.isPending ? tx("Posting…") : issueType === "PKG_ISSUE" ? tx("Post packaging issue") : tx("Post raw-material issue")}
           </button>
         </div>
       </section>
 
       <section className="space-y-4 rounded-lg border bg-white p-5">
         <div>
-          <h2 className="font-semibold text-gray-900">Record actual packaging consumption</h2>
-          <p className="mt-1 text-xs text-gray-500">Consumption links to a posted packaging issue and production order. The actual quantity is added to finished-lot genealogy when the order completes.</p>
+          <h2 className="font-semibold text-gray-900">{tx("Record actual packaging consumption")}</h2>
+          <p className="mt-1 text-xs text-gray-500">{tx("Consumption links to a posted packaging issue and production order. The actual quantity is added to finished-lot genealogy when the order completes.")}</p>
         </div>
         <div className="grid gap-4 md:grid-cols-2">
           <label className="text-xs font-medium text-gray-600">
-            Posted packaging issue line
+            {tx("Posted packaging issue line")}
             <select
               value={consumptionLineId}
               onChange={(event) => { setConsumptionLineId(event.target.value); setConsumptionQuantity(""); setConsumptionIdempotencyKey(""); }}
               className="mt-1 w-full rounded border px-3 py-2 text-sm font-normal text-gray-900"
             >
-              <option value="">Select a packaging issue line</option>
+              <option value="">{tx("Select a packaging issue line")}</option>
               {packageIssueLines.map(({ transaction, line }) => (
                 <option key={line.id} value={line.id}>
-                  {transaction.flow_no} · {line.material_name || line.material_id} · {line.lot_number || "untracked lot"}
+                  {transaction.flow_no} · {line.material_name || line.material_id} · {line.lot_number || tx("untracked lot")}
                 </option>
               ))}
             </select>
           </label>
           <label className="text-xs font-medium text-gray-600">
-            Actual consumed quantity
+            {tx("Actual consumed quantity")}
             <input
               type="number"
               min="0"
@@ -356,11 +357,11 @@ export default function IssuePage() {
               className="mt-1 w-full rounded border px-3 py-2 text-sm font-normal text-gray-900"
               disabled={!selectedConsumption}
             />
-            {selectedConsumption && <span className="mt-1 block text-[11px]">Up to {outstandingConsumption.toLocaleString()} {selectedConsumption.line.uom} remains unsettled.</span>}
+            {selectedConsumption && <span className="mt-1 block text-[11px]">{tx("Up to")} {outstandingConsumption.toLocaleString()} {selectedConsumption.line.uom} {tx("remains unsettled.")}</span>}
           </label>
         </div>
         <label className="block text-xs font-medium text-gray-600">
-          Consumption note
+          {tx("Consumption note")}
           <input value={consumptionNotes} onChange={(event) => { setConsumptionNotes(event.target.value); setConsumptionIdempotencyKey(""); }} className="mt-1 w-full rounded border px-3 py-2 text-sm font-normal text-gray-900" />
         </label>
         <button
@@ -368,19 +369,19 @@ export default function IssuePage() {
           disabled={!selectedConsumption || Number(consumptionQuantity) <= 0 || Number(consumptionQuantity) > outstandingConsumption || recordPackagingConsumption.isPending}
           className="rounded-lg bg-violet-600 px-5 py-2 text-sm text-white hover:bg-violet-700 disabled:opacity-50"
         >
-          {recordPackagingConsumption.isPending ? "Recording…" : "Record packaging consumption"}
+          {recordPackagingConsumption.isPending ? tx("Recording…") : tx("Record packaging consumption")}
         </button>
       </section>
 
       <section className="overflow-hidden rounded-lg border bg-white">
         <div className="border-b px-4 py-3">
-          <h2 className="font-semibold text-gray-900">Recent material issues</h2>
+          <h2 className="font-semibold text-gray-900">{tx("Recent material issues")}</h2>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-left text-xs text-gray-600">
               <tr>
-                {["Flow No", "Reservation", "Date", "Status", "Lines"].map((heading) => <th key={heading} className="px-4 py-2">{heading}</th>)}
+                {[tx("Flow No"), tx("Reservation"), tx("Date"), tx("Status"), tx("Lines")].map((heading) => <th key={heading} className="px-4 py-2">{heading}</th>)}
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -395,7 +396,7 @@ export default function IssuePage() {
                   <td className="px-4 py-2 text-xs">{transaction.lines?.length || 0}</td>
                 </tr>
               ))}
-              {transactions.length === 0 && <tr><td colSpan={5} className="px-4 py-6 text-center text-sm text-gray-500">No material issue transactions yet.</td></tr>}
+              {transactions.length === 0 && <tr><td colSpan={5} className="px-4 py-6 text-center text-sm text-gray-500">{tx("No material issue transactions yet.")}</td></tr>}
             </tbody>
           </table>
         </div>
@@ -403,23 +404,23 @@ export default function IssuePage() {
 
       <section className="space-y-4 rounded-lg border bg-white p-5">
         <div>
-          <h2 className="font-semibold text-gray-900">Return unused material</h2>
-          <p className="mt-1 text-xs text-gray-500">Returns are linked to a posted issue line. Returned stock is recorded at its original location and blocked until review; it is not immediately available for another reservation.</p>
+          <h2 className="font-semibold text-gray-900">{tx("Return unused material")}</h2>
+          <p className="mt-1 text-xs text-gray-500">{tx("Returns are linked to a posted issue line. Returned stock is recorded at its original location and blocked until review; it is not immediately available for another reservation.")}</p>
         </div>
         <label className="block max-w-xl text-xs font-medium text-gray-600">
-          Return note
+          {tx("Return note")}
           <input
             value={returnNotes}
             onChange={(event) => setReturnNotes(event.target.value)}
             className="mt-1 w-full rounded border px-3 py-2 text-sm font-normal text-gray-900"
-            placeholder="Optional reason or condition note"
+            placeholder={tx("Optional reason or condition note")}
           />
         </label>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-left text-xs text-gray-600">
               <tr>
-                {['Issue', 'Issue line', 'Material', 'Lot', 'Issued', 'Return quantity', 'Action'].map((heading) => <th key={heading} className="px-3 py-2">{heading}</th>)}
+                {[tx("Issue"), tx("Issue line"), tx("Material"), tx("Lot"), tx("Issued"), tx("Return quantity"), tx("Action")].map((heading) => <th key={heading} className="px-3 py-2">{heading}</th>)}
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -427,8 +428,8 @@ export default function IssuePage() {
                 <tr key={line.id}>
                   <td className="px-3 py-2 font-mono text-xs">{transaction.flow_no}</td>
                   <td className="px-3 py-2 font-mono text-xs">{line.line_no}</td>
-                  <td className="px-3 py-2">{line.material_name || line.material_id || "Material"}</td>
-                  <td className="px-3 py-2 font-mono text-xs">{line.lot_number || "Untracked"}</td>
+                  <td className="px-3 py-2">{line.material_name || line.material_id || tx("Material")}</td>
+                  <td className="px-3 py-2 font-mono text-xs">{line.lot_number || tx("Untracked")}</td>
                   <td className="px-3 py-2 text-right">{Number(line.quantity).toLocaleString()} {line.uom}</td>
                   <td className="px-3 py-2">
                     <input
@@ -439,7 +440,7 @@ export default function IssuePage() {
                       value={returnQuantities[line.id] || ""}
                       onChange={(event) => setReturnQuantities((current) => ({ ...current, [line.id]: event.target.value }))}
                       className="w-32 rounded border px-2 py-1 text-right text-sm"
-                      aria-label={`Return quantity for issue line ${line.line_no}`}
+                      aria-label={tx("Return quantity for issue line {line_no}", { line_no: line.line_no })}
                     />
                   </td>
                   <td className="px-3 py-2">
@@ -452,50 +453,50 @@ export default function IssuePage() {
                       disabled={!Number.isFinite(Number(returnQuantities[line.id])) || Number(returnQuantities[line.id]) <= 0 || returnMaterial.isPending}
                       className="rounded bg-amber-600 px-3 py-1.5 text-xs text-white hover:bg-amber-700 disabled:opacity-50"
                     >
-                      {returnMaterial.isPending ? "Posting…" : "Post return"}
+                      {returnMaterial.isPending ? tx("Posting…") : tx("Post return")}
                     </button>
                   </td>
                 </tr>
               ))) }
-              {transactions.length === 0 && <tr><td colSpan={7} className="px-4 py-6 text-center text-sm text-gray-500">No posted material issue lines are available for return.</td></tr>}
+              {transactions.length === 0 && <tr><td colSpan={7} className="px-4 py-6 text-center text-sm text-gray-500">{tx("No posted material issue lines are available for return.")}</td></tr>}
             </tbody>
           </table>
         </div>
         <div className="border-t pt-3">
-          <h3 className="mb-2 text-sm font-semibold text-gray-800">Recent returns</h3>
+          <h3 className="mb-2 text-sm font-semibold text-gray-800">{tx("Recent returns")}</h3>
           <div className="space-y-1 text-xs text-gray-600">
             {returnTransactions.slice(0, 10).map((transaction) => (
               <div key={transaction.id} className="flex flex-wrap gap-x-3 gap-y-1">
                 <span className="font-mono">{transaction.flow_no}</span>
-                <span>Issue {transaction.source_document_id?.slice(0, 8) || "—"}</span>
-                <span>{transaction.lines?.reduce((sum, line) => sum + Number(line.quantity), 0).toLocaleString()} returned</span>
+                <span>{tx("Issue")} {transaction.source_document_id?.slice(0, 8) || "—"}</span>
+                <span>{transaction.lines?.reduce((sum, line) => sum + Number(line.quantity), 0).toLocaleString()} {tx("returned")}</span>
                 <span>{new Date(transaction.transaction_datetime).toLocaleString()}</span>
               </div>
             ))}
-            {returnTransactions.length === 0 && <p>No material returns recorded yet.</p>}
+            {returnTransactions.length === 0 && <p>{tx("No material returns recorded yet.")}</p>}
           </div>
         </div>
       </section>
 
       <section className="space-y-4 rounded-lg border bg-white p-5">
         <div>
-          <h2 className="font-semibold text-gray-900">Record scrap or spillage</h2>
-          <p className="mt-1 text-xs text-gray-500">Record a reason and quantity against a posted issue line. This records production loss; warehouse stock was already reduced when the material was issued.</p>
+          <h2 className="font-semibold text-gray-900">{tx("Record scrap or spillage")}</h2>
+          <p className="mt-1 text-xs text-gray-500">{tx("Record a reason and quantity against a posted issue line. This records production loss; warehouse stock was already reduced when the material was issued.")}</p>
         </div>
         <label className="block max-w-xl text-xs font-medium text-gray-600">
-          Explanation
+          {tx("Explanation")}
           <input
             value={scrapNotes}
             onChange={(event) => setScrapNotes(event.target.value)}
             className="mt-1 w-full rounded border px-3 py-2 text-sm font-normal text-gray-900"
-            placeholder="Describe what was lost or damaged"
+            placeholder={tx("Describe what was lost or damaged")}
           />
         </label>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-left text-xs text-gray-600">
               <tr>
-                {['Issue', 'Line', 'Material', 'Issued', 'Reason', 'Scrap quantity', 'Action'].map((heading) => <th key={heading} className="px-3 py-2">{heading}</th>)}
+                {[tx("Issue"), tx("Line"), tx("Material"), tx("Issued"), tx("Reason"), tx("Scrap quantity"), tx("Action")].map((heading) => <th key={heading} className="px-3 py-2">{heading}</th>)}
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -503,16 +504,16 @@ export default function IssuePage() {
                 <tr key={line.id}>
                   <td className="px-3 py-2 font-mono text-xs">{transaction.flow_no}</td>
                   <td className="px-3 py-2 font-mono text-xs">{line.line_no}</td>
-                  <td className="px-3 py-2">{line.material_name || line.material_id || "Material"}</td>
+                  <td className="px-3 py-2">{line.material_name || line.material_id || tx("Material")}</td>
                   <td className="px-3 py-2 text-right">{Number(line.quantity).toLocaleString()} {line.uom}</td>
                   <td className="px-3 py-2">
                     <select
                       value={scrapReasons[line.id] || ""}
                       onChange={(event) => setScrapReasons((current) => ({ ...current, [line.id]: event.target.value }))}
                       className="rounded border px-2 py-1 text-xs"
-                      aria-label={`Scrap reason for issue line ${line.line_no}`}
+                      aria-label={tx("Scrap reason for issue line {line_no}", { line_no: line.line_no })}
                     >
-                      <option value="">Select reason</option>
+                      <option value="">{tx("Select reason")}</option>
                       {[["SPILLAGE", "Spillage"], ["CONTAMINATION", "Contamination"], ["DAMAGE", "Damage"], ["PROCESS_LOSS", "Process loss"], ["OTHER", "Other"]].map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                     </select>
                   </td>
@@ -525,7 +526,7 @@ export default function IssuePage() {
                       value={scrapQuantities[line.id] || ""}
                       onChange={(event) => setScrapQuantities((current) => ({ ...current, [line.id]: event.target.value }))}
                       className="w-32 rounded border px-2 py-1 text-right text-sm"
-                      aria-label={`Scrap quantity for issue line ${line.line_no}`}
+                      aria-label={tx("Scrap quantity for issue line {line_no}", { line_no: line.line_no })}
                     />
                   </td>
                   <td className="px-3 py-2">
@@ -538,28 +539,28 @@ export default function IssuePage() {
                       disabled={!Number.isFinite(Number(scrapQuantities[line.id])) || Number(scrapQuantities[line.id]) <= 0 || !scrapReasons[line.id] || !scrapNotes.trim() || scrapMaterial.isPending}
                       className="rounded bg-red-600 px-3 py-1.5 text-xs text-white hover:bg-red-700 disabled:opacity-50"
                     >
-                      {scrapMaterial.isPending ? "Posting…" : "Record scrap"}
+                      {scrapMaterial.isPending ? tx("Posting…") : tx("Record scrap")}
                     </button>
                   </td>
                 </tr>
               ))) }
-              {transactions.length === 0 && <tr><td colSpan={7} className="px-4 py-6 text-center text-sm text-gray-500">No posted material issue lines are available.</td></tr>}
+              {transactions.length === 0 && <tr><td colSpan={7} className="px-4 py-6 text-center text-sm text-gray-500">{tx("No posted material issue lines are available.")}</td></tr>}
             </tbody>
           </table>
         </div>
         <div className="border-t pt-3">
-          <h3 className="mb-2 text-sm font-semibold text-gray-800">Recent scrap/spillage events</h3>
+          <h3 className="mb-2 text-sm font-semibold text-gray-800">{tx("Recent scrap/spillage events")}</h3>
           <div className="space-y-1 text-xs text-gray-600">
             {scrapTransactions.slice(0, 10).map((transaction) => (
               <div key={transaction.id} className="flex flex-wrap gap-x-3 gap-y-1">
                 <span className="font-mono">{transaction.flow_no}</span>
-                <span>Issue {transaction.source_document_id?.slice(0, 8) || "—"}</span>
-                <span>{transaction.lines?.reduce((sum, line) => sum + Number(line.quantity), 0).toLocaleString()} scrapped</span>
-                <span>{transaction.notes || "No notes"}</span>
+                <span>{tx("Issue")} {transaction.source_document_id?.slice(0, 8) || "—"}</span>
+                <span>{transaction.lines?.reduce((sum, line) => sum + Number(line.quantity), 0).toLocaleString()} {tx("scrapped")}</span>
+                <span>{transaction.notes || tx("No notes")}</span>
                 <span>{new Date(transaction.transaction_datetime).toLocaleString()}</span>
               </div>
             ))}
-            {scrapTransactions.length === 0 && <p>No scrap/spillage events recorded yet.</p>}
+            {scrapTransactions.length === 0 && <p>{tx("No scrap/spillage events recorded yet.")}</p>}
           </div>
         </div>
       </section>

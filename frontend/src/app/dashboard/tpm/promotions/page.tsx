@@ -6,6 +6,7 @@ import {
   PROMOTION_TYPE_LABEL, OBJECTIVE_TYPE_LABEL, PROMOTION_STATUS_BADGE,
 } from "@/lib/tpm";
 import Link from "next/link";
+import { tx } from "@/lib/i18n/core";
 
 export default function TPMPromotionsPage() {
   const qc = useQueryClient();
@@ -31,18 +32,18 @@ export default function TPMPromotionsPage() {
     <div className="p-6 space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Trade Promotions</h1>
-          <p className="text-sm text-gray-500">All planned and active trade promotion events.</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Trade Promotions")}</h1>
+          <p className="text-sm text-gray-500">{tx("All planned and active trade promotion events.")}</p>
         </div>
         <div className="flex gap-2 items-center">
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as TPMPromotionStatus | "")}
             className="rounded-lg border border-gray-300 px-3 py-2 text-sm">
-            <option value="">All Statuses</option>
+            <option value="">{tx("All Statuses")}</option>
             {(["DRAFT","PROPOSED","APPROVED","ACTIVE","COMPLETED","CANCELLED","SETTLED"] as TPMPromotionStatus[]).map((s) => (
               <option key={s} value={s}>{s}</option>
             ))}
           </select>
-          <Link href="/dashboard/tpm/promotions/new" className="glow-button text-sm">+ New Promotion</Link>
+          <Link href="/dashboard/tpm/promotions/new" className="glow-button text-sm">{tx("+ New Promotion")}</Link>
         </div>
       </div>
 
@@ -50,20 +51,20 @@ export default function TPMPromotionsPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-blue-900/30">
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Promotion</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Type</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Objective</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Period</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Scope</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Status</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Actions</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Promotion")}</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Type")}</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Objective")}</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Period")}</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Scope")}</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Status")}</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Actions")}</th>
             </tr>
           </thead>
           <tbody>
             {isLoading ? (
-              <tr><td colSpan={7} className="text-center py-10 text-gray-400">Loading…</td></tr>
+              <tr><td colSpan={7} className="text-center py-10 text-gray-400">{tx("Loading…")}</td></tr>
             ) : promotions.length === 0 ? (
-              <tr><td colSpan={7} className="text-center py-10 text-gray-400">No promotions found.</td></tr>
+              <tr><td colSpan={7} className="text-center py-10 text-gray-400">{tx("No promotions found.")}</td></tr>
             ) : promotions.map((p: TPMPromotion) => (
               <tr key={p.id} className="border-b border-blue-900/20 hover:bg-blue-950/20 transition-colors">
                 <td className="px-4 py-3">
@@ -91,19 +92,19 @@ export default function TPMPromotionsPage() {
                   <div className="flex gap-1 flex-wrap">
                     {p.status === "DRAFT" && (
                       <button onClick={() => updateStatus.mutate({ id: p.id, status: "PROPOSED" })}
-                        disabled={updateStatus.isPending} className="glow-button-secondary text-xs !py-1">Propose</button>
+                        disabled={updateStatus.isPending} className="glow-button-secondary text-xs !py-1">{tx("Propose")}</button>
                     )}
                     {p.status === "PROPOSED" && (
                       <button onClick={() => approve.mutate(p.id)}
-                        disabled={approve.isPending} className="glow-button text-xs !py-1">Approve</button>
+                        disabled={approve.isPending} className="glow-button text-xs !py-1">{tx("Approve")}</button>
                     )}
                     {p.status === "APPROVED" && (
                       <button onClick={() => updateStatus.mutate({ id: p.id, status: "ACTIVE" })}
-                        disabled={updateStatus.isPending} className="glow-button text-xs !py-1">Activate</button>
+                        disabled={updateStatus.isPending} className="glow-button text-xs !py-1">{tx("Activate")}</button>
                     )}
                     {p.status === "ACTIVE" && (
                       <button onClick={() => updateStatus.mutate({ id: p.id, status: "COMPLETED" })}
-                        disabled={updateStatus.isPending} className="text-xs text-blue-400 border border-blue-300 rounded px-2 py-1">Complete</button>
+                        disabled={updateStatus.isPending} className="text-xs text-blue-400 border border-blue-300 rounded px-2 py-1">{tx("Complete")}</button>
                     )}
                   </div>
                 </td>

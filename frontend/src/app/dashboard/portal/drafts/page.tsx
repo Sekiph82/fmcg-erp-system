@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { portalApi, PortalDraftOrder, fmtCurrency, DRAFT_STATUS_COLORS } from "@/lib/portal";
+import { tx } from "@/lib/i18n/core";
 
 export default function DraftsQueuePage() {
   const [accounts, setAccounts] = useState<{ id: string; account_code: string }[]>([]);
@@ -46,15 +47,15 @@ export default function DraftsQueuePage() {
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-gray-900">Draft Order Review Queue</h1>
+        <h1 className="text-xl font-bold text-gray-900">{tx("Draft Order Review Queue")}</h1>
         <div className="flex items-center gap-2">
           <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
             className="text-sm border rounded-lg px-2 py-1.5">
-            <option value="">All</option>
-            <option value="SUBMITTED">Submitted (Pending Review)</option>
-            <option value="APPROVED">Approved</option>
-            <option value="REJECTED">Rejected</option>
-            <option value="DRAFT">Draft</option>
+            <option value="">{tx("All")}</option>
+            <option value="SUBMITTED">{tx("Submitted (Pending Review)")}</option>
+            <option value="APPROVED">{tx("Approved")}</option>
+            <option value="REJECTED">{tx("Rejected")}</option>
+            <option value="DRAFT">{tx("Draft")}</option>
           </select>
         </div>
       </div>
@@ -63,19 +64,19 @@ export default function DraftsQueuePage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b bg-gray-50 text-xs text-gray-600">
-              <th className="px-3 py-2 text-left">Draft No</th>
-              <th className="px-3 py-2 text-left">Account</th>
-              <th className="px-3 py-2 text-left">Submitted By</th>
-              <th className="px-3 py-2 text-right">Total</th>
-              <th className="px-3 py-2 text-left">Delivery Date</th>
-              <th className="px-3 py-2 text-left">Status</th>
-              <th className="px-3 py-2 text-left">Submitted</th>
-              <th className="px-3 py-2 text-left">Actions</th>
+              <th className="px-3 py-2 text-left">{tx("Draft No")}</th>
+              <th className="px-3 py-2 text-left">{tx("Account")}</th>
+              <th className="px-3 py-2 text-left">{tx("Submitted By")}</th>
+              <th className="px-3 py-2 text-right">{tx("Total")}</th>
+              <th className="px-3 py-2 text-left">{tx("Delivery Date")}</th>
+              <th className="px-3 py-2 text-left">{tx("Status")}</th>
+              <th className="px-3 py-2 text-left">{tx("Submitted")}</th>
+              <th className="px-3 py-2 text-left">{tx("Actions")}</th>
             </tr>
           </thead>
           <tbody>
-            {loading && <tr><td colSpan={8} className="px-3 py-6 text-center text-gray-400">Loading…</td></tr>}
-            {!loading && allDrafts.length === 0 && <tr><td colSpan={8} className="px-3 py-6 text-center text-gray-400">No draft orders</td></tr>}
+            {loading && <tr><td colSpan={8} className="px-3 py-6 text-center text-gray-400">{tx("Loading…")}</td></tr>}
+            {!loading && allDrafts.length === 0 && <tr><td colSpan={8} className="px-3 py-6 text-center text-gray-400">{tx("No draft orders")}</td></tr>}
             {allDrafts.map(draft => (
               <tr key={draft.id} className="border-b hover:bg-gray-50">
                 <td className="px-3 py-2 font-mono text-xs text-blue-600">{draft.draft_no}</td>
@@ -97,11 +98,11 @@ export default function DraftsQueuePage() {
                     <>
                       <button onClick={() => handleApprove(draft.id)}
                         className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded hover:bg-green-200">
-                        Approve
+                        {tx("Approve")}
                       </button>
                       <button onClick={() => handleReject(draft.id)}
                         className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded hover:bg-red-200">
-                        Reject
+                        {tx("Reject")}
                       </button>
                     </>
                   )}

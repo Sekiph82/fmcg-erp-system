@@ -2,6 +2,7 @@
 import { EntityPicker } from "@/components/EntityPicker";
 import { useCallback, useState, useEffect } from "react";
 import { spApi, SPAccount, SPAccountStatus, SP_STATUS_COLORS } from "@/lib/supplier_portal";
+import { tx } from "@/lib/i18n/core";
 
 export default function SupplierPortalAdmin() {
   const [accounts, setAccounts] = useState<SPAccount[]>([]);
@@ -33,11 +34,11 @@ export default function SupplierPortalAdmin() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Supplier Portal</h1>
-          <p className="text-sm text-gray-500 mt-1">External supplier collaboration hub — POs, invoices, documents</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Supplier Portal")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{tx("External supplier collaboration hub — POs, invoices, documents")}</p>
         </div>
         <button onClick={() => setCreating(true)} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">
-          + Onboard Supplier
+          {tx("+ Onboard Supplier")}
         </button>
       </div>
 
@@ -56,7 +57,7 @@ export default function SupplierPortalAdmin() {
         {["", "PENDING", "ACTIVE", "SUSPENDED", "CLOSED"].map((s) => (
           <button key={s} onClick={() => setStatusFilter(s)}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium border ${statusFilter === s ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-600 border-gray-300 hover:border-blue-400"}`}>
-            {s || "All"}
+            {s || tx("All")}
           </button>
         ))}
       </div>
@@ -66,16 +67,16 @@ export default function SupplierPortalAdmin() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
-              {["Supplier ID", "Contact Name", "Email", "Phone", "Status", "Currency", "Can View Payment", "Actions"].map((h) => (
+              {[tx("Supplier ID"), tx("Contact Name"), tx("Email"), tx("Phone"), tx("Status"), tx("Currency"), tx("Can View Payment"), tx("Actions")].map((h) => (
                 <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wide">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {loading ? (
-              <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">Loading...</td></tr>
+              <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">{tx("Loading...")}</td></tr>
             ) : accounts.length === 0 ? (
-              <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">No supplier portal accounts found.</td></tr>
+              <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">{tx("No supplier portal accounts found.")}</td></tr>
             ) : accounts.map((a) => (
               <tr key={a.id} className="hover:bg-gray-50">
                 <td className="px-4 py-3 font-mono text-xs text-gray-500">{a.supplier_id.slice(0, 8)}…</td>
@@ -86,11 +87,11 @@ export default function SupplierPortalAdmin() {
                 <td className="px-4 py-3 text-gray-600">{a.default_currency}</td>
                 <td className="px-4 py-3">
                   <span className={`px-2 py-0.5 rounded-full text-xs ${a.can_view_payment ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
-                    {a.can_view_payment ? "Yes" : "No"}
+                    {a.can_view_payment ? tx("Yes") : tx("No")}
                   </span>
                 </td>
                 <td className="px-4 py-3">
-                  <a href={`/dashboard/supplier-portal/accounts/${a.id}`} className="text-blue-600 hover:underline text-xs mr-2">View</a>
+                  <a href={`/dashboard/supplier-portal/accounts/${a.id}`} className="text-blue-600 hover:underline text-xs mr-2">{tx("View")}</a>
                 </td>
               </tr>
             ))}
@@ -102,35 +103,35 @@ export default function SupplierPortalAdmin() {
       {creating && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-lg">
-            <h2 className="text-lg font-bold text-gray-900 mb-4">Onboard Supplier to Portal</h2>
+            <h2 className="text-lg font-bold text-gray-900 mb-4">{tx("Onboard Supplier to Portal")}</h2>
             <form onSubmit={handleCreate} className="space-y-4">
               <div>
-                <label className="text-xs font-medium text-gray-700">Supplier</label>
-                <EntityPicker kind="supplier" label="Supplier" value={form.supplier_id} onChange={(id) => setForm((f) => ({ ...f, supplier_id: id }))} />
+                <label className="text-xs font-medium text-gray-700">{tx("Supplier")}</label>
+                <EntityPicker kind="supplier" label={tx("Supplier")} value={form.supplier_id} onChange={(id) => setForm((f) => ({ ...f, supplier_id: id }))} />
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-700">Primary Contact Name</label>
+                <label className="text-xs font-medium text-gray-700">{tx("Primary Contact Name")}</label>
                 <input value={form.primary_contact_name} onChange={(e) => setForm({ ...form, primary_contact_name: e.target.value })}
                   className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-700">Primary Contact Email</label>
+                <label className="text-xs font-medium text-gray-700">{tx("Primary Contact Email")}</label>
                 <input type="email" value={form.primary_contact_email} onChange={(e) => setForm({ ...form, primary_contact_email: e.target.value })}
                   className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-700">Primary Contact Phone</label>
+                <label className="text-xs font-medium text-gray-700">{tx("Primary Contact Phone")}</label>
                 <input value={form.primary_contact_phone} onChange={(e) => setForm({ ...form, primary_contact_phone: e.target.value })}
                   className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-700">Notes</label>
+                <label className="text-xs font-medium text-gray-700">{tx("Notes")}</label>
                 <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })}
                   rows={2} className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
               </div>
               <div className="flex justify-end gap-3 pt-2">
-                <button type="button" onClick={() => setCreating(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm">Cancel</button>
-                <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">Create</button>
+                <button type="button" onClick={() => setCreating(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm">{tx("Cancel")}</button>
+                <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">{tx("Create")}</button>
               </div>
             </form>
           </div>

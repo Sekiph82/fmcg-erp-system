@@ -2,6 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { tpmApi, fmtCurrency, PROMOTION_STATUS_BADGE } from "@/lib/tpm";
 import Link from "next/link";
+import { tx } from "@/lib/i18n/core";
 
 export default function TPMDashboardPage() {
   const { data, isLoading } = useQuery({
@@ -9,8 +10,8 @@ export default function TPMDashboardPage() {
     queryFn: () => tpmApi.getDashboard(),
   });
 
-  if (isLoading) return <div className="p-6 text-gray-400">Loading…</div>;
-  if (!data) return <div className="p-6 text-red-500">Failed to load TPM dashboard.</div>;
+  if (isLoading) return <div className="p-6 text-gray-400">{tx("Loading…")}</div>;
+  if (!data) return <div className="p-6 text-red-500">{tx("Failed to load TPM dashboard.")}</div>;
 
   const d = data;
   const spendPct = d.total_planned_budget > 0
@@ -21,26 +22,26 @@ export default function TPMDashboardPage() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Trade Promotion Management</h1>
-          <p className="text-sm text-gray-500">Plan, budget, execute, and analyse trade promotions across all channels.</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Trade Promotion Management")}</h1>
+          <p className="text-sm text-gray-500">{tx("Plan, budget, execute, and analyse trade promotions across all channels.")}</p>
         </div>
         <div className="flex gap-2">
-          <Link href="/dashboard/tpm/plans/new" className="glow-button-secondary text-sm">+ New Plan</Link>
-          <Link href="/dashboard/tpm/promotions/new" className="glow-button text-sm">+ New Promotion</Link>
+          <Link href="/dashboard/tpm/plans/new" className="glow-button-secondary text-sm">{tx("+ New Plan")}</Link>
+          <Link href="/dashboard/tpm/promotions/new" className="glow-button text-sm">{tx("+ New Promotion")}</Link>
         </div>
       </div>
 
       {/* KPI cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: "Active Plans",       value: d.active_plans,                       color: "text-blue-400" },
-          { label: "Active Promotions",  value: d.active_promotions,                  color: "text-green-400" },
-          { label: "Open Claims",        value: d.open_claims,                        color: "text-yellow-400" },
-          { label: "Pending Approvals",  value: d.pending_approvals,                  color: "text-orange-400" },
-          { label: "Planned Budget",     value: fmtCurrency(d.total_planned_budget),  color: "text-indigo-400" },
-          { label: "Actual Spend",       value: fmtCurrency(d.total_actual_spend),    color: "text-red-400" },
-          { label: "Open Claims Value",  value: fmtCurrency(d.open_claims_amount),    color: "text-purple-400" },
-          { label: "Budget Utilization", value: `${spendPct.toFixed(1)}%`,            color: spendPct > 90 ? "text-red-400" : "text-teal-400" },
+          { label: tx("Active Plans"),       value: d.active_plans,                       color: "text-blue-400" },
+          { label: tx("Active Promotions"),  value: d.active_promotions,                  color: "text-green-400" },
+          { label: tx("Open Claims"),        value: d.open_claims,                        color: "text-yellow-400" },
+          { label: tx("Pending Approvals"),  value: d.pending_approvals,                  color: "text-orange-400" },
+          { label: tx("Planned Budget"),     value: fmtCurrency(d.total_planned_budget),  color: "text-indigo-400" },
+          { label: tx("Actual Spend"),       value: fmtCurrency(d.total_actual_spend),    color: "text-red-400" },
+          { label: tx("Open Claims Value"),  value: fmtCurrency(d.open_claims_amount),    color: "text-purple-400" },
+          { label: tx("Budget Utilization"), value: `${spendPct.toFixed(1)}%`,            color: spendPct > 90 ? "text-red-400" : "text-teal-400" },
         ].map((k) => (
           <div key={k.label} className="glow-card p-4 text-center">
             <p className="text-xs text-gray-500">{k.label}</p>
@@ -52,7 +53,7 @@ export default function TPMDashboardPage() {
       {/* Budget bar */}
       <div className="liquid-glass p-5 space-y-2">
         <div className="flex items-center justify-between text-sm">
-          <span className="text-gray-400">Budget Spend Progress</span>
+          <span className="text-gray-400">{tx("Budget Spend Progress")}</span>
           <span className="text-gray-300 font-medium">
             {fmtCurrency(d.total_actual_spend)} / {fmtCurrency(d.total_planned_budget)}
           </span>
@@ -68,7 +69,7 @@ export default function TPMDashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {/* Status breakdown */}
         <div className="liquid-glass p-5 space-y-3">
-          <h2 className="text-sm font-semibold text-gray-700">Promotions by Status</h2>
+          <h2 className="text-sm font-semibold text-gray-700">{tx("Promotions by Status")}</h2>
           {Object.entries(d.promotions_by_status).map(([status, count]) => (
             <div key={status} className="flex items-center justify-between text-sm">
               <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${PROMOTION_STATUS_BADGE[status as import("@/lib/tpm").TPMPromotionStatus] ?? "bg-gray-100 text-gray-600"}`}>
@@ -82,11 +83,11 @@ export default function TPMDashboardPage() {
         {/* Top promotions */}
         <div className="liquid-glass p-5 space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-gray-700">Recent Promotions</h2>
-            <Link href="/dashboard/tpm/promotions" className="text-xs text-indigo-400 hover:text-indigo-300">View all →</Link>
+            <h2 className="text-sm font-semibold text-gray-700">{tx("Recent Promotions")}</h2>
+            <Link href="/dashboard/tpm/promotions" className="text-xs text-indigo-400 hover:text-indigo-300">{tx("View all →")}</Link>
           </div>
           {d.top_promotions.length === 0 ? (
-            <p className="text-xs text-gray-500">No promotions yet.</p>
+            <p className="text-xs text-gray-500">{tx("No promotions yet.")}</p>
           ) : d.top_promotions.map((p) => (
             <div key={p.id} className="flex items-center justify-between gap-3">
               <div>
@@ -107,14 +108,14 @@ export default function TPMDashboardPage() {
       {/* Quick links */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { label: "Promotion Calendar",  href: "/dashboard/tpm/calendar" },
-          { label: "Budget Monitor",      href: "/dashboard/tpm/budget" },
-          { label: "Claims Queue",        href: "/dashboard/tpm/claims" },
-          { label: "ROI Analysis",        href: "/dashboard/tpm/roi" },
-          { label: "Settlement Tracker",  href: "/dashboard/tpm/settlement" },
-          { label: "Plans Master",        href: "/dashboard/tpm/plans" },
-          { label: "All Promotions",      href: "/dashboard/tpm/promotions" },
-          { label: "AI Agents",           href: "/dashboard/tpm/ai" },
+          { label: tx("Promotion Calendar"),  href: "/dashboard/tpm/calendar" },
+          { label: tx("Budget Monitor"),      href: "/dashboard/tpm/budget" },
+          { label: tx("Claims Queue"),        href: "/dashboard/tpm/claims" },
+          { label: tx("ROI Analysis"),        href: "/dashboard/tpm/roi" },
+          { label: tx("Settlement Tracker"),  href: "/dashboard/tpm/settlement" },
+          { label: tx("Plans Master"),        href: "/dashboard/tpm/plans" },
+          { label: tx("All Promotions"),      href: "/dashboard/tpm/promotions" },
+          { label: tx("AI Agents"),           href: "/dashboard/tpm/ai" },
         ].map((q) => (
           <Link key={q.label} href={q.href} className="glow-card p-3 text-center text-sm text-gray-300 hover:text-indigo-300 transition-colors">
             {q.label} →

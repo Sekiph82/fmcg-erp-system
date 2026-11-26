@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { execApi, ExecWorkOrderOut, WOExecStatus, WO_STATUS_COLOR, fmtMins } from "@/lib/productionExecution";
+import { tx } from "@/lib/i18n/core";
 
 const STATUSES: WOExecStatus[] = ["PENDING", "READY", "IN_PROGRESS", "PAUSED", "COMPLETED", "CANCELLED"];
 
@@ -38,22 +39,22 @@ export default function WorkOrderQueuePage() {
       <div className="flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <a href="/dashboard/production-execution" className="text-sm text-gray-400 hover:text-gray-600">← Production Orders</a>
+            <a href="/dashboard/production-execution" className="text-sm text-gray-400 hover:text-gray-600">{tx("← Production Orders")}</a>
           </div>
-          <h1 className="text-xl font-bold text-gray-900">Work Order Queue</h1>
-          <p className="text-sm text-gray-500 mt-0.5">All work orders across production orders</p>
+          <h1 className="text-xl font-bold text-gray-900">{tx("Work Order Queue")}</h1>
+          <p className="text-sm text-gray-500 mt-0.5">{tx("All work orders across production orders")}</p>
         </div>
       </div>
 
       {/* KPIs */}
       <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
         {[
-          { label: "Total WOs",  value: wos.length,   color: "text-gray-900" },
-          { label: "Ready",      value: readyCount,    color: "text-blue-600" },
-          { label: "Active",     value: activeCount,   color: "text-yellow-600" },
-          { label: "Pending",    value: pendingCount,  color: "text-gray-400" },
-          { label: "Completed",  value: wos.filter((w) => w.status === "COMPLETED").length, color: "text-green-600" },
-          { label: "Cancelled",  value: wos.filter((w) => w.status === "CANCELLED").length, color: "text-red-500" },
+          { label: tx("Total WOs"),  value: wos.length,   color: "text-gray-900" },
+          { label: tx("Ready"),      value: readyCount,    color: "text-blue-600" },
+          { label: tx("Active"),     value: activeCount,   color: "text-yellow-600" },
+          { label: tx("Pending"),    value: pendingCount,  color: "text-gray-400" },
+          { label: tx("Completed"),  value: wos.filter((w) => w.status === "COMPLETED").length, color: "text-green-600" },
+          { label: tx("Cancelled"),  value: wos.filter((w) => w.status === "CANCELLED").length, color: "text-red-500" },
         ].map((k) => (
           <div key={k.label} className="bg-white rounded-xl border border-gray-100 shadow-sm p-3 text-center">
             <p className="text-xs text-gray-400">{k.label}</p>
@@ -65,25 +66,25 @@ export default function WorkOrderQueuePage() {
       {/* Filter */}
       <div className="flex items-center gap-3">
         <select className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
-          <option value="">All Statuses</option>
+          <option value="">{tx("All Statuses")}</option>
           {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
-        <span className="text-sm text-gray-400">{wos.length} work orders</span>
+        <span className="text-sm text-gray-400">{wos.length} {tx("work orders")}</span>
       </div>
 
       {/* List */}
       {isLoading ? (
-        <div className="text-center text-gray-400 py-8">Loading…</div>
+        <div className="text-center text-gray-400 py-8">{tx("Loading…")}</div>
       ) : wos.length === 0 ? (
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-8 text-center text-sm text-gray-400">
-          No work orders found.
+          {tx("No work orders found.")}
         </div>
       ) : (
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-gray-50">
               <tr>
-                {["Step", "Operation", "Status", "Planned", "Actual", "Completed", "Scrap", "QC", ""].map((h) => (
+                {[tx("Step"), tx("Operation"), tx("Status"), tx("Planned"), tx("Actual"), tx("Completed"), tx("Scrap"), "QC", ""].map((h) => (
                   <th key={h} className="px-3 py-2.5 text-left font-medium text-gray-400 text-xs">{h}</th>
                 ))}
               </tr>
@@ -98,7 +99,7 @@ export default function WorkOrderQueuePage() {
                     <p className="font-medium">{wo.step_name}</p>
                     <p className="text-xs text-gray-400 font-mono">
                       <a href={`/dashboard/production-execution/${wo.production_order_id}`} className="hover:underline text-indigo-500">
-                        → View Order
+                        {tx("→ View Order")}
                       </a>
                     </p>
                   </td>
@@ -115,15 +116,15 @@ export default function WorkOrderQueuePage() {
                     {wo.qc_required_flag ? (
                       wo.qc_passed === true ? <span className="text-green-600">✓</span> :
                       wo.qc_passed === false ? <span className="text-red-600">✗</span> :
-                      <span className="text-yellow-600">Pending</span>
+                      <span className="text-yellow-600">{tx("Pending")}</span>
                     ) : "—"}
                   </td>
                   <td className="px-3 py-2">
                     {wo.status === "READY" && (
-                      <button onClick={() => startWO.mutate(wo.id)} disabled={startWO.isPending} className="text-xs text-yellow-600 hover:underline">Start</button>
+                      <button onClick={() => startWO.mutate(wo.id)} disabled={startWO.isPending} className="text-xs text-yellow-600 hover:underline">{tx("Start")}</button>
                     )}
                     {wo.status === "IN_PROGRESS" && (
-                      <a href={`/dashboard/production-execution/${wo.production_order_id}?tab=Work+Orders`} className="text-xs text-green-600 hover:underline">Complete</a>
+                      <a href={`/dashboard/production-execution/${wo.production_order_id}?tab=Work+Orders`} className="text-xs text-green-600 hover:underline">{tx("Complete")}</a>
                     )}
                   </td>
                 </tr>

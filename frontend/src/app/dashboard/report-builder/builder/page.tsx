@@ -6,6 +6,7 @@ import {
   AggregationType, FilterOperator, SortDirection,
   AGG_TYPES, FILTER_OPS, AGG_LABEL, OP_LABEL,
 } from "@/lib/report_builder";
+import { tx } from "@/lib/i18n/core";
 
 interface FieldRow {
   field_path: string;
@@ -70,7 +71,7 @@ export default function ReportBuilderPage() {
   };
 
   const save = async () => {
-    if (!reportCode || !reportName || !dataSource) { setError("Code, Name, and Data Source are required"); return; }
+    if (!reportCode || !reportName || !dataSource) { setError(tx("Code, Name, and Data Source are required")); return; }
     setError("");
     setSaving(true);
     try {
@@ -92,19 +93,19 @@ export default function ReportBuilderPage() {
 
   return (
     <div className="p-6 space-y-6 max-w-5xl">
-      <h1 className="text-xl font-bold text-gray-900">Build Report</h1>
+      <h1 className="text-xl font-bold text-gray-900">{tx("Build Report")}</h1>
       {error && <div className="bg-red-50 border border-red-200 text-red-700 rounded p-3 text-sm">{error}</div>}
 
       <div className="bg-white border rounded-lg p-4 shadow-sm space-y-3">
-        <h2 className="font-semibold text-gray-800">1. Report Details</h2>
+        <h2 className="font-semibold text-gray-800">{tx("1. Report Details")}</h2>
         <div className="grid grid-cols-2 gap-3">
-          <div><label className="text-xs text-gray-500">Report Code *</label>
+          <div><label className="text-xs text-gray-500">{tx("Report Code *")}</label>
             <input className="w-full border rounded px-2 py-1 text-sm mt-1" value={reportCode}
               onChange={(e) => setReportCode(e.target.value)} placeholder="MY-REPORT-001" /></div>
-          <div><label className="text-xs text-gray-500">Report Name *</label>
+          <div><label className="text-xs text-gray-500">{tx("Report Name *")}</label>
             <input className="w-full border rounded px-2 py-1 text-sm mt-1" value={reportName}
               onChange={(e) => setReportName(e.target.value)} /></div>
-          <div><label className="text-xs text-gray-500">Visibility</label>
+          <div><label className="text-xs text-gray-500">{tx("Visibility")}</label>
             <select className="w-full border rounded px-2 py-1 text-sm mt-1" value={visibility}
               onChange={(e) => setVisibility(e.target.value as typeof visibility)}>
               {(["private","team","global"] as const).map(v => <option key={v} value={v}>{v}</option>)}
@@ -113,13 +114,13 @@ export default function ReportBuilderPage() {
       </div>
 
       <div className="bg-white border rounded-lg p-4 shadow-sm space-y-3">
-        <h2 className="font-semibold text-gray-800">2. Select Data Source *</h2>
+        <h2 className="font-semibold text-gray-800">{tx("2. Select Data Source *")}</h2>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {Object.entries(catalog).map(([key, ds]) => (
             <button key={key} onClick={() => selectDS(key)}
               className={`rounded border px-3 py-2 text-xs text-left transition-colors ${dataSource === key ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-700 hover:bg-gray-50"}`}>
               <p className="font-semibold">{ds.label}</p>
-              <p className="opacity-70">{ds.field_count} fields</p>
+              <p className="opacity-70">{ds.field_count} {tx("fields")}</p>
             </button>
           ))}
         </div>
@@ -127,7 +128,7 @@ export default function ReportBuilderPage() {
 
       {dsInfo && (
         <div className="bg-white border rounded-lg p-4 shadow-sm space-y-3">
-          <h2 className="font-semibold text-gray-800">3. Select Fields</h2>
+          <h2 className="font-semibold text-gray-800">{tx("3. Select Fields")}</h2>
           <div className="flex flex-wrap gap-2 mb-3">
             {dsInfo.fields.map(f => (
               <button key={f.path} onClick={() => addField(f)}
@@ -141,7 +142,7 @@ export default function ReportBuilderPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead className="bg-gray-50 border-b"><tr>
-                  {["Field","Alias","Aggregation","Group By","Sort",""].map(h=><th key={h} className="px-2 py-1.5 text-left text-gray-600">{h}</th>)}
+                  {[tx("Field"),tx("Alias"),tx("Aggregation"),tx("Group By"),tx("Sort"),""].map(h=><th key={h} className="px-2 py-1.5 text-left text-gray-600">{h}</th>)}
                 </tr></thead>
                 <tbody className="divide-y">
                   {fields.map((f, i) => (
@@ -164,7 +165,7 @@ export default function ReportBuilderPage() {
                       <td className="px-2 py-1.5">
                         <select className="border rounded px-1.5 py-0.5 text-xs" value={f.sort_direction}
                           onChange={(e) => updateField(i, "sort_direction", e.target.value)}>
-                          <option value="">None</option>
+                          <option value="">{tx("None")}</option>
                           <option value="asc">ASC</option>
                           <option value="desc">DESC</option>
                         </select>
@@ -184,8 +185,8 @@ export default function ReportBuilderPage() {
       {dsInfo && (
         <div className="bg-white border rounded-lg p-4 shadow-sm space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-gray-800">4. Add Filters</h2>
-            <button onClick={addFilter} className="text-xs text-blue-600 hover:underline">+ Add Filter</button>
+            <h2 className="font-semibold text-gray-800">{tx("4. Add Filters")}</h2>
+            <button onClick={addFilter} className="text-xs text-blue-600 hover:underline">{tx("+ Add Filter")}</button>
           </div>
           {filters.map((f, i) => (
             <div key={i} className="grid grid-cols-5 gap-2 items-center">
@@ -206,28 +207,28 @@ export default function ReportBuilderPage() {
                 {FILTER_OPS.map(op => <option key={op} value={op}>{OP_LABEL[op]}</option>)}
               </select>
               {!["is_null","is_not_null"].includes(f.operator) && (
-                <input className="border rounded px-1.5 py-0.5 text-xs" placeholder="Value"
+                <input className="border rounded px-1.5 py-0.5 text-xs" placeholder={tx("Value")}
                   value={f.value} onChange={(e) => updateFilter(i, "value", e.target.value)} />
               )}
               {f.operator === "between" && (
-                <input className="border rounded px-1.5 py-0.5 text-xs" placeholder="To"
+                <input className="border rounded px-1.5 py-0.5 text-xs" placeholder={tx("To")}
                   value={f.value_to} onChange={(e) => updateFilter(i, "value_to", e.target.value)} />
               )}
               <button onClick={() => setFilters(filters.filter((_, j) => j !== i))}
                 className="text-red-400 hover:text-red-600 text-xs">✕</button>
             </div>
           ))}
-          {filters.length === 0 && <p className="text-xs text-gray-400">No filters. Report will return all records.</p>}
+          {filters.length === 0 && <p className="text-xs text-gray-400">{tx("No filters. Report will return all records.")}</p>}
         </div>
       )}
 
       <div className="flex gap-3">
         <button onClick={save} disabled={saving}
           className="rounded bg-blue-600 px-6 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">
-          {saving ? "Saving…" : "Save & Preview"}
+          {saving ? tx("Saving…") : tx("Save & Preview")}
         </button>
         <button onClick={() => router.back()} className="rounded border px-6 py-2 text-sm text-gray-600 hover:bg-gray-50">
-          Cancel
+          {tx("Cancel")}
         </button>
       </div>
     </div>

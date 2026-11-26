@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { esgApi, EmissionSummary, EmissionBySource, ResourceSummary, SOURCE_TYPE_LABELS } from "@/lib/esg";
+import { tx } from "@/lib/i18n/core";
 
 const SCOPE_COLORS: Record<string, string> = {
   SCOPE1: "bg-red-50 border-red-200 text-red-700",
@@ -56,23 +57,23 @@ export default function ESGReportsPage() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">ESG Reports</h1>
-          <p className="text-sm text-gray-500 mt-1">GHG Protocol aligned reporting · Scope 1, 2, 3</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("ESG Reports")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{tx("GHG Protocol aligned reporting · Scope 1, 2, 3")}</p>
         </div>
       </div>
 
       {/* Date filters */}
       <div className="flex gap-3 items-end flex-wrap">
         <div>
-          <label className="block text-xs text-gray-500 mb-1">From</label>
+          <label className="block text-xs text-gray-500 mb-1">{tx("From")}</label>
           <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="border rounded-lg px-3 py-2 text-sm" />
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">To</label>
+          <label className="block text-xs text-gray-500 mb-1">{tx("To")}</label>
           <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="border rounded-lg px-3 py-2 text-sm" />
         </div>
         <button onClick={load} disabled={loading} className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
-          {loading ? "Loading…" : "Refresh"}
+          {loading ? tx("Loading…") : tx("Refresh")}
         </button>
       </div>
 
@@ -82,9 +83,9 @@ export default function ESGReportsPage() {
           {summary.map((s) => (
             <div key={s.scope} className={`rounded-lg border p-4 ${SCOPE_COLORS[s.scope]}`}>
               <p className="text-xs font-semibold mb-1">{s.scope}</p>
-              <p className="text-2xl font-bold">{Number(s.total_kgco2e).toLocaleString(undefined, { maximumFractionDigits: 0 })} kg</p>
-              <p className="text-xs mt-1">{Number(s.total_tco2e).toFixed(3)} tCO₂e · {s.activity_count} activities</p>
-              <p className="text-xs mt-0.5">{totalKg > 0 ? ((Number(s.total_kgco2e) / totalKg) * 100).toFixed(1) : 0}% of total</p>
+              <p className="text-2xl font-bold">{Number(s.total_kgco2e).toLocaleString(undefined, { maximumFractionDigits: 0 })} {tx("kg")}</p>
+              <p className="text-xs mt-1">{Number(s.total_tco2e).toFixed(3)} {tx("tCO₂e ·")} {s.activity_count} {tx("activities")}</p>
+              <p className="text-xs mt-0.5">{totalKg > 0 ? ((Number(s.total_kgco2e) / totalKg) * 100).toFixed(1) : 0}{tx("% of total")}</p>
             </div>
           ))}
         </div>
@@ -95,7 +96,7 @@ export default function ESGReportsPage() {
         {(["scope", "source", "resources"] as const).map((t) => (
           <button key={t} onClick={() => setTab(t)}
             className={`pb-2 text-sm font-medium capitalize border-b-2 -mb-px ${tab === t ? "border-blue-600 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700"}`}>
-            {t === "scope" ? "By Scope" : t === "source" ? "By Source" : "Energy/Water/Waste"}
+            {t === "scope" ? tx("By Scope") : t === "source" ? tx("By Source") : tx("Energy/Water/Waste")}
           </button>
         ))}
       </div>
@@ -104,21 +105,21 @@ export default function ESGReportsPage() {
       {tab === "scope" && (
         <div className="bg-white rounded-lg border overflow-hidden">
           <div className="flex justify-end px-4 py-2 border-b">
-            <button onClick={() => exportCSV(summary, "esg-scope-report")} className="text-xs text-blue-600 hover:underline">Export CSV</button>
+            <button onClick={() => exportCSV(summary, "esg-scope-report")} className="text-xs text-blue-600 hover:underline">{tx("Export CSV")}</button>
           </div>
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-gray-600 uppercase text-xs">
               <tr>
-                <th className="px-4 py-3 text-left">Scope</th>
-                <th className="px-4 py-3 text-right">kgCO₂e</th>
-                <th className="px-4 py-3 text-right">tCO₂e</th>
-                <th className="px-4 py-3 text-right">Activities</th>
-                <th className="px-4 py-3 text-right">% of Total</th>
+                <th className="px-4 py-3 text-left">{tx("Scope")}</th>
+                <th className="px-4 py-3 text-right">{tx("kgCO₂e")}</th>
+                <th className="px-4 py-3 text-right">{tx("tCO₂e")}</th>
+                <th className="px-4 py-3 text-right">{tx("Activities")}</th>
+                <th className="px-4 py-3 text-right">{tx("% of Total")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {summary.length === 0 ? (
-                <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-400">No emission records yet</td></tr>
+                <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-400">{tx("No emission records yet")}</td></tr>
               ) : (
                 summary.map((r) => (
                   <tr key={r.scope} className="hover:bg-gray-50">
@@ -148,21 +149,21 @@ export default function ESGReportsPage() {
       {tab === "source" && (
         <div className="bg-white rounded-lg border overflow-hidden">
           <div className="flex justify-end px-4 py-2 border-b">
-            <button onClick={() => exportCSV(bySource, "esg-source-report")} className="text-xs text-blue-600 hover:underline">Export CSV</button>
+            <button onClick={() => exportCSV(bySource, "esg-source-report")} className="text-xs text-blue-600 hover:underline">{tx("Export CSV")}</button>
           </div>
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-gray-600 uppercase text-xs">
               <tr>
-                <th className="px-4 py-3 text-left">Source Type</th>
-                <th className="px-4 py-3 text-left">Scope</th>
-                <th className="px-4 py-3 text-right">kgCO₂e</th>
-                <th className="px-4 py-3 text-right">Activities</th>
-                <th className="px-4 py-3 text-right">% of Total</th>
+                <th className="px-4 py-3 text-left">{tx("Source Type")}</th>
+                <th className="px-4 py-3 text-left">{tx("Scope")}</th>
+                <th className="px-4 py-3 text-right">{tx("kgCO₂e")}</th>
+                <th className="px-4 py-3 text-right">{tx("Activities")}</th>
+                <th className="px-4 py-3 text-right">{tx("% of Total")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {bySource.length === 0 ? (
-                <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-400">No data</td></tr>
+                <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-400">{tx("No data")}</td></tr>
               ) : (
                 bySource.map((r, i) => (
                   <tr key={i} className="hover:bg-gray-50">
@@ -187,20 +188,20 @@ export default function ESGReportsPage() {
       {tab === "resources" && (
         <div className="bg-white rounded-lg border overflow-hidden">
           <div className="flex justify-end px-4 py-2 border-b">
-            <button onClick={() => exportCSV(resources, "esg-resources-report")} className="text-xs text-blue-600 hover:underline">Export CSV</button>
+            <button onClick={() => exportCSV(resources, "esg-resources-report")} className="text-xs text-blue-600 hover:underline">{tx("Export CSV")}</button>
           </div>
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-gray-600 uppercase text-xs">
               <tr>
-                <th className="px-4 py-3 text-left">Metric</th>
-                <th className="px-4 py-3 text-right">Total Quantity</th>
-                <th className="px-4 py-3 text-left">Unit</th>
-                <th className="px-4 py-3 text-left">Period</th>
+                <th className="px-4 py-3 text-left">{tx("Metric")}</th>
+                <th className="px-4 py-3 text-right">{tx("Total Quantity")}</th>
+                <th className="px-4 py-3 text-left">{tx("Unit")}</th>
+                <th className="px-4 py-3 text-left">{tx("Period")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {resources.length === 0 ? (
-                <tr><td colSpan={4} className="px-4 py-8 text-center text-gray-400">No resource metrics. Log energy, water, and waste usage.</td></tr>
+                <tr><td colSpan={4} className="px-4 py-8 text-center text-gray-400">{tx("No resource metrics. Log energy, water, and waste usage.")}</td></tr>
               ) : (
                 resources.map((r, i) => (
                   <tr key={i} className="hover:bg-gray-50">
@@ -218,8 +219,8 @@ export default function ESGReportsPage() {
 
       {/* Standards Note */}
       <div className="bg-gray-50 rounded-lg border p-4 text-xs text-gray-500">
-        <p className="font-semibold text-gray-600 mb-1">Standards & Methodology</p>
-        <p>Emissions calculated per GHG Protocol. Scope 1 = direct combustion. Scope 2 = purchased electricity. Scope 3 = upstream/downstream value chain. Factors sourced from GHG Protocol 2023, DEFRA 2023, IPCC AR6, and Kenya KPLC Grid Factor.</p>
+        <p className="font-semibold text-gray-600 mb-1">{tx("Standards & Methodology")}</p>
+        <p>{tx("Emissions calculated per GHG Protocol. Scope 1 = direct combustion. Scope 2 = purchased electricity. Scope 3 = upstream/downstream value chain. Factors sourced from GHG Protocol 2023, DEFRA 2023, IPCC AR6, and Kenya KPLC Grid Factor.")}</p>
       </div>
     </div>
   );

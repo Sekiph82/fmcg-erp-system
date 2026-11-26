@@ -23,6 +23,7 @@ import {
   UTILITY_TYPE_ICONS,
   SEVERITY_COLOR,
 } from "@/lib/utilityAlarm";
+import { tx } from "@/lib/i18n/core";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -93,7 +94,7 @@ function StatusToggle({ rule, onToggle }: { rule: AlarmRule; onToggle: () => voi
           : "bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400 hover:bg-gray-200"
       }`}
     >
-      {rule.is_active ? "Active" : "Inactive"}
+      {rule.is_active ? tx("Active") : tx("Inactive")}
     </button>
   );
 }
@@ -128,9 +129,9 @@ function RuleModal({
   }
 
   const tabs = [
-    { id: 1 as const, label: "Basic" },
-    { id: 2 as const, label: "Detection" },
-    { id: 3 as const, label: "Notifications & Settings" },
+    { id: 1 as const, label: tx("Basic") },
+    { id: 2 as const, label: tx("Detection") },
+    { id: 3 as const, label: tx("Notifications & Settings") },
   ];
 
   return (
@@ -139,7 +140,7 @@ function RuleModal({
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-            {mode === "create" ? "New Alarm Rule" : "Edit Alarm Rule"}
+            {mode === "create" ? tx("New Alarm Rule") : tx("Edit Alarm Rule")}
           </h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xl font-bold">&times;</button>
         </div>
@@ -169,21 +170,21 @@ function RuleModal({
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className={labelCls}>Rule Code *</label>
-                  <input className={ic} value={form.rule_code ?? ""} onChange={e => set("rule_code", e.target.value)} placeholder="e.g. ELEC-HIGH-DEMAND" required />
+                  <label className={labelCls}>{tx("Rule Code *")}</label>
+                  <input className={ic} value={form.rule_code ?? ""} onChange={e => set("rule_code", e.target.value)} placeholder={tx("e.g. ELEC-HIGH-DEMAND")} required />
                 </div>
                 <div>
-                  <label className={labelCls}>Name *</label>
-                  <input className={ic} value={form.name ?? ""} onChange={e => set("name", e.target.value)} placeholder="Alarm rule name" required />
+                  <label className={labelCls}>{tx("Name *")}</label>
+                  <input className={ic} value={form.name ?? ""} onChange={e => set("name", e.target.value)} placeholder={tx("Alarm rule name")} required />
                 </div>
               </div>
               <div>
-                <label className={labelCls}>Description</label>
-                <textarea className={ic + " resize-none"} rows={2} value={form.description ?? ""} onChange={e => set("description", e.target.value)} placeholder="Optional description" />
+                <label className={labelCls}>{tx("Description")}</label>
+                <textarea className={ic + " resize-none"} rows={2} value={form.description ?? ""} onChange={e => set("description", e.target.value)} placeholder={tx("Optional description")} />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className={labelCls}>Utility Type *</label>
+                  <label className={labelCls}>{tx("Utility Type *")}</label>
                   <select className={ic} value={form.utility_type ?? "ELECTRICITY"} onChange={e => set("utility_type", e.target.value as UtilityType)}>
                     {UTILITY_TYPES.map(u => (
                       <option key={u} value={u}>{UTILITY_TYPE_ICONS[u]} {UTILITY_TYPE_LABELS[u]}</option>
@@ -191,7 +192,7 @@ function RuleModal({
                   </select>
                 </div>
                 <div>
-                  <label className={labelCls}>Alarm Category *</label>
+                  <label className={labelCls}>{tx("Alarm Category *")}</label>
                   <select className={ic} value={form.alarm_category ?? "ENERGY"} onChange={e => set("alarm_category", e.target.value as AlarmCategory)}>
                     {CATEGORIES.map(c => (
                       <option key={c} value={c}>{ALARM_CATEGORY_ICONS[c]} {ALARM_CATEGORY_LABELS[c]}</option>
@@ -201,20 +202,20 @@ function RuleModal({
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className={labelCls}>Alarm Type</label>
-                  <input className={ic} value={form.alarm_type ?? ""} onChange={e => set("alarm_type", e.target.value)} placeholder="e.g. BOILER_EFFICIENCY_DECLINE" />
+                  <label className={labelCls}>{tx("Alarm Type")}</label>
+                  <input className={ic} value={form.alarm_type ?? ""} onChange={e => set("alarm_type", e.target.value)} placeholder={tx("e.g. BOILER_EFFICIENCY_DECLINE")} />
                 </div>
                 <div>
-                  <label className={labelCls}>Source Module</label>
-                  <input className={ic} value={form.source_module ?? ""} onChange={e => set("source_module", e.target.value)} placeholder="e.g. steam, compressor" />
+                  <label className={labelCls}>{tx("Source Module")}</label>
+                  <input className={ic} value={form.source_module ?? ""} onChange={e => set("source_module", e.target.value)} placeholder={tx("e.g. steam, compressor")} />
                 </div>
               </div>
               <div>
-                <label className={labelCls}>Parameter *</label>
-                <input className={ic} value={form.parameter ?? ""} onChange={e => set("parameter", e.target.value)} placeholder="Field name being monitored, e.g. boiler_efficiency_pct" required />
+                <label className={labelCls}>{tx("Parameter *")}</label>
+                <input className={ic} value={form.parameter ?? ""} onChange={e => set("parameter", e.target.value)} placeholder={tx("Field name being monitored, e.g. boiler_efficiency_pct")} required />
               </div>
               <div className="flex items-center gap-3 pt-1">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Active</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{tx("Active")}</label>
                 <button
                   type="button"
                   onClick={() => set("is_active", !form.is_active)}
@@ -230,7 +231,7 @@ function RuleModal({
           {tab === 2 && (
             <div className="space-y-4">
               <div>
-                <label className={labelCls}>Detection Type *</label>
+                <label className={labelCls}>{tx("Detection Type *")}</label>
                 <select className={ic} value={form.detection_type ?? "THRESHOLD"} onChange={e => set("detection_type", e.target.value as AlarmDetectionType)}>
                   {DETECTION_TYPES.map(d => (
                     <option key={d} value={d}>{DETECTION_TYPE_LABELS[d]}</option>
@@ -240,7 +241,7 @@ function RuleModal({
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <label className={labelCls}>Operator *</label>
+                  <label className={labelCls}>{tx("Operator *")}</label>
                   <select className={ic} value={form.operator ?? "GT"} onChange={e => set("operator", e.target.value as AlarmOperator)}>
                     {OPERATORS.map(op => (
                       <option key={op} value={op}>{OPERATOR_LABELS[op]}</option>
@@ -248,32 +249,32 @@ function RuleModal({
                   </select>
                 </div>
                 <div>
-                  <label className={labelCls}>Threshold Value *</label>
+                  <label className={labelCls}>{tx("Threshold Value *")}</label>
                   <input className={ic} type="number" step="any" value={form.threshold_value ?? ""} onChange={e => set("threshold_value", parseFloat(e.target.value))} required />
                 </div>
                 <div>
-                  <label className={labelCls}>Threshold Unit</label>
-                  <input className={ic} value={form.threshold_unit ?? ""} onChange={e => set("threshold_unit", e.target.value)} placeholder="kWh, m³, %" />
+                  <label className={labelCls}>{tx("Threshold Unit")}</label>
+                  <input className={ic} value={form.threshold_unit ?? ""} onChange={e => set("threshold_unit", e.target.value)} placeholder={tx("kWh, m³, %")} />
                 </div>
               </div>
 
               {/* Conditional fields */}
               {form.detection_type === "ROLLING_DEVIATION" && (
                 <div>
-                  <label className={labelCls}>Rolling Window (hours)</label>
-                  <input className={ic} type="number" step="1" min="1" value={form.rolling_window_hours ?? ""} onChange={e => set("rolling_window_hours", parseInt(e.target.value))} placeholder="e.g. 24" />
+                  <label className={labelCls}>{tx("Rolling Window (hours)")}</label>
+                  <input className={ic} type="number" step="1" min="1" value={form.rolling_window_hours ?? ""} onChange={e => set("rolling_window_hours", parseInt(e.target.value))} placeholder={tx("e.g. 24")} />
                 </div>
               )}
               {form.detection_type === "SUDDEN_JUMP" && (
                 <div>
-                  <label className={labelCls}>Delta % Threshold</label>
-                  <input className={ic} type="number" step="any" value={form.delta_pct_threshold ?? ""} onChange={e => set("delta_pct_threshold", parseFloat(e.target.value))} placeholder="e.g. 30 for 30% jump" />
+                  <label className={labelCls}>{tx("Delta % Threshold")}</label>
+                  <input className={ic} type="number" step="any" value={form.delta_pct_threshold ?? ""} onChange={e => set("delta_pct_threshold", parseFloat(e.target.value))} placeholder={tx("e.g. 30 for 30% jump")} />
                 </div>
               )}
               {form.detection_type === "VS_STANDARD" && (
                 <div>
-                  <label className={labelCls}>Standard Value</label>
-                  <input className={ic} type="number" step="any" value={form.standard_value ?? ""} onChange={e => set("standard_value", parseFloat(e.target.value))} placeholder="Benchmark / standard value" />
+                  <label className={labelCls}>{tx("Standard Value")}</label>
+                  <input className={ic} type="number" step="any" value={form.standard_value ?? ""} onChange={e => set("standard_value", parseFloat(e.target.value))} placeholder={tx("Benchmark / standard value")} />
                 </div>
               )}
             </div>
@@ -284,7 +285,7 @@ function RuleModal({
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className={labelCls}>Severity *</label>
+                  <label className={labelCls}>{tx("Severity *")}</label>
                   <select className={ic} value={form.severity ?? "WARNING"} onChange={e => set("severity", e.target.value as AlarmSeverity)}>
                     {SEVERITIES.map(s => (
                       <option key={s} value={s}>{s}</option>
@@ -292,25 +293,25 @@ function RuleModal({
                   </select>
                 </div>
                 <div>
-                  <label className={labelCls}>Cooldown (minutes)</label>
+                  <label className={labelCls}>{tx("Cooldown (minutes)")}</label>
                   <input className={ic} type="number" step="1" min="0" value={form.cooldown_minutes ?? 60} onChange={e => set("cooldown_minutes", parseInt(e.target.value))} />
                 </div>
               </div>
               <div>
-                <label className={labelCls}>Evaluation Frequency (minutes)</label>
+                <label className={labelCls}>{tx("Evaluation Frequency (minutes)")}</label>
                 <input className={ic} type="number" step="1" min="1" value={form.evaluation_frequency_min ?? 15} onChange={e => set("evaluation_frequency_min", parseInt(e.target.value))} />
               </div>
               <div>
-                <label className={labelCls}>Notification Emails</label>
-                <textarea className={ic + " resize-none"} rows={2} value={form.notification_emails ?? ""} onChange={e => set("notification_emails", e.target.value)} placeholder="Comma-separated email addresses" />
+                <label className={labelCls}>{tx("Notification Emails")}</label>
+                <textarea className={ic + " resize-none"} rows={2} value={form.notification_emails ?? ""} onChange={e => set("notification_emails", e.target.value)} placeholder={tx("Comma-separated email addresses")} />
               </div>
               <div>
-                <label className={labelCls}>Notification Channel</label>
-                <input className={ic} value={form.notification_channel ?? ""} onChange={e => set("notification_channel", e.target.value)} placeholder="e.g. #alerts-slack, teams-webhook" />
+                <label className={labelCls}>{tx("Notification Channel")}</label>
+                <input className={ic} value={form.notification_channel ?? ""} onChange={e => set("notification_channel", e.target.value)} placeholder={tx("e.g. #alerts-slack, teams-webhook")} />
               </div>
               <div>
-                <label className={labelCls}>Notes</label>
-                <textarea className={ic + " resize-none"} rows={3} value={form.notes ?? ""} onChange={e => set("notes", e.target.value)} placeholder="Internal notes about this rule" />
+                <label className={labelCls}>{tx("Notes")}</label>
+                <textarea className={ic + " resize-none"} rows={3} value={form.notes ?? ""} onChange={e => set("notes", e.target.value)} placeholder={tx("Internal notes about this rule")} />
               </div>
             </div>
           )}
@@ -321,13 +322,13 @@ function RuleModal({
               {tab > 1 && (
                 <button type="button" onClick={() => setTab((tab - 1) as 1 | 2 | 3)}
                   className="px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
-                  ← Back
+                  {tx("← Back")}
                 </button>
               )}
               {tab < 3 && (
                 <button type="button" onClick={() => setTab((tab + 1) as 2 | 3)}
                   className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                  Next →
+                  {tx("Next →")}
                 </button>
               )}
             </div>
@@ -337,7 +338,7 @@ function RuleModal({
                 disabled={saving}
                 className="px-5 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
               >
-                {saving ? "Saving…" : mode === "create" ? "Create Rule" : "Update Rule"}
+                {saving ? tx("Saving…") : mode === "create" ? tx("Create Rule") : tx("Update Rule")}
               </button>
             )}
           </div>
@@ -366,16 +367,16 @@ function TemplatesModal({
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
         <div className="flex items-center justify-between p-5 border-b border-gray-200 dark:border-gray-700">
           <div>
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white">Predefined Templates</h2>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Select a template to pre-fill the rule creation form</p>
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white">{tx("Predefined Templates")}</h2>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{tx("Select a template to pre-fill the rule creation form")}</p>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xl font-bold">&times;</button>
         </div>
         <div className="flex-1 overflow-y-auto p-5">
           {isLoading ? (
-            <p className="text-center text-gray-400 py-10">Loading templates…</p>
+            <p className="text-center text-gray-400 py-10">{tx("Loading templates…")}</p>
           ) : templates.length === 0 ? (
-            <p className="text-center text-gray-400 py-10">No templates available.</p>
+            <p className="text-center text-gray-400 py-10">{tx("No templates available.")}</p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {templates.map(tpl => (
@@ -411,7 +412,7 @@ function TemplatesModal({
                     onClick={() => onUse(tpl)}
                     className="mt-3 w-full px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
                   >
-                    Use Template
+                    {tx("Use Template")}
                   </button>
                 </div>
               ))}
@@ -431,14 +432,14 @@ function DeleteConfirm({ rule, onClose, onDelete, deleting }: {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-md p-6">
-        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Delete Rule?</h3>
+        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">{tx("Delete Rule?")}</h3>
         <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-          Are you sure you want to delete <strong>{rule.name}</strong> ({rule.rule_code})? This action cannot be undone.
+          {tx("Are you sure you want to delete")} <strong>{rule.name}</strong> ({rule.rule_code}{tx(")? This action cannot be undone.")}
         </p>
         <div className="flex justify-end gap-3">
-          <button onClick={onClose} className="px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">Cancel</button>
+          <button onClick={onClose} className="px-4 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">{tx("Cancel")}</button>
           <button onClick={onDelete} disabled={deleting} className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50">
-            {deleting ? "Deleting…" : "Delete"}
+            {deleting ? tx("Deleting…") : tx("Delete")}
           </button>
         </div>
       </div>
@@ -499,26 +500,26 @@ export default function AlarmRulesPage() {
 
   const createMut = useMutation({
     mutationFn: (data: AlarmRuleCreate) => alarmApi.createRule(data),
-    onSuccess: () => { invalidate(); setShowCreateModal(false); setTemplateInitial(null); showToast("Rule created successfully", "success"); },
-    onError: () => showToast("Failed to create rule", "error"),
+    onSuccess: () => { invalidate(); setShowCreateModal(false); setTemplateInitial(null); showToast(tx("Rule created successfully"), "success"); },
+    onError: () => showToast(tx("Failed to create rule"), "error"),
   });
 
   const updateMut = useMutation({
     mutationFn: ({ id, data }: { id: string; data: AlarmRuleCreate }) => alarmApi.updateRule(id, data),
-    onSuccess: () => { invalidate(); setEditRule(null); showToast("Rule updated successfully", "success"); },
-    onError: () => showToast("Failed to update rule", "error"),
+    onSuccess: () => { invalidate(); setEditRule(null); showToast(tx("Rule updated successfully"), "success"); },
+    onError: () => showToast(tx("Failed to update rule"), "error"),
   });
 
   const deleteMut = useMutation({
     mutationFn: (id: string) => alarmApi.deleteRule(id),
-    onSuccess: () => { invalidate(); setDeleteRule(null); showToast("Rule deleted", "success"); },
-    onError: () => showToast("Failed to delete rule", "error"),
+    onSuccess: () => { invalidate(); setDeleteRule(null); showToast(tx("Rule deleted"), "success"); },
+    onError: () => showToast(tx("Failed to delete rule"), "error"),
   });
 
   const toggleMut = useMutation({
     mutationFn: (id: string) => alarmApi.toggleRule(id),
     onSuccess: () => invalidate(),
-    onError: () => showToast("Failed to toggle rule status", "error"),
+    onError: () => showToast(tx("Failed to toggle rule status"), "error"),
   });
 
   function handleUseTemplate(tpl: AlarmRuleTemplate) {
@@ -556,15 +557,15 @@ export default function AlarmRulesPage() {
       <div className="flex items-start justify-between flex-wrap gap-4">
         <div>
           <div className="flex items-center gap-3 mb-1">
-            <Link href="/dashboard/utility-management/alarm-center" className="text-sm text-gray-500 hover:text-blue-600">← Alarm Center</Link>
+            <Link href="/dashboard/utility-management/alarm-center" className="text-sm text-gray-500 hover:text-blue-600">{tx("← Alarm Center")}</Link>
             <span className="text-gray-300 dark:text-gray-600">|</span>
-            <Link href="/dashboard/utility-management/kpi-center" className="text-sm text-gray-500 hover:text-blue-600">KPI Center</Link>
+            <Link href="/dashboard/utility-management/kpi-center" className="text-sm text-gray-500 hover:text-blue-600">{tx("KPI Center")}</Link>
           </div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white" style={{ borderLeft: "4px solid #ef4444", paddingLeft: 12 }}>
-            Alarm Rules
+            {tx("Alarm Rules")}
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Configure detection rules for utility anomalies and threshold breaches.
+            {tx("Configure detection rules for utility anomalies and threshold breaches.")}
           </p>
         </div>
         <div className="flex gap-2">
@@ -572,13 +573,13 @@ export default function AlarmRulesPage() {
             onClick={() => setShowTemplates(true)}
             className="px-4 py-2 text-sm border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 font-medium"
           >
-            Browse Templates
+            {tx("Browse Templates")}
           </button>
           <button
             onClick={() => { setTemplateInitial(null); setShowCreateModal(true); }}
             className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
           >
-            + New Rule
+            {tx("+ New Rule")}
           </button>
         </div>
       </div>
@@ -586,32 +587,32 @@ export default function AlarmRulesPage() {
       {/* Filters */}
       <div className="flex flex-wrap gap-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
         <div>
-          <p className="text-[10px] font-medium text-gray-500 uppercase mb-1">Utility Type</p>
+          <p className="text-[10px] font-medium text-gray-500 uppercase mb-1">{tx("Utility Type")}</p>
           <select className={selectCls} value={filterUtility} onChange={e => setFilterUtility(e.target.value)}>
-            <option value="">All Types</option>
+            <option value="">{tx("All Types")}</option>
             {UTILITY_TYPES.map(u => <option key={u} value={u}>{UTILITY_TYPE_LABELS[u]}</option>)}
           </select>
         </div>
         <div>
-          <p className="text-[10px] font-medium text-gray-500 uppercase mb-1">Severity</p>
+          <p className="text-[10px] font-medium text-gray-500 uppercase mb-1">{tx("Severity")}</p>
           <select className={selectCls} value={filterSeverity} onChange={e => setFilterSeverity(e.target.value)}>
-            <option value="">All Severities</option>
+            <option value="">{tx("All Severities")}</option>
             {SEVERITIES.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
         <div>
-          <p className="text-[10px] font-medium text-gray-500 uppercase mb-1">Detection Type</p>
+          <p className="text-[10px] font-medium text-gray-500 uppercase mb-1">{tx("Detection Type")}</p>
           <select className={selectCls} value={filterDetection} onChange={e => setFilterDetection(e.target.value)}>
-            <option value="">All Detection Types</option>
+            <option value="">{tx("All Detection Types")}</option>
             {DETECTION_TYPES.map(d => <option key={d} value={d}>{DETECTION_TYPE_LABELS[d]}</option>)}
           </select>
         </div>
         <div>
-          <p className="text-[10px] font-medium text-gray-500 uppercase mb-1">Status</p>
+          <p className="text-[10px] font-medium text-gray-500 uppercase mb-1">{tx("Status")}</p>
           <select className={selectCls} value={filterActive} onChange={e => setFilterActive(e.target.value)}>
-            <option value="">All</option>
-            <option value="true">Active</option>
-            <option value="false">Inactive</option>
+            <option value="">{tx("All")}</option>
+            <option value="true">{tx("Active")}</option>
+            <option value="false">{tx("Inactive")}</option>
           </select>
         </div>
         {(filterUtility || filterSeverity || filterDetection || filterActive) && (
@@ -620,7 +621,7 @@ export default function AlarmRulesPage() {
               onClick={() => { setFilterUtility(""); setFilterSeverity(""); setFilterDetection(""); setFilterActive(""); }}
               className="px-3 py-2 text-xs text-gray-500 hover:text-red-600 border border-gray-300 dark:border-gray-600 rounded-lg"
             >
-              Clear Filters
+              {tx("Clear Filters")}
             </button>
           </div>
         )}
@@ -629,12 +630,12 @@ export default function AlarmRulesPage() {
       {/* Table */}
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
         {rulesQ.isLoading ? (
-          <p className="text-center text-gray-400 py-14 text-sm">Loading rules…</p>
+          <p className="text-center text-gray-400 py-14 text-sm">{tx("Loading rules…")}</p>
         ) : rules.length === 0 ? (
           <div className="text-center py-14">
-            <p className="text-gray-400 text-sm mb-3">No alarm rules found.</p>
+            <p className="text-gray-400 text-sm mb-3">{tx("No alarm rules found.")}</p>
             <button onClick={() => setShowCreateModal(true)} className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg">
-              + Create First Rule
+              {tx("+ Create First Rule")}
             </button>
           </div>
         ) : (
@@ -642,16 +643,16 @@ export default function AlarmRulesPage() {
             <table className="w-full text-sm">
               <thead className="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
                 <tr>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Rule Code</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Name</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Utility</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Detection</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Parameter</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Threshold</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Severity</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Events</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{tx("Rule Code")}</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{tx("Name")}</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{tx("Utility")}</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{tx("Detection")}</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{tx("Parameter")}</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{tx("Threshold")}</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{tx("Severity")}</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{tx("Status")}</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{tx("Events")}</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{tx("Actions")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -714,13 +715,13 @@ export default function AlarmRulesPage() {
                           onClick={() => setEditRule(rule)}
                           className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs font-medium"
                         >
-                          Edit
+                          {tx("Edit")}
                         </button>
                         <button
                           onClick={() => setDeleteRule(rule)}
                           className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 text-xs font-medium"
                         >
-                          Delete
+                          {tx("Delete")}
                         </button>
                       </div>
                     </td>
@@ -734,7 +735,7 @@ export default function AlarmRulesPage() {
 
       {/* Count */}
       {!rulesQ.isLoading && rules.length > 0 && (
-        <p className="text-xs text-gray-400 text-right">{rules.length} rule{rules.length !== 1 ? "s" : ""}</p>
+        <p className="text-xs text-gray-400 text-right">{rules.length} {tx("rule")}{rules.length !== 1 ? tx("s") : ""}</p>
       )}
 
       {/* Create modal */}

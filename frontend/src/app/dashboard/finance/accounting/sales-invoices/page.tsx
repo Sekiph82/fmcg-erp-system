@@ -4,19 +4,20 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { financeApi, SalesInvoice, InvoiceStatus } from "@/lib/finance";
+import { tx, lx } from "@/lib/i18n/core";
 
 function fmtKES(n: number) {
   return `KES ${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-const STATUS_CONFIG: Record<InvoiceStatus, { label: string; cls: string }> = {
-  DRAFT:          { label: "Draft",          cls: "bg-gray-100 text-gray-500" },
-  ISSUED:         { label: "Issued",         cls: "bg-blue-100 text-blue-700" },
-  PARTIALLY_PAID: { label: "Partial",        cls: "bg-yellow-100 text-yellow-700" },
-  PAID:           { label: "Paid",           cls: "bg-green-100 text-green-700" },
-  OVERDUE:        { label: "Overdue",        cls: "bg-red-100 text-red-700" },
-  CANCELLED:      { label: "Cancelled",      cls: "bg-gray-100 text-gray-400" },
-};
+const STATUS_CONFIG: Record<InvoiceStatus, { label: string; cls: string }> = lx(() => ({
+  DRAFT:          { label: tx("Draft"),          cls: "bg-gray-100 text-gray-500" },
+  ISSUED:         { label: tx("Issued"),         cls: "bg-blue-100 text-blue-700" },
+  PARTIALLY_PAID: { label: tx("Partial"),        cls: "bg-yellow-100 text-yellow-700" },
+  PAID:           { label: tx("Paid"),           cls: "bg-green-100 text-green-700" },
+  OVERDUE:        { label: tx("Overdue"),        cls: "bg-red-100 text-red-700" },
+  CANCELLED:      { label: tx("Cancelled"),      cls: "bg-gray-100 text-gray-400" },
+}));
 
 const STATUSES: Array<InvoiceStatus | ""> = ["", "ISSUED", "PARTIALLY_PAID", "PAID", "OVERDUE", "DRAFT", "CANCELLED"];
 
@@ -47,23 +48,23 @@ export default function SalesInvoicesPage() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Sales Invoices</h1>
-          <p className="text-sm text-gray-400 mt-0.5">Customer invoices — amounts, payments, and balances</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Sales Invoices")}</h1>
+          <p className="text-sm text-gray-400 mt-0.5">{tx("Customer invoices — amounts, payments, and balances")}</p>
         </div>
       </div>
 
       {/* Summary row */}
       <div className="grid grid-cols-3 gap-4">
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-          <p className="text-xs text-gray-400 font-semibold uppercase tracking-widest">Invoiced</p>
+          <p className="text-xs text-gray-400 font-semibold uppercase tracking-widest">{tx("Invoiced")}</p>
           <p className="text-lg font-bold text-indigo-700">{fmtKES(totalInvoiced)}</p>
         </div>
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-          <p className="text-xs text-gray-400 font-semibold uppercase tracking-widest">Paid</p>
+          <p className="text-xs text-gray-400 font-semibold uppercase tracking-widest">{tx("Paid")}</p>
           <p className="text-lg font-bold text-green-600">{fmtKES(totalPaid)}</p>
         </div>
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-          <p className="text-xs text-gray-400 font-semibold uppercase tracking-widest">Outstanding</p>
+          <p className="text-xs text-gray-400 font-semibold uppercase tracking-widest">{tx("Outstanding")}</p>
           <p className={`text-lg font-bold ${totalOutstanding > 0 ? "text-orange-600" : "text-green-600"}`}>
             {fmtKES(totalOutstanding)}
           </p>
@@ -74,7 +75,7 @@ export default function SalesInvoicesPage() {
       <div className="flex flex-wrap gap-3">
         <input
           type="text"
-          placeholder="Search invoice # or customer..."
+          placeholder={tx("Search invoice # or customer...")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 w-64"
@@ -85,7 +86,7 @@ export default function SalesInvoicesPage() {
           className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
         >
           {STATUSES.map((s) => (
-            <option key={s} value={s}>{s === "" ? "All Statuses" : STATUS_CONFIG[s as InvoiceStatus]?.label ?? s}</option>
+            <option key={s} value={s}>{s === "" ? tx("All Statuses") : STATUS_CONFIG[s as InvoiceStatus]?.label ?? s}</option>
           ))}
         </select>
       </div>
@@ -96,14 +97,14 @@ export default function SalesInvoicesPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 text-xs text-gray-500 uppercase tracking-widest">
-                <th className="px-5 py-3 text-left font-semibold">Invoice #</th>
-                <th className="px-5 py-3 text-left font-semibold">Customer</th>
-                <th className="px-5 py-3 text-center font-semibold">Date</th>
-                <th className="px-5 py-3 text-center font-semibold">Due</th>
-                <th className="px-5 py-3 text-right font-semibold">Total</th>
-                <th className="px-5 py-3 text-right font-semibold">Paid</th>
-                <th className="px-5 py-3 text-right font-semibold">Outstanding</th>
-                <th className="px-5 py-3 text-center font-semibold">Status</th>
+                <th className="px-5 py-3 text-left font-semibold">{tx("Invoice #")}</th>
+                <th className="px-5 py-3 text-left font-semibold">{tx("Customer")}</th>
+                <th className="px-5 py-3 text-center font-semibold">{tx("Date")}</th>
+                <th className="px-5 py-3 text-center font-semibold">{tx("Due")}</th>
+                <th className="px-5 py-3 text-right font-semibold">{tx("Total")}</th>
+                <th className="px-5 py-3 text-right font-semibold">{tx("Paid")}</th>
+                <th className="px-5 py-3 text-right font-semibold">{tx("Outstanding")}</th>
+                <th className="px-5 py-3 text-center font-semibold">{tx("Status")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -121,7 +122,7 @@ export default function SalesInvoicesPage() {
               {!isLoading && filtered.length === 0 && (
                 <tr>
                   <td colSpan={8} className="px-5 py-8 text-center text-gray-400">
-                    No invoices found.
+                    {tx("No invoices found.")}
                   </td>
                 </tr>
               )}
@@ -157,7 +158,7 @@ export default function SalesInvoicesPage() {
             {filtered.length > 0 && (
               <tfoot>
                 <tr className="bg-gray-50 font-semibold text-sm border-t-2 border-gray-200">
-                  <td className="px-5 py-3" colSpan={4}>Total ({filtered.length})</td>
+                  <td className="px-5 py-3" colSpan={4}>{tx("Total (")}{filtered.length})</td>
                   <td className="px-5 py-3 text-right text-indigo-700">{fmtKES(totalInvoiced)}</td>
                   <td className="px-5 py-3 text-right text-green-600">{fmtKES(totalPaid)}</td>
                   <td className={`px-5 py-3 text-right ${totalOutstanding > 0 ? "text-orange-600" : "text-green-600"}`}>

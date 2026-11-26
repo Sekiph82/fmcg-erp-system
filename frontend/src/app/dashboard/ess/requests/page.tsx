@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { essSelf, ESSRequest, ESSRequestType, REQUEST_STATUS_COLOR } from "@/lib/ess";
+import { tx } from "@/lib/i18n/core";
 
 const REQ_TYPES: ESSRequestType[] = ["leave", "expense", "profile_update", "document", "certificate", "payslip", "other"];
 const inputCls = "w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500";
@@ -18,19 +19,19 @@ export default function RequestTrackerPage() {
 
   const handleCreate = async () => {
     await essSelf.createRequest(form);
-    await load(); setShowForm(false); setMsg("Request submitted"); setTimeout(() => setMsg(""), 2500);
+    await load(); setShowForm(false); setMsg(tx("Request submitted")); setTimeout(() => setMsg(""), 2500);
   };
 
   return (
     <div className="p-6 space-y-5 text-slate-200">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-white">My Requests</h1>
-          <p className="text-slate-500 text-sm mt-0.5">{requests.length} requests</p>
+          <h1 className="text-xl font-bold text-white">{tx("My Requests")}</h1>
+          <p className="text-slate-500 text-sm mt-0.5">{requests.length} {tx("requests")}</p>
         </div>
         <button onClick={() => setShowForm(!showForm)}
           className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium">
-          {showForm ? "Cancel" : "+ New Request"}
+          {showForm ? tx("Cancel") : tx("+ New Request")}
         </button>
       </div>
 
@@ -39,22 +40,22 @@ export default function RequestTrackerPage() {
       {showForm && (
         <div className="glow-card p-5 space-y-3">
           <div className="grid grid-cols-2 gap-3">
-            <div><label className={labelCls}>Request Type</label>
+            <div><label className={labelCls}>{tx("Request Type")}</label>
               <select value={form.request_type} onChange={(e) => setForm({ ...form, request_type: e.target.value as ESSRequestType })} className={selectCls}>
                 {REQ_TYPES.map((t) => <option key={t} value={t}>{t.replace("_", " ")}</option>)}
               </select>
             </div>
-            <div><label className={labelCls}>Subject</label><input value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} className={inputCls} /></div>
-            <div className="col-span-2"><label className={labelCls}>Description</label><textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} className={inputCls} /></div>
+            <div><label className={labelCls}>{tx("Subject")}</label><input value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} className={inputCls} /></div>
+            <div className="col-span-2"><label className={labelCls}>{tx("Description")}</label><textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} className={inputCls} /></div>
           </div>
-          <button onClick={handleCreate} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm">Submit Request</button>
+          <button onClick={handleCreate} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm">{tx("Submit Request")}</button>
         </div>
       )}
 
       <div className="glass-table">
         <table className="w-full text-sm">
           <thead><tr className="border-b border-white/[0.07]">
-            {["Ref", "Type", "Subject", "Date", "Status", "HR Notes"].map((h) => (
+            {[tx("Ref"), tx("Type"), tx("Subject"), tx("Date"), tx("Status"), tx("HR Notes")].map((h) => (
               <th key={h} className="px-4 py-3 text-[10px] text-slate-500 uppercase tracking-widest text-left">{h}</th>
             ))}
           </tr></thead>
@@ -69,7 +70,7 @@ export default function RequestTrackerPage() {
                 <td className="px-4 py-3 text-slate-600 text-xs">{r.hr_notes || "—"}</td>
               </tr>
             ))}
-            {requests.length === 0 && <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-600">No requests</td></tr>}
+            {requests.length === 0 && <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-600">{tx("No requests")}</td></tr>}
           </tbody>
         </table>
       </div>

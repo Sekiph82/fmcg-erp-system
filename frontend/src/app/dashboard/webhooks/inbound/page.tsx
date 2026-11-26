@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { listInboundEndpoints, createInboundEndpoint, rotateInboundEndpointSecret, InboundEndpoint, AuthType, WebhookSecretRotation } from "@/lib/webhooks";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { tx } from "@/lib/i18n/core";
 
 export default function InboundEndpointsPage() {
   const [endpoints, setEndpoints] = useState<InboundEndpoint[]>([]);
@@ -30,13 +31,13 @@ export default function InboundEndpointsPage() {
       await load();
     } catch (err: unknown) {
       const e2 = err as { response?: { data?: { detail?: string } } };
-      setError(e2?.response?.data?.detail || "Failed to create endpoint");
+      setError(e2?.response?.data?.detail || tx("Failed to create endpoint"));
     }
     setSaving(false);
   }
 
   async function handleRotateSecret(id: string) {
-    if (!confirm("Rotate this HMAC secret? The new value is shown only once. The previous value remains valid for 24 hours.")) return;
+    if (!confirm(tx("Rotate this HMAC secret? The new value is shown only once. The previous value remains valid for 24 hours."))) return;
     try {
       const result = await rotateInboundEndpointSecret(id);
       setRotatedSecrets((previous) => ({ ...previous, [id]: result }));
@@ -50,48 +51,48 @@ export default function InboundEndpointsPage() {
 
   const apiBase = typeof window !== "undefined" ? `${window.location.protocol}//${window.location.hostname}:8000` : "http://localhost:8000";
 
-  if (loading) return <div className="p-8 text-gray-500">Loading...</div>;
+  if (loading) return <div className="p-8 text-gray-500">{tx("Loading...")}</div>;
 
   return (
     <div className="max-w-4xl mx-auto py-8 px-4 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Inbound Endpoints</h1>
-          <p className="text-sm text-gray-500 mt-1">Receive webhooks from external systems</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Inbound Endpoints")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{tx("Receive webhooks from external systems")}</p>
         </div>
         <Button onClick={() => setShowForm(!showForm)}>
-          {showForm ? "Cancel" : "New Endpoint"}
+          {showForm ? tx("Cancel") : tx("New Endpoint")}
         </Button>
       </div>
 
       {showForm && (
         <div className="bg-white rounded-2xl border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Register Inbound Endpoint</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">{tx("Register Inbound Endpoint")}</h2>
           <form onSubmit={handleCreate} className="grid grid-cols-2 gap-4">
-            <Input id="name" label="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
-            <Input id="path" label="Path Slug" value={form.endpoint_path} onChange={(e) => setForm({ ...form, endpoint_path: e.target.value })} required placeholder="payment-callback" />
+            <Input id="name" label={tx("Name")} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+            <Input id="path" label={tx("Path Slug")} value={form.endpoint_path} onChange={(e) => setForm({ ...form, endpoint_path: e.target.value })} required placeholder="payment-callback" />
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Auth Type</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{tx("Auth Type")}</label>
               <select className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" value={form.auth_type} onChange={(e) => setForm({ ...form, auth_type: e.target.value as AuthType })}>
-                <option value="none">None</option>
-                <option value="hmac">HMAC Signature</option>
-                <option value="bearer">Bearer Token</option>
+                <option value="none">{tx("None")}</option>
+                <option value="hmac">{tx("HMAC Signature")}</option>
+                <option value="bearer">{tx("Bearer Token")}</option>
               </select>
             </div>
             {form.auth_type !== "none" && (
               <div className="col-span-2">
-                <Input id="secret" label="Secret / Token" type="password" value={form.secret_key} onChange={(e) => setForm({ ...form, secret_key: e.target.value })} required />
-                {form.auth_type === "hmac" && <p className="mt-1 text-xs text-gray-500">Use at least 32 characters. Secrets are encrypted at rest and never returned after creation.</p>}
+                <Input id="secret" label={tx("Secret / Token")} type="password" value={form.secret_key} onChange={(e) => setForm({ ...form, secret_key: e.target.value })} required />
+                {form.auth_type === "hmac" && <p className="mt-1 text-xs text-gray-500">{tx("Use at least 32 characters. Secrets are encrypted at rest and never returned after creation.")}</p>}
               </div>
             )}
-            <Input id="handler" label="Handler Module (tag)" value={form.handler_module} onChange={(e) => setForm({ ...form, handler_module: e.target.value })} placeholder="payment_confirmation" />
+            <Input id="handler" label={tx("Handler Module (tag)")} value={form.handler_module} onChange={(e) => setForm({ ...form, handler_module: e.target.value })} placeholder="payment_confirmation" />
             <div className="col-span-2">
-              <Input id="desc" label="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+              <Input id="desc" label={tx("Description")} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
             </div>
             {error && <div className="col-span-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">{error}</div>}
             <div className="col-span-2 flex justify-end gap-3">
-              <Button variant="secondary" type="button" onClick={() => setShowForm(false)}>Cancel</Button>
-              <Button type="submit" loading={saving}>Create</Button>
+              <Button variant="secondary" type="button" onClick={() => setShowForm(false)}>{tx("Cancel")}</Button>
+              <Button type="submit" loading={saving}>{tx("Create")}</Button>
             </div>
           </form>
         </div>
@@ -105,28 +106,28 @@ export default function InboundEndpointsPage() {
                 <div className="flex items-center gap-2">
                   <span className="font-semibold text-gray-900">{ep.name}</span>
                   <span className={`text-xs px-2 py-0.5 rounded font-medium ${ep.active_flag ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
-                    {ep.active_flag ? "Active" : "Inactive"}
+                    {ep.active_flag ? tx("Active") : tx("Inactive")}
                   </span>
                 </div>
                 <div className="text-xs bg-gray-900 text-green-400 font-mono px-3 py-2 rounded-lg">
                   POST {apiBase}/api/v1/webhooks/inbound/{ep.endpoint_path}
                 </div>
                 <div className="flex gap-4 text-xs text-gray-500">
-                  <span>Auth: {ep.auth_type}</span>
-                  {ep.handler_module && <span>Handler: {ep.handler_module}</span>}
-                  <span>Received: {ep.receive_count}</span>
-                  {ep.last_received_at && <span>Last: {new Date(ep.last_received_at).toLocaleString()}</span>}
+                  <span>{tx("Auth:")} {ep.auth_type}</span>
+                  {ep.handler_module && <span>{tx("Handler:")} {ep.handler_module}</span>}
+                  <span>{tx("Received:")} {ep.receive_count}</span>
+                  {ep.last_received_at && <span>{tx("Last:")} {new Date(ep.last_received_at).toLocaleString()}</span>}
                 </div>
-                {ep.auth_type === "hmac" && <button onClick={() => handleRotateSecret(ep.id)} className="text-xs text-purple-600 hover:underline">Rotate HMAC secret</button>}
+                {ep.auth_type === "hmac" && <button onClick={() => handleRotateSecret(ep.id)} className="text-xs text-purple-600 hover:underline">{tx("Rotate HMAC secret")}</button>}
                 {actionErrors[ep.id] && <p className="text-xs text-red-600">{actionErrors[ep.id]}</p>}
                 {rotatedSecrets[ep.id] && (
                   <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm">
-                    <p className="font-medium text-amber-900">Copy this new secret now. It will not be shown again.</p>
+                    <p className="font-medium text-amber-900">{tx("Copy this new secret now. It will not be shown again.")}</p>
                     <code className="my-2 block break-all rounded bg-white p-2 text-xs">{rotatedSecrets[ep.id].secret_key}</code>
-                    <p className="text-xs text-amber-800">Previous key accepted until {new Date(rotatedSecrets[ep.id].previous_secret_expires_at).toLocaleString()}.</p>
+                    <p className="text-xs text-amber-800">{tx("Previous key accepted until")} {new Date(rotatedSecrets[ep.id].previous_secret_expires_at).toLocaleString()}.</p>
                     <div className="mt-2 flex gap-4">
-                      <button className="text-xs font-medium text-indigo-700 underline" onClick={() => navigator.clipboard.writeText(rotatedSecrets[ep.id].secret_key)}>Copy secret</button>
-                      <button className="text-xs text-gray-600 underline" onClick={() => setRotatedSecrets((previous) => { const next = { ...previous }; delete next[ep.id]; return next; })}>Hide secret</button>
+                      <button className="text-xs font-medium text-indigo-700 underline" onClick={() => navigator.clipboard.writeText(rotatedSecrets[ep.id].secret_key)}>{tx("Copy secret")}</button>
+                      <button className="text-xs text-gray-600 underline" onClick={() => setRotatedSecrets((previous) => { const next = { ...previous }; delete next[ep.id]; return next; })}>{tx("Hide secret")}</button>
                     </div>
                   </div>
                 )}
@@ -135,7 +136,7 @@ export default function InboundEndpointsPage() {
           </div>
         ))}
         {endpoints.length === 0 && (
-          <div className="text-center py-12 text-gray-400">No inbound endpoints configured.</div>
+          <div className="text-center py-12 text-gray-400">{tx("No inbound endpoints configured.")}</div>
         )}
       </div>
     </div>

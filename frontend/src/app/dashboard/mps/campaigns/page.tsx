@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { mpsApi, MPSPlanSummary, MPSCampaign, MPSLine } from "@/lib/mps";
 import { useAuth } from "@/context/AuthContext";
+import { tx } from "@/lib/i18n/core";
 
 export default function CampaignsPage() {
   const qc = useQueryClient();
@@ -49,25 +50,25 @@ export default function CampaignsPage() {
   return (
     <div className="p-6 space-y-5">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-gray-900">Campaign Planning</h1>
-        <a href="/dashboard/mps" className="text-xs text-blue-600 hover:underline">← MPS Dashboard</a>
+        <h1 className="text-xl font-semibold text-gray-900">{tx("Campaign Planning")}</h1>
+        <a href="/dashboard/mps" className="text-xs text-blue-600 hover:underline">{tx("← MPS Dashboard")}</a>
       </div>
-      {plansLoading && <p role="status" aria-live="polite" className="text-sm text-gray-500">Loading plans…</p>}
-      {plansError && <p role="alert" className="text-sm text-red-700">Could not load MPS plans: {(plansError as Error).message}</p>}
-      {campaignsError && <p role="alert" className="text-sm text-red-700">Could not load campaigns: {(campaignsError as Error).message}</p>}
-      {linesError && <p role="alert" className="text-sm text-red-700">Could not load plan lines: {(linesError as Error).message}</p>}
-      {runCampaigns.error && <p role="alert" className="text-sm text-red-700">Campaign grouping failed: {(runCampaigns.error as Error).message}</p>}
+      {plansLoading && <p role="status" aria-live="polite" className="text-sm text-gray-500">{tx("Loading plans…")}</p>}
+      {plansError && <p role="alert" className="text-sm text-red-700">{tx("Could not load MPS plans:")} {(plansError as Error).message}</p>}
+      {campaignsError && <p role="alert" className="text-sm text-red-700">{tx("Could not load campaigns:")} {(campaignsError as Error).message}</p>}
+      {linesError && <p role="alert" className="text-sm text-red-700">{tx("Could not load plan lines:")} {(linesError as Error).message}</p>}
+      {runCampaigns.error && <p role="alert" className="text-sm text-red-700">{tx("Campaign grouping failed:")} {(runCampaigns.error as Error).message}</p>}
 
       {/* Plan selector + actions */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex flex-wrap items-center gap-3">
-        <label htmlFor="campaign-plan" className="text-sm font-medium text-gray-600">Select Plan:</label>
+        <label htmlFor="campaign-plan" className="text-sm font-medium text-gray-600">{tx("Select Plan:")}</label>
         <select
           id="campaign-plan"
           className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm min-w-64"
           value={selectedPlanId || ""}
           onChange={(e) => setSelectedPlanId(e.target.value || null)}
         >
-          <option value="">-- select plan --</option>
+          <option value="">{tx("-- select plan --")}</option>
           {plans.map((p) => (
             <option key={p.id} value={p.id}>{p.plan_no} — {p.plan_name}</option>
           ))}
@@ -78,13 +79,13 @@ export default function CampaignsPage() {
             disabled={runCampaigns.isPending}
             className="px-3 py-1.5 text-xs font-medium bg-purple-100 text-purple-700 hover:bg-purple-200 rounded-lg"
           >
-            {runCampaigns.isPending ? "Grouping…" : "Re-run Campaign Grouping"}
+            {runCampaigns.isPending ? tx("Grouping…") : tx("Re-run Campaign Grouping")}
           </button>
         )}
       </div>
 
       {selectedPlanId && (isLoading || linesLoading) && (
-        <div role="status" aria-live="polite" className="bg-white rounded-xl border border-gray-100 p-8 text-center text-sm text-gray-400">Loading campaign data…</div>
+        <div role="status" aria-live="polite" className="bg-white rounded-xl border border-gray-100 p-8 text-center text-sm text-gray-400">{tx("Loading campaign data…")}</div>
       )}
 
       {selectedPlanId && !isLoading && !campaignsError && campaigns.length > 0 && (
@@ -92,10 +93,10 @@ export default function CampaignsPage() {
           {/* Summary */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: "Campaigns", value: campaigns.length },
-              { label: "Total SKUs", value: campaigns.reduce((s, c) => s + c.sku_count, 0) },
-              { label: "Production Hours", value: `${totalProduction.toFixed(1)}h` },
-              { label: "Campaign Efficiency", value: `${efficiency}%`, color: "text-green-600" },
+              { label: tx("Campaigns"), value: campaigns.length },
+              { label: tx("Total SKUs"), value: campaigns.reduce((s, c) => s + c.sku_count, 0) },
+              { label: tx("Production Hours"), value: `${totalProduction.toFixed(1)}h` },
+              { label: tx("Campaign Efficiency"), value: `${efficiency}%`, color: "text-green-600" },
             ].map((kpi) => (
               <div key={kpi.label} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
                 <p className="text-xs text-gray-400 font-medium">{kpi.label}</p>
@@ -125,10 +126,10 @@ export default function CampaignsPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-6 text-xs text-gray-500">
-                      <span>{camp.sku_count} SKU{camp.sku_count !== 1 ? "s" : ""}</span>
-                      <span>{Number(camp.total_production_hrs).toFixed(1)}h production</span>
-                      <span className="text-orange-500">{Number(camp.total_changeover_hrs).toFixed(1)}h changeover</span>
-                      <span className="text-green-600 font-medium">{efficiency_pct}% efficient</span>
+                      <span>{camp.sku_count} SKU{camp.sku_count !== 1 ? tx("s") : ""}</span>
+                      <span>{Number(camp.total_production_hrs).toFixed(1)}{tx("h production")}</span>
+                      <span className="text-orange-500">{Number(camp.total_changeover_hrs).toFixed(1)}{tx("h changeover")}</span>
+                      <span className="text-green-600 font-medium">{efficiency_pct}{tx("% efficient")}</span>
                       {camp.campaign_start && (
                         <span>{camp.campaign_start} → {camp.campaign_end}</span>
                       )}
@@ -139,7 +140,7 @@ export default function CampaignsPage() {
                     <table className="w-full text-xs">
                       <thead className="bg-gray-50">
                         <tr>
-                          {["Seq", "Product", "Period", "Planned Qty", "Req Hrs", "Priority", "Status"].map((h) => (
+                          {[tx("Seq"), tx("Product"), tx("Period"), tx("Planned Qty"), tx("Req Hrs"), tx("Priority"), tx("Status")].map((h) => (
                             <th key={h} className="px-3 py-2 text-left font-medium text-gray-400">{h}</th>
                           ))}
                         </tr>
@@ -170,7 +171,7 @@ export default function CampaignsPage() {
                       </tbody>
                     </table>
                   ) : (
-                    <p className="px-5 py-3 text-xs text-gray-400">No lines in this campaign</p>
+                    <p className="px-5 py-3 text-xs text-gray-400">{tx("No lines in this campaign")}</p>
                   )}
                 </div>
               );
@@ -181,7 +182,7 @@ export default function CampaignsPage() {
           {uncampaigned.length > 0 && (
             <div className="bg-white rounded-xl border border-yellow-200 shadow-sm p-4">
               <h3 className="text-sm font-semibold text-yellow-700 mb-2">
-                {uncampaigned.length} lines not grouped into any campaign
+                {uncampaigned.length} {tx("lines not grouped into any campaign")}
               </h3>
               <div className="flex flex-wrap gap-2">
                 {uncampaigned.map((l) => (
@@ -197,7 +198,7 @@ export default function CampaignsPage() {
 
       {selectedPlanId && !isLoading && !campaignsError && campaigns.length === 0 && (
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-8 text-center text-sm text-gray-400">
-          No campaigns yet. Run campaign grouping to group SKUs automatically.
+          {tx("No campaigns yet. Run campaign grouping to group SKUs automatically.")}
         </div>
       )}
     </div>

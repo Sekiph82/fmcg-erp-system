@@ -30,6 +30,7 @@ import {
 } from "@/lib/water";
 import { importApi } from "@/lib/importApi";
 import type { ImportResult } from "@/lib/importApi";
+import { tx } from "@/lib/i18n/core";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -101,18 +102,18 @@ function RecordForm({
       {/* Asset + datetime */}
       <div className="grid grid-cols-2 gap-3">
         <label className="flex flex-col gap-1">
-          <span className="text-xs text-gray-400">Softener Asset *</span>
+          <span className="text-xs text-gray-400">{tx("Softener Asset *")}</span>
           <select required
             className="bg-white/5 border border-white/10 rounded px-2 py-1.5 text-sm text-white"
             value={f.asset_id} onChange={e => set("asset_id", e.target.value)}>
             {assets.map(a => (
               <option key={a.id} value={a.id}>{a.name} ({a.asset_no})</option>
             ))}
-            {assets.length === 0 && <option value="">No SOFT_WATER assets found</option>}
+            {assets.length === 0 && <option value="">{tx("No SOFT_WATER assets found")}</option>}
           </select>
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-xs text-gray-400">Record DateTime *</span>
+          <span className="text-xs text-gray-400">{tx("Record DateTime *")}</span>
           <input required type="datetime-local"
             className="bg-white/5 border border-white/10 rounded px-2 py-1.5 text-sm text-white"
             value={f.record_datetime} onChange={e => set("record_datetime", e.target.value)} />
@@ -120,7 +121,7 @@ function RecordForm({
       </div>
 
       {/* Water quality */}
-      <p className="text-xs text-gray-500 border-t border-white/5 pt-3">Water Quality</p>
+      <p className="text-xs text-gray-500 border-t border-white/5 pt-3">{tx("Water Quality")}</p>
       <div className="grid grid-cols-3 gap-3">
         {([
           ["feed_water_hardness_ppm",    "Feed Hardness (ppm)"],
@@ -143,7 +144,7 @@ function RecordForm({
       </div>
 
       {/* Volume + flow */}
-      <p className="text-xs text-gray-500 border-t border-white/5 pt-3">Volume & Flow</p>
+      <p className="text-xs text-gray-500 border-t border-white/5 pt-3">{tx("Volume & Flow")}</p>
       <div className="grid grid-cols-3 gap-3">
         {([
           ["raw_water_input_m3",  "Raw Input (m³)"],
@@ -164,38 +165,38 @@ function RecordForm({
       </div>
 
       {/* Regeneration */}
-      <p className="text-xs text-gray-500 border-t border-white/5 pt-3">Regeneration Cycle</p>
+      <p className="text-xs text-gray-500 border-t border-white/5 pt-3">{tx("Regeneration Cycle")}</p>
       <div className="grid grid-cols-3 gap-3">
         <label className="flex flex-col gap-1">
-          <span className="text-xs text-gray-400">Regen Start</span>
+          <span className="text-xs text-gray-400">{tx("Regen Start")}</span>
           <input type="datetime-local"
             className="bg-white/5 border border-white/10 rounded px-2 py-1.5 text-sm text-white"
             value={f.regen_start ?? ""}
             onChange={e => set("regen_start", e.target.value || null)} />
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-xs text-gray-400">Regen End</span>
+          <span className="text-xs text-gray-400">{tx("Regen End")}</span>
           <input type="datetime-local"
             className="bg-white/5 border border-white/10 rounded px-2 py-1.5 text-sm text-white"
             value={f.regen_end ?? ""}
             onChange={e => set("regen_end", e.target.value || null)} />
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-xs text-gray-400">Regen Count</span>
+          <span className="text-xs text-gray-400">{tx("Regen Count")}</span>
           <input type="number" step="1"
             className="bg-white/5 border border-white/10 rounded px-2 py-1.5 text-sm text-white"
             value={f.regeneration_count ?? ""}
             onChange={e => set("regeneration_count", e.target.value ? parseInt(e.target.value) : null)} />
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-xs text-gray-400">Service Run Hours</span>
+          <span className="text-xs text-gray-400">{tx("Service Run Hours")}</span>
           <input type="number" step="0.01"
             className="bg-white/5 border border-white/10 rounded px-2 py-1.5 text-sm text-white"
             value={f.service_run_hours ?? ""}
             onChange={e => set("service_run_hours", e.target.value ? parseFloat(e.target.value) : null)} />
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-xs text-gray-400">Downtime (min)</span>
+          <span className="text-xs text-gray-400">{tx("Downtime (min)")}</span>
           <input type="number" step="1"
             className="bg-white/5 border border-white/10 rounded px-2 py-1.5 text-sm text-white"
             value={f.downtime_minutes ?? ""}
@@ -204,10 +205,10 @@ function RecordForm({
       </div>
 
       {/* Operational */}
-      <p className="text-xs text-gray-500 border-t border-white/5 pt-3">Operational</p>
+      <p className="text-xs text-gray-500 border-t border-white/5 pt-3">{tx("Operational")}</p>
       <div className="grid grid-cols-3 gap-3">
         <label className="flex flex-col gap-1">
-          <span className="text-xs text-gray-400">Status</span>
+          <span className="text-xs text-gray-400">{tx("Status")}</span>
           <select className="bg-white/5 border border-white/10 rounded px-2 py-1.5 text-sm text-white"
             value={f.status} onChange={e => set("status", e.target.value)}>
             {(["ONLINE", "REGENERATING", "STANDBY", "FAULT"] as SoftenerStatus[]).map(s => (
@@ -216,20 +217,20 @@ function RecordForm({
           </select>
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-xs text-gray-400">Destination Tag</span>
+          <span className="text-xs text-gray-400">{tx("Destination Tag")}</span>
           <input className="bg-white/5 border border-white/10 rounded px-2 py-1.5 text-sm text-white"
-            placeholder="e.g. Boiler Feed, CIP"
+            placeholder={tx("e.g. Boiler Feed, CIP")}
             value={f.destination_tag ?? ""}
             onChange={e => set("destination_tag", e.target.value || null)} />
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-xs text-gray-400">Department</span>
+          <span className="text-xs text-gray-400">{tx("Department")}</span>
           <input className="bg-white/5 border border-white/10 rounded px-2 py-1.5 text-sm text-white"
             value={f.department ?? ""}
             onChange={e => set("department", e.target.value || null)} />
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-xs text-gray-400">Shift</span>
+          <span className="text-xs text-gray-400">{tx("Shift")}</span>
           <input className="bg-white/5 border border-white/10 rounded px-2 py-1.5 text-sm text-white"
             value={f.shift_ref ?? ""}
             onChange={e => set("shift_ref", e.target.value || null)} />
@@ -238,19 +239,19 @@ function RecordForm({
           <label className="flex items-center gap-2 text-xs text-gray-400">
             <input type="checkbox" checked={!!f.maintenance_flag}
               onChange={e => set("maintenance_flag", e.target.checked)} />
-            Maintenance Required
+            {tx("Maintenance Required")}
           </label>
           <label className="flex items-center gap-2 text-xs text-gray-400">
             <input type="checkbox" checked={!!f.is_anomaly}
               onChange={e => set("is_anomaly", e.target.checked)} />
-            Anomaly
+            {tx("Anomaly")}
           </label>
         </div>
       </div>
 
       {f.is_anomaly && (
         <label className="flex flex-col gap-1">
-          <span className="text-xs text-gray-400">Anomaly Note</span>
+          <span className="text-xs text-gray-400">{tx("Anomaly Note")}</span>
           <input className="bg-white/5 border border-white/10 rounded px-2 py-1.5 text-sm text-white"
             value={f.anomaly_note ?? ""}
             onChange={e => set("anomaly_note", e.target.value || null)} />
@@ -258,7 +259,7 @@ function RecordForm({
       )}
 
       <label className="flex flex-col gap-1">
-        <span className="text-xs text-gray-400">Notes</span>
+        <span className="text-xs text-gray-400">{tx("Notes")}</span>
         <textarea rows={2} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 text-sm text-white resize-none"
           value={f.notes ?? ""}
           onChange={e => set("notes", e.target.value || null)} />
@@ -266,10 +267,10 @@ function RecordForm({
 
       <div className="flex gap-2 justify-end pt-2">
         <button type="button" onClick={onCancel}
-          className="px-3 py-1.5 rounded text-sm text-gray-400 border border-white/10 hover:bg-white/5">Cancel</button>
+          className="px-3 py-1.5 rounded text-sm text-gray-400 border border-white/10 hover:bg-white/5">{tx("Cancel")}</button>
         <button type="submit" disabled={loading}
           className="px-4 py-1.5 rounded text-sm bg-cyan-600 hover:bg-cyan-500 text-white disabled:opacity-50">
-          {loading ? "Saving…" : "Save"}
+          {loading ? tx("Saving…") : tx("Save")}
         </button>
       </div>
     </form>
@@ -294,7 +295,7 @@ function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: () => v
       setResult(r);
       if (doImport && r.imported) onDone();
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Import failed");
+      setError(e instanceof Error ? e.message : tx("Import failed"));
     } finally {
       setLoading(false);
     }
@@ -304,30 +305,30 @@ function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: () => v
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
       <div className="bg-[#1a1f2e] border border-white/10 rounded-xl p-6 w-full max-w-md space-y-4">
         <div className="flex justify-between items-center">
-          <h3 className="text-white font-semibold">Import Soft Water Records</h3>
+          <h3 className="text-white font-semibold">{tx("Import Soft Water Records")}</h3>
           <button onClick={onClose} className="text-gray-400 hover:text-white">✕</button>
         </div>
         <button onClick={() => importApi.downloadTemplate("soft_water_records")}
-          className="text-xs text-cyan-400 hover:underline">Download template CSV</button>
+          className="text-xs text-cyan-400 hover:underline">{tx("Download template CSV")}</button>
         <input type="file" accept=".csv"
           className="block w-full text-sm text-gray-400 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:bg-white/10 file:text-white"
           onChange={e => { setFile(e.target.files?.[0] ?? null); setResult(null); }} />
         {result && (
           <div className={`p-3 rounded text-sm border ${result.imported ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "bg-blue-500/10 border-blue-500/20 text-blue-400"}`}>
-            <p>{result.imported ? "Import complete" : "Validation result"}</p>
-            <p className="text-xs mt-1">{result.valid_rows} valid / {result.failed_rows} failed / {result.total_rows} total</p>
+            <p>{result.imported ? tx("Import complete") : tx("Validation result")}</p>
+            <p className="text-xs mt-1">{result.valid_rows} {tx("valid /")} {result.failed_rows} {tx("failed /")} {result.total_rows} {tx("total")}</p>
             {result.errors.slice(0, 5).map((e, i) => (
-              <p key={i} className="text-xs text-red-400 mt-0.5">Row {e.row}: {e.message}</p>
+              <p key={i} className="text-xs text-red-400 mt-0.5">{tx("Row")} {e.row}: {e.message}</p>
             ))}
           </div>
         )}
         {error && <p className="text-red-400 text-sm">{error}</p>}
         <div className="flex gap-2 justify-end">
           <button onClick={() => run(false)} disabled={!file || loading}
-            className="px-3 py-1.5 text-xs rounded border border-white/10 text-gray-300 hover:bg-white/5 disabled:opacity-40">Validate</button>
+            className="px-3 py-1.5 text-xs rounded border border-white/10 text-gray-300 hover:bg-white/5 disabled:opacity-40">{tx("Validate")}</button>
           <button onClick={() => run(true)} disabled={!file || loading}
             className="px-3 py-1.5 text-xs rounded bg-cyan-600 hover:bg-cyan-500 text-white disabled:opacity-40">
-            {loading ? "Running…" : "Import"}
+            {loading ? tx("Running…") : tx("Import")}
           </button>
         </div>
       </div>
@@ -410,9 +411,9 @@ export default function SoftWaterPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Soft Water Management</h1>
+          <h1 className="text-2xl font-bold text-white">{tx("Soft Water Management")}</h1>
           <p className="text-sm text-gray-400 mt-1">
-            Softener operations · Hardness/TDS/conductivity · Regeneration cycles · Salt consumption
+            {tx("Softener operations · Hardness/TDS/conductivity · Regeneration cycles · Salt consumption")}
           </p>
         </div>
         <div className="flex gap-2">
@@ -423,15 +424,15 @@ export default function SoftWaterPage() {
             }}
             className="px-3 py-1.5 text-xs rounded border border-white/10 text-gray-300 hover:bg-white/5"
           >
-            Export CSV
+            {tx("Export CSV")}
           </button>
           <button onClick={() => setModal({ type: "import" })}
             className="px-3 py-1.5 text-xs rounded border border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10">
-            Import
+            {tx("Import")}
           </button>
           <button onClick={() => setModal({ type: "create" })}
             className="px-3 py-1.5 text-xs rounded bg-cyan-600 hover:bg-cyan-500 text-white">
-            + Log Record
+            {tx("+ Log Record")}
           </button>
         </div>
       </div>
@@ -454,7 +455,7 @@ export default function SoftWaterPage() {
           value={filters.asset_id ?? ""}
           onChange={e => setF("asset_id", e.target.value)}
         >
-          <option value="">All Assets</option>
+          <option value="">{tx("All Assets")}</option>
           {assets.map(a => (
             <option key={a.id} value={a.id}>{a.name}</option>
           ))}
@@ -462,35 +463,35 @@ export default function SoftWaterPage() {
         <label className="flex items-center gap-1.5 text-xs text-gray-400">
           <input type="checkbox" checked={filters.is_anomaly === true}
             onChange={e => setF("is_anomaly", e.target.checked ? true : undefined)} />
-          Anomalies only
+          {tx("Anomalies only")}
         </label>
         <label className="flex items-center gap-1.5 text-xs text-gray-400">
           <input type="checkbox" checked={filters.maintenance_flag === true}
             onChange={e => setF("maintenance_flag", e.target.checked ? true : undefined)} />
-          Maintenance flagged
+          {tx("Maintenance flagged")}
         </label>
       </div>
 
       {/* KPIs */}
-      <Section title="Soft Water KPIs" />
+      <Section title={tx("Soft Water KPIs")} />
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
-        <KPICard label="Volume Treated" value={`${fmt(kpis?.total_volume_m3)} m³`} />
-        <KPICard label="Raw Input" value={`${fmt(kpis?.total_raw_input_m3)} m³`} />
-        <KPICard label="Salt Consumed" value={`${fmt(kpis?.total_salt_kg)} kg`} />
-        <KPICard label="Salt / m³" value={kpis?.salt_per_m3 ? `${fmt(kpis.salt_per_m3, 3)} kg` : "—"} />
+        <KPICard label={tx("Volume Treated")} value={`${fmt(kpis?.total_volume_m3)} m³`} />
+        <KPICard label={tx("Raw Input")} value={`${fmt(kpis?.total_raw_input_m3)} m³`} />
+        <KPICard label={tx("Salt Consumed")} value={`${fmt(kpis?.total_salt_kg)} kg`} />
+        <KPICard label={tx("Salt / m³")} value={kpis?.salt_per_m3 ? `${fmt(kpis.salt_per_m3, 3)} kg` : "—"} />
         <KPICard
-          label="Conversion Eff."
+          label={tx("Conversion Eff.")}
           value={kpis?.conversion_eff_pct ? `${fmt(kpis.conversion_eff_pct, 1)}%` : "—"}
           ok={parseFloat(kpis?.conversion_eff_pct ?? "0") >= 95}
           alert={parseFloat(kpis?.conversion_eff_pct ?? "100") < 90}
         />
         <KPICard
-          label="Hardness Removal"
+          label={tx("Hardness Removal")}
           value={kpis?.hardness_removal_pct ? `${fmt(kpis.hardness_removal_pct, 1)}%` : "—"}
           ok={parseFloat(kpis?.hardness_removal_pct ?? "0") >= 90}
         />
         <KPICard
-          label="Compliance"
+          label={tx("Compliance")}
           value={kpis?.compliance_pct ? `${fmt(kpis.compliance_pct, 1)}%` : "—"}
           sub="Product ≤ 50 ppm"
           ok={parseFloat(kpis?.compliance_pct ?? "0") >= 95}
@@ -498,29 +499,29 @@ export default function SoftWaterPage() {
         />
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <KPICard label="Regen Count" value={String(kpis?.regen_count ?? 0)} />
-        <KPICard label="Regen Frequency" value={kpis?.regen_frequency ? `${fmt(kpis.regen_frequency, 2)}/day` : "—"} />
+        <KPICard label={tx("Regen Count")} value={String(kpis?.regen_count ?? 0)} />
+        <KPICard label={tx("Regen Frequency")} value={kpis?.regen_frequency ? `${fmt(kpis.regen_frequency, 2)}/day` : "—"} />
         <KPICard
-          label="Loss Ratio"
+          label={tx("Loss Ratio")}
           value={kpis?.loss_ratio ? `${fmt(kpis.loss_ratio, 1)}%` : "—"}
           alert={parseFloat(kpis?.loss_ratio ?? "0") > 5}
         />
-        <KPICard label="Avg Downtime" value={kpis?.avg_downtime_min ? `${fmt(kpis.avg_downtime_min, 0)} min` : "—"}
+        <KPICard label={tx("Avg Downtime")} value={kpis?.avg_downtime_min ? `${fmt(kpis.avg_downtime_min, 0)} min` : "—"}
           alert={parseFloat(kpis?.avg_downtime_min ?? "0") > 30} />
       </div>
       {(kpis?.anomaly_count ?? 0) > 0 && (
         <div className="flex gap-4">
-          <KPICard label="Anomalies" value={String(kpis?.anomaly_count ?? 0)} alert />
-          <KPICard label="Maintenance Flags" value={String(kpis?.maintenance_count ?? 0)} alert={(kpis?.maintenance_count ?? 0) > 0} />
+          <KPICard label={tx("Anomalies")} value={String(kpis?.anomaly_count ?? 0)} alert />
+          <KPICard label={tx("Maintenance Flags")} value={String(kpis?.maintenance_count ?? 0)} alert={(kpis?.maintenance_count ?? 0) > 0} />
         </div>
       )}
 
       {/* Trend Charts */}
-      <Section title="Daily Trend" />
+      <Section title={tx("Daily Trend")} />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Volume + Salt */}
         <div className="bg-white/5 border border-white/10 rounded-xl p-4" style={{ height: 240 }}>
-          <p className="text-xs text-gray-400 mb-2">Volume Treated vs Salt Consumed</p>
+          <p className="text-xs text-gray-400 mb-2">{tx("Volume Treated vs Salt Consumed")}</p>
           <ResponsiveContainer width="100%" height="90%">
             <BarChart data={trendData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
@@ -539,7 +540,7 @@ export default function SoftWaterPage() {
         </div>
         {/* Efficiency */}
         <div className="bg-white/5 border border-white/10 rounded-xl p-4" style={{ height: 240 }}>
-          <p className="text-xs text-gray-400 mb-2">Efficiency % Trend</p>
+          <p className="text-xs text-gray-400 mb-2">{tx("Efficiency % Trend")}</p>
           <ResponsiveContainer width="100%" height="90%">
             <AreaChart data={trendData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
@@ -556,14 +557,14 @@ export default function SoftWaterPage() {
       </div>
 
       {/* Records table */}
-      <Section title="Operational Records" />
+      <Section title={tx("Operational Records")} />
       <div className="bg-white/5 border border-white/10 rounded-xl overflow-auto">
         <table className="w-full text-xs">
           <thead>
             <tr className="border-b border-white/10">
-              {["Record No", "DateTime", "Asset", "Vol (m³)", "Raw In",
-                "Salt (kg)", "Hard Feed/Prod", "Eff %", "Regen",
-                "Status", "Flags", ""].map(h => (
+              {[tx("Record No"), tx("DateTime"), tx("Asset"), tx("Vol (m³)"), tx("Raw In"),
+                tx("Salt (kg)"), tx("Hard Feed/Prod"), tx("Eff %"), tx("Regen"),
+                tx("Status"), tx("Flags"), ""].map(h => (
                 <th key={h} className="text-left px-3 py-2 text-gray-400 whitespace-nowrap">{h}</th>
               ))}
             </tr>
@@ -602,15 +603,15 @@ export default function SoftWaterPage() {
                 <td className="px-3 py-2 text-gray-400">{rec.regeneration_count ?? "—"}</td>
                 <td className="px-3 py-2"><StatusBadge status={rec.status} /></td>
                 <td className="px-3 py-2">
-                  {rec.is_anomaly && <span className="text-red-400 mr-1" title="Anomaly">⚠</span>}
-                  {rec.maintenance_flag && <span className="text-amber-400" title="Maintenance required">🔧</span>}
+                  {rec.is_anomaly && <span className="text-red-400 mr-1" title={tx("Anomaly")}>⚠</span>}
+                  {rec.maintenance_flag && <span className="text-amber-400" title={tx("Maintenance required")}>🔧</span>}
                 </td>
                 <td className="px-3 py-2" onClick={e => e.stopPropagation()}>
                   <div className="flex gap-2">
                     <button onClick={() => setModal({ type: "edit", rec })}
-                      className="text-cyan-400 hover:text-cyan-300 text-xs">Edit</button>
+                      className="text-cyan-400 hover:text-cyan-300 text-xs">{tx("Edit")}</button>
                     <button onClick={() => setModal({ type: "delete", rec })}
-                      className="text-red-400 hover:text-red-300 text-xs">Del</button>
+                      className="text-red-400 hover:text-red-300 text-xs">{tx("Del")}</button>
                   </div>
                 </td>
               </tr>
@@ -618,7 +619,7 @@ export default function SoftWaterPage() {
             {records.length === 0 && (
               <tr>
                 <td colSpan={12} className="px-3 py-8 text-center text-gray-500">
-                  No soft water records found for the selected filters.
+                  {tx("No soft water records found for the selected filters.")}
                 </td>
               </tr>
             )}
@@ -630,7 +631,7 @@ export default function SoftWaterPage() {
       {modal.type === "create" && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 overflow-auto">
           <div className="bg-[#1a1f2e] border border-white/10 rounded-xl p-6 w-full max-w-3xl max-h-[90vh] overflow-auto">
-            <h3 className="text-white font-semibold mb-4">Log Soft Water Record</h3>
+            <h3 className="text-white font-semibold mb-4">{tx("Log Soft Water Record")}</h3>
             <RecordForm
               assets={assets}
               onSubmit={d => createMut.mutate(d)}
@@ -644,7 +645,7 @@ export default function SoftWaterPage() {
       {modal.type === "edit" && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 overflow-auto">
           <div className="bg-[#1a1f2e] border border-white/10 rounded-xl p-6 w-full max-w-3xl max-h-[90vh] overflow-auto">
-            <h3 className="text-white font-semibold mb-4">Edit Soft Water Record — {modal.rec.record_no}</h3>
+            <h3 className="text-white font-semibold mb-4">{tx("Edit Soft Water Record —")} {modal.rec.record_no}</h3>
             <RecordForm
               initial={modal.rec as unknown as Partial<SoftWaterRecordCreate>}
               assets={assets}
@@ -660,7 +661,7 @@ export default function SoftWaterPage() {
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 overflow-auto">
           <div className="bg-[#1a1f2e] border border-white/10 rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-auto">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-white font-semibold">Record — {modal.rec.record_no}</h3>
+              <h3 className="text-white font-semibold">{tx("Record —")} {modal.rec.record_no}</h3>
               <button onClick={() => setModal({ type: "none" })} className="text-gray-400 hover:text-white">✕</button>
             </div>
             <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
@@ -693,7 +694,7 @@ export default function SoftWaterPage() {
               ))}
               {modal.rec.notes && (
                 <div className="col-span-2 flex gap-2">
-                  <span className="text-gray-500 w-32 shrink-0">Notes</span>
+                  <span className="text-gray-500 w-32 shrink-0">{tx("Notes")}</span>
                   <span className="text-gray-200">{modal.rec.notes}</span>
                 </div>
               )}
@@ -705,15 +706,15 @@ export default function SoftWaterPage() {
       {modal.type === "delete" && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
           <div className="bg-[#1a1f2e] border border-white/10 rounded-xl p-6 w-full max-w-sm text-center">
-            <p className="text-white mb-2">Delete this record?</p>
+            <p className="text-white mb-2">{tx("Delete this record?")}</p>
             <p className="text-gray-400 text-sm mb-4">{modal.rec.record_no}</p>
             <div className="flex gap-2 justify-center">
               <button onClick={() => setModal({ type: "none" })}
-                className="px-4 py-1.5 rounded border border-white/10 text-gray-300 text-sm hover:bg-white/5">Cancel</button>
+                className="px-4 py-1.5 rounded border border-white/10 text-gray-300 text-sm hover:bg-white/5">{tx("Cancel")}</button>
               <button onClick={() => deleteMut.mutate(modal.rec.id)}
                 disabled={deleteMut.isPending}
                 className="px-4 py-1.5 rounded bg-red-600 hover:bg-red-500 text-white text-sm disabled:opacity-50">
-                {deleteMut.isPending ? "Deleting…" : "Delete"}
+                {deleteMut.isPending ? tx("Deleting…") : tx("Delete")}
               </button>
             </div>
           </div>

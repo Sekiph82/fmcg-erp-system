@@ -5,6 +5,7 @@ import {
   notificationsApi, NCDashboard,
   TYPE_COLOR, PRIORITY_COLOR, CHANNEL_LABEL,
 } from "@/lib/notifications_center";
+import { tx } from "@/lib/i18n/core";
 
 export default function NotificationCenterDashboard() {
   const [dash, setDash] = useState<NCDashboard | null>(null);
@@ -19,37 +20,37 @@ export default function NotificationCenterDashboard() {
     setSeeding(true);
     const r = await notificationsApi.seedTemplates();
     setSeeding(false);
-    alert(`Seeded ${r.created} default templates.`);
+    alert(tx("Seeded {created} default templates.", { created: r.created }));
   };
 
   const kpis = dash ? [
-    { label: "Total Notifications", value: dash.total_notifications },
-    { label: "Unread", value: dash.unread_count, color: "text-orange-600" },
-    { label: "Sent Today", value: dash.sent_today, color: "text-green-600" },
-    { label: "Failed", value: dash.failed_count, color: "text-red-600" },
-    { label: "Pending Schedules", value: dash.pending_schedules, color: "text-blue-600" },
+    { label: tx("Total Notifications"), value: dash.total_notifications },
+    { label: tx("Unread"), value: dash.unread_count, color: "text-orange-600" },
+    { label: tx("Sent Today"), value: dash.sent_today, color: "text-green-600" },
+    { label: tx("Failed"), value: dash.failed_count, color: "text-red-600" },
+    { label: tx("Pending Schedules"), value: dash.pending_schedules, color: "text-blue-600" },
   ] : [];
 
   const links = [
-    { href: "/dashboard/notification-center/list", label: "All Notifications" },
-    { href: "/dashboard/notification-center/preferences", label: "Preferences" },
-    { href: "/dashboard/notification-center/templates", label: "Templates" },
-    { href: "/dashboard/notification-center/schedules", label: "Schedules" },
-    { href: "/dashboard/notification-center/reports", label: "Reports" },
-    { href: "/dashboard/notification-center/ai", label: "AI Insights" },
+    { href: "/dashboard/notification-center/list", label: tx("All Notifications") },
+    { href: "/dashboard/notification-center/preferences", label: tx("Preferences") },
+    { href: "/dashboard/notification-center/templates", label: tx("Templates") },
+    { href: "/dashboard/notification-center/schedules", label: tx("Schedules") },
+    { href: "/dashboard/notification-center/reports", label: tx("Reports") },
+    { href: "/dashboard/notification-center/ai", label: tx("AI Insights") },
   ];
 
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Notification Center</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{tx("Notification Center")}</h1>
         <button onClick={seedTemplates} disabled={seeding}
           className="rounded border border-gray-300 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-50">
-          {seeding ? "Seeding…" : "Seed Default Templates"}
+          {seeding ? tx("Seeding…") : tx("Seed Default Templates")}
         </button>
       </div>
 
-      {loading ? <p className="text-gray-500">Loading…</p> : (
+      {loading ? <p className="text-gray-500">{tx("Loading…")}</p> : (
         <>
           <div className="grid grid-cols-3 gap-4 lg:grid-cols-5">
             {kpis.map((k) => (
@@ -63,7 +64,7 @@ export default function NotificationCenterDashboard() {
           {dash && (
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <div className="bg-white border rounded-lg p-4 shadow-sm">
-                <h2 className="text-sm font-semibold text-gray-700 mb-3">By Type</h2>
+                <h2 className="text-sm font-semibold text-gray-700 mb-3">{tx("By Type")}</h2>
                 <div className="space-y-1.5">
                   {Object.entries(dash.by_type).map(([type, count]) => (
                     <div key={type} className="flex items-center justify-between">
@@ -76,7 +77,7 @@ export default function NotificationCenterDashboard() {
                 </div>
               </div>
               <div className="bg-white border rounded-lg p-4 shadow-sm">
-                <h2 className="text-sm font-semibold text-gray-700 mb-3">By Priority</h2>
+                <h2 className="text-sm font-semibold text-gray-700 mb-3">{tx("By Priority")}</h2>
                 <div className="space-y-1.5">
                   {Object.entries(dash.by_priority).map(([p, count]) => (
                     <div key={p} className="flex items-center justify-between">
@@ -89,7 +90,7 @@ export default function NotificationCenterDashboard() {
                 </div>
               </div>
               <div className="bg-white border rounded-lg p-4 shadow-sm">
-                <h2 className="text-sm font-semibold text-gray-700 mb-3">By Channel</h2>
+                <h2 className="text-sm font-semibold text-gray-700 mb-3">{tx("By Channel")}</h2>
                 <div className="space-y-1.5">
                   {Object.entries(dash.by_channel).map(([ch, count]) => (
                     <div key={ch} className="flex items-center justify-between">
@@ -104,7 +105,7 @@ export default function NotificationCenterDashboard() {
 
           {dash && dash.top_modules.length > 0 && (
             <div className="bg-white border rounded-lg p-4 shadow-sm">
-              <h2 className="text-sm font-semibold text-gray-700 mb-3">Top Modules</h2>
+              <h2 className="text-sm font-semibold text-gray-700 mb-3">{tx("Top Modules")}</h2>
               <div className="flex gap-4 flex-wrap">
                 {dash.top_modules.map((m) => (
                   <div key={m.module} className="bg-gray-50 rounded-lg px-4 py-2 text-center">
@@ -119,7 +120,7 @@ export default function NotificationCenterDashboard() {
       )}
 
       <div className="bg-white border rounded-lg p-4 shadow-sm">
-        <h2 className="text-sm font-semibold text-gray-700 mb-3">Quick Navigation</h2>
+        <h2 className="text-sm font-semibold text-gray-700 mb-3">{tx("Quick Navigation")}</h2>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {links.map((l) => (
             <Link key={l.href} href={l.href}

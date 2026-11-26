@@ -2,6 +2,7 @@
 // M45.S01.T018 configuration sandbox: export a bundle from staging, dry-run and apply it here.
 import { useState } from "react";
 import { apiClient } from "@/lib/api";
+import { tx } from "@/lib/i18n/core";
 
 type Step = { table: string; key: string; action: string; changed?: string[]; detail?: string };
 const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : "Something went wrong."; };
@@ -19,25 +20,25 @@ export default function ConfigSandboxPage() {
     a.href = URL.createObjectURL(new Blob([JSON.stringify(r.data, null, 2)], { type: "application/json" }));
     a.download = `config-${String(r.data.sha256).slice(0, 8)}.json`; a.click();
   }).catch((e) => setMsg(err(e)));
-  const load = (f: File | undefined) => f && f.text().then((t) => { try { setBundle(JSON.parse(t)); setPlan(null); setMsg(null); } catch { setMsg("Not a JSON file."); } });
+  const load = (f: File | undefined) => f && f.text().then((t) => { try { setBundle(JSON.parse(t)); setPlan(null); setMsg(null); } catch { setMsg(tx("Not a JSON file.")); } });
   const dry = () => bundle && apiClient.post("/api/v1/config-bundles/plan", { bundle, mode, site_keys: siteKeys() }).then((r) => setPlan(r.data)).catch((e) => setMsg(err(e)));
-  const apply = () => bundle && apiClient.post("/api/v1/config-bundles/apply", { bundle, mode, site_keys: siteKeys() }).then((r) => { setMsg(`Applied: ${r.data.created} created, ${r.data.updated} updated. Workflows arrive as drafts: publish them.`); setPlan(null); }).catch((e) => setMsg(err(e)));
+  const apply = () => bundle && apiClient.post("/api/v1/config-bundles/apply", { bundle, mode, site_keys: siteKeys() }).then((r) => { setMsg(tx("Applied: {created} created, {updated} updated. Workflows arrive as drafts: publish them.", { created: r.data.created, updated: r.data.updated })); setPlan(null); }).catch((e) => setMsg(err(e)));
   return (
     <div className="p-4 space-y-3 text-sm max-w-4xl">
-      <h2 className="text-lg font-semibold">Configuration sandbox</h2>
+      <h2 className="text-lg font-semibold">{tx("Configuration sandbox")}</h2>
       <div className="flex flex-wrap gap-3 items-center text-xs">
-        <label className="flex items-center gap-1"><input type="checkbox" checked={cms} onChange={(e) => setCms(e.target.checked)} />Include website content (live public pages as drafts, tables, redirects, CTAs; media by reference)</label>
-        <label>Site key mapping<input aria-label="Site key mapping" className="border rounded px-1 ml-1" placeholder="povu=povu-staging" value={siteMap} onChange={(e) => setSiteMap(e.target.value)} /></label>
+        <label className="flex items-center gap-1"><input type="checkbox" checked={cms} onChange={(e) => setCms(e.target.checked)} />{tx("Include website content (live public pages as drafts, tables, redirects, CTAs; media by reference)")}</label>
+        <label>{tx("Site key mapping")}<input aria-label={tx("Site key mapping")} className="border rounded px-1 ml-1" placeholder={tx("povu=povu-staging")} value={siteMap} onChange={(e) => setSiteMap(e.target.value)} /></label>
       </div>
-      <p className="text-xs text-gray-500">Try configuration changes on a staging copy, export them here, then dry-run and apply them in production. Bundles contain pipelines, custom fields and objects, templates, sequences, forms, scoring and routing rules and workflows: never customer or transaction data.</p>
+      <p className="text-xs text-gray-500">{tx("Try configuration changes on a staging copy, export them here, then dry-run and apply them in production. Bundles contain pipelines, custom fields and objects, templates, sequences, forms, scoring and routing rules and workflows: never customer or transaction data.")}</p>
       {msg && <p role="status" className="text-xs">{msg}</p>}
-      <button className="border rounded px-3 py-1 text-xs" onClick={download}>Export this system&apos;s configuration</button>
+      <button className="border rounded px-3 py-1 text-xs" onClick={download}>{tx("Export this system's configuration")}</button>
       <div className="border rounded p-3 bg-white space-y-2">
-        <input aria-label="Bundle file" type="file" accept="application/json" onChange={(e) => load(e.target.files?.[0])} />
-        <select aria-label="When a setting already exists" className="border rounded px-1 text-xs" value={mode} onChange={(e) => setMode(e.target.value as "overwrite" | "skip_existing")}>
-          <option value="overwrite">Update existing settings</option><option value="skip_existing">Keep existing settings</option></select>
-        <div className="flex gap-2"><button className="border rounded px-3 py-1 text-xs" disabled={!bundle} onClick={dry}>Dry run</button>
-          <button className="bg-indigo-600 text-white rounded px-3 py-1 text-xs" disabled={!plan || (plan.summary.error ?? 0) > 0} onClick={apply}>Apply</button></div>
+        <input aria-label={tx("Bundle file")} type="file" accept="application/json" onChange={(e) => load(e.target.files?.[0])} />
+        <select aria-label={tx("When a setting already exists")} className="border rounded px-1 text-xs" value={mode} onChange={(e) => setMode(e.target.value as "overwrite" | "skip_existing")}>
+          <option value="overwrite">{tx("Update existing settings")}</option><option value="skip_existing">{tx("Keep existing settings")}</option></select>
+        <div className="flex gap-2"><button className="border rounded px-3 py-1 text-xs" disabled={!bundle} onClick={dry}>{tx("Dry run")}</button>
+          <button className="bg-indigo-600 text-white rounded px-3 py-1 text-xs" disabled={!plan || (plan.summary.error ?? 0) > 0} onClick={apply}>{tx("Apply")}</button></div>
         {plan && <><p className="text-xs">{Object.entries(plan.summary).map(([k, v]) => `${v} ${k}`).join(" · ")}</p>
           <table className="text-xs w-full"><tbody>{plan.steps.filter((s) => s.action !== "unchanged").map((s, i) => <tr key={i} className="border-t">
             <td className="p-1">{s.table}</td><td>{s.key}</td><td className={s.action === "error" ? "text-red-600" : ""}>{s.action}</td><td>{s.changed?.join(", ") ?? s.detail ?? ""}</td></tr>)}</tbody></table></>}

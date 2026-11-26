@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
+import { tx } from "@/lib/i18n/core";
 
 const emptyForm: RoleCreate = { name: "", description: "" };
 
@@ -42,10 +43,10 @@ export default function RolesPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Roles</h1>
-          <p className="text-sm text-gray-500 mt-1">{roles.length} total</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Roles")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{roles.length} {tx("total")}</p>
         </div>
-        <Button onClick={() => setCreateOpen(true)}>+ Add Role</Button>
+        <Button onClick={() => setCreateOpen(true)}>{tx("+ Add Role")}</Button>
       </div>
 
       <div className="mb-4 flex gap-3">
@@ -54,9 +55,9 @@ export default function RolesPage() {
           onChange={(e) => setFilterActive(e.target.value)}
           className="rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
         >
-          <option value="all">All Status</option>
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
+          <option value="all">{tx("All Status")}</option>
+          <option value="active">{tx("Active")}</option>
+          <option value="inactive">{tx("Inactive")}</option>
         </select>
       </div>
 
@@ -70,7 +71,7 @@ export default function RolesPage() {
           data={roles}
           columns={[
             {
-              header: "Role",
+              header: tx("Role"),
               accessor: (r) => (
                 <Link
                   href={`/dashboard/roles/${r.id}`}
@@ -80,18 +81,18 @@ export default function RolesPage() {
                 </Link>
               ),
             },
-            { header: "Description", accessor: (r) => r.description ?? "—" },
+            { header: tx("Description"), accessor: (r) => r.description ?? "—" },
             {
-              header: "Permissions",
+              header: tx("Permissions"),
               accessor: (r) => (
-                <span className="text-sm text-gray-600">{r.permissions.length} assigned</span>
+                <span className="text-sm text-gray-600">{r.permissions.length} {tx("assigned")}</span>
               ),
             },
             {
-              header: "Status",
+              header: tx("Status"),
               accessor: (r) => (
                 <Badge
-                  label={r.is_active ? "Active" : "Inactive"}
+                  label={r.is_active ? tx("Active") : tx("Inactive")}
                   variant={r.is_active ? "green" : "red"}
                 />
               ),
@@ -103,7 +104,7 @@ export default function RolesPage() {
                   href={`/dashboard/roles/${r.id}`}
                   className="text-xs text-indigo-500 hover:underline"
                 >
-                  Manage →
+                  {tx("Manage →")}
                 </Link>
               ),
             },
@@ -111,7 +112,7 @@ export default function RolesPage() {
         />
       )}
 
-      <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="Create Role">
+      <Modal open={createOpen} onClose={() => setCreateOpen(false)} title={tx("Create Role")}>
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -120,13 +121,13 @@ export default function RolesPage() {
           className="space-y-4"
         >
           <Input
-            label="Role Name *"
+            label={tx("Role Name *")}
             value={form.name}
             onChange={(e) => set("name", e.target.value)}
             required
           />
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{tx("Description")}</label>
             <textarea
               value={form.description ?? ""}
               onChange={(e) => set("description", e.target.value)}
@@ -135,14 +136,14 @@ export default function RolesPage() {
             />
           </div>
           {createMutation.error && (
-            <p className="text-sm text-red-600">Failed to create role. Name may already exist.</p>
+            <p className="text-sm text-red-600">{tx("Failed to create role. Name may already exist.")}</p>
           )}
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" type="button" onClick={() => setCreateOpen(false)}>
-              Cancel
+              {tx("Cancel")}
             </Button>
             <Button type="submit" loading={createMutation.isPending}>
-              Create
+              {tx("Create")}
             </Button>
           </div>
         </form>

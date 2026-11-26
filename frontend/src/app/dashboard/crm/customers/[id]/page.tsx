@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { crmApi, type CustomerTimeline, type TimelineEvent } from "@/lib/crm_pipeline";
 import { CopilotPanel } from "@/components/crm/CopilotPanel";
 import { QuickNote } from "@/components/crm/QuickNote";
+import { tx } from "@/lib/i18n/core";
 
 const TYPE_LABELS: Record<string, string> = {
   crm_record: "CRM", crm_activity: "Activity", interaction: "Interaction", visit: "Visit", field_visit: "Field visit",
@@ -49,13 +50,13 @@ export default function CustomerTimelinePage() {
     <div className="p-6 space-y-4 max-w-4xl">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <Link href="/dashboard/sales/customers" className="text-xs text-indigo-600">← Customers</Link>
-          <h1 className="text-xl font-bold text-gray-900">{data ? `${data.customer.name} · ${data.customer.code}` : "Customer timeline"}</h1>
-          <p className="text-sm text-gray-500">Everything that touched this customer, newest first.</p>
+          <Link href="/dashboard/sales/customers" className="text-xs text-indigo-600">{tx("← Customers")}</Link>
+          <h1 className="text-xl font-bold text-gray-900">{data ? `${data.customer.name} · ${data.customer.code}` : tx("Customer timeline")}</h1>
+          <p className="text-sm text-gray-500">{tx("Everything that touched this customer, newest first.")}</p>
         </div>
-        <label className="text-xs text-gray-500">Show
-          <select aria-label="Event type" value={type} onChange={(e) => setType(e.target.value)} className="block text-sm border rounded-lg px-2 py-1.5">
-            <option value="">All events</option>
+        <label className="text-xs text-gray-500">{tx("Show")}
+          <select aria-label={tx("Event type")} value={type} onChange={(e) => setType(e.target.value)} className="block text-sm border rounded-lg px-2 py-1.5">
+            <option value="">{tx("All events")}</option>
             {Object.entries(TYPE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </select>
         </label>
@@ -64,7 +65,7 @@ export default function CustomerTimelinePage() {
       {data && <QuickNote customerId={id} onSaved={() => load()} />}
       {data && <CopilotPanel customerId={id} />}
       {data && data.hidden_sources.length > 0 && (
-        <p className="text-xs text-gray-500">Not shown for your role: {data.hidden_sources.map((s) => SOURCE_LABELS[s] ?? s).join(", ")}.</p>
+        <p className="text-xs text-gray-500">{tx("Not shown for your role:")} {data.hidden_sources.map((s) => SOURCE_LABELS[s] ?? s).join(", ")}.</p>
       )}
       <ol className="relative border-l border-gray-200 ml-2">
         {events.map((e) => (
@@ -81,10 +82,10 @@ export default function CustomerTimelinePage() {
           </li>
         ))}
       </ol>
-      {!loading && events.length === 0 && !error && <p className="text-sm text-gray-400">No events for this customer yet.</p>}
-      {loading && <p className="text-sm text-gray-400">Loading…</p>}
+      {!loading && events.length === 0 && !error && <p className="text-sm text-gray-400">{tx("No events for this customer yet.")}</p>}
+      {loading && <p className="text-sm text-gray-400">{tx("Loading…")}</p>}
       {data?.next && !loading && (
-        <button className="px-3 py-1.5 text-sm border rounded-lg" onClick={() => load(data.next!)}>Load older events</button>
+        <button className="px-3 py-1.5 text-sm border rounded-lg" onClick={() => load(data.next!)}>{tx("Load older events")}</button>
       )}
     </div>
   );

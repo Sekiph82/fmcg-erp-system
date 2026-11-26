@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
 import { marketingApi, SurveyType } from "@/lib/marketingApi";
 import { RequirePermission } from "@/components/PermissionGuard";
+import { tx } from "@/lib/i18n/core";
 
 const SURVEY_TYPES: SurveyType[] = [
   "CUSTOMER_FEEDBACK", "MARKET_AUDIT", "RETAILER_FEEDBACK",
@@ -34,7 +35,7 @@ export default function NewSurveyPage() {
         try {
           questions_json = JSON.parse(form.questions_raw);
         } catch {
-          throw new Error("Questions JSON is invalid. Please check the format.");
+          throw new Error(tx("Questions JSON is invalid. Please check the format."));
         }
       }
       return marketingApi.surveys.create({
@@ -57,7 +58,7 @@ export default function NewSurveyPage() {
   const validateJson = (v: string) => {
     set("questions_raw", v);
     if (!v.trim()) { setJsonError(""); return; }
-    try { JSON.parse(v); setJsonError(""); } catch { setJsonError("Invalid JSON"); }
+    try { JSON.parse(v); setJsonError(""); } catch { setJsonError(tx("Invalid JSON")); }
   };
 
   return (
@@ -65,9 +66,9 @@ export default function NewSurveyPage() {
       <div className="min-h-screen bg-[#0b1120] p-6 text-white max-w-2xl mx-auto">
         <div className="mb-6">
           <button onClick={() => router.back()} className="text-slate-400 hover:text-white text-sm mb-2">
-            ← Back
+            {tx("← Back")}
           </button>
-          <h1 className="text-2xl font-bold">New Survey</h1>
+          <h1 className="text-2xl font-bold">{tx("New Survey")}</h1>
         </div>
 
         {error && (
@@ -76,16 +77,16 @@ export default function NewSurveyPage() {
 
         <div className="bg-[#131c2e] border border-slate-700/50 rounded-xl p-6 space-y-4">
           <div>
-            <label className="block text-xs text-slate-400 mb-1">Survey Name *</label>
+            <label className="block text-xs text-slate-400 mb-1">{tx("Survey Name *")}</label>
             <input type="text" value={form.survey_name}
               onChange={(e) => set("survey_name", e.target.value)}
-              placeholder="e.g. Q2 Retailer Feedback — Nairobi"
+              placeholder={tx("e.g. Q2 Retailer Feedback — Nairobi")}
               className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600" />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Survey Type *</label>
+              <label className="block text-xs text-slate-400 mb-1">{tx("Survey Type *")}</label>
               <select value={form.survey_type} onChange={(e) => set("survey_type", e.target.value)}
                 className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
                 {SURVEY_TYPES.map((t) => (
@@ -95,7 +96,7 @@ export default function NewSurveyPage() {
             </div>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Survey Date *</label>
+              <label className="block text-xs text-slate-400 mb-1">{tx("Survey Date *")}</label>
               <input type="date" value={form.survey_date}
                 onChange={(e) => set("survey_date", e.target.value)}
                 className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white" />
@@ -104,60 +105,60 @@ export default function NewSurveyPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Region</label>
+              <label className="block text-xs text-slate-400 mb-1">{tx("Region")}</label>
               <input type="text" value={form.region}
                 onChange={(e) => set("region", e.target.value)}
-                placeholder="e.g. Nairobi, Western Kenya"
+                placeholder={tx("e.g. Nairobi, Western Kenya")}
                 className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600" />
             </div>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Target Segment <span className="text-slate-600">(optional)</span></label>
-              <EntityPicker kind="segment" label="Target segment" value={form.target_segment_id} onChange={(id) => set("target_segment_id", id)} />
+              <label className="block text-xs text-slate-400 mb-1">{tx("Target Segment")} <span className="text-slate-600">{tx("(optional)")}</span></label>
+              <EntityPicker kind="segment" label={tx("Target segment")} value={form.target_segment_id} onChange={(id) => set("target_segment_id", id)} />
             </div>
           </div>
 
           <div>
             <label className="block text-xs text-slate-400 mb-1">
-              Questions <span className="text-slate-500">(JSON format)</span>
+              {tx("Questions")} <span className="text-slate-500">{tx("(JSON format)")}</span>
             </label>
             <textarea
               value={form.questions_raw}
               onChange={(e) => validateJson(e.target.value)}
               rows={6}
-              placeholder={`{\n  "q1": "How would you rate our product quality?",\n  "q2": "Would you recommend us to others?"\n}`}
+              placeholder={tx("{\n  \"q1\": \"How would you rate our product quality?\",\n  \"q2\": \"Would you recommend us to others?\"\n}")}
               className={`w-full bg-[#0b1120] border rounded-lg px-3 py-2 text-sm text-white font-mono placeholder-slate-600 resize-y ${
                 jsonError ? "border-red-600" : "border-slate-700"
               }`}
             />
             {jsonError && <p className="text-xs text-red-400 mt-1">{jsonError}</p>}
-            <p className="text-xs text-slate-600 mt-1">Leave blank to add questions later. Must be valid JSON if filled.</p>
+            <p className="text-xs text-slate-600 mt-1">{tx("Leave blank to add questions later. Must be valid JSON if filled.")}</p>
           </div>
 
           <div>
-            <label className="block text-xs text-slate-400 mb-1">Summary / Objective</label>
+            <label className="block text-xs text-slate-400 mb-1">{tx("Summary / Objective")}</label>
             <textarea value={form.summary} onChange={(e) => set("summary", e.target.value)}
-              rows={2} placeholder="What is this survey measuring?"
+              rows={2} placeholder={tx("What is this survey measuring?")}
               className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600 resize-none" />
           </div>
 
           <div>
-            <label className="block text-xs text-slate-400 mb-1">Competitor Notes</label>
+            <label className="block text-xs text-slate-400 mb-1">{tx("Competitor Notes")}</label>
             <textarea value={form.competitor_notes} onChange={(e) => set("competitor_notes", e.target.value)}
-              rows={2} placeholder="Competitor observations to include..."
+              rows={2} placeholder={tx("Competitor observations to include...")}
               className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600 resize-none" />
           </div>
 
           <div className="flex justify-end gap-3 pt-2">
             <button onClick={() => router.back()}
               className="px-4 py-2 rounded-lg border border-slate-600 text-slate-300 hover:bg-slate-800 text-sm">
-              Cancel
+              {tx("Cancel")}
             </button>
             <button
               onClick={() => createMut.mutate()}
               disabled={!form.survey_name || !form.survey_date || !!jsonError || createMut.isPending}
               className="px-5 py-2 rounded-lg bg-teal-600 hover:bg-teal-500 disabled:opacity-50 text-sm font-medium">
-              {createMut.isPending ? "Creating..." : "Create Survey"}
+              {createMut.isPending ? tx("Creating...") : tx("Create Survey")}
             </button>
           </div>
         </div>

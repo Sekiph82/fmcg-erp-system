@@ -9,6 +9,7 @@ import {
   PluginLifecycleEvent,
   PluginLifecycleAction,
 } from "@/lib/integrations";
+import { tx } from "@/lib/i18n/core";
 
 const STATUS_COLOR: Record<string, string> = {
   active: "bg-green-100 text-green-700",
@@ -125,11 +126,11 @@ export default function IntegrationMarketplacePage() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Integration Marketplace</h1>
-          <p className="text-sm text-gray-500 mt-1">Governed connector catalog, tenant install state, lifecycle audit, and dependency controls</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Integration Marketplace")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{tx("Governed connector catalog, tenant install state, lifecycle audit, and dependency controls")}</p>
         </div>
         <Link href="/dashboard/integrations" className="border rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-gray-50">
-          Back to Overview
+          {tx("Back to Overview")}
         </Link>
       </div>
 
@@ -152,25 +153,25 @@ export default function IntegrationMarketplacePage() {
 
       <div className="bg-white rounded-lg border p-4 flex flex-wrap items-end gap-3">
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Tenant</label>
+          <label className="block text-xs text-gray-500 mb-1">{tx("Tenant")}</label>
           <input value={tenantKey} onChange={(e) => setTenantKey(e.target.value || "default")} className="border rounded-lg px-3 py-2 text-sm w-36" />
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Search</label>
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Connector name" className="border rounded-lg px-3 py-2 text-sm w-56" />
+          <label className="block text-xs text-gray-500 mb-1">{tx("Search")}</label>
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={tx("Connector name")} className="border rounded-lg px-3 py-2 text-sm w-56" />
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Status</label>
+          <label className="block text-xs text-gray-500 mb-1">{tx("Status")}</label>
           <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="border rounded-lg px-3 py-2 text-sm">
-            <option value="">All statuses</option>
-            <option value="active">Active</option>
-            <option value="beta">Beta</option>
-            <option value="coming_soon">Coming Soon</option>
-            <option value="deprecated">Deprecated</option>
+            <option value="">{tx("All statuses")}</option>
+            <option value="active">{tx("Active")}</option>
+            <option value="beta">{tx("Beta")}</option>
+            <option value="coming_soon">{tx("Coming Soon")}</option>
+            <option value="deprecated">{tx("Deprecated")}</option>
           </select>
         </div>
         <button onClick={load} disabled={loading} className="px-4 py-2 text-sm bg-gray-900 text-white rounded-lg hover:bg-gray-800 disabled:opacity-50">
-          {loading ? "Loading..." : "Refresh"}
+          {loading ? tx("Loading...") : tx("Refresh")}
         </button>
       </div>
 
@@ -179,7 +180,7 @@ export default function IntegrationMarketplacePage() {
           onClick={() => setFilterCat("")}
           className={`text-xs rounded-full border px-3 py-1.5 ${!filterCat ? "bg-blue-600 text-white border-blue-600" : "bg-gray-50 text-gray-600 border-gray-300 hover:bg-gray-100"}`}
         >
-          All ({connectors.length})
+          {tx("All (")}{connectors.length})
         </button>
         {categories.map((cat) => (
           <button
@@ -195,9 +196,9 @@ export default function IntegrationMarketplacePage() {
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
         <div className="xl:col-span-3 space-y-8">
           {loading ? (
-            <p className="text-gray-400 text-sm">Loading marketplace...</p>
+            <p className="text-gray-400 text-sm">{tx("Loading marketplace...")}</p>
           ) : Object.entries(grouped).length === 0 ? (
-            <div className="bg-white rounded-lg border p-8 text-center text-gray-500">No connectors match the current filters.</div>
+            <div className="bg-white rounded-lg border p-8 text-center text-gray-500">{tx("No connectors match the current filters.")}</div>
           ) : (
             Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b)).map(([category, items]) => (
               <div key={category}>
@@ -215,7 +216,7 @@ export default function IntegrationMarketplacePage() {
                             <span className="text-2xl">{connector.icon_emoji ?? ">"}</span>
                             <div>
                               <p className="font-semibold text-gray-900 text-sm">{connector.name}</p>
-                              <p className="text-xs text-gray-500">{connector.connector_code} · v{connector.current_version}</p>
+                              <p className="text-xs text-gray-500">{connector.connector_code} {tx("· v")}{connector.current_version}</p>
                             </div>
                           </div>
                           <div className="flex flex-col items-end gap-1">
@@ -236,7 +237,7 @@ export default function IntegrationMarketplacePage() {
                         </div>
 
                         {connector.dependency_codes.length > 0 && (
-                          <p className="text-xs text-gray-500">Requires: {connector.dependency_codes.join(", ")}</p>
+                          <p className="text-xs text-gray-500">{tx("Requires:")} {connector.dependency_codes.join(", ")}</p>
                         )}
                         {connector.config_guide && <p className="text-xs text-gray-500 leading-relaxed">{connector.config_guide}</p>}
 
@@ -248,19 +249,19 @@ export default function IntegrationMarketplacePage() {
 
                         <div className="flex flex-wrap gap-2">
                           {!installed && !disabled && installable && (
-                            <button onClick={() => runAction(connector, "install")} disabled={busy === `${connector.connector_code}:install`} className="text-xs border rounded px-3 py-1.5 text-green-700 border-green-300 bg-green-50 hover:bg-green-100 disabled:opacity-50">Install</button>
+                            <button onClick={() => runAction(connector, "install")} disabled={busy === `${connector.connector_code}:install`} className="text-xs border rounded px-3 py-1.5 text-green-700 border-green-300 bg-green-50 hover:bg-green-100 disabled:opacity-50">{tx("Install")}</button>
                           )}
                           {disabled && (
-                            <button onClick={() => runAction(connector, "enable")} disabled={busy === `${connector.connector_code}:enable`} className="text-xs border rounded px-3 py-1.5 text-green-700 border-green-300 bg-green-50 hover:bg-green-100 disabled:opacity-50">Enable</button>
+                            <button onClick={() => runAction(connector, "enable")} disabled={busy === `${connector.connector_code}:enable`} className="text-xs border rounded px-3 py-1.5 text-green-700 border-green-300 bg-green-50 hover:bg-green-100 disabled:opacity-50">{tx("Enable")}</button>
                           )}
                           {installed && (
-                            <button onClick={() => runAction(connector, "disable")} disabled={busy === `${connector.connector_code}:disable`} className="text-xs border rounded px-3 py-1.5 text-gray-700 border-gray-300 hover:bg-gray-50 disabled:opacity-50">Disable</button>
+                            <button onClick={() => runAction(connector, "disable")} disabled={busy === `${connector.connector_code}:disable`} className="text-xs border rounded px-3 py-1.5 text-gray-700 border-gray-300 hover:bg-gray-50 disabled:opacity-50">{tx("Disable")}</button>
                           )}
                           {(installed || disabled) && (
-                            <button onClick={() => runAction(connector, "uninstall")} disabled={busy === `${connector.connector_code}:uninstall`} className="text-xs border rounded px-3 py-1.5 text-red-700 border-red-300 bg-red-50 hover:bg-red-100 disabled:opacity-50">Uninstall</button>
+                            <button onClick={() => runAction(connector, "uninstall")} disabled={busy === `${connector.connector_code}:uninstall`} className="text-xs border rounded px-3 py-1.5 text-red-700 border-red-300 bg-red-50 hover:bg-red-100 disabled:opacity-50">{tx("Uninstall")}</button>
                           )}
                           {connector.status !== "coming_soon" && (
-                            <button onClick={() => handleTest(connector.connector_code)} disabled={busy === `${connector.connector_code}:test`} className="text-xs border rounded px-3 py-1.5 text-gray-600 border-gray-300 hover:bg-gray-50 disabled:opacity-50">Test</button>
+                            <button onClick={() => handleTest(connector.connector_code)} disabled={busy === `${connector.connector_code}:test`} className="text-xs border rounded px-3 py-1.5 text-gray-600 border-gray-300 hover:bg-gray-50 disabled:opacity-50">{tx("Test")}</button>
                           )}
                         </div>
                       </div>
@@ -274,18 +275,18 @@ export default function IntegrationMarketplacePage() {
 
         <div className="bg-white rounded-lg border overflow-hidden self-start">
           <div className="px-4 py-3 border-b">
-            <h2 className="font-semibold text-gray-800">Lifecycle Audit</h2>
+            <h2 className="font-semibold text-gray-800">{tx("Lifecycle Audit")}</h2>
           </div>
           <div className="divide-y divide-gray-100">
             {events.map((event) => (
               <div key={event.id} className="p-4">
                 <p className="text-sm font-medium text-gray-900">{event.connector_code}</p>
-                <p className="text-xs text-gray-500 mt-0.5">{event.action} · {event.previous_status || "-"} to {event.new_status || "-"}</p>
+                <p className="text-xs text-gray-500 mt-0.5">{event.action} · {event.previous_status || "-"} {tx("to")} {event.new_status || "-"}</p>
                 {event.message && <p className="text-xs text-gray-600 mt-2">{event.message}</p>}
               </div>
             ))}
             {!loading && events.length === 0 && (
-              <p className="p-4 text-sm text-gray-500">No lifecycle events yet.</p>
+              <p className="p-4 text-sm text-gray-500">{tx("No lifecycle events yet.")}</p>
             )}
           </div>
         </div>

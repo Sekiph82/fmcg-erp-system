@@ -4,6 +4,7 @@ import { EntityPicker } from "@/components/EntityPicker";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { mfApi, TankOccupancy, FlowTransaction, TANK_STATUS_COLORS, FLOW_STATUS_COLORS } from "@/lib/materialFlow";
+import { tx } from "@/lib/i18n/core";
 
 export default function BulkTransferPage() {
   const qc = useQueryClient();
@@ -44,7 +45,7 @@ export default function BulkTransferPage() {
         }],
       }),
     onSuccess: (r) => {
-      setSuccessMsg(`Bulk transfer ${r.flow_no} posted.`);
+      setSuccessMsg(tx("Bulk transfer {flow_no} posted.", { flow_no: r.flow_no }));
       qc.invalidateQueries({ queryKey: ["mf-transactions", "bulk"] });
       qc.invalidateQueries({ queryKey: ["mf-tanks"] });
       qc.invalidateQueries({ queryKey: ["mf-dashboard"] });
@@ -59,9 +60,9 @@ export default function BulkTransferPage() {
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center gap-3">
-        <a href="/dashboard/material-flow" className="text-sm text-indigo-600 hover:underline">← Dashboard</a>
-        <h1 className="text-xl font-bold text-gray-900">Bulk Transfer</h1>
-        <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">Tank-to-Tank</span>
+        <a href="/dashboard/material-flow" className="text-sm text-indigo-600 hover:underline">{tx("← Dashboard")}</a>
+        <h1 className="text-xl font-bold text-gray-900">{tx("Bulk Transfer")}</h1>
+        <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">{tx("Tank-to-Tank")}</span>
       </div>
 
       {successMsg && <div className="bg-green-50 border border-green-200 text-green-700 p-3 rounded-lg text-sm">{successMsg}</div>}
@@ -69,28 +70,28 @@ export default function BulkTransferPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Form */}
         <div className="lg:col-span-2 bg-white rounded-lg border p-5 space-y-4">
-          <h2 className="font-semibold text-gray-800">Bulk Transfer Form</h2>
+          <h2 className="font-semibold text-gray-800">{tx("Bulk Transfer Form")}</h2>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Source Tank</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Source Tank")}</label>
               <select value={form.source_tank_id} onChange={(e) => setForm((p) => ({ ...p, source_tank_id: e.target.value }))} className="w-full border rounded px-3 py-2 text-sm">
-                <option value="">— select source tank —</option>
+                <option value="">{tx("— select source tank —")}</option>
                 {tankList.filter((t) => t.quantity_current > 0).map((t) => (
                   <option key={t.id} value={t.id}>{t.tank_code} — {Number(t.quantity_current).toLocaleString()} {t.uom}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Destination Tank</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Destination Tank")}</label>
               <select value={form.destination_tank_id} onChange={(e) => setForm((p) => ({ ...p, destination_tank_id: e.target.value }))} className="w-full border rounded px-3 py-2 text-sm">
-                <option value="">— select destination tank —</option>
+                <option value="">{tx("— select destination tank —")}</option>
                 {tankList.filter((t) => t.id !== form.source_tank_id).map((t) => (
                   <option key={t.id} value={t.id}>{t.tank_code} — {t.tank_status}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Transfer Quantity</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Transfer Quantity")}</label>
               <div className="flex gap-1">
                 <input type="number" value={form.quantity} onChange={(e) => setForm((p) => ({ ...p, quantity: e.target.value }))} className="flex-1 border rounded px-3 py-2 text-sm" placeholder="0" />
                 <select value={form.uom} onChange={(e) => setForm((p) => ({ ...p, uom: e.target.value }))} className="border rounded px-2 py-2 text-sm">
@@ -98,29 +99,29 @@ export default function BulkTransferPage() {
                 </select>
               </div>
               {sourceTank && form.quantity && parseFloat(form.quantity) > sourceTank.quantity_current && (
-                <p className="text-xs text-red-500 mt-1">⚠ Quantity exceeds available stock ({Number(sourceTank.quantity_current).toLocaleString()} {sourceTank.uom})</p>
+                <p className="text-xs text-red-500 mt-1">{tx("⚠ Quantity exceeds available stock (")}{Number(sourceTank.quantity_current).toLocaleString()} {sourceTank.uom})</p>
               )}
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Production Order</label>
-              <EntityPicker kind="production_order" label="Production order" value={form.production_order_id} onChange={(id) => setForm((f) => ({ ...f, production_order_id: id }))} />
+              <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Production Order")}</label>
+              <EntityPicker kind="production_order" label={tx("Production order")} value={form.production_order_id} onChange={(id) => setForm((f) => ({ ...f, production_order_id: id }))} />
             </div>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
-            <textarea value={form.notes} onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))} rows={2} className="w-full border rounded px-3 py-2 text-sm" placeholder="Reason for transfer" />
+            <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Notes")}</label>
+            <textarea value={form.notes} onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))} rows={2} className="w-full border rounded px-3 py-2 text-sm" placeholder={tx("Reason for transfer")} />
           </div>
           <div className="flex justify-end">
             <button onClick={() => create.mutate()} disabled={create.isPending || !form.source_tank_id || !form.destination_tank_id || !form.quantity} className="bg-purple-600 text-white px-5 py-2 rounded-lg text-sm hover:bg-purple-700 disabled:opacity-50">
-              {create.isPending ? "Posting…" : "Post Bulk Transfer"}
+              {create.isPending ? tx("Posting…") : tx("Post Bulk Transfer")}
             </button>
           </div>
         </div>
 
         {/* Tank Summary */}
         <div className="bg-white rounded-lg border p-4 space-y-3">
-          <h2 className="font-semibold text-gray-800">Tank Status</h2>
-          {tankList.length === 0 && <p className="text-xs text-gray-400">No tanks configured.</p>}
+          <h2 className="font-semibold text-gray-800">{tx("Tank Status")}</h2>
+          {tankList.length === 0 && <p className="text-xs text-gray-400">{tx("No tanks configured.")}</p>}
           {tankList.map((t) => (
             <div key={t.id} className="border rounded p-2 space-y-1">
               <div className="flex justify-between items-center">
@@ -143,10 +144,10 @@ export default function BulkTransferPage() {
 
       {/* History */}
       <div className="bg-white rounded-lg border overflow-x-auto">
-        <div className="px-4 py-3 border-b"><h2 className="font-semibold text-gray-900">Recent Bulk Transfers</h2></div>
+        <div className="px-4 py-3 border-b"><h2 className="font-semibold text-gray-900">{tx("Recent Bulk Transfers")}</h2></div>
         <table className="w-full text-sm">
           <thead className="bg-gray-50">
-            <tr>{["Flow No", "Date", "Lines", "Status"].map((h) => <th key={h} className="px-4 py-2 text-left text-xs font-medium text-gray-600">{h}</th>)}</tr>
+            <tr>{[tx("Flow No"), tx("Date"), tx("Lines"), tx("Status")].map((h) => <th key={h} className="px-4 py-2 text-left text-xs font-medium text-gray-600">{h}</th>)}</tr>
           </thead>
           <tbody className="divide-y">
             {(txList || []).map((t) => (

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { psApi, runStatusBadge, fmt, urgencyBadge } from "@/lib/procurement_suggestion";
+import { tx } from "@/lib/i18n/core";
 
 function Kpi({ label, value, sub, warn }: { label: string; value: string | number; sub?: string; warn?: boolean }) {
   return (
@@ -46,12 +47,12 @@ export default function ProcurementSuggestionDashboard() {
       qc.invalidateQueries({ queryKey: ["ps-dashboard"] });
       qc.invalidateQueries({ queryKey: ["ps-runs"] });
       setShowRun(false);
-      alert("Procurement Suggestion Engine completed.");
+      alert(tx("Procurement Suggestion Engine completed."));
     },
   });
 
-  if (isLoading) return <div className="p-8 text-gray-400">Loading…</div>;
-  if (isError || !data) return <div className="p-8 text-red-500">Failed to load dashboard.</div>;
+  if (isLoading) return <div className="p-8 text-gray-400">{tx("Loading…")}</div>;
+  if (isError || !data) return <div className="p-8 text-red-500">{tx("Failed to load dashboard.")}</div>;
 
   const running = createRun.isPending || executeRun.isPending;
 
@@ -60,15 +61,15 @@ export default function ProcurementSuggestionDashboard() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900">Procurement Suggestion Engine</h1>
-          <p className="text-sm text-gray-500">Smart purchasing · Supplier selection · MRP integration · AI optimization</p>
+          <h1 className="text-xl font-semibold text-gray-900">{tx("Procurement Suggestion Engine")}</h1>
+          <p className="text-sm text-gray-500">{tx("Smart purchasing · Supplier selection · MRP integration · AI optimization")}</p>
         </div>
         <button
           onClick={() => setShowRun(true)}
           disabled={running}
           className="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-50"
         >
-          {running ? "Running Engine…" : "Run Procurement Engine"}
+          {running ? tx("Running Engine…") : tx("Run Procurement Engine")}
         </button>
       </div>
 
@@ -76,9 +77,9 @@ export default function ProcurementSuggestionDashboard() {
       {showRun && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 w-96 space-y-4 shadow-xl">
-            <h2 className="text-lg font-semibold">New Procurement Suggestion Run</h2>
+            <h2 className="text-lg font-semibold">{tx("New Procurement Suggestion Run")}</h2>
             <div>
-              <label className="text-sm text-gray-600">Planning Horizon (days)</label>
+              <label className="text-sm text-gray-600">{tx("Planning Horizon (days)")}</label>
               <input
                 type="number"
                 value={horizonDays}
@@ -92,10 +93,10 @@ export default function ProcurementSuggestionDashboard() {
                 disabled={running}
                 className="flex-1 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50"
               >
-                {running ? "Running…" : "Start Engine"}
+                {running ? tx("Running…") : tx("Start Engine")}
               </button>
               <button onClick={() => setShowRun(false)} className="flex-1 py-2 border rounded text-sm hover:bg-gray-50">
-                Cancel
+                {tx("Cancel")}
               </button>
             </div>
           </div>
@@ -104,38 +105,38 @@ export default function ProcurementSuggestionDashboard() {
 
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
-        <Kpi label="Total Runs" value={data.total_runs} />
-        <Kpi label="Open Suggestions" value={data.open_suggestions} />
-        <Kpi label="Critical" value={data.critical_suggestions} warn={data.critical_suggestions > 0} />
-        <Kpi label="High Priority" value={data.high_suggestions} warn={data.high_suggestions > 0} />
-        <Kpi label="Risk Flagged" value={data.risk_flagged} warn={data.risk_flagged > 0} />
-        <Kpi label="Est. Total Cost" value={`KES ${fmt(data.total_estimated_cost, 0)}`} />
-        <Kpi label="Converted to PR" value={data.converted_count} />
+        <Kpi label={tx("Total Runs")} value={data.total_runs} />
+        <Kpi label={tx("Open Suggestions")} value={data.open_suggestions} />
+        <Kpi label={tx("Critical")} value={data.critical_suggestions} warn={data.critical_suggestions > 0} />
+        <Kpi label={tx("High Priority")} value={data.high_suggestions} warn={data.high_suggestions > 0} />
+        <Kpi label={tx("Risk Flagged")} value={data.risk_flagged} warn={data.risk_flagged > 0} />
+        <Kpi label={tx("Est. Total Cost")} value={`KES ${fmt(data.total_estimated_cost, 0)}`} />
+        <Kpi label={tx("Converted to PR")} value={data.converted_count} />
       </div>
 
       {/* Secondary KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Kpi label="Approved" value={data.approved_count} />
-        <Kpi label="Active Suppliers" value={data.supplier_count} />
-        <Kpi label="Supplier-Item Prices" value={data.supplier_items_count} sub="Mapped in system" />
-        <Kpi label="AI Recommendations" value={data.ai_recs_count} />
+        <Kpi label={tx("Approved")} value={data.approved_count} />
+        <Kpi label={tx("Active Suppliers")} value={data.supplier_count} />
+        <Kpi label={tx("Supplier-Item Prices")} value={data.supplier_items_count} sub="Mapped in system" />
+        <Kpi label={tx("AI Recommendations")} value={data.ai_recs_count} />
       </div>
 
       {/* Latest runs */}
       <div className="bg-white border border-gray-200 rounded-lg">
         <div className="px-4 py-3 border-b border-gray-100">
-          <h2 className="text-sm font-semibold text-gray-700">Recent Runs</h2>
+          <h2 className="text-sm font-semibold text-gray-700">{tx("Recent Runs")}</h2>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
               <tr>
-                <th className="text-left px-4 py-2">Run No</th>
-                <th className="text-left px-4 py-2">Date</th>
-                <th className="text-left px-4 py-2">Status</th>
-                <th className="text-right px-4 py-2">Suggestions</th>
-                <th className="text-right px-4 py-2">Est. Cost</th>
-                <th className="text-left px-4 py-2">Actions</th>
+                <th className="text-left px-4 py-2">{tx("Run No")}</th>
+                <th className="text-left px-4 py-2">{tx("Date")}</th>
+                <th className="text-left px-4 py-2">{tx("Status")}</th>
+                <th className="text-right px-4 py-2">{tx("Suggestions")}</th>
+                <th className="text-right px-4 py-2">{tx("Est. Cost")}</th>
+                <th className="text-left px-4 py-2">{tx("Actions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -152,13 +153,13 @@ export default function ProcurementSuggestionDashboard() {
                   <td className="px-4 py-2 text-right">{r.total_estimated_cost ? `KES ${fmt(r.total_estimated_cost, 0)}` : "—"}</td>
                   <td className="px-4 py-2">
                     <a href={`/dashboard/procurement-suggestion/suggestions?run_id=${r.id}`} className="text-blue-600 hover:underline text-xs">
-                      View Suggestions →
+                      {tx("View Suggestions →")}
                     </a>
                   </td>
                 </tr>
               ))}
               {!runs?.length && (
-                <tr><td colSpan={6} className="px-4 py-6 text-center text-gray-400">No runs yet — click &quot;Run Procurement Engine&quot; to start.</td></tr>
+                <tr><td colSpan={6} className="px-4 py-6 text-center text-gray-400">{tx("No runs yet — click \"Run Procurement Engine\" to start.")}</td></tr>
               )}
             </tbody>
           </table>
@@ -168,10 +169,10 @@ export default function ProcurementSuggestionDashboard() {
       {/* Quick links */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { label: "Suggestion List",      href: "/dashboard/procurement-suggestion/suggestions",      desc: "Review & approve all suggestions" },
-          { label: "Grouped Orders",       href: "/dashboard/procurement-suggestion/groups",           desc: "Consolidated supplier orders" },
-          { label: "Supplier Prices",      href: "/dashboard/procurement-suggestion/supplier-prices",  desc: "Manage supplier-item price mappings" },
-          { label: "AI Recommendations",   href: "/dashboard/procurement-suggestion/ai",               desc: "Supplier optimizer · Risk predictor · Cost optimizer" },
+          { label: tx("Suggestion List"),      href: "/dashboard/procurement-suggestion/suggestions",      desc: tx("Review & approve all suggestions") },
+          { label: tx("Grouped Orders"),       href: "/dashboard/procurement-suggestion/groups",           desc: tx("Consolidated supplier orders") },
+          { label: tx("Supplier Prices"),      href: "/dashboard/procurement-suggestion/supplier-prices",  desc: tx("Manage supplier-item price mappings") },
+          { label: tx("AI Recommendations"),   href: "/dashboard/procurement-suggestion/ai",               desc: tx("Supplier optimizer · Risk predictor · Cost optimizer") },
         ].map((link) => (
           <a key={link.href} href={link.href} className="block bg-white border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors">
             <p className="font-medium text-gray-800 text-sm">{link.label}</p>

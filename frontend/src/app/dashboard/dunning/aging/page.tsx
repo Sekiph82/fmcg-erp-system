@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { dunningApi, AgingRow } from "@/lib/dunning";
+import { tx } from "@/lib/i18n/core";
 
 export default function AgingPage() {
   const [rows, setRows] = useState<AgingRow[]>([]);
@@ -37,17 +38,17 @@ export default function AgingPage() {
   return (
     <div className="p-6 space-y-5">
       <div>
-        <h1 className="text-xl font-bold text-gray-900">Customer Aging Report</h1>
-        <p className="text-sm text-gray-500 mt-1">Overdue balance distribution across aging buckets</p>
+        <h1 className="text-xl font-bold text-gray-900">{tx("Customer Aging Report")}</h1>
+        <p className="text-sm text-gray-500 mt-1">{tx("Overdue balance distribution across aging buckets")}</p>
       </div>
 
       {/* Summary Buckets */}
       <div className="grid grid-cols-4 gap-3">
         {[
-          { label: "1–7 Days", value: totalRow.overdue_1_7, color: "border-yellow-300" },
-          { label: "8–30 Days", value: totalRow.overdue_8_14 + totalRow.overdue_15_30, color: "border-orange-300" },
-          { label: "31–90 Days", value: totalRow.overdue_31_60 + totalRow.overdue_61_90, color: "border-red-300" },
-          { label: "90+ Days", value: totalRow.overdue_90_plus, color: "border-red-500" },
+          { label: tx("1–7 Days"), value: totalRow.overdue_1_7, color: "border-yellow-300" },
+          { label: tx("8–30 Days"), value: totalRow.overdue_8_14 + totalRow.overdue_15_30, color: "border-orange-300" },
+          { label: tx("31–90 Days"), value: totalRow.overdue_31_60 + totalRow.overdue_61_90, color: "border-red-300" },
+          { label: tx("90+ Days"), value: totalRow.overdue_90_plus, color: "border-red-500" },
         ].map((b) => (
           <div key={b.label} className={`bg-white rounded-xl border-2 ${b.color} p-4`}>
             <div className="text-xl font-bold text-gray-900">{b.value.toLocaleString()}</div>
@@ -57,33 +58,33 @@ export default function AgingPage() {
       </div>
 
       <div className="flex items-center gap-3">
-        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search customer…"
+        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={tx("Search customer…")}
           className="border border-gray-300 rounded-lg px-3 py-2 text-sm w-64" />
-        <span className="text-xs text-gray-500">{filtered.length} customers</span>
+        <span className="text-xs text-gray-500">{filtered.length} {tx("customers")}</span>
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Customer</th>
-              <th className="px-3 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Current</th>
-              <th className="px-3 py-3 text-right text-xs font-semibold text-yellow-700 uppercase">1–7d</th>
-              <th className="px-3 py-3 text-right text-xs font-semibold text-orange-600 uppercase">8–14d</th>
-              <th className="px-3 py-3 text-right text-xs font-semibold text-orange-700 uppercase">15–30d</th>
-              <th className="px-3 py-3 text-right text-xs font-semibold text-red-600 uppercase">31–60d</th>
-              <th className="px-3 py-3 text-right text-xs font-semibold text-red-700 uppercase">61–90d</th>
-              <th className="px-3 py-3 text-right text-xs font-semibold text-red-800 uppercase">90+d</th>
-              <th className="px-3 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Total Overdue</th>
-              <th className="px-3 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Hold</th>
-              <th className="px-3 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Pri</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">{tx("Customer")}</th>
+              <th className="px-3 py-3 text-right text-xs font-semibold text-gray-600 uppercase">{tx("Current")}</th>
+              <th className="px-3 py-3 text-right text-xs font-semibold text-yellow-700 uppercase">{tx("1–7d")}</th>
+              <th className="px-3 py-3 text-right text-xs font-semibold text-orange-600 uppercase">{tx("8–14d")}</th>
+              <th className="px-3 py-3 text-right text-xs font-semibold text-orange-700 uppercase">{tx("15–30d")}</th>
+              <th className="px-3 py-3 text-right text-xs font-semibold text-red-600 uppercase">{tx("31–60d")}</th>
+              <th className="px-3 py-3 text-right text-xs font-semibold text-red-700 uppercase">{tx("61–90d")}</th>
+              <th className="px-3 py-3 text-right text-xs font-semibold text-red-800 uppercase">{tx("90+d")}</th>
+              <th className="px-3 py-3 text-right text-xs font-semibold text-gray-600 uppercase">{tx("Total Overdue")}</th>
+              <th className="px-3 py-3 text-center text-xs font-semibold text-gray-600 uppercase">{tx("Hold")}</th>
+              <th className="px-3 py-3 text-center text-xs font-semibold text-gray-600 uppercase">{tx("Pri")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {loading ? (
-              <tr><td colSpan={11} className="px-4 py-8 text-center text-gray-400">Loading…</td></tr>
+              <tr><td colSpan={11} className="px-4 py-8 text-center text-gray-400">{tx("Loading…")}</td></tr>
             ) : filtered.length === 0 ? (
-              <tr><td colSpan={11} className="px-4 py-8 text-center text-gray-400">No overdue balances found.</td></tr>
+              <tr><td colSpan={11} className="px-4 py-8 text-center text-gray-400">{tx("No overdue balances found.")}</td></tr>
             ) : filtered.map((row) => (
               <tr key={row.customer_id} className={`hover:bg-gray-50 ${row.credit_hold ? "bg-red-50" : ""}`}>
                 <td className="px-4 py-2.5">
@@ -107,7 +108,7 @@ export default function AgingPage() {
             {/* Totals row */}
             {filtered.length > 0 && (
               <tr className="bg-gray-100 font-bold">
-                <td className="px-4 py-3 text-sm text-gray-900">TOTAL ({filtered.length} customers)</td>
+                <td className="px-4 py-3 text-sm text-gray-900">{tx("TOTAL (")}{filtered.length} {tx("customers)")}</td>
                 {[totalRow.current, totalRow.overdue_1_7, totalRow.overdue_8_14, totalRow.overdue_15_30,
                   totalRow.overdue_31_60, totalRow.overdue_61_90, totalRow.overdue_90_plus, totalRow.total_overdue].map((v, i) => (
                   <td key={i} className="px-3 py-3 text-right font-mono text-sm text-gray-800">{v.toLocaleString()}</td>

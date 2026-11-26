@@ -7,6 +7,7 @@ import {
   PROMOTION_TYPE_LABEL, OBJECTIVE_TYPE_LABEL, PROMOTION_STATUS_BADGE, CLAIM_STATUS_BADGE,
 } from "@/lib/tpm";
 import Link from "next/link";
+import { tx } from "@/lib/i18n/core";
 
 export default function TPMPromotionDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -28,8 +29,8 @@ export default function TPMPromotionDetailPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["tpm-promotion", id] }),
   });
 
-  if (isLoading) return <div className="p-6 text-gray-400">Loading…</div>;
-  if (!promo) return <div className="p-6 text-red-400">Promotion not found.</div>;
+  if (isLoading) return <div className="p-6 text-gray-400">{tx("Loading…")}</div>;
+  if (!promo) return <div className="p-6 text-red-400">{tx("Promotion not found.")}</div>;
 
   const totalPlanned = promo.budget_lines.reduce((s, b) => s + b.planned_spend_amount, 0);
   const totalActual  = promo.budget_lines.reduce((s, b) => s + b.actual_spend_amount, 0);
@@ -41,7 +42,7 @@ export default function TPMPromotionDetailPage() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <Link href="/dashboard/tpm/promotions" className="text-xs text-gray-500 hover:text-indigo-400">← Back to Promotions</Link>
+          <Link href="/dashboard/tpm/promotions" className="text-xs text-gray-500 hover:text-indigo-400">{tx("← Back to Promotions")}</Link>
           <h1 className="text-2xl font-bold text-gray-900 mt-1">{promo.promotion_name}</h1>
           <div className="flex items-center gap-2 mt-1 flex-wrap">
             <span className="font-mono text-xs text-indigo-300">{promo.promotion_code}</span>
@@ -53,18 +54,18 @@ export default function TPMPromotionDetailPage() {
         </div>
         <div className="flex gap-2 flex-shrink-0">
           {promo.status === "DRAFT" && (
-            <button onClick={() => updateStatus.mutate("PROPOSED")} className="glow-button-secondary text-sm">Propose</button>
+            <button onClick={() => updateStatus.mutate("PROPOSED")} className="glow-button-secondary text-sm">{tx("Propose")}</button>
           )}
           {promo.status === "PROPOSED" && (
             <button onClick={() => approve.mutate()} disabled={approve.isPending} className="glow-button text-sm">
-              {approve.isPending ? "Approving…" : "Approve"}
+              {approve.isPending ? tx("Approving…") : tx("Approve")}
             </button>
           )}
           {promo.status === "APPROVED" && (
-            <button onClick={() => updateStatus.mutate("ACTIVE")} className="glow-button text-sm">Activate</button>
+            <button onClick={() => updateStatus.mutate("ACTIVE")} className="glow-button text-sm">{tx("Activate")}</button>
           )}
           {promo.status === "ACTIVE" && (
-            <button onClick={() => updateStatus.mutate("COMPLETED")} className="glow-button-secondary text-sm">Mark Complete</button>
+            <button onClick={() => updateStatus.mutate("COMPLETED")} className="glow-button-secondary text-sm">{tx("Mark Complete")}</button>
           )}
         </div>
       </div>
@@ -82,22 +83,22 @@ export default function TPMPromotionDetailPage() {
       {activeTab === "overview" && (
         <div className="space-y-4">
           <div className="liquid-glass p-5 grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div><p className="text-xs text-gray-500">Valid From</p><p className="text-sm text-gray-200">{promo.valid_from}</p></div>
-            <div><p className="text-xs text-gray-500">Valid To</p><p className="text-sm text-gray-200">{promo.valid_to}</p></div>
-            <div><p className="text-xs text-gray-500">Brand</p><p className="text-sm text-gray-200">{promo.brand_id || "—"}</p></div>
-            <div><p className="text-xs text-gray-500">Category</p><p className="text-sm text-gray-200">{promo.category_id || "—"}</p></div>
-            <div><p className="text-xs text-gray-500">Channel</p><p className="text-sm text-gray-200">{promo.channel_id || "—"}</p></div>
-            <div><p className="text-xs text-gray-500">Region</p><p className="text-sm text-gray-200">{promo.region_id || "—"}</p></div>
-            <div><p className="text-xs text-gray-500">Distributor Group</p><p className="text-sm text-gray-200">{promo.distributor_group_id || "—"}</p></div>
-            <div><p className="text-xs text-gray-500">Linked Scheme</p>
+            <div><p className="text-xs text-gray-500">{tx("Valid From")}</p><p className="text-sm text-gray-200">{promo.valid_from}</p></div>
+            <div><p className="text-xs text-gray-500">{tx("Valid To")}</p><p className="text-sm text-gray-200">{promo.valid_to}</p></div>
+            <div><p className="text-xs text-gray-500">{tx("Brand")}</p><p className="text-sm text-gray-200">{promo.brand_id || "—"}</p></div>
+            <div><p className="text-xs text-gray-500">{tx("Category")}</p><p className="text-sm text-gray-200">{promo.category_id || "—"}</p></div>
+            <div><p className="text-xs text-gray-500">{tx("Channel")}</p><p className="text-sm text-gray-200">{promo.channel_id || "—"}</p></div>
+            <div><p className="text-xs text-gray-500">{tx("Region")}</p><p className="text-sm text-gray-200">{promo.region_id || "—"}</p></div>
+            <div><p className="text-xs text-gray-500">{tx("Distributor Group")}</p><p className="text-sm text-gray-200">{promo.distributor_group_id || "—"}</p></div>
+            <div><p className="text-xs text-gray-500">{tx("Linked Scheme")}</p>
               {promo.linked_scheme_id
-                ? <Link href={`/dashboard/promotions/schemes/${promo.linked_scheme_id}`} className="text-sm text-indigo-400 hover:text-indigo-300">View Scheme →</Link>
-                : <p className="text-sm text-gray-500">Not linked</p>}
+                ? <Link href={`/dashboard/promotions/schemes/${promo.linked_scheme_id}`} className="text-sm text-indigo-400 hover:text-indigo-300">{tx("View Scheme →")}</Link>
+                : <p className="text-sm text-gray-500">{tx("Not linked")}</p>}
             </div>
           </div>
           {promo.notes && (
             <div className="liquid-glass p-4">
-              <p className="text-xs text-gray-500 mb-1">Notes</p>
+              <p className="text-xs text-gray-500 mb-1">{tx("Notes")}</p>
               <p className="text-sm text-gray-300">{promo.notes}</p>
             </div>
           )}
@@ -108,33 +109,33 @@ export default function TPMPromotionDetailPage() {
         <div className="space-y-4">
           <div className="grid grid-cols-3 gap-4">
             <div className="glow-card p-4 text-center">
-              <p className="text-xs text-gray-500">Total Planned</p>
+              <p className="text-xs text-gray-500">{tx("Total Planned")}</p>
               <p className="text-lg font-bold text-indigo-400">{fmtCurrency(totalPlanned)}</p>
             </div>
             <div className="glow-card p-4 text-center">
-              <p className="text-xs text-gray-500">Total Actual</p>
+              <p className="text-xs text-gray-500">{tx("Total Actual")}</p>
               <p className="text-lg font-bold text-orange-400">{fmtCurrency(totalActual)}</p>
             </div>
             <div className="glow-card p-4 text-center">
-              <p className="text-xs text-gray-500">Remaining</p>
+              <p className="text-xs text-gray-500">{tx("Remaining")}</p>
               <p className={`text-lg font-bold ${totalPlanned - totalActual < 0 ? "text-red-400" : "text-green-400"}`}>
                 {fmtCurrency(totalPlanned - totalActual)}
               </p>
             </div>
           </div>
           {promo.budget_lines.length === 0 ? (
-            <div className="liquid-glass p-8 text-center text-gray-400 text-sm">No budget lines configured.</div>
+            <div className="liquid-glass p-8 text-center text-gray-400 text-sm">{tx("No budget lines configured.")}</div>
           ) : (
             <div className="glass-table overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-blue-900/30">
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Type</th>
-                    <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Planned</th>
-                    <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Approved</th>
-                    <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Actual</th>
-                    <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Accrued</th>
-                    <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Remaining</th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Type")}</th>
+                    <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Planned")}</th>
+                    <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Approved")}</th>
+                    <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Actual")}</th>
+                    <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Accrued")}</th>
+                    <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Remaining")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -160,9 +161,9 @@ export default function TPMPromotionDetailPage() {
       {activeTab === "performance" && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div className="liquid-glass p-5 space-y-3">
-            <h2 className="text-sm font-semibold text-gray-700">Expected Performance</h2>
+            <h2 className="text-sm font-semibold text-gray-700">{tx("Expected Performance")}</h2>
             {!exp ? (
-              <p className="text-sm text-gray-400">No expected performance set.</p>
+              <p className="text-sm text-gray-400">{tx("No expected performance set.")}</p>
             ) : (
               <div className="space-y-2 text-sm">
                 {[
@@ -185,9 +186,9 @@ export default function TPMPromotionDetailPage() {
             )}
           </div>
           <div className="liquid-glass p-5 space-y-3">
-            <h2 className="text-sm font-semibold text-gray-700">Actual Performance</h2>
+            <h2 className="text-sm font-semibold text-gray-700">{tx("Actual Performance")}</h2>
             {!act ? (
-              <p className="text-sm text-gray-400">No actuals recorded yet.</p>
+              <p className="text-sm text-gray-400">{tx("No actuals recorded yet.")}</p>
             ) : (
               <div className="space-y-2 text-sm">
                 {[
@@ -214,11 +215,11 @@ export default function TPMPromotionDetailPage() {
       {activeTab === "claims" && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <p className="text-sm text-gray-400">{promo.claims?.length ?? 0} claim(s) for this promotion</p>
-            <Link href={`/dashboard/tpm/claims?promotion_id=${id}`} className="glow-button-secondary text-xs">View in Claims Queue →</Link>
+            <p className="text-sm text-gray-400">{promo.claims?.length ?? 0} {tx("claim(s) for this promotion")}</p>
+            <Link href={`/dashboard/tpm/claims?promotion_id=${id}`} className="glow-button-secondary text-xs">{tx("View in Claims Queue →")}</Link>
           </div>
           {(!promo.claims || promo.claims.length === 0) ? (
-            <div className="liquid-glass p-8 text-center text-gray-400">No claims submitted.</div>
+            <div className="liquid-glass p-8 text-center text-gray-400">{tx("No claims submitted.")}</div>
           ) : promo.claims.map((c: any) => (
             <div key={c.id} className="liquid-glass p-4 flex items-center justify-between gap-3">
               <div>

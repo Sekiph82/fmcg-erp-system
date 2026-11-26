@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { calendarApi, CalendarEvent, EventType, EventStatus, EVENT_BADGE, STATUS_BADGE } from "@/lib/calendar";
+import { tx } from "@/lib/i18n/core";
 
 const EVENT_TYPES: EventType[] = ["meeting", "task", "booking", "production", "maintenance", "other"];
 const STATUSES: EventStatus[] = ["scheduled", "completed", "cancelled"];
@@ -20,7 +21,7 @@ export default function EventsPage() {
   useEffect(() => { load(); }, [filterType, filterStatus]);
 
   const cancel = async (id: string) => {
-    if (!confirm("Cancel this event?")) return;
+    if (!confirm(tx("Cancel this event?"))) return;
     await calendarApi.cancelEvent(id);
     load();
   };
@@ -28,30 +29,30 @@ export default function EventsPage() {
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <h1 className="text-xl font-bold text-gray-900">Events</h1>
+        <h1 className="text-xl font-bold text-gray-900">{tx("Events")}</h1>
         <a href="/dashboard/calendar/new-event"
           className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
-          + New Event
+          {tx("+ New Event")}
         </a>
       </div>
 
       <div className="flex gap-3 flex-wrap">
         <select className="border rounded px-2 py-1 text-sm" value={filterType} onChange={e => setFilterType(e.target.value)}>
-          <option value="">All Types</option>
+          <option value="">{tx("All Types")}</option>
           {EVENT_TYPES.map(t => <option key={t} value={t} className="capitalize">{t}</option>)}
         </select>
         <select className="border rounded px-2 py-1 text-sm" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
-          <option value="">All Statuses</option>
+          <option value="">{tx("All Statuses")}</option>
           {STATUSES.map(s => <option key={s} value={s} className="capitalize">{s}</option>)}
         </select>
       </div>
 
-      {loading ? <p className="text-sm text-gray-500">Loading…</p> : (
+      {loading ? <p className="text-sm text-gray-500">{tx("Loading…")}</p> : (
         <div className="bg-white border rounded-lg shadow-sm overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b">
               <tr>
-                {["Title", "Type", "Start", "End", "Location", "Status", "Participants", "Actions"].map(h => (
+                {[tx("Title"), tx("Type"), tx("Start"), tx("End"), tx("Location"), tx("Status"), tx("Participants"), tx("Actions")].map(h => (
                   <th key={h} className="px-4 py-2 text-left text-xs font-semibold text-gray-600">{h}</th>
                 ))}
               </tr>
@@ -72,14 +73,14 @@ export default function EventsPage() {
                   <td className="px-4 py-2 text-gray-500 text-xs">{e.participants.length}</td>
                   <td className="px-4 py-2">
                     {e.status === "scheduled" && (
-                      <button onClick={() => cancel(e.event_id)} className="text-xs text-red-500 hover:underline">Cancel</button>
+                      <button onClick={() => cancel(e.event_id)} className="text-xs text-red-500 hover:underline">{tx("Cancel")}</button>
                     )}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-          {events.length === 0 && <p className="text-center text-gray-400 py-8 text-sm">No events found.</p>}
+          {events.length === 0 && <p className="text-center text-gray-400 py-8 text-sm">{tx("No events found.")}</p>}
         </div>
       )}
     </div>

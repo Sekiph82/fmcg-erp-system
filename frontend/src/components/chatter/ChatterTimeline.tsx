@@ -4,6 +4,7 @@ import {
   chatterApi, ActivityOut, ActivityType,
   TYPE_ICON, TYPE_COLOR, timeAgo,
 } from "@/lib/chatter";
+import { tx } from "@/lib/i18n/core";
 
 interface Props {
   referenceType: string;
@@ -50,7 +51,7 @@ function CommentThread({ activity, currentUser, onUpdate }: {
   };
 
   const deleteComment = async (commentId: string) => {
-    if (!confirm("Delete this comment?")) return;
+    if (!confirm(tx("Delete this comment?"))) return;
     await chatterApi.deleteComment(commentId);
     onUpdate();
   };
@@ -66,15 +67,15 @@ function CommentThread({ activity, currentUser, onUpdate }: {
                 <Avatar name={c.user_name ?? "U"} size="sm" />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xs font-medium text-gray-700">{c.user_name ?? "User"}</span>
+                    <span className="text-xs font-medium text-gray-700">{c.user_name ?? tx("User")}</span>
                     <span className="text-xs text-gray-400">{timeAgo(c.created_at)}</span>
-                    {c.edited_at && <span className="text-xs text-gray-300">(edited)</span>}
+                    {c.edited_at && <span className="text-xs text-gray-300">{tx("(edited)")}</span>}
                     {c.user_name === currentUser && !editing && (
                       <div className="hidden group-hover:flex gap-2 ml-auto">
                         <button onClick={() => { setEditing(c.comment_id); setEditText(c.message); }}
-                          className="text-xs text-gray-400 hover:text-blue-600">Edit</button>
+                          className="text-xs text-gray-400 hover:text-blue-600">{tx("Edit")}</button>
                         <button onClick={() => deleteComment(c.comment_id)}
-                          className="text-xs text-gray-400 hover:text-red-500">Delete</button>
+                          className="text-xs text-gray-400 hover:text-red-500">{tx("Delete")}</button>
                       </div>
                     )}
                   </div>
@@ -83,9 +84,9 @@ function CommentThread({ activity, currentUser, onUpdate }: {
                       <input className="flex-1 border rounded px-2 py-0.5 text-xs focus:outline-none focus:ring-1 focus:ring-blue-400"
                         value={editText} onChange={e => setEditText(e.target.value)} />
                       <button onClick={() => saveEdit(c.comment_id)}
-                        className="text-xs text-blue-600 font-medium hover:underline">Save</button>
+                        className="text-xs text-blue-600 font-medium hover:underline">{tx("Save")}</button>
                       <button onClick={() => setEditing(null)}
-                        className="text-xs text-gray-400 hover:underline">Cancel</button>
+                        className="text-xs text-gray-400 hover:underline">{tx("Cancel")}</button>
                     </div>
                   ) : <p className="text-xs text-gray-600 mt-0.5">{c.message}</p>}
                 </div>
@@ -101,20 +102,20 @@ function CommentThread({ activity, currentUser, onUpdate }: {
           <div className="flex-1 flex gap-1">
             <input
               className="flex-1 border rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-400"
-              placeholder="Write a reply… @mention to notify someone"
+              placeholder={tx("Write a reply… @mention to notify someone")}
               value={replyText}
               onChange={e => setReplyText(e.target.value)}
               onKeyDown={e => { if (e.key === "Enter") postReply(); }}
               autoFocus
             />
-            <button onClick={postReply} className="text-xs bg-blue-600 text-white px-2 rounded hover:bg-blue-700">Post</button>
-            <button onClick={() => setShowReply(false)} className="text-xs text-gray-400">Cancel</button>
+            <button onClick={postReply} className="text-xs bg-blue-600 text-white px-2 rounded hover:bg-blue-700">{tx("Post")}</button>
+            <button onClick={() => setShowReply(false)} className="text-xs text-gray-400">{tx("Cancel")}</button>
           </div>
         </div>
       ) : (
         <button onClick={() => setShowReply(true)}
           className="mt-1.5 text-xs text-gray-400 hover:text-blue-600 transition-colors">
-          Reply
+          {tx("Reply")}
         </button>
       )}
     </div>
@@ -137,9 +138,9 @@ function ActivityCard({ activity, currentUser, onUpdate }: {
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-medium text-gray-800">{activity.created_by ?? "System"}</span>
+            <span className="text-sm font-medium text-gray-800">{activity.created_by ?? tx("System")}</span>
             {activity.is_pinned && (
-              <span className="text-xs bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded">📌 Pinned</span>
+              <span className="text-xs bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded">{tx("📌 Pinned")}</span>
             )}
             <span className="text-xs text-gray-400 ml-auto">{timeAgo(activity.created_at)}</span>
           </div>
@@ -206,7 +207,7 @@ export default function ChatterTimeline({
         reference_type: referenceType,
         reference_id: referenceId,
         activity_type: "comment",
-        title: "Comment",
+        title: tx("Comment"),
         message: text,
         created_by: currentUser,
       });
@@ -245,7 +246,7 @@ export default function ChatterTimeline({
           <textarea
             className="w-full border rounded px-3 py-2 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-blue-500"
             rows={compact ? 1 : 2}
-            placeholder="Add a comment… Use @name to mention someone (Ctrl+Enter to post)"
+            placeholder={tx("Add a comment… Use @name to mention someone (Ctrl+Enter to post)")}
             value={text}
             onChange={e => setText(e.target.value)}
             onKeyDown={e => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) post(); }}
@@ -253,29 +254,29 @@ export default function ChatterTimeline({
           <div className="flex items-center gap-2">
             <button onClick={post} disabled={!text.trim() || posting}
               className="rounded bg-blue-600 px-3 py-1 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">
-              {posting ? "Posting…" : "Post"}
+              {posting ? tx("Posting…") : tx("Post")}
             </button>
             <button onClick={() => setShowAttach(s => !s)}
-              className="text-xs text-gray-500 hover:text-gray-700">📎 Attach</button>
+              className="text-xs text-gray-500 hover:text-gray-700">{tx("📎 Attach")}</button>
           </div>
           {showAttach && (
             <div className="flex gap-2">
               <input className="flex-1 border rounded px-2 py-1 text-sm"
-                placeholder="File name (e.g. report.pdf)"
+                placeholder={tx("File name (e.g. report.pdf)")}
                 value={attachName} onChange={e => setAttachName(e.target.value)} />
               <button onClick={() => {
                 if (activities.length > 0) attach(activities[0].activity_id);
-                else alert("Post a comment first, then attach.");
+                else alert(tx("Post a comment first, then attach."));
               }} className="rounded bg-gray-700 px-3 py-1 text-sm text-white hover:bg-gray-600">
-                Upload
+                {tx("Upload")}
               </button>
-              <button onClick={() => setShowAttach(false)} className="text-xs text-gray-400">Cancel</button>
+              <button onClick={() => setShowAttach(false)} className="text-xs text-gray-400">{tx("Cancel")}</button>
             </div>
           )}
         </div>
       </div>
 
-      {loading && <p className="text-sm text-gray-400 text-center py-6">Loading…</p>}
+      {loading && <p className="text-sm text-gray-400 text-center py-6">{tx("Loading…")}</p>}
 
       {!loading && (
         <div className="space-y-5">
@@ -295,7 +296,7 @@ export default function ChatterTimeline({
           ))}
           {activities.length === 0 && (
             <p className="text-sm text-gray-400 text-center py-8">
-              No activity yet. Be the first to comment.
+              {tx("No activity yet. Be the first to comment.")}
             </p>
           )}
         </div>

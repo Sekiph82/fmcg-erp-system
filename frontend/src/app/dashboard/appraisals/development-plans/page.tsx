@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { appraisalsApi, DevelopmentPlan, DevelopmentPlanStatus, PLAN_STATUS_COLOR } from "@/lib/appraisals";
+import { tx } from "@/lib/i18n/core";
 
 const STATUSES: DevelopmentPlanStatus[] = ["open","in_progress","completed","cancelled"];
 
@@ -32,19 +33,19 @@ export default function DevelopmentPlansPage() {
 
   return (
     <div className="p-6 space-y-4">
-      <h1 className="text-xl font-bold text-gray-900">Development Plans</h1>
+      <h1 className="text-xl font-bold text-gray-900">{tx("Development Plans")}</h1>
 
       <select
         className="border rounded px-2 py-1 text-sm"
         value={statusFilter}
         onChange={(e) => setStatusFilter(e.target.value)}
       >
-        <option value="">All Statuses</option>
+        <option value="">{tx("All Statuses")}</option>
         {STATUSES.map((s) => <option key={s} value={s}>{s.replace(/_/g," ")}</option>)}
       </select>
 
       {loading ? (
-        <p className="text-gray-500 text-sm">Loading…</p>
+        <p className="text-gray-500 text-sm">{tx("Loading…")}</p>
       ) : (
         <div className="grid gap-3">
           {plans.map((p) => (
@@ -56,11 +57,11 @@ export default function DevelopmentPlansPage() {
               <div className="flex justify-between items-start">
                 <div className="flex-1">
                   <p className="font-semibold text-gray-800">{p.goal_title}</p>
-                  <p className="text-sm text-gray-500 mt-0.5">Employee: {p.employee_id}</p>
+                  <p className="text-sm text-gray-500 mt-0.5">{tx("Employee:")} {p.employee_id}</p>
                   {p.action_plan && <p className="text-sm text-gray-600 mt-1 line-clamp-2">{p.action_plan}</p>}
                   <div className="flex gap-3 mt-2 text-xs text-gray-400">
-                    {p.due_date && <span className={overdue(p) ? "text-red-500 font-semibold" : ""}>Due: {p.due_date}</span>}
-                    {p.owner_name && <span>Owner: {p.owner_name}</span>}
+                    {p.due_date && <span className={overdue(p) ? "text-red-500 font-semibold" : ""}>{tx("Due:")} {p.due_date}</span>}
+                    {p.owner_name && <span>{tx("Owner:")} {p.owner_name}</span>}
                   </div>
                 </div>
                 <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ml-3 ${PLAN_STATUS_COLOR[p.status]}`}>
@@ -68,11 +69,11 @@ export default function DevelopmentPlansPage() {
                 </span>
               </div>
               {overdue(p) && (
-                <p className="text-xs text-red-500 mt-1 font-semibold">⚠ Overdue</p>
+                <p className="text-xs text-red-500 mt-1 font-semibold">{tx("⚠ Overdue")}</p>
               )}
             </div>
           ))}
-          {plans.length === 0 && <p className="text-gray-400 text-sm text-center py-8">No development plans found.</p>}
+          {plans.length === 0 && <p className="text-gray-400 text-sm text-center py-8">{tx("No development plans found.")}</p>}
         </div>
       )}
 
@@ -80,7 +81,7 @@ export default function DevelopmentPlansPage() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6 space-y-4">
             <div className="flex justify-between">
-              <h2 className="text-lg font-bold text-gray-900">Update Plan</h2>
+              <h2 className="text-lg font-bold text-gray-900">{tx("Update Plan")}</h2>
               <button onClick={() => setSelected(null)} className="text-gray-400 hover:text-gray-700 text-xl">✕</button>
             </div>
             <div>
@@ -88,20 +89,20 @@ export default function DevelopmentPlansPage() {
               {selected.action_plan && <p className="text-sm text-gray-600 mt-1">{selected.action_plan}</p>}
             </div>
             <div>
-              <label className="text-xs text-gray-500">Status</label>
+              <label className="text-xs text-gray-500">{tx("Status")}</label>
               <select className="w-full border rounded px-2 py-1 text-sm mt-1"
                 value={updateStatus} onChange={(e) => setUpdateStatus(e.target.value as DevelopmentPlanStatus)}>
                 {STATUSES.map(s => <option key={s} value={s}>{s.replace(/_/g," ")}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-xs text-gray-500">Notes</label>
+              <label className="text-xs text-gray-500">{tx("Notes")}</label>
               <textarea className="w-full border rounded px-2 py-1 text-sm mt-1" rows={3}
                 value={notes} onChange={(e) => setNotes(e.target.value)} />
             </div>
             <div className="flex gap-2">
-              <button onClick={save} className="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">Save</button>
-              <button onClick={() => setSelected(null)} className="rounded border px-4 py-1.5 text-sm text-gray-600 hover:bg-gray-50">Cancel</button>
+              <button onClick={save} className="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">{tx("Save")}</button>
+              <button onClick={() => setSelected(null)} className="rounded border px-4 py-1.5 text-sm text-gray-600 hover:bg-gray-50">{tx("Cancel")}</button>
             </div>
           </div>
         </div>

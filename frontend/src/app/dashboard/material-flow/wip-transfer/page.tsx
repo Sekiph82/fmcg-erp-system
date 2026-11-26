@@ -4,6 +4,7 @@ import { EntityPicker } from "@/components/EntityPicker";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { FlowStage, WIPBalance, mfApi } from "@/lib/materialFlow";
+import { tx } from "@/lib/i18n/core";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -55,14 +56,14 @@ export default function WIPTransferPage() {
       notes: notes.trim() || undefined,
     }),
     onSuccess: async (transaction) => {
-      setMessage(`WIP output ${transaction.flow_no} recorded.`);
+      setMessage(tx("WIP output {flow_no} recorded.", { flow_no: transaction.flow_no }));
       setOutputQuantity("");
       await refreshWip();
     },
   });
   const transfer = useMutation({
     mutationFn: () => {
-      if (!selectedBalance || !destinationStage?.location_id) throw new Error("Select an available WIP balance and a configured destination stage.");
+      if (!selectedBalance || !destinationStage?.location_id) throw new Error(tx("Select an available WIP balance and a configured destination stage."));
       return mfApi.transferWip(orderId.trim(), selectedBalance.origin_line_id, {
         idempotency_key: crypto.randomUUID(),
         quantity: Number(transferQuantity),
@@ -74,14 +75,14 @@ export default function WIPTransferPage() {
       });
     },
     onSuccess: async (transaction) => {
-      setMessage(`WIP transfer ${transaction.flow_no} posted.`);
+      setMessage(tx("WIP transfer {flow_no} posted.", { flow_no: transaction.flow_no }));
       setTransferQuantity("");
       await refreshWip();
     },
   });
   const bulkTransfer = useMutation({
     mutationFn: () => {
-      if (!selectedBalances.length || !destinationStage?.location_id) throw new Error("Select WIP balances and a configured destination stage.");
+      if (!selectedBalances.length || !destinationStage?.location_id) throw new Error(tx("Select WIP balances and a configured destination stage."));
       return mfApi.transferWipBulk(orderId.trim(), {
         idempotency_key: crypto.randomUUID(),
         lines: selectedBalances.map((balance) => ({
@@ -96,7 +97,7 @@ export default function WIPTransferPage() {
       });
     },
     onSuccess: async (transaction) => {
-      setMessage(`Bulk WIP transfer ${transaction.flow_no} posted (${transaction.lines.length} lines).`);
+      setMessage(tx("Bulk WIP transfer {flow_no} posted ({length} lines).", { flow_no: transaction.flow_no, length: transaction.lines.length }));
       setSelectedBalanceKeys([]);
       await refreshWip();
     },
@@ -105,101 +106,101 @@ export default function WIPTransferPage() {
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center gap-3">
-        <a href="/dashboard/material-flow" className="text-sm text-indigo-600 hover:underline">← Dashboard</a>
-        <h1 className="text-xl font-bold text-gray-900">WIP Output & Stage Transfer</h1>
+        <a href="/dashboard/material-flow" className="text-sm text-indigo-600 hover:underline">{tx("← Dashboard")}</a>
+        <h1 className="text-xl font-bold text-gray-900">{tx("WIP Output & Stage Transfer")}</h1>
       </div>
 
       {message && <div role="status" className="bg-green-50 border border-green-200 text-green-700 p-3 rounded-lg text-sm">{message}</div>}
       {(output.error || transfer.error || bulkTransfer.error) && (
         <div role="alert" className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg text-sm">
-          {(output.error || transfer.error || bulkTransfer.error)?.message || "WIP request failed."}
+          {(output.error || transfer.error || bulkTransfer.error)?.message || tx("WIP request failed.")}
         </div>
       )}
 
       <section className="bg-white rounded-lg border p-5 space-y-4">
-        <h2 className="font-semibold text-gray-800">Production order</h2>
+        <h2 className="font-semibold text-gray-800">{tx("Production order")}</h2>
         <label className="block text-xs font-medium text-gray-600">
-          Production order
-          <EntityPicker kind="production_order" label="Production order" value={orderId} onChange={setOrderId} />
+          {tx("Production order")}
+          <EntityPicker kind="production_order" label={tx("Production order")} value={orderId} onChange={setOrderId} />
         </label>
       </section>
 
       <section className="bg-white rounded-lg border p-5 space-y-4">
         <div>
-          <h2 className="font-semibold text-gray-800">Record measured WIP output</h2>
-          <p className="text-xs text-gray-500 mt-1">Uses the order product and batch. Quantity is capped at the order plan; no warehouse stock is created.</p>
+          <h2 className="font-semibold text-gray-800">{tx("Record measured WIP output")}</h2>
+          <p className="text-xs text-gray-500 mt-1">{tx("Uses the order product and batch. Quantity is capped at the order plan; no warehouse stock is created.")}</p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <label className="text-xs font-medium text-gray-600">Quantity
+          <label className="text-xs font-medium text-gray-600">{tx("Quantity")}
             <input type="number" min="0.001" step="0.001" value={outputQuantity} onChange={(event) => setOutputQuantity(event.target.value)} className="mt-1 w-full border rounded px-3 py-2 text-sm font-normal" />
           </label>
-          <label className="text-xs font-medium text-gray-600">Order UOM
+          <label className="text-xs font-medium text-gray-600">{tx("Order UOM")}
             <input value={outputUom} onChange={(event) => setOutputUom(event.target.value)} maxLength={20} className="mt-1 w-full border rounded px-3 py-2 text-sm font-normal" />
           </label>
-          <label className="text-xs font-medium text-gray-600">Destination stage
+          <label className="text-xs font-medium text-gray-600">{tx("Destination stage")}
             <select value={outputStageId} onChange={(event) => setOutputStageId(event.target.value)} className="mt-1 w-full border rounded px-3 py-2 text-sm font-normal">
-              <option value="">Select a configured stage</option>
+              <option value="">{tx("Select a configured stage")}</option>
               {usableStages.map((stage) => <option key={stage.id} value={stage.id}>{stage.stage_name}</option>)}
             </select>
           </label>
         </div>
         <button onClick={() => output.mutate()} disabled={!validOrderId || !outputQuantity || !outputStage?.location_id || output.isPending} className="bg-blue-600 text-white px-5 py-2 rounded-lg text-sm disabled:opacity-50">
-          {output.isPending ? "Recording…" : "Record WIP output"}
+          {output.isPending ? tx("Recording…") : tx("Record WIP output")}
         </button>
       </section>
 
       <section className="bg-white rounded-lg border p-5 space-y-4">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h2 className="font-semibold text-gray-800">Available WIP by stage and location</h2>
-            <p className="text-xs text-gray-500 mt-1">Balances are derived from posted output and transfer history.</p>
+            <h2 className="font-semibold text-gray-800">{tx("Available WIP by stage and location")}</h2>
+            <p className="text-xs text-gray-500 mt-1">{tx("Balances are derived from posted output and transfer history.")}</p>
           </div>
-          {isFetching && <span className="text-xs text-gray-500">Refreshing…</span>}
+          {isFetching && <span className="text-xs text-gray-500">{tx("Refreshing…")}</span>}
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-          <thead className="bg-gray-50"><tr>{["Select", "Batch", "Stage", "Location", "Quality", "Available", "Transfer"].map((heading) => <th key={heading} className="px-3 py-2 text-left text-xs text-gray-600">{heading}</th>)}</tr></thead>
+          <thead className="bg-gray-50"><tr>{[tx("Select"), tx("Batch"), tx("Stage"), tx("Location"), tx("Quality"), tx("Available"), tx("Transfer")].map((heading) => <th key={heading} className="px-3 py-2 text-left text-xs text-gray-600">{heading}</th>)}</tr></thead>
             <tbody className="divide-y">
               {balances.map((balance) => {
                 const balanceKey = `${balance.origin_line_id}:${balance.stage_id}:${balance.location_id}`;
                 return <tr key={balanceKey}>
-                <td className="px-3 py-2"><input type="checkbox" aria-label={`Select ${balance.batch_id} at ${balance.location_code}`} checked={selectedBalanceKeys.includes(balanceKey)} onChange={(event) => setSelectedBalanceKeys((current) => event.target.checked ? [...current, balanceKey] : current.filter((key) => key !== balanceKey))} /></td>
+                <td className="px-3 py-2"><input type="checkbox" aria-label={tx("Select {batch_id} at {location_code}", { batch_id: balance.batch_id, location_code: balance.location_code })} checked={selectedBalanceKeys.includes(balanceKey)} onChange={(event) => setSelectedBalanceKeys((current) => event.target.checked ? [...current, balanceKey] : current.filter((key) => key !== balanceKey))} /></td>
                 <td className="px-3 py-2 font-mono text-xs">{balance.batch_id}</td>
                 <td className="px-3 py-2">{balance.stage_name}</td>
                 <td className="px-3 py-2">{balance.location_code}</td>
                 <td className="px-3 py-2">{balance.quality_status}</td>
                 <td className="px-3 py-2">{balance.quantity} {balance.uom}</td>
-                <td className="px-3 py-2"><button onClick={() => setSelectedBalanceKey(balanceKey)} className="text-indigo-700 underline">Select</button></td>
+                <td className="px-3 py-2"><button onClick={() => setSelectedBalanceKey(balanceKey)} className="text-indigo-700 underline">{tx("Select")}</button></td>
               </tr>})}
-              {validOrderId && balances.length === 0 && !isFetching && <tr><td colSpan={7} className="px-3 py-6 text-center text-gray-500">No posted WIP output is recorded for this order.</td></tr>}
+              {validOrderId && balances.length === 0 && !isFetching && <tr><td colSpan={7} className="px-3 py-6 text-center text-gray-500">{tx("No posted WIP output is recorded for this order.")}</td></tr>}
             </tbody>
           </table>
         </div>
       </section>
 
       <section className="bg-white rounded-lg border p-5 space-y-4">
-        <h2 className="font-semibold text-gray-800">Move selected WIP</h2>
-        <p className="text-xs text-gray-500">A transfer keeps the same batch, quality status, and quantity unit. The source balance is locked and checked before posting.</p>
-        {selectedBalance && <p className="text-sm text-gray-700">Selected: {selectedBalance.batch_id} · {selectedBalance.quantity} {selectedBalance.uom} at {selectedBalance.stage_name} / {selectedBalance.location_code}</p>}
+        <h2 className="font-semibold text-gray-800">{tx("Move selected WIP")}</h2>
+        <p className="text-xs text-gray-500">{tx("A transfer keeps the same batch, quality status, and quantity unit. The source balance is locked and checked before posting.")}</p>
+        {selectedBalance && <p className="text-sm text-gray-700">{tx("Selected:")} {selectedBalance.batch_id} · {selectedBalance.quantity} {selectedBalance.uom} {tx("at")} {selectedBalance.stage_name} / {selectedBalance.location_code}</p>}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <label className="text-xs font-medium text-gray-600">Transfer quantity
+          <label className="text-xs font-medium text-gray-600">{tx("Transfer quantity")}
             <input type="number" min="0.001" step="0.001" max={selectedBalance?.quantity} value={transferQuantity} onChange={(event) => setTransferQuantity(event.target.value)} className="mt-1 w-full border rounded px-3 py-2 text-sm font-normal" />
           </label>
-          <label className="text-xs font-medium text-gray-600">Destination stage
+          <label className="text-xs font-medium text-gray-600">{tx("Destination stage")}
             <select value={destinationStageId} onChange={(event) => setDestinationStageId(event.target.value)} className="mt-1 w-full border rounded px-3 py-2 text-sm font-normal">
-              <option value="">Select a configured stage</option>
+              <option value="">{tx("Select a configured stage")}</option>
               {usableStages.filter((stage) => stage.id !== selectedBalance?.stage_id).map((stage) => <option key={stage.id} value={stage.id}>{stage.stage_name}</option>)}
             </select>
           </label>
-          <label className="text-xs font-medium text-gray-600">Notes
+          <label className="text-xs font-medium text-gray-600">{tx("Notes")}
             <input value={notes} onChange={(event) => setNotes(event.target.value)} maxLength={1000} className="mt-1 w-full border rounded px-3 py-2 text-sm font-normal" />
           </label>
         </div>
         <button onClick={() => transfer.mutate()} disabled={!validOrderId || !selectedBalance || !destinationStage?.location_id || !transferQuantity || transfer.isPending} className="bg-indigo-600 text-white px-5 py-2 rounded-lg text-sm disabled:opacity-50">
-          {transfer.isPending ? "Posting…" : "Post WIP transfer"}
+          {transfer.isPending ? tx("Posting…") : tx("Post WIP transfer")}
         </button>
         <button onClick={() => bulkTransfer.mutate()} disabled={!validOrderId || !selectedBalances.length || !destinationStage?.location_id || bulkTransfer.isPending} className="ml-2 bg-purple-700 text-white px-5 py-2 rounded-lg text-sm disabled:opacity-50">
-          {bulkTransfer.isPending ? "Posting…" : `Bulk move selected full balances (${selectedBalances.length})`}
+          {bulkTransfer.isPending ? tx("Posting…") : tx("Bulk move selected full balances ({length})", { length: selectedBalances.length })}
         </button>
       </section>
     </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { TrendPoint } from "@/lib/analytics";
+import { tx } from "@/lib/i18n/core";
 
 export interface LineSeries {
   name: string;
@@ -26,7 +27,7 @@ export function LineChart({
   showLegend = true,
 }: LineChartProps) {
   if (!series.length || !series[0].data.length) {
-    return <div className="text-xs text-gray-400 text-center py-6">No data</div>;
+    return <div className="text-xs text-gray-400 text-center py-6">{tx("No data")}</div>;
   }
 
   const width = 480;

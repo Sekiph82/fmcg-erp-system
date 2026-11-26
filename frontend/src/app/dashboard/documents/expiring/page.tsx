@@ -2,6 +2,7 @@
 import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { tx } from "@/lib/i18n/core";
 
 interface ExpiringDoc {
   id: string;
@@ -59,8 +60,8 @@ export default function ExpiringDocumentsPage() {
     <div className="p-6 space-y-6 max-w-5xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Document Expiry Tracker</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Monitor approved documents approaching or past expiry</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Document Expiry Tracker")}</h1>
+          <p className="text-sm text-gray-500 mt-0.5">{tx("Monitor approved documents approaching or past expiry")}</p>
         </div>
         <div className="flex items-center gap-3">
           <select
@@ -68,14 +69,14 @@ export default function ExpiringDocumentsPage() {
             onChange={(e) => setDays(Number(e.target.value))}
             className="border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none"
           >
-            <option value={7}>Next 7 days</option>
-            <option value={30}>Next 30 days</option>
-            <option value={60}>Next 60 days</option>
-            <option value={90}>Next 90 days</option>
+            <option value={7}>{tx("Next 7 days")}</option>
+            <option value={30}>{tx("Next 30 days")}</option>
+            <option value={60}>{tx("Next 60 days")}</option>
+            <option value={90}>{tx("Next 90 days")}</option>
           </select>
           <button onClick={load} disabled={loading}
             className="border border-gray-300 rounded px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-50">
-            Refresh
+            {tx("Refresh")}
           </button>
         </div>
       </div>
@@ -85,9 +86,9 @@ export default function ExpiringDocumentsPage() {
       {/* KPI strip */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         {[
-          { label: "Expired", value: expired.length, color: "text-red-600" },
+          { label: tx("Expired"), value: expired.length, color: "text-red-600" },
           { label: `Expiring in ${days}d`, value: expiringSoon.length, color: "text-orange-500" },
-          { label: "Total At Risk", value: docs.length, color: "text-gray-700" },
+          { label: tx("Total At Risk"), value: docs.length, color: "text-gray-700" },
         ].map((k) => (
           <div key={k.label} className="bg-white border rounded-lg p-4 shadow-sm">
             <p className="text-xs text-gray-500">{k.label}</p>
@@ -97,27 +98,27 @@ export default function ExpiringDocumentsPage() {
       </div>
 
       {loading ? (
-        <p className="text-gray-400 text-sm">Loading…</p>
+        <p className="text-gray-400 text-sm">{tx("Loading…")}</p>
       ) : docs.length === 0 ? (
         <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
-          <p className="text-green-700 font-semibold">All clear</p>
-          <p className="text-green-600 text-sm mt-1">No documents expiring in the next {days} days.</p>
+          <p className="text-green-700 font-semibold">{tx("All clear")}</p>
+          <p className="text-green-600 text-sm mt-1">{tx("No documents expiring in the next")} {days} {tx("days.")}</p>
         </div>
       ) : (
         <div className="bg-white border rounded-lg shadow-sm overflow-hidden">
           <div className="px-4 py-3 border-b bg-gray-50">
-            <h2 className="text-sm font-semibold text-gray-700">Documents Requiring Attention</h2>
+            <h2 className="text-sm font-semibold text-gray-700">{tx("Documents Requiring Attention")}</h2>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-gray-50 text-xs text-gray-500">
                 <tr>
-                  <th className="text-left px-4 py-2">Title</th>
-                  <th className="text-left px-4 py-2">Category</th>
-                  <th className="text-left px-4 py-2">v</th>
-                  <th className="text-left px-4 py-2">Expiry Date</th>
-                  <th className="text-left px-4 py-2">Status</th>
-                  <th className="text-left px-4 py-2">Linked To</th>
+                  <th className="text-left px-4 py-2">{tx("Title")}</th>
+                  <th className="text-left px-4 py-2">{tx("Category")}</th>
+                  <th className="text-left px-4 py-2">{tx("v")}</th>
+                  <th className="text-left px-4 py-2">{tx("Expiry Date")}</th>
+                  <th className="text-left px-4 py-2">{tx("Status")}</th>
+                  <th className="text-left px-4 py-2">{tx("Linked To")}</th>
                   <th className="px-4 py-2"></th>
                 </tr>
               </thead>
@@ -126,7 +127,7 @@ export default function ExpiringDocumentsPage() {
                   <tr key={d.id} className={d.expired ? "bg-red-50" : ""}>
                     <td className="px-4 py-2.5 font-medium text-gray-900 max-w-[200px] truncate">{d.title}</td>
                     <td className="px-4 py-2.5 text-xs text-gray-600">{d.category.replace(/_/g, " ")}</td>
-                    <td className="px-4 py-2.5 text-gray-400">v{d.version}</td>
+                    <td className="px-4 py-2.5 text-gray-400">{tx("v")}{d.version}</td>
                     <td className="px-4 py-2.5">
                       {d.expiry_date && (
                         <div className="flex items-center gap-2">
@@ -146,7 +147,7 @@ export default function ExpiringDocumentsPage() {
                     <td className="px-4 py-2.5">
                       <Link href={`/dashboard/documents/${d.id}`}
                         className="text-xs text-blue-600 hover:text-blue-800">
-                        View
+                        {tx("View")}
                       </Link>
                     </td>
                   </tr>
@@ -158,11 +159,10 @@ export default function ExpiringDocumentsPage() {
       )}
 
       <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-800">
-        <p className="font-semibold mb-1">Renewal Workflow</p>
+        <p className="font-semibold mb-1">{tx("Renewal Workflow")}</p>
         <p className="text-xs">
-          For each expiring document: open the document, upload a new version via{" "}
-          <strong>+ New Version</strong>, then approve the new version. The old version is
-          automatically marked obsolete. Set a new expiry date during approval.
+          {tx("For each expiring document: open the document, upload a new version via")}{" "}
+          <strong>{tx("+ New Version")}</strong>{tx(", then approve the new version. The old version is automatically marked obsolete. Set a new expiry date during approval.")}
         </p>
       </div>
     </div>

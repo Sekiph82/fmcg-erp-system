@@ -1,24 +1,25 @@
 "use client";
 import { useEffect, useState } from "react";
 import { appraisalsApi, APAIRec, APAIAgentType, APAIRecStatus } from "@/lib/appraisals";
+import { tx, lx } from "@/lib/i18n/core";
 
-const AGENT_META: Record<APAIAgentType, { label: string; desc: string; color: string }> = {
+const AGENT_META: Record<APAIAgentType, { label: string; desc: string; color: string }> = lx(() => ({
   performance_insight: {
-    label: "Performance Insight Assistant",
-    desc: "Detects recurring performance patterns, KPI gaps, and employees who need coaching or improvement plans.",
+    label: tx("Performance Insight Assistant"),
+    desc: tx("Detects recurring performance patterns, KPI gaps, and employees who need coaching or improvement plans."),
     color: "bg-blue-50 border-blue-200",
   },
   calibration_risk: {
-    label: "Calibration Risk Monitor",
-    desc: "Detects rating inflation, inconsistent scoring patterns, and department bias in appraisal ratings.",
+    label: tx("Calibration Risk Monitor"),
+    desc: tx("Detects rating inflation, inconsistent scoring patterns, and department bias in appraisal ratings."),
     color: "bg-orange-50 border-orange-200",
   },
   development_plan: {
-    label: "Development Plan Assistant",
-    desc: "Suggests training or coaching actions for completed appraisals with no development plan.",
+    label: tx("Development Plan Assistant"),
+    desc: tx("Suggests training or coaching actions for completed appraisals with no development plan."),
     color: "bg-purple-50 border-purple-200",
   },
-};
+}));
 
 const STATUS_COLOR: Record<APAIRecStatus, string> = {
   pending: "bg-yellow-100 text-yellow-700",
@@ -54,7 +55,7 @@ export default function AppraisalsAIPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-xl font-bold text-gray-900">Performance AI Insights</h1>
+      <h1 className="text-xl font-bold text-gray-900">{tx("Performance AI Insights")}</h1>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         {(Object.entries(AGENT_META) as [APAIAgentType, typeof AGENT_META[APAIAgentType]][]).map(([type, meta]) => (
@@ -66,7 +67,7 @@ export default function AppraisalsAIPage() {
               disabled={running === type}
               className="w-full rounded bg-gray-800 px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-700 disabled:opacity-50"
             >
-              {running === type ? "Running…" : "Run Agent"}
+              {running === type ? tx("Running…") : tx("Run Agent")}
             </button>
           </div>
         ))}
@@ -74,12 +75,12 @@ export default function AppraisalsAIPage() {
 
       <div className="bg-white border rounded-lg shadow-sm">
         <div className="px-4 py-3 border-b">
-          <h2 className="font-semibold text-gray-800 text-sm">AI Recommendations</h2>
+          <h2 className="font-semibold text-gray-800 text-sm">{tx("AI Recommendations")}</h2>
         </div>
         {loading ? (
-          <p className="text-gray-500 text-sm p-4">Loading…</p>
+          <p className="text-gray-500 text-sm p-4">{tx("Loading…")}</p>
         ) : recs.length === 0 ? (
-          <p className="text-gray-400 text-sm text-center py-8">No recommendations yet. Run an agent above.</p>
+          <p className="text-gray-400 text-sm text-center py-8">{tx("No recommendations yet. Run an agent above.")}</p>
         ) : (
           <div className="divide-y">
             {recs.map((r) => (
@@ -94,15 +95,15 @@ export default function AppraisalsAIPage() {
                         {r.status}
                       </span>
                       {r.score != null && (
-                        <span className="text-xs text-gray-400">Score: {r.score}</span>
+                        <span className="text-xs text-gray-400">{tx("Score:")} {r.score}</span>
                       )}
                     </div>
                     <p className="text-sm font-semibold text-gray-800 mt-1">{r.title}</p>
                     <p className="text-sm text-gray-600">{r.body}</p>
                     {(r.employee_id || r.department_id) && (
                       <p className="text-xs text-gray-400 mt-1">
-                        {r.employee_id && `Employee: ${r.employee_id}`}
-                        {r.department_id && ` · Dept: ${r.department_id}`}
+                        {r.employee_id && tx("Employee: {employee_id}", { employee_id: r.employee_id })}
+                        {r.department_id && tx(" · Dept: {department_id}", { department_id: r.department_id })}
                       </p>
                     )}
                   </div>
@@ -110,15 +111,15 @@ export default function AppraisalsAIPage() {
                     <div className="flex flex-col gap-1 shrink-0">
                       <button onClick={() => ack(r.rec_id, "acknowledged")}
                         className="rounded border border-blue-300 px-2 py-0.5 text-xs text-blue-600 hover:bg-blue-50">
-                        Acknowledge
+                        {tx("Acknowledge")}
                       </button>
                       <button onClick={() => ack(r.rec_id, "actioned")}
                         className="rounded border border-green-300 px-2 py-0.5 text-xs text-green-600 hover:bg-green-50">
-                        Action
+                        {tx("Action")}
                       </button>
                       <button onClick={() => ack(r.rec_id, "dismissed")}
                         className="rounded border border-gray-200 px-2 py-0.5 text-xs text-gray-500 hover:bg-gray-50">
-                        Dismiss
+                        {tx("Dismiss")}
                       </button>
                     </div>
                   )}

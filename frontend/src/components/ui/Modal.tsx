@@ -1,6 +1,7 @@
 "use client";
 
 import { ReactNode } from "react";
+import { tx } from "@/lib/i18n/core";
 
 interface ModalProps {
   open: boolean;
@@ -20,7 +21,7 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
           <button
             onClick={onClose}
             className="glow-button-secondary !px-2 !py-1 text-lg leading-none"
-            aria-label="Close"
+            aria-label={tx("Close")}
           >
             &times;
           </button>

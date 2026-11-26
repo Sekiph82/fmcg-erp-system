@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { taxApi, TaxSummaryRow, RegulatoryStatusRow } from "@/lib/tax_regulatory";
 import { Badge } from "@/components/ui/Badge";
+import { tx } from "@/lib/i18n/core";
 
 const STATUS_VARIANT: Record<string, "green" | "red" | "yellow" | "gray"> = {
   COMPLIANT: "green",
@@ -47,11 +48,11 @@ export default function TaxReportsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Tax Reports</h1>
-          <p className="text-sm text-gray-500 mt-1">Tax summary by country and type, regulatory compliance overview</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Tax Reports")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{tx("Tax summary by country and type, regulatory compliance overview")}</p>
         </div>
         <select className="border rounded px-3 py-2 text-sm" value={filterCountry} onChange={(e) => setFilterCountry(e.target.value)}>
-          <option value="">All countries</option>
+          <option value="">{tx("All countries")}</option>
           {countries.map((c) => <option key={c.country_code} value={c.country_code}>{c.country_code} — {c.country_name}</option>)}
         </select>
       </div>
@@ -67,19 +68,19 @@ export default function TaxReportsPage() {
               </div>
               <div className="space-y-1">
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Taxable Amount</span>
+                  <span className="text-gray-500">{tx("Taxable Amount")}</span>
                   <span className="font-medium">{c.total_taxable.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Total Tax</span>
+                  <span className="text-gray-500">{tx("Total Tax")}</span>
                   <span className="font-bold text-indigo-600">{c.total_tax.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Effective Rate</span>
+                  <span className="text-gray-500">{tx("Effective Rate")}</span>
                   <span>{c.total_taxable > 0 ? ((c.total_tax / c.total_taxable) * 100).toFixed(2) : "0.00"}%</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Transactions</span>
+                  <span className="text-gray-500">{tx("Transactions")}</span>
                   <span>{c.tx_count}</span>
                 </div>
               </div>
@@ -91,18 +92,18 @@ export default function TaxReportsPage() {
       {/* Tax breakdown table */}
       {taxSummary.length > 0 && (
         <div className="bg-white rounded-lg border">
-          <div className="px-5 py-3 border-b font-semibold text-gray-800">Tax Breakdown by Country & Type</div>
-          {loadingTax ? <p className="px-5 py-8 text-center text-gray-400">Loading…</p> : (
+          <div className="px-5 py-3 border-b font-semibold text-gray-800">{tx("Tax Breakdown by Country & Type")}</div>
+          {loadingTax ? <p className="px-5 py-8 text-center text-gray-400">{tx("Loading…")}</p> : (
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-gray-50 text-xs text-gray-500 uppercase">
-                  <th className="px-5 py-2 text-left">Country</th>
-                  <th className="px-5 py-2 text-left">Tax Type</th>
-                  <th className="px-5 py-2 text-left">Currency</th>
-                  <th className="px-5 py-2 text-right">Taxable Amount</th>
-                  <th className="px-5 py-2 text-right">Tax Amount</th>
-                  <th className="px-5 py-2 text-right">Effective %</th>
-                  <th className="px-5 py-2 text-right">Transactions</th>
+                  <th className="px-5 py-2 text-left">{tx("Country")}</th>
+                  <th className="px-5 py-2 text-left">{tx("Tax Type")}</th>
+                  <th className="px-5 py-2 text-left">{tx("Currency")}</th>
+                  <th className="px-5 py-2 text-right">{tx("Taxable Amount")}</th>
+                  <th className="px-5 py-2 text-right">{tx("Tax Amount")}</th>
+                  <th className="px-5 py-2 text-right">{tx("Effective %")}</th>
+                  <th className="px-5 py-2 text-right">{tx("Transactions")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
@@ -129,22 +130,22 @@ export default function TaxReportsPage() {
 
       {taxSummary.length === 0 && !loadingTax && (
         <div className="bg-white rounded-lg border p-12 text-center text-gray-400">
-          No confirmed or posted tax transactions found
+          {tx("No confirmed or posted tax transactions found")}
         </div>
       )}
 
       {/* Regulatory compliance table */}
       <div className="bg-white rounded-lg border">
-        <div className="px-5 py-3 border-b font-semibold text-gray-800">Regulatory Compliance Status</div>
-        {loadingReg ? <p className="px-5 py-8 text-center text-gray-400">Loading…</p> : (
+        <div className="px-5 py-3 border-b font-semibold text-gray-800">{tx("Regulatory Compliance Status")}</div>
+        {loadingReg ? <p className="px-5 py-8 text-center text-gray-400">{tx("Loading…")}</p> : (
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-gray-50 text-xs text-gray-500 uppercase">
-                <th className="px-5 py-2 text-left">Country</th>
-                <th className="px-5 py-2 text-left">Flag Type</th>
-                <th className="px-5 py-2 text-left">Status</th>
-                <th className="px-5 py-2 text-right">Count</th>
-                <th className="px-5 py-2 text-right">Expiring (30d)</th>
+                <th className="px-5 py-2 text-left">{tx("Country")}</th>
+                <th className="px-5 py-2 text-left">{tx("Flag Type")}</th>
+                <th className="px-5 py-2 text-left">{tx("Status")}</th>
+                <th className="px-5 py-2 text-right">{tx("Count")}</th>
+                <th className="px-5 py-2 text-right">{tx("Expiring (30d)")}</th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -164,7 +165,7 @@ export default function TaxReportsPage() {
                 </tr>
               ))}
               {regStatus.length === 0 && (
-                <tr><td colSpan={5} className="px-5 py-8 text-center text-gray-400">No regulatory data</td></tr>
+                <tr><td colSpan={5} className="px-5 py-8 text-center text-gray-400">{tx("No regulatory data")}</td></tr>
               )}
             </tbody>
           </table>

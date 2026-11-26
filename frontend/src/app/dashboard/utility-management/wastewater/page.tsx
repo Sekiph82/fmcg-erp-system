@@ -37,6 +37,7 @@ import {
   type ComplianceStatus,
 } from "@/lib/wastewater";
 import { importApi, type ImportResult } from "@/lib/importApi";
+import { tx } from "@/lib/i18n/core";
 
 // ── Palette ────────────────────────────────────────────────────────────────────
 const CYAN   = "#22d3ee";
@@ -171,7 +172,7 @@ function ImportModal({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
       <div className="bg-slate-800 border border-slate-600 rounded-xl p-6 w-full max-w-md shadow-2xl">
-        <h3 className="text-white font-semibold text-lg mb-4">Import Wastewater Records (CSV)</h3>
+        <h3 className="text-white font-semibold text-lg mb-4">{tx("Import Wastewater Records (CSV)")}</h3>
         <input
           type="file" accept=".csv"
           onChange={e => setFile(e.target.files?.[0] ?? null)}
@@ -179,19 +180,19 @@ function ImportModal({ onClose }: { onClose: () => void }) {
         />
         {result && (
           <div className={`text-sm mb-4 p-3 rounded ${result.success ? "bg-emerald-900/40 text-emerald-300" : "bg-red-900/40 text-red-300"}`}>
-            {result.message} {result.success ? `(${result.inserted} inserted)` : ""}
+            {result.message} {result.success ? tx("({inserted} inserted)", { inserted: result.inserted }) : ""}
           </div>
         )}
         <div className="flex gap-2 justify-end">
           <button onClick={onClose} className="px-4 py-2 rounded bg-slate-700 text-slate-300 text-sm hover:bg-slate-600">
-            Close
+            {tx("Close")}
           </button>
           <button
             onClick={handleImport}
             disabled={!file || busy}
             className="px-4 py-2 rounded bg-cyan-600 text-white text-sm hover:bg-cyan-500 disabled:opacity-50"
           >
-            {busy ? "Importing…" : "Import"}
+            {busy ? tx("Importing…") : tx("Import")}
           </button>
         </div>
       </div>
@@ -302,13 +303,13 @@ function RecordModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 overflow-y-auto p-4">
       <div className="bg-slate-800 border border-slate-600 rounded-xl p-6 w-full max-w-4xl shadow-2xl">
         <h3 className="text-white font-semibold text-lg mb-5">
-          {record ? "Edit Wastewater Record" : "New Wastewater Record"}
+          {record ? tx("Edit Wastewater Record") : tx("New Wastewater Record")}
         </h3>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {/* Asset */}
           <div className="flex flex-col gap-1 col-span-2">
-            <label className="text-xs text-slate-400">Asset / WWTP Unit</label>
+            <label className="text-xs text-slate-400">{tx("Asset / WWTP Unit")}</label>
             <select
               value={form.asset_id ?? ""}
               onChange={e => set("asset_id", e.target.value)}
@@ -320,7 +321,7 @@ function RecordModal({
 
           {/* Datetime */}
           <div className="flex flex-col gap-1 col-span-2">
-            <label className="text-xs text-slate-400">Date / Time</label>
+            <label className="text-xs text-slate-400">{tx("Date / Time")}</label>
             <input
               type="datetime-local"
               value={form.record_datetime ?? ""}
@@ -331,7 +332,7 @@ function RecordModal({
 
           {/* Stage */}
           <div className="flex flex-col gap-1 col-span-2">
-            <label className="text-xs text-slate-400">Treatment Stage</label>
+            <label className="text-xs text-slate-400">{tx("Treatment Stage")}</label>
             <select
               value={form.process_stage ?? "SECONDARY"}
               onChange={e => set("process_stage", e.target.value)}
@@ -345,7 +346,7 @@ function RecordModal({
 
           {/* Compliance Status */}
           <div className="flex flex-col gap-1 col-span-2">
-            <label className="text-xs text-slate-400">Compliance Status</label>
+            <label className="text-xs text-slate-400">{tx("Compliance Status")}</label>
             <select
               value={form.compliance_status ?? "COMPLIANT"}
               onChange={e => set("compliance_status", e.target.value)}
@@ -398,7 +399,7 @@ function RecordModal({
 
           {/* Permit */}
           <div className="flex flex-col gap-1 col-span-2">
-            <label className="text-xs text-slate-400">Permit Limit Reference</label>
+            <label className="text-xs text-slate-400">{tx("Permit Limit Reference")}</label>
             <input
               type="text"
               value={form.permit_limit_ref ?? ""}
@@ -409,7 +410,7 @@ function RecordModal({
 
           {/* Deviation */}
           <div className="flex flex-col gap-1 col-span-4">
-            <label className="text-xs text-slate-400">Deviation Reason</label>
+            <label className="text-xs text-slate-400">{tx("Deviation Reason")}</label>
             <textarea
               rows={2}
               value={form.deviation_reason ?? ""}
@@ -420,7 +421,7 @@ function RecordModal({
 
           {/* Corrective action */}
           <div className="flex flex-col gap-1 col-span-4">
-            <label className="text-xs text-slate-400">Corrective Action</label>
+            <label className="text-xs text-slate-400">{tx("Corrective Action")}</label>
             <textarea
               rows={2}
               value={form.corrective_action ?? ""}
@@ -431,7 +432,7 @@ function RecordModal({
 
           {/* Notes */}
           <div className="flex flex-col gap-1 col-span-4">
-            <label className="text-xs text-slate-400">Notes</label>
+            <label className="text-xs text-slate-400">{tx("Notes")}</label>
             <textarea
               rows={2}
               value={form.notes ?? ""}
@@ -443,20 +444,20 @@ function RecordModal({
 
         {err && (
           <p className="text-red-400 text-sm mt-3">
-            {(err as Error)?.message ?? "An error occurred."}
+            {(err as Error)?.message ?? tx("An error occurred.")}
           </p>
         )}
 
         <div className="flex gap-2 justify-end mt-5">
           <button onClick={onClose} className="px-4 py-2 rounded bg-slate-700 text-slate-300 text-sm hover:bg-slate-600">
-            Cancel
+            {tx("Cancel")}
           </button>
           <button
             onClick={handleSubmit}
             disabled={busy}
             className="px-4 py-2 rounded bg-cyan-600 text-white text-sm hover:bg-cyan-500 disabled:opacity-50"
           >
-            {busy ? "Saving…" : record ? "Update" : "Create"}
+            {busy ? tx("Saving…") : record ? tx("Update") : tx("Create")}
           </button>
         </div>
       </div>
@@ -528,32 +529,32 @@ export default function WastewaterPage() {
     return [
       {
         key: "ph", active: kpis.alarm_ph_out_of_range, severity: "ALERT",
-        label: "pH Out of Range",
+        label: tx("pH Out of Range"),
         detail: `Effluent pH outside [6.0 – 9.0]. Avg: ${n(kpis.avg_effluent_ph, 2)}`,
       },
       {
         key: "cod", active: kpis.alarm_cod_high, severity: "CRITICAL",
-        label: "COD Exceedance",
+        label: tx("COD Exceedance"),
         detail: `Avg effluent COD ${n(kpis.avg_effluent_cod)} mg/L exceeds 150 mg/L limit.`,
       },
       {
         key: "do", active: kpis.alarm_low_do, severity: "WARNING",
-        label: "Low Dissolved Oxygen",
+        label: tx("Low Dissolved Oxygen"),
         detail: `Avg DO ${n(kpis.avg_do_mgl)} mg/L is below 1.5 mg/L minimum.`,
       },
       {
         key: "blower", active: kpis.alarm_blower_failure, severity: "CRITICAL",
-        label: "Blower Failure",
+        label: tx("Blower Failure"),
         detail: "One or more records show zero aeration runtime.",
       },
       {
         key: "overflow", active: kpis.alarm_overflow_risk, severity: "ALERT",
-        label: "Overflow Risk",
+        label: tx("Overflow Risk"),
         detail: "Influent flow exceeded overflow threshold (500 m³/h).",
       },
       {
         key: "nc", active: kpis.alarm_non_compliant_discharge, severity: "CRITICAL",
-        label: "Non-Compliant Discharge",
+        label: tx("Non-Compliant Discharge"),
         detail: `${kpis.non_compliant_count} non-compliant record(s) in selected period.`,
       },
     ];
@@ -572,8 +573,8 @@ export default function WastewaterPage() {
 
   return (
     <div className="min-h-screen bg-slate-900 text-white p-6">
-      <h1 className="text-2xl font-bold mb-1">Biological / Wastewater Treatment</h1>
-      <p className="text-slate-400 text-sm mb-6">Influent quality, treatment efficiency, compliance monitoring, and sludge management.</p>
+      <h1 className="text-2xl font-bold mb-1">{tx("Biological / Wastewater Treatment")}</h1>
+      <p className="text-slate-400 text-sm mb-6">{tx("Influent quality, treatment efficiency, compliance monitoring, and sludge management.")}</p>
 
       {/* ── Filters ── */}
       <div className="flex flex-wrap gap-3 mb-6">
@@ -594,7 +595,7 @@ export default function WastewaterPage() {
           onChange={e => setFilter("asset_id", e.target.value)}
           className="bg-slate-800 border border-slate-600 rounded px-3 py-1.5 text-sm text-white focus:outline-none focus:border-cyan-500"
         >
-          <option value="">All Assets</option>
+          <option value="">{tx("All Assets")}</option>
           {assets.map(a => <option key={a.id} value={a.id}>{a.asset_no} — {a.name}</option>)}
         </select>
         <select
@@ -602,7 +603,7 @@ export default function WastewaterPage() {
           onChange={e => setFilter("process_stage", e.target.value)}
           className="bg-slate-800 border border-slate-600 rounded px-3 py-1.5 text-sm text-white focus:outline-none focus:border-cyan-500"
         >
-          <option value="">All Stages</option>
+          <option value="">{tx("All Stages")}</option>
           {(["PRIMARY", "SECONDARY", "TERTIARY", "SLUDGE_HANDLING"] as WastewaterProcess[]).map(s => (
             <option key={s} value={s}>{PROCESS_STAGE_LABELS[s]}</option>
           ))}
@@ -612,7 +613,7 @@ export default function WastewaterPage() {
           onChange={e => setFilter("compliance_status", e.target.value)}
           className="bg-slate-800 border border-slate-600 rounded px-3 py-1.5 text-sm text-white focus:outline-none focus:border-cyan-500"
         >
-          <option value="">All Compliance</option>
+          <option value="">{tx("All Compliance")}</option>
           {(["COMPLIANT", "NON_COMPLIANT", "BORDERLINE", "NOT_TESTED"] as ComplianceStatus[]).map(s => (
             <option key={s} value={s}>{COMPLIANCE_LABELS[s]}</option>
           ))}
@@ -621,7 +622,7 @@ export default function WastewaterPage() {
           onClick={() => setFilters({})}
           className="px-3 py-1.5 rounded bg-slate-700 text-slate-300 text-sm hover:bg-slate-600"
         >
-          Reset
+          {tx("Reset")}
         </button>
       </div>
 
@@ -630,23 +631,23 @@ export default function WastewaterPage() {
 
       {/* ── KPI Cards ── */}
       {kpisLoading ? (
-        <p className="text-slate-400 text-sm mb-6">Loading KPIs…</p>
+        <p className="text-slate-400 text-sm mb-6">{tx("Loading KPIs…")}</p>
       ) : kpis ? (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <KPICard
-            label="COD Removal"
+            label={tx("COD Removal")}
             value={kpis.cod_removal_pct != null ? `${n(kpis.cod_removal_pct)}%` : "—"}
             sub={`Influent ${n(kpis.avg_influent_cod)} → Effluent ${n(kpis.avg_effluent_cod)} mg/L`}
             accent="border-cyan-700"
           />
           <KPICard
-            label="BOD Removal"
+            label={tx("BOD Removal")}
             value={kpis.bod_removal_pct != null ? `${n(kpis.bod_removal_pct)}%` : "—"}
             sub={`Influent ${n(kpis.avg_influent_bod)} → Effluent ${n(kpis.avg_effluent_bod)} mg/L`}
             accent="border-teal-700"
           />
           <KPICard
-            label="Compliance"
+            label={tx("Compliance")}
             value={kpis.compliance_pct != null ? `${n(kpis.compliance_pct)}%` : "—"}
             sub={`${kpis.compliant_count} compliant / ${kpis.record_count} records`}
             accent="border-emerald-700"
@@ -654,13 +655,13 @@ export default function WastewaterPage() {
             flagMsg={kpis.non_compliant_count > 0 ? `${kpis.non_compliant_count} non-compliant` : undefined}
           />
           <KPICard
-            label="Treatment Cost / m³"
+            label={tx("Treatment Cost / m³")}
             value={kpis.treatment_cost_per_m3 != null ? `$${n(kpis.treatment_cost_per_m3, 4)}` : "—"}
             sub={kpis.treatment_cost_total != null ? `Total $${n(kpis.treatment_cost_total, 2)}` : "No cost data"}
             accent="border-orange-700"
           />
           <KPICard
-            label="Blower Energy / m³"
+            label={tx("Blower Energy / m³")}
             value={kpis.blower_energy_per_m3 != null ? `${n(kpis.blower_energy_per_m3, 4)} kWh` : "—"}
             sub={`Total power: ${n(kpis.total_power_kwh, 1)} kWh`}
             accent="border-blue-700"
@@ -668,13 +669,13 @@ export default function WastewaterPage() {
             flagMsg={kpis.alarm_blower_failure ? "Blower failure detected" : undefined}
           />
           <KPICard
-            label="Sludge Generation Rate"
+            label={tx("Sludge Generation Rate")}
             value={kpis.sludge_gen_rate != null ? `${n(kpis.sludge_gen_rate, 3)} kg/m³` : "—"}
             sub={`Total: ${n(kpis.total_sludge_produced_kg, 0)} kg`}
             accent="border-amber-700"
           />
           <KPICard
-            label="Avg Dissolved Oxygen"
+            label={tx("Avg Dissolved Oxygen")}
             value={kpis.avg_do_mgl != null ? `${n(kpis.avg_do_mgl, 2)} mg/L` : "—"}
             sub="Aeration tank"
             accent="border-violet-700"
@@ -682,7 +683,7 @@ export default function WastewaterPage() {
             flagMsg={kpis.alarm_low_do ? "Below 1.5 mg/L minimum" : undefined}
           />
           <KPICard
-            label="Non-Compliance Risk"
+            label={tx("Non-Compliance Risk")}
             value={kpis.non_compliance_risk ? "HIGH" : "LOW"}
             sub="Based on last 7 days"
             accent={kpis.non_compliance_risk ? "border-red-700" : "border-slate-700"}
@@ -696,7 +697,7 @@ export default function WastewaterPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
         {/* COD / BOD Trend */}
         <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
-          <h3 className="text-sm font-medium text-slate-300 mb-3">COD / BOD — Daily Trend (mg/L)</h3>
+          <h3 className="text-sm font-medium text-slate-300 mb-3">{tx("COD / BOD — Daily Trend (mg/L)")}</h3>
           <ResponsiveContainer width="100%" height={220}>
             <LineChart data={trend} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
@@ -717,7 +718,7 @@ export default function WastewaterPage() {
 
         {/* DO & pH Trend */}
         <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
-          <h3 className="text-sm font-medium text-slate-300 mb-3">Dissolved Oxygen & Effluent pH — Daily</h3>
+          <h3 className="text-sm font-medium text-slate-300 mb-3">{tx("Dissolved Oxygen & Effluent pH — Daily")}</h3>
           <ResponsiveContainer width="100%" height={220}>
             <LineChart data={trend} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
@@ -737,7 +738,7 @@ export default function WastewaterPage() {
 
         {/* Flow Trend */}
         <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
-          <h3 className="text-sm font-medium text-slate-300 mb-3">Flow — Influent vs Effluent (m³/h avg)</h3>
+          <h3 className="text-sm font-medium text-slate-300 mb-3">{tx("Flow — Influent vs Effluent (m³/h avg)")}</h3>
           <ResponsiveContainer width="100%" height={220}>
             <AreaChart data={trend} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
               <defs>
@@ -766,7 +767,7 @@ export default function WastewaterPage() {
 
         {/* Compliance Donut + Stage Bar */}
         <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
-          <h3 className="text-sm font-medium text-slate-300 mb-3">Compliance Distribution</h3>
+          <h3 className="text-sm font-medium text-slate-300 mb-3">{tx("Compliance Distribution")}</h3>
           <div className="flex gap-6 items-center">
             <ResponsiveContainer width={160} height={160}>
               <PieChart>
@@ -796,7 +797,7 @@ export default function WastewaterPage() {
               ))}
               {compliance && (
                 <div className="mt-2 pt-2 border-t border-slate-700 text-slate-400">
-                  Compliance rate: <span className="text-white font-semibold">{n(compliance.compliance_pct)}%</span>
+                  {tx("Compliance rate:")} <span className="text-white font-semibold">{n(compliance.compliance_pct)}%</span>
                 </div>
               )}
             </div>
@@ -807,7 +808,7 @@ export default function WastewaterPage() {
       {/* ── Stage Analysis ── */}
       {stages.length > 0 && (
         <div className="bg-slate-800 border border-slate-700 rounded-lg p-4 mb-6">
-          <h3 className="text-sm font-medium text-slate-300 mb-3">Treatment Stage Analysis</h3>
+          <h3 className="text-sm font-medium text-slate-300 mb-3">{tx("Treatment Stage Analysis")}</h3>
           <ResponsiveContainer width="100%" height={180}>
             <BarChart data={stages} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
@@ -828,27 +829,27 @@ export default function WastewaterPage() {
       <div className="bg-slate-800 border border-slate-700 rounded-lg">
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700">
           <span className="text-sm font-medium text-slate-300">
-            Wastewater Records
-            {recLoading ? " — Loading…" : ` — ${records.length}`}
+            {tx("Wastewater Records")}
+            {recLoading ? tx(" — Loading…") : ` — ${records.length}`}
           </span>
           <div className="flex gap-2">
             <button
               onClick={() => downloadWastewaterCsv({ ...filters })}
               className="px-3 py-1.5 rounded bg-slate-700 text-slate-300 text-xs hover:bg-slate-600"
             >
-              Export CSV
+              {tx("Export CSV")}
             </button>
             <button
               onClick={() => setShowImport(true)}
               className="px-3 py-1.5 rounded bg-slate-700 text-slate-300 text-xs hover:bg-slate-600"
             >
-              Import CSV
+              {tx("Import CSV")}
             </button>
             <button
               onClick={() => { setEditRecord(null); setShowForm(true); }}
               className="px-3 py-1.5 rounded bg-cyan-600 text-white text-xs hover:bg-cyan-500"
             >
-              + New Record
+              {tx("+ New Record")}
             </button>
           </div>
         </div>
@@ -857,18 +858,18 @@ export default function WastewaterPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-slate-700 text-slate-400 text-xs">
-                <th className="text-left px-4 py-2">Record No</th>
-                <th className="text-left px-4 py-2">Date / Time</th>
-                <th className="text-left px-4 py-2">Stage</th>
-                <th className="text-right px-4 py-2">Inf Flow</th>
-                <th className="text-right px-4 py-2">Eff pH</th>
-                <th className="text-right px-4 py-2">COD In/Out</th>
+                <th className="text-left px-4 py-2">{tx("Record No")}</th>
+                <th className="text-left px-4 py-2">{tx("Date / Time")}</th>
+                <th className="text-left px-4 py-2">{tx("Stage")}</th>
+                <th className="text-right px-4 py-2">{tx("Inf Flow")}</th>
+                <th className="text-right px-4 py-2">{tx("Eff pH")}</th>
+                <th className="text-right px-4 py-2">{tx("COD In/Out")}</th>
                 <th className="text-right px-4 py-2">DO</th>
-                <th className="text-right px-4 py-2">Blower (h)</th>
-                <th className="text-right px-4 py-2">Sludge (kg)</th>
-                <th className="text-left px-4 py-2">Compliance</th>
-                <th className="text-left px-4 py-2">Permit Ref</th>
-                <th className="text-left px-4 py-2">Operator</th>
+                <th className="text-right px-4 py-2">{tx("Blower (h)")}</th>
+                <th className="text-right px-4 py-2">{tx("Sludge (kg)")}</th>
+                <th className="text-left px-4 py-2">{tx("Compliance")}</th>
+                <th className="text-left px-4 py-2">{tx("Permit Ref")}</th>
+                <th className="text-left px-4 py-2">{tx("Operator")}</th>
                 <th className="px-4 py-2"></th>
               </tr>
             </thead>
@@ -876,7 +877,7 @@ export default function WastewaterPage() {
               {records.length === 0 ? (
                 <tr>
                   <td colSpan={13} className="text-center text-slate-500 py-10">
-                    No records found. Adjust filters or create a new record.
+                    {tx("No records found. Adjust filters or create a new record.")}
                   </td>
                 </tr>
               ) : records.map(rec => (
@@ -890,7 +891,7 @@ export default function WastewaterPage() {
                   <td className="px-4 py-2 font-mono text-xs text-slate-300">{rec.record_no}</td>
                   <td className="px-4 py-2 text-slate-300 whitespace-nowrap">{fmtDatetime(rec.record_datetime)}</td>
                   <td className="px-4 py-2"><StageBadge stage={rec.process_stage} /></td>
-                  <td className="px-4 py-2 text-right text-slate-300">{n(rec.influent_flow_m3h)} m³/h</td>
+                  <td className="px-4 py-2 text-right text-slate-300">{n(rec.influent_flow_m3h)} {tx("m³/h")}</td>
                   <td className="px-4 py-2 text-right">
                     <span className={
                       rec.effluent_ph != null && (rec.effluent_ph < 6 || rec.effluent_ph > 9)
@@ -926,13 +927,13 @@ export default function WastewaterPage() {
                         onClick={() => { setEditRecord(rec); setShowForm(true); }}
                         className="text-xs text-cyan-400 hover:text-cyan-300"
                       >
-                        Edit
+                        {tx("Edit")}
                       </button>
                       <button
                         onClick={() => setDeleteId(rec.id)}
                         className="text-xs text-red-400 hover:text-red-300"
                       >
-                        Delete
+                        {tx("Delete")}
                       </button>
                     </div>
                   </td>
@@ -957,21 +958,21 @@ export default function WastewaterPage() {
       {deleteId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
           <div className="bg-slate-800 border border-slate-600 rounded-xl p-6 w-full max-w-sm shadow-2xl">
-            <h3 className="text-white font-semibold mb-3">Delete Record?</h3>
-            <p className="text-slate-400 text-sm mb-5">This action cannot be undone.</p>
+            <h3 className="text-white font-semibold mb-3">{tx("Delete Record?")}</h3>
+            <p className="text-slate-400 text-sm mb-5">{tx("This action cannot be undone.")}</p>
             <div className="flex gap-2 justify-end">
               <button
                 onClick={() => setDeleteId(null)}
                 className="px-4 py-2 rounded bg-slate-700 text-slate-300 text-sm hover:bg-slate-600"
               >
-                Cancel
+                {tx("Cancel")}
               </button>
               <button
                 onClick={() => deleteMut.mutate(deleteId)}
                 disabled={deleteMut.isPending}
                 className="px-4 py-2 rounded bg-red-600 text-white text-sm hover:bg-red-500 disabled:opacity-50"
               >
-                {deleteMut.isPending ? "Deleting…" : "Delete"}
+                {deleteMut.isPending ? tx("Deleting…") : tx("Delete")}
               </button>
             </div>
           </div>

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { PipelineSelect } from "@/components/PipelineSelect";
 import Link from "next/link";
 import { crmApi, CRMRecord, CRMStage, fmtCurrency, TEMPERATURE_COLORS, STATUS_COLORS } from "@/lib/crm_pipeline";
+import { tx } from "@/lib/i18n/core";
 
 export default function PipelineBoardPage() {
   const [stages, setStages] = useState<CRMStage[]>([]);
@@ -41,7 +42,7 @@ export default function PipelineBoardPage() {
       await load();
     } catch (err) {   // e.g. 409 stage gate: an unfinished playbook or approval (M43.S01.T010/T014/T016)
       const d = (err as { response?: { data?: { detail?: { message?: string } | string } } }).response?.data?.detail;
-      setGateMsg(typeof d === "string" ? d : d?.message ?? "The deal could not be moved.");
+      setGateMsg(typeof d === "string" ? d : d?.message ?? tx("The deal could not be moved."));
     }
     setMovingId(null);
   };
@@ -52,21 +53,21 @@ export default function PipelineBoardPage() {
   const stageTotal = (stageId: string) =>
     recordsByStage(stageId).reduce((s, r) => s + (r.expected_revenue || 0), 0);
 
-  if (loading) return <div className="p-6 text-gray-500">Loading pipeline…</div>;
+  if (loading) return <div className="p-6 text-gray-500">{tx("Loading pipeline…")}</div>;
 
   return (
     <div className="p-6 space-y-4">
       <PipelineSelect value={pipelineId} onChange={setPipelineId} />
       {gateMsg && <p role="alert" className="text-sm text-amber-800 bg-amber-50 rounded px-2 py-1">{gateMsg}</p>}
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-gray-900">Pipeline Board</h1>
+        <h1 className="text-xl font-bold text-gray-900">{tx("Pipeline Board")}</h1>
         <div className="flex gap-2">
-          <Link href="/dashboard/crm/leads" className="text-sm text-blue-600 hover:underline">+ Lead</Link>
-          <Link href="/dashboard/crm/opportunities" className="text-sm text-purple-600 hover:underline">+ Opportunity</Link>
+          <Link href="/dashboard/crm/leads" className="text-sm text-blue-600 hover:underline">{tx("+ Lead")}</Link>
+          <Link href="/dashboard/crm/opportunities" className="text-sm text-purple-600 hover:underline">{tx("+ Opportunity")}</Link>
         </div>
       </div>
 
-      <div className="text-xs text-gray-400">Drag cards between stages to move records</div>
+      <div className="text-xs text-gray-400">{tx("Drag cards between stages to move records")}</div>
 
       {/* Kanban Board */}
       <div className="flex gap-4 overflow-x-auto pb-4" style={{ minHeight: "500px" }}>
@@ -108,8 +109,8 @@ export default function PipelineBoardPage() {
                       {rec.lead_code || rec.opportunity_code}
                     </div>
                     {rec.access?.view_only && (
-                      <div title={rec.access.reason ?? "You can view this record but cannot modify it in this scope."} className="mt-1 inline-flex rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
-                        View only
+                      <div title={rec.access.reason ?? tx("You can view this record but cannot modify it in this scope.")} className="mt-1 inline-flex rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
+                        {tx("View only")}
                       </div>
                     )}
                     {rec.expected_revenue ? (
@@ -125,12 +126,12 @@ export default function PipelineBoardPage() {
                     </div>
                     <Link href={`/dashboard/crm/records/${rec.id}`}
                       className="block text-center text-xs text-blue-600 hover:underline mt-2 pt-1 border-t">
-                      View
+                      {tx("View")}
                     </Link>
                   </div>
                 ))}
                 {stageRecs.length === 0 && (
-                  <div className="text-center text-xs text-gray-300 py-4">No records</div>
+                  <div className="text-center text-xs text-gray-300 py-4">{tx("No records")}</div>
                 )}
               </div>
             </div>
@@ -140,20 +141,20 @@ export default function PipelineBoardPage() {
 
       {/* Summary Footer */}
       <div className="bg-white rounded-xl border shadow-sm p-4">
-        <div className="text-xs text-gray-500 mb-2">Pipeline Summary</div>
+        <div className="text-xs text-gray-500 mb-2">{tx("Pipeline Summary")}</div>
         <div className="flex flex-wrap gap-4">
           <div>
-            <span className="text-xs text-gray-400">Total Open</span>
-            <div className="font-semibold text-gray-800">{records.length} records</div>
+            <span className="text-xs text-gray-400">{tx("Total Open")}</span>
+            <div className="font-semibold text-gray-800">{records.length} {tx("records")}</div>
           </div>
           <div>
-            <span className="text-xs text-gray-400">Pipeline Value</span>
+            <span className="text-xs text-gray-400">{tx("Pipeline Value")}</span>
             <div className="font-semibold text-gray-800">
               {fmtCurrency(records.reduce((s, r) => s + (r.expected_revenue || 0), 0))}
             </div>
           </div>
           <div>
-            <span className="text-xs text-gray-400">Weighted Value</span>
+            <span className="text-xs text-gray-400">{tx("Weighted Value")}</span>
             <div className="font-semibold text-indigo-700">
               {fmtCurrency(records.reduce((s, r) => s + (r.expected_revenue || 0) * (r.probability_pct || 0) / 100, 0))}
             </div>

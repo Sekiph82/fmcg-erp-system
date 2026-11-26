@@ -2,6 +2,7 @@
 import { EntityPicker } from "@/components/EntityPicker";
 import { useEffect, useState } from "react";
 import { appraisalsApi, AppraisalRecord, KPILine, CompetencyLine } from "@/lib/appraisals";
+import { tx } from "@/lib/i18n/core";
 
 export default function SelfReviewPage() {
   const [records, setRecords] = useState<AppraisalRecord[]>([]);
@@ -62,13 +63,13 @@ export default function SelfReviewPage() {
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-gray-900">Employee Self Review</h1>
-        <EntityPicker kind="employee" label="Filter by employee" value={employeeId} onChange={setEmployeeId} />
+        <h1 className="text-xl font-bold text-gray-900">{tx("Employee Self Review")}</h1>
+        <EntityPicker kind="employee" label={tx("Filter by employee")} value={employeeId} onChange={setEmployeeId} />
       </div>
-      <p className="text-sm text-gray-500">Appraisals pending self-review. Employees enter self scores and submit to manager.</p>
+      <p className="text-sm text-gray-500">{tx("Appraisals pending self-review. Employees enter self scores and submit to manager.")}</p>
 
       {loading ? (
-        <p className="text-gray-500 text-sm">Loading…</p>
+        <p className="text-gray-500 text-sm">{tx("Loading…")}</p>
       ) : (
         <div className="grid gap-3">
           {records
@@ -77,18 +78,18 @@ export default function SelfReviewPage() {
               <div key={r.appraisal_id} className="bg-white border rounded-lg p-4 shadow-sm flex justify-between items-center">
                 <div>
                   <p className="font-semibold text-gray-800">{r.employee_name ?? r.employee_id}</p>
-                  <p className="text-sm text-gray-500">{r.department_name ?? "—"} · Manager: {r.manager_name ?? "—"}</p>
-                  <p className="text-xs text-gray-400 mt-1">KPIs: {r.kpi_lines.length} · Competencies: {r.competency_lines.length}</p>
+                  <p className="text-sm text-gray-500">{r.department_name ?? "—"} {tx("· Manager:")} {r.manager_name ?? "—"}</p>
+                  <p className="text-xs text-gray-400 mt-1">{tx("KPIs:")} {r.kpi_lines.length} {tx("· Competencies:")} {r.competency_lines.length}</p>
                 </div>
                 <button
                   onClick={() => openRecord(r)}
                   className="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700"
                 >
-                  Start Self Review
+                  {tx("Start Self Review")}
                 </button>
               </div>
             ))}
-          {records.length === 0 && <p className="text-gray-400 text-sm text-center py-8">No appraisals pending self-review.</p>}
+          {records.length === 0 && <p className="text-gray-400 text-sm text-center py-8">{tx("No appraisals pending self-review.")}</p>}
         </div>
       )}
 
@@ -97,26 +98,26 @@ export default function SelfReviewPage() {
           <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl p-6 space-y-4 my-4">
             <div className="flex justify-between">
               <h2 className="text-lg font-bold text-gray-900">
-                Self Review — {selected.employee_name ?? selected.employee_id}
+                {tx("Self Review —")} {selected.employee_name ?? selected.employee_id}
               </h2>
               <button onClick={() => setSelected(null)} className="text-gray-400 hover:text-gray-700 text-xl">✕</button>
             </div>
 
             {selected.kpi_lines.length > 0 && (
               <div>
-                <h3 className="text-sm font-semibold text-gray-700 mb-2">KPI Self Scores (0–100)</h3>
+                <h3 className="text-sm font-semibold text-gray-700 mb-2">{tx("KPI Self Scores (0–100)")}</h3>
                 <div className="space-y-2">
                   {selected.kpi_lines.map((l) => (
                     <div key={l.kpi_line_id} className="grid grid-cols-3 gap-2 items-center">
                       <span className="text-sm text-gray-700 col-span-2">
                         {l.kpi_name}
-                        <span className="text-gray-400 text-xs ml-1">(weight: {l.weight_pct}%)</span>
-                        {l.target_value != null && <span className="text-gray-400 text-xs ml-1">Target: {l.target_value} {l.unit}</span>}
+                        <span className="text-gray-400 text-xs ml-1">{tx("(weight:")} {l.weight_pct}%)</span>
+                        {l.target_value != null && <span className="text-gray-400 text-xs ml-1">{tx("Target:")} {l.target_value} {l.unit}</span>}
                       </span>
                       <input
                         type="number" min={0} max={100}
                         className="border rounded px-2 py-1 text-sm"
-                        placeholder="Score 0–100"
+                        placeholder={tx("Score 0–100")}
                         value={kpiScores[l.kpi_line_id] ?? ""}
                         onChange={(e) => setKpiScores({ ...kpiScores, [l.kpi_line_id]: e.target.value })}
                       />
@@ -128,20 +129,20 @@ export default function SelfReviewPage() {
 
             {selected.competency_lines.length > 0 && (
               <div>
-                <h3 className="text-sm font-semibold text-gray-700 mb-2">Competency Self Ratings (1–5)</h3>
+                <h3 className="text-sm font-semibold text-gray-700 mb-2">{tx("Competency Self Ratings (1–5)")}</h3>
                 <div className="space-y-2">
                   {selected.competency_lines.map((l) => (
                     <div key={l.competency_line_id} className="grid grid-cols-3 gap-2 items-center">
                       <span className="text-sm text-gray-700 col-span-2">
                         {l.competency_name}
-                        <span className="text-gray-400 text-xs ml-1">(weight: {l.weight_pct}%)</span>
+                        <span className="text-gray-400 text-xs ml-1">{tx("(weight:")} {l.weight_pct}%)</span>
                       </span>
                       <select
                         className="border rounded px-2 py-1 text-sm"
                         value={compRatings[l.competency_line_id] ?? ""}
                         onChange={(e) => setCompRatings({ ...compRatings, [l.competency_line_id]: e.target.value })}
                       >
-                        <option value="">Select…</option>
+                        <option value="">{tx("Select…")}</option>
                         {[1,2,3,4,5].map(v => <option key={v} value={v}>{v} — {["Unsatisfactory","Below Expectations","Meets Expectations","Exceeds Expectations","Outstanding"][v-1]}</option>)}
                       </select>
                     </div>
@@ -152,7 +153,7 @@ export default function SelfReviewPage() {
 
             <div className="space-y-2">
               <div>
-                <label className="text-xs text-gray-500">Overall Self Score (optional — auto-calculated if blank)</label>
+                <label className="text-xs text-gray-500">{tx("Overall Self Score (optional — auto-calculated if blank)")}</label>
                 <input
                   type="number" min={0} max={100}
                   className="w-full border rounded px-2 py-1 text-sm mt-1"
@@ -161,7 +162,7 @@ export default function SelfReviewPage() {
                 />
               </div>
               <div>
-                <label className="text-xs text-gray-500">Notes / Comments</label>
+                <label className="text-xs text-gray-500">{tx("Notes / Comments")}</label>
                 <textarea
                   className="w-full border rounded px-2 py-1 text-sm mt-1"
                   rows={3}
@@ -177,10 +178,10 @@ export default function SelfReviewPage() {
                 disabled={saving}
                 className="rounded bg-green-600 px-6 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
               >
-                {saving ? "Submitting…" : "Submit to Manager"}
+                {saving ? tx("Submitting…") : tx("Submit to Manager")}
               </button>
               <button onClick={() => setSelected(null)} className="rounded border px-4 py-2 text-sm text-gray-600 hover:bg-gray-50">
-                Cancel
+                {tx("Cancel")}
               </button>
             </div>
           </div>

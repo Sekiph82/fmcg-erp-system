@@ -40,6 +40,7 @@ import {
   type UtilityType,
   type WorkCenterDropdown,
 } from "@/lib/machineUtility";
+import { tx } from "@/lib/i18n/core";
 
 // ── Palette ────────────────────────────────────────────────────────────────────
 const CYAN   = "#22d3ee";
@@ -187,13 +188,13 @@ function RecordForm({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 overflow-y-auto p-4">
       <div className="bg-slate-800 border border-slate-600 rounded-xl p-6 w-full max-w-3xl shadow-2xl">
         <h3 className="text-white font-semibold text-lg mb-5">
-          {record ? "Edit Consumption Record" : "New Consumption Record"}
+          {record ? tx("Edit Consumption Record") : tx("New Consumption Record")}
         </h3>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {/* Work center */}
           <div className="flex flex-col gap-1 col-span-2">
-            <label className="text-xs text-slate-400">Machine / Work Center</label>
+            <label className="text-xs text-slate-400">{tx("Machine / Work Center")}</label>
             <select
               value={form.work_center_id ?? ""}
               onChange={e => set("work_center_id", e.target.value)}
@@ -210,7 +211,7 @@ function RecordForm({
 
           {/* Date */}
           <div className="flex flex-col gap-1 col-span-2">
-            <label className="text-xs text-slate-400">Date</label>
+            <label className="text-xs text-slate-400">{tx("Date")}</label>
             <input
               type="date"
               value={form.record_date ?? ""}
@@ -221,7 +222,7 @@ function RecordForm({
 
           {/* Utility type */}
           <div className="flex flex-col gap-1 col-span-2">
-            <label className="text-xs text-slate-400">Utility Type</label>
+            <label className="text-xs text-slate-400">{tx("Utility Type")}</label>
             <select
               value={form.utility_type ?? "ELECTRICITY"}
               onChange={e => set("utility_type", e.target.value)}
@@ -235,7 +236,7 @@ function RecordForm({
 
           {/* Source method */}
           <div className="flex flex-col gap-1 col-span-2">
-            <label className="text-xs text-slate-400">Source Method</label>
+            <label className="text-xs text-slate-400">{tx("Source Method")}</label>
             <select
               value={form.source_method ?? "MANUAL"}
               onChange={e => set("source_method", e.target.value)}
@@ -273,7 +274,7 @@ function RecordForm({
                   onChange={e => set("is_estimated", e.target.checked)}
                   className="accent-cyan-500"
                 />
-                Estimated (not metered)
+                {tx("Estimated (not metered)")}
               </label>
               <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
                 <input
@@ -282,7 +283,7 @@ function RecordForm({
                   onChange={e => set("is_standby", e.target.checked)}
                   className="accent-amber-500"
                 />
-                Standby / idle consumption
+                {tx("Standby / idle consumption")}
               </label>
               <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
                 <input
@@ -291,13 +292,13 @@ function RecordForm({
                   onChange={e => set("is_anomaly", e.target.checked)}
                   className="accent-red-500"
                 />
-                Flag as anomaly
+                {tx("Flag as anomaly")}
               </label>
             </div>
           </div>
 
           <div className="flex flex-col gap-1 col-span-4">
-            <label className="text-xs text-slate-400">Notes / Remarks</label>
+            <label className="text-xs text-slate-400">{tx("Notes / Remarks")}</label>
             <textarea
               rows={2}
               value={form.notes ?? ""}
@@ -309,18 +310,18 @@ function RecordForm({
 
         {(createMut.error || updateMut.error) && (
           <p className="text-red-400 text-sm mt-3">
-            {((createMut.error || updateMut.error) as Error)?.message ?? "An error occurred."}
+            {((createMut.error || updateMut.error) as Error)?.message ?? tx("An error occurred.")}
           </p>
         )}
 
         <div className="flex gap-2 justify-end mt-5">
           <button onClick={onClose}
             className="px-4 py-2 rounded bg-slate-700 text-slate-300 text-sm hover:bg-slate-600">
-            Cancel
+            {tx("Cancel")}
           </button>
           <button onClick={handleSubmit} disabled={busy}
             className="px-4 py-2 rounded bg-cyan-600 text-white text-sm hover:bg-cyan-500 disabled:opacity-50">
-            {busy ? "Saving…" : record ? "Update" : "Create"}
+            {busy ? tx("Saving…") : record ? tx("Update") : tx("Create")}
           </button>
         </div>
       </div>
@@ -377,13 +378,13 @@ function MappingForm({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
       <div className="bg-slate-800 border border-slate-600 rounded-xl p-6 w-full max-w-2xl shadow-2xl">
         <h3 className="text-white font-semibold text-lg mb-5">
-          {mapping ? "Edit Mapping Config" : "New Machine Utility Mapping"}
+          {mapping ? tx("Edit Mapping Config") : tx("New Machine Utility Mapping")}
         </h3>
 
         <div className="grid grid-cols-2 gap-4">
           {/* Work center */}
           <div className="flex flex-col gap-1 col-span-2">
-            <label className="text-xs text-slate-400">Work Center (machine/line)</label>
+            <label className="text-xs text-slate-400">{tx("Work Center (machine/line)")}</label>
             <select
               value={form.work_center_id ?? ""}
               onChange={e => {
@@ -398,7 +399,7 @@ function MappingForm({
               }}
               className="bg-slate-900 border border-slate-600 rounded px-3 py-1.5 text-sm text-white focus:outline-none focus:border-cyan-500"
             >
-              <option value="">— select —</option>
+              <option value="">{tx("— select —")}</option>
               {workCenters.map(wc => (
                 <option key={wc.id} value={wc.id}>{wc.work_center_id} — {wc.name}</option>
               ))}
@@ -407,7 +408,7 @@ function MappingForm({
 
           {/* Utility type */}
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-slate-400">Utility Type</label>
+            <label className="text-xs text-slate-400">{tx("Utility Type")}</label>
             <select
               value={form.utility_type ?? "ELECTRICITY"}
               onChange={e => set("utility_type", e.target.value)}
@@ -421,7 +422,7 @@ function MappingForm({
 
           {/* Allocation */}
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-slate-400">Allocation % (shared meter)</label>
+            <label className="text-xs text-slate-400">{tx("Allocation % (shared meter)")}</label>
             <input type="number" step="0.01" min="0" max="100"
               value={form.allocation_pct ?? ""}
               onChange={e => set("allocation_pct", e.target.value === "" ? undefined : parseFloat(e.target.value))}
@@ -431,7 +432,7 @@ function MappingForm({
 
           {/* Rated consumption */}
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-slate-400">Rated Consumption (nameplate)</label>
+            <label className="text-xs text-slate-400">{tx("Rated Consumption (nameplate)")}</label>
             <input type="number" step="any"
               value={form.rated_consumption ?? ""}
               onChange={e => set("rated_consumption", e.target.value === "" ? undefined : parseFloat(e.target.value))}
@@ -441,7 +442,7 @@ function MappingForm({
 
           {/* Rated unit */}
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-slate-400">Rated Unit (e.g. kW, m³/h)</label>
+            <label className="text-xs text-slate-400">{tx("Rated Unit (e.g. kW, m³/h)")}</label>
             <input type="text" placeholder="kW"
               value={form.rated_unit ?? ""}
               onChange={e => set("rated_unit", e.target.value)}
@@ -451,7 +452,7 @@ function MappingForm({
 
           {/* Notes */}
           <div className="flex flex-col gap-1 col-span-2">
-            <label className="text-xs text-slate-400">Notes</label>
+            <label className="text-xs text-slate-400">{tx("Notes")}</label>
             <textarea rows={2}
               value={form.notes ?? ""}
               onChange={e => set("notes", e.target.value)}
@@ -465,7 +466,7 @@ function MappingForm({
                 onChange={e => set("is_active", e.target.checked)}
                 className="accent-cyan-500"
               />
-              Active mapping
+              {tx("Active mapping")}
             </label>
           </div>
         </div>
@@ -473,11 +474,11 @@ function MappingForm({
         <div className="flex gap-2 justify-end mt-5">
           <button onClick={onClose}
             className="px-4 py-2 rounded bg-slate-700 text-slate-300 text-sm hover:bg-slate-600">
-            Cancel
+            {tx("Cancel")}
           </button>
           <button onClick={handleSubmit} disabled={busy}
             className="px-4 py-2 rounded bg-cyan-600 text-white text-sm hover:bg-cyan-500 disabled:opacity-50">
-            {busy ? "Saving…" : mapping ? "Update" : "Create"}
+            {busy ? tx("Saving…") : mapping ? tx("Update") : tx("Create")}
           </button>
         </div>
       </div>
@@ -578,9 +579,9 @@ export default function MachineUtilityPage() {
 
   return (
     <div className="min-h-screen bg-slate-900 text-white p-6">
-      <h1 className="text-2xl font-bold mb-1">Machine Utility Consumption</h1>
+      <h1 className="text-2xl font-bold mb-1">{tx("Machine Utility Consumption")}</h1>
       <p className="text-slate-400 text-sm mb-4">
-        Map utility usage to machines — basis for machine-level costing and performance analysis.
+        {tx("Map utility usage to machines — basis for machine-level costing and performance analysis.")}
       </p>
 
       {/* ── Tabs ── */}
@@ -595,7 +596,7 @@ export default function MachineUtilityPage() {
                 : "border-transparent text-slate-400 hover:text-slate-200"
             }`}
           >
-            {tab === "records" ? "Consumption Records" : "Mapping Configuration"}
+            {tab === "records" ? tx("Consumption Records") : tx("Mapping Configuration")}
           </button>
         ))}
       </div>
@@ -622,7 +623,7 @@ export default function MachineUtilityPage() {
               onChange={e => setFilter("work_center_id", e.target.value)}
               className="bg-slate-800 border border-slate-600 rounded px-3 py-1.5 text-sm text-white focus:outline-none focus:border-cyan-500"
             >
-              <option value="">All Machines</option>
+              <option value="">{tx("All Machines")}</option>
               {workCenters.map(wc => (
                 <option key={wc.id} value={wc.id}>{wc.work_center_id} — {wc.name}</option>
               ))}
@@ -632,22 +633,22 @@ export default function MachineUtilityPage() {
               onChange={e => setFilter("utility_type", e.target.value)}
               className="bg-slate-800 border border-slate-600 rounded px-3 py-1.5 text-sm text-white focus:outline-none focus:border-cyan-500"
             >
-              <option value="">All Utilities</option>
+              <option value="">{tx("All Utilities")}</option>
               {UTILITY_TYPES.map(t => (
                 <option key={t} value={t}>{UTILITY_TYPE_LABELS[t]}</option>
               ))}
             </select>
-            <input type="text" placeholder="Shift (e.g. A)"
+            <input type="text" placeholder={tx("Shift (e.g. A)")}
               value={filters.shift_ref ?? ""}
               onChange={e => setFilter("shift_ref", e.target.value)}
               className="bg-slate-800 border border-slate-600 rounded px-3 py-1.5 text-sm text-white w-28 focus:outline-none focus:border-cyan-500"
             />
-            <input type="text" placeholder="Batch No"
+            <input type="text" placeholder={tx("Batch No")}
               value={filters.batch_no ?? ""}
               onChange={e => setFilter("batch_no", e.target.value)}
               className="bg-slate-800 border border-slate-600 rounded px-3 py-1.5 text-sm text-white w-36 focus:outline-none focus:border-cyan-500"
             />
-            <input type="text" placeholder="Line"
+            <input type="text" placeholder={tx("Line")}
               value={filters.production_line ?? ""}
               onChange={e => setFilter("production_line", e.target.value)}
               className="bg-slate-800 border border-slate-600 rounded px-3 py-1.5 text-sm text-white w-28 focus:outline-none focus:border-cyan-500"
@@ -657,29 +658,29 @@ export default function MachineUtilityPage() {
               onChange={e => setFilter("is_standby", e.target.value === "" ? undefined : e.target.value === "true")}
               className="bg-slate-800 border border-slate-600 rounded px-3 py-1.5 text-sm text-white focus:outline-none focus:border-cyan-500"
             >
-              <option value="">All (standby+active)</option>
-              <option value="true">Standby only</option>
-              <option value="false">Active only</option>
+              <option value="">{tx("All (standby+active)")}</option>
+              <option value="true">{tx("Standby only")}</option>
+              <option value="false">{tx("Active only")}</option>
             </select>
             <button onClick={() => setFilters({})}
               className="px-3 py-1.5 rounded bg-slate-700 text-slate-300 text-sm hover:bg-slate-600">
-              Reset
+              {tx("Reset")}
             </button>
           </div>
 
           {/* ── KPI Cards ── */}
           {kpisLoading ? (
-            <p className="text-slate-400 text-sm mb-5">Loading KPIs…</p>
+            <p className="text-slate-400 text-sm mb-5">{tx("Loading KPIs…")}</p>
           ) : kpis ? (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
               <KPICard
-                label="Total Consumption"
+                label={tx("Total Consumption")}
                 value={`${n(kpis.total_consumption, 2)} ${kpis.consumption_unit ?? ""}`}
                 sub={`${kpis.record_count} records`}
                 accent="border-cyan-700"
               />
               <KPICard
-                label="Electricity / Runtime Hour"
+                label={tx("Electricity / Runtime Hour")}
                 value={kpis.electricity_per_runtime_h != null ? `${n(kpis.electricity_per_runtime_h, 4)} kWh/h` : "—"}
                 sub={`Runtime: ${n(kpis.total_runtime_hours, 1)} h`}
                 accent="border-amber-700"
@@ -687,19 +688,19 @@ export default function MachineUtilityPage() {
                 flagMsg={kpis.flag_high_variance ? `Variance ${n(kpis.avg_variance_pct)}% from nominal` : undefined}
               />
               <KPICard
-                label="Water / Batch"
+                label={tx("Water / Batch")}
                 value={kpis.water_per_batch != null ? `${n(kpis.water_per_batch, 3)} m³` : "—"}
                 sub={`${kpis.batch_count} batches`}
                 accent="border-blue-700"
               />
               <KPICard
-                label="Compressed Air / Batch"
+                label={tx("Compressed Air / Batch")}
                 value={kpis.air_per_batch != null ? `${n(kpis.air_per_batch, 3)} Nm³` : "—"}
                 sub="Per distinct batch"
                 accent="border-teal-700"
               />
               <KPICard
-                label="Standby Consumption"
+                label={tx("Standby Consumption")}
                 value={kpis.total_standby_consumption != null ? n(kpis.total_standby_consumption) : "—"}
                 sub={kpis.standby_pct != null ? `${n(kpis.standby_pct, 1)}% of total` : ""}
                 accent="border-orange-700"
@@ -707,20 +708,20 @@ export default function MachineUtilityPage() {
                 flagMsg={kpis.flag_standby_waste ? "Standby > 20% of consumption" : undefined}
               />
               <KPICard
-                label="Cost / Batch"
+                label={tx("Cost / Batch")}
                 value={kpis.cost_per_batch != null ? `$${n(kpis.cost_per_batch, 4)}` : "—"}
                 sub={kpis.total_cost != null ? `Total $${n(kpis.total_cost, 2)}` : "No cost data"}
                 accent="border-violet-700"
               />
               <KPICard
-                label="Avg Variance vs Nominal"
+                label={tx("Avg Variance vs Nominal")}
                 value={kpis.avg_variance_pct != null ? `${n(kpis.avg_variance_pct, 1)}%` : "—"}
                 sub="Positive = overconsumption"
                 accent={kpis.flag_high_variance ? "border-red-700" : "border-slate-700"}
                 flag={kpis.flag_high_variance}
               />
               <KPICard
-                label="Anomalies"
+                label={tx("Anomalies")}
                 value={kpis.anomaly_count}
                 sub={`${kpis.order_count} orders linked`}
                 accent={kpis.anomaly_count > 0 ? "border-red-700" : "border-slate-700"}
@@ -734,7 +735,7 @@ export default function MachineUtilityPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
             {/* Consumption trend */}
             <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
-              <h3 className="text-sm font-medium text-slate-300 mb-3">Daily Consumption by Utility Type</h3>
+              <h3 className="text-sm font-medium text-slate-300 mb-3">{tx("Daily Consumption by Utility Type")}</h3>
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={trendByDate} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
@@ -758,17 +759,17 @@ export default function MachineUtilityPage() {
             {/* Breakdown */}
             <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-medium text-slate-300">Consumption Breakdown</h3>
+                <h3 className="text-sm font-medium text-slate-300">{tx("Consumption Breakdown")}</h3>
                 <select
                   value={breakdown}
                   onChange={e => setBreakdown(e.target.value as typeof breakdown)}
                   className="bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs text-white focus:outline-none"
                 >
-                  <option value="machine">By Machine</option>
-                  <option value="utility">By Utility Type</option>
-                  <option value="shift">By Shift</option>
-                  <option value="line">By Production Line</option>
-                  <option value="department">By Department</option>
+                  <option value="machine">{tx("By Machine")}</option>
+                  <option value="utility">{tx("By Utility Type")}</option>
+                  <option value="shift">{tx("By Shift")}</option>
+                  <option value="line">{tx("By Production Line")}</option>
+                  <option value="department">{tx("By Department")}</option>
                 </select>
               </div>
               <ResponsiveContainer width="100%" height={220}>
@@ -798,20 +799,20 @@ export default function MachineUtilityPage() {
           <div className="bg-slate-800 border border-slate-700 rounded-lg">
             <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700">
               <span className="text-sm font-medium text-slate-300">
-                Consumption Records {recLoading ? "— Loading…" : `— ${records.length}`}
+                {tx("Consumption Records")} {recLoading ? tx("— Loading…") : `— ${records.length}`}
               </span>
               <div className="flex gap-2">
                 <button
                   onClick={() => downloadMachineUtilityCsv({ ...filters })}
                   className="px-3 py-1.5 rounded bg-slate-700 text-slate-300 text-xs hover:bg-slate-600"
                 >
-                  Export CSV
+                  {tx("Export CSV")}
                 </button>
                 <button
                   onClick={() => { setEditRecord(null); setShowRecordForm(true); }}
                   className="px-3 py-1.5 rounded bg-cyan-600 text-white text-xs hover:bg-cyan-500"
                 >
-                  + New Record
+                  {tx("+ New Record")}
                 </button>
               </div>
             </div>
@@ -820,18 +821,18 @@ export default function MachineUtilityPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-slate-700 text-slate-400 text-xs">
-                    <th className="text-left px-3 py-2">Record No</th>
-                    <th className="text-left px-3 py-2">Date</th>
-                    <th className="text-left px-3 py-2">Machine</th>
-                    <th className="text-left px-3 py-2">Utility</th>
-                    <th className="text-left px-3 py-2">Shift</th>
-                    <th className="text-right px-3 py-2">Nominal Rate</th>
-                    <th className="text-right px-3 py-2">Actual</th>
-                    <th className="text-right px-3 py-2">Variance %</th>
-                    <th className="text-right px-3 py-2">Runtime h</th>
-                    <th className="text-left px-3 py-2">Batch / Order</th>
-                    <th className="text-right px-3 py-2">Cost</th>
-                    <th className="text-left px-3 py-2">Flags</th>
+                    <th className="text-left px-3 py-2">{tx("Record No")}</th>
+                    <th className="text-left px-3 py-2">{tx("Date")}</th>
+                    <th className="text-left px-3 py-2">{tx("Machine")}</th>
+                    <th className="text-left px-3 py-2">{tx("Utility")}</th>
+                    <th className="text-left px-3 py-2">{tx("Shift")}</th>
+                    <th className="text-right px-3 py-2">{tx("Nominal Rate")}</th>
+                    <th className="text-right px-3 py-2">{tx("Actual")}</th>
+                    <th className="text-right px-3 py-2">{tx("Variance %")}</th>
+                    <th className="text-right px-3 py-2">{tx("Runtime h")}</th>
+                    <th className="text-left px-3 py-2">{tx("Batch / Order")}</th>
+                    <th className="text-right px-3 py-2">{tx("Cost")}</th>
+                    <th className="text-left px-3 py-2">{tx("Flags")}</th>
                     <th className="px-3 py-2"></th>
                   </tr>
                 </thead>
@@ -839,7 +840,7 @@ export default function MachineUtilityPage() {
                   {records.length === 0 ? (
                     <tr>
                       <td colSpan={13} className="text-center text-slate-500 py-10">
-                        No records. Adjust filters or create a new consumption record.
+                        {tx("No records. Adjust filters or create a new consumption record.")}
                       </td>
                     </tr>
                   ) : records.map(rec => (
@@ -889,17 +890,17 @@ export default function MachineUtilityPage() {
                         <div className="flex gap-1 flex-wrap">
                           {rec.is_standby && (
                             <span className="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">
-                              Standby
+                              {tx("Standby")}
                             </span>
                           )}
                           {rec.is_estimated && (
                             <span className="px-1.5 py-0.5 rounded bg-slate-600/60 text-slate-300 border border-slate-500/30">
-                              Est
+                              {tx("Est")}
                             </span>
                           )}
                           {rec.is_anomaly && (
                             <span className="px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 border border-red-500/30">
-                              Anomaly
+                              {tx("Anomaly")}
                             </span>
                           )}
                         </div>
@@ -910,13 +911,13 @@ export default function MachineUtilityPage() {
                             onClick={() => { setEditRecord(rec); setShowRecordForm(true); }}
                             className="text-xs text-cyan-400 hover:text-cyan-300"
                           >
-                            Edit
+                            {tx("Edit")}
                           </button>
                           <button
                             onClick={() => setDeleteId({ id: rec.id, type: "record" })}
                             className="text-xs text-red-400 hover:text-red-300"
                           >
-                            Delete
+                            {tx("Delete")}
                           </button>
                         </div>
                       </td>
@@ -936,13 +937,13 @@ export default function MachineUtilityPage() {
         <div className="bg-slate-800 border border-slate-700 rounded-lg">
           <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700">
             <span className="text-sm font-medium text-slate-300">
-              Machine ↔ Utility Meter Mappings {mapLoading ? "— Loading…" : `— ${mappings.length}`}
+              {tx("Machine ↔ Utility Meter Mappings")} {mapLoading ? tx("— Loading…") : `— ${mappings.length}`}
             </span>
             <button
               onClick={() => { setEditMapping(null); setShowMappingForm(true); }}
               className="px-3 py-1.5 rounded bg-cyan-600 text-white text-xs hover:bg-cyan-500"
             >
-              + New Mapping
+              {tx("+ New Mapping")}
             </button>
           </div>
 
@@ -950,14 +951,14 @@ export default function MachineUtilityPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-700 text-slate-400 text-xs">
-                  <th className="text-left px-4 py-2">Machine Ref</th>
-                  <th className="text-left px-4 py-2">Machine Name</th>
-                  <th className="text-left px-4 py-2">Utility</th>
-                  <th className="text-left px-4 py-2">Department / Line</th>
-                  <th className="text-right px-4 py-2">Allocation %</th>
-                  <th className="text-right px-4 py-2">Rated Consumption</th>
-                  <th className="text-left px-4 py-2">Meter / Device</th>
-                  <th className="text-left px-4 py-2">Status</th>
+                  <th className="text-left px-4 py-2">{tx("Machine Ref")}</th>
+                  <th className="text-left px-4 py-2">{tx("Machine Name")}</th>
+                  <th className="text-left px-4 py-2">{tx("Utility")}</th>
+                  <th className="text-left px-4 py-2">{tx("Department / Line")}</th>
+                  <th className="text-right px-4 py-2">{tx("Allocation %")}</th>
+                  <th className="text-right px-4 py-2">{tx("Rated Consumption")}</th>
+                  <th className="text-left px-4 py-2">{tx("Meter / Device")}</th>
+                  <th className="text-left px-4 py-2">{tx("Status")}</th>
                   <th className="px-4 py-2"></th>
                 </tr>
               </thead>
@@ -965,7 +966,7 @@ export default function MachineUtilityPage() {
                 {mappings.length === 0 ? (
                   <tr>
                     <td colSpan={9} className="text-center text-slate-500 py-10">
-                      No mappings configured. Add machine-utility mappings to enable costing.
+                      {tx("No mappings configured. Add machine-utility mappings to enable costing.")}
                     </td>
                   </tr>
                 ) : mappings.map(m => (
@@ -993,7 +994,7 @@ export default function MachineUtilityPage() {
                           ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
                           : "bg-slate-700/50 border-slate-600 text-slate-400"
                       }`}>
-                        {m.is_active ? "Active" : "Inactive"}
+                        {m.is_active ? tx("Active") : tx("Inactive")}
                       </span>
                     </td>
                     <td className="px-4 py-2">
@@ -1002,13 +1003,13 @@ export default function MachineUtilityPage() {
                           onClick={() => { setEditMapping(m); setShowMappingForm(true); }}
                           className="text-xs text-cyan-400 hover:text-cyan-300"
                         >
-                          Edit
+                          {tx("Edit")}
                         </button>
                         <button
                           onClick={() => setDeleteId({ id: m.id, type: "mapping" })}
                           className="text-xs text-red-400 hover:text-red-300"
                         >
-                          Delete
+                          {tx("Delete")}
                         </button>
                       </div>
                     </td>
@@ -1041,20 +1042,20 @@ export default function MachineUtilityPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
           <div className="bg-slate-800 border border-slate-600 rounded-xl p-6 w-full max-w-sm shadow-2xl">
             <h3 className="text-white font-semibold mb-3">
-              Delete {deleteId.type === "record" ? "Consumption Record" : "Mapping"}?
+              {tx("Delete")} {deleteId.type === "record" ? tx("Consumption Record") : tx("Mapping")}?
             </h3>
-            <p className="text-slate-400 text-sm mb-5">This action cannot be undone.</p>
+            <p className="text-slate-400 text-sm mb-5">{tx("This action cannot be undone.")}</p>
             <div className="flex gap-2 justify-end">
               <button onClick={() => setDeleteId(null)}
                 className="px-4 py-2 rounded bg-slate-700 text-slate-300 text-sm hover:bg-slate-600">
-                Cancel
+                {tx("Cancel")}
               </button>
               <button
                 onClick={() => deleteMut.mutate(deleteId)}
                 disabled={deleteMut.isPending}
                 className="px-4 py-2 rounded bg-red-600 text-white text-sm hover:bg-red-500 disabled:opacity-50"
               >
-                {deleteMut.isPending ? "Deleting…" : "Delete"}
+                {deleteMut.isPending ? tx("Deleting…") : tx("Delete")}
               </button>
             </div>
           </div>

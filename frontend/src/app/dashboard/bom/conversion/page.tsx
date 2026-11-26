@@ -8,6 +8,7 @@ import { ImportModal } from "@/components/import/ImportModal";
 import { importApi } from "@/lib/importApi";
 import { PermissionGuard, RequirePermission } from "@/components/PermissionGuard";
 import { auditApi, AuditLog, EVENT_LABELS, eventBadgeColor } from "@/lib/audit";
+import { tx } from "@/lib/i18n/core";
 
 function ConversionProfileHistory({ profileId }: { profileId: string }) {
   const { data: events = [], isLoading, isError } = useQuery<AuditLog[]>({
@@ -17,10 +18,10 @@ function ConversionProfileHistory({ profileId }: { profileId: string }) {
 
   return (
     <section className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-      <h3 className="font-semibold text-gray-800">Profile History</h3>
-      {isLoading ? <p className="text-sm text-gray-400 mt-3">Loading history…</p>
-        : isError ? <p className="text-sm text-red-600 mt-3" role="alert">Could not load profile history.</p>
-        : events.length === 0 ? <p className="text-sm text-gray-400 mt-3">No recorded changes for this profile.</p>
+      <h3 className="font-semibold text-gray-800">{tx("Profile History")}</h3>
+      {isLoading ? <p className="text-sm text-gray-400 mt-3">{tx("Loading history…")}</p>
+        : isError ? <p className="text-sm text-red-600 mt-3" role="alert">{tx("Could not load profile history.")}</p>
+        : events.length === 0 ? <p className="text-sm text-gray-400 mt-3">{tx("No recorded changes for this profile.")}</p>
         : <ul className="mt-3 divide-y divide-gray-100">
           {events.map((event) => (
             <li key={event.id} className="py-2 flex items-start justify-between gap-3">
@@ -28,7 +29,7 @@ function ConversionProfileHistory({ profileId }: { profileId: string }) {
                 <span className={`inline-flex rounded px-2 py-0.5 text-xs ${eventBadgeColor(event.event_type)}`}>
                   {EVENT_LABELS[event.event_type] ?? event.event_type}
                 </span>
-                <p className="text-xs text-gray-500 mt-1">{event.actor_email ?? "System"}</p>
+                <p className="text-xs text-gray-500 mt-1">{event.actor_email ?? tx("System")}</p>
               </div>
               <time className="text-xs text-gray-400 whitespace-nowrap" dateTime={event.created_at}>
                 {new Date(event.created_at).toLocaleString()}
@@ -112,7 +113,7 @@ export default function ConversionProfilePage() {
     try {
       await importApi.downloadConversionProfiles();
     } catch {
-      setExportError("Could not export conversion profiles. Check your export permission and try again.");
+      setExportError(tx("Could not export conversion profiles. Check your export permission and try again."));
     } finally {
       setExporting(false);
     }
@@ -148,8 +149,8 @@ export default function ConversionProfilePage() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <a href="/dashboard/bom" className="text-sm text-gray-400 hover:text-gray-600">← BOMs</a>
-          <h1 className="text-xl font-bold text-gray-900">Bulk-to-Pack Conversion Profiles</h1>
+          <a href="/dashboard/bom" className="text-sm text-gray-400 hover:text-gray-600">{tx("← BOMs")}</a>
+          <h1 className="text-xl font-bold text-gray-900">{tx("Bulk-to-Pack Conversion Profiles")}</h1>
         </div>
         <div className="flex items-center gap-2">
           <PermissionGuard permission="bom.import">
@@ -159,12 +160,12 @@ export default function ConversionProfilePage() {
           </PermissionGuard>
           <PermissionGuard permission="bom.export">
             <button type="button" onClick={exportProfiles} disabled={exporting} className="px-3 py-2 border border-gray-200 text-gray-600 text-sm rounded-lg hover:bg-gray-50 disabled:opacity-40">
-              {exporting ? "Exporting…" : "Export CSV"}
+              {exporting ? tx("Exporting…") : tx("Export CSV")}
             </button>
           </PermissionGuard>
           <PermissionGuard permission="bom.create">
             <button onClick={() => { create.reset(); setShowCreate(true); }} className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700">
-              + New Profile
+              {tx("+ New Profile")}
             </button>
           </PermissionGuard>
         </div>
@@ -176,7 +177,7 @@ export default function ConversionProfilePage() {
         <div className="space-y-3">
           {profiles.length === 0 ? (
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-8 text-center text-sm text-gray-400">
-              No conversion profiles yet.
+              {tx("No conversion profiles yet.")}
             </div>
           ) : profiles.map((p) => (
             <div
@@ -187,26 +188,26 @@ export default function ConversionProfilePage() {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="font-medium text-gray-800">{p.profile_name}</p>
-                  <p className="text-xs text-gray-400 font-mono mt-0.5">{p.profile_code} · v{p.version_no}</p>
+                  <p className="text-xs text-gray-400 font-mono mt-0.5">{p.profile_code} {tx("· v")}{p.version_no}</p>
                   <p className="text-xs text-gray-500 mt-1">
-                    Effective {p.effective_from || "from any date"} – {p.effective_to || "open-ended"}
+                    {tx("Effective")} {p.effective_from || tx("from any date")} – {p.effective_to || "open-ended"}
                   </p>
-                  {p.target_product_name && <p className="text-xs text-indigo-600 mt-1">Target SKU: {p.target_product_name}</p>}
+                  {p.target_product_name && <p className="text-xs text-indigo-600 mt-1">{tx("Target SKU:")} {p.target_product_name}</p>}
                 </div>
                 <span className={`text-xs px-2 py-0.5 rounded-full ${p.is_active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
-                  {p.is_active ? "Active" : "Inactive"}
+                  {p.is_active ? tx("Active") : tx("Inactive")}
                 </span>
               </div>
               <div className="mt-3 grid grid-cols-3 gap-2 text-xs text-gray-500">
-                <div><span className="text-gray-400">Ratio</span> <span className="font-medium text-gray-700">×{p.theoretical_conversion_ratio}</span></div>
-                <div><span className="text-gray-400">Startup</span> <span className="font-medium">{p.startup_loss_pct}%</span></div>
-                <div><span className="text-gray-400">Reject</span> <span className="font-medium">{p.packaging_reject_pct}%</span></div>
-                <div><span className="text-gray-400">Shutdown</span> <span className="font-medium">{p.shutdown_loss_pct}%</span></div>
-                <div><span className="text-gray-400">Residual</span> <span className="font-medium">{p.residual_bulk_pct}%</span></div>
-                <div><span className="text-gray-400">Purge</span> <span className="font-medium">{p.line_purge_loss_pct}%</span></div>
+                <div><span className="text-gray-400">{tx("Ratio")}</span> <span className="font-medium text-gray-700">×{p.theoretical_conversion_ratio}</span></div>
+                <div><span className="text-gray-400">{tx("Startup")}</span> <span className="font-medium">{p.startup_loss_pct}%</span></div>
+                <div><span className="text-gray-400">{tx("Reject")}</span> <span className="font-medium">{p.packaging_reject_pct}%</span></div>
+                <div><span className="text-gray-400">{tx("Shutdown")}</span> <span className="font-medium">{p.shutdown_loss_pct}%</span></div>
+                <div><span className="text-gray-400">{tx("Residual")}</span> <span className="font-medium">{p.residual_bulk_pct}%</span></div>
+                <div><span className="text-gray-400">{tx("Purge")}</span> <span className="font-medium">{p.line_purge_loss_pct}%</span></div>
               </div>
               {p.standard_expected_units && (
-                <p className="mt-2 text-xs text-indigo-600">Standard expected: {p.standard_expected_units?.toLocaleString()} units</p>
+                <p className="mt-2 text-xs text-indigo-600">{tx("Standard expected:")} {p.standard_expected_units?.toLocaleString()} {tx("units")}</p>
               )}
             </div>
           ))}
@@ -215,17 +216,17 @@ export default function ConversionProfilePage() {
         {/* Calculator */}
         <div className="space-y-4">
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-            <h3 className="font-semibold text-gray-800 mb-3">Conversion Calculator</h3>
+            <h3 className="font-semibold text-gray-800 mb-3">{tx("Conversion Calculator")}</h3>
             {!selectedId ? (
-              <p className="text-sm text-gray-400">Select a profile to calculate.</p>
+              <p className="text-sm text-gray-400">{tx("Select a profile to calculate.")}</p>
             ) : (
               <div className="space-y-3">
-                <p className="text-sm text-gray-600">Profile: <span className="font-medium">{selected?.profile_name}</span></p>
-                <p className="text-xs text-gray-500">Version {selected?.version_no} · {selected?.effective_from || "no start date"} to {selected?.effective_to || "open-ended"}</p>
+                <p className="text-sm text-gray-600">{tx("Profile:")} <span className="font-medium">{selected?.profile_name}</span></p>
+                <p className="text-xs text-gray-500">{tx("Version")} {selected?.version_no} · {selected?.effective_from || tx("no start date")} {tx("to")} {selected?.effective_to || "open-ended"}</p>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs text-gray-500 mb-1 block">Source Quantity</label>
-                    <input type="number" min="0.000001" step="0.000001" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="e.g. 1000" value={sourceQty} onChange={(e) => setSourceQty(e.target.value)} />
+                    <label className="text-xs text-gray-500 mb-1 block">{tx("Source Quantity")}</label>
+                    <input type="number" min="0.000001" step="0.000001" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder={tx("e.g. 1000")} value={sourceQty} onChange={(e) => setSourceQty(e.target.value)} />
                   </div>
                   <div>
                     <label className="text-xs text-gray-500 mb-1 block">UOM</label>
@@ -235,12 +236,12 @@ export default function ConversionProfilePage() {
                   </div>
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Calculate as of date (optional)</label>
+                  <label className="text-xs text-gray-500 mb-1 block">{tx("Calculate as of date (optional)")}</label>
                   <input type="date" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={asOfDate} onChange={(e) => { setAsOfDate(e.target.value); setPackageResult(null); }} />
-                  <p className="text-xs text-gray-400 mt-1">Leave blank to use today. Effective start and end dates include their boundary day.</p>
+                  <p className="text-xs text-gray-400 mt-1">{tx("Leave blank to use today. Effective start and end dates include their boundary day.")}</p>
                 </div>
                 <button onClick={doCalc} disabled={!sourceQty || !Number.isFinite(Number(sourceQty)) || Number(sourceQty) <= 0 || calculating} className="w-full py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-40">
-                  {calculating ? "Calculating…" : "Calculate"}
+                  {calculating ? tx("Calculating…") : tx("Calculate")}
                 </button>
               </div>
             )}
@@ -248,18 +249,18 @@ export default function ConversionProfilePage() {
 
           {calcResult && (
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-3">
-              <h3 className="font-semibold text-gray-800">Results</h3>
-              <p className="text-xs text-gray-500">Profile {calcResult.profile_code} · v{calcResult.version_no} · calculated for {calcResult.as_of_date}</p>
+              <h3 className="font-semibold text-gray-800">{tx("Results")}</h3>
+              <p className="text-xs text-gray-500">{tx("Profile")} {calcResult.profile_code} {tx("· v")}{calcResult.version_no} {tx("· calculated for")} {calcResult.as_of_date}</p>
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  { label: "Theoretical Units", value: calcResult.theoretical_units.toLocaleString(), highlight: false },
-                  { label: "Expected Good Units", value: calcResult.expected_good_units.toLocaleString(), highlight: true },
-                  { label: "Startup Loss", value: calcResult.startup_loss_units.toLocaleString(), highlight: false },
-                  { label: "Shutdown Loss", value: calcResult.shutdown_loss_units.toLocaleString(), highlight: false },
-                  { label: "Reject Units", value: calcResult.reject_units.toLocaleString(), highlight: false },
-                  { label: "Residual Units", value: calcResult.residual_units.toLocaleString(), highlight: false },
-                  { label: "Total Loss %", value: `${calcResult.total_loss_pct.toFixed(2)}%`, highlight: false },
-                  { label: "Fill Volume / Unit", value: calcResult.fill_volume_per_unit ? `${calcResult.fill_volume_per_unit} L` : "—", highlight: false },
+                  { label: tx("Theoretical Units"), value: calcResult.theoretical_units.toLocaleString(), highlight: false },
+                  { label: tx("Expected Good Units"), value: calcResult.expected_good_units.toLocaleString(), highlight: true },
+                  { label: tx("Startup Loss"), value: calcResult.startup_loss_units.toLocaleString(), highlight: false },
+                  { label: tx("Shutdown Loss"), value: calcResult.shutdown_loss_units.toLocaleString(), highlight: false },
+                  { label: tx("Reject Units"), value: calcResult.reject_units.toLocaleString(), highlight: false },
+                  { label: tx("Residual Units"), value: calcResult.residual_units.toLocaleString(), highlight: false },
+                  { label: tx("Total Loss %"), value: `${calcResult.total_loss_pct.toFixed(2)}%`, highlight: false },
+                  { label: tx("Fill Volume / Unit"), value: calcResult.fill_volume_per_unit ? `${calcResult.fill_volume_per_unit} L` : "—", highlight: false },
                 ].map((item) => (
                   <div key={item.label} className={`rounded-lg p-3 ${item.highlight ? "bg-indigo-50 border border-indigo-200" : "bg-gray-50"}`}>
                     <p className="text-xs text-gray-400">{item.label}</p>
@@ -279,42 +280,42 @@ export default function ConversionProfilePage() {
 
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-3">
             <div>
-              <h3 className="font-semibold text-gray-800">Packaging Components by SKU</h3>
-              <p className="text-xs text-gray-500 mt-1">Enter the requested target SKU quantity explicitly. It is not inferred from the conversion yield result.</p>
+              <h3 className="font-semibold text-gray-800">{tx("Packaging Components by SKU")}</h3>
+              <p className="text-xs text-gray-500 mt-1">{tx("Enter the requested target SKU quantity explicitly. It is not inferred from the conversion yield result.")}</p>
             </div>
             {!selectedId ? (
-              <p className="text-sm text-gray-400">Select a conversion profile to calculate its packaging components.</p>
+              <p className="text-sm text-gray-400">{tx("Select a conversion profile to calculate its packaging components.")}</p>
             ) : !selected?.target_product_id || !selected.linked_packaging_bom_id ? (
-              <p className="text-sm text-amber-700 bg-amber-50 rounded-lg p-3">This profile needs a target product and a linked packaging BOM before component quantities can be calculated.</p>
+              <p className="text-sm text-amber-700 bg-amber-50 rounded-lg p-3">{tx("This profile needs a target product and a linked packaging BOM before component quantities can be calculated.")}</p>
             ) : (
               <>
-                <p className="text-xs text-gray-500">Target: {selectedTarget?.sku || selected.target_product_name || "configured product"} · {selected.linked_packaging_bom_id}</p>
+                <p className="text-xs text-gray-500">{tx("Target:")} {selectedTarget?.sku || selected.target_product_name || tx("configured product")} · {selected.linked_packaging_bom_id}</p>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs text-gray-500 mb-1 block">Requested SKU Quantity</label>
-                    <input type="number" min="0.0001" step="0.0001" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="e.g. 24" value={packageQty} onChange={(e) => { setPackageQty(e.target.value); setPackageResult(null); }} />
+                    <label className="text-xs text-gray-500 mb-1 block">{tx("Requested SKU Quantity")}</label>
+                    <input type="number" min="0.0001" step="0.0001" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder={tx("e.g. 24")} value={packageQty} onChange={(e) => { setPackageQty(e.target.value); setPackageResult(null); }} />
                   </div>
                   <div>
-                    <label className="text-xs text-gray-500 mb-1 block">Quantity UOM (optional)</label>
-                    <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder={selectedTarget?.uom || "Use target SKU UOM"} value={packageUom} onChange={(e) => { setPackageUom(e.target.value); setPackageResult(null); }} />
+                    <label className="text-xs text-gray-500 mb-1 block">{tx("Quantity UOM (optional)")}</label>
+                    <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder={selectedTarget?.uom || tx("Use target SKU UOM")} value={packageUom} onChange={(e) => { setPackageUom(e.target.value); setPackageResult(null); }} />
                   </div>
                 </div>
                 <button onClick={() => packageComponents.mutate()} disabled={!packageQty || !Number.isFinite(Number(packageQty)) || Number(packageQty) <= 0 || packageComponents.isPending} className="w-full py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 disabled:opacity-40">
-                  {packageComponents.isPending ? "Calculating…" : "Calculate Packaging Components"}
+                  {packageComponents.isPending ? tx("Calculating…") : tx("Calculate Packaging Components")}
                 </button>
-                {packageComponents.isError && <p className="text-xs text-red-600" role="alert">Could not calculate packaging components. Check the linked packaging BOM and requested quantity.</p>}
+                {packageComponents.isError && <p className="text-xs text-red-600" role="alert">{tx("Could not calculate packaging components. Check the linked packaging BOM and requested quantity.")}</p>}
                 {packageResult && (
                   <div className="border-t pt-3 space-y-2">
-                    <p className="text-xs text-gray-600">{packageResult.target_sku} · requested {packageResult.requested_qty} {packageResult.requested_uom} · normalized {packageResult.normalized_qty} {packageResult.normalized_uom}</p>
+                    <p className="text-xs text-gray-600">{packageResult.target_sku} {tx("· requested")} {packageResult.requested_qty} {packageResult.requested_uom} {tx("· normalized")} {packageResult.normalized_qty} {packageResult.normalized_uom}</p>
                     {packageResult.components.length === 0 ? (
-                      <p className="text-sm text-gray-400">The linked packaging BOM has no packaging component lines.</p>
+                      <p className="text-sm text-gray-400">{tx("The linked packaging BOM has no packaging component lines.")}</p>
                     ) : (
                       <div className="overflow-x-auto">
                         <table className="w-full text-xs text-left">
-                          <thead className="text-gray-400 border-b"><tr><th className="py-2 pr-3">Component</th><th className="py-2 pr-3">Code</th><th className="py-2 pr-3 text-right">Required</th><th className="py-2 text-right">Adjusted</th></tr></thead>
+                          <thead className="text-gray-400 border-b"><tr><th className="py-2 pr-3">{tx("Component")}</th><th className="py-2 pr-3">{tx("Code")}</th><th className="py-2 pr-3 text-right">{tx("Required")}</th><th className="py-2 text-right">{tx("Adjusted")}</th></tr></thead>
                           <tbody>{packageResult.components.map((component, index) => (
                             <tr key={`${component.line_no}-${component.item_id || component.item_code || index}`} className="border-b last:border-0">
-                              <td className="py-2 pr-3">{component.item_name || "Unnamed component"}</td>
+                              <td className="py-2 pr-3">{component.item_name || tx("Unnamed component")}</td>
                               <td className="py-2 pr-3 font-mono text-gray-500">{component.item_code || "—"}</td>
                               <td className="py-2 pr-3 text-right">{component.scaled_qty.toFixed(4)} {component.required_uom}</td>
                               <td className="py-2 text-right">{component.adjusted_qty.toFixed(4)} {component.required_uom}</td>
@@ -337,74 +338,74 @@ export default function ConversionProfilePage() {
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 overflow-y-auto max-h-[90vh]">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold">New Conversion Profile</h2>
+              <h2 className="text-lg font-semibold">{tx("New Conversion Profile")}</h2>
               <button onClick={() => setShowCreate(false)} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
             </div>
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
-                <input maxLength={80} className="border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="Profile Code (optional)" value={form.profile_code ?? ""} onChange={(e) => setForm({ ...form, profile_code: e.target.value || null })} />
-                <input maxLength={255} className="border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="Profile Name *" value={form.profile_name} onChange={(e) => setForm({ ...form, profile_name: e.target.value })} />
+                <input maxLength={80} className="border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder={tx("Profile Code (optional)")} value={form.profile_code ?? ""} onChange={(e) => setForm({ ...form, profile_code: e.target.value || null })} />
+                <input maxLength={255} className="border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder={tx("Profile Name *")} value={form.profile_name} onChange={(e) => setForm({ ...form, profile_name: e.target.value })} />
               </div>
-              <p className="text-xs text-gray-400">Leave the code blank to generate one automatically. Reuse a profile code for versions in one family; each code/version pair must be unique.</p>
+              <p className="text-xs text-gray-400">{tx("Leave the code blank to generate one automatically. Reuse a profile code for versions in one family; each code/version pair must be unique.")}</p>
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Version</label>
+                  <label className="text-xs text-gray-500 mb-1 block">{tx("Version")}</label>
                   <input maxLength={20} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="1.0" value={form.version_no ?? "1.0"} onChange={(e) => setForm({ ...form, version_no: e.target.value })} />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Effective from</label>
+                  <label className="text-xs text-gray-500 mb-1 block">{tx("Effective from")}</label>
                   <input type="date" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={form.effective_from ?? ""} onChange={(e) => setForm({ ...form, effective_from: e.target.value || null })} />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Effective to</label>
+                  <label className="text-xs text-gray-500 mb-1 block">{tx("Effective to")}</label>
                   <input type="date" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={form.effective_to ?? ""} onChange={(e) => setForm({ ...form, effective_to: e.target.value || null })} />
                 </div>
               </div>
               {form.effective_from && form.effective_to && form.effective_to < form.effective_from && (
-                <p className="text-xs text-red-600" role="alert">Effective to must be on or after effective from.</p>
+                <p className="text-xs text-red-600" role="alert">{tx("Effective to must be on or after effective from.")}</p>
               )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Source Product (optional)</label>
+                  <label className="text-xs text-gray-500 mb-1 block">{tx("Source Product (optional)")}</label>
                   <select className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" disabled={productsLoading || productsError || products.length === 0} value={form.source_product_id ?? ""} onChange={(e) => {
                     const product = products.find((candidate) => candidate.id === e.target.value);
                     setForm({ ...form, source_product_id: product?.id ?? null, source_product_name: product?.name ?? null });
                   }}>
-                    <option value="">Choose manually by UOM</option>
+                    <option value="">{tx("Choose manually by UOM")}</option>
                     {products.map((product) => <option key={product.id} value={product.id}>{product.sku} · {product.name} ({product.uom})</option>)}
                   </select>
-                  {productsLoading && <p className="text-xs text-gray-400 mt-1">Loading products…</p>}
-                  {productsError && <button type="button" onClick={() => refetchProducts()} className="text-xs text-red-600 mt-1">Could not load products. Retry.</button>}
+                  {productsLoading && <p className="text-xs text-gray-400 mt-1">{tx("Loading products…")}</p>}
+                  {productsError && <button type="button" onClick={() => refetchProducts()} className="text-xs text-red-600 mt-1">{tx("Could not load products. Retry.")}</button>}
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Target SKU (optional)</label>
+                  <label className="text-xs text-gray-500 mb-1 block">{tx("Target SKU (optional)")}</label>
                   <select className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" disabled={productsLoading || productsError || products.length === 0} value={form.target_product_id ?? ""} onChange={(e) => {
                     const product = products.find((candidate) => candidate.id === e.target.value);
                     setForm({ ...form, target_product_id: product?.id ?? null, target_product_name: product?.name ?? null, linked_packaging_bom_id: null });
                   }}>
-                    <option value="">No target SKU linked</option>
+                    <option value="">{tx("No target SKU linked")}</option>
                     {products.map((product) => <option key={product.id} value={product.id}>{product.sku} · {product.name} ({product.uom})</option>)}
                   </select>
-                  {productsLoading && <p className="text-xs text-gray-400 mt-1">Loading products…</p>}
-                  {productsError && <button type="button" onClick={() => refetchProducts()} className="text-xs text-red-600 mt-1">Could not load products. Retry.</button>}
+                  {productsLoading && <p className="text-xs text-gray-400 mt-1">{tx("Loading products…")}</p>}
+                  {productsError && <button type="button" onClick={() => refetchProducts()} className="text-xs text-red-600 mt-1">{tx("Could not load products. Retry.")}</button>}
                 </div>
                 <div className="md:col-span-2">
-                  <label className="text-xs text-gray-500 mb-1 block">Packaging BOM for target SKU (optional)</label>
+                  <label className="text-xs text-gray-500 mb-1 block">{tx("Packaging BOM for target SKU (optional)")}</label>
                   <select className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={form.linked_packaging_bom_id ?? ""} disabled={!form.target_product_id || packagingBomsLoading || packagingBomsError} onChange={(e) => setForm({ ...form, linked_packaging_bom_id: e.target.value || null })}>
-                    <option value="">No packaging BOM linked</option>
+                    <option value="">{tx("No packaging BOM linked")}</option>
                     {formTargetPackagingBoms.map((bom) => <option key={bom.id} value={bom.id}>{bom.bom_code} · {bom.bom_name} ({bom.lifecycle})</option>)}
                   </select>
-                  {!form.target_product_id && <p className="text-xs text-gray-400 mt-1">Select a target SKU first.</p>}
-                  {packagingBomsLoading && <p className="text-xs text-gray-400 mt-1">Loading packaging BOMs…</p>}
-                  {packagingBomsError && <button type="button" onClick={() => refetchPackagingBoms()} className="text-xs text-red-600 mt-1">Could not load packaging BOMs. Retry.</button>}
-                  {form.target_product_id && !packagingBomsLoading && !packagingBomsError && formTargetPackagingBoms.length === 0 && <p className="text-xs text-gray-400 mt-1">No packaging BOM is available for this target SKU.</p>}
+                  {!form.target_product_id && <p className="text-xs text-gray-400 mt-1">{tx("Select a target SKU first.")}</p>}
+                  {packagingBomsLoading && <p className="text-xs text-gray-400 mt-1">{tx("Loading packaging BOMs…")}</p>}
+                  {packagingBomsError && <button type="button" onClick={() => refetchPackagingBoms()} className="text-xs text-red-600 mt-1">{tx("Could not load packaging BOMs. Retry.")}</button>}
+                  {form.target_product_id && !packagingBomsLoading && !packagingBomsError && formTargetPackagingBoms.length === 0 && <p className="text-xs text-gray-400 mt-1">{tx("No packaging BOM is available for this target SKU.")}</p>}
                 </div>
               </div>
               <div>
-                <label className="text-xs text-gray-500 mb-1 block">Theoretical Conversion Ratio (source → units)</label>
+                <label className="text-xs text-gray-500 mb-1 block">{tx("Theoretical Conversion Ratio (source → units)")}</label>
                 <input type="number" min="0.000001" max="9999.999999" step="0.000001" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={form.theoretical_conversion_ratio ?? 1} onChange={(e) => setForm({ ...form, theoretical_conversion_ratio: Number(e.target.value) })} />
               </div>
-              <p className="text-xs font-medium text-gray-500 pt-1">Loss Percentages</p>
+              <p className="text-xs font-medium text-gray-500 pt-1">{tx("Loss Percentages")}</p>
               <div className="grid grid-cols-2 gap-3">
                 {[
                   ["startup_loss_pct", "Startup Loss %"],
@@ -421,40 +422,40 @@ export default function ConversionProfilePage() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Fill Volume per Unit</label>
-                  <input type="number" min="0.0001" max="9999999999.9999" step="0.0001" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="e.g. 1.0" value={form.standard_fill_volume ?? ""} onChange={(e) => setForm({ ...form, standard_fill_volume: e.target.value ? Number(e.target.value) : null })} />
+                  <label className="text-xs text-gray-500 mb-1 block">{tx("Fill Volume per Unit")}</label>
+                  <input type="number" min="0.0001" max="9999999999.9999" step="0.0001" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder={tx("e.g. 1.0")} value={form.standard_fill_volume ?? ""} onChange={(e) => setForm({ ...form, standard_fill_volume: e.target.value ? Number(e.target.value) : null })} />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Fill Volume UOM</label>
+                  <label className="text-xs text-gray-500 mb-1 block">{tx("Fill Volume UOM")}</label>
                   <input maxLength={20} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="L" value={form.fill_volume_uom ?? ""} onChange={(e) => setForm({ ...form, fill_volume_uom: e.target.value })} />
                 </div>
               </div>
-              {form.standard_fill_volume != null && !form.fill_volume_uom?.trim() && <p className="text-xs text-red-600" role="alert">Fill volume UOM is required when a fill volume is set.</p>}
+              {form.standard_fill_volume != null && !form.fill_volume_uom?.trim() && <p className="text-xs text-red-600" role="alert">{tx("Fill volume UOM is required when a fill volume is set.")}</p>}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Fill Tolerance %</label>
+                  <label className="text-xs text-gray-500 mb-1 block">{tx("Fill Tolerance %")}</label>
                   <input type="number" min="0" max="99.999" step="0.001" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={form.fill_tolerance_pct ?? 1} onChange={(e) => setForm({ ...form, fill_tolerance_pct: Number(e.target.value) })} />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Density (g/ml, optional)</label>
+                  <label className="text-xs text-gray-500 mb-1 block">{tx("Density (g/ml, optional)")}</label>
                   <input type="number" min="0.0001" max="9999.9999" step="0.0001" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={form.density_g_per_ml ?? ""} onChange={(e) => setForm({ ...form, density_g_per_ml: e.target.value ? Number(e.target.value) : null})} />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Standard Expected Units (optional)</label>
+                  <label className="text-xs text-gray-500 mb-1 block">{tx("Standard Expected Units (optional)")}</label>
                   <input type="number" min="0" max="99999999999999" step="1" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={form.standard_expected_units ?? ""} onChange={(e) => setForm({ ...form, standard_expected_units: e.target.value ? Number(e.target.value) : null })} />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Realistic Expected Units (optional)</label>
+                  <label className="text-xs text-gray-500 mb-1 block">{tx("Realistic Expected Units (optional)")}</label>
                   <input type="number" min="0" max="99999999999999" step="1" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={form.realistic_expected_units ?? ""} onChange={(e) => setForm({ ...form, realistic_expected_units: e.target.value ? Number(e.target.value) : null })} />
                 </div>
               </div>
-              {create.isError && <p className="text-xs text-red-600" role="alert">Could not create this profile version. Check the code/version, dates, quantities, loss percentages, and fill UOM.</p>}
+              {create.isError && <p className="text-xs text-red-600" role="alert">{tx("Could not create this profile version. Check the code/version, dates, quantities, loss percentages, and fill UOM.")}</p>}
             </div>
             <div className="flex gap-3 mt-4">
               <button onClick={() => create.mutate()} disabled={!canCreate || create.isPending} className="flex-1 bg-indigo-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-40">
-                {create.isPending ? "Creating…" : "Create Profile"}
+                {create.isPending ? tx("Creating…") : tx("Create Profile")}
               </button>
-              <button onClick={() => setShowCreate(false)} className="px-4 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50">Cancel</button>
+              <button onClick={() => setShowCreate(false)} className="px-4 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50">{tx("Cancel")}</button>
             </div>
           </div>
         </div>

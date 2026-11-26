@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { maintenanceApi } from "@/lib/maintenance";
 import { Badge } from "@/components/ui/Badge";
 import { RequirePermission } from "@/components/PermissionGuard";
+import { tx } from "@/lib/i18n/core";
 
 function MaintenanceDashboardTab() {
   const router = useRouter();
@@ -36,10 +37,10 @@ function MaintenanceDashboardTab() {
   const lowStock = spareParts.filter((s) => s.reorder_level != null && s.current_stock <= s.reorder_level!);
 
   const tiles = [
-    { label: "Total Assets", value: assets.length, sub: `${underMaintenance.length} under maintenance`, color: "text-gray-900", href: "/dashboard/maintenance?tab=assets" },
-    { label: "Open Breakdowns", value: openBreakdowns.length, sub: "active / in-repair", color: openBreakdowns.length > 0 ? "text-red-600" : "text-gray-700", href: "/dashboard/maintenance?tab=breakdowns" },
-    { label: "Overdue PMs", value: overduePM.length, sub: "past due date", color: overduePM.length > 0 ? "text-orange-600" : "text-gray-700", href: "/dashboard/maintenance?tab=plans" },
-    { label: "Low Stock Spares", value: lowStock.length, sub: "at or below reorder level", color: lowStock.length > 0 ? "text-yellow-600" : "text-gray-700", href: "/dashboard/maintenance?tab=spares" },
+    { label: tx("Total Assets"), value: assets.length, sub: `${underMaintenance.length} under maintenance`, color: "text-gray-900", href: "/dashboard/maintenance?tab=assets" },
+    { label: tx("Open Breakdowns"), value: openBreakdowns.length, sub: "active / in-repair", color: openBreakdowns.length > 0 ? "text-red-600" : "text-gray-700", href: "/dashboard/maintenance?tab=breakdowns" },
+    { label: tx("Overdue PMs"), value: overduePM.length, sub: "past due date", color: overduePM.length > 0 ? "text-orange-600" : "text-gray-700", href: "/dashboard/maintenance?tab=plans" },
+    { label: tx("Low Stock Spares"), value: lowStock.length, sub: "at or below reorder level", color: lowStock.length > 0 ? "text-yellow-600" : "text-gray-700", href: "/dashboard/maintenance?tab=spares" },
   ];
 
   const severityColor = (s: string) =>
@@ -50,8 +51,8 @@ function MaintenanceDashboardTab() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Maintenance</h1>
-          <p className="text-sm text-gray-500 mt-1">Asset register, preventive maintenance & breakdowns</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Maintenance")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{tx("Asset register, preventive maintenance & breakdowns")}</p>
         </div>
       </div>
 
@@ -74,19 +75,19 @@ function MaintenanceDashboardTab() {
         {/* Open breakdowns */}
         <div className="bg-white rounded-lg border">
           <div className="px-5 py-3 border-b flex items-center justify-between">
-            <h2 className="font-semibold text-gray-800">Open Breakdowns</h2>
-            <button className="text-xs text-indigo-600 hover:underline" onClick={() => router.push("/dashboard/maintenance?tab=breakdowns")}>View all</button>
+            <h2 className="font-semibold text-gray-800">{tx("Open Breakdowns")}</h2>
+            <button className="text-xs text-indigo-600 hover:underline" onClick={() => router.push("/dashboard/maintenance?tab=breakdowns")}>{tx("View all")}</button>
           </div>
           {openBreakdowns.length === 0 ? (
-            <p className="px-5 py-8 text-sm text-gray-400 text-center">No open breakdowns</p>
+            <p className="px-5 py-8 text-sm text-gray-400 text-center">{tx("No open breakdowns")}</p>
           ) : (
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-gray-50 text-xs text-gray-500 uppercase">
-                  <th className="px-5 py-2 text-left">Asset</th>
-                  <th className="px-5 py-2 text-left">Reason</th>
-                  <th className="px-5 py-2 text-left">Severity</th>
-                  <th className="px-5 py-2 text-left">Started</th>
+                  <th className="px-5 py-2 text-left">{tx("Asset")}</th>
+                  <th className="px-5 py-2 text-left">{tx("Reason")}</th>
+                  <th className="px-5 py-2 text-left">{tx("Severity")}</th>
+                  <th className="px-5 py-2 text-left">{tx("Started")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
@@ -106,19 +107,19 @@ function MaintenanceDashboardTab() {
         {/* Overdue PMs */}
         <div className="bg-white rounded-lg border">
           <div className="px-5 py-3 border-b flex items-center justify-between">
-            <h2 className="font-semibold text-gray-800">Overdue PM Plans</h2>
-            <button className="text-xs text-indigo-600 hover:underline" onClick={() => router.push("/dashboard/maintenance?tab=plans")}>View all</button>
+            <h2 className="font-semibold text-gray-800">{tx("Overdue PM Plans")}</h2>
+            <button className="text-xs text-indigo-600 hover:underline" onClick={() => router.push("/dashboard/maintenance?tab=plans")}>{tx("View all")}</button>
           </div>
           {overduePM.length === 0 ? (
-            <p className="px-5 py-8 text-sm text-gray-400 text-center">All PMs are up to date</p>
+            <p className="px-5 py-8 text-sm text-gray-400 text-center">{tx("All PMs are up to date")}</p>
           ) : (
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-gray-50 text-xs text-gray-500 uppercase">
-                  <th className="px-5 py-2 text-left">Asset</th>
-                  <th className="px-5 py-2 text-left">Plan</th>
-                  <th className="px-5 py-2 text-left">Due</th>
-                  <th className="px-5 py-2 text-right">Days Overdue</th>
+                  <th className="px-5 py-2 text-left">{tx("Asset")}</th>
+                  <th className="px-5 py-2 text-left">{tx("Plan")}</th>
+                  <th className="px-5 py-2 text-left">{tx("Due")}</th>
+                  <th className="px-5 py-2 text-right">{tx("Days Overdue")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
@@ -128,7 +129,7 @@ function MaintenanceDashboardTab() {
                     <td className="px-5 py-2 text-gray-600">{r.plan_name}</td>
                     <td className="px-5 py-2 text-gray-500">{r.next_due_date}</td>
                     <td className="px-5 py-2 text-right">
-                      <span className={`font-semibold ${r.days_overdue > 14 ? "text-red-600" : "text-orange-500"}`}>{r.days_overdue}d</span>
+                      <span className={`font-semibold ${r.days_overdue > 14 ? "text-red-600" : "text-orange-500"}`}>{r.days_overdue}{tx("d")}</span>
                     </td>
                   </tr>
                 ))}
@@ -141,12 +142,12 @@ function MaintenanceDashboardTab() {
       {/* Quick links */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label: "Asset Register", desc: "Manage machines, equipment and production lines", href: "/dashboard/maintenance?tab=assets" },
-          { label: "PM Plans & Work Orders", desc: "Preventive maintenance schedules and completion tracking", href: "/dashboard/maintenance?tab=plans" },
-          { label: "Breakdown Records", desc: "Log and resolve equipment failures with MES linkage", href: "/dashboard/maintenance?tab=breakdowns" },
-          { label: "Predictive Maintenance", desc: "IoT-based failure risk queue and maintenance recommendations", href: "/dashboard/maintenance?tab=predictive" },
-          { label: "Spare Parts", desc: "Spare part inventory with reorder alerts", href: "/dashboard/maintenance?tab=spares" },
-          { label: "Maintenance Reports", desc: "MTBF, MTTR, downtime by machine, overdue PM list", href: "/dashboard/maintenance?tab=reports" },
+          { label: tx("Asset Register"), desc: tx("Manage machines, equipment and production lines"), href: "/dashboard/maintenance?tab=assets" },
+          { label: tx("PM Plans & Work Orders"), desc: tx("Preventive maintenance schedules and completion tracking"), href: "/dashboard/maintenance?tab=plans" },
+          { label: tx("Breakdown Records"), desc: tx("Log and resolve equipment failures with MES linkage"), href: "/dashboard/maintenance?tab=breakdowns" },
+          { label: tx("Predictive Maintenance"), desc: tx("IoT-based failure risk queue and maintenance recommendations"), href: "/dashboard/maintenance?tab=predictive" },
+          { label: tx("Spare Parts"), desc: tx("Spare part inventory with reorder alerts"), href: "/dashboard/maintenance?tab=spares" },
+          { label: tx("Maintenance Reports"), desc: tx("MTBF, MTTR, downtime by machine, overdue PM list"), href: "/dashboard/maintenance?tab=reports" },
         ].map((item) => (
           <button
             key={item.href}
@@ -172,17 +173,17 @@ const MaintenanceReportsPage    = dynamic(() => import("@/app/dashboard/maintena
 
 export default function MaintenancePage() {
   const tabs = [
-    { key: "overview",    label: "Overview",    permission: "maintenance.view", content: <MaintenanceDashboardTab /> },
-    { key: "assets",      label: "Assets",      permission: "maintenance.view", content: <MaintenanceAssetsPage /> },
-    { key: "breakdowns",  label: "Breakdowns",  permission: "maintenance.view", content: <MaintenanceBreakdownsPage /> },
-    { key: "plans",       label: "Plans",       permission: "maintenance.view", content: <MaintenancePlansPage /> },
-    { key: "predictive",  label: "Predictive",  permission: "maintenance.view", content: <MaintenancePredictivePage /> },
-    { key: "spares",      label: "Spares",      permission: "maintenance.view", content: <MaintenanceSparesPage /> },
-    { key: "reports",     label: "Reports",     permission: "maintenance.export", content: <MaintenanceReportsPage /> },
+    { key: "overview",    label: tx("Overview"),    permission: "maintenance.view", content: <MaintenanceDashboardTab /> },
+    { key: "assets",      label: tx("Assets"),      permission: "maintenance.view", content: <MaintenanceAssetsPage /> },
+    { key: "breakdowns",  label: tx("Breakdowns"),  permission: "maintenance.view", content: <MaintenanceBreakdownsPage /> },
+    { key: "plans",       label: tx("Plans"),       permission: "maintenance.view", content: <MaintenancePlansPage /> },
+    { key: "predictive",  label: tx("Predictive"),  permission: "maintenance.view", content: <MaintenancePredictivePage /> },
+    { key: "spares",      label: tx("Spares"),      permission: "maintenance.view", content: <MaintenanceSparesPage /> },
+    { key: "reports",     label: tx("Reports"),     permission: "maintenance.export", content: <MaintenanceReportsPage /> },
   ];
   return (
     <ModuleWorkspace
-      title="Maintenance"
+      title={tx("Maintenance")}
       description="Assets, breakdowns, planned maintenance, predictive, spares"
       permission="maintenance.view"
       tabs={tabs}

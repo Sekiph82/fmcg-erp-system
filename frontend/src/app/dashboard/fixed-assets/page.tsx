@@ -2,6 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { faApi, fmtCurrency, FADashboardSummary } from "@/lib/fixed_assets";
+import { tx } from "@/lib/i18n/core";
 
 export default function FADashboardPage() {
   const qc = useQueryClient();
@@ -18,29 +19,29 @@ export default function FADashboardPage() {
   if (isLoading || !data) return (
     <div className="p-6 flex items-center gap-3 text-gray-400">
       <div className="w-5 h-5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
-      Loading…
+      {tx("Loading…")}
     </div>
   );
 
   const kpis = [
-    { label: "Total Assets",          value: data.total_assets,                        color: "text-blue-700" },
-    { label: "Active Assets",         value: data.active_assets,                       color: "text-green-700" },
-    { label: "Total Cost (KES)",       value: fmtCurrency(data.total_cost),             color: "text-indigo-600" },
-    { label: "Accumulated Depr.",      value: fmtCurrency(data.total_accumulated_depreciation), color: "text-orange-600" },
-    { label: "Net Book Value",         value: fmtCurrency(data.total_nbv),             color: "text-cyan-600" },
-    { label: "Pending Depr. Lines",   value: data.pending_depreciation_lines,          color: "text-yellow-600" },
-    { label: "AI Recommendations",    value: data.ai_pending_recommendations,          color: "text-purple-600" },
+    { label: tx("Total Assets"),          value: data.total_assets,                        color: "text-blue-700" },
+    { label: tx("Active Assets"),         value: data.active_assets,                       color: "text-green-700" },
+    { label: tx("Total Cost (KES)"),       value: fmtCurrency(data.total_cost),             color: "text-indigo-600" },
+    { label: tx("Accumulated Depr."),      value: fmtCurrency(data.total_accumulated_depreciation), color: "text-orange-600" },
+    { label: tx("Net Book Value"),         value: fmtCurrency(data.total_nbv),             color: "text-cyan-600" },
+    { label: tx("Pending Depr. Lines"),   value: data.pending_depreciation_lines,          color: "text-yellow-600" },
+    { label: tx("AI Recommendations"),    value: data.ai_pending_recommendations,          color: "text-purple-600" },
   ];
 
   const quickLinks = [
-    { href: "/dashboard/fixed-assets/assets",       label: "Asset Register",        icon: "🏭" },
-    { href: "/dashboard/fixed-assets/categories",   label: "Asset Categories",      icon: "📂" },
-    { href: "/dashboard/fixed-assets/depreciation", label: "Depreciation Schedules",icon: "📅" },
-    { href: "/dashboard/fixed-assets/posting",      label: "Posting Run",           icon: "⚡" },
-    { href: "/dashboard/fixed-assets/disposal",     label: "Disposals",             icon: "🗑️" },
-    { href: "/dashboard/fixed-assets/transfer",     label: "Transfers",             icon: "🔄" },
-    { href: "/dashboard/fixed-assets/import",       label: "Legacy Import",         icon: "📥" },
-    { href: "/dashboard/fixed-assets/ai",           label: "AI Agents",             icon: "🤖", badge: data.ai_pending_recommendations },
+    { href: "/dashboard/fixed-assets/assets",       label: tx("Asset Register"),        icon: "🏭" },
+    { href: "/dashboard/fixed-assets/categories",   label: tx("Asset Categories"),      icon: "📂" },
+    { href: "/dashboard/fixed-assets/depreciation", label: tx("Depreciation Schedules"),icon: "📅" },
+    { href: "/dashboard/fixed-assets/posting",      label: tx("Posting Run"),           icon: "⚡" },
+    { href: "/dashboard/fixed-assets/disposal",     label: tx("Disposals"),             icon: "🗑️" },
+    { href: "/dashboard/fixed-assets/transfer",     label: tx("Transfers"),             icon: "🔄" },
+    { href: "/dashboard/fixed-assets/import",       label: tx("Legacy Import"),         icon: "📥" },
+    { href: "/dashboard/fixed-assets/ai",           label: tx("AI Agents"),             icon: "🤖", badge: data.ai_pending_recommendations },
   ];
 
   return (
@@ -48,19 +49,19 @@ export default function FADashboardPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Fixed Asset Accounting</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Full financial lifecycle — acquisition · depreciation · disposal</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Fixed Asset Accounting")}</h1>
+          <p className="text-sm text-gray-500 mt-0.5">{tx("Full financial lifecycle — acquisition · depreciation · disposal")}</p>
         </div>
         <div className="flex gap-2">
           <Link href="/dashboard/fixed-assets/assets/new" className="glow-button">
-            + New Asset
+            {tx("+ New Asset")}
           </Link>
           <button
             onClick={() => runAI.mutate()}
             disabled={runAI.isPending}
             className="glow-button-secondary"
           >
-            {runAI.isPending ? "Running…" : "Run AI Agents"}
+            {runAI.isPending ? tx("Running…") : tx("Run AI Agents")}
           </button>
         </div>
       </div>
@@ -77,14 +78,14 @@ export default function FADashboardPage() {
 
       {/* Quick links */}
       <div>
-        <h2 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-3">Module Navigation</h2>
+        <h2 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-3">{tx("Module Navigation")}</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {quickLinks.map((q) => (
             <Link key={q.href} href={q.href} className="liquid-glass glow-hover p-4 flex items-center gap-3">
               <span className="text-2xl">{q.icon}</span>
               <div className="min-w-0">
                 <p className="text-sm font-medium text-gray-800 truncate">{q.label}</p>
-                {q.badge ? <p className="text-xs text-yellow-600">{q.badge} pending</p> : null}
+                {q.badge ? <p className="text-xs text-yellow-600">{q.badge} {tx("pending")}</p> : null}
               </div>
             </Link>
           ))}
@@ -93,12 +94,12 @@ export default function FADashboardPage() {
 
       {/* NBV summary */}
       <div className="glass-panel p-5 space-y-3">
-        <h2 className="text-sm font-semibold text-gray-700">Book Value Summary</h2>
+        <h2 className="text-sm font-semibold text-gray-700">{tx("Book Value Summary")}</h2>
         <div className="grid grid-cols-3 gap-4">
           {[
-            { label: "Gross Cost",             value: data.total_cost,                        color: "text-blue-600" },
-            { label: "Accumulated Depreciation",value: data.total_accumulated_depreciation,   color: "text-orange-600" },
-            { label: "Net Book Value",          value: data.total_nbv,                        color: "text-green-600" },
+            { label: tx("Gross Cost"),             value: data.total_cost,                        color: "text-blue-600" },
+            { label: tx("Accumulated Depreciation"),value: data.total_accumulated_depreciation,   color: "text-orange-600" },
+            { label: tx("Net Book Value"),          value: data.total_nbv,                        color: "text-green-600" },
           ].map((row) => (
             <div key={row.label} className="text-center">
               <p className="text-xs text-gray-500 uppercase tracking-wide">{row.label}</p>
@@ -118,7 +119,7 @@ export default function FADashboardPage() {
         <p className="text-xs text-gray-400 text-center">
           {data.total_cost > 0
             ? `${((data.total_accumulated_depreciation / data.total_cost) * 100).toFixed(1)}% of total cost depreciated`
-            : "No active assets"}
+            : tx("No active assets")}
         </p>
       </div>
     </div>

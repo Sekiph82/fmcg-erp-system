@@ -1,24 +1,25 @@
 "use client";
 import { useEffect, useState } from "react";
 import { customFieldsApi, CFAIRec, CFAIAgentType, CFAIRecStatus } from "@/lib/custom_fields";
+import { tx, lx } from "@/lib/i18n/core";
 
-const AGENT_META: Record<CFAIAgentType, { label: string; desc: string; color: string }> = {
+const AGENT_META: Record<CFAIAgentType, { label: string; desc: string; color: string }> = lx(() => ({
   field_design_assistant: {
-    label: "Field Design Assistant",
-    desc: "Detects entity types with no custom fields and suggests common fields. Also flags duplicate field labels across modules.",
+    label: tx("Field Design Assistant"),
+    desc: tx("Detects entity types with no custom fields and suggests common fields. Also flags duplicate field labels across modules."),
     color: "bg-blue-50 border-blue-200",
   },
   data_quality_monitor: {
-    label: "Data Quality Monitor",
-    desc: "Finds required fields with 0 values recorded and flags low-adoption fields to help prioritize cleanup.",
+    label: tx("Data Quality Monitor"),
+    desc: tx("Finds required fields with 0 values recorded and flags low-adoption fields to help prioritize cleanup."),
     color: "bg-orange-50 border-orange-200",
   },
   reporting_assistant: {
-    label: "Reporting Assistant",
-    desc: "Identifies high-usage fields not marked as reportable and suggests enabling them for the Report Builder.",
+    label: tx("Reporting Assistant"),
+    desc: tx("Identifies high-usage fields not marked as reportable and suggests enabling them for the Report Builder."),
     color: "bg-green-50 border-green-200",
   },
-};
+}));
 
 const STATUS_COLOR: Record<CFAIRecStatus, string> = {
   pending: "bg-yellow-100 text-yellow-700",
@@ -52,7 +53,7 @@ export default function CustomFieldsAIPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-xl font-bold text-gray-900">Custom Fields AI Insights</h1>
+      <h1 className="text-xl font-bold text-gray-900">{tx("Custom Fields AI Insights")}</h1>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         {(Object.entries(AGENT_META) as [CFAIAgentType, typeof AGENT_META[CFAIAgentType]][]).map(([type, meta]) => (
@@ -61,7 +62,7 @@ export default function CustomFieldsAIPage() {
             <p className="text-xs text-gray-600 mt-1 mb-3">{meta.desc}</p>
             <button onClick={() => run(type)} disabled={running === type}
               className="w-full rounded bg-gray-800 px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-700 disabled:opacity-50">
-              {running === type ? "Running…" : "Run Agent"}
+              {running === type ? tx("Running…") : tx("Run Agent")}
             </button>
           </div>
         ))}
@@ -70,12 +71,12 @@ export default function CustomFieldsAIPage() {
       <div className="bg-white border rounded-lg shadow-sm">
         <div className="px-4 py-3 border-b">
           <h2 className="font-semibold text-gray-800 text-sm">
-            AI Recommendations ({recs.filter(r => r.status === "pending").length} pending)
+            {tx("AI Recommendations (")}{recs.filter(r => r.status === "pending").length} {tx("pending)")}
           </h2>
         </div>
-        {loading ? <p className="text-gray-500 text-sm p-4">Loading…</p> :
+        {loading ? <p className="text-gray-500 text-sm p-4">{tx("Loading…")}</p> :
           recs.length === 0
-            ? <p className="text-gray-400 text-sm text-center py-8">No recommendations yet.</p>
+            ? <p className="text-gray-400 text-sm text-center py-8">{tx("No recommendations yet.")}</p>
             : (
               <div className="divide-y">
                 {recs.map(r => (
@@ -89,7 +90,7 @@ export default function CustomFieldsAIPage() {
                           <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLOR[r.status]}`}>
                             {r.status}
                           </span>
-                          {r.score != null && <span className="text-xs text-gray-400">Score: {r.score}</span>}
+                          {r.score != null && <span className="text-xs text-gray-400">{tx("Score:")} {r.score}</span>}
                           {r.entity_type && (
                             <span className="text-xs bg-gray-100 text-gray-500 rounded px-1.5 py-0.5 capitalize">
                               {r.entity_type.replace("_", " ")}
@@ -102,11 +103,11 @@ export default function CustomFieldsAIPage() {
                       {r.status === "pending" && (
                         <div className="flex flex-col gap-1 shrink-0">
                           <button onClick={() => ack(r.rec_id, "acknowledged")}
-                            className="rounded border border-blue-300 px-2 py-0.5 text-xs text-blue-600 hover:bg-blue-50">Ack</button>
+                            className="rounded border border-blue-300 px-2 py-0.5 text-xs text-blue-600 hover:bg-blue-50">{tx("Ack")}</button>
                           <button onClick={() => ack(r.rec_id, "actioned")}
-                            className="rounded border border-green-300 px-2 py-0.5 text-xs text-green-600 hover:bg-green-50">Action</button>
+                            className="rounded border border-green-300 px-2 py-0.5 text-xs text-green-600 hover:bg-green-50">{tx("Action")}</button>
                           <button onClick={() => ack(r.rec_id, "dismissed")}
-                            className="rounded border border-gray-200 px-2 py-0.5 text-xs text-gray-500 hover:bg-gray-50">Dismiss</button>
+                            className="rounded border border-gray-200 px-2 py-0.5 text-xs text-gray-500 hover:bg-gray-50">{tx("Dismiss")}</button>
                         </div>
                       )}
                     </div>

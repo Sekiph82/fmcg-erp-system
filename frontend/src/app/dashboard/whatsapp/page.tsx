@@ -7,6 +7,7 @@ import {
   WADirection, STATUS_COLOR, STATUS_ICON,
 } from "@/lib/whatsapp";
 import { Button } from "@/components/ui/Button";
+import { tx } from "@/lib/i18n/core";
 
 function fmtTime(iso: string) {
   return new Date(iso).toLocaleString("en-KE", {
@@ -32,10 +33,10 @@ function MessageBubble({ msg }: { msg: WAMessage }) {
         )}
         {msg.template_name && (
           <p className={`text-xs mb-1 ${isOut ? "text-green-100" : "text-gray-400"}`}>
-            📋 Template: {msg.template_name}
+            {tx("📋 Template:")} {msg.template_name}
           </p>
         )}
-        <p className="text-sm whitespace-pre-wrap">{msg.body ?? "(no body)"}</p>
+        <p className="text-sm whitespace-pre-wrap">{msg.body ?? tx("(no body)")}</p>
         <div className={`flex items-center gap-2 mt-1 ${isOut ? "justify-end" : ""}`}>
           <span className={`text-xs ${isOut ? "text-green-100" : "text-gray-400"}`}>{fmtTime(msg.created_at)}</span>
           {isOut && <span className={`text-xs font-bold ${msg.status === "READ" ? "text-blue-200" : "text-green-200"}`}>{STATUS_ICON[msg.status]}</span>}
@@ -147,14 +148,14 @@ export default function WhatsAppPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">WhatsApp Business</h1>
-          <p className="text-sm text-gray-500 mt-1">Send order confirmations, invoices, alerts via WhatsApp</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("WhatsApp Business")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{tx("Send order confirmations, invoices, alerts via WhatsApp")}</p>
         </div>
         <div className="flex gap-2">
           {activeConfig && (
-            <Button onClick={() => setShowSend(true)}>+ Send Message</Button>
+            <Button onClick={() => setShowSend(true)}>{tx("+ Send Message")}</Button>
           )}
-          <Button variant="secondary" onClick={() => setShowNewConfig(true)}>+ Account</Button>
+          <Button variant="secondary" onClick={() => setShowNewConfig(true)}>{tx("+ Account")}</Button>
         </div>
       </div>
 
@@ -171,7 +172,7 @@ export default function WhatsAppPage() {
               <div className="text-left">
                 <p className="font-medium leading-none">{c.display_name}</p>
                 <p className={`text-xs ${activeConfig?.id === c.id ? "text-green-100" : "text-gray-400"}`}>
-                  {c.business_phone_no ?? c.provider} {c.is_demo_mode && "· Demo"}
+                  {c.business_phone_no ?? c.provider} {c.is_demo_mode && tx("· Demo")}
                 </p>
               </div>
             </button>
@@ -182,10 +183,10 @@ export default function WhatsAppPage() {
       {/* Summary KPIs */}
       <div className="grid grid-cols-4 gap-4">
         {[
-          { label: "Total Messages",   value: messages.length,                                      color: "text-gray-700" },
-          { label: "Sent Today",       value: messages.filter((m) => m.direction === "OUTBOUND" && new Date(m.created_at).toDateString() === new Date().toDateString()).length, color: "text-green-700" },
-          { label: "Inbound",          value: messages.filter((m) => m.direction === "INBOUND").length, color: "text-blue-700" },
-          { label: "Unread",           value: unread, color: unread > 0 ? "text-red-600" : "text-gray-500" },
+          { label: tx("Total Messages"),   value: messages.length,                                      color: "text-gray-700" },
+          { label: tx("Sent Today"),       value: messages.filter((m) => m.direction === "OUTBOUND" && new Date(m.created_at).toDateString() === new Date().toDateString()).length, color: "text-green-700" },
+          { label: tx("Inbound"),          value: messages.filter((m) => m.direction === "INBOUND").length, color: "text-blue-700" },
+          { label: tx("Unread"),           value: unread, color: unread > 0 ? "text-red-600" : "text-gray-500" },
         ].map((k) => (
           <div key={k.label} className="bg-white rounded-lg border p-4 text-center">
             <p className="text-xs text-gray-500 mb-1">{k.label}</p>
@@ -216,9 +217,9 @@ export default function WhatsAppPage() {
         <div className="grid grid-cols-3 gap-6 h-[500px]">
           {/* Contact list */}
           <div className="bg-white border rounded-lg overflow-y-auto">
-            <div className="px-4 py-3 border-b font-semibold text-sm text-gray-700">Contacts ({phones.length})</div>
+            <div className="px-4 py-3 border-b font-semibold text-sm text-gray-700">{tx("Contacts (")}{phones.length})</div>
             {phones.length === 0 ? (
-              <p className="px-4 py-8 text-center text-sm text-gray-400">No messages yet</p>
+              <p className="px-4 py-8 text-center text-sm text-gray-400">{tx("No messages yet")}</p>
             ) : (
               phones.map((phone) => {
                 const lastMsg = messages.filter((m) => m.phone === phone).at(-1);
@@ -251,7 +252,7 @@ export default function WhatsAppPage() {
           <div className="col-span-2 bg-gray-50 border rounded-lg flex flex-col">
             {!filterPhone ? (
               <div className="flex-1 flex items-center justify-center text-gray-400">
-                <p className="text-sm">Select a contact to view conversation</p>
+                <p className="text-sm">{tx("Select a contact to view conversation")}</p>
               </div>
             ) : (
               <>
@@ -277,17 +278,17 @@ export default function WhatsAppPage() {
       {tab === "templates" && (
         <div className="bg-white rounded-lg border">
           <div className="px-5 py-3 border-b flex items-center justify-between">
-            <h2 className="font-semibold text-gray-800">Message Templates</h2>
+            <h2 className="font-semibold text-gray-800">{tx("Message Templates")}</h2>
             <Button
               variant="secondary"
               onClick={() => seedTemplates.mutate()}
               loading={seedTemplates.isPending}
             >
-              Seed Demo Templates
+              {tx("Seed Demo Templates")}
             </Button>
           </div>
           {templates.length === 0 ? (
-            <p className="px-5 py-8 text-center text-gray-400">No templates — click &quot;Seed Demo Templates&quot; to add FMCG defaults</p>
+            <p className="px-5 py-8 text-center text-gray-400">{tx("No templates — click \"Seed Demo Templates\" to add FMCG defaults")}</p>
           ) : (
             <div className="divide-y">
               {templates.map((t) => (
@@ -306,7 +307,7 @@ export default function WhatsAppPage() {
                       <p className="text-sm text-gray-700 bg-gray-50 rounded p-2 font-mono">{t.body_template}</p>
                       {t.footer_text && <p className="text-xs text-gray-400 mt-1">{t.footer_text}</p>}
                       {t.variable_count > 0 && (
-                        <p className="text-xs text-gray-400 mt-1">{t.variable_count} variable{t.variable_count > 1 ? "s" : ""} required</p>
+                        <p className="text-xs text-gray-400 mt-1">{t.variable_count} {tx("variable")}{t.variable_count > 1 ? tx("s") : ""} {tx("required")}</p>
                       )}
                     </div>
                   </div>
@@ -320,16 +321,16 @@ export default function WhatsAppPage() {
       {/* CONFIG tab */}
       {tab === "config" && (
         <div className="bg-white rounded-lg border">
-          <div className="px-5 py-3 border-b font-semibold text-gray-800">WhatsApp Accounts</div>
+          <div className="px-5 py-3 border-b font-semibold text-gray-800">{tx("WhatsApp Accounts")}</div>
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-gray-50 text-xs text-gray-500 uppercase">
-                <th className="px-4 py-2 text-left">Name</th>
-                <th className="px-4 py-2 text-left">Phone</th>
-                <th className="px-4 py-2 text-left">Provider</th>
-                <th className="px-4 py-2 text-center">Mode</th>
-                <th className="px-4 py-2 text-center">Status</th>
-                <th className="px-4 py-2 text-center">Actions</th>
+                <th className="px-4 py-2 text-left">{tx("Name")}</th>
+                <th className="px-4 py-2 text-left">{tx("Phone")}</th>
+                <th className="px-4 py-2 text-left">{tx("Provider")}</th>
+                <th className="px-4 py-2 text-center">{tx("Mode")}</th>
+                <th className="px-4 py-2 text-center">{tx("Status")}</th>
+                <th className="px-4 py-2 text-center">{tx("Actions")}</th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -340,12 +341,12 @@ export default function WhatsAppPage() {
                   <td className="px-4 py-3 text-gray-500">{c.provider}</td>
                   <td className="px-4 py-3 text-center">
                     <span className={`text-xs px-2 py-0.5 rounded ${c.is_demo_mode ? "bg-amber-100 text-amber-700" : "bg-green-100 text-green-700"}`}>
-                      {c.is_demo_mode ? "Demo" : "Live"}
+                      {c.is_demo_mode ? tx("Demo") : tx("Live")}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-center">
                     <span className={`text-xs px-2 py-0.5 rounded ${c.is_active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
-                      {c.is_active ? "Active" : "Inactive"}
+                      {c.is_active ? tx("Active") : tx("Inactive")}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-center">
@@ -353,13 +354,13 @@ export default function WhatsAppPage() {
                       className="text-xs text-blue-600 hover:underline"
                       onClick={() => { setEditingConfig(c); setEditForm({ is_demo_mode: c.is_demo_mode }); }}
                     >
-                      Edit
+                      {tx("Edit")}
                     </button>
                   </td>
                 </tr>
               ))}
               {configs.length === 0 && (
-                <tr><td colSpan={6} className="px-5 py-8 text-center text-gray-400">No accounts — add one above</td></tr>
+                <tr><td colSpan={6} className="px-5 py-8 text-center text-gray-400">{tx("No accounts — add one above")}</td></tr>
               )}
             </tbody>
           </table>
@@ -370,19 +371,19 @@ export default function WhatsAppPage() {
       {showSend && activeConfig && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4">
-            <h2 className="font-semibold text-lg">Send WhatsApp Message</h2>
+            <h2 className="font-semibold text-lg">{tx("Send WhatsApp Message")}</h2>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Phone (E.164)</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Phone (E.164)")}</label>
               <input className="w-full border rounded px-3 py-2 text-sm" value={composePhone} onChange={(e) => setComposePhone(e.target.value)} placeholder="+254712345678" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Template (optional)</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Template (optional)")}</label>
               <select className="w-full border rounded px-3 py-2 text-sm" value={selectedTemplate?.template_name ?? ""} onChange={(e) => {
                 const t = templates.find((t) => t.template_name === e.target.value) ?? null;
                 setSelectedTemplate(t);
                 setTemplateVars(t ? Array(t.variable_count).fill("") : []);
               }}>
-                <option value="">— Free text —</option>
+                <option value="">{tx("— Free text —")}</option>
                 {templates.map((t) => <option key={t.id} value={t.template_name}>{t.display_name}</option>)}
               </select>
             </div>
@@ -391,25 +392,25 @@ export default function WhatsAppPage() {
                 <div className="bg-gray-50 rounded p-3 text-sm font-mono text-gray-600">{selectedTemplate.body_template}</div>
                 {templateVars.map((v, i) => (
                   <div key={i}>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Variable {`{{${i + 1}}}`}</label>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Variable")} {`{{${i + 1}}}`}</label>
                     <input className="w-full border rounded px-3 py-2 text-sm" value={v} onChange={(e) => setTemplateVars((vs) => vs.map((vv, j) => j === i ? e.target.value : vv))} />
                   </div>
                 ))}
               </>
             ) : (
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Message</label>
+                <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Message")}</label>
                 <textarea className="w-full border rounded px-3 py-2 text-sm" rows={3} value={composeBody} onChange={(e) => setComposeBody(e.target.value)} />
               </div>
             )}
             <div className="flex gap-2 justify-end">
-              <Button variant="secondary" onClick={() => setShowSend(false)}>Cancel</Button>
+              <Button variant="secondary" onClick={() => setShowSend(false)}>{tx("Cancel")}</Button>
               <Button
                 loading={sendText.isPending || sendTemplate.isPending}
                 onClick={() => selectedTemplate ? sendTemplate.mutate() : sendText.mutate()}
                 disabled={!composePhone || (!composeBody && !selectedTemplate)}
               >
-                Send
+                {tx("Send")}
               </Button>
             </div>
           </div>
@@ -421,23 +422,23 @@ export default function WhatsAppPage() {
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="font-semibold text-lg">Edit WhatsApp Account</h2>
+              <h2 className="font-semibold text-lg">{tx("Edit WhatsApp Account")}</h2>
               <span className={`text-xs px-2 py-0.5 rounded font-medium ${editForm.is_demo_mode === false ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"}`}>
-                {editForm.is_demo_mode === false ? "Live Mode" : "Demo Mode"}
+                {editForm.is_demo_mode === false ? tx("Live Mode") : tx("Demo Mode")}
               </span>
             </div>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Phone Number ID <span className="text-gray-400">(Meta Phone Number ID)</span></label>
+                <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Phone Number ID")} <span className="text-gray-400">{tx("(Meta Phone Number ID)")}</span></label>
                 <input
                   className="w-full border rounded px-3 py-2 text-sm font-mono"
-                  placeholder="e.g. 123456789012345"
+                  placeholder={tx("e.g. 123456789012345")}
                   value={editForm.business_phone_id ?? ""}
                   onChange={(e) => setEditForm((f) => ({ ...f, business_phone_id: e.target.value || undefined }))}
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Business Phone Number</label>
+                <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Business Phone Number")}</label>
                 <input
                   className="w-full border rounded px-3 py-2 text-sm"
                   placeholder="+254700000000"
@@ -446,51 +447,51 @@ export default function WhatsAppPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Access Token <span className="text-gray-400">(System User token)</span></label>
+                <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Access Token")} <span className="text-gray-400">{tx("(System User token)")}</span></label>
                 <input
                   type="password"
                   className="w-full border rounded px-3 py-2 text-sm font-mono"
-                  placeholder="Enter token to update (leave blank to keep current)"
+                  placeholder={tx("Enter token to update (leave blank to keep current)")}
                   value={editForm.api_token ?? ""}
                   onChange={(e) => setEditForm((f) => ({ ...f, api_token: e.target.value || undefined }))}
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Webhook Verify Token</label>
+                <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Webhook Verify Token")}</label>
                 <input
                   type="password"
                   className="w-full border rounded px-3 py-2 text-sm font-mono"
-                  placeholder="Enter verify token to update"
+                  placeholder={tx("Enter verify token to update")}
                   value={editForm.webhook_verify_token ?? ""}
                   onChange={(e) => setEditForm((f) => ({ ...f, webhook_verify_token: e.target.value || undefined }))}
                 />
               </div>
               <div className="flex items-center gap-3 pt-1">
-                <label className="text-sm font-medium text-gray-700">Mode:</label>
+                <label className="text-sm font-medium text-gray-700">{tx("Mode:")}</label>
                 <button
                   type="button"
                   className={`px-3 py-1.5 rounded text-xs font-medium border ${editForm.is_demo_mode !== false ? "bg-amber-50 border-amber-300 text-amber-700" : "bg-white border-gray-200 text-gray-500"}`}
                   onClick={() => setEditForm((f) => ({ ...f, is_demo_mode: true }))}
                 >
-                  Demo (simulated)
+                  {tx("Demo (simulated)")}
                 </button>
                 <button
                   type="button"
                   className={`px-3 py-1.5 rounded text-xs font-medium border ${editForm.is_demo_mode === false ? "bg-green-50 border-green-400 text-green-700" : "bg-white border-gray-200 text-gray-500"}`}
                   onClick={() => setEditForm((f) => ({ ...f, is_demo_mode: false }))}
                 >
-                  Live (calls Meta API)
+                  {tx("Live (calls Meta API)")}
                 </button>
               </div>
               {editForm.is_demo_mode === false && (
                 <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2">
-                  Live mode will call the real Meta Cloud API. Ensure Phone Number ID and Access Token are set above.
+                  {tx("Live mode will call the real Meta Cloud API. Ensure Phone Number ID and Access Token are set above.")}
                 </p>
               )}
             </div>
             <div className="flex gap-2 justify-end">
-              <Button variant="secondary" onClick={() => { setEditingConfig(null); setEditForm({}); }}>Cancel</Button>
-              <Button loading={updateConfig.isPending} onClick={() => updateConfig.mutate()}>Save</Button>
+              <Button variant="secondary" onClick={() => { setEditingConfig(null); setEditForm({}); }}>{tx("Cancel")}</Button>
+              <Button loading={updateConfig.isPending} onClick={() => updateConfig.mutate()}>{tx("Save")}</Button>
             </div>
           </div>
         </div>
@@ -500,29 +501,29 @@ export default function WhatsAppPage() {
       {showNewConfig && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 space-y-4">
-            <h2 className="font-semibold text-lg">Add WhatsApp Account</h2>
+            <h2 className="font-semibold text-lg">{tx("Add WhatsApp Account")}</h2>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Display Name</label>
-                <input className="w-full border rounded px-3 py-2 text-sm" value={newConfigForm.display_name} onChange={(e) => setNewConfigForm((f) => ({ ...f, display_name: e.target.value }))} placeholder="Sales Team WA" />
+                <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Display Name")}</label>
+                <input className="w-full border rounded px-3 py-2 text-sm" value={newConfigForm.display_name} onChange={(e) => setNewConfigForm((f) => ({ ...f, display_name: e.target.value }))} placeholder={tx("Sales Team WA")} />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Business Phone</label>
+                <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Business Phone")}</label>
                 <input className="w-full border rounded px-3 py-2 text-sm" value={newConfigForm.business_phone_no} onChange={(e) => setNewConfigForm((f) => ({ ...f, business_phone_no: e.target.value }))} placeholder="+254700000000" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Provider</label>
+                <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Provider")}</label>
                 <select className="w-full border rounded px-3 py-2 text-sm" value={newConfigForm.provider} onChange={(e) => setNewConfigForm((f) => ({ ...f, provider: e.target.value }))}>
-                  <option value="META">Meta (WhatsApp Cloud API)</option>
-                  <option value="TWILIO">Twilio</option>
-                  <option value="AFRICASTALKING">Africa&apos;s Talking</option>
+                  <option value="META">{tx("Meta (WhatsApp Cloud API)")}</option>
+                  <option value="TWILIO">{tx("Twilio")}</option>
+                  <option value="AFRICASTALKING">{tx("Africa's Talking")}</option>
                 </select>
               </div>
-              <p className="text-xs text-gray-400">Starts in Demo mode — messages simulated locally.</p>
+              <p className="text-xs text-gray-400">{tx("Starts in Demo mode — messages simulated locally.")}</p>
             </div>
             <div className="flex gap-2 justify-end">
-              <Button variant="secondary" onClick={() => setShowNewConfig(false)}>Cancel</Button>
-              <Button loading={addConfig.isPending} onClick={() => addConfig.mutate()} disabled={!newConfigForm.display_name.trim()}>Connect</Button>
+              <Button variant="secondary" onClick={() => setShowNewConfig(false)}>{tx("Cancel")}</Button>
+              <Button loading={addConfig.isPending} onClick={() => addConfig.mutate()} disabled={!newConfigForm.display_name.trim()}>{tx("Connect")}</Button>
             </div>
           </div>
         </div>

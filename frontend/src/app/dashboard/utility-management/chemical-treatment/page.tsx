@@ -30,6 +30,7 @@ import {
   type ChemicalCategory,
   type TreatmentType,
 } from "@/lib/chemicalTreatment";
+import { tx } from "@/lib/i18n/core";
 
 // ── Palette ────────────────────────────────────────────────────────────────────
 const TEAL    = "#2dd4bf";
@@ -89,9 +90,9 @@ function CategoryBadge({ category }: { category: ChemicalCategory | null | undef
 
 // ── Anomaly Flags ──────────────────────────────────────────────────────────────
 function AnomalyBadge({ rec }: { rec: TreatmentRecord }) {
-  if (rec.overdose_flag)  return <span className="px-2 py-0.5 rounded text-xs font-medium bg-red-500/10 border border-red-500/20 text-red-400">Overdose</span>;
-  if (rec.underdose_flag) return <span className="px-2 py-0.5 rounded text-xs font-medium bg-amber-500/10 border border-amber-500/20 text-amber-400">Underdose</span>;
-  if (rec.is_anomaly)     return <span className="px-2 py-0.5 rounded text-xs font-medium bg-orange-500/10 border border-orange-500/20 text-orange-400">Anomaly</span>;
+  if (rec.overdose_flag)  return <span className="px-2 py-0.5 rounded text-xs font-medium bg-red-500/10 border border-red-500/20 text-red-400">{tx("Overdose")}</span>;
+  if (rec.underdose_flag) return <span className="px-2 py-0.5 rounded text-xs font-medium bg-amber-500/10 border border-amber-500/20 text-amber-400">{tx("Underdose")}</span>;
+  if (rec.is_anomaly)     return <span className="px-2 py-0.5 rounded text-xs font-medium bg-orange-500/10 border border-orange-500/20 text-orange-400">{tx("Anomaly")}</span>;
   return <span className="px-2 py-0.5 rounded text-xs font-medium bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">OK</span>;
 }
 
@@ -163,156 +164,156 @@ function RecordForm({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
       <div className="bg-slate-800 border border-slate-700 rounded-xl w-full max-w-3xl p-6 space-y-4 overflow-y-auto max-h-[90vh]">
-        <h3 className="text-white font-semibold text-lg">{initial ? "Edit" : "New"} Treatment Record</h3>
+        <h3 className="text-white font-semibold text-lg">{initial ? tx("Edit") : tx("New")} {tx("Treatment Record")}</h3>
 
         <div className="grid grid-cols-2 gap-3">
           {/* Basic */}
           <div className={row}>
-            <label className={lbl}>Asset *</label>
+            <label className={lbl}>{tx("Asset *")}</label>
             <select className={inp} value={f.asset_id} onChange={e => set("asset_id", e.target.value)}>
-              <option value="">— select —</option>
+              <option value="">{tx("— select —")}</option>
               {assets.map(a => <option key={a.id} value={a.id}>{a.name} ({a.asset_no})</option>)}
             </select>
           </div>
           <div className={row}>
-            <label className={lbl}>Date / Time *</label>
+            <label className={lbl}>{tx("Date / Time *")}</label>
             <input className={inp} type="datetime-local" value={f.record_datetime?.slice(0, 16)} onChange={e => set("record_datetime", e.target.value)} />
           </div>
           <div className={row}>
-            <label className={lbl}>Treatment Type *</label>
+            <label className={lbl}>{tx("Treatment Type *")}</label>
             <select className={inp} value={f.treatment_type} onChange={e => set("treatment_type", e.target.value as TreatmentType)}>
               {ALL_TREATMENT_TYPES.map(t => <option key={t} value={t}>{TREATMENT_TYPE_LABELS[t]}</option>)}
             </select>
           </div>
           <div className={row}>
-            <label className={lbl}>Dosing Mode</label>
+            <label className={lbl}>{tx("Dosing Mode")}</label>
             <select className={inp} value={f.manual_or_auto_dose} onChange={e => set("manual_or_auto_dose", e.target.value)}>
-              <option value="MANUAL">Manual</option>
-              <option value="AUTO">Automatic</option>
+              <option value="MANUAL">{tx("Manual")}</option>
+              <option value="AUTO">{tx("Automatic")}</option>
             </select>
           </div>
 
           {/* Chemical */}
           <div className={row}>
-            <label className={lbl}>Chemical (master)</label>
+            <label className={lbl}>{tx("Chemical (master)")}</label>
             <select className={inp} value={f.chemical_id ?? ""} onChange={e => onChemSelect(e.target.value)}>
-              <option value="">— select or type below —</option>
+              <option value="">{tx("— select or type below —")}</option>
               {chemicals.map(c => <option key={c.id} value={c.id}>{c.chemical_code} — {c.chemical_name}</option>)}
             </select>
           </div>
           <div className={row}>
-            <label className={lbl}>Chemical Name *</label>
-            <input className={inp} value={f.chemical_name} onChange={e => set("chemical_name", e.target.value)} placeholder="e.g. Sodium Hypochlorite" />
+            <label className={lbl}>{tx("Chemical Name *")}</label>
+            <input className={inp} value={f.chemical_name} onChange={e => set("chemical_name", e.target.value)} placeholder={tx("e.g. Sodium Hypochlorite")} />
           </div>
           <div className={row}>
-            <label className={lbl}>Category</label>
+            <label className={lbl}>{tx("Category")}</label>
             <select className={inp} value={f.chemical_category ?? ""} onChange={e => set("chemical_category", e.target.value as ChemicalCategory)}>
-              <option value="">— select —</option>
+              <option value="">{tx("— select —")}</option>
               {ALL_CATEGORIES.map(c => <option key={c} value={c}>{CHEMICAL_CATEGORY_LABELS[c]}</option>)}
             </select>
           </div>
           <div className={row}>
-            <label className={lbl}>Batch / Lot No</label>
+            <label className={lbl}>{tx("Batch / Lot No")}</label>
             <input className={inp} value={f.batch_lot_no} onChange={e => set("batch_lot_no", e.target.value)} />
           </div>
 
           {/* Location */}
           <div className={row}>
-            <label className={lbl}>Treatment Area</label>
-            <input className={inp} value={f.treatment_area} onChange={e => set("treatment_area", e.target.value)} placeholder="e.g. Boiler Feed, Cooling Tower" />
+            <label className={lbl}>{tx("Treatment Area")}</label>
+            <input className={inp} value={f.treatment_area} onChange={e => set("treatment_area", e.target.value)} placeholder={tx("e.g. Boiler Feed, Cooling Tower")} />
           </div>
           <div className={row}>
-            <label className={lbl}>Dosing Point</label>
-            <input className={inp} value={f.dosing_point} onChange={e => set("dosing_point", e.target.value)} placeholder="e.g. Pump Skid A" />
+            <label className={lbl}>{tx("Dosing Point")}</label>
+            <input className={inp} value={f.dosing_point} onChange={e => set("dosing_point", e.target.value)} placeholder={tx("e.g. Pump Skid A")} />
           </div>
 
           {/* Stock */}
           <div className={row}>
-            <label className={lbl}>Stock UOM</label>
-            <input className={inp} value={f.stock_uom} onChange={e => set("stock_uom", e.target.value)} placeholder="kg / L / drum" />
+            <label className={lbl}>{tx("Stock UOM")}</label>
+            <input className={inp} value={f.stock_uom} onChange={e => set("stock_uom", e.target.value)} placeholder={tx("kg / L / drum")} />
           </div>
           <div className={row}>
-            <label className={lbl}>Dosing UOM</label>
-            <input className={inp} value={f.dosing_uom} onChange={e => set("dosing_uom", e.target.value)} placeholder="ml / g / ppm" />
+            <label className={lbl}>{tx("Dosing UOM")}</label>
+            <input className={inp} value={f.dosing_uom} onChange={e => set("dosing_uom", e.target.value)} placeholder={tx("ml / g / ppm")} />
           </div>
           <div className={row}>
-            <label className={lbl}>Opening Stock</label>
+            <label className={lbl}>{tx("Opening Stock")}</label>
             <input className={inp} type="number" step="any" value={f.opening_stock ?? ""} onChange={e => set("opening_stock", e.target.value ? +e.target.value : undefined)} />
           </div>
           <div className={row}>
-            <label className={lbl}>Received Qty</label>
+            <label className={lbl}>{tx("Received Qty")}</label>
             <input className={inp} type="number" step="any" value={f.received_qty ?? 0} onChange={e => set("received_qty", +e.target.value)} />
           </div>
           <div className={row}>
-            <label className={lbl}>Consumed Qty</label>
+            <label className={lbl}>{tx("Consumed Qty")}</label>
             <input className={inp} type="number" step="any" value={f.consumed_qty ?? 0} onChange={e => set("consumed_qty", +e.target.value)} />
           </div>
           <div className={row}>
-            <label className={lbl}>Closing Stock</label>
+            <label className={lbl}>{tx("Closing Stock")}</label>
             <input className={inp} type="number" step="any" value={f.closing_stock ?? ""} onChange={e => set("closing_stock", e.target.value ? +e.target.value : undefined)} />
           </div>
 
           {/* Dosing */}
           <div className={row}>
-            <label className={lbl}>Quantity Dosed *</label>
+            <label className={lbl}>{tx("Quantity Dosed *")}</label>
             <input className={inp} type="number" step="any" value={f.quantity_dosed ?? 0} onChange={e => set("quantity_dosed", +e.target.value)} />
           </div>
           <div className={row}>
-            <label className={lbl}>Dosing Unit *</label>
-            <input className={inp} value={f.unit} onChange={e => set("unit", e.target.value)} placeholder="kg, L, g" />
+            <label className={lbl}>{tx("Dosing Unit *")}</label>
+            <input className={inp} value={f.unit} onChange={e => set("unit", e.target.value)} placeholder={tx("kg, L, g")} />
           </div>
           <div className={row}>
-            <label className={lbl}>Unit Cost</label>
+            <label className={lbl}>{tx("Unit Cost")}</label>
             <input className={inp} type="number" step="any" value={f.unit_cost ?? ""} onChange={e => set("unit_cost", e.target.value ? +e.target.value : undefined)} />
           </div>
           <div className={row}>
-            <label className={lbl}>Water Volume (m³)</label>
+            <label className={lbl}>{tx("Water Volume (m³)")}</label>
             <input className={inp} type="number" step="any" value={f.water_volume_m3 ?? ""} onChange={e => set("water_volume_m3", e.target.value ? +e.target.value : undefined)} />
           </div>
           <div className={row}>
-            <label className={lbl}>Target Dose (ppm)</label>
+            <label className={lbl}>{tx("Target Dose (ppm)")}</label>
             <input className={inp} type="number" step="any" value={f.target_dose_ppm ?? ""} onChange={e => set("target_dose_ppm", e.target.value ? +e.target.value : undefined)} />
           </div>
           <div className={row}>
-            <label className={lbl}>Actual Dose (ppm)</label>
+            <label className={lbl}>{tx("Actual Dose (ppm)")}</label>
             <input className={inp} type="number" step="any" value={f.actual_dose_ppm ?? ""} onChange={e => set("actual_dose_ppm", e.target.value ? +e.target.value : undefined)} />
           </div>
 
           {/* KPI denominators */}
           <div className={row}>
-            <label className={lbl}>Water Treated (m³ period)</label>
+            <label className={lbl}>{tx("Water Treated (m³ period)")}</label>
             <input className={inp} type="number" step="any" value={f.water_treated_m3 ?? ""} onChange={e => set("water_treated_m3", e.target.value ? +e.target.value : undefined)} />
           </div>
           <div className={row}>
-            <label className={lbl}>Steam Produced (ton period)</label>
+            <label className={lbl}>{tx("Steam Produced (ton period)")}</label>
             <input className={inp} type="number" step="any" value={f.steam_produced_ton ?? ""} onChange={e => set("steam_produced_ton", e.target.value ? +e.target.value : undefined)} />
           </div>
 
           {/* Water quality */}
           <div className={row}>
-            <label className={lbl}>Feed pH</label>
+            <label className={lbl}>{tx("Feed pH")}</label>
             <input className={inp} type="number" step="0.01" value={f.feed_ph ?? ""} onChange={e => set("feed_ph", e.target.value ? +e.target.value : undefined)} />
           </div>
           <div className={row}>
-            <label className={lbl}>Product pH</label>
+            <label className={lbl}>{tx("Product pH")}</label>
             <input className={inp} type="number" step="0.01" value={f.product_ph ?? ""} onChange={e => set("product_ph", e.target.value ? +e.target.value : undefined)} />
           </div>
           <div className={row}>
-            <label className={lbl}>Residual Chlorine (ppm)</label>
+            <label className={lbl}>{tx("Residual Chlorine (ppm)")}</label>
             <input className={inp} type="number" step="any" value={f.residual_chlorine_ppm ?? ""} onChange={e => set("residual_chlorine_ppm", e.target.value ? +e.target.value : undefined)} />
           </div>
           <div className={row}>
-            <label className={lbl}>TDS Feed (ppm)</label>
+            <label className={lbl}>{tx("TDS Feed (ppm)")}</label>
             <input className={inp} type="number" step="any" value={f.tds_feed_ppm ?? ""} onChange={e => set("tds_feed_ppm", e.target.value ? +e.target.value : undefined)} />
           </div>
 
           {/* Meta */}
           <div className={row}>
-            <label className={lbl}>Shift Ref</label>
+            <label className={lbl}>{tx("Shift Ref")}</label>
             <input className={inp} value={f.shift_ref} onChange={e => set("shift_ref", e.target.value)} />
           </div>
           <div className={`${row} col-span-2`}>
-            <label className={lbl}>Notes</label>
+            <label className={lbl}>{tx("Notes")}</label>
             <textarea className={`${inp} h-16 resize-none`} value={f.notes} onChange={e => set("notes", e.target.value)} />
           </div>
         </div>
@@ -323,10 +324,10 @@ function RecordForm({
             onClick={() => onSave(f as TreatmentRecordCreate)}
             className="px-4 py-1.5 text-sm bg-teal-600 hover:bg-teal-500 text-white rounded disabled:opacity-40"
           >
-            {busy ? "Saving…" : "Save"}
+            {busy ? tx("Saving…") : tx("Save")}
           </button>
           <button onClick={onClose} className="px-3 py-1.5 text-sm text-slate-400 hover:text-white">
-            Cancel
+            {tx("Cancel")}
           </button>
         </div>
       </div>
@@ -365,53 +366,53 @@ function ChemicalForm({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
       <div className="bg-slate-800 border border-slate-700 rounded-xl w-full max-w-lg p-6 space-y-4 overflow-y-auto max-h-[90vh]">
-        <h3 className="text-white font-semibold text-lg">{initial ? "Edit" : "New"} Chemical</h3>
+        <h3 className="text-white font-semibold text-lg">{initial ? tx("Edit") : tx("New")} {tx("Chemical")}</h3>
         <div className="grid grid-cols-2 gap-3">
           <div className={row}>
-            <label className={lbl}>Code *</label>
+            <label className={lbl}>{tx("Code *")}</label>
             <input className={inp} value={f.chemical_code} onChange={e => set("chemical_code", e.target.value)} placeholder="CHM-CLOR-001" />
           </div>
           <div className={row}>
-            <label className={lbl}>Name *</label>
+            <label className={lbl}>{tx("Name *")}</label>
             <input className={inp} value={f.chemical_name} onChange={e => set("chemical_name", e.target.value)} />
           </div>
           <div className={`${row} col-span-2`}>
-            <label className={lbl}>Category *</label>
+            <label className={lbl}>{tx("Category *")}</label>
             <select className={inp} value={f.chemical_category} onChange={e => set("chemical_category", e.target.value as ChemicalCategory)}>
               {ALL_CATEGORIES.map(c => <option key={c} value={c}>{CHEMICAL_CATEGORY_LABELS[c]}</option>)}
             </select>
           </div>
           <div className={row}>
-            <label className={lbl}>Stock UOM *</label>
-            <input className={inp} value={f.stock_uom} onChange={e => set("stock_uom", e.target.value)} placeholder="kg / L / drum" />
+            <label className={lbl}>{tx("Stock UOM *")}</label>
+            <input className={inp} value={f.stock_uom} onChange={e => set("stock_uom", e.target.value)} placeholder={tx("kg / L / drum")} />
           </div>
           <div className={row}>
-            <label className={lbl}>Dosing UOM *</label>
-            <input className={inp} value={f.dosing_uom} onChange={e => set("dosing_uom", e.target.value)} placeholder="ml / g / ppm" />
+            <label className={lbl}>{tx("Dosing UOM *")}</label>
+            <input className={inp} value={f.dosing_uom} onChange={e => set("dosing_uom", e.target.value)} placeholder={tx("ml / g / ppm")} />
           </div>
           <div className={row}>
-            <label className={lbl}>Unit Cost</label>
+            <label className={lbl}>{tx("Unit Cost")}</label>
             <input className={inp} type="number" step="any" value={f.unit_cost ?? ""} onChange={e => set("unit_cost", e.target.value ? +e.target.value : undefined)} />
           </div>
           <div className={row}>
-            <label className={lbl}>Low Stock Threshold</label>
+            <label className={lbl}>{tx("Low Stock Threshold")}</label>
             <input className={inp} type="number" step="any" value={f.low_stock_threshold ?? ""} onChange={e => set("low_stock_threshold", e.target.value ? +e.target.value : undefined)} />
           </div>
           <div className={row}>
-            <label className={lbl}>Min Target Dose</label>
+            <label className={lbl}>{tx("Min Target Dose")}</label>
             <input className={inp} type="number" step="any" value={f.target_dose_min ?? ""} onChange={e => set("target_dose_min", e.target.value ? +e.target.value : undefined)} />
           </div>
           <div className={row}>
-            <label className={lbl}>Max Target Dose</label>
+            <label className={lbl}>{tx("Max Target Dose")}</label>
             <input className={inp} type="number" step="any" value={f.target_dose_max ?? ""} onChange={e => set("target_dose_max", e.target.value ? +e.target.value : undefined)} />
           </div>
           <div className={`${row} col-span-2`}>
-            <label className={lbl}>Description</label>
+            <label className={lbl}>{tx("Description")}</label>
             <textarea className={`${inp} h-16 resize-none`} value={f.description} onChange={e => set("description", e.target.value)} />
           </div>
           <div className="col-span-2 flex items-center gap-2">
             <input type="checkbox" id="is_active" checked={!!f.is_active} onChange={e => set("is_active", e.target.checked)} />
-            <label htmlFor="is_active" className="text-sm text-slate-300">Active</label>
+            <label htmlFor="is_active" className="text-sm text-slate-300">{tx("Active")}</label>
           </div>
         </div>
         <div className="flex gap-2 pt-2">
@@ -420,9 +421,9 @@ function ChemicalForm({
             onClick={() => onSave(f as WaterTreatmentChemicalCreate)}
             className="px-4 py-1.5 text-sm bg-teal-600 hover:bg-teal-500 text-white rounded disabled:opacity-40"
           >
-            {busy ? "Saving…" : "Save"}
+            {busy ? tx("Saving…") : tx("Save")}
           </button>
-          <button onClick={onClose} className="px-3 py-1.5 text-sm text-slate-400 hover:text-white">Cancel</button>
+          <button onClick={onClose} className="px-3 py-1.5 text-sm text-slate-400 hover:text-white">{tx("Cancel")}</button>
         </div>
       </div>
     </div>
@@ -562,8 +563,8 @@ export default function ChemicalTreatmentPage() {
       {/* ── Title & tab bar ──────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-xl font-bold text-white">Chemical Water Treatment</h1>
-          <p className="text-sm text-slate-400 mt-0.5">Dosing records, stock movements, lot traceability and KPIs</p>
+          <h1 className="text-xl font-bold text-white">{tx("Chemical Water Treatment")}</h1>
+          <p className="text-sm text-slate-400 mt-0.5">{tx("Dosing records, stock movements, lot traceability and KPIs")}</p>
         </div>
         <div className="flex gap-2">
           {(["records", "catalog"] as const).map(t => (
@@ -576,7 +577,7 @@ export default function ChemicalTreatmentPage() {
                   : "bg-slate-700 text-slate-300 hover:text-white"
               }`}
             >
-              {t === "records" ? "Dosing Records" : "Chemical Catalog"}
+              {t === "records" ? tx("Dosing Records") : tx("Chemical Catalog")}
             </button>
           ))}
         </div>
@@ -589,62 +590,62 @@ export default function ChemicalTreatmentPage() {
           <div className="bg-slate-800 border border-slate-700 rounded-xl p-4">
             <div className="flex flex-wrap gap-3 items-end">
               <div className="flex flex-col gap-1">
-                <label className="text-xs text-slate-400">From</label>
+                <label className="text-xs text-slate-400">{tx("From")}</label>
                 <input className={inp} type="date" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setRecPage(0); }} />
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-xs text-slate-400">To</label>
+                <label className="text-xs text-slate-400">{tx("To")}</label>
                 <input className={inp} type="date" value={dateTo} onChange={e => { setDateTo(e.target.value); setRecPage(0); }} />
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-xs text-slate-400">Asset</label>
+                <label className="text-xs text-slate-400">{tx("Asset")}</label>
                 <select className={inp} value={assetId} onChange={e => { setAssetId(e.target.value); setRecPage(0); }}>
-                  <option value="">All assets</option>
+                  <option value="">{tx("All assets")}</option>
                   {assets.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
                 </select>
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-xs text-slate-400">Chemical</label>
+                <label className="text-xs text-slate-400">{tx("Chemical")}</label>
                 <select className={inp} value={chemId} onChange={e => { setChemId(e.target.value); setRecPage(0); }}>
-                  <option value="">All chemicals</option>
+                  <option value="">{tx("All chemicals")}</option>
                   {chemOptions.map(c => <option key={c.id} value={c.id}>{c.chemical_name}</option>)}
                 </select>
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-xs text-slate-400">Category</label>
+                <label className="text-xs text-slate-400">{tx("Category")}</label>
                 <select className={inp} value={chemCat} onChange={e => { setChemCat(e.target.value); setRecPage(0); }}>
-                  <option value="">All categories</option>
+                  <option value="">{tx("All categories")}</option>
                   {ALL_CATEGORIES.map(c => <option key={c} value={c}>{CHEMICAL_CATEGORY_LABELS[c]}</option>)}
                 </select>
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-xs text-slate-400">Treatment Area</label>
-                <input className={inp} value={treatArea} onChange={e => { setTreatArea(e.target.value); setRecPage(0); }} placeholder="Filter area…" />
+                <label className="text-xs text-slate-400">{tx("Treatment Area")}</label>
+                <input className={inp} value={treatArea} onChange={e => { setTreatArea(e.target.value); setRecPage(0); }} placeholder={tx("Filter area…")} />
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-xs text-slate-400">Batch / Lot</label>
-                <input className={inp} value={batchLot} onChange={e => { setBatchLot(e.target.value); setRecPage(0); }} placeholder="Lot no…" />
+                <label className="text-xs text-slate-400">{tx("Batch / Lot")}</label>
+                <input className={inp} value={batchLot} onChange={e => { setBatchLot(e.target.value); setRecPage(0); }} placeholder={tx("Lot no…")} />
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-xs text-slate-400">Anomaly</label>
+                <label className="text-xs text-slate-400">{tx("Anomaly")}</label>
                 <select className={inp} value={isAnomaly} onChange={e => { setIsAnomaly(e.target.value); setRecPage(0); }}>
-                  <option value="">All</option>
-                  <option value="yes">Anomaly only</option>
-                  <option value="no">Normal only</option>
+                  <option value="">{tx("All")}</option>
+                  <option value="yes">{tx("Anomaly only")}</option>
+                  <option value="no">{tx("Normal only")}</option>
                 </select>
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-xs text-slate-400">Overdose</label>
+                <label className="text-xs text-slate-400">{tx("Overdose")}</label>
                 <select className={inp} value={overdose} onChange={e => { setOverdose(e.target.value); setRecPage(0); }}>
-                  <option value="">All</option>
-                  <option value="yes">Overdose only</option>
+                  <option value="">{tx("All")}</option>
+                  <option value="yes">{tx("Overdose only")}</option>
                 </select>
               </div>
               <button
                 onClick={() => { setDateFrom(""); setDateTo(""); setAssetId(""); setChemId(""); setChemCat(""); setTreatArea(""); setBatchLot(""); setIsAnomaly(""); setOverdose(""); setRecPage(0); }}
                 className="px-3 py-1.5 text-xs text-slate-400 hover:text-white border border-slate-600 rounded"
               >
-                Clear
+                {tx("Clear")}
               </button>
             </div>
           </div>
@@ -652,44 +653,44 @@ export default function ChemicalTreatmentPage() {
           {/* KPI Strip */}
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
             <KPICard
-              label="Total Records"
+              label={tx("Total Records")}
               value={kpisLoading ? "…" : n(kpis?.total_records, 0)}
               accent="border-teal-500/30"
             />
             <KPICard
-              label="Qty Dosed"
+              label={tx("Qty Dosed")}
               value={kpisLoading ? "…" : n(kpis?.total_quantity_dosed)}
               sub="dosing units"
             />
             <KPICard
-              label="Consumed"
+              label={tx("Consumed")}
               value={kpisLoading ? "…" : n(kpis?.total_consumed_qty)}
               sub="stock units"
             />
             <KPICard
-              label="Received"
+              label={tx("Received")}
               value={kpisLoading ? "…" : n(kpis?.total_received_qty)}
               sub="stock units"
             />
             <KPICard
-              label="Total Cost"
+              label={tx("Total Cost")}
               value={kpisLoading ? "…" : `$${n(kpis?.total_cost)}`}
               accent="border-blue-500/30"
             />
             <KPICard
-              label="Chem / m³ Water"
+              label={tx("Chem / m³ Water")}
               value={kpisLoading ? "…" : n(kpis?.chemical_per_m3_water, 4)}
               sub="dosing unit / m³"
               accent="border-cyan-500/30"
             />
             <KPICard
-              label="Chem / ton Steam"
+              label={tx("Chem / ton Steam")}
               value={kpisLoading ? "…" : n(kpis?.chemical_per_ton_steam, 4)}
               sub="dosing unit / ton"
               accent="border-orange-500/30"
             />
             <KPICard
-              label="Anomalies"
+              label={tx("Anomalies")}
               value={kpisLoading ? "…" : (kpis?.overdose_count ?? 0) + (kpis?.underdose_count ?? 0) + (kpis?.anomaly_count ?? 0)}
               flag={(kpis?.overdose_count ?? 0) > 0 || (kpis?.underdose_count ?? 0) > 0}
               flagMsg={
@@ -706,7 +707,7 @@ export default function ChemicalTreatmentPage() {
           {/* Low stock alert */}
           {kpis?.low_stock_chemicals && kpis.low_stock_chemicals.length > 0 && (
             <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg px-4 py-3 text-sm text-amber-300">
-              <span className="font-medium">Low stock alert:</span>{" "}
+              <span className="font-medium">{tx("Low stock alert:")}</span>{" "}
               {kpis.low_stock_chemicals.join(", ")}
             </div>
           )}
@@ -715,20 +716,20 @@ export default function ChemicalTreatmentPage() {
           <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
             <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700">
               <span className="text-sm font-medium text-white">
-                Dosing Records {recsLoading ? "…" : `(${records.length})`}
+                {tx("Dosing Records")} {recsLoading ? "…" : `(${records.length})`}
               </span>
               <div className="flex gap-2">
                 <button
                   onClick={() => downloadChemicalTreatmentCsv(filters)}
                   className="px-3 py-1.5 text-xs border border-slate-600 rounded text-slate-300 hover:text-white"
                 >
-                  Export CSV
+                  {tx("Export CSV")}
                 </button>
                 <button
                   onClick={() => setCreateRecOpen(true)}
                   className="px-3 py-1.5 text-xs bg-teal-600 hover:bg-teal-500 text-white rounded font-medium"
                 >
-                  + Add Record
+                  {tx("+ Add Record")}
                 </button>
               </div>
             </div>
@@ -737,25 +738,25 @@ export default function ChemicalTreatmentPage() {
               <table className="w-full text-sm text-left">
                 <thead>
                   <tr className="text-xs text-slate-400 uppercase border-b border-slate-700">
-                    <th className="px-3 py-2">Record No</th>
-                    <th className="px-3 py-2">Date</th>
-                    <th className="px-3 py-2">Asset</th>
-                    <th className="px-3 py-2">Chemical</th>
-                    <th className="px-3 py-2">Category</th>
-                    <th className="px-3 py-2">Area</th>
-                    <th className="px-3 py-2">Lot No</th>
-                    <th className="px-3 py-2">Dosed</th>
-                    <th className="px-3 py-2">Consumed</th>
-                    <th className="px-3 py-2">Closing Stock</th>
-                    <th className="px-3 py-2">Target ppm</th>
-                    <th className="px-3 py-2">Actual ppm</th>
-                    <th className="px-3 py-2">Status</th>
+                    <th className="px-3 py-2">{tx("Record No")}</th>
+                    <th className="px-3 py-2">{tx("Date")}</th>
+                    <th className="px-3 py-2">{tx("Asset")}</th>
+                    <th className="px-3 py-2">{tx("Chemical")}</th>
+                    <th className="px-3 py-2">{tx("Category")}</th>
+                    <th className="px-3 py-2">{tx("Area")}</th>
+                    <th className="px-3 py-2">{tx("Lot No")}</th>
+                    <th className="px-3 py-2">{tx("Dosed")}</th>
+                    <th className="px-3 py-2">{tx("Consumed")}</th>
+                    <th className="px-3 py-2">{tx("Closing Stock")}</th>
+                    <th className="px-3 py-2">{tx("Target ppm")}</th>
+                    <th className="px-3 py-2">{tx("Actual ppm")}</th>
+                    <th className="px-3 py-2">{tx("Status")}</th>
                     <th className="px-3 py-2"></th>
                   </tr>
                 </thead>
                 <tbody>
                   {records.length === 0 && !recsLoading && (
-                    <tr><td colSpan={14} className="px-3 py-8 text-center text-slate-500">No records found.</td></tr>
+                    <tr><td colSpan={14} className="px-3 py-8 text-center text-slate-500">{tx("No records found.")}</td></tr>
                   )}
                   {records.map(rec => (
                     <tr key={rec.id} className="border-b border-slate-700/50 hover:bg-slate-700/30">
@@ -774,8 +775,8 @@ export default function ChemicalTreatmentPage() {
                       <td className="px-3 py-2"><AnomalyBadge rec={rec} /></td>
                       <td className="px-3 py-2">
                         <div className="flex gap-2">
-                          <button onClick={() => setEditRec(rec)} className="text-xs text-teal-400 hover:text-teal-300">Edit</button>
-                          <button onClick={() => setDeleteRec(rec)} className="text-xs text-red-400 hover:text-red-300">Del</button>
+                          <button onClick={() => setEditRec(rec)} className="text-xs text-teal-400 hover:text-teal-300">{tx("Edit")}</button>
+                          <button onClick={() => setDeleteRec(rec)} className="text-xs text-red-400 hover:text-red-300">{tx("Del")}</button>
                         </div>
                       </td>
                     </tr>
@@ -786,9 +787,9 @@ export default function ChemicalTreatmentPage() {
 
             {/* Pagination */}
             <div className="flex items-center gap-3 px-4 py-3 border-t border-slate-700">
-              <button disabled={recPage === 0} onClick={() => setRecPage(p => p - 1)} className="text-xs text-slate-400 hover:text-white disabled:opacity-40">← Prev</button>
-              <span className="text-xs text-slate-400">Page {recPage + 1}</span>
-              <button disabled={records.length < REC_LIMIT} onClick={() => setRecPage(p => p + 1)} className="text-xs text-slate-400 hover:text-white disabled:opacity-40">Next →</button>
+              <button disabled={recPage === 0} onClick={() => setRecPage(p => p - 1)} className="text-xs text-slate-400 hover:text-white disabled:opacity-40">{tx("← Prev")}</button>
+              <span className="text-xs text-slate-400">{tx("Page")} {recPage + 1}</span>
+              <button disabled={records.length < REC_LIMIT} onClick={() => setRecPage(p => p + 1)} className="text-xs text-slate-400 hover:text-white disabled:opacity-40">{tx("Next →")}</button>
             </div>
           </div>
         </>
@@ -799,35 +800,35 @@ export default function ChemicalTreatmentPage() {
         <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700">
             <span className="text-sm font-medium text-white">
-              Chemical Catalog {chemsLoading ? "…" : `(${chemicals.length})`}
+              {tx("Chemical Catalog")} {chemsLoading ? "…" : `(${chemicals.length})`}
             </span>
             <button
               onClick={() => setCreateChemOpen(true)}
               className="px-3 py-1.5 text-xs bg-teal-600 hover:bg-teal-500 text-white rounded font-medium"
             >
-              + New Chemical
+              {tx("+ New Chemical")}
             </button>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left">
               <thead>
                 <tr className="text-xs text-slate-400 uppercase border-b border-slate-700">
-                  <th className="px-3 py-2">Code</th>
-                  <th className="px-3 py-2">Name</th>
-                  <th className="px-3 py-2">Category</th>
-                  <th className="px-3 py-2">Supplier</th>
-                  <th className="px-3 py-2">Stock UOM</th>
-                  <th className="px-3 py-2">Dosing UOM</th>
-                  <th className="px-3 py-2">Unit Cost</th>
-                  <th className="px-3 py-2">Target Dose</th>
-                  <th className="px-3 py-2">Low Stock</th>
-                  <th className="px-3 py-2">Status</th>
+                  <th className="px-3 py-2">{tx("Code")}</th>
+                  <th className="px-3 py-2">{tx("Name")}</th>
+                  <th className="px-3 py-2">{tx("Category")}</th>
+                  <th className="px-3 py-2">{tx("Supplier")}</th>
+                  <th className="px-3 py-2">{tx("Stock UOM")}</th>
+                  <th className="px-3 py-2">{tx("Dosing UOM")}</th>
+                  <th className="px-3 py-2">{tx("Unit Cost")}</th>
+                  <th className="px-3 py-2">{tx("Target Dose")}</th>
+                  <th className="px-3 py-2">{tx("Low Stock")}</th>
+                  <th className="px-3 py-2">{tx("Status")}</th>
                   <th className="px-3 py-2"></th>
                 </tr>
               </thead>
               <tbody>
                 {chemicals.length === 0 && !chemsLoading && (
-                  <tr><td colSpan={11} className="px-3 py-8 text-center text-slate-500">No chemicals configured.</td></tr>
+                  <tr><td colSpan={11} className="px-3 py-8 text-center text-slate-500">{tx("No chemicals configured.")}</td></tr>
                 )}
                 {chemicals.map(chem => (
                   <tr key={chem.id} className="border-b border-slate-700/50 hover:bg-slate-700/30">
@@ -846,13 +847,13 @@ export default function ChemicalTreatmentPage() {
                     <td className="px-3 py-2 text-slate-400 text-xs">{chem.low_stock_threshold != null ? n(chem.low_stock_threshold) : "—"}</td>
                     <td className="px-3 py-2">
                       <span className={`px-2 py-0.5 rounded text-xs font-medium border ${chem.is_active ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "bg-slate-500/10 border-slate-500/20 text-slate-400"}`}>
-                        {chem.is_active ? "Active" : "Inactive"}
+                        {chem.is_active ? tx("Active") : tx("Inactive")}
                       </span>
                     </td>
                     <td className="px-3 py-2">
                       <div className="flex gap-2">
-                        <button onClick={() => setEditChem(chem)} className="text-xs text-teal-400 hover:text-teal-300">Edit</button>
-                        <button onClick={() => setDeleteChem(chem)} className="text-xs text-red-400 hover:text-red-300">Del</button>
+                        <button onClick={() => setEditChem(chem)} className="text-xs text-teal-400 hover:text-teal-300">{tx("Edit")}</button>
+                        <button onClick={() => setDeleteChem(chem)} className="text-xs text-red-400 hover:text-red-300">{tx("Del")}</button>
                       </div>
                     </td>
                   </tr>
@@ -892,9 +893,9 @@ export default function ChemicalTreatmentPage() {
       {deleteRec && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
           <div className="bg-slate-800 border border-slate-700 rounded-xl p-6 w-full max-w-sm space-y-4">
-            <h3 className="text-white font-semibold">Delete Record</h3>
+            <h3 className="text-white font-semibold">{tx("Delete Record")}</h3>
             <p className="text-sm text-slate-300">
-              Delete <strong>{deleteRec.record_no}</strong>? This cannot be undone.
+              {tx("Delete")} <strong>{deleteRec.record_no}</strong>{tx("? This cannot be undone.")}
             </p>
             <div className="flex gap-2">
               <button
@@ -902,9 +903,9 @@ export default function ChemicalTreatmentPage() {
                 onClick={() => deleteRecMut.mutate(deleteRec.id)}
                 className="px-4 py-1.5 text-sm bg-red-600 hover:bg-red-500 text-white rounded disabled:opacity-40"
               >
-                {deleteRecMut.isPending ? "Deleting…" : "Delete"}
+                {deleteRecMut.isPending ? tx("Deleting…") : tx("Delete")}
               </button>
-              <button onClick={() => setDeleteRec(null)} className="px-3 py-1.5 text-sm text-slate-400 hover:text-white">Cancel</button>
+              <button onClick={() => setDeleteRec(null)} className="px-3 py-1.5 text-sm text-slate-400 hover:text-white">{tx("Cancel")}</button>
             </div>
           </div>
         </div>
@@ -933,10 +934,9 @@ export default function ChemicalTreatmentPage() {
       {deleteChem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
           <div className="bg-slate-800 border border-slate-700 rounded-xl p-6 w-full max-w-sm space-y-4">
-            <h3 className="text-white font-semibold">Delete Chemical</h3>
+            <h3 className="text-white font-semibold">{tx("Delete Chemical")}</h3>
             <p className="text-sm text-slate-300">
-              Delete <strong>{deleteChem.chemical_name}</strong> from the catalog?
-              Existing records referencing this chemical will not be deleted.
+              {tx("Delete")} <strong>{deleteChem.chemical_name}</strong> {tx("from the catalog? Existing records referencing this chemical will not be deleted.")}
             </p>
             <div className="flex gap-2">
               <button
@@ -944,9 +944,9 @@ export default function ChemicalTreatmentPage() {
                 onClick={() => deleteChemMut.mutate(deleteChem.id)}
                 className="px-4 py-1.5 text-sm bg-red-600 hover:bg-red-500 text-white rounded disabled:opacity-40"
               >
-                {deleteChemMut.isPending ? "Deleting…" : "Delete"}
+                {deleteChemMut.isPending ? tx("Deleting…") : tx("Delete")}
               </button>
-              <button onClick={() => setDeleteChem(null)} className="px-3 py-1.5 text-sm text-slate-400 hover:text-white">Cancel</button>
+              <button onClick={() => setDeleteChem(null)} className="px-3 py-1.5 text-sm text-slate-400 hover:text-white">{tx("Cancel")}</button>
             </div>
           </div>
         </div>

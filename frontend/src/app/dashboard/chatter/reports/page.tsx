@@ -4,6 +4,7 @@ import {
   chatterApi, ChatterStats, ActivityOut, ActivityType,
   TYPE_BADGE, REF_LABEL, timeAgo,
 } from "@/lib/chatter";
+import { tx } from "@/lib/i18n/core";
 
 type Tab = "volume" | "types" | "users";
 
@@ -43,14 +44,14 @@ export default function ChatterReportsPage() {
   }, {} as Record<string, number>);
 
   const tabs: { key: Tab; label: string }[] = [
-    { key: "volume", label: "Module Volume" },
-    { key: "types", label: "Activity Types" },
-    { key: "users", label: "User Activity" },
+    { key: "volume", label: tx("Module Volume") },
+    { key: "types", label: tx("Activity Types") },
+    { key: "users", label: tx("User Activity") },
   ];
 
   return (
     <div className="p-6 space-y-4">
-      <h1 className="text-xl font-bold text-gray-900">Chatter Reports</h1>
+      <h1 className="text-xl font-bold text-gray-900">{tx("Chatter Reports")}</h1>
 
       <div className="flex border-b">
         {tabs.map(t => (
@@ -61,13 +62,13 @@ export default function ChatterReportsPage() {
         ))}
       </div>
 
-      {loading ? <p className="text-sm text-gray-500 text-center py-8">Loading…</p> : (
+      {loading ? <p className="text-sm text-gray-500 text-center py-8">{tx("Loading…")}</p> : (
         <>
           {tab === "volume" && (
             <div className="bg-white border rounded-lg shadow-sm p-5">
-              <h2 className="font-semibold text-gray-800 text-sm mb-4">Activity Volume by Module</h2>
+              <h2 className="font-semibold text-gray-800 text-sm mb-4">{tx("Activity Volume by Module")}</h2>
               {stats?.by_module.length === 0
-                ? <p className="text-sm text-gray-400">No activity data yet.</p>
+                ? <p className="text-sm text-gray-400">{tx("No activity data yet.")}</p>
                 : (
                   <div className="space-y-3">
                     {(stats?.by_module ?? []).map(m => {
@@ -79,7 +80,7 @@ export default function ChatterReportsPage() {
                             <span className="text-sm text-gray-700 capitalize">
                               {REF_LABEL[m.reference_type as keyof typeof REF_LABEL] ?? m.reference_type.replace("_", " ")}
                             </span>
-                            <span className="text-sm font-semibold text-gray-800">{m.count} activities</span>
+                            <span className="text-sm font-semibold text-gray-800">{m.count} {tx("activities")}</span>
                           </div>
                           <div className="w-full bg-gray-100 rounded-full h-3">
                             <div className="h-3 rounded-full bg-blue-500" style={{ width: `${pct}%` }} />
@@ -95,7 +96,7 @@ export default function ChatterReportsPage() {
           {tab === "types" && (
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="bg-white border rounded-lg shadow-sm p-5">
-                <h2 className="font-semibold text-gray-800 text-sm mb-4">Activities by Type</h2>
+                <h2 className="font-semibold text-gray-800 text-sm mb-4">{tx("Activities by Type")}</h2>
                 {ACTIVITY_TYPES.map(t => {
                   const count = byType[t] ?? 0;
                   const max = Math.max(...Object.values(byType), 1);
@@ -117,14 +118,14 @@ export default function ChatterReportsPage() {
               </div>
 
               <div className="bg-white border rounded-lg shadow-sm p-5">
-                <h2 className="font-semibold text-gray-800 text-sm mb-4">Summary</h2>
+                <h2 className="font-semibold text-gray-800 text-sm mb-4">{tx("Summary")}</h2>
                 {[
-                  { label: "Total Activities", value: stats?.total_activities ?? 0 },
-                  { label: "Total Comments", value: stats?.total_comments ?? 0 },
-                  { label: "Pending Mentions", value: stats?.pending_mentions ?? 0 },
-                  { label: "Active Modules", value: stats?.by_module.length ?? 0 },
-                  { label: "Pinned Activities", value: activities.filter(a => a.is_pinned).length },
-                  { label: "With Attachments", value: activities.filter(a => a.attachments.length > 0).length },
+                  { label: tx("Total Activities"), value: stats?.total_activities ?? 0 },
+                  { label: tx("Total Comments"), value: stats?.total_comments ?? 0 },
+                  { label: tx("Pending Mentions"), value: stats?.pending_mentions ?? 0 },
+                  { label: tx("Active Modules"), value: stats?.by_module.length ?? 0 },
+                  { label: tx("Pinned Activities"), value: activities.filter(a => a.is_pinned).length },
+                  { label: tx("With Attachments"), value: activities.filter(a => a.attachments.length > 0).length },
                 ].map(s => (
                   <div key={s.label} className="flex justify-between py-2 border-b last:border-0">
                     <span className="text-sm text-gray-600">{s.label}</span>
@@ -137,9 +138,9 @@ export default function ChatterReportsPage() {
 
           {tab === "users" && (
             <div className="bg-white border rounded-lg shadow-sm p-5">
-              <h2 className="font-semibold text-gray-800 text-sm mb-4">Top Active Users</h2>
+              <h2 className="font-semibold text-gray-800 text-sm mb-4">{tx("Top Active Users")}</h2>
               {topUsers.length === 0
-                ? <p className="text-sm text-gray-400">No user activity yet.</p>
+                ? <p className="text-sm text-gray-400">{tx("No user activity yet.")}</p>
                 : (
                   <div className="space-y-3">
                     {topUsers.map(([user, count], i) => {

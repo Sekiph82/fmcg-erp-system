@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { timesheetsApi, TimesheetHeader, ACTIVITY_COLOR, ActivityType } from "@/lib/timesheets";
+import { tx } from "@/lib/i18n/core";
 
 function getMondayStr(d: Date): string {
   const day = d.getDay();
@@ -59,28 +60,28 @@ export default function WeeklyViewPage() {
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-gray-900">Weekly Timesheet View</h1>
+        <h1 className="text-xl font-bold text-gray-900">{tx("Weekly Timesheet View")}</h1>
         <div className="flex items-center gap-3">
-          <button onClick={prevWeek} className="rounded border px-3 py-1 text-sm text-gray-600 hover:bg-gray-50">← Prev</button>
+          <button onClick={prevWeek} className="rounded border px-3 py-1 text-sm text-gray-600 hover:bg-gray-50">{tx("← Prev")}</button>
           <span className="text-sm font-medium text-gray-700">{weekStart} → {weekEnd}</span>
-          <button onClick={nextWeek} className="rounded border px-3 py-1 text-sm text-gray-600 hover:bg-gray-50">Next →</button>
+          <button onClick={nextWeek} className="rounded border px-3 py-1 text-sm text-gray-600 hover:bg-gray-50">{tx("Next →")}</button>
         </div>
       </div>
 
       {loading ? (
-        <p className="text-gray-500 text-sm">Loading…</p>
+        <p className="text-gray-500 text-sm">{tx("Loading…")}</p>
       ) : (
         <div className="bg-white border rounded-lg shadow-sm overflow-x-auto">
           <table className="w-full text-xs">
             <thead className="bg-gray-50 border-b">
               <tr>
-                <th className="px-3 py-2 text-left font-semibold text-gray-600 w-32">Employee</th>
+                <th className="px-3 py-2 text-left font-semibold text-gray-600 w-32">{tx("Employee")}</th>
                 {weekDays.map(d => (
                   <th key={d} className="px-2 py-2 text-center font-semibold text-gray-600 min-w-[100px]">
                     {new Date(d + "T00:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}
                   </th>
                 ))}
-                <th className="px-3 py-2 text-right font-semibold text-gray-600">Total</th>
+                <th className="px-3 py-2 text-right font-semibold text-gray-600">{tx("Total")}</th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -100,24 +101,24 @@ export default function WeeklyViewPage() {
                             <div className="space-y-1">
                               {entries.map((e, i) => (
                                 <div key={i} className={`rounded px-1 py-0.5 ${ACTIVITY_COLOR[e.activity_type]}`}>
-                                  <div className="font-semibold">{e.hours}h</div>
+                                  <div className="font-semibold">{e.hours}{tx("h")}</div>
                                   {e.project && <div className="text-xs opacity-75 truncate">{e.project}</div>}
                                 </div>
                               ))}
                               {entries.length > 1 && (
-                                <div className="text-gray-500 font-semibold">{dayTotal}h total</div>
+                                <div className="text-gray-500 font-semibold">{dayTotal}{tx("h total")}</div>
                               )}
                             </div>
                           )}
                         </td>
                       );
                     })}
-                    <td className="px-3 py-2 text-right font-bold text-gray-900">{total.toFixed(1)}h</td>
+                    <td className="px-3 py-2 text-right font-bold text-gray-900">{total.toFixed(1)}{tx("h")}</td>
                   </tr>
                 );
               })}
               {Object.keys(grid).length === 0 && (
-                <tr><td colSpan={9} className="text-center text-gray-400 py-8">No timesheets for this week.</td></tr>
+                <tr><td colSpan={9} className="text-center text-gray-400 py-8">{tx("No timesheets for this week.")}</td></tr>
               )}
             </tbody>
           </table>

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
 import { marketingApi, BrandSpendCategory } from "@/lib/marketingApi";
 import { RequirePermission } from "@/components/PermissionGuard";
+import { tx } from "@/lib/i18n/core";
 
 const CATEGORIES: BrandSpendCategory[] = [
   "TV", "RADIO", "DIGITAL_ADS", "INFLUENCER", "EVENT", "SAMPLING",
@@ -47,9 +48,9 @@ export default function NewBrandSpendPage() {
       <div className="min-h-screen bg-[#0b1120] p-6 text-white max-w-2xl mx-auto">
         <div className="mb-6">
           <button onClick={() => router.back()} className="text-slate-400 hover:text-white text-sm mb-2">
-            ← Back
+            {tx("← Back")}
           </button>
-          <h1 className="text-2xl font-bold">New Brand Spend</h1>
+          <h1 className="text-2xl font-bold">{tx("New Brand Spend")}</h1>
         </div>
 
         {error && (
@@ -59,7 +60,7 @@ export default function NewBrandSpendPage() {
         <div className="bg-[#131c2e] border border-slate-700/50 rounded-xl p-6 space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Category *</label>
+              <label className="block text-xs text-slate-400 mb-1">{tx("Category *")}</label>
               <select value={form.spend_category} onChange={(e) => set("spend_category", e.target.value)}
                 className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
                 {CATEGORIES.map((c) => (
@@ -69,7 +70,7 @@ export default function NewBrandSpendPage() {
             </div>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Currency</label>
+              <label className="block text-xs text-slate-400 mb-1">{tx("Currency")}</label>
               <select value={form.currency} onChange={(e) => set("currency", e.target.value)}
                 className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
                 {["KES", "USD", "EUR", "GBP", "TRY"].map((c) => (
@@ -81,7 +82,7 @@ export default function NewBrandSpendPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Amount *</label>
+              <label className="block text-xs text-slate-400 mb-1">{tx("Amount *")}</label>
               <input type="number" min="0" step="0.01" value={form.amount}
                 onChange={(e) => set("amount", e.target.value)}
                 placeholder="0.00"
@@ -89,7 +90,7 @@ export default function NewBrandSpendPage() {
             </div>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Spend Date *</label>
+              <label className="block text-xs text-slate-400 mb-1">{tx("Spend Date *")}</label>
               <input type="date" value={form.spend_date}
                 onChange={(e) => set("spend_date", e.target.value)}
                 className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white" />
@@ -97,35 +98,35 @@ export default function NewBrandSpendPage() {
           </div>
 
           <div>
-            <label className="block text-xs text-slate-400 mb-1">Vendor / Supplier</label>
+            <label className="block text-xs text-slate-400 mb-1">{tx("Vendor / Supplier")}</label>
             <input type="text" value={form.vendor}
               onChange={(e) => set("vendor", e.target.value)}
-              placeholder="Vendor or agency name"
+              placeholder={tx("Vendor or agency name")}
               className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600" />
           </div>
 
           <div>
-            <label className="block text-xs text-slate-400 mb-1">Campaign <span className="text-slate-600">(optional)</span></label>
-            <EntityPicker kind="campaign" label="Campaign" value={form.campaign_id} onChange={(id) => set("campaign_id", id)} />
+            <label className="block text-xs text-slate-400 mb-1">{tx("Campaign")} <span className="text-slate-600">{tx("(optional)")}</span></label>
+            <EntityPicker kind="campaign" label={tx("Campaign")} value={form.campaign_id} onChange={(id) => set("campaign_id", id)} />
           </div>
 
           <div>
-            <label className="block text-xs text-slate-400 mb-1">Notes</label>
+            <label className="block text-xs text-slate-400 mb-1">{tx("Notes")}</label>
             <textarea value={form.notes} onChange={(e) => set("notes", e.target.value)}
-              rows={3} placeholder="Additional details..."
+              rows={3} placeholder={tx("Additional details...")}
               className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600 resize-none" />
           </div>
 
           <div className="flex justify-end gap-3 pt-2">
             <button onClick={() => router.back()}
               className="px-4 py-2 rounded-lg border border-slate-600 text-slate-300 hover:bg-slate-800 text-sm">
-              Cancel
+              {tx("Cancel")}
             </button>
             <button
               onClick={() => createMut.mutate()}
               disabled={!form.amount || !form.spend_date || createMut.isPending}
               className="px-5 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-sm font-medium">
-              {createMut.isPending ? "Saving..." : "Create Brand Spend"}
+              {createMut.isPending ? tx("Saving...") : tx("Create Brand Spend")}
             </button>
           </div>
         </div>

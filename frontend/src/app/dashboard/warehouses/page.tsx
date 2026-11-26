@@ -16,13 +16,14 @@ import { Select } from "@/components/ui/Select";
 import { ToastContainer } from "@/components/ui/Toast";
 import { useToast } from "@/hooks/useToast";
 import { ImportModal } from "@/components/import/ImportModal";
+import { tx, lx } from "@/lib/i18n/core";
 
-const TYPES: { value: string; label: string }[] = [
-  { value: "FINISHED_GOODS", label: "Finished Goods" },
-  { value: "RAW_MATERIAL", label: "Raw Material" },
-  { value: "TRANSIT", label: "Transit" },
-  { value: "RETURNS", label: "Returns" },
-];
+const TYPES: { value: string; label: string }[] = lx(() => [
+  { value: "FINISHED_GOODS", label: tx("Finished Goods") },
+  { value: "RAW_MATERIAL", label: tx("Raw Material") },
+  { value: "TRANSIT", label: tx("Transit") },
+  { value: "RETURNS", label: tx("Returns") },
+]);
 
 const typeVariant = (t: WarehouseType): "blue" | "yellow" | "gray" | "red" => {
   const map: Record<WarehouseType, "blue" | "yellow" | "gray" | "red"> = {
@@ -51,19 +52,19 @@ function WarehousesListTab() {
       qc.invalidateQueries({ queryKey: ["warehouses"] });
       setOpen(false);
       setForm(empty);
-      toast("success", "Warehouse created", `${w.name} (${w.code}) added.`);
+      toast("success", tx("Warehouse created"), tx("{name} ({code}) added.", { name: w.name, code: w.code }));
     },
-    onError: (err) => toast("error", "Failed to create warehouse", extractApiError(err)),
+    onError: (err) => toast("error", tx("Failed to create warehouse"), extractApiError(err)),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => warehousesApi.delete(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["warehouses"] });
-      toast("success", "Warehouse deleted", "Warehouse removed successfully.");
+      toast("success", tx("Warehouse deleted"), tx("Warehouse removed successfully."));
       setDeletingId(null);
     },
-    onError: (err) => toast("error", "Failed to delete warehouse", extractApiError(err)),
+    onError: (err) => toast("error", tx("Failed to delete warehouse"), extractApiError(err)),
   });
 
   const set = (key: keyof WarehouseCreate, value: unknown) => setForm((f) => ({ ...f, [key]: value }));
@@ -76,13 +77,13 @@ function WarehousesListTab() {
 
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Warehouses</h1>
-          <p className="text-sm text-gray-500 mt-1">{warehouses.length} total</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Warehouses")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{warehouses.length} {tx("total")}</p>
         </div>
         <div className="flex items-center gap-2">
           <ImportModal module="warehouses" onSuccess={() => qc.invalidateQueries({ queryKey: ["warehouses"] })} />
           <PermissionGuard permission="warehouses.create">
-            <Button onClick={() => setOpen(true)}>+ Add Warehouse</Button>
+            <Button onClick={() => setOpen(true)}>{tx("+ Add Warehouse")}</Button>
           </PermissionGuard>
         </div>
       </div>
@@ -95,13 +96,13 @@ function WarehousesListTab() {
           data={warehouses}
           emptyMessage="No warehouses yet. Add your first warehouse."
           columns={[
-            { header: "Code", accessor: "code", className: "font-mono text-xs font-medium" },
-            { header: "Name", accessor: "name" },
-            { header: "Type", accessor: (r) => <Badge label={r.warehouse_type.replace("_", " ")} variant={typeVariant(r.warehouse_type)} /> },
-            { header: "City", accessor: (r) => r.city ?? "—" },
-            { header: "Country", accessor: (r) => r.country ?? "—" },
-            { header: "Capacity (m²)", accessor: (r) => r.capacity_sqm ? Number(r.capacity_sqm).toLocaleString() : "—" },
-            { header: "Status", accessor: (r) => <Badge label={r.is_active ? "Active" : "Inactive"} variant={r.is_active ? "green" : "red"} /> },
+            { header: tx("Code"), accessor: "code", className: "font-mono text-xs font-medium" },
+            { header: tx("Name"), accessor: "name" },
+            { header: tx("Type"), accessor: (r) => <Badge label={r.warehouse_type.replace("_", " ")} variant={typeVariant(r.warehouse_type)} /> },
+            { header: tx("City"), accessor: (r) => r.city ?? "—" },
+            { header: tx("Country"), accessor: (r) => r.country ?? "—" },
+            { header: tx("Capacity (m²)"), accessor: (r) => r.capacity_sqm ? Number(r.capacity_sqm).toLocaleString() : "—" },
+            { header: tx("Status"), accessor: (r) => <Badge label={r.is_active ? tx("Active") : tx("Inactive")} variant={r.is_active ? "green" : "red"} /> },
             {
               header: "",
               accessor: (r) => (
@@ -109,7 +110,7 @@ function WarehousesListTab() {
                   onClick={() => setDeletingId(r.id)}
                   className="text-xs text-red-500 hover:text-red-700 hover:underline"
                 >
-                  Delete
+                  {tx("Delete")}
                 </button>
               ),
             },
@@ -118,42 +119,41 @@ function WarehousesListTab() {
       )}
 
       {/* Add Warehouse Modal */}
-      <Modal open={open} onClose={() => { setOpen(false); setForm(empty); }} title="Add Warehouse">
+      <Modal open={open} onClose={() => { setOpen(false); setForm(empty); }} title={tx("Add Warehouse")}>
         <form onSubmit={(e) => { e.preventDefault(); create.mutate(form); }} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Code *" value={form.code} onChange={(e) => set("code", e.target.value)} required placeholder="WH-01" />
-            <Input label="Name *" value={form.name} onChange={(e) => set("name", e.target.value)} required placeholder="Main Warehouse" />
+            <Input label={tx("Code *")} value={form.code} onChange={(e) => set("code", e.target.value)} required placeholder="WH-01" />
+            <Input label={tx("Name *")} value={form.name} onChange={(e) => set("name", e.target.value)} required placeholder={tx("Main Warehouse")} />
           </div>
-          <Select label="Type" options={TYPES} value={form.warehouse_type}
+          <Select label={tx("Type")} options={TYPES} value={form.warehouse_type}
             onChange={(e) => set("warehouse_type", e.target.value as WarehouseType)} />
           <div className="grid grid-cols-2 gap-4">
-            <Input label="City" onChange={(e) => set("city", e.target.value)} placeholder="Jakarta" />
-            <Input label="Country" onChange={(e) => set("country", e.target.value)} placeholder="Indonesia" />
+            <Input label={tx("City")} onChange={(e) => set("city", e.target.value)} placeholder={tx("Jakarta")} />
+            <Input label={tx("Country")} onChange={(e) => set("country", e.target.value)} placeholder={tx("Indonesia")} />
           </div>
-          <Input label="Capacity (m²)" type="number" step="0.01" onChange={(e) => set("capacity_sqm", parseFloat(e.target.value) || undefined)} />
+          <Input label={tx("Capacity (m²)")} type="number" step="0.01" onChange={(e) => set("capacity_sqm", parseFloat(e.target.value) || undefined)} />
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" type="button" onClick={() => { setOpen(false); setForm(empty); }}>Cancel</Button>
-            <Button type="submit" loading={create.isPending}>Create Warehouse</Button>
+            <Button variant="secondary" type="button" onClick={() => { setOpen(false); setForm(empty); }}>{tx("Cancel")}</Button>
+            <Button type="submit" loading={create.isPending}>{tx("Create Warehouse")}</Button>
           </div>
         </form>
       </Modal>
 
       {/* Delete Confirm Modal */}
-      <Modal open={!!deletingId} onClose={() => setDeletingId(null)} title="Delete Warehouse">
+      <Modal open={!!deletingId} onClose={() => setDeletingId(null)} title={tx("Delete Warehouse")}>
         <p className="text-sm text-gray-600 mb-4">
-          Are you sure you want to delete{" "}
+          {tx("Are you sure you want to delete")}{" "}
           <span className="font-semibold text-gray-900">{deletingWarehouse?.name}</span>{" "}
-          <span className="font-mono text-xs text-gray-500">({deletingWarehouse?.code})</span>?
-          This action cannot be undone.
+          <span className="font-mono text-xs text-gray-500">({deletingWarehouse?.code})</span>{tx("? This action cannot be undone.")}
         </p>
         <div className="flex justify-end gap-3">
-          <Button variant="secondary" onClick={() => setDeletingId(null)}>Cancel</Button>
+          <Button variant="secondary" onClick={() => setDeletingId(null)}>{tx("Cancel")}</Button>
           <Button
             variant="danger"
             loading={deleteMutation.isPending}
             onClick={() => deletingId && deleteMutation.mutate(deletingId)}
           >
-            Delete
+            {tx("Delete")}
           </Button>
         </div>
       </Modal>
@@ -165,12 +165,12 @@ const WMSPage = dynamic(() => import("@/app/dashboard/wms/page"), { ssr: false }
 
 export default function WarehousesPage() {
   const tabs = [
-    { key: "warehouses", label: "Warehouses",  permission: "inventory.view", content: <WarehousesListTab /> },
-    { key: "wms",        label: "WMS / Putaway",permission: "inventory.view", content: <WMSPage /> },
+    { key: "warehouses", label: tx("Warehouses"),  permission: "inventory.view", content: <WarehousesListTab /> },
+    { key: "wms",        label: tx("WMS / Putaway"),permission: "inventory.view", content: <WMSPage /> },
   ];
   return (
     <ModuleWorkspace
-      title="Warehouses"
+      title={tx("Warehouses")}
       description="Warehouse management, locations, WMS operations"
       permission="inventory.view"
       tabs={tabs}

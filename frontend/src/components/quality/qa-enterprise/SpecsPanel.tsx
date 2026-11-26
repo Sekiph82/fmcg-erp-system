@@ -13,15 +13,16 @@ import {
   LoadError, type Notify, ReadOnlyNotice, Section, TextArea, shortId, statusVariant, todayIso,
   useAction, useQualityPermissions,
 } from "./shared";
+import { tx, lx } from "@/lib/i18n/core";
 
-const NEXT_STEPS: Record<ChangeStatus, Array<{ status: ChangeStatus; label: string; approve?: boolean }>> = {
-  DRAFT: [{ status: "SUBMITTED", label: "Submit" }, { status: "CANCELLED", label: "Cancel" }],
-  SUBMITTED: [{ status: "APPROVED", label: "Approve", approve: true }, { status: "REJECTED", label: "Reject", approve: true },
-    { status: "CANCELLED", label: "Cancel" }],
-  APPROVED: [{ status: "IMPLEMENTED", label: "Mark implemented" }],
-  IMPLEMENTED: [{ status: "CLOSED", label: "Close", approve: true }],
+const NEXT_STEPS: Record<ChangeStatus, Array<{ status: ChangeStatus; label: string; approve?: boolean }>> = lx(() => ({
+  DRAFT: [{ status: "SUBMITTED", label: tx("Submit") }, { status: "CANCELLED", label: tx("Cancel") }],
+  SUBMITTED: [{ status: "APPROVED", label: tx("Approve"), approve: true }, { status: "REJECTED", label: tx("Reject"), approve: true },
+    { status: "CANCELLED", label: tx("Cancel") }],
+  APPROVED: [{ status: "IMPLEMENTED", label: tx("Mark implemented") }],
+  IMPLEMENTED: [{ status: "CLOSED", label: tx("Close"), approve: true }],
   REJECTED: [], CANCELLED: [], CLOSED: [],
-};
+}));
 
 export function SpecsPanel({ notify }: { notify: Notify }) {
   const perms = useQualityPermissions();
@@ -60,28 +61,28 @@ export function SpecsPanel({ notify }: { notify: Notify }) {
     });
   };
 
-  if (!perms.canView) return <ReadOnlyNotice>Specifications require quality.view.</ReadOnlyNotice>;
+  if (!perms.canView) return <ReadOnlyNotice>{tx("Specifications require quality.view.")}</ReadOnlyNotice>;
   const approvedCrs = (crs.data ?? []).filter((c) => c.status === "APPROVED" || c.status === "IMPLEMENTED");
 
   return (
     <div className="space-y-4">
-      <Section title="Specifications" description="Versioned, effective-dated specifications. The author cannot approve; version 2+ needs an approved change request.">
+      <Section title={tx("Specifications")} description="Versioned, effective-dated specifications. The author cannot approve; version 2+ needs an approved change request.">
         {specs.error ? <LoadError error={specs.error} /> : (
           <Table
             keyField="id"
             data={specs.data ?? []}
             emptyMessage="No specifications yet."
             columns={[
-              { header: "Code", accessor: (s) => `${s.spec_code} v${s.version}` },
-              { header: "Name", accessor: "name" },
-              { header: "Scope", accessor: (s) => `${s.scope_type} ${s.process_stage ?? shortId(s.product_id ?? s.material_id)}` },
-              { header: "Effective", accessor: (s) => `${s.effective_from} → ${s.effective_to ?? "open"}` },
-              { header: "Status", accessor: (s) => <Badge label={s.status} variant={statusVariant(s.status)} /> },
+              { header: tx("Code"), accessor: (s) => `${s.spec_code} v${s.version}` },
+              { header: tx("Name"), accessor: "name" },
+              { header: tx("Scope"), accessor: (s) => `${s.scope_type} ${s.process_stage ?? shortId(s.product_id ?? s.material_id)}` },
+              { header: tx("Effective"), accessor: (s) => `${s.effective_from} → ${s.effective_to ?? "open"}` },
+              { header: tx("Status"), accessor: (s) => <Badge label={s.status} variant={statusVariant(s.status)} /> },
               {
-                header: "Actions",
+                header: tx("Actions"),
                 accessor: (s) => s.status === "DRAFT" && perms.canApprove ? (
                   <Button variant="secondary" onClick={() => approveSpec.mutate(s.id)} loading={approveSpec.isPending}
-                    aria-label={`Approve ${s.spec_code} v${s.version}`}>Approve</Button>
+                    aria-label={tx("Approve {spec_code} v{version}", { spec_code: s.spec_code, version: s.version })}>{tx("Approve")}</Button>
                 ) : null,
               },
             ]}
@@ -89,60 +90,60 @@ export function SpecsPanel({ notify }: { notify: Notify }) {
         )}
         {perms.canCreate && (
           <form className="grid gap-3 md:grid-cols-3" onSubmit={(e) => { e.preventDefault(); submitSpec(); }}>
-            <Input id="spec-code" label="Spec code" value={spec.spec_code} required
+            <Input id="spec-code" label={tx("Spec code")} value={spec.spec_code} required
               onChange={(e) => setSpec((s) => ({ ...s, spec_code: e.target.value }))} />
-            <Input id="spec-name" label="Spec name" value={spec.name} required
+            <Input id="spec-name" label={tx("Spec name")} value={spec.name} required
               onChange={(e) => setSpec((s) => ({ ...s, name: e.target.value }))} />
-            <Select id="spec-scope" label="Scope" value={spec.scope_type}
+            <Select id="spec-scope" label={tx("Scope")} value={spec.scope_type}
               onChange={(e) => setSpec((s) => ({ ...s, scope_type: e.target.value }))}
-              options={[{ value: "PRODUCT", label: "Product" }, { value: "MATERIAL", label: "Material" },
-                { value: "PROCESS", label: "Process stage" }]} />
+              options={[{ value: "PRODUCT", label: tx("Product") }, { value: "MATERIAL", label: tx("Material") },
+                { value: "PROCESS", label: tx("Process stage") }]} />
             <Input id="spec-scope-ref" required value={spec.scope_ref}
-              label={spec.scope_type === "PROCESS" ? "Process stage" : `${spec.scope_type === "PRODUCT" ? "Product" : "Material"} ID`}
+              label={spec.scope_type === "PROCESS" ? tx("Process stage") : `${spec.scope_type === "PRODUCT" ? "Product" : "Material"} ID`}
               onChange={(e) => setSpec((s) => ({ ...s, scope_ref: e.target.value }))} />
-            <Select id="spec-template" label="Parameter template" value={spec.template_id} required
+            <Select id="spec-template" label={tx("Parameter template")} value={spec.template_id} required
               onChange={(e) => setSpec((s) => ({ ...s, template_id: e.target.value }))}
-              options={[{ value: "", label: "Select template" },
+              options={[{ value: "", label: tx("Select template") },
                 ...(templates.data ?? []).filter((t) => t.is_active).map((t) => ({ value: t.id, label: t.name }))]} />
-            <Input id="spec-effective" label="Effective from" type="date" min={todayIso()} value={spec.effective_from}
+            <Input id="spec-effective" label={tx("Effective from")} type="date" min={todayIso()} value={spec.effective_from}
               onChange={(e) => setSpec((s) => ({ ...s, effective_from: e.target.value }))} />
-            <Select id="spec-cr" label="Change request" value={spec.change_request_id}
+            <Select id="spec-cr" label={tx("Change request")} value={spec.change_request_id}
               onChange={(e) => setSpec((s) => ({ ...s, change_request_id: e.target.value }))}
-              options={[{ value: "", label: "None (first version)" },
+              options={[{ value: "", label: tx("None (first version)") },
                 ...approvedCrs.map((c) => ({ value: c.id, label: `${c.cr_no} — ${c.target_reference ?? c.title}` }))]} />
             <div className="md:col-span-2">
-              <Input id="spec-reason" label="Change reason" value={spec.change_reason}
+              <Input id="spec-reason" label={tx("Change reason")} value={spec.change_reason}
                 onChange={(e) => setSpec((s) => ({ ...s, change_reason: e.target.value }))} />
             </div>
             <div className="md:col-span-3 flex justify-end">
               <Button type="submit" loading={createSpec.isPending}
-                disabled={!spec.spec_code || !spec.name || !spec.scope_ref || !spec.template_id}>Save draft specification</Button>
+                disabled={!spec.spec_code || !spec.name || !spec.scope_ref || !spec.template_id}>{tx("Save draft specification")}</Button>
             </div>
           </form>
         )}
       </Section>
 
-      <Section title="Change control" description="Draft → submitted → approved → implemented → closed. The requester cannot approve their own change.">
+      <Section title={tx("Change control")} description="Draft → submitted → approved → implemented → closed. The requester cannot approve their own change.">
         {crs.error ? <LoadError error={crs.error} /> : (
           <Table<ChangeRequest>
             keyField="id"
             data={crs.data ?? []}
             emptyMessage="No change requests."
             columns={[
-              { header: "Ref", accessor: "cr_no" },
-              { header: "Title", accessor: "title" },
-              { header: "Type", accessor: "change_type" },
-              { header: "Target", accessor: (c) => c.target_reference ?? "—" },
-              { header: "Status", accessor: (c) => <Badge label={c.status} variant={statusVariant(c.status)} /> },
+              { header: tx("Ref"), accessor: "cr_no" },
+              { header: tx("Title"), accessor: "title" },
+              { header: tx("Type"), accessor: "change_type" },
+              { header: tx("Target"), accessor: (c) => c.target_reference ?? "—" },
+              { header: tx("Status"), accessor: (c) => <Badge label={c.status} variant={statusVariant(c.status)} /> },
               {
-                header: "Next step",
+                header: tx("Next step"),
                 accessor: (c) => {
                   const steps = NEXT_STEPS[c.status].filter((s) => (s.approve ? perms.canApprove : perms.canEdit || perms.canApprove));
                   if (!steps.length) return null;
                   return (
                     <div className="flex flex-wrap items-center gap-2">
                       {c.status === "IMPLEMENTED" && (
-                        <input aria-label={`Verification notes for ${c.cr_no}`} placeholder="Verification notes"
+                        <input aria-label={tx("Verification notes for {cr_no}", { cr_no: c.cr_no })} placeholder={tx("Verification notes")}
                           className="rounded border border-gray-300 px-2 py-1 text-xs"
                           value={crNotes[c.id] ?? ""} onChange={(e) => setCrNotes((n) => ({ ...n, [c.id]: e.target.value }))} />
                       )}
@@ -163,17 +164,17 @@ export function SpecsPanel({ notify }: { notify: Notify }) {
         {perms.canCreate && (
           <form className="grid gap-3 md:grid-cols-2" onSubmit={(e) => { e.preventDefault(); createCr.mutate({
             ...cr, target_reference: cr.target_reference || undefined, risk_assessment: cr.risk_assessment || undefined }); }}>
-            <Input id="cr-title" label="Change title" required value={cr.title} onChange={(e) => setCr((c) => ({ ...c, title: e.target.value }))} />
-            <Select id="cr-type" label="Change type" value={cr.change_type}
+            <Input id="cr-title" label={tx("Change title")} required value={cr.title} onChange={(e) => setCr((c) => ({ ...c, title: e.target.value }))} />
+            <Select id="cr-type" label={tx("Change type")} value={cr.change_type}
               onChange={(e) => setCr((c) => ({ ...c, change_type: e.target.value as ChangeType }))}
               options={["SPECIFICATION", "QC_PLAN", "TEST_METHOD", "PROCESS", "OTHER"].map((v) => ({ value: v, label: v.replace("_", " ") }))} />
-            <Input id="cr-target" label="Target reference" placeholder="e.g. SPEC-PH" value={cr.target_reference}
+            <Input id="cr-target" label={tx("Target reference")} placeholder={tx("e.g. SPEC-PH")} value={cr.target_reference}
               onChange={(e) => setCr((c) => ({ ...c, target_reference: e.target.value }))} />
             <div />
-            <TextArea id="cr-description" label="Description" value={cr.description} onChange={(v) => setCr((c) => ({ ...c, description: v }))} />
-            <TextArea id="cr-risk" label="Risk assessment" value={cr.risk_assessment} onChange={(v) => setCr((c) => ({ ...c, risk_assessment: v }))} />
+            <TextArea id="cr-description" label={tx("Description")} value={cr.description} onChange={(v) => setCr((c) => ({ ...c, description: v }))} />
+            <TextArea id="cr-risk" label={tx("Risk assessment")} value={cr.risk_assessment} onChange={(v) => setCr((c) => ({ ...c, risk_assessment: v }))} />
             <div className="md:col-span-2 flex justify-end">
-              <Button type="submit" loading={createCr.isPending} disabled={!cr.title || !cr.description}>Create change request</Button>
+              <Button type="submit" loading={createCr.isPending} disabled={!cr.title || !cr.description}>{tx("Create change request")}</Button>
             </div>
           </form>
         )}

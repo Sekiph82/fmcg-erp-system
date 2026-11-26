@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { apiClient } from "@/lib/api";
 import { EntityPicker } from "@/components/EntityPicker";
 import { PipelineSelect } from "@/components/PipelineSelect";
+import { tx } from "@/lib/i18n/core";
 
 interface Team { id: string; code: string; name: string; parent_id: string | null; members: { user_id: string; role: string }[] | null }
 interface Tag { id: string; name: string }
@@ -35,37 +36,37 @@ export default function CRMViewsPage() {
   const act = async (fn: () => Promise<unknown>, ok: string) => { try { await fn(); setMsg(ok); load(); } catch (e) { setMsg(err(e, "Not allowed.")); } };
   const open = async (v: View) => { setActive(v); try { setRows((await apiClient.get(`/api/v1/crm-teams/views/${v.id}/records`)).data); } catch { setRows([]); } };
   const tree = (parent: string | null, depth = 0): React.ReactNode[] => teams.filter((t) => t.parent_id === parent).flatMap((t) => [
-    <div key={t.id} className="text-xs" style={{ paddingLeft: depth * 12 }}>{t.name} <span className="text-gray-400">({t.code}) · {t.members?.length ?? 0} people</span></div>,
+    <div key={t.id} className="text-xs" style={{ paddingLeft: depth * 12 }}>{t.name} <span className="text-gray-400">({t.code}) · {t.members?.length ?? 0} {tx("people")}</span></div>,
     ...tree(t.id, depth + 1)]);
 
   return (
     <div className="p-4 grid lg:grid-cols-3 gap-4">
       {msg && <p role="status" className="lg:col-span-3 text-sm">{msg}</p>}
       <section className="border rounded bg-white p-3 space-y-2">
-        <h3 className="text-sm font-semibold">Sales teams</h3>
+        <h3 className="text-sm font-semibold">{tx("Sales teams")}</h3>
         {tree(null)}
         <form className="space-y-1 text-xs" onSubmit={(e) => { e.preventDefault(); act(() => apiClient.post("/api/v1/crm-teams/teams", { ...team, parent_id: team.parent_id || null }), "Team added."); setTeam({ code: "", name: "", parent_id: "" }); }}>
-          <div className="flex gap-1"><input required className="border rounded px-2 py-1 w-1/3" placeholder="Code" value={team.code} onChange={(e) => setTeam({ ...team, code: e.target.value })} />
-            <input required className="border rounded px-2 py-1 flex-1" placeholder="Name" value={team.name} onChange={(e) => setTeam({ ...team, name: e.target.value })} /></div>
+          <div className="flex gap-1"><input required className="border rounded px-2 py-1 w-1/3" placeholder={tx("Code")} value={team.code} onChange={(e) => setTeam({ ...team, code: e.target.value })} />
+            <input required className="border rounded px-2 py-1 flex-1" placeholder={tx("Name")} value={team.name} onChange={(e) => setTeam({ ...team, name: e.target.value })} /></div>
           <select className="border rounded px-2 py-1 w-full" value={team.parent_id} onChange={(e) => setTeam({ ...team, parent_id: e.target.value })}>
-            <option value="">Top level</option>{teams.map((t) => <option key={t.id} value={t.id}>under {t.name}</option>)}</select>
-          <button className="border rounded px-2 py-1">Add team</button>
+            <option value="">{tx("Top level")}</option>{teams.map((t) => <option key={t.id} value={t.id}>{tx("under")} {t.name}</option>)}</select>
+          <button className="border rounded px-2 py-1">{tx("Add team")}</button>
         </form>
         <div className="space-y-1 text-xs">
           <select className="border rounded px-2 py-1 w-full" value={member.team_id} onChange={(e) => setMember({ ...member, team_id: e.target.value })}>
-            <option value="">Team…</option>{teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}</select>
-          <EntityPicker kind="user" value={member.user_id} onChange={(id) => setMember({ ...member, user_id: id })} placeholder="Person…" />
+            <option value="">{tx("Team…")}</option>{teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}</select>
+          <EntityPicker kind="user" value={member.user_id} onChange={(id) => setMember({ ...member, user_id: id })} placeholder={tx("Person…")} />
           <button className="border rounded px-2 py-1" disabled={!member.team_id || !member.user_id}
-                  onClick={() => act(() => apiClient.put(`/api/v1/crm-teams/teams/${member.team_id}/members`, { user_id: member.user_id }), "Member added.")}>Add member</button>
+                  onClick={() => act(() => apiClient.put(`/api/v1/crm-teams/teams/${member.team_id}/members`, { user_id: member.user_id }), "Member added.")}>{tx("Add member")}</button>
         </div>
       </section>
       <section className="border rounded bg-white p-3 space-y-2">
-        <h3 className="text-sm font-semibold">Tags</h3>
+        <h3 className="text-sm font-semibold">{tx("Tags")}</h3>
         <div className="flex flex-wrap gap-1">{tags.map((t) => <span key={t.id} className="text-xs bg-gray-100 rounded px-2 py-0.5">{t.name}</span>)}</div>
         <form className="flex gap-1 text-xs" onSubmit={(e) => { e.preventDefault(); act(() => apiClient.post("/api/v1/crm-teams/tags", { name: tagName }), "Tag added."); setTagName(""); }}>
-          <input required className="border rounded px-2 py-1 flex-1" placeholder="New tag" value={tagName} onChange={(e) => setTagName(e.target.value)} />
-          <button className="border rounded px-2">Add</button></form>
-        <h3 className="text-sm font-semibold pt-2">New saved view</h3>
+          <input required className="border rounded px-2 py-1 flex-1" placeholder={tx("New tag")} value={tagName} onChange={(e) => setTagName(e.target.value)} />
+          <button className="border rounded px-2">{tx("Add")}</button></form>
+        <h3 className="text-sm font-semibold pt-2">{tx("New saved view")}</h3>
         <form className="space-y-1 text-xs" onSubmit={(e) => {
           e.preventDefault();
           const filters: Record<string, string> = {};
@@ -75,26 +76,26 @@ export default function CRMViewsPage() {
           act(() => apiClient.post("/api/v1/crm-teams/views", { name: draft.name, view_type: draft.view_type, filters, team_id: draft.team_id || null,
             calendar_field: draft.view_type === "calendar" ? draft.calendar_field : null }), "View saved.");
         }}>
-          <input required className="border rounded px-2 py-1 w-full" placeholder="View name" value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
+          <input required className="border rounded px-2 py-1 w-full" placeholder={tx("View name")} value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
           <PipelineSelect value={draft.pipeline_id} onChange={(id) => setDraft((d) => ({ ...d, pipeline_id: id }))} />
           <select className="border rounded px-2 py-1 w-full" value={draft.tag} onChange={(e) => setDraft({ ...draft, tag: e.target.value })}>
-            <option value="">Any tag</option>{tags.map((t) => <option key={t.id}>{t.name}</option>)}</select>
+            <option value="">{tx("Any tag")}</option>{tags.map((t) => <option key={t.id}>{t.name}</option>)}</select>
           <select className="border rounded px-2 py-1 w-full" value={draft.view_type} onChange={(e) => setDraft({ ...draft, view_type: e.target.value })}>
-            <option value="list">List</option><option value="calendar">Calendar</option></select>
+            <option value="list">{tx("List")}</option><option value="calendar">{tx("Calendar")}</option></select>
           {draft.view_type === "calendar" && <select className="border rounded px-2 py-1 w-full" value={draft.calendar_field} onChange={(e) => setDraft({ ...draft, calendar_field: e.target.value })}>
-            <option value="expected_close_date">by expected close date</option><option value="next_action_date">by next action date</option></select>}
+            <option value="expected_close_date">{tx("by expected close date")}</option><option value="next_action_date">{tx("by next action date")}</option></select>}
           <select className="border rounded px-2 py-1 w-full" value={draft.team_id} onChange={(e) => setDraft({ ...draft, team_id: e.target.value })}>
-            <option value="">Only me</option>{teams.map((t) => <option key={t.id} value={t.id}>Share with {t.name}</option>)}</select>
-          <button className="bg-indigo-600 text-white rounded px-3 py-1">Save view</button>
+            <option value="">{tx("Only me")}</option>{teams.map((t) => <option key={t.id} value={t.id}>{tx("Share with")} {t.name}</option>)}</select>
+          <button className="bg-indigo-600 text-white rounded px-3 py-1">{tx("Save view")}</button>
         </form>
       </section>
       <section className="border rounded bg-white p-3 space-y-2">
-        <h3 className="text-sm font-semibold">My views</h3>
+        <h3 className="text-sm font-semibold">{tx("My views")}</h3>
         <div className="flex flex-wrap gap-1">{views.map((v) => (
-          <button key={v.id} className={`text-xs border rounded px-2 py-1 ${active?.id === v.id ? "bg-indigo-600 text-white" : ""}`} onClick={() => open(v)}>{v.name}{v.team_id ? " (team)" : ""}</button>))}</div>
+          <button key={v.id} className={`text-xs border rounded px-2 py-1 ${active?.id === v.id ? "bg-indigo-600 text-white" : ""}`} onClick={() => open(v)}>{v.name}{v.team_id ? tx(" (team)") : ""}</button>))}</div>
         {active && (active.view_type === "calendar" ? <Calendar rows={rows} /> : (
           <ul className="text-xs divide-y">{rows.map((r) => <li key={r.id} className="py-1 flex justify-between gap-2"><span>{r.company_name}</span><span className="text-gray-500">{r.currency} {r.expected_revenue.toLocaleString()} · {r.status}</span></li>)}
-            {rows.length === 0 && <li className="text-gray-500 py-1">No matching records.</li>}</ul>))}
+            {rows.length === 0 && <li className="text-gray-500 py-1">{tx("No matching records.")}</li>}</ul>))}
       </section>
     </div>
   );
@@ -111,12 +112,12 @@ function Calendar({ rows }: { rows: Row[] }) {
   return (
     <div className="text-xs">
       <div className="flex justify-between items-center mb-1">
-        <button aria-label="Previous month" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))}>‹</button>
+        <button aria-label={tx("Previous month")} onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))}>‹</button>
         <span>{month.toLocaleDateString([], { month: "long", year: "numeric" })}</span>
-        <button aria-label="Next month" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))}>›</button>
+        <button aria-label={tx("Next month")} onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))}>›</button>
       </div>
       <div className="grid grid-cols-7 gap-px bg-gray-200">
-        {["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"].map((d) => <div key={d} className="bg-gray-50 text-center">{d}</div>)}
+        {[tx("Mo"), tx("Tu"), tx("We"), tx("Th"), tx("Fr"), tx("Sa"), tx("Su")].map((d) => <div key={d} className="bg-gray-50 text-center">{d}</div>)}
         {days.map((d, i) => (
           <div key={i} className="bg-white min-h-[3rem] p-0.5">
             {d && <><div className="text-gray-400">{d}</div>

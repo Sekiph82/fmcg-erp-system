@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { helpTopics } from "@/lib/help-content";
+import { tx } from "@/lib/i18n/core";
 
 type Props = {
   topic: string;
@@ -42,7 +43,7 @@ export function PageHelpTooltip({ topic, className = "" }: Props) {
       {/* Trigger button */}
       <button
         type="button"
-        aria-label="Open page help"
+        aria-label={tx("Open page help")}
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
         onFocus={() => { cancelClose(); setOpen(true); }}
@@ -56,7 +57,7 @@ export function PageHelpTooltip({ topic, className = "" }: Props) {
       {open && (
         <div
           role="dialog"
-          aria-label={`Help: ${entry.title}`}
+          aria-label={tx("Help: {title}", { title: entry.title })}
           className="absolute right-0 top-9 z-50 w-[400px] rounded-xl border border-gray-200 bg-white shadow-lg text-sm"
         >
           {/* Arrow */}
@@ -72,7 +73,7 @@ export function PageHelpTooltip({ topic, className = "" }: Props) {
             {/* Main actions */}
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-1.5">
-                Main Actions
+                {tx("Main Actions")}
               </p>
               <ul className="space-y-1">
                 {entry.mainActions.map((a, i) => (
@@ -88,7 +89,7 @@ export function PageHelpTooltip({ topic, className = "" }: Props) {
             {entry.keyFields && entry.keyFields.length > 0 && (
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-1.5">
-                  Key Fields
+                  {tx("Key Fields")}
                 </p>
                 <div className="space-y-1">
                   {entry.keyFields.map((f, i) => (
@@ -105,7 +106,7 @@ export function PageHelpTooltip({ topic, className = "" }: Props) {
             {entry.statuses && entry.statuses.length > 0 && (
               <div>
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-1.5">
-                  Status Meanings
+                  {tx("Status Meanings")}
                 </p>
                 <div className="space-y-1">
                   {entry.statuses.map((s, i) => (
@@ -124,7 +125,7 @@ export function PageHelpTooltip({ topic, className = "" }: Props) {
             {entry.warnings && entry.warnings.length > 0 && (
               <div className="bg-amber-50 border border-amber-100 rounded-lg p-2.5">
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-600 mb-1.5">
-                  Warnings
+                  {tx("Warnings")}
                 </p>
                 <ul className="space-y-1">
                   {entry.warnings.map((w, i) => (

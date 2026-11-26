@@ -23,6 +23,7 @@
 import { useRef, useState } from "react";
 import { importApi, type ImportMode, type ImportResult } from "@/lib/importApi";
 import { ImportResultView } from "./ImportResultView";
+import { tx } from "@/lib/i18n/core";
 
 type Tab = "headers" | "items" | "steps";
 type Step = "idle" | "validating" | "validated" | "importing" | "done";
@@ -162,7 +163,7 @@ export function RecipeBulkImportModal({ onSuccess }: Props) {
         onClick={() => setOpen(true)}
         className="flex items-center gap-1.5 rounded-lg border border-white/[0.07] bg-white/[0.03] px-3 py-1.5 text-xs text-slate-300 hover:bg-white/[0.06] transition-colors"
       >
-        <UploadIcon /> Import Recipes / BOM
+        <UploadIcon /> {tx("Import Recipes / BOM")}
       </button>
 
       {/* Modal */}
@@ -175,9 +176,9 @@ export function RecipeBulkImportModal({ onSuccess }: Props) {
             {/* Header */}
             <div className="flex items-start justify-between px-6 pt-5 pb-4 border-b border-white/[0.06] shrink-0">
               <div>
-                <h2 className="text-base font-semibold text-white">Bulk Import — Recipes / BOM</h2>
+                <h2 className="text-base font-semibold text-white">{tx("Bulk Import — Recipes / BOM")}</h2>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Import recipe headers first, then BOM items and process steps.
+                  {tx("Import recipe headers first, then BOM items and process steps.")}
                 </p>
               </div>
               <button onClick={close} className="text-slate-600 hover:text-slate-300 text-xl leading-none ml-4">×</button>
@@ -234,9 +235,9 @@ export function RecipeBulkImportModal({ onSuccess }: Props) {
                   {/* Template download */}
                   <div className="flex items-center justify-between rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-3">
                     <div>
-                      <p className="text-sm text-slate-300 font-medium">Step 1 – Download Template</p>
+                      <p className="text-sm text-slate-300 font-medium">{tx("Step 1 – Download Template")}</p>
                       <p className="text-[11px] text-slate-500 mt-0.5">
-                        CSV template with headers, type hints and example rows.
+                        {tx("CSV template with headers, type hints and example rows.")}
                       </p>
                     </div>
                     <button
@@ -247,13 +248,13 @@ export function RecipeBulkImportModal({ onSuccess }: Props) {
                       }
                       className="shrink-0 rounded-lg border border-indigo-500/30 bg-indigo-500/10 px-3 py-1.5 text-xs text-indigo-300 hover:bg-indigo-500/20 transition-colors"
                     >
-                      ↓ Template
+                      {tx("↓ Template")}
                     </button>
                   </div>
 
                   {/* File picker */}
                   <div>
-                    <p className="text-xs text-slate-500 mb-1.5">Step 2 – Select your CSV file</p>
+                    <p className="text-xs text-slate-500 mb-1.5">{tx("Step 2 – Select your CSV file")}</p>
                     <input
                       ref={fileRefs[tab]}
                       type="file"
@@ -274,14 +275,14 @@ export function RecipeBulkImportModal({ onSuccess }: Props) {
 
                   <div className="flex gap-2 pt-1">
                     <button onClick={close} className="flex-1 rounded-lg border border-white/[0.07] py-2 text-xs text-slate-400 hover:text-slate-200 transition-colors">
-                      Cancel
+                      {tx("Cancel")}
                     </button>
                     <button
                       onClick={() => handleValidate(tab)}
                       disabled={!s.file || s.step === "validating"}
                       className="flex-1 rounded-lg bg-indigo-600 py-2 text-xs font-medium text-white hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                     >
-                      {s.step === "validating" ? "Validating…" : "Validate"}
+                      {s.step === "validating" ? tx("Validating…") : tx("Validate")}
                     </button>
                   </div>
                 </div>
@@ -297,10 +298,10 @@ export function RecipeBulkImportModal({ onSuccess }: Props) {
 
                   {s.result.valid_rows > 0 && (
                     <div>
-                      <p className="text-[11px] text-slate-500 mb-1.5">Import mode</p>
+                      <p className="text-[11px] text-slate-500 mb-1.5">{tx("Import mode")}</p>
                       <div className="flex gap-2">
-                        <ModeBtn current={s.mode} value="import_valid_only" label="Import valid rows only"    onChange={m => setTabState(tab, { mode: m })} />
-                        <ModeBtn current={s.mode} value="strict"            label="Strict (abort on any error)" onChange={m => setTabState(tab, { mode: m })} />
+                        <ModeBtn current={s.mode} value="import_valid_only" label={tx("Import valid rows only")}    onChange={m => setTabState(tab, { mode: m })} />
+                        <ModeBtn current={s.mode} value="strict"            label={tx("Strict (abort on any error)")} onChange={m => setTabState(tab, { mode: m })} />
                       </div>
                     </div>
                   )}
@@ -311,10 +312,10 @@ export function RecipeBulkImportModal({ onSuccess }: Props) {
 
                   <div className="flex gap-2">
                     <button onClick={() => resetTab(tab)} className="rounded-lg border border-white/[0.07] px-4 py-2 text-xs text-slate-400 hover:text-slate-200 transition-colors">
-                      ← Back
+                      {tx("← Back")}
                     </button>
                     <button onClick={close} className="rounded-lg border border-white/[0.07] px-4 py-2 text-xs text-slate-400 hover:text-slate-200 transition-colors">
-                      Cancel
+                      {tx("Cancel")}
                     </button>
                     {s.result.valid_rows > 0 && (
                       <button
@@ -323,7 +324,7 @@ export function RecipeBulkImportModal({ onSuccess }: Props) {
                         className="flex-1 rounded-lg bg-emerald-600 py-2 text-xs font-medium text-white hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                       >
                         {s.step === "importing"
-                          ? "Importing…"
+                          ? tx("Importing…")
                           : `Import ${s.result.valid_rows} row${s.result.valid_rows !== 1 ? "s" : ""}`}
                       </button>
                     )}
@@ -344,7 +345,7 @@ export function RecipeBulkImportModal({ onSuccess }: Props) {
                       onClick={() => resetTab(tab)}
                       className="rounded-lg border border-white/[0.07] px-4 py-2 text-xs text-slate-400 hover:text-slate-200 transition-colors"
                     >
-                      Import Another
+                      {tx("Import Another")}
                     </button>
                     {/* Advance to next tab if not on last */}
                     {tab !== "steps" && (
@@ -352,7 +353,7 @@ export function RecipeBulkImportModal({ onSuccess }: Props) {
                         onClick={() => setTab(tab === "headers" ? "items" : "steps")}
                         className="flex-1 rounded-lg bg-indigo-600 py-2 text-xs font-medium text-white hover:bg-indigo-500 transition-colors"
                       >
-                        Next: {tab === "headers" ? "BOM Items →" : "Process Steps →"}
+                        {tx("Next:")} {tab === "headers" ? tx("BOM Items →") : tx("Process Steps →")}
                       </button>
                     )}
                     {tab === "steps" && (
@@ -360,7 +361,7 @@ export function RecipeBulkImportModal({ onSuccess }: Props) {
                         onClick={close}
                         className="flex-1 rounded-lg bg-indigo-600 py-2 text-xs font-medium text-white hover:bg-indigo-500 transition-colors"
                       >
-                        Done
+                        {tx("Done")}
                       </button>
                     )}
                   </div>
@@ -371,14 +372,13 @@ export function RecipeBulkImportModal({ onSuccess }: Props) {
             {/* Footer: import-order reminder */}
             <div className="px-6 py-3 border-t border-white/[0.06] shrink-0">
               <p className="text-[10px] text-slate-600">
-                Import order: <span className="text-slate-500">1 Recipe Headers</span>
+                {tx("Import order:")} <span className="text-slate-500">{tx("1 Recipe Headers")}</span>
                 {" → "}
-                <span className="text-slate-500">2 BOM Items</span>
+                <span className="text-slate-500">{tx("2 BOM Items")}</span>
                 {" → "}
-                <span className="text-slate-500">3 Process Steps</span>
+                <span className="text-slate-500">{tx("3 Process Steps")}</span>
                 {" · "}
-                BOM items and process steps can only be added to <span className="text-slate-500">DRAFT</span> recipes.
-                Existing line_no / step_no entries are updated in-place.
+                {tx("BOM items and process steps can only be added to")} <span className="text-slate-500">DRAFT</span> {tx("recipes. Existing line_no / step_no entries are updated in-place.")}
               </p>
             </div>
           </div>

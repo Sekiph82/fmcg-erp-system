@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { brApi, BRRule, BRRuleConditionType, BRERPTransactionType, ERP_TX_LABEL } from "@/lib/bank_reconciliation";
+import { tx } from "@/lib/i18n/core";
 
 const CONDITION_LABELS: Record<BRRuleConditionType, string> = {
   NARRATION_CONTAINS:    "Narration contains",
@@ -58,32 +59,32 @@ export default function RulesPage() {
     <div className="p-6 space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Reconciliation Rules</h1>
-          <p className="text-sm text-gray-500 mt-1">Auto-match pattern rules applied during reconciliation</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Reconciliation Rules")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{tx("Auto-match pattern rules applied during reconciliation")}</p>
         </div>
         <button onClick={() => setShowForm(!showForm)}
           className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">
-          {showForm ? "Cancel" : "+ New Rule"}
+          {showForm ? tx("Cancel") : tx("+ New Rule")}
         </button>
       </div>
 
       {showForm && (
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-5 space-y-4">
-          <h2 className="text-sm font-semibold text-blue-800">New Rule</h2>
+          <h2 className="text-sm font-semibold text-blue-800">{tx("New Rule")}</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="md:col-span-2">
-              <label className="text-xs text-gray-500 font-medium">Rule Name *</label>
+              <label className="text-xs text-gray-500 font-medium">{tx("Rule Name *")}</label>
               <input type="text" value={form.rule_name} onChange={(e) => setForm({ ...form, rule_name: e.target.value })}
                 className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
-                placeholder="e.g. Match M-Pesa collections" />
+                placeholder={tx("e.g. Match M-Pesa collections")} />
             </div>
             <div>
-              <label className="text-xs text-gray-500 font-medium">Priority (lower = first)</label>
+              <label className="text-xs text-gray-500 font-medium">{tx("Priority (lower = first)")}</label>
               <input type="number" value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })}
                 className="mt-1 w-full border rounded-lg px-3 py-2 text-sm" />
             </div>
             <div>
-              <label className="text-xs text-gray-500 font-medium">Condition Type</label>
+              <label className="text-xs text-gray-500 font-medium">{tx("Condition Type")}</label>
               <select value={form.condition_type} onChange={(e) => setForm({ ...form, condition_type: e.target.value as BRRuleConditionType })}
                 className="mt-1 w-full border rounded-lg px-3 py-2 text-sm">
                 {Object.entries(CONDITION_LABELS).map(([v, l]) => (
@@ -92,13 +93,13 @@ export default function RulesPage() {
               </select>
             </div>
             <div>
-              <label className="text-xs text-gray-500 font-medium">Condition Value *</label>
+              <label className="text-xs text-gray-500 font-medium">{tx("Condition Value *")}</label>
               <input type="text" value={form.condition_value} onChange={(e) => setForm({ ...form, condition_value: e.target.value })}
                 className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
-                placeholder="e.g. BANK CHARGE or MPESA" />
+                placeholder={tx("e.g. BANK CHARGE or MPESA")} />
             </div>
             <div>
-              <label className="text-xs text-gray-500 font-medium">Target Transaction Type</label>
+              <label className="text-xs text-gray-500 font-medium">{tx("Target Transaction Type")}</label>
               <select value={form.target_transaction_type}
                 onChange={(e) => setForm({ ...form, target_transaction_type: e.target.value as BRERPTransactionType })}
                 className="mt-1 w-full border rounded-lg px-3 py-2 text-sm">
@@ -108,7 +109,7 @@ export default function RulesPage() {
               </select>
             </div>
             <div>
-              <label className="text-xs text-gray-500 font-medium">Confidence Weight (0–1)</label>
+              <label className="text-xs text-gray-500 font-medium">{tx("Confidence Weight (0–1)")}</label>
               <input type="number" step="0.05" min="0" max="1" value={form.confidence_weight}
                 onChange={(e) => setForm({ ...form, confidence_weight: e.target.value })}
                 className="mt-1 w-full border rounded-lg px-3 py-2 text-sm" />
@@ -117,11 +118,11 @@ export default function RulesPage() {
               <label className="flex items-center gap-2 text-sm cursor-pointer">
                 <input type="checkbox" checked={form.auto_apply}
                   onChange={(e) => setForm({ ...form, auto_apply: e.target.checked })} className="rounded" />
-                Auto-apply
+                {tx("Auto-apply")}
               </label>
             </div>
             <div>
-              <label className="text-xs text-gray-500 font-medium">Notes</label>
+              <label className="text-xs text-gray-500 font-medium">{tx("Notes")}</label>
               <input type="text" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })}
                 className="mt-1 w-full border rounded-lg px-3 py-2 text-sm" />
             </div>
@@ -129,19 +130,19 @@ export default function RulesPage() {
           <button onClick={() => create.mutate()}
             disabled={create.isPending || !form.rule_name || !form.condition_value}
             className="px-5 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50">
-            {create.isPending ? "Creating…" : "Create Rule"}
+            {create.isPending ? tx("Creating…") : tx("Create Rule")}
           </button>
         </div>
       )}
 
       {isLoading ? (
-        <p className="text-gray-400">Loading…</p>
+        <p className="text-gray-400">{tx("Loading…")}</p>
       ) : (
         <div className="bg-white border rounded-xl overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
               <tr>
-                {["Priority", "Rule Name", "Condition", "Target Type", "Confidence", "Auto", "Active", ""].map((h) => (
+                {[tx("Priority"), tx("Rule Name"), tx("Condition"), tx("Target Type"), tx("Confidence"), tx("Auto"), tx("Active"), ""].map((h) => (
                   <th key={h} className="px-4 py-2 text-left font-medium">{h}</th>
                 ))}
               </tr>
@@ -159,25 +160,25 @@ export default function RulesPage() {
                   <td className="px-4 py-2 text-xs">{(Number(r.confidence_weight) * 100).toFixed(0)}%</td>
                   <td className="px-4 py-2">
                     <span className={`px-2 py-0.5 rounded-full text-xs ${r.auto_apply ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
-                      {r.auto_apply ? "Auto" : "Manual"}
+                      {r.auto_apply ? tx("Auto") : tx("Manual")}
                     </span>
                   </td>
                   <td className="px-4 py-2">
                     <button onClick={() => toggle.mutate({ id: r.id, active: !r.active })}
                       className={`px-2 py-0.5 rounded-full text-xs ${r.active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
-                      {r.active ? "Active" : "Inactive"}
+                      {r.active ? tx("Active") : tx("Inactive")}
                     </button>
                   </td>
                   <td className="px-4 py-2">
                     <button onClick={() => del.mutate(r.id)}
                       className="text-xs text-red-500 hover:text-red-700">
-                      Delete
+                      {tx("Delete")}
                     </button>
                   </td>
                 </tr>
               ))}
               {rules.length === 0 && (
-                <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400 text-sm">No rules. Create one to automate matching.</td></tr>
+                <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400 text-sm">{tx("No rules. Create one to automate matching.")}</td></tr>
               )}
             </tbody>
           </table>

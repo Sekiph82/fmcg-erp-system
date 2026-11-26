@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { scApi, SCOrderOut, SCOrderStatus, orderStatusBadge, fmt } from "@/lib/subcontracting";
 import { advProductionApi } from "@/lib/productionAdvanced";
+import { tx } from "@/lib/i18n/core";
 
 const STATUS_OPTIONS: (SCOrderStatus|"")[] = ["","DRAFT","APPROVED","ISSUED","IN_PROGRESS","PARTIALLY_RECEIVED","COMPLETED","CLOSED","CANCELLED"];
 
@@ -17,7 +18,7 @@ function OrderDetail({ orderId }: { orderId: string }) {
   const approve = useMutation({ mutationFn: () => scApi.approveOrder(orderId), onSuccess: () => qc.invalidateQueries({ queryKey: ["sc-order", orderId] }) });
   const complete = useMutation({ mutationFn: () => scApi.completeOrder(orderId), onSuccess: () => qc.invalidateQueries({ queryKey: ["sc-order", orderId] }) });
 
-  if (isLoading || !order) return <div className="p-6 text-gray-400">Loading order…</div>;
+  if (isLoading || !order) return <div className="p-6 text-gray-400">{tx("Loading order…")}</div>;
 
   return (
     <div className="p-6 space-y-5">
@@ -31,36 +32,36 @@ function OrderDetail({ orderId }: { orderId: string }) {
           {order.status === "DRAFT" && (
             <button onClick={() => approve.mutate()} disabled={approve.isPending}
               className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50">
-              Approve
+              {tx("Approve")}
             </button>
           )}
           {["ISSUED","IN_PROGRESS","PARTIALLY_RECEIVED"].includes(order.status) && (
             <button onClick={() => complete.mutate()} disabled={complete.isPending}
               className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50">
-              Complete Order
+              {tx("Complete Order")}
             </button>
           )}
         </div>
       </div>
 
       <div className="grid grid-cols-3 gap-4 bg-white border rounded-lg p-4 text-sm">
-        <div><p className="text-gray-500 text-xs">Expected Completion</p><p className="font-medium">{order.expected_completion_date ?? "—"}</p></div>
-        <div><p className="text-gray-500 text-xs">Material Cost</p><p className="font-medium">{order.total_material_cost ? `KES ${fmt(order.total_material_cost, 0)}` : "—"}</p></div>
-        <div><p className="text-gray-500 text-xs">Service Cost</p><p className="font-medium">{order.total_service_cost ? `KES ${fmt(order.total_service_cost, 0)}` : "—"}</p></div>
-        <div><p className="text-gray-500 text-xs">Wastage Cost</p><p className="font-medium text-orange-600">{order.total_wastage_cost ? `KES ${fmt(order.total_wastage_cost, 0)}` : "—"}</p></div>
-        <div><p className="text-gray-500 text-xs">SC Location</p><p className="font-medium">{order.subcontractor_location_id ? "Configured" : <span className="text-red-500">Not configured</span>}</p></div>
-        <div><p className="text-gray-500 text-xs">Linked Work Order</p><p className="font-medium font-mono">{order.work_order_code ?? "Unlinked"}</p></div>
-        <div><p className="text-gray-500 text-xs">Remarks</p><p className="font-medium">{order.remarks ?? "—"}</p></div>
+        <div><p className="text-gray-500 text-xs">{tx("Expected Completion")}</p><p className="font-medium">{order.expected_completion_date ?? "—"}</p></div>
+        <div><p className="text-gray-500 text-xs">{tx("Material Cost")}</p><p className="font-medium">{order.total_material_cost ? `KES ${fmt(order.total_material_cost, 0)}` : "—"}</p></div>
+        <div><p className="text-gray-500 text-xs">{tx("Service Cost")}</p><p className="font-medium">{order.total_service_cost ? `KES ${fmt(order.total_service_cost, 0)}` : "—"}</p></div>
+        <div><p className="text-gray-500 text-xs">{tx("Wastage Cost")}</p><p className="font-medium text-orange-600">{order.total_wastage_cost ? `KES ${fmt(order.total_wastage_cost, 0)}` : "—"}</p></div>
+        <div><p className="text-gray-500 text-xs">{tx("SC Location")}</p><p className="font-medium">{order.subcontractor_location_id ? tx("Configured") : <span className="text-red-500">{tx("Not configured")}</span>}</p></div>
+        <div><p className="text-gray-500 text-xs">{tx("Linked Work Order")}</p><p className="font-medium font-mono">{order.work_order_code ?? tx("Unlinked")}</p></div>
+        <div><p className="text-gray-500 text-xs">{tx("Remarks")}</p><p className="font-medium">{order.remarks ?? "—"}</p></div>
       </div>
 
       {/* Order Lines */}
       <div className="bg-white border border-gray-200 rounded-lg">
-        <div className="px-4 py-3 border-b border-gray-100"><h3 className="text-sm font-semibold">Order Lines (What to Produce)</h3></div>
+        <div className="px-4 py-3 border-b border-gray-100"><h3 className="text-sm font-semibold">{tx("Order Lines (What to Produce)")}</h3></div>
         <table className="w-full text-xs">
           <thead className="bg-gray-50 text-gray-500 uppercase"><tr>
-            <th className="text-left px-4 py-2">#</th><th className="text-left px-4 py-2">Item</th>
-            <th className="text-right px-4 py-2">Ordered</th><th className="text-right px-4 py-2">Received</th>
-            <th className="text-right px-4 py-2">Yield %</th><th className="text-right px-4 py-2">Service Cost/U</th>
+            <th className="text-left px-4 py-2">#</th><th className="text-left px-4 py-2">{tx("Item")}</th>
+            <th className="text-right px-4 py-2">{tx("Ordered")}</th><th className="text-right px-4 py-2">{tx("Received")}</th>
+            <th className="text-right px-4 py-2">{tx("Yield %")}</th><th className="text-right px-4 py-2">{tx("Service Cost/U")}</th>
           </tr></thead>
           <tbody>{order.lines.map((l) => (
             <tr key={l.id} className="border-t border-gray-100">
@@ -80,7 +81,7 @@ function OrderDetail({ orderId }: { orderId: string }) {
       {/* Material Issues */}
       {issues && issues.length > 0 && (
         <div className="bg-white border border-gray-200 rounded-lg">
-          <div className="px-4 py-3 border-b border-gray-100"><h3 className="text-sm font-semibold">Material Issues ({issues.length})</h3></div>
+          <div className="px-4 py-3 border-b border-gray-100"><h3 className="text-sm font-semibold">{tx("Material Issues (")}{issues.length})</h3></div>
           {issues.map((iss) => (
             <div key={iss.id} className="border-t border-gray-100 p-4">
               <p className="text-sm font-medium font-mono mb-2">{iss.issue_no} — {iss.issue_date}
@@ -88,9 +89,9 @@ function OrderDetail({ orderId }: { orderId: string }) {
               </p>
               <table className="w-full text-xs">
                 <thead className="bg-gray-50 text-gray-500 uppercase"><tr>
-                  <th className="text-left px-3 py-1">Material</th><th className="text-right px-3 py-1">Issued</th>
-                  <th className="text-right px-3 py-1">Returned</th><th className="text-right px-3 py-1">Consumed</th>
-                  <th className="text-right px-3 py-1">Scrapped</th>
+                  <th className="text-left px-3 py-1">{tx("Material")}</th><th className="text-right px-3 py-1">{tx("Issued")}</th>
+                  <th className="text-right px-3 py-1">{tx("Returned")}</th><th className="text-right px-3 py-1">{tx("Consumed")}</th>
+                  <th className="text-right px-3 py-1">{tx("Scrapped")}</th>
                 </tr></thead>
                 <tbody>{iss.lines.map((l) => (
                   <tr key={l.id} className="border-t border-gray-100">
@@ -110,15 +111,15 @@ function OrderDetail({ orderId }: { orderId: string }) {
       {/* Receipts */}
       {receipts && receipts.length > 0 && (
         <div className="bg-white border border-gray-200 rounded-lg">
-          <div className="px-4 py-3 border-b border-gray-100"><h3 className="text-sm font-semibold">Goods Receipts ({receipts.length})</h3></div>
+          <div className="px-4 py-3 border-b border-gray-100"><h3 className="text-sm font-semibold">{tx("Goods Receipts (")}{receipts.length})</h3></div>
           {receipts.map((r) => (
             <div key={r.id} className="border-t border-gray-100 p-4">
               <p className="text-sm font-medium font-mono mb-2">{r.receipt_no} — {r.receipt_date}</p>
               <table className="w-full text-xs">
                 <thead className="bg-gray-50 text-gray-500 uppercase"><tr>
-                  <th className="text-left px-3 py-1">Item</th><th className="text-right px-3 py-1">Received</th>
-                  <th className="text-right px-3 py-1">Accepted</th><th className="text-right px-3 py-1">Rejected</th>
-                  <th className="text-left px-3 py-1">Lot</th>
+                  <th className="text-left px-3 py-1">{tx("Item")}</th><th className="text-right px-3 py-1">{tx("Received")}</th>
+                  <th className="text-right px-3 py-1">{tx("Accepted")}</th><th className="text-right px-3 py-1">{tx("Rejected")}</th>
+                  <th className="text-left px-3 py-1">{tx("Lot")}</th>
                 </tr></thead>
                 <tbody>{r.lines.map((l) => (
                   <tr key={l.id} className="border-t border-gray-100">
@@ -138,20 +139,20 @@ function OrderDetail({ orderId }: { orderId: string }) {
       {/* Yield */}
       {yieldRecs && yieldRecs.length > 0 && (
         <div className="bg-white border border-gray-200 rounded-lg">
-          <div className="px-4 py-3 border-b border-gray-100"><h3 className="text-sm font-semibold">Yield Analysis</h3></div>
+          <div className="px-4 py-3 border-b border-gray-100"><h3 className="text-sm font-semibold">{tx("Yield Analysis")}</h3></div>
           {yieldRecs.map((y) => (
             <div key={y.id} className="px-4 py-3 border-t border-gray-100 text-sm">
               <div className="grid grid-cols-4 gap-4">
-                <div><p className="text-xs text-gray-500">Actual Yield</p>
+                <div><p className="text-xs text-gray-500">{tx("Actual Yield")}</p>
                   <p className={`font-bold text-lg ${Number(y.actual_yield_pct ?? 0) < 90 ? "text-red-600" : "text-green-600"}`}>
                     {y.actual_yield_pct != null ? `${fmt(y.actual_yield_pct, 1)}%` : "—"}
                   </p></div>
-                <div><p className="text-xs text-gray-500">Expected</p><p className="font-medium">{y.expected_yield_pct != null ? `${y.expected_yield_pct}%` : "—"}</p></div>
-                <div><p className="text-xs text-gray-500">Variance</p>
+                <div><p className="text-xs text-gray-500">{tx("Expected")}</p><p className="font-medium">{y.expected_yield_pct != null ? `${y.expected_yield_pct}%` : "—"}</p></div>
+                <div><p className="text-xs text-gray-500">{tx("Variance")}</p>
                   <p className={`font-medium ${Number(y.yield_variance_pct ?? 0) < 0 ? "text-red-600" : "text-green-600"}`}>
                     {y.yield_variance_pct != null ? `${Number(y.yield_variance_pct) >= 0 ? "+" : ""}${fmt(y.yield_variance_pct, 1)}%` : "—"}
                   </p></div>
-                <div><p className="text-xs text-gray-500">Scrapped</p>
+                <div><p className="text-xs text-gray-500">{tx("Scrapped")}</p>
                   <p className={`font-medium ${Number(y.total_scrapped) > 0 ? "text-orange-600" : "text-gray-700"}`}>{fmt(y.total_scrapped)}</p></div>
               </div>
             </div>
@@ -187,19 +188,19 @@ function NewOrderModal({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <div className="bg-white rounded-xl p-6 w-96 space-y-3 shadow-xl">
-        <h2 className="font-semibold text-gray-900">New Subcontracting Order</h2>
+        <h2 className="font-semibold text-gray-900">{tx("New Subcontracting Order")}</h2>
         <div>
-          <label className="text-xs text-gray-600">Production Work Order (optional)</label>
+          <label className="text-xs text-gray-600">{tx("Production Work Order (optional)")}</label>
           <select value={form.work_order_id} onChange={(e) => f("work_order_id", e.target.value)}
             className="w-full border rounded px-2 py-1.5 text-sm mt-0.5">
-            <option value="">No operation link</option>
+            <option value="">{tx("No operation link")}</option>
             {workOrders.filter((workOrder) => workOrder.status === "planned").map((workOrder) => (
               <option key={workOrder.id} value={workOrder.id}>
                 {workOrder.work_order_id} · {workOrder.order_no ?? workOrder.production_order_id} · {workOrder.operation}
               </option>
             ))}
           </select>
-          <p className="text-[11px] text-gray-500 mt-1">Only planned operations can be linked. Existing orders remain unlinked.</p>
+          <p className="text-[11px] text-gray-500 mt-1">{tx("Only planned operations can be linked. Existing orders remain unlinked.")}</p>
         </div>
         {[["Supplier ID","supplier_id"],["Order Date","order_date","date"],["Expected Completion","expected_completion_date","date"],
           ["Source Warehouse ID","warehouse_id"],["Currency","currency"],["Remarks","remarks"],
@@ -211,9 +212,9 @@ function NewOrderModal({ onClose }: { onClose: () => void }) {
         <div className="flex gap-2 pt-2">
           <button onClick={() => create.mutate()} disabled={!form.supplier_id || create.isPending}
             className="flex-1 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50">
-            {create.isPending ? "Creating…" : "Create Order"}
+            {create.isPending ? tx("Creating…") : tx("Create Order")}
           </button>
-          <button onClick={onClose} className="flex-1 py-2 border rounded text-sm hover:bg-gray-50">Cancel</button>
+          <button onClick={onClose} className="flex-1 py-2 border rounded text-sm hover:bg-gray-50">{tx("Cancel")}</button>
         </div>
       </div>
     </div>
@@ -238,16 +239,16 @@ export default function OrdersPage() {
       {showNew && <NewOrderModal onClose={() => setShowNew(false)} />}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900">Subcontracting Orders</h1>
-          <p className="text-sm text-gray-500">Manage external manufacturing orders</p>
+          <h1 className="text-xl font-semibold text-gray-900">{tx("Subcontracting Orders")}</h1>
+          <p className="text-sm text-gray-500">{tx("Manage external manufacturing orders")}</p>
         </div>
         <div className="flex gap-2">
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as SCOrderStatus|"")}
             className="border rounded px-2 py-1.5 text-sm">
-            {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s || "All Statuses"}</option>)}
+            {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s || tx("All Statuses")}</option>)}
           </select>
           <button onClick={() => setShowNew(true)} className="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
-            + New Order
+            {tx("+ New Order")}
           </button>
         </div>
       </div>
@@ -256,16 +257,16 @@ export default function OrdersPage() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
             <tr>
-              <th className="text-left px-4 py-2">Order No</th><th className="text-left px-4 py-2">Supplier</th>
-              <th className="text-left px-4 py-2">Work Order</th>
-              <th className="text-left px-4 py-2">Date</th><th className="text-left px-4 py-2">Due</th>
-              <th className="text-left px-4 py-2">Status</th><th className="text-right px-4 py-2">Items</th>
-              <th className="text-right px-4 py-2">Service Cost</th><th className="text-left px-4 py-2">Actions</th>
+              <th className="text-left px-4 py-2">{tx("Order No")}</th><th className="text-left px-4 py-2">{tx("Supplier")}</th>
+              <th className="text-left px-4 py-2">{tx("Work Order")}</th>
+              <th className="text-left px-4 py-2">{tx("Date")}</th><th className="text-left px-4 py-2">{tx("Due")}</th>
+              <th className="text-left px-4 py-2">{tx("Status")}</th><th className="text-right px-4 py-2">{tx("Items")}</th>
+              <th className="text-right px-4 py-2">{tx("Service Cost")}</th><th className="text-left px-4 py-2">{tx("Actions")}</th>
             </tr>
           </thead>
           <tbody>
-            {isLoading && <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">Loading…</td></tr>}
-            {!isLoading && !orders?.length && <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">No orders found.</td></tr>}
+            {isLoading && <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">{tx("Loading…")}</td></tr>}
+            {!isLoading && !orders?.length && <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400">{tx("No orders found.")}</td></tr>}
             {(orders ?? []).map((o) => (
               <tr key={o.id} className="border-t border-gray-100 hover:bg-gray-50">
                 <td className="px-4 py-2 font-mono font-medium text-blue-700">{o.order_no}</td>
@@ -281,7 +282,7 @@ export default function OrdersPage() {
                 <td className="px-4 py-2 text-right">{o.lines.length}</td>
                 <td className="px-4 py-2 text-right">{o.total_service_cost ? `KES ${fmt(o.total_service_cost, 0)}` : "—"}</td>
                 <td className="px-4 py-2">
-                  <a href={`/dashboard/subcontracting/orders?id=${o.id}`} className="text-blue-600 hover:underline text-xs">Manage →</a>
+                  <a href={`/dashboard/subcontracting/orders?id=${o.id}`} className="text-blue-600 hover:underline text-xs">{tx("Manage →")}</a>
                 </td>
               </tr>
             ))}

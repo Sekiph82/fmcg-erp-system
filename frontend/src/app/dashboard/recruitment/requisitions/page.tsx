@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { recruitmentApi, JobRequisition, RequisitionStatus, REQ_STATUS_LABEL, REQ_STATUS_COLOR } from "@/lib/recruitment";
+import { tx } from "@/lib/i18n/core";
 
 const STATUSES: RequisitionStatus[] = ["draft", "approved", "open", "closed", "cancelled"];
 
@@ -23,16 +24,16 @@ export default function RequisitionsPage() {
     <div className="p-6 space-y-5 text-slate-200">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-white">Job Requisitions</h1>
-          <p className="text-slate-500 text-sm mt-0.5">{reqs.length} requisitions</p>
+          <h1 className="text-xl font-bold text-white">{tx("Job Requisitions")}</h1>
+          <p className="text-slate-500 text-sm mt-0.5">{reqs.length} {tx("requisitions")}</p>
         </div>
         <Link href="/dashboard/recruitment/requisitions/new"
-          className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium">+ New</Link>
+          className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium">{tx("+ New")}</Link>
       </div>
 
       <div className="flex gap-2 flex-wrap">
         <button onClick={() => setFilter("")}
-          className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${filter === "" ? "bg-indigo-600 border-indigo-500 text-white" : "border-white/[0.08] text-slate-400 hover:border-white/20"}`}>All</button>
+          className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${filter === "" ? "bg-indigo-600 border-indigo-500 text-white" : "border-white/[0.08] text-slate-400 hover:border-white/20"}`}>{tx("All")}</button>
         {STATUSES.map((s) => (
           <button key={s} onClick={() => setFilter(s)}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${filter === s ? "bg-indigo-600 border-indigo-500 text-white" : "border-white/[0.08] text-slate-400 hover:border-white/20"}`}>
@@ -44,7 +45,7 @@ export default function RequisitionsPage() {
       <div className="glass-table">
         <table className="w-full text-sm">
           <thead><tr className="border-b border-white/[0.07]">
-            {["Code", "Title", "Type", "Headcount", "Status", "Closing", "Actions"].map((h) => (
+            {[tx("Code"), tx("Title"), tx("Type"), tx("Headcount"), tx("Status"), tx("Closing"), tx("Actions")].map((h) => (
               <th key={h} className="px-4 py-3 text-[10px] text-slate-500 uppercase tracking-widest text-left">{h}</th>
             ))}
           </tr></thead>
@@ -60,14 +61,14 @@ export default function RequisitionsPage() {
                 <td className="px-4 py-3"><span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${REQ_STATUS_COLOR[r.status]}`}>{REQ_STATUS_LABEL[r.status]}</span></td>
                 <td className="px-4 py-3 text-slate-500">{r.closing_date || "—"}</td>
                 <td className="px-4 py-3 space-x-3">
-                  {r.status === "draft" && <button onClick={() => handleApprove(r.requisition_id)} className="text-xs text-blue-400 hover:text-blue-300">Approve</button>}
-                  {r.status === "approved" && <button onClick={() => handleOpen(r.requisition_id)} className="text-xs text-emerald-400 hover:text-emerald-300">Open</button>}
-                  {r.status === "open" && <button onClick={() => handleClose(r.requisition_id)} className="text-xs text-slate-400 hover:text-slate-300">Close</button>}
-                  <Link href={`/dashboard/recruitment/requisitions/${r.requisition_id}`} className="text-xs text-slate-500 hover:text-slate-400">View</Link>
+                  {r.status === "draft" && <button onClick={() => handleApprove(r.requisition_id)} className="text-xs text-blue-400 hover:text-blue-300">{tx("Approve")}</button>}
+                  {r.status === "approved" && <button onClick={() => handleOpen(r.requisition_id)} className="text-xs text-emerald-400 hover:text-emerald-300">{tx("Open")}</button>}
+                  {r.status === "open" && <button onClick={() => handleClose(r.requisition_id)} className="text-xs text-slate-400 hover:text-slate-300">{tx("Close")}</button>}
+                  <Link href={`/dashboard/recruitment/requisitions/${r.requisition_id}`} className="text-xs text-slate-500 hover:text-slate-400">{tx("View")}</Link>
                 </td>
               </tr>
             ))}
-            {reqs.length === 0 && <tr><td colSpan={7} className="px-4 py-8 text-center text-slate-600">No requisitions</td></tr>}
+            {reqs.length === 0 && <tr><td colSpan={7} className="px-4 py-8 text-center text-slate-600">{tx("No requisitions")}</td></tr>}
           </tbody>
         </table>
       </div>

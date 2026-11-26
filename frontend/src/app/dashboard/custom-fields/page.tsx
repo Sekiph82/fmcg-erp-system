@@ -4,6 +4,7 @@ import {
   customFieldsApi, CustomFieldDefinition, UsageStat,
   ENTITY_LABEL, FIELD_TYPE_LABEL, EntityType,
 } from "@/lib/custom_fields";
+import { tx } from "@/lib/i18n/core";
 
 export default function CustomFieldsDashboard() {
   const [fields, setFields] = useState<CustomFieldDefinition[]>([]);
@@ -32,19 +33,19 @@ export default function CustomFieldsDashboard() {
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-gray-900">Custom Fields</h1>
+        <h1 className="text-xl font-bold text-gray-900">{tx("Custom Fields")}</h1>
         <a href="/dashboard/custom-fields/new-field"
           className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
-          + Create Field
+          {tx("+ Create Field")}
         </a>
       </div>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         {[
-          { label: "Active Fields", value: activeFields.length, color: "text-blue-600" },
-          { label: "Required Fields", value: requiredFields.length, color: "text-red-500" },
-          { label: "Entities Covered", value: entitiesWithFields, color: "text-green-600" },
-          { label: "Total Values", value: totalValues, color: "text-purple-600" },
+          { label: tx("Active Fields"), value: activeFields.length, color: "text-blue-600" },
+          { label: tx("Required Fields"), value: requiredFields.length, color: "text-red-500" },
+          { label: tx("Entities Covered"), value: entitiesWithFields, color: "text-green-600" },
+          { label: tx("Total Values"), value: totalValues, color: "text-purple-600" },
         ].map(s => (
           <div key={s.label} className="bg-white border rounded-lg p-4 shadow-sm">
             <p className="text-xs text-gray-500">{s.label}</p>
@@ -55,8 +56,8 @@ export default function CustomFieldsDashboard() {
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <div className="bg-white border rounded-lg shadow-sm p-5">
-          <h2 className="font-semibold text-gray-800 text-sm mb-4">Fields by Module</h2>
-          {loading ? <p className="text-sm text-gray-500">Loading…</p> : (
+          <h2 className="font-semibold text-gray-800 text-sm mb-4">{tx("Fields by Module")}</h2>
+          {loading ? <p className="text-sm text-gray-500">{tx("Loading…")}</p> : (
             <div className="space-y-2">
               {Object.entries(byEntity).sort((a, b) => b[1] - a[1]).map(([et, count]) => {
                 const max = Math.max(...Object.values(byEntity), 1);
@@ -75,14 +76,14 @@ export default function CustomFieldsDashboard() {
                   </div>
                 );
               })}
-              {Object.keys(byEntity).length === 0 && <p className="text-sm text-gray-400">No fields yet.</p>}
+              {Object.keys(byEntity).length === 0 && <p className="text-sm text-gray-400">{tx("No fields yet.")}</p>}
             </div>
           )}
         </div>
 
         <div className="bg-white border rounded-lg shadow-sm p-5">
-          <h2 className="font-semibold text-gray-800 text-sm mb-4">Most Used Fields</h2>
-          {loading ? <p className="text-sm text-gray-500">Loading…</p> : (
+          <h2 className="font-semibold text-gray-800 text-sm mb-4">{tx("Most Used Fields")}</h2>
+          {loading ? <p className="text-sm text-gray-500">{tx("Loading…")}</p> : (
             <div className="divide-y">
               {stats.slice(0, 8).map(s => (
                 <div key={s.custom_field_id} className="py-2 flex items-center justify-between">
@@ -93,7 +94,7 @@ export default function CustomFieldsDashboard() {
                   <span className="text-sm font-semibold text-blue-600">{s.value_count}</span>
                 </div>
               ))}
-              {stats.length === 0 && <p className="text-sm text-gray-400">No values recorded yet.</p>}
+              {stats.length === 0 && <p className="text-sm text-gray-400">{tx("No values recorded yet.")}</p>}
             </div>
           )}
         </div>
@@ -101,14 +102,14 @@ export default function CustomFieldsDashboard() {
 
       <div className="bg-white border rounded-lg shadow-sm">
         <div className="px-4 py-3 border-b flex items-center justify-between">
-          <h2 className="font-semibold text-gray-800 text-sm">Recent Fields</h2>
-          <a href="/dashboard/custom-fields/fields" className="text-xs text-blue-600 hover:underline">View all</a>
+          <h2 className="font-semibold text-gray-800 text-sm">{tx("Recent Fields")}</h2>
+          <a href="/dashboard/custom-fields/fields" className="text-xs text-blue-600 hover:underline">{tx("View all")}</a>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b">
               <tr>
-                {["Label", "Code", "Module", "Type", "Required", "Values", "Status"].map(h => (
+                {[tx("Label"), tx("Code"), tx("Module"), tx("Type"), tx("Required"), tx("Values"), tx("Status")].map(h => (
                   <th key={h} className="px-4 py-2 text-left text-xs font-semibold text-gray-600">{h}</th>
                 ))}
               </tr>
@@ -130,7 +131,7 @@ export default function CustomFieldsDashboard() {
                     <td className="px-4 py-2 text-gray-600">{usage?.value_count ?? 0}</td>
                     <td className="px-4 py-2">
                       <span className={`text-xs rounded-full px-2 py-0.5 ${f.active_flag ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
-                        {f.active_flag ? "active" : "disabled"}
+                        {f.active_flag ? tx("active") : tx("disabled")}
                       </span>
                     </td>
                   </tr>
@@ -138,18 +139,18 @@ export default function CustomFieldsDashboard() {
               })}
             </tbody>
           </table>
-          {fields.length === 0 && <p className="text-center text-gray-400 py-8 text-sm">No custom fields yet.</p>}
+          {fields.length === 0 && <p className="text-center text-gray-400 py-8 text-sm">{tx("No custom fields yet.")}</p>}
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-6">
         {[
-          { href: "/dashboard/custom-fields/fields", label: "Field Manager", icon: "📋" },
-          { href: "/dashboard/custom-fields/form-builder", label: "Form Builder", icon: "🎨" },
-          { href: "/dashboard/custom-fields/workflow-rules", label: "Workflow Rules", icon: "⚡" },
-          { href: "/dashboard/custom-fields/new-field", label: "New Field", icon: "➕" },
-          { href: "/dashboard/custom-fields/values", label: "Values Browser", icon: "🔍" },
-          { href: "/dashboard/custom-fields/ai", label: "AI Insights", icon: "🤖" },
+          { href: "/dashboard/custom-fields/fields", label: tx("Field Manager"), icon: "📋" },
+          { href: "/dashboard/custom-fields/form-builder", label: tx("Form Builder"), icon: "🎨" },
+          { href: "/dashboard/custom-fields/workflow-rules", label: tx("Workflow Rules"), icon: "⚡" },
+          { href: "/dashboard/custom-fields/new-field", label: tx("New Field"), icon: "➕" },
+          { href: "/dashboard/custom-fields/values", label: tx("Values Browser"), icon: "🔍" },
+          { href: "/dashboard/custom-fields/ai", label: tx("AI Insights"), icon: "🤖" },
         ].map(l => (
           <a key={l.href} href={l.href}
             className="bg-white border rounded-lg p-4 shadow-sm hover:bg-gray-50 text-center">

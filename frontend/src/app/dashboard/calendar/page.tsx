@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { calendarApi, CalendarEvent, ResourceBooking, CalendarResource, EVENT_BADGE } from "@/lib/calendar";
+import { tx } from "@/lib/i18n/core";
 
 export default function CalendarDashboard() {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
@@ -34,15 +35,15 @@ export default function CalendarDashboard() {
   const activeResources = resources.filter(r => r.status === "active");
 
   const stats = [
-    { label: "Events This Week", value: events.length, color: "text-blue-600" },
-    { label: "Upcoming (24h)", value: next24h.length, color: "text-purple-600" },
-    { label: "Pending Bookings", value: pendingBookings.length, color: "text-orange-600" },
-    { label: "Active Resources", value: activeResources.length, color: "text-green-600" },
+    { label: tx("Events This Week"), value: events.length, color: "text-blue-600" },
+    { label: tx("Upcoming (24h)"), value: next24h.length, color: "text-purple-600" },
+    { label: tx("Pending Bookings"), value: pendingBookings.length, color: "text-orange-600" },
+    { label: tx("Active Resources"), value: activeResources.length, color: "text-green-600" },
   ];
 
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-xl font-bold text-gray-900">Calendar & Resource Scheduling</h1>
+      <h1 className="text-xl font-bold text-gray-900">{tx("Calendar & Resource Scheduling")}</h1>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         {stats.map(s => (
@@ -56,10 +57,10 @@ export default function CalendarDashboard() {
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <div className="bg-white border rounded-lg shadow-sm">
           <div className="px-4 py-3 border-b">
-            <h2 className="font-semibold text-gray-800 text-sm">Upcoming Events (Next 7 Days)</h2>
+            <h2 className="font-semibold text-gray-800 text-sm">{tx("Upcoming Events (Next 7 Days)")}</h2>
           </div>
-          {loading ? <p className="p-4 text-sm text-gray-500">Loading…</p> :
-            events.length === 0 ? <p className="p-4 text-sm text-gray-400 text-center py-8">No upcoming events.</p> : (
+          {loading ? <p className="p-4 text-sm text-gray-500">{tx("Loading…")}</p> :
+            events.length === 0 ? <p className="p-4 text-sm text-gray-400 text-center py-8">{tx("No upcoming events.")}</p> : (
               <div className="divide-y max-h-72 overflow-y-auto">
                 {events.slice(0, 10).map(e => (
                   <div key={e.event_id} className="px-4 py-2.5 flex items-start gap-3">
@@ -69,7 +70,7 @@ export default function CalendarDashboard() {
                         <span className={`text-xs rounded-full px-2 py-0.5 ${EVENT_BADGE[e.event_type]}`}>{e.event_type}</span>
                       </div>
                       <p className="text-xs text-gray-500 mt-0.5">
-                        {new Date(e.start_datetime).toLocaleString()} — {e.location ?? "No location"}
+                        {new Date(e.start_datetime).toLocaleString()} — {e.location ?? tx("No location")}
                       </p>
                     </div>
                   </div>
@@ -80,15 +81,15 @@ export default function CalendarDashboard() {
 
         <div className="bg-white border rounded-lg shadow-sm">
           <div className="px-4 py-3 border-b">
-            <h2 className="font-semibold text-gray-800 text-sm">Resources</h2>
+            <h2 className="font-semibold text-gray-800 text-sm">{tx("Resources")}</h2>
           </div>
-          {loading ? <p className="p-4 text-sm text-gray-500">Loading…</p> : (
+          {loading ? <p className="p-4 text-sm text-gray-500">{tx("Loading…")}</p> : (
             <div className="divide-y max-h-72 overflow-y-auto">
               {resources.map(r => (
                 <div key={r.resource_id} className="px-4 py-2.5 flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-800">{r.name}</p>
-                    <p className="text-xs text-gray-500 capitalize">{r.resource_type} · {r.location ?? "No location"}</p>
+                    <p className="text-xs text-gray-500 capitalize">{r.resource_type} · {r.location ?? tx("No location")}</p>
                   </div>
                   <span className={`text-xs rounded-full px-2 py-0.5 ${
                     r.status === "active" ? "bg-green-100 text-green-700" :
@@ -98,7 +99,7 @@ export default function CalendarDashboard() {
                   </span>
                 </div>
               ))}
-              {resources.length === 0 && <p className="p-4 text-sm text-gray-400 text-center py-8">No resources configured.</p>}
+              {resources.length === 0 && <p className="p-4 text-sm text-gray-400 text-center py-8">{tx("No resources configured.")}</p>}
             </div>
           )}
         </div>
@@ -106,10 +107,10 @@ export default function CalendarDashboard() {
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         {[
-          { href: "/dashboard/calendar/view", label: "Calendar View", icon: "📅" },
-          { href: "/dashboard/calendar/new-event", label: "New Event", icon: "➕" },
-          { href: "/dashboard/calendar/resources", label: "Resources", icon: "🏠" },
-          { href: "/dashboard/calendar/availability", label: "Check Availability", icon: "✅" },
+          { href: "/dashboard/calendar/view", label: tx("Calendar View"), icon: "📅" },
+          { href: "/dashboard/calendar/new-event", label: tx("New Event"), icon: "➕" },
+          { href: "/dashboard/calendar/resources", label: tx("Resources"), icon: "🏠" },
+          { href: "/dashboard/calendar/availability", label: tx("Check Availability"), icon: "✅" },
         ].map(l => (
           <a key={l.href} href={l.href}
             className="bg-white border rounded-lg p-4 shadow-sm hover:bg-gray-50 text-center">

@@ -14,10 +14,11 @@ import { ToastContainer } from "@/components/ui/Toast";
 import { useToast } from "@/hooks/useToast";
 import { ImportModal } from "@/components/import/ImportModal";
 import { PageHelpTooltip } from "@/components/help/PageHelpTooltip";
+import { tx, lx } from "@/lib/i18n/core";
 
-const TYPE_OPTS   = [{value:"inline",label:"Inline"},{value:"final",label:"Final"},{value:"input",label:"Input"}];
-const STATUS_OPTS = [{value:"pending",label:"Pending"},{value:"pass",label:"Passed"},{value:"fail",label:"Failed"},{value:"on_hold",label:"On Hold"}];
-const FILTER      = [{value:"",label:"All"},...STATUS_OPTS];
+const TYPE_OPTS   = lx(() => [{value:"inline",label:tx("Inline")},{value:"final",label:tx("Final")},{value:"input",label:tx("Input")}]);
+const STATUS_OPTS = lx(() => [{value:"pending",label:tx("Pending")},{value:"pass",label:tx("Passed")},{value:"fail",label:tx("Failed")},{value:"on_hold",label:tx("On Hold")}]);
+const FILTER      = lx(() => [{value:"",label:tx("All")},...STATUS_OPTS]);
 
 const statusVariant = (s:string) => s==="pass"?"green":s==="fail"?"red":s==="on_hold"?"yellow":"blue";
 
@@ -47,24 +48,24 @@ export default function QualityControlPage() {
         unit: r.unit||undefined, result: r.result,
       })),
     }),
-    onSuccess:()=>{ qc.invalidateQueries({queryKey:["qc"]}); setOpen(false); toast("success","Created","QC inspection saved."); },
-    onError:(e)=>toast("error","Failed",extractApiError(e))
+    onSuccess:()=>{ qc.invalidateQueries({queryKey:["qc"]}); setOpen(false); toast("success",tx("Created"),tx("QC inspection saved.")); },
+    onError:(e)=>toast("error",tx("Failed"),extractApiError(e))
   });
-  const updateStatus = useMutation({ mutationFn:({id,status}:{id:string;status:string})=>advProductionApi.updateQC(id,{status}), onSuccess:()=>{ qc.invalidateQueries({queryKey:["qc"]}); toast("success","Updated","QC status changed."); }, onError:(e)=>toast("error","Failed",extractApiError(e)) });
-  const del = useMutation({ mutationFn:(id:string)=>advProductionApi.deleteQC(id), onSuccess:()=>{ qc.invalidateQueries({queryKey:["qc"]}); setDel(null); toast("success","Deleted",""); }, onError:(e)=>toast("error","Failed",extractApiError(e)) });
+  const updateStatus = useMutation({ mutationFn:({id,status}:{id:string;status:string})=>advProductionApi.updateQC(id,{status}), onSuccess:()=>{ qc.invalidateQueries({queryKey:["qc"]}); toast("success",tx("Updated"),tx("QC status changed.")); }, onError:(e)=>toast("error",tx("Failed"),extractApiError(e)) });
+  const del = useMutation({ mutationFn:(id:string)=>advProductionApi.deleteQC(id), onSuccess:()=>{ qc.invalidateQueries({queryKey:["qc"]}); setDel(null); toast("success",tx("Deleted"),""); }, onError:(e)=>toast("error",tx("Failed"),extractApiError(e)) });
 
   return (
     <div>
       <ToastContainer toasts={toasts} onDismiss={dismiss}/>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Quality Control</h1>
-          <p className="text-sm text-gray-500 mt-1">{items.length} inspections — <span className="text-green-600 font-medium">{pass} passed</span> · <span className="text-red-600 font-medium">{fail} failed</span></p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Quality Control")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{items.length} {tx("inspections —")} <span className="text-green-600 font-medium">{pass} {tx("passed")}</span> · <span className="text-red-600 font-medium">{fail} {tx("failed")}</span></p>
         </div>
         <div className="flex gap-2 items-center">
           <PageHelpTooltip topic="production-qc" />
           <ImportModal module="qc_inspections" onSuccess={()=>qc.invalidateQueries({queryKey:["qc"]})}/>
-          <Button onClick={()=>setOpen(true)}>+ New Inspection</Button>
+          <Button onClick={()=>setOpen(true)}>{tx("+ New Inspection")}</Button>
         </div>
       </div>
       <div className="mb-4">
@@ -72,72 +73,72 @@ export default function QualityControlPage() {
       </div>
       {isLoading ? <div className="flex justify-center py-16"><div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent"/></div> : (
         <Table keyField="id" data={items} emptyMessage="No QC inspections yet." columns={[
-          { header:"QC ID",          accessor:(r)=><button onClick={()=>setDetail(r)} className="font-mono text-xs text-indigo-600 hover:underline">{r.qc_id}</button> },
-          { header:"Type",           accessor:(r)=><Badge label={r.inspection_type} variant="blue"/> },
-          { header:"Order No",       accessor:(r)=>r.order_no??"—" },
-          { header:"Checked By",     accessor:(r)=>r.checked_by??"—" },
-          { header:"Date",           accessor:(r)=>r.inspected_at ? new Date(r.inspected_at).toLocaleDateString() : "—" },
-          { header:"Results",        accessor:(r)=><span className="text-xs text-gray-600">{r.results.length} test{r.results.length!==1?"s":""}</span> },
-          { header:"Status",         accessor:(r)=><Badge label={r.status} variant={statusVariant(r.status)}/> },
+          { header:tx("QC ID"),          accessor:(r)=><button onClick={()=>setDetail(r)} className="font-mono text-xs text-indigo-600 hover:underline">{r.qc_id}</button> },
+          { header:tx("Type"),           accessor:(r)=><Badge label={r.inspection_type} variant="blue"/> },
+          { header:tx("Order No"),       accessor:(r)=>r.order_no??"—" },
+          { header:tx("Checked By"),     accessor:(r)=>r.checked_by??"—" },
+          { header:tx("Date"),           accessor:(r)=>r.inspected_at ? new Date(r.inspected_at).toLocaleDateString() : "—" },
+          { header:tx("Results"),        accessor:(r)=><span className="text-xs text-gray-600">{r.results.length} {tx("test")}{r.results.length!==1?tx("s"):""}</span> },
+          { header:tx("Status"),         accessor:(r)=><Badge label={r.status} variant={statusVariant(r.status)}/> },
           { header:"", accessor:(r)=>(
             <div className="flex gap-2">
-              {r.status==="pending" && <button onClick={()=>updateStatus.mutate({id:r.id,status:"pass"})} className="text-xs text-green-600 hover:underline">Pass</button>}
-              {r.status==="pending" && <button onClick={()=>updateStatus.mutate({id:r.id,status:"fail"})} className="text-xs text-red-600 hover:underline">Fail</button>}
-              <button onClick={()=>setDel(r.id)} className="text-xs text-red-500 hover:underline">Delete</button>
+              {r.status==="pending" && <button onClick={()=>updateStatus.mutate({id:r.id,status:"pass"})} className="text-xs text-green-600 hover:underline">{tx("Pass")}</button>}
+              {r.status==="pending" && <button onClick={()=>updateStatus.mutate({id:r.id,status:"fail"})} className="text-xs text-red-600 hover:underline">{tx("Fail")}</button>}
+              <button onClick={()=>setDel(r.id)} className="text-xs text-red-500 hover:underline">{tx("Delete")}</button>
             </div>
           )},
         ]}/>
       )}
 
       {/* Create */}
-      <Modal open={open} onClose={()=>setOpen(false)} title="New QC Inspection">
+      <Modal open={open} onClose={()=>setOpen(false)} title={tx("New QC Inspection")}>
         <form onSubmit={e=>{e.preventDefault();create.mutate();}} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <Input label="QC ID *"        value={form.qc_id}               onChange={e=>setForm(f=>({...f,qc_id:e.target.value}))}               required placeholder="QC001"/>
-            <div><label className="block text-sm font-medium text-gray-700 mb-1">Production Order</label><EntityPicker kind="production_order" label="Production order" value={form.production_order_id} onChange={(id) => setForm((f) => ({ ...f, production_order_id: id }))} /></div>
+            <Input label={tx("QC ID *")}        value={form.qc_id}               onChange={e=>setForm(f=>({...f,qc_id:e.target.value}))}               required placeholder="QC001"/>
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">{tx("Production Order")}</label><EntityPicker kind="production_order" label={tx("Production order")} value={form.production_order_id} onChange={(id) => setForm((f) => ({ ...f, production_order_id: id }))} /></div>
           </div>
           <div className="grid grid-cols-3 gap-4">
-            <Select label="Type"       options={TYPE_OPTS}   value={form.inspection_type} onChange={e=>setForm(f=>({...f,inspection_type:e.target.value}))}/>
-            <Input label="Checked By"  value={form.checked_by}  onChange={e=>setForm(f=>({...f,checked_by:e.target.value}))}/>
-            <Input label="Date"        type="datetime-local" onChange={e=>setForm(f=>({...f,inspected_at:e.target.value}))}/>
+            <Select label={tx("Type")}       options={TYPE_OPTS}   value={form.inspection_type} onChange={e=>setForm(f=>({...f,inspection_type:e.target.value}))}/>
+            <Input label={tx("Checked By")}  value={form.checked_by}  onChange={e=>setForm(f=>({...f,checked_by:e.target.value}))}/>
+            <Input label={tx("Date")}        type="datetime-local" onChange={e=>setForm(f=>({...f,inspected_at:e.target.value}))}/>
           </div>
-          <Input label="Batch Ref" value={form.batch_ref} onChange={e=>setForm(f=>({...f,batch_ref:e.target.value}))}/>
+          <Input label={tx("Batch Ref")} value={form.batch_ref} onChange={e=>setForm(f=>({...f,batch_ref:e.target.value}))}/>
 
           <div className="border-t pt-3">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-sm font-semibold text-gray-800">Test Results</p>
-              <button type="button" onClick={addResult} className="text-xs text-indigo-600 hover:underline">+ Add Test</button>
+              <p className="text-sm font-semibold text-gray-800">{tx("Test Results")}</p>
+              <button type="button" onClick={addResult} className="text-xs text-indigo-600 hover:underline">{tx("+ Add Test")}</button>
             </div>
             {results.map((r,i)=>(
               <div key={i} className="grid grid-cols-4 gap-2 mb-2">
-                <Input placeholder="Test type (pH, viscosity…)" value={r.test_type}     onChange={e=>updateResult(i,"test_type",e.target.value)}/>
-                <Input placeholder="Value"                       value={r.actual_value}  onChange={e=>updateResult(i,"actual_value",e.target.value)} type="number" step="any"/>
-                <Input placeholder="Unit (pH, cP…)"             value={r.unit}          onChange={e=>updateResult(i,"unit",e.target.value)}/>
-                <Select options={[{value:"pass",label:"Pass"},{value:"fail",label:"Fail"}]} value={r.result} onChange={e=>updateResult(i,"result",e.target.value)}/>
+                <Input placeholder={tx("Test type (pH, viscosity…)")} value={r.test_type}     onChange={e=>updateResult(i,"test_type",e.target.value)}/>
+                <Input placeholder={tx("Value")}                       value={r.actual_value}  onChange={e=>updateResult(i,"actual_value",e.target.value)} type="number" step="any"/>
+                <Input placeholder={tx("Unit (pH, cP…)")}             value={r.unit}          onChange={e=>updateResult(i,"unit",e.target.value)}/>
+                <Select options={[{value:"pass",label:tx("Pass")},{value:"fail",label:tx("Fail")}]} value={r.result} onChange={e=>updateResult(i,"result",e.target.value)}/>
               </div>
             ))}
           </div>
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" type="button" onClick={()=>setOpen(false)}>Cancel</Button>
-            <Button type="submit" loading={create.isPending}>Save Inspection</Button>
+            <Button variant="secondary" type="button" onClick={()=>setOpen(false)}>{tx("Cancel")}</Button>
+            <Button type="submit" loading={create.isPending}>{tx("Save Inspection")}</Button>
           </div>
         </form>
       </Modal>
 
       {/* Detail */}
-      <Modal open={!!detail} onClose={()=>setDetail(null)} title={`QC Inspection — ${detail?.qc_id}`}>
+      <Modal open={!!detail} onClose={()=>setDetail(null)} title={tx("QC Inspection — {qc_id}", { qc_id: detail?.qc_id })}>
         {detail && (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4 text-sm">
-              <div><span className="text-gray-500">Type:</span> <Badge label={detail.inspection_type} variant="blue"/></div>
-              <div><span className="text-gray-500">Status:</span> <Badge label={detail.status} variant={statusVariant(detail.status)}/></div>
-              <div><span className="text-gray-500">Checked by:</span> {detail.checked_by??"—"}</div>
-              <div><span className="text-gray-500">Date:</span> {detail.inspected_at ? new Date(detail.inspected_at).toLocaleString() : "—"}</div>
+              <div><span className="text-gray-500">{tx("Type:")}</span> <Badge label={detail.inspection_type} variant="blue"/></div>
+              <div><span className="text-gray-500">{tx("Status:")}</span> <Badge label={detail.status} variant={statusVariant(detail.status)}/></div>
+              <div><span className="text-gray-500">{tx("Checked by:")}</span> {detail.checked_by??"—"}</div>
+              <div><span className="text-gray-500">{tx("Date:")}</span> {detail.inspected_at ? new Date(detail.inspected_at).toLocaleString() : "—"}</div>
             </div>
             <div className="border-t pt-3">
-              <p className="text-sm font-semibold mb-2">Test Results</p>
-              {detail.results.length === 0 ? <p className="text-xs text-gray-500">No test results.</p> : (
-                <table className="w-full text-xs"><thead><tr className="text-gray-500"><th className="text-left py-1">Test</th><th>Value</th><th>Unit</th><th>Result</th></tr></thead>
+              <p className="text-sm font-semibold mb-2">{tx("Test Results")}</p>
+              {detail.results.length === 0 ? <p className="text-xs text-gray-500">{tx("No test results.")}</p> : (
+                <table className="w-full text-xs"><thead><tr className="text-gray-500"><th className="text-left py-1">{tx("Test")}</th><th>{tx("Value")}</th><th>{tx("Unit")}</th><th>{tx("Result")}</th></tr></thead>
                   <tbody>{detail.results.map(r=>(
                     <tr key={r.id} className="border-t">
                       <td className="py-1">{r.test_type}</td>
@@ -149,16 +150,16 @@ export default function QualityControlPage() {
                 </table>
               )}
             </div>
-            <div className="flex justify-end"><Button variant="secondary" onClick={()=>setDetail(null)}>Close</Button></div>
+            <div className="flex justify-end"><Button variant="secondary" onClick={()=>setDetail(null)}>{tx("Close")}</Button></div>
           </div>
         )}
       </Modal>
 
-      <Modal open={!!deletingId} onClose={()=>setDel(null)} title="Delete Inspection">
-        <p className="text-sm text-gray-600 mb-4">Remove this QC inspection and all test results?</p>
+      <Modal open={!!deletingId} onClose={()=>setDel(null)} title={tx("Delete Inspection")}>
+        <p className="text-sm text-gray-600 mb-4">{tx("Remove this QC inspection and all test results?")}</p>
         <div className="flex justify-end gap-3">
-          <Button variant="secondary" onClick={()=>setDel(null)}>Cancel</Button>
-          <Button variant="danger" loading={del.isPending} onClick={()=>deletingId&&del.mutate(deletingId)}>Delete</Button>
+          <Button variant="secondary" onClick={()=>setDel(null)}>{tx("Cancel")}</Button>
+          <Button variant="danger" loading={del.isPending} onClick={()=>deletingId&&del.mutate(deletingId)}>{tx("Delete")}</Button>
         </div>
       </Modal>
     </div>

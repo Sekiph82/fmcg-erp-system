@@ -4,6 +4,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { crmApi, type CopilotBrief } from "@/lib/crm_pipeline";
+import { tx } from "@/lib/i18n/core";
 
 export function CopilotPanel({ customerId }: { customerId: string }) {
   const [note, setNote] = useState("");
@@ -24,47 +25,47 @@ export function CopilotPanel({ customerId }: { customerId: string }) {
   async function run() {
     setBusy(true); setError(null); setCopied(false);
     try { setBrief(await crmApi.customerCopilot(customerId, note || undefined)); }
-    catch { setError("The brief could not be prepared. Please try again."); }
+    catch { setError(tx("The brief could not be prepared. Please try again.")); }
     finally { setBusy(false); }
   }
 
   return (
-    <section aria-label="AI brief" className="bg-white rounded-xl border p-4 space-y-3">
+    <section aria-label={tx("AI brief")} className="bg-white rounded-xl border p-4 space-y-3">
       <div className="flex flex-wrap gap-2 items-center">
-        <h2 className="font-semibold text-gray-900 mr-auto">AI brief</h2>
-        <input aria-label="What do you need help with" placeholder="Optional: what do you need help with?" maxLength={500} value={note}
+        <h2 className="font-semibold text-gray-900 mr-auto">{tx("AI brief")}</h2>
+        <input aria-label={tx("What do you need help with")} placeholder={tx("Optional: what do you need help with?")} maxLength={500} value={note}
           onChange={(e) => setNote(e.target.value)} className="text-sm border rounded-lg px-2 py-1.5 flex-1 min-w-[12rem]" />
         <button onClick={run} disabled={busy} className="px-3 py-1.5 text-sm rounded-lg bg-indigo-600 text-white disabled:opacity-50">
-          {busy ? "Preparing…" : brief ? "Refresh" : "Prepare brief"}
+          {busy ? tx("Preparing…") : brief ? tx("Refresh") : tx("Prepare brief")}
         </button>
       </div>
       {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
       {brief && (
         <>
           <p className="text-xs text-gray-500">
-            {brief.mode === "ai" ? "Written by AI from the records below; check before you act." : "Rule-based brief (AI not used)."}
+            {brief.mode === "ai" ? tx("Written by AI from the records below; check before you act.") : tx("Rule-based brief (AI not used).")}
             {brief.note ? ` ${brief.note}` : ""}
-            {brief.dropped_unsupported ? ` ${brief.dropped_unsupported} suggestion(s) without evidence were removed.` : ""}
+            {brief.dropped_unsupported ? tx(" {dropped_unsupported} suggestion(s) without evidence were removed.", { dropped_unsupported: brief.dropped_unsupported }) : ""}
           </p>
           <p className="text-sm text-gray-800">{brief.summary}<Cite ids={brief.summary_evidence} /></p>
           {brief.follow_ups.length > 0 && (
             <ul className="text-sm space-y-1 list-disc ml-5">
               {brief.follow_ups.map((f, i) => (
-                <li key={i}>{f.due_in_days === 0 ? "Today" : `In ${f.due_in_days} day${f.due_in_days > 1 ? "s" : ""}`}: {f.action}<Cite ids={f.evidence} /></li>
+                <li key={i}>{f.due_in_days === 0 ? tx("Today") : `In ${f.due_in_days} day${f.due_in_days > 1 ? "s" : ""}`}: {f.action}<Cite ids={f.evidence} /></li>
               ))}
             </ul>
           )}
           {brief.draft && (
             <div className="border rounded-lg p-3 space-y-1">
-              <p className="text-xs font-semibold text-gray-500">DRAFT E-MAIL (not sent)</p>
+              <p className="text-xs font-semibold text-gray-500">{tx("DRAFT E-MAIL (not sent)")}</p>
               <p className="text-sm font-medium">{brief.draft.subject}</p>
               <p className="text-sm whitespace-pre-wrap text-gray-700">{brief.draft.body}</p>
               <button className="text-xs underline text-indigo-700" onClick={async () => {
                 try { await navigator.clipboard.writeText(`${brief.draft!.subject}\n\n${brief.draft!.body}`); setCopied(true); } catch { setCopied(false); }
-              }}>{copied ? "Copied" : "Copy to send from Communication → Email"}</button>
+              }}>{copied ? tx("Copied") : tx("Copy to send from Communication → Email")}</button>
             </div>
           )}
-          {brief.hidden_sources.length > 0 && <p className="text-xs text-gray-400">Not used (not visible to your role): {brief.hidden_sources.join(", ")}.</p>}
+          {brief.hidden_sources.length > 0 && <p className="text-xs text-gray-400">{tx("Not used (not visible to your role):")} {brief.hidden_sources.join(", ")}.</p>}
         </>
       )}
     </section>

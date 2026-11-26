@@ -5,6 +5,7 @@ import {
   notificationsApi, NCPreference, NotificationType, NotificationChannel,
   NOTIFICATION_TYPES, CHANNELS, CHANNEL_LABEL,
 } from "@/lib/notifications_center";
+import { tx } from "@/lib/i18n/core";
 
 export default function PreferencesPage() {
   const [userId, setUserId] = useState("user001");
@@ -49,27 +50,27 @@ export default function PreferencesPage() {
 
   return (
     <div className="p-6 space-y-4">
-      <h1 className="text-xl font-bold text-gray-900">Notification Preferences</h1>
+      <h1 className="text-xl font-bold text-gray-900">{tx("Notification Preferences")}</h1>
 
       <div className="flex gap-3 items-end">
         <div>
-          <label className="text-xs text-gray-500">User</label>
-          <EntityPicker kind="user" label="User" value={userId} onChange={setUserId} />
+          <label className="text-xs text-gray-500">{tx("User")}</label>
+          <EntityPicker kind="user" label={tx("User")} value={userId} onChange={setUserId} />
         </div>
-        <button onClick={load} className="rounded border px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50">Load</button>
+        <button onClick={load} className="rounded border px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50">{tx("Load")}</button>
         <button onClick={seed} className="rounded border border-blue-200 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50">
-          Seed Defaults
+          {tx("Seed Defaults")}
         </button>
       </div>
 
-      <p className="text-xs text-gray-500">Click a cell to toggle. Green = enabled, Gray = disabled.</p>
+      <p className="text-xs text-gray-500">{tx("Click a cell to toggle. Green = enabled, Gray = disabled.")}</p>
 
-      {loading ? <p className="text-gray-500 text-sm">Loading…</p> : (
+      {loading ? <p className="text-gray-500 text-sm">{tx("Loading…")}</p> : (
         <div className="bg-white border rounded-lg shadow-sm overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b">
               <tr>
-                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 w-48">Notification Type</th>
+                <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 w-48">{tx("Notification Type")}</th>
                 {CHANNELS.map(c => (
                   <th key={c} className="px-4 py-2 text-center text-xs font-semibold text-gray-600">{CHANNEL_LABEL[c]}</th>
                 ))}

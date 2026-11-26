@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { faApi, fmtCurrency, DEPR_METHOD_LABEL } from "@/lib/fixed_assets";
+import { tx } from "@/lib/i18n/core";
 
 export default function FADepreciationPage() {
   const [assetId, setAssetId] = useState("");
@@ -29,20 +30,20 @@ export default function FADepreciationPage() {
     <div className="p-6 space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Depreciation Schedules</h1>
-          <p className="text-sm text-gray-500">View period-by-period depreciation lines for any active asset.</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Depreciation Schedules")}</h1>
+          <p className="text-sm text-gray-500">{tx("View period-by-period depreciation lines for any active asset.")}</p>
         </div>
         <Link href="/dashboard/fixed-assets/posting" className="glow-button text-sm">
-          Posting Run →
+          {tx("Posting Run →")}
         </Link>
       </div>
 
       <div className="liquid-glass p-4 flex items-end gap-4">
         <div className="flex flex-col gap-1 flex-1 max-w-sm">
-          <label className="text-xs text-gray-500">Select Asset</label>
+          <label className="text-xs text-gray-500">{tx("Select Asset")}</label>
           <select value={assetId} onChange={(e) => setAssetId(e.target.value)}
             className="rounded-lg border border-gray-300 px-3 py-2 text-sm">
-            <option value="">— Choose an asset —</option>
+            <option value="">{tx("— Choose an asset —")}</option>
             {assets.map((a) => (
               <option key={a.id} value={a.id}>{a.asset_code} — {a.asset_name}</option>
             ))}
@@ -51,7 +52,7 @@ export default function FADepreciationPage() {
         {selected && (
           <Link href={`/dashboard/fixed-assets/assets/${selected.id}`}
             className="glow-button-secondary text-sm self-end">
-            View Asset Detail
+            {tx("View Asset Detail")}
           </Link>
         )}
       </div>
@@ -59,10 +60,10 @@ export default function FADepreciationPage() {
       {selected && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { label: "Original Cost",   value: fmtCurrency(selected.original_cost),          color: "text-blue-600" },
-            { label: "Accumulated Depr",value: fmtCurrency(selected.accumulated_depreciation),color: "text-orange-600" },
-            { label: "Net Book Value",  value: fmtCurrency(selected.net_book_value),          color: "text-green-600" },
-            { label: "Method",          value: DEPR_METHOD_LABEL[selected.depreciation_method] ?? selected.depreciation_method, color: "text-indigo-600" },
+            { label: tx("Original Cost"),   value: fmtCurrency(selected.original_cost),          color: "text-blue-600" },
+            { label: tx("Accumulated Depr"),value: fmtCurrency(selected.accumulated_depreciation),color: "text-orange-600" },
+            { label: tx("Net Book Value"),  value: fmtCurrency(selected.net_book_value),          color: "text-green-600" },
+            { label: tx("Method"),          value: DEPR_METHOD_LABEL[selected.depreciation_method] ?? selected.depreciation_method, color: "text-indigo-600" },
           ].map((k) => (
             <div key={k.label} className="glow-card p-4 text-center">
               <p className="text-xs text-gray-500">{k.label}</p>
@@ -77,11 +78,11 @@ export default function FADepreciationPage() {
           {!isLoading && schedule.length > 0 && (
             <div className="grid grid-cols-2 gap-4">
               <div className="liquid-glass p-3 text-center">
-                <p className="text-xs text-gray-500">Posted ({posted.length} periods)</p>
+                <p className="text-xs text-gray-500">{tx("Posted (")}{posted.length} {tx("periods)")}</p>
                 <p className="text-base font-bold text-green-600">{fmtCurrency(totalPosted)}</p>
               </div>
               <div className="liquid-glass p-3 text-center">
-                <p className="text-xs text-gray-500">Planned ({planned.length} periods)</p>
+                <p className="text-xs text-gray-500">{tx("Planned (")}{planned.length} {tx("periods)")}</p>
                 <p className="text-base font-bold text-yellow-600">{fmtCurrency(totalPlanned)}</p>
               </div>
             </div>
@@ -91,23 +92,23 @@ export default function FADepreciationPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-blue-900/30">
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Period Start</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Period End</th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Opening NBV</th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Depreciation</th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Closing NBV</th>
-                  <th className="text-center px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Status</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Period Start")}</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Period End")}</th>
+                  <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Opening NBV")}</th>
+                  <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Depreciation")}</th>
+                  <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Closing NBV")}</th>
+                  <th className="text-center px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Status")}</th>
                 </tr>
               </thead>
               <tbody>
                 {isLoading ? (
-                  <tr><td colSpan={6} className="text-center py-10 text-gray-400">Loading…</td></tr>
+                  <tr><td colSpan={6} className="text-center py-10 text-gray-400">{tx("Loading…")}</td></tr>
                 ) : schedule.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="text-center py-10 text-gray-400">
-                      No schedule lines found.{" "}
+                      {tx("No schedule lines found.")}{" "}
                       <Link href="/dashboard/fixed-assets/posting" className="text-indigo-400 underline">
-                        Run Generate Schedules
+                        {tx("Run Generate Schedules")}
                       </Link>
                     </td>
                   </tr>
@@ -137,7 +138,7 @@ export default function FADepreciationPage() {
 
       {!assetId && (
         <div className="liquid-glass p-12 text-center text-gray-400">
-          Select an asset above to view its depreciation schedule.
+          {tx("Select an asset above to view its depreciation schedule.")}
         </div>
       )}
     </div>

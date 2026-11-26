@@ -9,6 +9,7 @@ import {
   MachineStatusRow,
   SyncStatus,
 } from "@/lib/integrations";
+import { tx } from "@/lib/i18n/core";
 
 const SYNC_STATUS_CFG: Record<SyncStatus, string> = {
   SYNCED: "bg-emerald-100 text-emerald-800",
@@ -48,30 +49,30 @@ function CrmSection() {
     <div className="space-y-4">
       <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="font-semibold text-gray-900">👥 CRM Sync</h2>
-          <span className="text-xs text-gray-500">{mappings.length} mapped customers</span>
+          <h2 className="font-semibold text-gray-900">{tx("👥 CRM Sync")}</h2>
+          <span className="text-xs text-gray-500">{mappings.length} {tx("mapped customers")}</span>
         </div>
 
         <div className="flex flex-wrap gap-3 items-end">
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Direction</label>
+            <label className="block text-xs text-gray-500 mb-1">{tx("Direction")}</label>
             <select
               value={direction}
               onChange={(e) => setDirection(e.target.value as "PUSH" | "PULL")}
               className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
             >
-              <option value="PUSH">Push to CRM</option>
-              <option value="PULL">Pull from CRM</option>
+              <option value="PUSH">{tx("Push to CRM")}</option>
+              <option value="PULL">{tx("Pull from CRM")}</option>
             </select>
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1">CRM Provider</label>
+            <label className="block text-xs text-gray-500 mb-1">{tx("CRM Provider")}</label>
             <select
               value={provider}
               onChange={(e) => setProvider(e.target.value)}
               className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
             >
-              {["generic", "hubspot", "salesforce", "zoho"].map((p) => (
+              {[tx("generic"), tx("hubspot"), tx("salesforce"), tx("zoho")].map((p) => (
                 <option key={p} value={p}>{p}</option>
               ))}
             </select>
@@ -81,16 +82,16 @@ function CrmSection() {
             disabled={syncMut.isPending}
             className="px-4 py-1.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
           >
-            {syncMut.isPending ? "Syncing..." : "🔄 Sync Now"}
+            {syncMut.isPending ? tx("Syncing...") : tx("🔄 Sync Now")}
           </button>
         </div>
 
         {result && (
           <div className={`rounded-lg p-3 text-sm ${result.errors.length > 0 ? "bg-amber-50 border border-amber-200" : "bg-emerald-50 border border-emerald-200"}`}>
-            <p className="font-medium">{result.errors.length === 0 ? "✅ Sync complete" : "⚠️ Sync with errors"}</p>
+            <p className="font-medium">{result.errors.length === 0 ? tx("✅ Sync complete") : tx("⚠️ Sync with errors")}</p>
             <p className="text-xs mt-1">
-              {result.synced}/{result.total} synced
-              {result.errors.length > 0 && ` · ${result.errors.length} errors`}
+              {result.synced}/{result.total} {tx("synced")}
+              {result.errors.length > 0 && tx(" · {length} errors", { length: result.errors.length })}
             </p>
             {result.errors.slice(0, 3).map((e, i) => (
               <p key={i} className="text-xs text-red-600 mt-0.5">{e}</p>
@@ -102,18 +103,18 @@ function CrmSection() {
       {/* Mappings table */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-100">
-          <h3 className="text-sm font-semibold text-gray-700">Customer Mappings</h3>
+          <h3 className="text-sm font-semibold text-gray-700">{tx("Customer Mappings")}</h3>
         </div>
         {isLoading ? (
-          <div className="p-6 text-center text-gray-400 text-sm">Loading...</div>
+          <div className="p-6 text-center text-gray-400 text-sm">{tx("Loading...")}</div>
         ) : mappings.length === 0 ? (
-          <div className="p-6 text-center text-gray-400 text-sm">No mappings yet — run a sync to create them</div>
+          <div className="p-6 text-center text-gray-400 text-sm">{tx("No mappings yet — run a sync to create them")}</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-gray-50">
                 <tr>
-                  {["External CRM ID", "Provider", "Direction", "Status", "Last Synced"].map((h) => (
+                  {[tx("External CRM ID"), tx("Provider"), tx("Direction"), tx("Status"), tx("Last Synced")].map((h) => (
                     <th key={h} className="px-4 py-2 text-left text-xs font-semibold text-gray-500">{h}</th>
                   ))}
                 </tr>
@@ -178,20 +179,20 @@ function EcommerceSection() {
     <div className="space-y-4">
       <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="font-semibold text-gray-900">🛒 E-commerce Sync</h2>
-          <span className="text-xs text-gray-500">{orders.length} order mappings</span>
+          <h2 className="font-semibold text-gray-900">{tx("🛒 E-commerce Sync")}</h2>
+          <span className="text-xs text-gray-500">{orders.length} {tx("order mappings")}</span>
         </div>
 
         <div className="flex flex-wrap gap-3 items-end">
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Platform</label>
+            <label className="block text-xs text-gray-500 mb-1">{tx("Platform")}</label>
             <select
               value={platform}
               onChange={(e) => setPlatform(e.target.value)}
               className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
             >
-              <option value="shopify">Shopify</option>
-              <option value="woocommerce">WooCommerce (no connector)</option>
+              <option value="shopify">{tx("Shopify")}</option>
+              <option value="woocommerce">{tx("WooCommerce (no connector)")}</option>
             </select>
           </div>
           <button
@@ -199,14 +200,14 @@ function EcommerceSection() {
             disabled={importMut.isPending}
             className="px-4 py-1.5 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50"
           >
-            {importMut.isPending ? "Importing..." : "⬇️ Import Orders"}
+            {importMut.isPending ? tx("Importing...") : tx("⬇️ Import Orders")}
           </button>
           <button
             onClick={() => syncMut.mutate()}
             disabled={syncMut.isPending}
             className="px-4 py-1.5 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 disabled:opacity-50"
           >
-            {syncMut.isPending ? "Syncing..." : "📦 Sync Inventory"}
+            {syncMut.isPending ? tx("Syncing...") : tx("📦 Sync Inventory")}
           </button>
         </div>
 
@@ -216,7 +217,7 @@ function EcommerceSection() {
         {importResult && (
           <div className="rounded-lg p-3 text-sm bg-blue-50 border border-blue-200">
             <p className="font-medium">
-              Import result: {importResult.imported} new draft sales orders{importResult.failed ? `, ${importResult.failed} failed` : ""}
+              {tx("Import result:")} {importResult.imported} {tx("new draft sales orders")}{importResult.failed ? tx(", {failed} failed", { failed: importResult.failed }) : ""}
             </p>
             {importResult.errors.length > 0 && (
               <ul className="text-xs text-red-600 mt-1 list-disc pl-4">
@@ -227,7 +228,7 @@ function EcommerceSection() {
         )}
         {syncResult && (
           <div className="rounded-lg p-3 text-sm bg-emerald-50 border border-emerald-200">
-            <p className="font-medium">Inventory sync complete</p>
+            <p className="font-medium">{tx("Inventory sync complete")}</p>
             <pre className="text-xs mt-1 text-gray-600">{JSON.stringify(syncResult, null, 2)}</pre>
           </div>
         )}
@@ -236,18 +237,18 @@ function EcommerceSection() {
       {/* Orders table */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-100">
-          <h3 className="text-sm font-semibold text-gray-700">Order Mappings</h3>
+          <h3 className="text-sm font-semibold text-gray-700">{tx("Order Mappings")}</h3>
         </div>
         {isLoading ? (
-          <div className="p-6 text-center text-gray-400 text-sm">Loading...</div>
+          <div className="p-6 text-center text-gray-400 text-sm">{tx("Loading...")}</div>
         ) : orders.length === 0 ? (
-          <div className="p-6 text-center text-gray-400 text-sm">No order mappings — import orders first</div>
+          <div className="p-6 text-center text-gray-400 text-sm">{tx("No order mappings — import orders first")}</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-gray-50">
                 <tr>
-                  {["Platform", "External Order", "Order No", "Status", "Last Synced"].map((h) => (
+                  {[tx("Platform"), tx("External Order"), tx("Order No"), tx("Status"), tx("Last Synced")].map((h) => (
                     <th key={h} className="px-4 py-2 text-left text-xs font-semibold text-gray-500">{h}</th>
                   ))}
                 </tr>
@@ -284,13 +285,13 @@ function IotSection() {
     <div className="space-y-4">
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-gray-700">🏭 Machine / IoT Status</h2>
-          <span className="text-xs text-gray-500">{machines.length} machines (24h)</span>
+          <h2 className="text-sm font-semibold text-gray-700">{tx("🏭 Machine / IoT Status")}</h2>
+          <span className="text-xs text-gray-500">{machines.length} {tx("machines (24h)")}</span>
         </div>
         {isLoading ? (
-          <div className="p-6 text-center text-gray-400 text-sm">Loading...</div>
+          <div className="p-6 text-center text-gray-400 text-sm">{tx("Loading...")}</div>
         ) : machines.length === 0 ? (
-          <div className="p-6 text-center text-gray-400 text-sm">No machine events in the last 24h</div>
+          <div className="p-6 text-center text-gray-400 text-sm">{tx("No machine events in the last 24h")}</div>
         ) : (
           <div className="divide-y divide-gray-100">
             {machines.map((m: MachineStatusRow) => (
@@ -304,7 +305,7 @@ function IotSection() {
                     {m.last_event_type}: <span className="text-indigo-700">{m.last_value ?? "—"}</span>
                   </p>
                   <p className="text-xs text-gray-500">
-                    {m.event_count_24h} events · {new Date(m.last_seen).toLocaleString()}
+                    {m.event_count_24h} {tx("events ·")} {new Date(m.last_seen).toLocaleString()}
                   </p>
                 </div>
               </div>
@@ -322,8 +323,8 @@ export default function SyncStatusPage() {
   return (
     <div className="w-full min-w-0 px-4 sm:px-6 lg:px-8 py-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">🔄 Sync Status</h1>
-        <p className="text-gray-500 text-sm mt-0.5">CRM, e-commerce, and IoT machine sync</p>
+        <h1 className="text-2xl font-bold text-gray-900">{tx("🔄 Sync Status")}</h1>
+        <p className="text-gray-500 text-sm mt-0.5">{tx("CRM, e-commerce, and IoT machine sync")}</p>
       </div>
 
       {/* Tabs */}
@@ -338,7 +339,7 @@ export default function SyncStatusPage() {
                 : "text-gray-600 hover:text-gray-900"
             }`}
           >
-            {tab === "crm" ? "👥 CRM" : tab === "ecommerce" ? "🛒 E-commerce" : "🏭 IoT"}
+            {tab === "crm" ? tx("👥 CRM") : tab === "ecommerce" ? tx("🛒 E-commerce") : tx("🏭 IoT")}
           </button>
         ))}
       </div>

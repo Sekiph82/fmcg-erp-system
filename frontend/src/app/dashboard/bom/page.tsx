@@ -9,6 +9,7 @@ import {
   LIFECYCLE_COLOR, BOM_TYPE_COLOR, fmtKES,
 } from "@/lib/bom";
 import { PermissionGuard, RequirePermission } from "@/components/PermissionGuard";
+import { tx } from "@/lib/i18n/core";
 
 const BOM_TYPES: BOMType[] = ["FORMULA", "INTERMEDIATE", "PACKAGING", "MULTILEVEL", "PHANTOM", "REWORK", "COPRODUCT"];
 
@@ -51,12 +52,12 @@ function BOMListTab() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">BOM Master</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Formula · Packaging · Multi-Level · Co-Product · Rework BOMs</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("BOM Master")}</h1>
+          <p className="text-sm text-gray-500 mt-0.5">{tx("Formula · Packaging · Multi-Level · Co-Product · Rework BOMs")}</p>
         </div>
         <PermissionGuard permission="bom.create">
           <button onClick={() => setShowCreate(true)} className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700">
-            + New BOM
+            {tx("+ New BOM")}
           </button>
         </PermissionGuard>
       </div>
@@ -64,12 +65,12 @@ function BOMListTab() {
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {[
-          { label: "Total BOMs",      value: dashboard?.total_boms ?? 0 },
-          { label: "Released",        value: dashboard?.released_boms ?? 0,  color: "text-green-600" },
-          { label: "Drafts",          value: dashboard?.draft_boms ?? 0,      color: "text-gray-500" },
-          { label: "Pending Review",  value: dashboard?.pending_review ?? 0,  color: "text-yellow-600" },
-          { label: "With Allergens",  value: dashboard?.boms_with_allergens ?? 0, color: "text-red-600" },
-          { label: "AI Recs Pending", value: dashboard?.pending_ai_recs ?? 0, color: "text-purple-600" },
+          { label: tx("Total BOMs"),      value: dashboard?.total_boms ?? 0 },
+          { label: tx("Released"),        value: dashboard?.released_boms ?? 0,  color: "text-green-600" },
+          { label: tx("Drafts"),          value: dashboard?.draft_boms ?? 0,      color: "text-gray-500" },
+          { label: tx("Pending Review"),  value: dashboard?.pending_review ?? 0,  color: "text-yellow-600" },
+          { label: tx("With Allergens"),  value: dashboard?.boms_with_allergens ?? 0, color: "text-red-600" },
+          { label: tx("AI Recs Pending"), value: dashboard?.pending_ai_recs ?? 0, color: "text-purple-600" },
         ].map((k) => (
           <div key={k.label} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
             <p className="text-xs text-gray-400 font-medium">{k.label}</p>
@@ -96,7 +97,7 @@ function BOMListTab() {
           value={filterType}
           onChange={(e) => setFilterType(e.target.value)}
         >
-          <option value="">All Types</option>
+          <option value="">{tx("All Types")}</option>
           {BOM_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
         </select>
         <select
@@ -104,7 +105,7 @@ function BOMListTab() {
           value={filterLifecycle}
           onChange={(e) => setFilterLifecycle(e.target.value)}
         >
-          <option value="">All Statuses</option>
+          <option value="">{tx("All Statuses")}</option>
           {["DRAFT", "UNDER_REVIEW", "APPROVED", "RELEASED", "SUPERSEDED", "ARCHIVED"].map((s) => (
             <option key={s} value={s}>{s}</option>
           ))}
@@ -113,17 +114,17 @@ function BOMListTab() {
 
       {/* BOM List */}
       {isLoading ? (
-        <div className="text-center text-gray-400 py-8">Loading…</div>
+        <div className="text-center text-gray-400 py-8">{tx("Loading…")}</div>
       ) : boms.length === 0 ? (
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-8 text-center text-sm text-gray-400">
-          No BOMs found. Create your first BOM to get started.
+          {tx("No BOMs found. Create your first BOM to get started.")}
         </div>
       ) : (
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-gray-50">
               <tr>
-                {["Code", "Name", "Type", "Product", "Base Qty", "Version", "Status", "Std Cost", "Actions"].map((h) => (
+                {[tx("Code"), tx("Name"), tx("Type"), tx("Product"), tx("Base Qty"), tx("Version"), tx("Status"), tx("Std Cost"), tx("Actions")].map((h) => (
                   <th key={h} className="px-4 py-3 text-left font-medium text-gray-400 text-xs">{h}</th>
                 ))}
               </tr>
@@ -137,7 +138,7 @@ function BOMListTab() {
                       {bom.bom_name}
                     </a>
                     {bom.is_default && (
-                      <span className="ml-1 text-xs bg-green-100 text-green-700 px-1 rounded">default</span>
+                      <span className="ml-1 text-xs bg-green-100 text-green-700 px-1 rounded">{tx("default")}</span>
                     )}
                   </td>
                   <td className="px-4 py-2">
@@ -145,7 +146,7 @@ function BOMListTab() {
                   </td>
                   <td className="px-4 py-2 text-xs text-gray-500">{bom.product_name || "—"}</td>
                   <td className="px-4 py-2 text-xs text-right font-medium">{Number(bom.base_qty).toLocaleString()} {bom.base_uom}</td>
-                  <td className="px-4 py-2 text-xs text-gray-500">v{bom.version_no}</td>
+                  <td className="px-4 py-2 text-xs text-gray-500">{tx("v")}{bom.version_no}</td>
                   <td className="px-4 py-2">
                     <span className={`text-xs px-1.5 py-0.5 rounded ${LIFECYCLE_COLOR[bom.lifecycle]}`}>{bom.lifecycle}</span>
                   </td>
@@ -154,8 +155,8 @@ function BOMListTab() {
                   </td>
                   <td className="px-4 py-2">
                     <div className="flex items-center gap-2">
-                      <a href={`/dashboard/bom/${bom.id}`} className="text-xs text-blue-600 hover:underline">View</a>
-                      <a href={`/dashboard/bom/${bom.id}?tab=formula`} className="text-xs text-gray-500 hover:text-gray-700">Formula</a>
+                      <a href={`/dashboard/bom/${bom.id}`} className="text-xs text-blue-600 hover:underline">{tx("View")}</a>
+                      <a href={`/dashboard/bom/${bom.id}?tab=formula`} className="text-xs text-gray-500 hover:text-gray-700">{tx("Formula")}</a>
                     </div>
                   </td>
                 </tr>
@@ -171,13 +172,13 @@ function BOMListTab() {
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold">New BOM</h2>
+              <h2 className="text-lg font-semibold">{tx("New BOM")}</h2>
               <button onClick={() => setShowCreate(false)} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
             </div>
             <div className="space-y-3">
               <input
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
-                placeholder="BOM Name *"
+                placeholder={tx("BOM Name *")}
                 value={form.bom_name}
                 onChange={(e) => setForm({ ...form, bom_name: e.target.value })}
               />
@@ -192,7 +193,7 @@ function BOMListTab() {
                 <input
                   type="number"
                   className="border border-gray-200 rounded-lg px-3 py-2 text-sm"
-                  placeholder="Base Qty"
+                  placeholder={tx("Base Qty")}
                   value={form.base_qty}
                   onChange={(e) => setForm({ ...form, base_qty: e.target.value })}
                 />
@@ -205,54 +206,54 @@ function BOMListTab() {
                 </select>
               </div>
               <div>
-                <label className="text-xs text-gray-500 mb-1 block">Expected process yield (% of BOM input)</label>
+                <label className="text-xs text-gray-500 mb-1 block">{tx("Expected process yield (% of BOM input)")}</label>
                 <input
                   type="number"
                   min="0"
                   step="0.0001"
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
-                  placeholder="Leave blank if not configured"
+                  placeholder={tx("Leave blank if not configured")}
                   value={form.expected_process_yield_pct}
                   onChange={(e) => setForm({ ...form, expected_process_yield_pct: e.target.value })}
                 />
-                <p className="text-xs text-gray-400 mt-1">Stores the planned good-output/input percentage; it does not prefill a value.</p>
+                <p className="text-xs text-gray-400 mt-1">{tx("Stores the planned good-output/input percentage; it does not prefill a value.")}</p>
               </div>
               <input
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
-                placeholder="Version identifier (e.g. 1.0)"
+                placeholder={tx("Version identifier (e.g. 1.0)")}
                 maxLength={20}
                 value={form.version_no}
                 onChange={(e) => setForm({ ...form, version_no: e.target.value })}
               />
               {(!form.version_no.trim() || form.version_no.trim().length > 20) && (
-                <p role="alert" className="text-xs text-red-600">Enter a nonblank version identifier of up to 20 characters.</p>
+                <p role="alert" className="text-xs text-red-600">{tx("Enter a nonblank version identifier of up to 20 characters.")}</p>
               )}
               <div>
-                <label className="text-xs text-gray-500 mb-1 block">Effective date window (inclusive)</label>
+                <label className="text-xs text-gray-500 mb-1 block">{tx("Effective date window (inclusive)")}</label>
                 <div className="grid grid-cols-2 gap-3">
                   <input
-                    aria-label="Effective from"
+                    aria-label={tx("Effective from")}
                     type="date"
                     className="border border-gray-200 rounded-lg px-3 py-2 text-sm"
                     value={form.effective_from}
                     onChange={(e) => setForm({ ...form, effective_from: e.target.value })}
                   />
                   <input
-                    aria-label="Effective to"
+                    aria-label={tx("Effective to")}
                     type="date"
                     className="border border-gray-200 rounded-lg px-3 py-2 text-sm"
                     value={form.effective_to}
                     onChange={(e) => setForm({ ...form, effective_to: e.target.value })}
                   />
                 </div>
-                <p className="text-xs text-gray-400 mt-1">Leave either date blank for an open-ended boundary.</p>
+                <p className="text-xs text-gray-400 mt-1">{tx("Leave either date blank for an open-ended boundary.")}</p>
                 {form.effective_from && form.effective_to && form.effective_to < form.effective_from && (
-                  <p role="alert" className="text-xs text-red-600 mt-1">Effective To must be on or after Effective From.</p>
+                  <p role="alert" className="text-xs text-red-600 mt-1">{tx("Effective To must be on or after Effective From.")}</p>
                 )}
               </div>
             </div>
             {create.isError && (
-              <p role="alert" className="text-xs text-red-600 mt-3">BOM could not be created. Check the version, date window, and your permissions, then try again.</p>
+              <p role="alert" className="text-xs text-red-600 mt-3">{tx("BOM could not be created. Check the version, date window, and your permissions, then try again.")}</p>
             )}
             <div className="flex gap-3 mt-4">
               <button
@@ -260,10 +261,10 @@ function BOMListTab() {
                 disabled={!form.bom_name || !form.version_no.trim() || form.version_no.trim().length > 20 || Boolean(form.effective_from && form.effective_to && form.effective_to < form.effective_from) || create.isPending}
                 className="flex-1 bg-indigo-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-40"
               >
-                {create.isPending ? "Creating…" : "Create BOM"}
+                {create.isPending ? tx("Creating…") : tx("Create BOM")}
               </button>
               <button onClick={() => setShowCreate(false)} className="px-4 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50">
-                Cancel
+                {tx("Cancel")}
               </button>
             </div>
           </div>
@@ -281,14 +282,14 @@ const BOMConversionPage = dynamic(() => import("@/app/dashboard/bom/conversion/p
 
 export default function BOMPage() {
   const tabs = [
-    { key: "list",        label: "BOM / Formula", permission: "bom.view", content: <BOMListTab /> },
-    { key: "substitutes", label: "Substitutes",   permission: "bom.view", content: <BOMSubstitutesPage /> },
-    { key: "compare",     label: "Compare",       permission: "bom.view", content: <BOMComparePage /> },
-    { key: "conversion",  label: "Conversion",    permission: "bom.view", content: <BOMConversionPage /> },
+    { key: "list",        label: tx("BOM / Formula"), permission: "bom.view", content: <BOMListTab /> },
+    { key: "substitutes", label: tx("Substitutes"),   permission: "bom.view", content: <BOMSubstitutesPage /> },
+    { key: "compare",     label: tx("Compare"),       permission: "bom.view", content: <BOMComparePage /> },
+    { key: "conversion",  label: tx("Conversion"),    permission: "bom.view", content: <BOMConversionPage /> },
   ];
   return (
     <ModuleWorkspace
-      title="BOM & Formula"
+      title={tx("BOM & Formula")}
       description="Bill of materials, formula versions, substitutes, cost explosion"
       permission="bom.view"
       tabs={tabs}

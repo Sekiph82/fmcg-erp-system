@@ -2,6 +2,7 @@
 
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useCallback, useEffect } from "react";
+import { tx } from "@/lib/i18n/core";
 
 interface WorkspaceDrawerProps {
   /** Which drawer= value triggers this drawer */
@@ -67,7 +68,7 @@ export function WorkspaceDrawer({
           <button
             onClick={close}
             className="rounded-lg p-1.5 text-slate-400 hover:text-slate-200 hover:bg-white/[0.06] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50"
-            aria-label="Close drawer"
+            aria-label={tx("Close drawer")}
           >
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

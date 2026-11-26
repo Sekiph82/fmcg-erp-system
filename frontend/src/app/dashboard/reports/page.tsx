@@ -6,72 +6,73 @@ import { useAuth } from "@/context/AuthContext";
 import { analyticsApi, fmtKES, fmt } from "@/lib/analytics";
 import { RequirePermission } from "@/components/PermissionGuard";
 import { Sparkline } from "@/components/bi/Charts";
+import { tx, lx } from "@/lib/i18n/core";
 
-const MODULES = [
+const MODULES = lx(() => [
   {
     id: "inventory",
-    label: "Inventory",
+    label: tx("Inventory"),
     href: "/dashboard/reports/inventory",
-    desc: "Stock value, low stock, movements",
+    desc: tx("Stock value, low stock, movements"),
     permission: "inventory.view",
     color: "border-blue-500/20 hover:border-blue-500/40",
     accent: "text-blue-400",
   },
   {
     id: "production",
-    label: "Production / MES",
+    label: tx("Production / MES"),
     href: "/dashboard/reports/production",
-    desc: "Plan vs actual, downtime, rejections",
+    desc: tx("Plan vs actual, downtime, rejections"),
     permission: "production.view",
     color: "border-purple-500/20 hover:border-purple-500/40",
     accent: "text-purple-400",
   },
   {
     id: "procurement",
-    label: "Procurement",
+    label: tx("Procurement"),
     href: "/dashboard/reports/procurement",
-    desc: "Open POs, overdue, supplier performance",
+    desc: tx("Open POs, overdue, supplier performance"),
     permission: "procurement.view",
     color: "border-amber-500/20 hover:border-amber-500/40",
     accent: "text-amber-400",
   },
   {
     id: "sales",
-    label: "Sales & Revenue",
+    label: tx("Sales & Revenue"),
     href: "/dashboard/reports/sales",
-    desc: "Revenue trends, channel mix, top customers",
+    desc: tx("Revenue trends, channel mix, top customers"),
     permission: "sales.view",
     color: "border-emerald-500/20 hover:border-emerald-500/40",
     accent: "text-emerald-400",
   },
   {
     id: "finance",
-    label: "Finance",
+    label: tx("Finance"),
     href: "/dashboard/reports/finance",
-    desc: "Cash position, receivables, payables",
+    desc: tx("Cash position, receivables, payables"),
     permission: "finance.view",
     color: "border-indigo-500/20 hover:border-indigo-500/40",
     accent: "text-indigo-400",
   },
   {
     id: "payments",
-    label: "M-Pesa Payments",
+    label: tx("M-Pesa Payments"),
     href: "/dashboard/reports/payments",
-    desc: "Collections, success rate, failure analysis",
+    desc: tx("Collections, success rate, failure analysis"),
     permission: "mpesa.view_transactions",
     color: "border-green-500/20 hover:border-green-500/40",
     accent: "text-green-400",
   },
   {
     id: "marketing",
-    label: "Marketing BI",
+    label: tx("Marketing BI"),
     href: "/dashboard/reports/marketing",
-    desc: "Campaigns, spend, influencers, social, ads, CRM",
+    desc: tx("Campaigns, spend, influencers, social, ads, CRM"),
     permission: "marketing_analytics.view",
     color: "border-pink-500/20 hover:border-pink-500/40",
     accent: "text-pink-400",
   },
-];
+]);
 
 function HubContent() {
   const router = useRouter();
@@ -85,7 +86,7 @@ function HubContent() {
 
   const quickKpis = [
     {
-      label: "Today's Revenue",
+      label: tx("Today's Revenue"),
       value: sales ? fmtKES(sales.today_revenue) : "—",
       sub: `${sales?.today_orders ?? "—"} orders`,
       color: "text-emerald-400",
@@ -93,7 +94,7 @@ function HubContent() {
       trendColor: "#10b981",
     },
     {
-      label: "Stock Value",
+      label: tx("Stock Value"),
       value: inv ? fmtKES(inv.total_stock_value) : "—",
       sub: `${inv?.low_stock_count ?? "—"} low stock`,
       color: "text-blue-400",
@@ -101,7 +102,7 @@ function HubContent() {
       trendColor: "#3b82f6",
     },
     {
-      label: "M-Pesa Today",
+      label: tx("M-Pesa Today"),
       value: mpesa ? fmtKES(mpesa.today_collected) : "—",
       sub: `${mpesa?.today_success_rate?.toFixed(1) ?? "—"}% success rate`,
       color: "text-green-400",
@@ -109,7 +110,7 @@ function HubContent() {
       trendColor: "#22c55e",
     },
     {
-      label: "Production",
+      label: tx("Production"),
       value: prod ? `${prod.active_orders} active` : "—",
       sub: `${prod?.completion_rate?.toFixed(1) ?? "—"}% completion`,
       color: "text-purple-400",
@@ -121,8 +122,8 @@ function HubContent() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-xl font-semibold text-white">Reports & Analytics</h1>
-        <p className="text-sm text-slate-500 mt-1">Live metrics from all ERP modules. Click a dashboard to drill in.</p>
+        <h1 className="text-xl font-semibold text-white">{tx("Reports & Analytics")}</h1>
+        <p className="text-sm text-slate-500 mt-1">{tx("Live metrics from all ERP modules. Click a dashboard to drill in.")}</p>
       </div>
 
       {/* Quick KPI strip */}
@@ -141,7 +142,7 @@ function HubContent() {
 
       {/* Module cards */}
       <div>
-        <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-600 mb-3">Module Dashboards</p>
+        <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-600 mb-3">{tx("Module Dashboards")}</p>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
           {MODULES.map((m) => (
             <button
@@ -154,7 +155,7 @@ function HubContent() {
             >
               <p className={`text-sm font-semibold ${m.accent}`}>{m.label}</p>
               <p className="text-[12px] text-slate-500 mt-1">{m.desc}</p>
-              <span className="mt-3 inline-block text-[11px] text-slate-600">Open →</span>
+              <span className="mt-3 inline-block text-[11px] text-slate-600">{tx("Open →")}</span>
             </button>
           ))}
         </div>

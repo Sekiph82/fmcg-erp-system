@@ -9,6 +9,7 @@ import {
   APPROVAL_STATUS_COLORS,
 } from "@/lib/marketingApi";
 import { RequirePermission } from "@/components/PermissionGuard";
+import { tx } from "@/lib/i18n/core";
 
 const CATEGORIES: BrandSpendCategory[] = [
   "TV", "RADIO", "DIGITAL_ADS", "INFLUENCER", "EVENT", "SAMPLING",
@@ -78,20 +79,20 @@ export default function BrandSpendDetailPage() {
 
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
-  if (isLoading) return <div className="p-8 text-slate-400">Loading...</div>;
-  if (!bs) return <div className="p-8 text-red-400">Brand spend record not found.</div>;
+  if (isLoading) return <div className="p-8 text-slate-400">{tx("Loading...")}</div>;
+  if (!bs) return <div className="p-8 text-red-400">{tx("Brand spend record not found.")}</div>;
 
   return (
     <RequirePermission permission="brand_spend.view">
       <div className="min-h-screen bg-[#0b1120] p-6 text-white max-w-3xl mx-auto">
         <div className="mb-6">
           <button onClick={() => router.back()} className="text-slate-400 hover:text-white text-sm mb-2">
-            ← Brand Spend
+            {tx("← Brand Spend")}
           </button>
           <div className="flex items-start justify-between">
             <div>
               <h1 className="text-2xl font-bold">{bs.spend_category.replace(/_/g, " ")}</h1>
-              <p className="text-slate-400 text-sm mt-1">{bs.vendor ?? "No vendor"} · {bs.spend_date}</p>
+              <p className="text-slate-400 text-sm mt-1">{bs.vendor ?? tx("No vendor")} · {bs.spend_date}</p>
             </div>
             <div className="flex items-center gap-2">
               <span className={`text-sm font-semibold ${APPROVAL_STATUS_COLORS[bs.approval_status as ApprovalStatus]}`}>
@@ -102,7 +103,7 @@ export default function BrandSpendDetailPage() {
                   <button onClick={() => approveMut.mutate()}
                     disabled={approveMut.isPending}
                     className="px-3 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-400 text-sm font-medium">
-                    {approveMut.isPending ? "Approving..." : "Approve"}
+                    {approveMut.isPending ? tx("Approving...") : tx("Approve")}
                   </button>
                 </RequirePermission>
               )}
@@ -117,32 +118,32 @@ export default function BrandSpendDetailPage() {
         {!editing ? (
           <div className="bg-[#131c2e] border border-slate-700/50 rounded-xl p-6">
             <div className="grid grid-cols-2 gap-x-8 gap-y-5 mb-6">
-              <Field label="Amount" value={`${bs.currency} ${Number(bs.amount).toLocaleString()}`} />
-              <Field label="Spend Date" value={bs.spend_date} />
-              <Field label="Category" value={bs.spend_category.replace(/_/g, " ")} />
-              <Field label="Vendor" value={bs.vendor} />
-              <Field label="Campaign ID" value={bs.campaign_id} />
-              <Field label="Approved By" value={bs.approved_by_id} />
+              <Field label={tx("Amount")} value={`${bs.currency} ${Number(bs.amount).toLocaleString()}`} />
+              <Field label={tx("Spend Date")} value={bs.spend_date} />
+              <Field label={tx("Category")} value={bs.spend_category.replace(/_/g, " ")} />
+              <Field label={tx("Vendor")} value={bs.vendor} />
+              <Field label={tx("Campaign ID")} value={bs.campaign_id} />
+              <Field label={tx("Approved By")} value={bs.approved_by_id} />
             </div>
             {bs.notes && (
               <div className="border-t border-slate-700/50 pt-4">
-                <p className="text-xs text-slate-400 mb-1">Notes</p>
+                <p className="text-xs text-slate-400 mb-1">{tx("Notes")}</p>
                 <p className="text-sm text-slate-300">{bs.notes}</p>
               </div>
             )}
             <div className="border-t border-slate-700/50 pt-4 mt-4 flex justify-between items-center">
-              <p className="text-xs text-slate-600">Created: {bs.created_at ? new Date(bs.created_at).toLocaleString() : "—"}</p>
+              <p className="text-xs text-slate-600">{tx("Created:")} {bs.created_at ? new Date(bs.created_at).toLocaleString() : "—"}</p>
               <div className="flex gap-2">
                 <RequirePermission permission="brand_spend.edit">
                   <button onClick={startEdit}
                     className="px-3 py-1.5 rounded-lg border border-slate-600 text-slate-300 hover:bg-slate-700 text-sm">
-                    Edit
+                    {tx("Edit")}
                   </button>
                   <button
-                    onClick={() => { if (confirm("Delete this brand spend record?")) deleteMut.mutate(); }}
+                    onClick={() => { if (confirm(tx("Delete this brand spend record?"))) deleteMut.mutate(); }}
                     disabled={deleteMut.isPending}
                     className="px-3 py-1.5 rounded-lg bg-red-900/30 hover:bg-red-900/50 text-red-400 text-sm">
-                    Delete
+                    {tx("Delete")}
                   </button>
                 </RequirePermission>
               </div>
@@ -152,14 +153,14 @@ export default function BrandSpendDetailPage() {
           <div className="bg-[#131c2e] border border-slate-700/50 rounded-xl p-6 space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Category</label>
+                <label className="block text-xs text-slate-400 mb-1">{tx("Category")}</label>
                 <select value={form.spend_category} onChange={(e) => set("spend_category", e.target.value)}
                   className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
                   {CATEGORIES.map((c) => <option key={c} value={c}>{c.replace(/_/g, " ")}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Currency</label>
+                <label className="block text-xs text-slate-400 mb-1">{tx("Currency")}</label>
                 <select value={form.currency} onChange={(e) => set("currency", e.target.value)}
                   className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
                   {["KES", "USD", "EUR", "GBP", "TRY"].map((c) => <option key={c} value={c}>{c}</option>)}
@@ -169,13 +170,13 @@ export default function BrandSpendDetailPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Amount</label>
+                <label className="block text-xs text-slate-400 mb-1">{tx("Amount")}</label>
                 <input type="number" step="0.01" value={form.amount ?? ""}
                   onChange={(e) => set("amount", e.target.value)}
                   className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white" />
               </div>
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Spend Date</label>
+                <label className="block text-xs text-slate-400 mb-1">{tx("Spend Date")}</label>
                 <input type="date" value={form.spend_date ?? ""}
                   onChange={(e) => set("spend_date", e.target.value)}
                   className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white" />
@@ -183,19 +184,19 @@ export default function BrandSpendDetailPage() {
             </div>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Vendor</label>
+              <label className="block text-xs text-slate-400 mb-1">{tx("Vendor")}</label>
               <input type="text" value={form.vendor ?? ""}
                 onChange={(e) => set("vendor", e.target.value)}
                 className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white" />
             </div>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Campaign</label>
-              <EntityPicker kind="campaign" label="Campaign" value={form.campaign_id ?? ""} onChange={(id) => set("campaign_id", id)} />
+              <label className="block text-xs text-slate-400 mb-1">{tx("Campaign")}</label>
+              <EntityPicker kind="campaign" label={tx("Campaign")} value={form.campaign_id ?? ""} onChange={(id) => set("campaign_id", id)} />
             </div>
 
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Notes</label>
+              <label className="block text-xs text-slate-400 mb-1">{tx("Notes")}</label>
               <textarea value={form.notes ?? ""} onChange={(e) => set("notes", e.target.value)}
                 rows={3}
                 className="w-full bg-[#0b1120] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white resize-none" />
@@ -204,11 +205,11 @@ export default function BrandSpendDetailPage() {
             <div className="flex justify-end gap-3">
               <button onClick={() => { setEditing(false); setForm({}); setError(""); }}
                 className="px-4 py-2 rounded-lg border border-slate-600 text-slate-300 hover:bg-slate-800 text-sm">
-                Cancel
+                {tx("Cancel")}
               </button>
               <button onClick={() => updateMut.mutate()} disabled={updateMut.isPending}
                 className="px-5 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-sm font-medium">
-                {updateMut.isPending ? "Saving..." : "Save Changes"}
+                {updateMut.isPending ? tx("Saving...") : tx("Save Changes")}
               </button>
             </div>
           </div>

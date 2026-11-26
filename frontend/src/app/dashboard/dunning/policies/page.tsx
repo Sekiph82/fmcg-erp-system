@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { dunningApi, DunningPolicy, DunningLevel, DunningActionType } from "@/lib/dunning";
+import { tx } from "@/lib/i18n/core";
 
 export default function PoliciesPage() {
   const [policies, setPolicies] = useState<DunningPolicy[]>([]);
@@ -59,9 +60,9 @@ export default function PoliciesPage() {
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-gray-900">Dunning Policies</h1>
+        <h1 className="text-xl font-bold text-gray-900">{tx("Dunning Policies")}</h1>
         <button onClick={() => setCreating(true)} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">
-          + New Policy
+          {tx("+ New Policy")}
         </button>
       </div>
 
@@ -80,27 +81,27 @@ export default function PoliciesPage() {
               </div>
               <div className="text-xs text-gray-500 mt-0.5">{p.policy_code}</div>
               {p.auto_credit_hold_days && (
-                <div className="text-xs text-red-600 mt-1">Auto-hold at {p.auto_credit_hold_days}d overdue</div>
+                <div className="text-xs text-red-600 mt-1">{tx("Auto-hold at")} {p.auto_credit_hold_days}{tx("d overdue")}</div>
               )}
             </button>
           ))}
-          {policies.length === 0 && <div className="text-gray-400 text-sm p-3">No policies yet.</div>}
+          {policies.length === 0 && <div className="text-gray-400 text-sm p-3">{tx("No policies yet.")}</div>}
         </div>
 
         {/* Level editor */}
         <div className="col-span-2">
           {!selected ? (
-            <div className="bg-white rounded-xl border border-gray-200 p-8 text-center text-gray-400">Select a policy to view its dunning levels.</div>
+            <div className="bg-white rounded-xl border border-gray-200 p-8 text-center text-gray-400">{tx("Select a policy to view its dunning levels.")}</div>
           ) : (
             <div className="bg-white rounded-xl border border-gray-200">
               <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
                 <div>
-                  <h2 className="font-semibold text-gray-900">{selectedPolicy?.policy_name} — Dunning Levels</h2>
-                  <p className="text-xs text-gray-500 mt-0.5">Ordered escalation steps from polite reminder to legal review</p>
+                  <h2 className="font-semibold text-gray-900">{selectedPolicy?.policy_name} {tx("— Dunning Levels")}</h2>
+                  <p className="text-xs text-gray-500 mt-0.5">{tx("Ordered escalation steps from polite reminder to legal review")}</p>
                 </div>
                 <button onClick={() => setAddingLevel(true)}
                   className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-700">
-                  + Add Level
+                  {tx("+ Add Level")}
                 </button>
               </div>
               <div className="divide-y divide-gray-100">
@@ -112,8 +113,8 @@ export default function PoliciesPage() {
                     <div className="flex-1">
                       <div className="font-medium text-sm text-gray-900">{lvl.level_name}</div>
                       <div className="text-xs text-gray-500 mt-0.5">
-                        {lvl.days_overdue_from}+ days overdue
-                        {lvl.days_overdue_to ? ` → ${lvl.days_overdue_to}d` : ""}
+                        {lvl.days_overdue_from}{tx("+ days overdue")}
+                        {lvl.days_overdue_to ? tx(" → {days_overdue_to}d", { days_overdue_to: lvl.days_overdue_to }) : ""}
                       </div>
                     </div>
                     <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${ACTION_COLORS[lvl.action_type]}`}>
@@ -123,14 +124,14 @@ export default function PoliciesPage() {
                       <span className="px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-xs">HOLD</span>
                     )}
                     {lvl.auto_send_flag ? (
-                      <span className="text-xs text-green-600">Auto</span>
+                      <span className="text-xs text-green-600">{tx("Auto")}</span>
                     ) : (
-                      <span className="text-xs text-gray-400">Manual</span>
+                      <span className="text-xs text-gray-400">{tx("Manual")}</span>
                     )}
                   </div>
                 ))}
                 {(levels[selected] || []).length === 0 && (
-                  <div className="px-5 py-8 text-center text-gray-400 text-sm">No levels defined. Add your first dunning level.</div>
+                  <div className="px-5 py-8 text-center text-gray-400 text-sm">{tx("No levels defined. Add your first dunning level.")}</div>
                 )}
               </div>
             </div>
@@ -142,34 +143,34 @@ export default function PoliciesPage() {
       {creating && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md space-y-4">
-            <h2 className="text-lg font-bold text-gray-900">New Dunning Policy</h2>
+            <h2 className="text-lg font-bold text-gray-900">{tx("New Dunning Policy")}</h2>
             <div>
-              <label className="text-xs font-medium text-gray-700">Policy Code</label>
+              <label className="text-xs font-medium text-gray-700">{tx("Policy Code")}</label>
               <input value={form.policy_code} onChange={(e) => setForm({ ...form, policy_code: e.target.value })}
-                className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" placeholder="e.g. STANDARD-30" />
+                className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" placeholder={tx("e.g. STANDARD-30")} />
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-700">Policy Name</label>
+              <label className="text-xs font-medium text-gray-700">{tx("Policy Name")}</label>
               <input value={form.policy_name} onChange={(e) => setForm({ ...form, policy_name: e.target.value })}
                 className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-700">Auto Credit Hold After (days overdue)</label>
+              <label className="text-xs font-medium text-gray-700">{tx("Auto Credit Hold After (days overdue)")}</label>
               <input type="number" value={form.auto_credit_hold_days} onChange={(e) => setForm({ ...form, auto_credit_hold_days: e.target.value })}
                 className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" placeholder="30" />
             </div>
             <div className="flex items-center gap-2">
               <input type="checkbox" checked={form.default_flag} onChange={(e) => setForm({ ...form, default_flag: e.target.checked })} />
-              <label className="text-sm text-gray-700">Set as default policy</label>
+              <label className="text-sm text-gray-700">{tx("Set as default policy")}</label>
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-700">Notes</label>
+              <label className="text-xs font-medium text-gray-700">{tx("Notes")}</label>
               <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })}
                 rows={2} className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
             </div>
             <div className="flex justify-end gap-3">
-              <button onClick={() => setCreating(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm">Cancel</button>
-              <button onClick={createPolicy} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium">Create</button>
+              <button onClick={() => setCreating(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm">{tx("Cancel")}</button>
+              <button onClick={createPolicy} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium">{tx("Create")}</button>
             </div>
           </div>
         </div>
@@ -179,26 +180,26 @@ export default function PoliciesPage() {
       {addingLevel && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md space-y-4">
-            <h2 className="text-lg font-bold text-gray-900">Add Dunning Level</h2>
+            <h2 className="text-lg font-bold text-gray-900">{tx("Add Dunning Level")}</h2>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-medium text-gray-700">Level #</label>
+                <label className="text-xs font-medium text-gray-700">{tx("Level #")}</label>
                 <input type="number" value={lvlForm.level_no} onChange={(e) => setLvlForm({ ...lvlForm, level_no: Number(e.target.value) })}
                   className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-700">Days Overdue From</label>
+                <label className="text-xs font-medium text-gray-700">{tx("Days Overdue From")}</label>
                 <input type="number" value={lvlForm.days_overdue_from} onChange={(e) => setLvlForm({ ...lvlForm, days_overdue_from: Number(e.target.value) })}
                   className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
               </div>
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-700">Level Name</label>
+              <label className="text-xs font-medium text-gray-700">{tx("Level Name")}</label>
               <input value={lvlForm.level_name} onChange={(e) => setLvlForm({ ...lvlForm, level_name: e.target.value })}
-                className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" placeholder="e.g. Polite Reminder" />
+                className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" placeholder={tx("e.g. Polite Reminder")} />
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-700">Action Type</label>
+              <label className="text-xs font-medium text-gray-700">{tx("Action Type")}</label>
               <select value={lvlForm.action_type} onChange={(e) => setLvlForm({ ...lvlForm, action_type: e.target.value as DunningActionType })}
                 className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
                 {(["EMAIL", "SMS", "WHATSAPP", "CALL_REMINDER", "CREDIT_HOLD", "MANAGER_ESCALATION", "FINAL_NOTICE", "LEGAL_REVIEW_FLAG"] as DunningActionType[]).map((a) => (
@@ -207,23 +208,23 @@ export default function PoliciesPage() {
               </select>
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-700">Template Code (optional)</label>
+              <label className="text-xs font-medium text-gray-700">{tx("Template Code (optional)")}</label>
               <input value={lvlForm.template_code} onChange={(e) => setLvlForm({ ...lvlForm, template_code: e.target.value })}
                 className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
             </div>
             <div className="flex gap-4">
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={lvlForm.auto_send_flag} onChange={(e) => setLvlForm({ ...lvlForm, auto_send_flag: e.target.checked })} />
-                Auto-send
+                {tx("Auto-send")}
               </label>
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={lvlForm.apply_credit_hold_flag} onChange={(e) => setLvlForm({ ...lvlForm, apply_credit_hold_flag: e.target.checked })} />
-                Apply Credit Hold
+                {tx("Apply Credit Hold")}
               </label>
             </div>
             <div className="flex justify-end gap-3">
-              <button onClick={() => setAddingLevel(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm">Cancel</button>
-              <button onClick={addLevel} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium">Add Level</button>
+              <button onClick={() => setAddingLevel(false)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm">{tx("Cancel")}</button>
+              <button onClick={addLevel} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium">{tx("Add Level")}</button>
             </div>
           </div>
         </div>

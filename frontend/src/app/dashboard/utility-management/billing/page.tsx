@@ -36,6 +36,7 @@ import {
   type TargetType,
   type TariffType,
 } from "@/lib/utilityBilling";
+import { tx } from "@/lib/i18n/core";
 
 // ── Utility components ────────────────────────────────────────────────────────
 
@@ -119,29 +120,29 @@ function PostToGLModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Post Bill to GL</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{tx("Post Bill to GL")}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">
             &times;
           </button>
         </div>
         <div className="p-6 space-y-4">
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            Bill <strong>{bill.bill_no}</strong> — {bill.provider_name ?? bill.utility_type} &mdash;{" "}
+            {tx("Bill")} <strong>{bill.bill_no}</strong> — {bill.provider_name ?? bill.utility_type} &mdash;{" "}
             <strong>
               {bill.total_amount.toLocaleString(undefined, { minimumFractionDigits: 2 })} {bill.currency_code}
             </strong>
           </p>
           <div>
-            <label className={labelCls}>Debit account *</label>
-            <EntityPicker kind="gl_account" label="Debit account" required value={debitAccountId} onChange={setDebitAccountId} />
+            <label className={labelCls}>{tx("Debit account *")}</label>
+            <EntityPicker kind="gl_account" label={tx("Debit account")} required value={debitAccountId} onChange={setDebitAccountId} />
           </div>
           <div>
-            <label className={labelCls}>Credit account *</label>
-            <EntityPicker kind="gl_account" label="Credit account" required value={creditAccountId} onChange={setCreditAccountId} />
+            <label className={labelCls}>{tx("Credit account *")}</label>
+            <EntityPicker kind="gl_account" label={tx("Credit account")} required value={creditAccountId} onChange={setCreditAccountId} />
           </div>
           {mut.isError && (
             <p className="text-xs text-red-600 dark:text-red-400">
-              {mut.error instanceof Error ? mut.error.message : "Failed to post bill to GL."}
+              {mut.error instanceof Error ? mut.error.message : tx("Failed to post bill to GL.")}
             </p>
           )}
           <div className="flex justify-end gap-3 pt-2">
@@ -150,14 +151,14 @@ function PostToGLModal({
               onClick={onClose}
               className="px-4 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
             >
-              Cancel
+              {tx("Cancel")}
             </button>
             <button
               onClick={() => mut.mutate()}
               disabled={mut.isPending || !debitAccountId.trim() || !creditAccountId.trim()}
               className="px-4 py-2 text-sm rounded-lg bg-violet-600 hover:bg-violet-700 text-white disabled:opacity-50"
             >
-              {mut.isPending ? "Posting…" : "Post to GL"}
+              {mut.isPending ? tx("Posting…") : tx("Post to GL")}
             </button>
           </div>
         </div>
@@ -230,13 +231,13 @@ function BillModal({
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-            {editing ? "Edit Bill" : "New Utility Bill"}
+            {editing ? tx("Edit Bill") : tx("New Utility Bill")}
           </h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 grid grid-cols-2 gap-4">
           <div>
-            <label className={labelCls}>Utility Type *</label>
+            <label className={labelCls}>{tx("Utility Type *")}</label>
             <select className={inputCls} value={form.utility_type}
               onChange={e => set("utility_type", e.target.value)} required>
               {Object.entries(UTILITY_TYPE_LABELS).map(([k, v]) => (
@@ -245,107 +246,107 @@ function BillModal({
             </select>
           </div>
           <div>
-            <label className={labelCls}>Provider / Supplier</label>
+            <label className={labelCls}>{tx("Provider / Supplier")}</label>
             <input className={inputCls} value={form.provider_name ?? ""}
               onChange={e => set("provider_name", e.target.value)} />
           </div>
           <div>
-            <label className={labelCls}>Bill Reference</label>
+            <label className={labelCls}>{tx("Bill Reference")}</label>
             <input className={inputCls} value={form.bill_reference ?? ""}
               onChange={e => set("bill_reference", e.target.value)} />
           </div>
           <div>
-            <label className={labelCls}>Tariff Code</label>
+            <label className={labelCls}>{tx("Tariff Code")}</label>
             <input className={inputCls} value={form.tariff_code ?? ""}
               onChange={e => set("tariff_code", e.target.value)} />
           </div>
           <div>
-            <label className={labelCls}>Period From *</label>
+            <label className={labelCls}>{tx("Period From *")}</label>
             <input type="date" className={inputCls} value={form.billing_period_from ?? ""}
               onChange={e => set("billing_period_from", e.target.value)} required />
           </div>
           <div>
-            <label className={labelCls}>Period To *</label>
+            <label className={labelCls}>{tx("Period To *")}</label>
             <input type="date" className={inputCls} value={form.billing_period_to ?? ""}
               onChange={e => set("billing_period_to", e.target.value)} required />
           </div>
           <div>
-            <label className={labelCls}>Invoice Date</label>
+            <label className={labelCls}>{tx("Invoice Date")}</label>
             <input type="date" className={inputCls} value={form.invoice_date ?? ""}
               onChange={e => set("invoice_date", e.target.value)} />
           </div>
           <div>
-            <label className={labelCls}>Due Date</label>
+            <label className={labelCls}>{tx("Due Date")}</label>
             <input type="date" className={inputCls} value={form.due_date ?? ""}
               onChange={e => set("due_date", e.target.value)} />
           </div>
           <div>
-            <label className={labelCls}>Consumption Qty</label>
+            <label className={labelCls}>{tx("Consumption Qty")}</label>
             <input type="number" step="any" className={inputCls}
               value={form.consumption_quantity ?? ""}
               onChange={e => set("consumption_quantity", e.target.value ? +e.target.value : undefined)} />
           </div>
           <div>
-            <label className={labelCls}>Consumption Unit</label>
-            <input className={inputCls} placeholder="kWh / m³ / kg"
+            <label className={labelCls}>{tx("Consumption Unit")}</label>
+            <input className={inputCls} placeholder={tx("kWh / m³ / kg")}
               value={form.consumption_unit ?? ""}
               onChange={e => set("consumption_unit", e.target.value)} />
           </div>
           <div>
-            <label className={labelCls}>Unit Rate</label>
+            <label className={labelCls}>{tx("Unit Rate")}</label>
             <input type="number" step="any" className={inputCls}
               value={form.unit_rate ?? ""}
               onChange={e => set("unit_rate", e.target.value ? +e.target.value : undefined)} />
           </div>
           <div>
-            <label className={labelCls}>Base Charge</label>
+            <label className={labelCls}>{tx("Base Charge")}</label>
             <input type="number" step="any" className={inputCls}
               value={form.base_charge ?? ""}
               onChange={e => set("base_charge", e.target.value ? +e.target.value : undefined)} />
           </div>
           <div>
-            <label className={labelCls}>Energy Charge</label>
+            <label className={labelCls}>{tx("Energy Charge")}</label>
             <input type="number" step="any" className={inputCls}
               value={form.energy_charge ?? ""}
               onChange={e => set("energy_charge", e.target.value ? +e.target.value : undefined)} />
           </div>
           <div>
-            <label className={labelCls}>Demand Charge</label>
+            <label className={labelCls}>{tx("Demand Charge")}</label>
             <input type="number" step="any" className={inputCls}
               value={form.demand_charge ?? ""}
               onChange={e => set("demand_charge", e.target.value ? +e.target.value : undefined)} />
           </div>
           <div>
-            <label className={labelCls}>Fixed Charge</label>
+            <label className={labelCls}>{tx("Fixed Charge")}</label>
             <input type="number" step="any" className={inputCls}
               value={form.fixed_charge ?? ""}
               onChange={e => set("fixed_charge", e.target.value ? +e.target.value : undefined)} />
           </div>
           <div>
-            <label className={labelCls}>Surcharge</label>
+            <label className={labelCls}>{tx("Surcharge")}</label>
             <input type="number" step="any" className={inputCls}
               value={form.surcharge_amount ?? ""}
               onChange={e => set("surcharge_amount", e.target.value ? +e.target.value : undefined)} />
           </div>
           <div>
-            <label className={labelCls}>Tax Amount</label>
+            <label className={labelCls}>{tx("Tax Amount")}</label>
             <input type="number" step="any" className={inputCls}
               value={form.tax_amount ?? ""}
               onChange={e => set("tax_amount", e.target.value ? +e.target.value : undefined)} />
           </div>
           <div>
-            <label className={labelCls}>Total Amount *</label>
+            <label className={labelCls}>{tx("Total Amount *")}</label>
             <input type="number" step="any" className={inputCls}
               value={form.total_amount ?? ""}
               onChange={e => set("total_amount", +e.target.value)} required />
           </div>
           <div>
-            <label className={labelCls}>Currency</label>
+            <label className={labelCls}>{tx("Currency")}</label>
             <input className={inputCls} value={form.currency_code ?? "USD"}
               onChange={e => set("currency_code", e.target.value)} />
           </div>
           <div>
-            <label className={labelCls}>Status</label>
+            <label className={labelCls}>{tx("Status")}</label>
             <select className={inputCls} value={form.status}
               onChange={e => set("status", e.target.value)}>
               {Object.entries(BILL_STATUS_LABELS).map(([k, v]) => (
@@ -354,28 +355,28 @@ function BillModal({
             </select>
           </div>
           <div>
-            <label className={labelCls}>Payment Date</label>
+            <label className={labelCls}>{tx("Payment Date")}</label>
             <input type="date" className={inputCls} value={form.payment_date ?? ""}
               onChange={e => set("payment_date", e.target.value)} />
           </div>
           <div>
-            <label className={labelCls}>Document Reference</label>
+            <label className={labelCls}>{tx("Document Reference")}</label>
             <input className={inputCls} value={form.document_ref ?? ""}
               onChange={e => set("document_ref", e.target.value)} />
           </div>
           <div className="col-span-2">
-            <label className={labelCls}>Notes</label>
+            <label className={labelCls}>{tx("Notes")}</label>
             <textarea className={inputCls} rows={2} value={form.notes ?? ""}
               onChange={e => set("notes", e.target.value)} />
           </div>
           <div className="col-span-2 flex justify-end gap-3 pt-2">
             <button type="button" onClick={onClose}
               className="px-4 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700">
-              Cancel
+              {tx("Cancel")}
             </button>
             <button type="submit" disabled={saving}
               className="px-4 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50">
-              {saving ? "Saving…" : editing ? "Update Bill" : "Create Bill"}
+              {saving ? tx("Saving…") : editing ? tx("Update Bill") : tx("Create Bill")}
             </button>
           </div>
         </form>
@@ -438,23 +439,23 @@ function TariffModal({
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-            {editing ? "Edit Tariff" : "New Tariff"}
+            {editing ? tx("Edit Tariff") : tx("New Tariff")}
           </h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 grid grid-cols-2 gap-4">
           <div>
-            <label className={labelCls}>Tariff Code *</label>
+            <label className={labelCls}>{tx("Tariff Code *")}</label>
             <input className={inputCls} value={form.tariff_code ?? ""}
               onChange={e => set("tariff_code", e.target.value)} required disabled={editing} />
           </div>
           <div>
-            <label className={labelCls}>Name *</label>
+            <label className={labelCls}>{tx("Name *")}</label>
             <input className={inputCls} value={form.name ?? ""}
               onChange={e => set("name", e.target.value)} required />
           </div>
           <div>
-            <label className={labelCls}>Utility Type *</label>
+            <label className={labelCls}>{tx("Utility Type *")}</label>
             <select className={inputCls} value={form.utility_type}
               onChange={e => set("utility_type", e.target.value)} required>
               {Object.entries(UTILITY_TYPE_LABELS).map(([k, v]) => (
@@ -463,7 +464,7 @@ function TariffModal({
             </select>
           </div>
           <div>
-            <label className={labelCls}>Tariff Type</label>
+            <label className={labelCls}>{tx("Tariff Type")}</label>
             <select className={inputCls} value={form.tariff_type}
               onChange={e => set("tariff_type", e.target.value)}>
               {Object.entries(TARIFF_TYPE_LABELS).map(([k, v]) => (
@@ -472,84 +473,84 @@ function TariffModal({
             </select>
           </div>
           <div>
-            <label className={labelCls}>Valid From *</label>
+            <label className={labelCls}>{tx("Valid From *")}</label>
             <input type="date" className={inputCls} value={form.effective_from ?? ""}
               onChange={e => set("effective_from", e.target.value)} required />
           </div>
           <div>
-            <label className={labelCls}>Valid To</label>
+            <label className={labelCls}>{tx("Valid To")}</label>
             <input type="date" className={inputCls} value={form.effective_to ?? ""}
               onChange={e => set("effective_to", e.target.value)} />
           </div>
           <div>
-            <label className={labelCls}>Unit *</label>
-            <input className={inputCls} placeholder="kWh / m³ / kg"
+            <label className={labelCls}>{tx("Unit *")}</label>
+            <input className={inputCls} placeholder={tx("kWh / m³ / kg")}
               value={form.unit ?? ""} onChange={e => set("unit", e.target.value)} required />
           </div>
           <div>
-            <label className={labelCls}>Currency</label>
+            <label className={labelCls}>{tx("Currency")}</label>
             <input className={inputCls} value={form.currency_code ?? "USD"}
               onChange={e => set("currency_code", e.target.value)} />
           </div>
           <div>
-            <label className={labelCls}>Base Rate ($/unit) *</label>
+            <label className={labelCls}>{tx("Base Rate ($/unit) *")}</label>
             <input type="number" step="any" className={inputCls}
               value={form.base_rate ?? 0}
               onChange={e => set("base_rate", +e.target.value)} required />
           </div>
           <div>
-            <label className={labelCls}>Peak Rate</label>
+            <label className={labelCls}>{tx("Peak Rate")}</label>
             <input type="number" step="any" className={inputCls}
               value={form.peak_rate ?? ""}
               onChange={e => set("peak_rate", e.target.value ? +e.target.value : undefined)} />
           </div>
           <div>
-            <label className={labelCls}>Off-Peak Rate</label>
+            <label className={labelCls}>{tx("Off-Peak Rate")}</label>
             <input type="number" step="any" className={inputCls}
               value={form.offpeak_rate ?? ""}
               onChange={e => set("offpeak_rate", e.target.value ? +e.target.value : undefined)} />
           </div>
           <div>
-            <label className={labelCls}>Demand Rate ($/kW)</label>
+            <label className={labelCls}>{tx("Demand Rate ($/kW)")}</label>
             <input type="number" step="any" className={inputCls}
               value={form.demand_rate ?? ""}
               onChange={e => set("demand_rate", e.target.value ? +e.target.value : undefined)} />
           </div>
           <div>
-            <label className={labelCls}>Fixed Charge</label>
+            <label className={labelCls}>{tx("Fixed Charge")}</label>
             <input type="number" step="any" className={inputCls}
               value={form.fixed_charge ?? ""}
               onChange={e => set("fixed_charge", e.target.value ? +e.target.value : undefined)} />
           </div>
           <div>
-            <label className={labelCls}>Tax Rate %</label>
+            <label className={labelCls}>{tx("Tax Rate %")}</label>
             <input type="number" step="any" className={inputCls}
               value={form.tax_rate_pct ?? ""}
               onChange={e => set("tax_rate_pct", e.target.value ? +e.target.value : undefined)} />
           </div>
           <div>
-            <label className={labelCls}>Tax Rule</label>
+            <label className={labelCls}>{tx("Tax Rule")}</label>
             <input className={inputCls} value={form.tax_rule ?? ""}
               onChange={e => set("tax_rule", e.target.value)} />
           </div>
           <div className="flex items-center gap-2 pt-4">
             <input type="checkbox" id="is_active" checked={form.is_active ?? true}
               onChange={e => set("is_active", e.target.checked)} />
-            <label htmlFor="is_active" className="text-sm text-gray-700 dark:text-gray-300">Active</label>
+            <label htmlFor="is_active" className="text-sm text-gray-700 dark:text-gray-300">{tx("Active")}</label>
           </div>
           <div className="col-span-2">
-            <label className={labelCls}>Notes</label>
+            <label className={labelCls}>{tx("Notes")}</label>
             <textarea className={inputCls} rows={2} value={form.notes ?? ""}
               onChange={e => set("notes", e.target.value)} />
           </div>
           <div className="col-span-2 flex justify-end gap-3 pt-2">
             <button type="button" onClick={onClose}
               className="px-4 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700">
-              Cancel
+              {tx("Cancel")}
             </button>
             <button type="submit" disabled={saving}
               className="px-4 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50">
-              {saving ? "Saving…" : editing ? "Update Tariff" : "Create Tariff"}
+              {saving ? tx("Saving…") : editing ? tx("Update Tariff") : tx("Create Tariff")}
             </button>
           </div>
         </form>
@@ -616,13 +617,13 @@ function AllocationModal({
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-            {editing ? "Edit Allocation" : "New Allocation"}
+            {editing ? tx("Edit Allocation") : tx("New Allocation")}
           </h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 grid grid-cols-2 gap-4">
           <div>
-            <label className={labelCls}>Utility Type *</label>
+            <label className={labelCls}>{tx("Utility Type *")}</label>
             <select className={inputCls} value={form.utility_type}
               onChange={e => set("utility_type", e.target.value)} required>
               {Object.entries(UTILITY_TYPE_LABELS).map(([k, v]) => (
@@ -631,22 +632,22 @@ function AllocationModal({
             </select>
           </div>
           <div>
-            <label className={labelCls}>Allocation Date *</label>
+            <label className={labelCls}>{tx("Allocation Date *")}</label>
             <input type="date" className={inputCls} value={form.allocation_date ?? ""}
               onChange={e => set("allocation_date", e.target.value)} required />
           </div>
           <div>
-            <label className={labelCls}>Period From</label>
+            <label className={labelCls}>{tx("Period From")}</label>
             <input type="date" className={inputCls} value={form.period_start ?? ""}
               onChange={e => set("period_start", e.target.value)} />
           </div>
           <div>
-            <label className={labelCls}>Period To</label>
+            <label className={labelCls}>{tx("Period To")}</label>
             <input type="date" className={inputCls} value={form.period_end ?? ""}
               onChange={e => set("period_end", e.target.value)} />
           </div>
           <div>
-            <label className={labelCls}>Method *</label>
+            <label className={labelCls}>{tx("Method *")}</label>
             <select className={inputCls} value={form.allocation_method}
               onChange={e => set("allocation_method", e.target.value)} required>
               {Object.entries(ALLOCATION_METHOD_LABELS).map(([k, v]) => (
@@ -655,109 +656,109 @@ function AllocationModal({
             </select>
           </div>
           <div>
-            <label className={labelCls}>Target Type</label>
+            <label className={labelCls}>{tx("Target Type")}</label>
             <select className={inputCls} value={form.target_type ?? ""}
               onChange={e => set("target_type", e.target.value || undefined)}>
-              <option value="">— Select —</option>
+              <option value="">{tx("— Select —")}</option>
               {Object.entries(TARGET_TYPE_LABELS).map(([k, v]) => (
                 <option key={k} value={k}>{v}</option>
               ))}
             </select>
           </div>
           <div>
-            <label className={labelCls}>Target ID</label>
+            <label className={labelCls}>{tx("Target ID")}</label>
             <input className={inputCls} value={form.target_id ?? ""}
               onChange={e => set("target_id", e.target.value)} />
           </div>
           <div>
-            <label className={labelCls}>Target Name</label>
+            <label className={labelCls}>{tx("Target Name")}</label>
             <input className={inputCls} value={form.target_name ?? ""}
               onChange={e => set("target_name", e.target.value)} />
           </div>
           <div>
-            <label className={labelCls}>Department</label>
+            <label className={labelCls}>{tx("Department")}</label>
             <input className={inputCls} value={form.department ?? ""}
               onChange={e => set("department", e.target.value)} />
           </div>
           <div>
-            <label className={labelCls}>Production Line</label>
+            <label className={labelCls}>{tx("Production Line")}</label>
             <input className={inputCls} value={form.production_line ?? ""}
               onChange={e => set("production_line", e.target.value)} />
           </div>
           <div>
-            <label className={labelCls}>Machine Ref</label>
+            <label className={labelCls}>{tx("Machine Ref")}</label>
             <input className={inputCls} value={form.machine_ref ?? ""}
               onChange={e => set("machine_ref", e.target.value)} />
           </div>
           <div>
-            <label className={labelCls}>Batch No</label>
+            <label className={labelCls}>{tx("Batch No")}</label>
             <input className={inputCls} value={form.batch_no ?? ""}
               onChange={e => set("batch_no", e.target.value)} />
           </div>
           <div>
-            <label className={labelCls}>Source Cost</label>
+            <label className={labelCls}>{tx("Source Cost")}</label>
             <input type="number" step="any" className={inputCls}
               value={form.source_cost ?? ""}
               onChange={e => set("source_cost", e.target.value ? +e.target.value : undefined)} />
           </div>
           <div>
-            <label className={labelCls}>Allocation Basis Value</label>
+            <label className={labelCls}>{tx("Allocation Basis Value")}</label>
             <input type="number" step="any" className={inputCls}
               value={form.allocation_basis ?? ""}
               onChange={e => set("allocation_basis", e.target.value ? +e.target.value : undefined)} />
           </div>
           <div>
-            <label className={labelCls}>Basis Unit</label>
-            <input className={inputCls} placeholder="hours / % / m²"
+            <label className={labelCls}>{tx("Basis Unit")}</label>
+            <input className={inputCls} placeholder={tx("hours / % / m²")}
               value={form.allocation_basis_unit ?? ""}
               onChange={e => set("allocation_basis_unit", e.target.value)} />
           </div>
           <div>
-            <label className={labelCls}>Allocated Qty</label>
+            <label className={labelCls}>{tx("Allocated Qty")}</label>
             <input type="number" step="any" className={inputCls}
               value={form.allocated_quantity ?? ""}
               onChange={e => set("allocated_quantity", e.target.value ? +e.target.value : undefined)} />
           </div>
           <div>
-            <label className={labelCls}>Quantity Unit</label>
+            <label className={labelCls}>{tx("Quantity Unit")}</label>
             <input className={inputCls} value={form.quantity_unit ?? ""}
               onChange={e => set("quantity_unit", e.target.value)} />
           </div>
           <div>
-            <label className={labelCls}>Total Cost *</label>
+            <label className={labelCls}>{tx("Total Cost *")}</label>
             <input type="number" step="any" className={inputCls}
               value={form.total_cost ?? 0}
               onChange={e => set("total_cost", +e.target.value)} required />
           </div>
           <div>
-            <label className={labelCls}>Allocated Cost *</label>
+            <label className={labelCls}>{tx("Allocated Cost *")}</label>
             <input type="number" step="any" className={inputCls}
               value={form.allocated_cost ?? 0}
               onChange={e => set("allocated_cost", +e.target.value)} required />
           </div>
           <div>
-            <label className={labelCls}>Currency</label>
+            <label className={labelCls}>{tx("Currency")}</label>
             <input className={inputCls} value={form.currency_code ?? "USD"}
               onChange={e => set("currency_code", e.target.value)} />
           </div>
           <div>
-            <label className={labelCls}>Linked Bill ID</label>
+            <label className={labelCls}>{tx("Linked Bill ID")}</label>
             <input className={inputCls} value={form.bill_id ?? ""}
               onChange={e => set("bill_id", e.target.value)} />
           </div>
           <div className="col-span-2">
-            <label className={labelCls}>Notes</label>
+            <label className={labelCls}>{tx("Notes")}</label>
             <textarea className={inputCls} rows={2} value={form.notes ?? ""}
               onChange={e => set("notes", e.target.value)} />
           </div>
           <div className="col-span-2 flex justify-end gap-3 pt-2">
             <button type="button" onClick={onClose}
               className="px-4 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600">
-              Cancel
+              {tx("Cancel")}
             </button>
             <button type="submit" disabled={saving}
               className="px-4 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50">
-              {saving ? "Saving…" : editing ? "Update" : "Create"}
+              {saving ? tx("Saving…") : editing ? tx("Update") : tx("Create")}
             </button>
           </div>
         </form>
@@ -819,13 +820,13 @@ function EngineModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Run Allocation Engine</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{tx("Run Allocation Engine")}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
         </div>
         <div className="p-6 space-y-4">
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Bill *</label>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{tx("Bill *")}</label>
               <select className={inputCls + " w-full"} value={billId}
                 onChange={e => setBillId(e.target.value)}>
                 {bills.map(b => (
@@ -834,7 +835,7 @@ function EngineModal({
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Method *</label>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{tx("Method *")}</label>
               <select className={inputCls + " w-full"} value={method}
                 onChange={e => setMethod(e.target.value as AllocationMethod)}>
                 {Object.entries(ALLOCATION_METHOD_LABELS).map(([k, v]) => (
@@ -843,7 +844,7 @@ function EngineModal({
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Allocation Date *</label>
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{tx("Allocation Date *")}</label>
               <input type="date" className={inputCls + " w-full"} value={allocationDate}
                 onChange={e => setAllocationDate(e.target.value)} />
             </div>
@@ -851,9 +852,9 @@ function EngineModal({
 
           <div>
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Allocation Targets</h3>
+              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">{tx("Allocation Targets")}</h3>
               <button onClick={addTarget}
-                className="text-xs text-blue-600 hover:underline">+ Add Target</button>
+                className="text-xs text-blue-600 hover:underline">{tx("+ Add Target")}</button>
             </div>
             <div className="space-y-2">
               {targets.map((t, i) => (
@@ -864,14 +865,14 @@ function EngineModal({
                       <option key={k} value={k}>{v}</option>
                     ))}
                   </select>
-                  <input className={inputCls} placeholder="Target ID"
+                  <input className={inputCls} placeholder={tx("Target ID")}
                     value={t.target_id} onChange={e => updateTarget(i, "target_id", e.target.value)} />
-                  <input className={inputCls} placeholder="Name"
+                  <input className={inputCls} placeholder={tx("Name")}
                     value={t.target_name ?? ""} onChange={e => updateTarget(i, "target_name", e.target.value)} />
-                  <input type="number" step="any" className={inputCls} placeholder="Basis value"
+                  <input type="number" step="any" className={inputCls} placeholder={tx("Basis value")}
                     value={t.basis_value} onChange={e => updateTarget(i, "basis_value", +e.target.value)} />
                   <div className="flex items-center gap-1">
-                    <input className={inputCls + " flex-1"} placeholder="Unit"
+                    <input className={inputCls + " flex-1"} placeholder={tx("Unit")}
                       value={t.basis_unit ?? ""} onChange={e => updateTarget(i, "basis_unit", e.target.value)} />
                     {targets.length > 1 && (
                       <button onClick={() => removeTarget(i)}
@@ -884,10 +885,10 @@ function EngineModal({
           </div>
           <div className="flex justify-end gap-3 pt-2">
             <button onClick={onClose}
-              className="px-4 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600">Cancel</button>
+              className="px-4 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600">{tx("Cancel")}</button>
             <button onClick={handleRun} disabled={running || !billId}
               className="px-4 py-2 text-sm rounded-lg bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50">
-              {running ? "Running…" : "Run Engine"}
+              {running ? tx("Running…") : tx("Run Engine")}
             </button>
           </div>
         </div>
@@ -1047,9 +1048,9 @@ export default function UtilityBillingPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Utility Billing & Cost Allocation</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{tx("Utility Billing & Cost Allocation")}</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Manage bills, tariffs, and allocate costs to departments, lines, machines, and batches.
+            {tx("Manage bills, tariffs, and allocate costs to departments, lines, machines, and batches.")}
           </p>
         </div>
         <div className="flex gap-2">
@@ -1057,33 +1058,33 @@ export default function UtilityBillingPage() {
             <>
               <button onClick={() => downloadBillsCsv({ utility_type: utilityType, status: billStatus })}
                 className="px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800">
-                Export CSV
+                {tx("Export CSV")}
               </button>
               <button onClick={() => setBillModal({ open: true })}
                 className="px-3 py-2 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700">
-                + Add Bill
+                {tx("+ Add Bill")}
               </button>
             </>
           )}
           {tab === "tariffs" && (
             <button onClick={() => setTariffModal({ open: true })}
               className="px-3 py-2 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700">
-              + Add Tariff
+              {tx("+ Add Tariff")}
             </button>
           )}
           {tab === "allocations" && (
             <>
               <button onClick={() => downloadAllocationsCsv({ utility_type: utilityType })}
                 className="px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800">
-                Export CSV
+                {tx("Export CSV")}
               </button>
               <button onClick={() => setEngineModal(true)}
                 className="px-3 py-2 text-sm rounded-lg bg-purple-600 text-white hover:bg-purple-700">
-                Run Engine
+                {tx("Run Engine")}
               </button>
               <button onClick={() => setAllocModal({ open: true })}
                 className="px-3 py-2 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700">
-                + Manual
+                {tx("+ Manual")}
               </button>
             </>
           )}
@@ -1095,7 +1096,7 @@ export default function UtilityBillingPage() {
         <select
           className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm"
           value={utilityType} onChange={e => setUtilityType(e.target.value)}>
-          <option value="">All Utilities</option>
+          <option value="">{tx("All Utilities")}</option>
           {Object.entries(UTILITY_TYPE_LABELS).map(([k, v]) => (
             <option key={k} value={k}>{v}</option>
           ))}
@@ -1104,7 +1105,7 @@ export default function UtilityBillingPage() {
           <select
             className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm"
             value={billStatus} onChange={e => setBillStatus(e.target.value)}>
-            <option value="">All Statuses</option>
+            <option value="">{tx("All Statuses")}</option>
             {Object.entries(BILL_STATUS_LABELS).map(([k, v]) => (
               <option key={k} value={k}>{v}</option>
             ))}
@@ -1112,23 +1113,23 @@ export default function UtilityBillingPage() {
         )}
         <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
           className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm" />
-        <span className="text-gray-400 text-xs">to</span>
+        <span className="text-gray-400 text-xs">{tx("to")}</span>
         <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
           className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm" />
         <button onClick={() => { setUtilityType(""); setBillStatus(""); setDateFrom(""); setDateTo(""); }}
-          className="text-xs text-blue-600 hover:underline">Clear</button>
+          className="text-xs text-blue-600 hover:underline">{tx("Clear")}</button>
       </div>
 
       {/* KPI cards — always visible */}
       {kpi && (
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          <KpiCard label="Total Bills" value={kpi.total_bills} />
-          <KpiCard label="Total Billed" value={fmt(kpi.total_billed_amount)} unit={kpi.currency_code} />
-          <KpiCard label="Total Tax" value={fmt(kpi.total_tax_amount)} unit={kpi.currency_code} />
-          <KpiCard label="Total Consumption" value={fmt(kpi.total_consumption)} unit={kpi.consumption_unit ?? ""} />
-          <KpiCard label="Avg Unit Rate" value={fmt(kpi.avg_unit_rate, 4)} />
+          <KpiCard label={tx("Total Bills")} value={kpi.total_bills} />
+          <KpiCard label={tx("Total Billed")} value={fmt(kpi.total_billed_amount)} unit={kpi.currency_code} />
+          <KpiCard label={tx("Total Tax")} value={fmt(kpi.total_tax_amount)} unit={kpi.currency_code} />
+          <KpiCard label={tx("Total Consumption")} value={fmt(kpi.total_consumption)} unit={kpi.consumption_unit ?? ""} />
+          <KpiCard label={tx("Avg Unit Rate")} value={fmt(kpi.avg_unit_rate, 4)} />
           <KpiCard
-            label="Unpaid / Overdue"
+            label={tx("Unpaid / Overdue")}
             value={fmt(kpi.unpaid_amount)}
             unit={kpi.currency_code}
             sub={`${kpi.overdue_count} overdue · ${kpi.disputed_count} disputed`}
@@ -1152,7 +1153,7 @@ export default function UtilityBillingPage() {
           {/* Cost by utility type pie */}
           {pieData.length > 0 && (
             <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Total Billed by Utility Type</h3>
+              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">{tx("Total Billed by Utility Type")}</h3>
               <div className="flex gap-6 items-center">
                 <ResponsiveContainer width={260} height={220}>
                   <PieChart>
@@ -1180,7 +1181,7 @@ export default function UtilityBillingPage() {
             <table className="w-full">
               <thead className="bg-gray-50 dark:bg-gray-700/50">
                 <tr>
-                  {["Bill No", "Utility", "Provider", "Period", "Consumption", "Total Amount", "Status", "Due Date", ""].map(h => (
+                  {[tx("Bill No"), tx("Utility"), tx("Provider"), tx("Period"), tx("Consumption"), tx("Total Amount"), tx("Status"), tx("Due Date"), ""].map(h => (
                     <th key={h} className={thCls}>{h}</th>
                   ))}
                 </tr>
@@ -1208,7 +1209,7 @@ export default function UtilityBillingPage() {
                         {b.status === "VERIFIED" && (
                           <button
                             onClick={() => setGlModal({ open: true, bill: b })}
-                            title="Post to GL"
+                            title={tx("Post to GL")}
                             className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 hover:bg-violet-200 dark:hover:bg-violet-800"
                           >
                             {/* Document / bank icon */}
@@ -1216,19 +1217,19 @@ export default function UtilityBillingPage() {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
                                 d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                             </svg>
-                            Post GL
+                            {tx("Post GL")}
                           </button>
                         )}
                         <button onClick={() => setBillModal({ open: true, item: b })}
-                          className="text-xs text-blue-600 hover:underline">Edit</button>
-                        <button onClick={() => { if (confirm("Delete this bill?")) deleteBillMut.mutate(b.id); }}
-                          className="text-xs text-red-500 hover:underline">Del</button>
+                          className="text-xs text-blue-600 hover:underline">{tx("Edit")}</button>
+                        <button onClick={() => { if (confirm(tx("Delete this bill?"))) deleteBillMut.mutate(b.id); }}
+                          className="text-xs text-red-500 hover:underline">{tx("Del")}</button>
                       </div>
                     </td>
                   </tr>
                 ))}
                 {bills.length === 0 && (
-                  <tr><td colSpan={9} className="text-center py-10 text-gray-400">No bills found.</td></tr>
+                  <tr><td colSpan={9} className="text-center py-10 text-gray-400">{tx("No bills found.")}</td></tr>
                 )}
               </tbody>
             </table>
@@ -1242,7 +1243,7 @@ export default function UtilityBillingPage() {
           <table className="w-full">
             <thead className="bg-gray-50 dark:bg-gray-700/50">
               <tr>
-                {["Code", "Name", "Utility", "Type", "Valid From", "Valid To", "Base Rate", "Peak", "Off-Peak", "Tax %", "Active", ""].map(h => (
+                {[tx("Code"), tx("Name"), tx("Utility"), tx("Type"), tx("Valid From"), tx("Valid To"), tx("Base Rate"), tx("Peak"), tx("Off-Peak"), tx("Tax %"), tx("Active"), ""].map(h => (
                   <th key={h} className={thCls}>{h}</th>
                 ))}
               </tr>
@@ -1255,28 +1256,28 @@ export default function UtilityBillingPage() {
                   <td className={tdCls}><UtilityBadge type={t.utility_type} /></td>
                   <td className={tdCls + " text-xs"}>{TARIFF_TYPE_LABELS[t.tariff_type as TariffType] ?? t.tariff_type}</td>
                   <td className={tdCls + " text-xs"}>{t.effective_from}</td>
-                  <td className={tdCls + " text-xs"}>{t.effective_to ?? "Open"}</td>
+                  <td className={tdCls + " text-xs"}>{t.effective_to ?? tx("Open")}</td>
                   <td className={tdCls}>{fmt(t.base_rate, 4)}/{t.unit}</td>
                   <td className={tdCls + " text-xs"}>{t.peak_rate != null ? fmt(t.peak_rate, 4) : "—"}</td>
                   <td className={tdCls + " text-xs"}>{t.offpeak_rate != null ? fmt(t.offpeak_rate, 4) : "—"}</td>
                   <td className={tdCls + " text-xs"}>{t.tax_rate_pct != null ? `${t.tax_rate_pct}%` : "—"}</td>
                   <td className={tdCls}>
                     <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${t.is_active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
-                      {t.is_active ? "Active" : "Inactive"}
+                      {t.is_active ? tx("Active") : tx("Inactive")}
                     </span>
                   </td>
                   <td className={tdCls}>
                     <div className="flex gap-2">
                       <button onClick={() => setTariffModal({ open: true, item: t })}
-                        className="text-xs text-blue-600 hover:underline">Edit</button>
-                      <button onClick={() => { if (confirm("Delete this tariff?")) deleteTariffMut.mutate(t.id); }}
-                        className="text-xs text-red-500 hover:underline">Del</button>
+                        className="text-xs text-blue-600 hover:underline">{tx("Edit")}</button>
+                      <button onClick={() => { if (confirm(tx("Delete this tariff?"))) deleteTariffMut.mutate(t.id); }}
+                        className="text-xs text-red-500 hover:underline">{tx("Del")}</button>
                     </div>
                   </td>
                 </tr>
               ))}
               {tariffs.length === 0 && (
-                <tr><td colSpan={12} className="text-center py-10 text-gray-400">No tariffs found.</td></tr>
+                <tr><td colSpan={12} className="text-center py-10 text-gray-400">{tx("No tariffs found.")}</td></tr>
               )}
             </tbody>
           </table>
@@ -1289,7 +1290,7 @@ export default function UtilityBillingPage() {
           <table className="w-full">
             <thead className="bg-gray-50 dark:bg-gray-700/50">
               <tr>
-                {["Alloc No", "Utility", "Date", "Method", "Target", "Dept / Line", "Source Cost", "Allocated Cost", "Approved", ""].map(h => (
+                {[tx("Alloc No"), tx("Utility"), tx("Date"), tx("Method"), tx("Target"), tx("Dept / Line"), tx("Source Cost"), tx("Allocated Cost"), tx("Approved"), ""].map(h => (
                   <th key={h} className={thCls}>{h}</th>
                 ))}
               </tr>
@@ -1313,25 +1314,25 @@ export default function UtilityBillingPage() {
                   <td className={tdCls + " font-semibold"}>{fmt(a.allocated_cost)} {a.currency_code}</td>
                   <td className={tdCls}>
                     <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${a.is_approved ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"}`}>
-                      {a.is_approved ? "Approved" : "Pending"}
+                      {a.is_approved ? tx("Approved") : tx("Pending")}
                     </span>
                   </td>
                   <td className={tdCls}>
                     <div className="flex gap-2">
                       {!a.is_approved && (
                         <button onClick={() => allocMut.mutate({ id: a.id, data: { is_approved: true } })}
-                          className="text-xs text-green-600 hover:underline">Approve</button>
+                          className="text-xs text-green-600 hover:underline">{tx("Approve")}</button>
                       )}
                       <button onClick={() => setAllocModal({ open: true, item: a })}
-                        className="text-xs text-blue-600 hover:underline">Edit</button>
-                      <button onClick={() => { if (confirm("Delete allocation?")) deleteAllocMut.mutate(a.id); }}
-                        className="text-xs text-red-500 hover:underline">Del</button>
+                        className="text-xs text-blue-600 hover:underline">{tx("Edit")}</button>
+                      <button onClick={() => { if (confirm(tx("Delete allocation?"))) deleteAllocMut.mutate(a.id); }}
+                        className="text-xs text-red-500 hover:underline">{tx("Del")}</button>
                     </div>
                   </td>
                 </tr>
               ))}
               {allocations.length === 0 && (
-                <tr><td colSpan={10} className="text-center py-10 text-gray-400">No allocations found.</td></tr>
+                <tr><td colSpan={10} className="text-center py-10 text-gray-400">{tx("No allocations found.")}</td></tr>
               )}
             </tbody>
           </table>
@@ -1342,7 +1343,7 @@ export default function UtilityBillingPage() {
       {tab === "reports" && (
         <div className="space-y-6">
           <div className="flex items-center gap-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Group By:</label>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{tx("Group By:")}</label>
             {(["target_type", "department", "production_line", "machine_ref", "batch_no"] as const).map(g => (
               <button key={g}
                 onClick={() => setReportGroupBy(g)}
@@ -1357,7 +1358,7 @@ export default function UtilityBillingPage() {
               {/* Bar chart */}
               <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
                 <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">
-                  Allocated Cost by {reportGroupBy.replace("_", " ")}
+                  {tx("Allocated Cost by")} {reportGroupBy.replace("_", " ")}
                 </h3>
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart
@@ -1384,13 +1385,13 @@ export default function UtilityBillingPage() {
               <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
                 <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
                   <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                    Cost Detail — Grand Total: {fmt(Number(report.grand_total))}
+                    {tx("Cost Detail — Grand Total:")} {fmt(Number(report.grand_total))}
                   </h3>
                 </div>
                 <table className="w-full">
                   <thead className="bg-gray-50 dark:bg-gray-700/50">
                     <tr>
-                      {["Target", "Target Name", "Utility", "Allocated Cost", "Qty", "Unit", "Cost/Unit", "Records"].map(h => (
+                      {[tx("Target"), tx("Target Name"), tx("Utility"), tx("Allocated Cost"), tx("Qty"), tx("Unit"), tx("Cost/Unit"), tx("Records")].map(h => (
                         <th key={h} className={thCls}>{h}</th>
                       ))}
                     </tr>
@@ -1409,7 +1410,7 @@ export default function UtilityBillingPage() {
                       </tr>
                     ))}
                     {report.rows.length === 0 && (
-                      <tr><td colSpan={8} className="text-center py-10 text-gray-400">No data.</td></tr>
+                      <tr><td colSpan={8} className="text-center py-10 text-gray-400">{tx("No data.")}</td></tr>
                     )}
                   </tbody>
                 </table>

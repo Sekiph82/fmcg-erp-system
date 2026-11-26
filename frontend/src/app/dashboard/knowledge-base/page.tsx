@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { kbApi, KBStats, KBCategory, KBArticle } from "@/lib/knowledge_base";
 import { RequirePermission } from "@/components/PermissionGuard";
 import { PageHelpTooltip } from "@/components/help/PageHelpTooltip";
+import { tx } from "@/lib/i18n/core";
 
 export default function KBHomePage() {
   const [stats, setStats] = useState<KBStats | null>(null);
@@ -41,10 +42,10 @@ export default function KBHomePage() {
     <div className="p-6 space-y-6">
       <div>
         <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-bold text-gray-900">Knowledge Base</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Knowledge Base")}</h1>
           <PageHelpTooltip topic="knowledge-base" />
         </div>
-        <p className="text-sm text-gray-500 mt-0.5">Internal wiki — SOPs, guides, policies, and how-tos.</p>
+        <p className="text-sm text-gray-500 mt-0.5">{tx("Internal wiki — SOPs, guides, policies, and how-tos.")}</p>
       </div>
 
       {/* Search */}
@@ -55,23 +56,23 @@ export default function KBHomePage() {
             value={searchQuery}
             onChange={e => { setSearchQuery(e.target.value); if (!e.target.value) setSearchResults([]); }}
             onKeyDown={e => e.key === "Enter" && doSearch()}
-            placeholder="Search articles, SOPs, guides…"
+            placeholder={tx("Search articles, SOPs, guides…")}
             className="flex-1 border rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
           />
           <button onClick={doSearch} disabled={searching}
             className="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">
-            {searching ? "…" : "Search"}
+            {searching ? "…" : tx("Search")}
           </button>
         </div>
         {searchResults.length > 0 && (
           <div className="mt-4 space-y-2">
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{searchResults.length} Results</p>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{searchResults.length} {tx("Results")}</p>
             {searchResults.map(a => (
               <a key={a.id} href={`/dashboard/knowledge-base/${a.id}`}
                 className="block p-3 rounded-lg border hover:bg-blue-50 transition-colors">
                 <p className="text-sm font-medium text-gray-800">{a.title}</p>
                 {a.summary && <p className="text-xs text-gray-500 mt-0.5 truncate">{a.summary}</p>}
-                <p className="text-xs text-gray-400 mt-0.5">{a.category_name ?? "Uncategorized"} · {a.view_count} views</p>
+                <p className="text-xs text-gray-400 mt-0.5">{a.category_name ?? tx("Uncategorized")} · {a.view_count} {tx("views")}</p>
               </a>
             ))}
           </div>
@@ -82,10 +83,10 @@ export default function KBHomePage() {
       {stats && (
         <div className="grid grid-cols-4 gap-4">
           {[
-            { label: "Published Articles", value: stats.published, color: "text-blue-600" },
-            { label: "Draft Articles", value: stats.drafts, color: "text-amber-600" },
-            { label: "Categories", value: stats.categories, color: "text-green-600" },
-            { label: "Total", value: stats.total_articles, color: "text-gray-700" },
+            { label: tx("Published Articles"), value: stats.published, color: "text-blue-600" },
+            { label: tx("Draft Articles"), value: stats.drafts, color: "text-amber-600" },
+            { label: tx("Categories"), value: stats.categories, color: "text-green-600" },
+            { label: tx("Total"), value: stats.total_articles, color: "text-gray-700" },
           ].map(s => (
             <div key={s.label} className="bg-white border rounded-lg p-4 shadow-sm">
               <p className="text-xs text-gray-500">{s.label}</p>
@@ -99,13 +100,13 @@ export default function KBHomePage() {
         {/* Categories */}
         <div className="bg-white border rounded-lg shadow-sm p-5">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold text-gray-800">Categories</h2>
-            <a href="/dashboard/knowledge-base/categories" className="text-xs text-blue-600 hover:underline">Manage</a>
+            <h2 className="text-sm font-semibold text-gray-800">{tx("Categories")}</h2>
+            <a href="/dashboard/knowledge-base/categories" className="text-xs text-blue-600 hover:underline">{tx("Manage")}</a>
           </div>
           {loading ? (
-            <p className="text-xs text-gray-400">Loading…</p>
+            <p className="text-xs text-gray-400">{tx("Loading…")}</p>
           ) : categories.length === 0 ? (
-            <p className="text-xs text-gray-400">No categories yet.</p>
+            <p className="text-xs text-gray-400">{tx("No categories yet.")}</p>
           ) : (
             <div className="space-y-2">
               {categories.map(c => (
@@ -125,20 +126,20 @@ export default function KBHomePage() {
         {/* Recent/Featured Articles */}
         <div className="lg:col-span-2 bg-white border rounded-lg shadow-sm p-5">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold text-gray-800">Recent Articles</h2>
+            <h2 className="text-sm font-semibold text-gray-800">{tx("Recent Articles")}</h2>
             <div className="flex gap-2">
-              <a href="/dashboard/knowledge-base/articles" className="text-xs text-blue-600 hover:underline">View all</a>
-              <a href="/dashboard/knowledge-base/articles/new" className="text-xs text-blue-600 hover:underline">+ New</a>
+              <a href="/dashboard/knowledge-base/articles" className="text-xs text-blue-600 hover:underline">{tx("View all")}</a>
+              <a href="/dashboard/knowledge-base/articles/new" className="text-xs text-blue-600 hover:underline">{tx("+ New")}</a>
             </div>
           </div>
           {loading ? (
-            <p className="text-xs text-gray-400">Loading…</p>
+            <p className="text-xs text-gray-400">{tx("Loading…")}</p>
           ) : featured.length === 0 ? (
             <div className="text-center py-8 text-gray-400">
               <p className="text-2xl mb-2">📝</p>
-              <p className="text-sm">No articles published yet.</p>
+              <p className="text-sm">{tx("No articles published yet.")}</p>
               <a href="/dashboard/knowledge-base/articles/new" className="text-xs text-blue-600 hover:underline mt-1 block">
-                Write your first article →
+                {tx("Write your first article →")}
               </a>
             </div>
           ) : (
@@ -149,7 +150,7 @@ export default function KBHomePage() {
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        {a.is_featured && <span className="text-xs bg-amber-100 text-amber-700 rounded px-1.5">Featured</span>}
+                        {a.is_featured && <span className="text-xs bg-amber-100 text-amber-700 rounded px-1.5">{tx("Featured")}</span>}
                         <p className="text-sm font-medium text-gray-800 truncate">{a.title}</p>
                       </div>
                       {a.summary && <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{a.summary}</p>}
@@ -163,8 +164,8 @@ export default function KBHomePage() {
                       </div>
                     </div>
                     <div className="text-xs text-gray-400 text-right whitespace-nowrap">
-                      <p>{a.view_count} views</p>
-                      <p>v{a.version}</p>
+                      <p>{a.view_count} {tx("views")}</p>
+                      <p>{tx("v")}{a.version}</p>
                     </div>
                   </div>
                 </a>
@@ -177,7 +178,7 @@ export default function KBHomePage() {
       {/* Top Articles */}
       {stats?.top_articles && stats.top_articles.length > 0 && (
         <div className="bg-white border rounded-lg shadow-sm p-5">
-          <h2 className="text-sm font-semibold text-gray-800 mb-3">Most Viewed</h2>
+          <h2 className="text-sm font-semibold text-gray-800 mb-3">{tx("Most Viewed")}</h2>
           <div className="flex gap-3 flex-wrap">
             {stats.top_articles.map((a, i) => (
               <a key={a.id} href={`/dashboard/knowledge-base/${a.id}`}

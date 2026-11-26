@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { hrApi, AttendanceStatus } from "@/lib/hr";
 import { RequirePermission } from "@/components/PermissionGuard";
 import { Badge } from "@/components/ui/Badge";
+import { tx } from "@/lib/i18n/core";
 
 const STATUS_VARIANT: Record<AttendanceStatus, "green" | "red" | "yellow" | "blue" | "gray"> = {
   PRESENT: "green",
@@ -57,11 +58,11 @@ function AttendanceContent() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Attendance</h1>
-          <p className="text-sm text-gray-500 mt-1">{records.length} records for period</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Attendance")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{records.length} {tx("records for period")}</p>
         </div>
         <button onClick={() => setShowForm(true)} className="px-4 py-2 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700">
-          + Record
+          {tx("+ Record")}
         </button>
       </div>
 
@@ -77,27 +78,27 @@ function AttendanceContent() {
 
       {showForm && (
         <div className="bg-white border rounded-lg p-4 space-y-3">
-          <h3 className="font-semibold text-sm text-gray-800">Record Attendance</h3>
+          <h3 className="font-semibold text-sm text-gray-800">{tx("Record Attendance")}</h3>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs text-gray-500">Employee</label>
+              <label className="text-xs text-gray-500">{tx("Employee")}</label>
               <select
                 className="w-full border rounded px-2 py-1.5 text-sm mt-1"
                 value={recForm.employee_id}
                 onChange={(e) => setRecForm((f) => ({ ...f, employee_id: e.target.value }))}
               >
-                <option value="">— select —</option>
+                <option value="">{tx("— select —")}</option>
                 {employees.map((e) => <option key={e.id} value={e.id}>{e.full_name} ({e.department})</option>)}
               </select>
             </div>
             <div>
-              <label className="text-xs text-gray-500">Date</label>
+              <label className="text-xs text-gray-500">{tx("Date")}</label>
               <input type="date" className="w-full border rounded px-2 py-1.5 text-sm mt-1"
                 value={recForm.attendance_date}
                 onChange={(e) => setRecForm((f) => ({ ...f, attendance_date: e.target.value }))} />
             </div>
             <div>
-              <label className="text-xs text-gray-500">Status</label>
+              <label className="text-xs text-gray-500">{tx("Status")}</label>
               <select className="w-full border rounded px-2 py-1.5 text-sm mt-1"
                 value={recForm.status}
                 onChange={(e) => setRecForm((f) => ({ ...f, status: e.target.value }))}>
@@ -105,7 +106,7 @@ function AttendanceContent() {
               </select>
             </div>
             <div>
-              <label className="text-xs text-gray-500">Notes</label>
+              <label className="text-xs text-gray-500">{tx("Notes")}</label>
               <input className="w-full border rounded px-2 py-1.5 text-sm mt-1"
                 value={recForm.notes}
                 onChange={(e) => setRecForm((f) => ({ ...f, notes: e.target.value }))} />
@@ -116,8 +117,8 @@ function AttendanceContent() {
               onClick={() => recordMutation.mutate(recForm)}
               className="px-3 py-1.5 bg-indigo-600 text-white rounded text-sm"
               disabled={!recForm.employee_id}
-            >Save</button>
-            <button onClick={() => setShowForm(false)} className="px-3 py-1.5 border rounded text-sm">Cancel</button>
+            >{tx("Save")}</button>
+            <button onClick={() => setShowForm(false)} className="px-3 py-1.5 border rounded text-sm">{tx("Cancel")}</button>
           </div>
         </div>
       )}
@@ -125,39 +126,39 @@ function AttendanceContent() {
       {/* Filters */}
       <div className="flex gap-3 flex-wrap">
         <div className="flex items-center gap-2">
-          <label className="text-xs text-gray-500">From</label>
+          <label className="text-xs text-gray-500">{tx("From")}</label>
           <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="border rounded px-2 py-1.5 text-sm" />
         </div>
         <div className="flex items-center gap-2">
-          <label className="text-xs text-gray-500">To</label>
+          <label className="text-xs text-gray-500">{tx("To")}</label>
           <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="border rounded px-2 py-1.5 text-sm" />
         </div>
         <select value={dept} onChange={(e) => setDept(e.target.value)} className="border rounded px-3 py-1.5 text-sm">
-          <option value="">All Departments</option>
+          <option value="">{tx("All Departments")}</option>
           {departments.map((d) => <option key={d}>{d}</option>)}
         </select>
         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="border rounded px-3 py-1.5 text-sm">
-          <option value="">All Statuses</option>
+          <option value="">{tx("All Statuses")}</option>
           {["PRESENT", "ABSENT", "LATE", "LEAVE", "HALF_DAY"].map((s) => <option key={s}>{s}</option>)}
         </select>
       </div>
 
       <div className="bg-white border rounded-lg overflow-hidden">
         {isLoading ? (
-          <p className="p-6 text-sm text-gray-400 text-center">Loading...</p>
+          <p className="p-6 text-sm text-gray-400 text-center">{tx("Loading...")}</p>
         ) : records.length === 0 ? (
-          <p className="p-6 text-sm text-gray-400 text-center">No attendance records for this period</p>
+          <p className="p-6 text-sm text-gray-400 text-center">{tx("No attendance records for this period")}</p>
         ) : (
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-gray-50 text-xs text-gray-500 uppercase">
-                <th className="px-4 py-2 text-left">Date</th>
-                <th className="px-4 py-2 text-left">Employee</th>
-                <th className="px-4 py-2 text-left">Dept</th>
-                <th className="px-4 py-2 text-left">Status</th>
-                <th className="px-4 py-2 text-left">Clock In</th>
-                <th className="px-4 py-2 text-left">Clock Out</th>
-                <th className="px-4 py-2 text-left">Notes</th>
+                <th className="px-4 py-2 text-left">{tx("Date")}</th>
+                <th className="px-4 py-2 text-left">{tx("Employee")}</th>
+                <th className="px-4 py-2 text-left">{tx("Dept")}</th>
+                <th className="px-4 py-2 text-left">{tx("Status")}</th>
+                <th className="px-4 py-2 text-left">{tx("Clock In")}</th>
+                <th className="px-4 py-2 text-left">{tx("Clock Out")}</th>
+                <th className="px-4 py-2 text-left">{tx("Notes")}</th>
               </tr>
             </thead>
             <tbody className="divide-y">

@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { bomApi, ExplosionResult, ExplosionNode } from "@/lib/bom";
 import { RequirePermission } from "@/components/PermissionGuard";
+import { tx } from "@/lib/i18n/core";
 
 function TreeNode({ node, depth = 0 }: { node: ExplosionNode; depth?: number }) {
   const [expanded, setExpanded] = useState(true);
@@ -29,13 +30,13 @@ function TreeNode({ node, depth = 0 }: { node: ExplosionNode; depth?: number }) 
         <span className="ml-auto text-xs text-gray-500 font-mono">
           {node.required_qty.toFixed(4)} → {node.adjusted_qty.toFixed(4)} {node.required_uom}
         </span>
-        {node.allergen_flag && <span className="text-xs bg-red-100 text-red-700 px-1 rounded">Allergen</span>}
-        {node.critical_component && <span className="text-xs bg-orange-100 text-orange-700 px-1 rounded">Critical</span>}
+        {node.allergen_flag && <span className="text-xs bg-red-100 text-red-700 px-1 rounded">{tx("Allergen")}</span>}
+        {node.critical_component && <span className="text-xs bg-orange-100 text-orange-700 px-1 rounded">{tx("Critical")}</span>}
         {node.wastage_pct > 0 && <span className="text-xs text-orange-500">W:{node.wastage_pct}%</span>}
       </div>
       {node.applied_substitute && (
         <p className="ml-8 text-xs text-amber-700">
-          Approved alternate: {node.applied_substitute} · {node.applied_substitute_qty?.toFixed(4)} {node.required_uom} · request {node.substitution_request_id}
+          {tx("Approved alternate:")} {node.applied_substitute} · {node.applied_substitute_qty?.toFixed(4)} {node.required_uom} {tx("· request")} {node.substitution_request_id}
         </p>
       )}
       {expanded && hasChildren && node.children.map((child) => (
@@ -65,20 +66,20 @@ export default function ExplodePage() {
     <RequirePermission permission="bom.view">
     <div className="p-6 space-y-5">
       <div className="flex items-center gap-3">
-        <a href={`/dashboard/bom/${id}`} className="text-sm text-gray-400 hover:text-gray-600">← BOM Detail</a>
-        <h1 className="text-xl font-bold text-gray-900">Multi-Level Explosion</h1>
+        <a href={`/dashboard/bom/${id}`} className="text-sm text-gray-400 hover:text-gray-600">{tx("← BOM Detail")}</a>
+        <h1 className="text-xl font-bold text-gray-900">{tx("Multi-Level Explosion")}</h1>
       </div>
 
       <div className="flex items-center gap-3 flex-wrap">
         <input
           type="number"
           className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm w-48"
-          placeholder="Target qty (optional)"
+          placeholder={tx("Target qty (optional)")}
           value={targetQty}
           onChange={(e) => setTargetQty(e.target.value)}
         />
-        <input className="w-72 border border-gray-200 rounded-lg px-3 py-1.5 text-sm" placeholder="Approved request IDs (comma separated)" value={substitutionRequestInput} onChange={(e) => setSubstitutionRequestInput(e.target.value)} />
-        <input className="w-56 border border-gray-200 rounded-lg px-3 py-1.5 text-sm" placeholder="Exact order/context reference" value={substitutionContextInput} onChange={(e) => setSubstitutionContextInput(e.target.value)} />
+        <input className="w-72 border border-gray-200 rounded-lg px-3 py-1.5 text-sm" placeholder={tx("Approved request IDs (comma separated)")} value={substitutionRequestInput} onChange={(e) => setSubstitutionRequestInput(e.target.value)} />
+        <input className="w-56 border border-gray-200 rounded-lg px-3 py-1.5 text-sm" placeholder={tx("Exact order/context reference")} value={substitutionContextInput} onChange={(e) => setSubstitutionContextInput(e.target.value)} />
         <button
           onClick={() => {
             setSubmitted(targetQty ? Number(targetQty) : undefined);
@@ -87,22 +88,22 @@ export default function ExplodePage() {
           }}
           className="px-4 py-1.5 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
         >
-          Explode
+          {tx("Explode")}
         </button>
         <div className="flex rounded-lg border border-gray-200 overflow-hidden">
-          <button onClick={() => setView("tree")} className={`px-3 py-1.5 text-xs ${view === "tree" ? "bg-indigo-600 text-white" : "text-gray-500 hover:bg-gray-50"}`}>Tree</button>
-          <button onClick={() => setView("flat")} className={`px-3 py-1.5 text-xs ${view === "flat" ? "bg-indigo-600 text-white" : "text-gray-500 hover:bg-gray-50"}`}>Flat</button>
+          <button onClick={() => setView("tree")} className={`px-3 py-1.5 text-xs ${view === "tree" ? "bg-indigo-600 text-white" : "text-gray-500 hover:bg-gray-50"}`}>{tx("Tree")}</button>
+          <button onClick={() => setView("flat")} className={`px-3 py-1.5 text-xs ${view === "flat" ? "bg-indigo-600 text-white" : "text-gray-500 hover:bg-gray-50"}`}>{tx("Flat")}</button>
         </div>
       </div>
 
-      {isLoading && <div className="text-center text-gray-400 py-8">Exploding BOM…</div>}
+      {isLoading && <div className="text-center text-gray-400 py-8">{tx("Exploding BOM…")}</div>}
 
       {data && (
         <>
           <div className="flex items-center gap-4 text-sm text-gray-500">
             <span><strong className="text-gray-800">{data.bom_name}</strong></span>
-            <span>Target: {data.target_qty.toLocaleString()} {data.target_uom}</span>
-            <span>{data.total_levels} levels</span>
+            <span>{tx("Target:")} {data.target_qty.toLocaleString()} {data.target_uom}</span>
+            <span>{data.total_levels} {tx("levels")}</span>
           </div>
 
           {view === "tree" && (
@@ -116,7 +117,7 @@ export default function ExplodePage() {
               <table className="w-full text-sm">
                 <thead className="bg-gray-50">
                   <tr>
-                    {["Item", "Code", "Type", "Required", "Adjusted", "UOM", "Flags"].map((h) => (
+                    {[tx("Item"), tx("Code"), tx("Type"), tx("Required"), tx("Adjusted"), "UOM", tx("Flags")].map((h) => (
                       <th key={h} className="px-4 py-3 text-left font-medium text-gray-400 text-xs">{h}</th>
                     ))}
                   </tr>

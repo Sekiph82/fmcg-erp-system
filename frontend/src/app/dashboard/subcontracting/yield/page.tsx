@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { scApi, SCYieldOut, yieldBadge, fmt } from "@/lib/subcontracting";
+import { tx } from "@/lib/i18n/core";
 
 export default function YieldPage() {
   const [abnormalOnly, setAbnormalOnly] = useState(false);
@@ -18,27 +19,27 @@ export default function YieldPage() {
     <div className="p-6 space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900">Yield Analysis</h1>
-          <p className="text-sm text-gray-500">Actual vs expected yield · Scrap tracking · Variance</p>
+          <h1 className="text-xl font-semibold text-gray-900">{tx("Yield Analysis")}</h1>
+          <p className="text-sm text-gray-500">{tx("Actual vs expected yield · Scrap tracking · Variance")}</p>
         </div>
         <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
           <input type="checkbox" checked={abnormalOnly} onChange={(e) => setAbnormalOnly(e.target.checked)} />
-          Abnormal Only
+          {tx("Abnormal Only")}
         </label>
       </div>
 
       {avgYield != null && (
         <div className="grid grid-cols-3 gap-3">
           <div className="bg-white border rounded-lg p-4">
-            <p className="text-xs text-gray-500 uppercase">Avg Yield</p>
+            <p className="text-xs text-gray-500 uppercase">{tx("Avg Yield")}</p>
             <p className={`text-2xl font-bold mt-1 ${avgYield < 90 ? "text-red-600" : "text-green-600"}`}>{fmt(avgYield, 1)}%</p>
           </div>
           <div className="bg-white border rounded-lg p-4">
-            <p className="text-xs text-gray-500 uppercase">Abnormal Records</p>
+            <p className="text-xs text-gray-500 uppercase">{tx("Abnormal Records")}</p>
             <p className="text-2xl font-bold mt-1 text-orange-600">{data?.filter((r) => r.is_abnormal).length ?? 0}</p>
           </div>
           <div className="bg-white border rounded-lg p-4">
-            <p className="text-xs text-gray-500 uppercase">Total Scrap Cost</p>
+            <p className="text-xs text-gray-500 uppercase">{tx("Total Scrap Cost")}</p>
             <p className="text-2xl font-bold mt-1 text-red-600">
               KES {fmt(data?.reduce((s, r) => s + Number(r.scrap_cost ?? 0), 0) ?? 0, 0)}
             </p>
@@ -46,24 +47,24 @@ export default function YieldPage() {
         </div>
       )}
 
-      {isLoading && <div className="text-gray-400">Loading…</div>}
+      {isLoading && <div className="text-gray-400">{tx("Loading…")}</div>}
       {!isLoading && !data?.length && (
-        <div className="text-center py-12 text-gray-400">No yield records found.</div>
+        <div className="text-center py-12 text-gray-400">{tx("No yield records found.")}</div>
       )}
 
       <div className="bg-white border border-gray-200 rounded-lg overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
             <tr>
-              <th className="text-left px-4 py-2">Order Line</th>
-              <th className="text-right px-4 py-2">Ordered</th>
-              <th className="text-right px-4 py-2">Received</th>
-              <th className="text-right px-4 py-2">Mat. Issued</th>
-              <th className="text-right px-4 py-2">Exp. Yield</th>
-              <th className="text-right px-4 py-2">Act. Yield</th>
-              <th className="text-right px-4 py-2">Variance</th>
-              <th className="text-right px-4 py-2">Scrapped</th>
-              <th className="text-left px-4 py-2">Status</th>
+              <th className="text-left px-4 py-2">{tx("Order Line")}</th>
+              <th className="text-right px-4 py-2">{tx("Ordered")}</th>
+              <th className="text-right px-4 py-2">{tx("Received")}</th>
+              <th className="text-right px-4 py-2">{tx("Mat. Issued")}</th>
+              <th className="text-right px-4 py-2">{tx("Exp. Yield")}</th>
+              <th className="text-right px-4 py-2">{tx("Act. Yield")}</th>
+              <th className="text-right px-4 py-2">{tx("Variance")}</th>
+              <th className="text-right px-4 py-2">{tx("Scrapped")}</th>
+              <th className="text-left px-4 py-2">{tx("Status")}</th>
             </tr>
           </thead>
           <tbody>

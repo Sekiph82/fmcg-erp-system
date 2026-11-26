@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/Button";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { BusinessCardPanel } from "@/components/BusinessCardPanel";
+import { tx } from "@/lib/i18n/core";
 
 const STATUS_VARIANT: Record<EmployeeStatus, "green" | "gray" | "yellow" | "red"> = {
   ACTIVE: "green",
@@ -51,7 +52,7 @@ function EmployeeForm({
 
   return (
     <div className="bg-white border rounded-lg p-6 space-y-4">
-      <h3 className="font-semibold text-gray-800">{initial?.id ? "Edit Employee" : "New Employee"}</h3>
+      <h3 className="font-semibold text-gray-800">{initial?.id ? tx("Edit Employee") : tx("New Employee")}</h3>
       <div className="grid grid-cols-2 gap-4">
         {[
           ["employee_code", "Employee Code"],
@@ -75,7 +76,7 @@ function EmployeeForm({
           </div>
         ))}
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Status</label>
+          <label className="block text-xs text-gray-500 mb-1">{tx("Status")}</label>
           <select className="w-full border rounded px-3 py-2 text-sm" {...field("status")}>
             {["ACTIVE", "INACTIVE", "ON_LEAVE", "TERMINATED"].map((s) => (
               <option key={s}>{s}</option>
@@ -83,9 +84,9 @@ function EmployeeForm({
           </select>
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Payment Method</label>
+          <label className="block text-xs text-gray-500 mb-1">{tx("Payment Method")}</label>
           <select className="w-full border rounded px-3 py-2 text-sm" {...field("payment_method")}>
-            <option value="">— none —</option>
+            <option value="">{tx("— none —")}</option>
             {["MPESA", "BANK", "CASH"].map((m) => (
               <option key={m}>{m}</option>
             ))}
@@ -97,10 +98,10 @@ function EmployeeForm({
           onClick={() => onSave(Object.fromEntries(Object.entries(form).filter(([, v]) => v !== "")))}
           className="px-4 py-2 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700"
         >
-          Save
+          {tx("Save")}
         </button>
         <button onClick={onCancel} className="px-4 py-2 border rounded text-sm hover:bg-gray-50">
-          Cancel
+          {tx("Cancel")}
         </button>
       </div>
     </div>
@@ -147,19 +148,19 @@ function EmployeesContent() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Employees</h1>
-          <p className="text-sm text-gray-500 mt-1">{employees.length} records</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Employees")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{employees.length} {tx("records")}</p>
         </div>
         <div className="flex items-center gap-2">
           {canCards && (
-            <Link href="/dashboard/hr/employees/cards" className="px-4 py-2 border rounded text-sm hover:bg-gray-50">Business cards</Link>
+            <Link href="/dashboard/hr/employees/cards" className="px-4 py-2 border rounded text-sm hover:bg-gray-50">{tx("Business cards")}</Link>
           )}
           <ImportModal module="employees" onSuccess={() => qc.invalidateQueries({ queryKey: ["hr-employees"] })} />
           <button
             onClick={() => setShowForm(true)}
             className="px-4 py-2 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700"
           >
-            + New Employee
+            {tx("+ New Employee")}
           </button>
         </div>
       </div>
@@ -180,35 +181,35 @@ function EmployeesContent() {
 
       <div className="flex gap-3">
         <input
-          placeholder="Search name or code..."
+          placeholder={tx("Search name or code...")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="border rounded px-3 py-2 text-sm w-56"
         />
         <select value={dept} onChange={(e) => setDept(e.target.value)} className="border rounded px-3 py-2 text-sm">
-          <option value="">All Departments</option>
+          <option value="">{tx("All Departments")}</option>
           {departments.map((d) => <option key={d}>{d}</option>)}
         </select>
         <select value={status} onChange={(e) => setStatus(e.target.value)} className="border rounded px-3 py-2 text-sm">
-          <option value="">All Statuses</option>
+          <option value="">{tx("All Statuses")}</option>
           {["ACTIVE", "INACTIVE", "ON_LEAVE", "TERMINATED"].map((s) => <option key={s}>{s}</option>)}
         </select>
       </div>
 
       <div className="bg-white border rounded-lg overflow-hidden">
         {isLoading ? (
-          <p className="p-6 text-sm text-gray-400 text-center">Loading...</p>
+          <p className="p-6 text-sm text-gray-400 text-center">{tx("Loading...")}</p>
         ) : employees.length === 0 ? (
-          <p className="p-6 text-sm text-gray-400 text-center">No employees found</p>
+          <p className="p-6 text-sm text-gray-400 text-center">{tx("No employees found")}</p>
         ) : (
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-gray-50 text-xs text-gray-500 uppercase">
-                <th className="px-4 py-2 text-left">Code</th>
-                <th className="px-4 py-2 text-left">Name</th>
-                <th className="px-4 py-2 text-left">Department</th>
-                <th className="px-4 py-2 text-left">Role</th>
-                <th className="px-4 py-2 text-left">Status</th>
+                <th className="px-4 py-2 text-left">{tx("Code")}</th>
+                <th className="px-4 py-2 text-left">{tx("Name")}</th>
+                <th className="px-4 py-2 text-left">{tx("Department")}</th>
+                <th className="px-4 py-2 text-left">{tx("Role")}</th>
+                <th className="px-4 py-2 text-left">{tx("Status")}</th>
                 <th className="px-4 py-2"></th>
               </tr>
             </thead>
@@ -226,20 +227,20 @@ function EmployeesContent() {
                     <div className="flex justify-end gap-3">
                       {canCards && (
                         <button onClick={() => setCardFor({ id: emp.id, name: emp.full_name })} className="text-xs text-indigo-600 hover:underline">
-                          Card
+                          {tx("Card")}
                         </button>
                       )}
                       <button
                         onClick={() => setEditing(emp as unknown as Employee)}
                         className="text-xs text-indigo-600 hover:underline"
                       >
-                        Edit
+                        {tx("Edit")}
                       </button>
                       <button
                         onClick={() => setDeletingId(emp.id)}
                         className="text-xs text-red-500 hover:text-red-700 hover:underline"
                       >
-                        Delete
+                        {tx("Delete")}
                       </button>
                     </div>
                   </td>
@@ -250,27 +251,26 @@ function EmployeesContent() {
         )}
       </div>
       {/* M42 business card of one employee */}
-      <Modal open={!!cardFor} onClose={() => setCardFor(null)} title={cardFor ? `Business card — ${cardFor.name}` : ""}>
+      <Modal open={!!cardFor} onClose={() => setCardFor(null)} title={cardFor ? tx("Business card — {name}", { name: cardFor.name }) : ""}>
         {cardFor && <BusinessCardPanel employeeId={cardFor.id} />}
       </Modal>
 
       {/* Delete Confirm Modal */}
-      <Modal open={!!deletingId} onClose={() => setDeletingId(null)} title="Delete Employee">
+      <Modal open={!!deletingId} onClose={() => setDeletingId(null)} title={tx("Delete Employee")}>
         <p className="text-sm text-gray-600 mb-4">
-          Are you sure you want to delete{" "}
+          {tx("Are you sure you want to delete")}{" "}
           <span className="font-semibold text-gray-900">{deletingEmployee?.full_name}</span>{" "}
-          <span className="font-mono text-xs text-gray-500">({deletingEmployee?.employee_code})</span>?
-          This action cannot be undone.
+          <span className="font-mono text-xs text-gray-500">({deletingEmployee?.employee_code})</span>{tx("? This action cannot be undone.")}
         </p>
-        {deleteMutation.error && <p className="text-sm text-red-600 mb-3">Failed to delete employee.</p>}
+        {deleteMutation.error && <p className="text-sm text-red-600 mb-3">{tx("Failed to delete employee.")}</p>}
         <div className="flex justify-end gap-3">
-          <Button variant="secondary" onClick={() => setDeletingId(null)}>Cancel</Button>
+          <Button variant="secondary" onClick={() => setDeletingId(null)}>{tx("Cancel")}</Button>
           <Button
             variant="danger"
             loading={deleteMutation.isPending}
             onClick={() => deletingId && deleteMutation.mutate(deletingId)}
           >
-            Delete
+            {tx("Delete")}
           </Button>
         </div>
       </Modal>

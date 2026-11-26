@@ -8,6 +8,7 @@ import {
   IntegrationProvider,
   IntegrationLogStatus,
 } from "@/lib/integrations";
+import { tx } from "@/lib/i18n/core";
 
 const PROVIDERS: (IntegrationProvider | "")[] = [
   "", "MPESA", "CRM", "SHOPIFY", "WOOCOMMERCE", "BARCODE", "IOT", "GENERIC",
@@ -31,7 +32,7 @@ function LogDetailModal({ log, onClose }: { log: IntegrationLog; onClose: () => 
     <div className="fixed inset-0 bg-black/40 z-50 flex items-start justify-center p-4 pt-16 overflow-y-auto">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl p-6 space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-gray-900">Log Detail</h2>
+          <h2 className="text-lg font-bold text-gray-900">{tx("Log Detail")}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
         </div>
 
@@ -55,7 +56,7 @@ function LogDetailModal({ log, onClose }: { log: IntegrationLog; onClose: () => 
 
         {log.request_payload && (
           <div>
-            <p className="text-xs font-medium text-gray-500 mb-1">Request Payload</p>
+            <p className="text-xs font-medium text-gray-500 mb-1">{tx("Request Payload")}</p>
             <pre className="bg-gray-50 rounded-lg p-3 text-xs overflow-x-auto text-gray-800 max-h-40">
               {(() => { try { return JSON.stringify(JSON.parse(log.request_payload!), null, 2); } catch { return log.request_payload; } })()}
             </pre>
@@ -64,7 +65,7 @@ function LogDetailModal({ log, onClose }: { log: IntegrationLog; onClose: () => 
 
         {log.response_payload && (
           <div>
-            <p className="text-xs font-medium text-gray-500 mb-1">Response Payload</p>
+            <p className="text-xs font-medium text-gray-500 mb-1">{tx("Response Payload")}</p>
             <pre className="bg-gray-50 rounded-lg p-3 text-xs overflow-x-auto text-gray-800 max-h-40">
               {(() => { try { return JSON.stringify(JSON.parse(log.response_payload!), null, 2); } catch { return log.response_payload; } })()}
             </pre>
@@ -75,7 +76,7 @@ function LogDetailModal({ log, onClose }: { log: IntegrationLog; onClose: () => 
           onClick={onClose}
           className="w-full px-4 py-2 bg-gray-100 rounded-lg text-sm hover:bg-gray-200"
         >
-          Close
+          {tx("Close")}
         </button>
       </div>
     </div>
@@ -107,21 +108,21 @@ export default function IntegrationLogsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900"><span aria-hidden="true">📋 </span>Integration Logs</h1>
-          <p className="text-gray-500 text-sm mt-0.5">Audit trail of all external API calls</p>
+          <h1 className="text-2xl font-bold text-gray-900"><span aria-hidden="true">📋 </span>{tx("Integration Logs")}</h1>
+          <p className="text-gray-500 text-sm mt-0.5">{tx("Audit trail of all external API calls")}</p>
         </div>
         <button
           onClick={() => refetch()}
           className="px-3 py-1.5 text-sm bg-white border border-gray-200 rounded-lg hover:bg-gray-50"
         >
-          ↻ Refresh
+          {tx("↻ Refresh")}
         </button>
       </div>
 
       {/* Filters */}
       <div className="flex flex-wrap gap-4 bg-white border border-gray-200 rounded-xl p-4">
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Provider</label>
+          <label className="block text-xs text-gray-500 mb-1">{tx("Provider")}</label>
           <select
             value={provider}
             onChange={(e) => setProvider(e.target.value as IntegrationProvider | "")}
@@ -129,13 +130,13 @@ export default function IntegrationLogsPage() {
           >
             {PROVIDERS.map((p) => (
               <option key={p} value={p}>
-                {p || "All Providers"}
+                {p || tx("All Providers")}
               </option>
             ))}
           </select>
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Status</label>
+          <label className="block text-xs text-gray-500 mb-1">{tx("Status")}</label>
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value as IntegrationLogStatus | "")}
@@ -143,28 +144,28 @@ export default function IntegrationLogsPage() {
           >
             {STATUSES.map((s) => (
               <option key={s} value={s}>
-                {s || "All Statuses"}
+                {s || tx("All Statuses")}
               </option>
             ))}
           </select>
         </div>
         <div className="flex items-end">
-          <span className="text-sm text-gray-500">{logs.length} records</span>
+          <span className="text-sm text-gray-500">{logs.length} {tx("records")}</span>
         </div>
       </div>
 
       {/* Table */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         {isLoading ? (
-          <div className="p-8 text-center text-gray-400 text-sm">Loading logs...</div>
+          <div className="p-8 text-center text-gray-400 text-sm">{tx("Loading logs...")}</div>
         ) : logs.length === 0 ? (
-          <div className="p-8 text-center text-gray-400 text-sm">No logs found for selected filters</div>
+          <div className="p-8 text-center text-gray-400 text-sm">{tx("No logs found for selected filters")}</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  {["Provider", "Type", "Endpoint", "Status", "HTTP", "Duration", "Time", ""].map((h) => (
+                  {[tx("Provider"), tx("Type"), tx("Endpoint"), tx("Status"), "HTTP", tx("Duration"), tx("Time"), ""].map((h) => (
                     <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500">
                       {h}
                     </th>
@@ -193,7 +194,7 @@ export default function IntegrationLogsPage() {
                     </td>
                     <td className="px-4 py-3 text-xs text-gray-600">{log.http_status ?? "—"}</td>
                     <td className="px-4 py-3 text-xs text-gray-600">
-                      {log.duration_ms ? `${log.duration_ms}ms` : "—"}
+                      {log.duration_ms ? tx("{duration_ms}ms", { duration_ms: log.duration_ms }) : "—"}
                     </td>
                     <td className="px-4 py-3 text-xs text-gray-500">
                       {new Date(log.created_at).toLocaleString()}

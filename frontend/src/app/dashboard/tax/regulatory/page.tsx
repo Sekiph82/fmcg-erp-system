@@ -7,6 +7,7 @@ import {
 } from "@/lib/tax_regulatory";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { tx } from "@/lib/i18n/core";
 
 const STATUS_VARIANT: Record<string, "green" | "red" | "yellow" | "gray" | "blue"> = {
   COMPLIANT: "green",
@@ -58,20 +59,20 @@ export default function RegulatoryFlagsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Regulatory Flags</h1>
-          <p className="text-sm text-gray-500 mt-1">Chemical compliance, licenses, certifications (KEBS, KEPHIS, REACH, Halal…)</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Regulatory Flags")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{tx("Chemical compliance, licenses, certifications (KEBS, KEPHIS, REACH, Halal…)")}</p>
         </div>
-        <Button onClick={() => setShowNew(true)}>Add Flag</Button>
+        <Button onClick={() => setShowNew(true)}>{tx("Add Flag")}</Button>
       </div>
 
       {/* Expiry alert */}
       {expiring.length > 0 && (
         <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-          <p className="font-semibold text-orange-800 text-sm mb-2">{expiring.length} certificate(s) expiring within 30 days</p>
+          <p className="font-semibold text-orange-800 text-sm mb-2">{expiring.length} {tx("certificate(s) expiring within 30 days")}</p>
           <div className="flex flex-wrap gap-2">
             {expiring.map((f: RegulatoryFlag) => (
               <span key={f.id} className="px-2 py-0.5 bg-orange-100 text-orange-700 rounded text-xs">
-                {f.country_code} · {f.flag_type.replace(/_/g, " ")} · exp {f.expiry_date}
+                {f.country_code} · {f.flag_type.replace(/_/g, " ")} {tx("· exp")} {f.expiry_date}
               </span>
             ))}
           </div>
@@ -81,7 +82,7 @@ export default function RegulatoryFlagsPage() {
       {/* Filters */}
       <div className="flex flex-wrap gap-3 items-center">
         <select className="border rounded px-3 py-2 text-sm" value={filterCountry} onChange={(e) => setFilterCountry(e.target.value)}>
-          <option value="">All countries</option>
+          <option value="">{tx("All countries")}</option>
           {countries.map((c: CountryTaxConfig) => <option key={c.country_code} value={c.country_code}>{c.country_code} — {c.country_name}</option>)}
         </select>
         <div className="flex flex-wrap gap-2">
@@ -96,19 +97,19 @@ export default function RegulatoryFlagsPage() {
 
       {/* Flags table */}
       <div className="bg-white rounded-lg border overflow-x-auto">
-        {isLoading ? <p className="px-5 py-8 text-center text-gray-400">Loading…</p> : (
+        {isLoading ? <p className="px-5 py-8 text-center text-gray-400">{tx("Loading…")}</p> : (
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-gray-50 text-xs text-gray-500 uppercase">
-                <th className="px-5 py-2 text-left">Country</th>
-                <th className="px-5 py-2 text-left">Flag Type</th>
-                <th className="px-5 py-2 text-left">HS Code</th>
-                <th className="px-5 py-2 text-left">Status</th>
-                <th className="px-5 py-2 text-left">Authority</th>
-                <th className="px-5 py-2 text-left">License No</th>
-                <th className="px-5 py-2 text-left">Issue Date</th>
-                <th className="px-5 py-2 text-left">Expiry Date</th>
-                <th className="px-5 py-2 text-left">Doc Ref</th>
+                <th className="px-5 py-2 text-left">{tx("Country")}</th>
+                <th className="px-5 py-2 text-left">{tx("Flag Type")}</th>
+                <th className="px-5 py-2 text-left">{tx("HS Code")}</th>
+                <th className="px-5 py-2 text-left">{tx("Status")}</th>
+                <th className="px-5 py-2 text-left">{tx("Authority")}</th>
+                <th className="px-5 py-2 text-left">{tx("License No")}</th>
+                <th className="px-5 py-2 text-left">{tx("Issue Date")}</th>
+                <th className="px-5 py-2 text-left">{tx("Expiry Date")}</th>
+                <th className="px-5 py-2 text-left">{tx("Doc Ref")}</th>
                 <th className="px-5 py-2" />
               </tr>
             </thead>
@@ -129,12 +130,12 @@ export default function RegulatoryFlagsPage() {
                     </td>
                     <td className="px-5 py-3 text-indigo-500 text-xs truncate max-w-xs">{f.document_ref || "—"}</td>
                     <td className="px-5 py-3">
-                      <button className="text-xs text-indigo-600 hover:underline" onClick={() => setEditing(f)}>Edit</button>
+                      <button className="text-xs text-indigo-600 hover:underline" onClick={() => setEditing(f)}>{tx("Edit")}</button>
                     </td>
                   </tr>
                 );
               })}
-              {flags.length === 0 && <tr><td colSpan={10} className="px-5 py-8 text-center text-gray-400">No flags found</td></tr>}
+              {flags.length === 0 && <tr><td colSpan={10} className="px-5 py-8 text-center text-gray-400">{tx("No flags found")}</td></tr>}
             </tbody>
           </table>
         )}
@@ -175,71 +176,71 @@ function FlagModal({ initial, countries, onClose, onSubmit, loading }: {
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 space-y-4 max-h-[90vh] overflow-y-auto">
-        <h2 className="font-semibold text-lg">{isEdit ? "Edit Regulatory Flag" : "Add Regulatory Flag"}</h2>
+        <h2 className="font-semibold text-lg">{isEdit ? tx("Edit Regulatory Flag") : tx("Add Regulatory Flag")}</h2>
         <div className="grid grid-cols-2 gap-3">
           {!isEdit && (
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Country</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Country")}</label>
               <select className="w-full border rounded px-3 py-2 text-sm" value={form.country_code} onChange={(e) => set("country_code", e.target.value)}>
-                <option value="">Select…</option>
+                <option value="">{tx("Select…")}</option>
                 {countries.map((c) => <option key={c.code} value={c.code}>{c.code} — {c.name}</option>)}
               </select>
             </div>
           )}
           {!isEdit && (
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Flag Type</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Flag Type")}</label>
               <select className="w-full border rounded px-3 py-2 text-sm" value={form.flag_type} onChange={(e) => set("flag_type", e.target.value)}>
                 {FLAG_TYPES.map((t) => <option key={t} value={t}>{t.replace(/_/g, " ")}</option>)}
               </select>
             </div>
           )}
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Status</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Status")}</label>
             <select className="w-full border rounded px-3 py-2 text-sm" value={form.status} onChange={(e) => set("status", e.target.value)}>
               {STATUSES.map((s) => <option key={s} value={s}>{s.replace(/_/g, " ")}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Authority</label>
-            <input className="w-full border rounded px-3 py-2 text-sm" value={form.authority} onChange={(e) => set("authority", e.target.value)} placeholder="e.g. KEBS, KEPHIS, KRA" />
+            <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Authority")}</label>
+            <input className="w-full border rounded px-3 py-2 text-sm" value={form.authority} onChange={(e) => set("authority", e.target.value)} placeholder={tx("e.g. KEBS, KEPHIS, KRA")} />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">License / Cert No</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{tx("License / Cert No")}</label>
             <input className="w-full border rounded px-3 py-2 text-sm font-mono" value={form.license_no} onChange={(e) => set("license_no", e.target.value)} />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">HS Code</label>
-            <input className="w-full border rounded px-3 py-2 text-sm font-mono" value={form.hs_code} onChange={(e) => set("hs_code", e.target.value)} placeholder="e.g. 3402.20" />
+            <label className="block text-xs font-medium text-gray-600 mb-1">{tx("HS Code")}</label>
+            <input className="w-full border rounded px-3 py-2 text-sm font-mono" value={form.hs_code} onChange={(e) => set("hs_code", e.target.value)} placeholder={tx("e.g. 3402.20")} />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Issue Date</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Issue Date")}</label>
             <input type="date" className="w-full border rounded px-3 py-2 text-sm" value={form.issue_date} onChange={(e) => set("issue_date", e.target.value)} />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Expiry Date</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Expiry Date")}</label>
             <input type="date" className="w-full border rounded px-3 py-2 text-sm" value={form.expiry_date} onChange={(e) => set("expiry_date", e.target.value)} />
           </div>
           <div className="col-span-2">
-            <label className="block text-xs font-medium text-gray-600 mb-1">Document Reference</label>
-            <input className="w-full border rounded px-3 py-2 text-sm" value={form.document_ref} onChange={(e) => set("document_ref", e.target.value)} placeholder="e.g. docs/kebs/cert-12345.pdf" />
+            <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Document Reference")}</label>
+            <input className="w-full border rounded px-3 py-2 text-sm" value={form.document_ref} onChange={(e) => set("document_ref", e.target.value)} placeholder={tx("e.g. docs/kebs/cert-12345.pdf")} />
           </div>
           <div className="col-span-2">
-            <label className="block text-xs font-medium text-gray-600 mb-1">Restriction Details</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Restriction Details")}</label>
             <textarea className="w-full border rounded px-3 py-2 text-sm" rows={2} value={form.restriction_details} onChange={(e) => set("restriction_details", e.target.value)} />
           </div>
           <div className="col-span-2">
-            <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Notes")}</label>
             <textarea className="w-full border rounded px-3 py-2 text-sm" rows={2} value={form.notes} onChange={(e) => set("notes", e.target.value)} />
           </div>
         </div>
         <div className="flex gap-2 justify-end">
-          <Button variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button variant="secondary" onClick={onClose}>{tx("Cancel")}</Button>
           <Button loading={loading} onClick={() => onSubmit({
             ...form,
             issue_date: form.issue_date || null,
             expiry_date: form.expiry_date || null,
-          })}>Save</Button>
+          })}>{tx("Save")}</Button>
         </div>
       </div>
     </div>

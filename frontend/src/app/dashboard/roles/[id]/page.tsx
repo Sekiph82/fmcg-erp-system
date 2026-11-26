@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
+import { tx } from "@/lib/i18n/core";
 
 export default function RoleDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -84,7 +85,7 @@ export default function RoleDetailPage() {
     );
   }
 
-  if (!role) return <p className="text-gray-500">Role not found.</p>;
+  if (!role) return <p className="text-gray-500">{tx("Role not found.")}</p>;
 
   const rolePermIds = new Set(role.permissions.map((p) => p.id));
 
@@ -97,7 +98,7 @@ export default function RoleDetailPage() {
             onClick={() => router.back()}
             className="mb-2 text-xs text-gray-400 hover:text-indigo-600"
           >
-            ← Back
+            {tx("← Back")}
           </button>
           <h1 className="text-2xl font-bold text-gray-900">{role.name}</h1>
           {role.description && (
@@ -105,29 +106,29 @@ export default function RoleDetailPage() {
           )}
         </div>
         <Badge
-          label={role.is_active ? "Active" : "Inactive"}
+          label={role.is_active ? tx("Active") : tx("Inactive")}
           variant={role.is_active ? "green" : "red"}
         />
       </div>
 
       {/* Actions */}
       <div className="flex flex-wrap gap-2">
-        <Button variant="secondary" onClick={openEdit}>Edit Role</Button>
-        <Button variant="secondary" onClick={openPerms}>Manage Permissions</Button>
+        <Button variant="secondary" onClick={openEdit}>{tx("Edit Role")}</Button>
+        <Button variant="secondary" onClick={openPerms}>{tx("Manage Permissions")}</Button>
         {role.is_active ? (
           <Button
             variant="danger"
             onClick={() => deactivateMutation.mutate()}
             loading={deactivateMutation.isPending}
           >
-            Deactivate
+            {tx("Deactivate")}
           </Button>
         ) : (
           <Button
             onClick={() => activateMutation.mutate()}
             loading={activateMutation.isPending}
           >
-            Activate
+            {tx("Activate")}
           </Button>
         )}
       </div>
@@ -136,17 +137,17 @@ export default function RoleDetailPage() {
       <section className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-semibold text-gray-700">
-            Permissions ({role.permissions.length})
+            {tx("Permissions (")}{role.permissions.length})
           </h2>
           <button
             onClick={openPerms}
             className="text-xs text-indigo-500 hover:underline"
           >
-            Edit
+            {tx("Edit")}
           </button>
         </div>
         {role.permissions.length === 0 ? (
-          <p className="text-sm text-gray-400">No permissions assigned.</p>
+          <p className="text-sm text-gray-400">{tx("No permissions assigned.")}</p>
         ) : (
           <div className="space-y-3">
             {Object.entries(groupByModule(role.permissions))
@@ -174,9 +175,9 @@ export default function RoleDetailPage() {
 
       {/* Audit trail */}
       <section className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
-        <h2 className="mb-3 text-sm font-semibold text-gray-700">Change History</h2>
+        <h2 className="mb-3 text-sm font-semibold text-gray-700">{tx("Change History")}</h2>
         {auditLogs.length === 0 ? (
-          <p className="text-sm text-gray-400">No changes recorded.</p>
+          <p className="text-sm text-gray-400">{tx("No changes recorded.")}</p>
         ) : (
           <div className="space-y-2">
             {auditLogs.map((log) => (
@@ -188,7 +189,7 @@ export default function RoleDetailPage() {
                     {EVENT_LABELS[log.event_type] ?? log.event_type}
                   </span>
                   {log.actor_email && (
-                    <span className="text-xs text-gray-500">by {log.actor_email}</span>
+                    <span className="text-xs text-gray-500">{tx("by")} {log.actor_email}</span>
                   )}
                 </div>
                 <span className="text-xs text-gray-400">
@@ -201,19 +202,19 @@ export default function RoleDetailPage() {
       </section>
 
       {/* Edit Modal */}
-      <Modal open={editOpen} onClose={() => setEditOpen(false)} title="Edit Role">
+      <Modal open={editOpen} onClose={() => setEditOpen(false)} title={tx("Edit Role")}>
         <form
           onSubmit={(e) => { e.preventDefault(); editMutation.mutate(); }}
           className="space-y-4"
         >
           <Input
-            label="Role Name *"
+            label={tx("Role Name *")}
             value={editName}
             onChange={(e) => setEditName(e.target.value)}
             required
           />
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{tx("Description")}</label>
             <textarea
               value={editDesc}
               onChange={(e) => setEditDesc(e.target.value)}
@@ -222,17 +223,17 @@ export default function RoleDetailPage() {
             />
           </div>
           {editMutation.error && (
-            <p className="text-sm text-red-600">Failed to update role.</p>
+            <p className="text-sm text-red-600">{tx("Failed to update role.")}</p>
           )}
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" type="button" onClick={() => setEditOpen(false)}>Cancel</Button>
-            <Button type="submit" loading={editMutation.isPending}>Save</Button>
+            <Button variant="secondary" type="button" onClick={() => setEditOpen(false)}>{tx("Cancel")}</Button>
+            <Button type="submit" loading={editMutation.isPending}>{tx("Save")}</Button>
           </div>
         </form>
       </Modal>
 
       {/* Permissions Modal */}
-      <Modal open={permOpen} onClose={() => setPermOpen(false)} title="Manage Permissions">
+      <Modal open={permOpen} onClose={() => setPermOpen(false)} title={tx("Manage Permissions")}>
         <div className="space-y-4">
           <div className="max-h-96 overflow-y-auto space-y-4 pr-1">
             {Object.entries(grouped)
@@ -262,15 +263,15 @@ export default function RoleDetailPage() {
               ))}
           </div>
           {assignPermsMutation.error && (
-            <p className="text-sm text-red-600">Failed to assign permissions.</p>
+            <p className="text-sm text-red-600">{tx("Failed to assign permissions.")}</p>
           )}
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" type="button" onClick={() => setPermOpen(false)}>Cancel</Button>
+            <Button variant="secondary" type="button" onClick={() => setPermOpen(false)}>{tx("Cancel")}</Button>
             <Button
               onClick={() => assignPermsMutation.mutate()}
               loading={assignPermsMutation.isPending}
             >
-              Save Permissions
+              {tx("Save Permissions")}
             </Button>
           </div>
         </div>

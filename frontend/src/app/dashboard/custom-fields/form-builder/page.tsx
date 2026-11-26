@@ -4,6 +4,7 @@ import {
   customFieldsApi, CustomFieldDefinition, EntityType, FormLayoutItem,
   ENTITY_LABEL, FIELD_TYPE_ICON, FIELD_TYPE_LABEL, FIELD_WIDTH_LABEL,
 } from "@/lib/custom_fields";
+import { tx } from "@/lib/i18n/core";
 
 const ENTITY_TYPES: EntityType[] = [
   "customer", "supplier", "product", "sales_order", "purchase_order",
@@ -105,8 +106,8 @@ export default function FormBuilderPage() {
     <div className="p-6 space-y-5">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Form Builder</h1>
-          <p className="text-xs text-gray-500 mt-0.5">Drag fields to reorder. Set sections and widths. Save layout.</p>
+          <h1 className="text-xl font-bold text-gray-900">{tx("Form Builder")}</h1>
+          <p className="text-xs text-gray-500 mt-0.5">{tx("Drag fields to reorder. Set sections and widths. Save layout.")}</p>
         </div>
         <div className="flex gap-2 items-center">
           <select
@@ -121,13 +122,13 @@ export default function FormBuilderPage() {
               onClick={() => setTab("builder")}
               className={`px-3 py-1.5 ${tab === "builder" ? "bg-blue-600 text-white" : "bg-white text-gray-600 hover:bg-gray-50"}`}
             >
-              Builder
+              {tx("Builder")}
             </button>
             <button
               onClick={() => setTab("preview")}
               className={`px-3 py-1.5 ${tab === "preview" ? "bg-blue-600 text-white" : "bg-white text-gray-600 hover:bg-gray-50"}`}
             >
-              Preview
+              {tx("Preview")}
             </button>
           </div>
           {tab === "builder" && (
@@ -136,19 +137,19 @@ export default function FormBuilderPage() {
               disabled={saving}
               className="rounded bg-green-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
             >
-              {saving ? "Saving…" : saved ? "Saved!" : "Save Layout"}
+              {saving ? tx("Saving…") : saved ? tx("Saved!") : tx("Save Layout")}
             </button>
           )}
         </div>
       </div>
 
       {loading ? (
-        <p className="text-sm text-gray-500">Loading fields…</p>
+        <p className="text-sm text-gray-500">{tx("Loading fields…")}</p>
       ) : fields.length === 0 ? (
         <div className="bg-white border rounded-lg p-10 text-center text-gray-400">
-          <p className="text-sm">No active custom fields for {ENTITY_LABEL[entityType]}.</p>
+          <p className="text-sm">{tx("No active custom fields for")} {ENTITY_LABEL[entityType]}.</p>
           <a href="/dashboard/custom-fields/new-field" className="text-xs text-blue-600 hover:underline mt-2 block">
-            Create a field first →
+            {tx("Create a field first →")}
           </a>
         </div>
       ) : tab === "builder" ? (
@@ -156,7 +157,7 @@ export default function FormBuilderPage() {
           {/* Field list with drag */}
           <div className="lg:col-span-2 space-y-2">
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-              Drag to reorder — {fields.length} fields
+              {tx("Drag to reorder —")} {fields.length} {tx("fields")}
             </p>
             {fields.map((f, idx) => (
               <div
@@ -193,7 +194,7 @@ export default function FormBuilderPage() {
                   onClick={() => openEdit(f)}
                   className="text-xs text-blue-600 hover:underline whitespace-nowrap"
                 >
-                  Edit layout
+                  {tx("Edit layout")}
                 </button>
               </div>
             ))}
@@ -204,30 +205,30 @@ export default function FormBuilderPage() {
             {editingId ? (
               <>
                 <h3 className="text-sm font-semibold text-gray-800 mb-4">
-                  Layout Settings
+                  {tx("Layout Settings")}
                 </h3>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Section Label</label>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Section Label")}</label>
                     <input
                       type="text"
                       value={editSection}
                       onChange={e => setEditSection(e.target.value)}
-                      placeholder="e.g. Contact Details"
+                      placeholder={tx("e.g. Contact Details")}
                       className="w-full border rounded px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"
                     />
-                    <p className="text-xs text-gray-400 mt-1">Groups this field under a section heading in the form</p>
+                    <p className="text-xs text-gray-400 mt-1">{tx("Groups this field under a section heading in the form")}</p>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Field Width</label>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Field Width")}</label>
                     <select
                       value={editWidth}
                       onChange={e => setEditWidth(e.target.value as "full" | "half" | "third")}
                       className="w-full border rounded px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"
                     >
-                      <option value="full">Full Width (12 cols)</option>
-                      <option value="half">Half Width (6 cols)</option>
-                      <option value="third">One Third (4 cols)</option>
+                      <option value="full">{tx("Full Width (12 cols)")}</option>
+                      <option value="half">{tx("Half Width (6 cols)")}</option>
+                      <option value="third">{tx("One Third (4 cols)")}</option>
                     </select>
                   </div>
                   <div className="flex gap-2 pt-2">
@@ -235,13 +236,13 @@ export default function FormBuilderPage() {
                       onClick={applyEdit}
                       className="flex-1 rounded bg-blue-600 py-2 text-sm font-medium text-white hover:bg-blue-700"
                     >
-                      Apply
+                      {tx("Apply")}
                     </button>
                     <button
                       onClick={() => setEditingId(null)}
                       className="flex-1 rounded border py-2 text-sm text-gray-600 hover:bg-gray-50"
                     >
-                      Cancel
+                      {tx("Cancel")}
                     </button>
                   </div>
                 </div>
@@ -249,7 +250,7 @@ export default function FormBuilderPage() {
             ) : (
               <div className="text-center py-6 text-gray-400">
                 <p className="text-2xl mb-2">✏️</p>
-                <p className="text-sm">Click &quot;Edit layout&quot; on a field to set its section and width.</p>
+                <p className="text-sm">{tx("Click \"Edit layout\" on a field to set its section and width.")}</p>
               </div>
             )}
           </div>
@@ -258,8 +259,7 @@ export default function FormBuilderPage() {
         /* Preview tab */
         <div className="bg-white border rounded-lg p-6 space-y-6">
           <p className="text-xs text-gray-500">
-            Preview of form layout for <strong>{ENTITY_LABEL[entityType]}</strong>.
-            This is how custom fields will appear on the record form.
+            {tx("Preview of form layout for")} <strong>{ENTITY_LABEL[entityType]}</strong>{tx(". This is how custom fields will appear on the record form.")}
           </p>
           {Object.entries(sections).map(([section, sFields]) => (
             <div key={section}>
@@ -289,11 +289,11 @@ export default function FormBuilderPage() {
       )}
 
       <div className="flex gap-3 text-xs">
-        <a href="/dashboard/custom-fields/fields" className="text-blue-600 hover:underline">Field Manager</a>
+        <a href="/dashboard/custom-fields/fields" className="text-blue-600 hover:underline">{tx("Field Manager")}</a>
         <span className="text-gray-300">|</span>
-        <a href="/dashboard/custom-fields/workflow-rules" className="text-blue-600 hover:underline">Workflow Rules</a>
+        <a href="/dashboard/custom-fields/workflow-rules" className="text-blue-600 hover:underline">{tx("Workflow Rules")}</a>
         <span className="text-gray-300">|</span>
-        <a href="/dashboard/custom-fields/new-field" className="text-blue-600 hover:underline">Create Field</a>
+        <a href="/dashboard/custom-fields/new-field" className="text-blue-600 hover:underline">{tx("Create Field")}</a>
       </div>
     </div>
   );

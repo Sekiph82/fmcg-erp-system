@@ -1,6 +1,7 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { ExceptionRow } from "@/lib/analytics";
+import { tx } from "@/lib/i18n/core";
 
 const SEV_COLORS: Record<string, string> = {
   critical: "bg-red-500/20 text-red-400 border-red-500/30",
@@ -21,7 +22,7 @@ export function ExceptionList({ items, title = "Exceptions" }: { items: Exceptio
   if (!items.length) return (
     <div className="rounded-xl border border-white/[0.06] p-4">
       <p className="text-xs font-medium text-slate-500 uppercase tracking-widest mb-3">{title}</p>
-      <p className="text-sm text-slate-600">No exceptions</p>
+      <p className="text-sm text-slate-600">{tx("No exceptions")}</p>
     </div>
   );
 

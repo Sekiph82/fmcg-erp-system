@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { BarcodeScanButton } from "@/components/BarcodeScanButton";
+import { tx } from "@/lib/i18n/core";
 
 /**
  * One field for every scanner: hardware keyboard-wedge scanners type the code + Enter,
@@ -40,7 +41,7 @@ export function ScanInput({
           disabled={disabled}
           className="min-h-11 flex-1 min-w-0 rounded-lg border border-gray-300 px-3 text-base font-mono"
         />
-        <BarcodeScanButton label="Camera" onScan={submit} />
+        <BarcodeScanButton label={tx("Camera")} onScan={submit} />
         <button type="submit" disabled={disabled || !value.trim()} className="min-h-11 rounded-lg bg-indigo-700 px-3 text-sm font-semibold text-white disabled:opacity-40">
           OK
         </button>

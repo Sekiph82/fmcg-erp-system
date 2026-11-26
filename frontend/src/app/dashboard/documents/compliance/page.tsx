@@ -2,6 +2,7 @@
 import { apiFetch } from "@/lib/api";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { tx } from "@/lib/i18n/core";
 
 interface DocShort {
   id: string;
@@ -60,8 +61,8 @@ export default function ComplianceDocsPage() {
   return (
     <div className="p-6 space-y-6 max-w-5xl mx-auto">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Compliance Documents</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Supplier compliance, QC, customs, HR, and regulatory documents</p>
+        <h1 className="text-2xl font-bold text-gray-900">{tx("Compliance Documents")}</h1>
+        <p className="text-sm text-gray-500 mt-0.5">{tx("Supplier compliance, QC, customs, HR, and regulatory documents")}</p>
       </div>
 
       {error && <div className="bg-red-50 border border-red-200 rounded p-3 text-sm text-red-700">{error}</div>}
@@ -86,9 +87,9 @@ export default function ComplianceDocsPage() {
       {/* KPI strip */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label: "Approved", value: approvedCount, color: "text-green-600" },
-          { label: "Draft", value: draftCount, color: "text-gray-500" },
-          { label: "Expired", value: expiredCount, color: "text-red-600" },
+          { label: tx("Approved"), value: approvedCount, color: "text-green-600" },
+          { label: tx("Draft"), value: draftCount, color: "text-gray-500" },
+          { label: tx("Expired"), value: expiredCount, color: "text-red-600" },
         ].map((k) => (
           <div key={k.label} className="bg-white border rounded-lg p-3 shadow-sm">
             <p className="text-xs text-gray-500">{k.label}</p>
@@ -100,7 +101,7 @@ export default function ComplianceDocsPage() {
       {/* Search */}
       <input
         type="text"
-        placeholder="Search documents…"
+        placeholder={tx("Search documents…")}
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
@@ -111,20 +112,20 @@ export default function ComplianceDocsPage() {
         <div className="px-4 py-3 border-b bg-gray-50 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-gray-700">
             {selectedCat.replace(/_/g, " ")}
-            <span className="ml-2 font-normal text-gray-400">{filtered.length} docs</span>
+            <span className="ml-2 font-normal text-gray-400">{filtered.length} {tx("docs")}</span>
           </h2>
           <Link href="/dashboard/documents/new"
             className="text-xs text-blue-600 hover:text-blue-800 font-medium">
-            + Upload Document
+            {tx("+ Upload Document")}
           </Link>
         </div>
 
         {loading ? (
-          <div className="p-6 text-sm text-gray-400 text-center">Loading…</div>
+          <div className="p-6 text-sm text-gray-400 text-center">{tx("Loading…")}</div>
         ) : filtered.length === 0 ? (
           <div className="p-6 text-sm text-gray-400 text-center">
-            No {selectedCat.replace(/_/g, " ").toLowerCase()} documents found.
-            {" "}<Link href="/dashboard/documents/new" className="text-blue-500 hover:text-blue-700">Upload one.</Link>
+            {tx("No")} {selectedCat.replace(/_/g, " ").toLowerCase()} {tx("documents found.")}
+            {" "}<Link href="/dashboard/documents/new" className="text-blue-500 hover:text-blue-700">{tx("Upload one.")}</Link>
           </div>
         ) : (
           <div className="divide-y">
@@ -143,11 +144,11 @@ export default function ComplianceDocsPage() {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900 truncate">{d.title}</p>
                     <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                      <span className="text-xs text-gray-400">v{d.version}</span>
+                      <span className="text-xs text-gray-400">{tx("v")}{d.version}</span>
                       {d.file_name && <span className="text-xs text-gray-400 truncate max-w-[150px]">{d.file_name}</span>}
                       {d.expiry_date && (
                         <span className={`text-xs ${isExpired ? "text-red-600 font-medium" : "text-gray-500"}`}>
-                          Expires: {d.expiry_date} {isExpired && "(expired)"}
+                          {tx("Expires:")} {d.expiry_date} {isExpired && tx("(expired)")}
                         </span>
                       )}
                     </div>
@@ -159,7 +160,7 @@ export default function ComplianceDocsPage() {
 
                   <Link href={`/dashboard/documents/${d.id}`}
                     className="text-xs text-blue-600 hover:text-blue-800 shrink-0">
-                    Open →
+                    {tx("Open →")}
                   </Link>
                 </div>
               );
@@ -170,9 +171,9 @@ export default function ComplianceDocsPage() {
 
       {/* Quick nav */}
       <div className="flex gap-3 flex-wrap">
-        <Link href="/dashboard/documents" className="text-sm text-blue-600 hover:text-blue-800">← All Documents</Link>
-        <Link href="/dashboard/documents/expiring" className="text-sm text-orange-600 hover:text-orange-800">Expiry Tracker</Link>
-        <Link href="/dashboard/esign" className="text-sm text-blue-600 hover:text-blue-800">E-Signatures</Link>
+        <Link href="/dashboard/documents" className="text-sm text-blue-600 hover:text-blue-800">{tx("← All Documents")}</Link>
+        <Link href="/dashboard/documents/expiring" className="text-sm text-orange-600 hover:text-orange-800">{tx("Expiry Tracker")}</Link>
+        <Link href="/dashboard/esign" className="text-sm text-blue-600 hover:text-blue-800">{tx("E-Signatures")}</Link>
       </div>
     </div>
   );

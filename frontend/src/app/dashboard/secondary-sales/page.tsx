@@ -6,6 +6,7 @@ import {
   SellThroughRow, DistributorPerformanceRow, AIInsightResult,
 } from "@/lib/secondarySales";
 import Link from "next/link";
+import { tx } from "@/lib/i18n/core";
 
 const STATUS_COLORS: Record<SecondarySalesStatus, string> = {
   PENDING: "bg-yellow-100 text-yellow-800",
@@ -75,27 +76,27 @@ export default function SecondarySalesDashboard() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Secondary Sales</h1>
-          <p className="text-sm text-gray-500 mt-1">Distributor sell-through & market visibility</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Secondary Sales")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{tx("Distributor sell-through & market visibility")}</p>
         </div>
         <div className="flex gap-2">
           <Link
             href="/dashboard/secondary-sales/analysis"
             className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
           >
-            Sell-Through Analysis
+            {tx("Sell-Through Analysis")}
           </Link>
           <Link
             href="/dashboard/secondary-sales/inventory"
             className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
           >
-            Dist. Inventory
+            {tx("Dist. Inventory")}
           </Link>
           <Link
             href="/dashboard/secondary-sales/upload"
             className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
-            + Upload Data
+            {tx("+ Upload Data")}
           </Link>
         </div>
       </div>
@@ -103,10 +104,10 @@ export default function SecondarySalesDashboard() {
       {/* KPIs */}
       <div className="grid grid-cols-4 gap-4">
         {[
-          { label: "Total Sell-Out Value", value: `KES ${totalValue.toLocaleString()}`, color: "text-green-600" },
-          { label: "Pending Validation", value: pendingCount, color: "text-yellow-600" },
-          { label: "Fast Moving SKUs", value: fastMoving, color: "text-blue-600" },
-          { label: "Slow Moving / At Risk", value: atRisk, color: "text-red-600" },
+          { label: tx("Total Sell-Out Value"), value: `KES ${totalValue.toLocaleString()}`, color: "text-green-600" },
+          { label: tx("Pending Validation"), value: pendingCount, color: "text-yellow-600" },
+          { label: tx("Fast Moving SKUs"), value: fastMoving, color: "text-blue-600" },
+          { label: tx("Slow Moving / At Risk"), value: atRisk, color: "text-red-600" },
         ].map((k) => (
           <div key={k.label} className="bg-white rounded-lg border p-4">
             <p className="text-xs text-gray-500">{k.label}</p>
@@ -122,7 +123,7 @@ export default function SecondarySalesDashboard() {
           disabled={aiLoading}
           className="px-4 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
         >
-          {aiLoading ? "Analyzing…" : "Run AI Analysis"}
+          {aiLoading ? tx("Analyzing…") : tx("Run AI Analysis")}
         </button>
       </div>
 
@@ -172,21 +173,21 @@ export default function SecondarySalesDashboard() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-gray-600 uppercase text-xs">
               <tr>
-                <th className="px-4 py-3 text-left">Reference</th>
-                <th className="px-4 py-3 text-left">Distributor</th>
-                <th className="px-4 py-3 text-left">Period</th>
-                <th className="px-4 py-3 text-left">Source</th>
-                <th className="px-4 py-3 text-right">Lines</th>
-                <th className="px-4 py-3 text-right">Value</th>
-                <th className="px-4 py-3 text-left">Status</th>
-                <th className="px-4 py-3 text-left">Action</th>
+                <th className="px-4 py-3 text-left">{tx("Reference")}</th>
+                <th className="px-4 py-3 text-left">{tx("Distributor")}</th>
+                <th className="px-4 py-3 text-left">{tx("Period")}</th>
+                <th className="px-4 py-3 text-left">{tx("Source")}</th>
+                <th className="px-4 py-3 text-right">{tx("Lines")}</th>
+                <th className="px-4 py-3 text-right">{tx("Value")}</th>
+                <th className="px-4 py-3 text-left">{tx("Status")}</th>
+                <th className="px-4 py-3 text-left">{tx("Action")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {loading ? (
-                <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">Loading…</td></tr>
+                <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">{tx("Loading…")}</td></tr>
               ) : headers.length === 0 ? (
-                <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">No secondary sales uploads yet</td></tr>
+                <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">{tx("No secondary sales uploads yet")}</td></tr>
               ) : (
                 headers.map((h) => (
                   <tr key={h.id} className="hover:bg-gray-50">
@@ -211,7 +212,7 @@ export default function SecondarySalesDashboard() {
                           onClick={() => handleProcess(h.id)}
                           className="text-green-600 hover:underline text-xs"
                         >
-                          Process
+                          {tx("Process")}
                         </button>
                       )}
                     </td>
@@ -229,18 +230,18 @@ export default function SecondarySalesDashboard() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-gray-600 uppercase text-xs">
               <tr>
-                <th className="px-4 py-3 text-left">Distributor</th>
-                <th className="px-4 py-3 text-left">Product</th>
-                <th className="px-4 py-3 text-right">Sell-Out Qty</th>
-                <th className="px-4 py-3 text-right">Stock</th>
-                <th className="px-4 py-3 text-right">Days of Stock</th>
-                <th className="px-4 py-3 text-right">Sell-Through %</th>
-                <th className="px-4 py-3 text-left">Status</th>
+                <th className="px-4 py-3 text-left">{tx("Distributor")}</th>
+                <th className="px-4 py-3 text-left">{tx("Product")}</th>
+                <th className="px-4 py-3 text-right">{tx("Sell-Out Qty")}</th>
+                <th className="px-4 py-3 text-right">{tx("Stock")}</th>
+                <th className="px-4 py-3 text-right">{tx("Days of Stock")}</th>
+                <th className="px-4 py-3 text-right">{tx("Sell-Through %")}</th>
+                <th className="px-4 py-3 text-left">{tx("Status")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {sellThrough.length === 0 ? (
-                <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400">No sell-through data. Process uploads first.</td></tr>
+                <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400">{tx("No sell-through data. Process uploads first.")}</td></tr>
               ) : (
                 sellThrough.map((r, idx) => (
                   <tr key={idx} className="hover:bg-gray-50">
@@ -270,16 +271,16 @@ export default function SecondarySalesDashboard() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-gray-600 uppercase text-xs">
               <tr>
-                <th className="px-4 py-3 text-left">Distributor</th>
-                <th className="px-4 py-3 text-right">Total Sell-Out Qty</th>
-                <th className="px-4 py-3 text-right">Total Value</th>
-                <th className="px-4 py-3 text-right">Lines</th>
-                <th className="px-4 py-3 text-left">Period</th>
+                <th className="px-4 py-3 text-left">{tx("Distributor")}</th>
+                <th className="px-4 py-3 text-right">{tx("Total Sell-Out Qty")}</th>
+                <th className="px-4 py-3 text-right">{tx("Total Value")}</th>
+                <th className="px-4 py-3 text-right">{tx("Lines")}</th>
+                <th className="px-4 py-3 text-left">{tx("Period")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {distPerf.length === 0 ? (
-                <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-400">No performance data. Process uploads first.</td></tr>
+                <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-400">{tx("No performance data. Process uploads first.")}</td></tr>
               ) : (
                 distPerf.map((r, idx) => (
                   <tr key={idx} className="hover:bg-gray-50">

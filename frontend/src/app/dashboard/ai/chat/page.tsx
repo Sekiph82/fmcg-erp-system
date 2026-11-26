@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { aiApi, AIChatResponse, parseAIError } from "@/lib/aiApi";
 import { Button } from "@/components/ui/Button";
 import { RequirePermission } from "@/components/PermissionGuard";
+import { tx } from "@/lib/i18n/core";
 
 interface Message {
   role: "user" | "assistant";
@@ -85,17 +86,17 @@ export default function ERPChatPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">ERP Copilot</h1>
-          <p className="text-xs text-gray-500 mt-0.5">Ask anything about sales, inventory, procurement, or finance</p>
+          <h1 className="text-xl font-bold text-gray-900">{tx("ERP Copilot")}</h1>
+          <p className="text-xs text-gray-500 mt-0.5">{tx("Ask anything about sales, inventory, procurement, or finance")}</p>
         </div>
         <div className="flex items-center gap-2">
           {isMock ? (
             <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full font-medium">
-              DEV/MOCK MODE — No real AI key
+              {tx("DEV/MOCK MODE — No real AI key")}
             </span>
           ) : (
             <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full font-medium">
-              LIVE — {status?.provider} / {status?.model}
+              {tx("LIVE —")} {status?.provider} / {status?.model}
             </span>
           )}
         </div>
@@ -106,7 +107,7 @@ export default function ERPChatPage() {
         {messages.length === 0 && (
           <div className="text-center py-12">
             <div className="text-4xl mb-3">💬</div>
-            <p className="text-gray-500 text-sm mb-6">Ask any question about your ERP data</p>
+            <p className="text-gray-500 text-sm mb-6">{tx("Ask any question about your ERP data")}</p>
             <div className="grid grid-cols-1 gap-2 max-w-md mx-auto">
               {EXAMPLE_QUESTIONS.map((q) => (
                 <button
@@ -136,10 +137,10 @@ export default function ERPChatPage() {
               {m.meta && (
                 <div className="mt-1 flex gap-2 text-xs text-gray-400 px-1">
                   {m.meta.mode === "mock" && (
-                    <span className="text-amber-500">Mock mode</span>
+                    <span className="text-amber-500">{tx("Mock mode")}</span>
                   )}
                   {m.meta.provider && <span>{m.meta.provider}</span>}
-                  {m.meta.latency_ms && <span>{m.meta.latency_ms}ms</span>}
+                  {m.meta.latency_ms && <span>{m.meta.latency_ms}{tx("ms")}</span>}
                 </div>
               )}
             </div>
@@ -155,14 +156,14 @@ export default function ERPChatPage() {
                   <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
                   <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
                 </div>
-                <span className="text-xs text-gray-400 ml-1">Thinking…</span>
+                <span className="text-xs text-gray-400 ml-1">{tx("Thinking…")}</span>
               </div>
             </div>
             <button
               onClick={cancelRequest}
               className="text-xs text-gray-400 hover:text-gray-600 underline"
             >
-              Cancel
+              {tx("Cancel")}
             </button>
           </div>
         )}
@@ -180,7 +181,7 @@ export default function ERPChatPage() {
       <div className="bg-white border border-gray-200 rounded-2xl p-3 flex gap-3 items-end shadow-sm">
         <textarea
           className="flex-1 text-sm resize-none outline-none text-gray-800 placeholder-gray-400 max-h-32"
-          placeholder="Ask about sales, inventory, orders, suppliers..."
+          placeholder={tx("Ask about sales, inventory, orders, suppliers...")}
           rows={1}
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -193,12 +194,12 @@ export default function ERPChatPage() {
           disabled={loading}
         />
         <Button onClick={() => sendMessage()} loading={loading} className="shrink-0">
-          Send
+          {tx("Send")}
         </Button>
       </div>
       <p className="text-xs text-gray-400 text-center mt-2">
-        Press Enter to send · Shift+Enter for new line · ERP data is live from DB
-        {isMock && " · Running in mock mode — no API key configured"}
+        {tx("Press Enter to send · Shift+Enter for new line · ERP data is live from DB")}
+        {isMock && tx(" · Running in mock mode — no API key configured")}
       </p>
     </div>
     </RequirePermission>

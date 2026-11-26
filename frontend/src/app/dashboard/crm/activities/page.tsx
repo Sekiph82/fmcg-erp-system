@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { crmApi, CRMActivity, ACTIVITY_TYPE_LABELS, ACTIVITY_RESULT_LABELS } from "@/lib/crm_pipeline";
+import { tx } from "@/lib/i18n/core";
 
 const RESULT_COLORS: Record<string, string> = {
   PLANNED: "#3B82F6",
@@ -40,8 +41,8 @@ export default function ActivitiesPage() {
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-gray-900">Activity Timeline</h1>
-        <span className="text-sm text-gray-500">{filtered.length} activities</span>
+        <h1 className="text-xl font-bold text-gray-900">{tx("Activity Timeline")}</h1>
+        <span className="text-sm text-gray-500">{filtered.length} {tx("activities")}</span>
       </div>
 
       {/* Filters */}
@@ -49,24 +50,24 @@ export default function ActivitiesPage() {
         <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
           <input type="checkbox" checked={overdueOnly} onChange={e => setOverdueOnly(e.target.checked)}
             className="rounded" />
-          Overdue Only
+          {tx("Overdue Only")}
         </label>
         <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
           className="text-sm border rounded-lg px-2 py-1.5">
-          <option value="">All Statuses</option>
+          <option value="">{tx("All Statuses")}</option>
           {Object.entries(ACTIVITY_RESULT_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </select>
         <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)}
           className="text-sm border rounded-lg px-2 py-1.5">
-          <option value="">All Types</option>
+          <option value="">{tx("All Types")}</option>
           {Object.entries(ACTIVITY_TYPE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </select>
       </div>
 
       {/* Timeline */}
       <div className="relative space-y-3">
-        {loading && <div className="text-gray-400 py-6 text-center">Loading…</div>}
-        {!loading && filtered.length === 0 && <div className="text-gray-400 py-6 text-center">No activities</div>}
+        {loading && <div className="text-gray-400 py-6 text-center">{tx("Loading…")}</div>}
+        {!loading && filtered.length === 0 && <div className="text-gray-400 py-6 text-center">{tx("No activities")}</div>}
         {filtered.map((act, i) => {
           const isOverdue = act.result_status === "PLANNED" && act.due_datetime && new Date(act.due_datetime) < new Date();
           return (
@@ -86,12 +87,12 @@ export default function ActivitiesPage() {
                       <span>{ACTIVITY_TYPE_LABELS[act.activity_type]}</span>
                       <span>·</span>
                       <span style={{ color: RESULT_COLORS[act.result_status] }}>{ACTIVITY_RESULT_LABELS[act.result_status]}</span>
-                      {act.assigned_to && <><span>·</span><span>Rep: {act.assigned_to}</span></>}
+                      {act.assigned_to && <><span>·</span><span>{tx("Rep:")} {act.assigned_to}</span></>}
                       {act.due_datetime && (
                         <>
                           <span>·</span>
                           <span className={isOverdue ? "text-red-600 font-medium" : ""}>
-                            Due: {new Date(act.due_datetime).toLocaleDateString()}
+                            {tx("Due:")} {new Date(act.due_datetime).toLocaleDateString()}
                           </span>
                         </>
                       )}
@@ -99,19 +100,19 @@ export default function ActivitiesPage() {
                   </div>
                   <Link href={`/dashboard/crm/records/${act.crm_record_id}`}
                     className="text-xs text-blue-600 hover:underline flex-shrink-0">
-                    View Record
+                    {tx("View Record")}
                   </Link>
                 </div>
                 {act.description && <p className="text-xs text-gray-600 mt-1.5">{act.description}</p>}
-                {act.next_step && <p className="text-xs text-indigo-600 mt-1">→ Next: {act.next_step}</p>}
-                {act.outcome_code && <p className="text-xs text-gray-500 mt-1">Outcome: {act.outcome_code}</p>}
+                {act.next_step && <p className="text-xs text-indigo-600 mt-1">{tx("→ Next:")} {act.next_step}</p>}
+                {act.outcome_code && <p className="text-xs text-gray-500 mt-1">{tx("Outcome:")} {act.outcome_code}</p>}
               </div>
 
               {/* Actions */}
               {act.result_status === "PLANNED" && (
                 <button onClick={() => handleComplete(act.id)}
                   className="flex-shrink-0 text-xs text-green-600 hover:underline self-start mt-1">
-                  Complete
+                  {tx("Complete")}
                 </button>
               )}
             </div>

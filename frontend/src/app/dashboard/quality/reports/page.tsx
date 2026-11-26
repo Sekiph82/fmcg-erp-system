@@ -8,16 +8,17 @@ import { Table } from "@/components/ui/Table";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Select";
+import { tx, lx } from "@/lib/i18n/core";
 
 type Tab = "overview" | "rejections" | "incoming" | "in-process" | "finished-goods";
 
-const TABS: { key: Tab; label: string }[] = [
-  { key: "overview", label: "Overview" },
-  { key: "rejections", label: "Rejection Summary" },
-  { key: "incoming", label: "Incoming QC" },
-  { key: "in-process", label: "In-Process" },
-  { key: "finished-goods", label: "Finished Goods" },
-];
+const TABS: { key: Tab; label: string }[] = lx(() => [
+  { key: "overview", label: tx("Overview") },
+  { key: "rejections", label: tx("Rejection Summary") },
+  { key: "incoming", label: tx("Incoming QC") },
+  { key: "in-process", label: tx("In-Process") },
+  { key: "finished-goods", label: tx("Finished Goods") },
+]);
 
 const QC_TYPE_MAP: Record<string, QCType> = {
   "incoming": "INCOMING",
@@ -84,8 +85,8 @@ export default function QCReportsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">QC Reports</h1>
-        <p className="text-sm text-gray-500 mt-1">Inspection outcomes, rejection analysis, and compliance overview</p>
+        <h1 className="text-2xl font-bold text-gray-900">{tx("QC Reports")}</h1>
+        <p className="text-sm text-gray-500 mt-1">{tx("Inspection outcomes, rejection analysis, and compliance overview")}</p>
       </div>
 
       {/* Tab bar */}
@@ -104,14 +105,14 @@ export default function QCReportsPage() {
           <div className="space-y-6">
             <div className="grid grid-cols-4 gap-4">
               {[
-                { label: "Total Inspections", value: total, color: "text-gray-900" },
-                { label: "Passed", value: passed, color: "text-green-600" },
-                { label: "Failed", value: failed, color: failed > 0 ? "text-red-600" : "text-gray-400" },
-                { label: "Conditional", value: conditional, color: conditional > 0 ? "text-amber-600" : "text-gray-400" },
-                { label: "Quarantined", value: quarantined, color: quarantined > 0 ? "text-red-700" : "text-gray-400" },
-                { label: "Rework Candidates", value: reworkCandidates, color: reworkCandidates > 0 ? "text-amber-600" : "text-gray-400" },
-                { label: "Critical Failures", value: criticalFails, color: criticalFails > 0 ? "text-red-700 font-extrabold" : "text-gray-400" },
-                { label: "Pass Rate", value: total > 0 ? `${Math.round(passed / total * 100)}%` : "—", color: "text-indigo-600" },
+                { label: tx("Total Inspections"), value: total, color: "text-gray-900" },
+                { label: tx("Passed"), value: passed, color: "text-green-600" },
+                { label: tx("Failed"), value: failed, color: failed > 0 ? "text-red-600" : "text-gray-400" },
+                { label: tx("Conditional"), value: conditional, color: conditional > 0 ? "text-amber-600" : "text-gray-400" },
+                { label: tx("Quarantined"), value: quarantined, color: quarantined > 0 ? "text-red-700" : "text-gray-400" },
+                { label: tx("Rework Candidates"), value: reworkCandidates, color: reworkCandidates > 0 ? "text-amber-600" : "text-gray-400" },
+                { label: tx("Critical Failures"), value: criticalFails, color: criticalFails > 0 ? "text-red-700 font-extrabold" : "text-gray-400" },
+                { label: tx("Pass Rate"), value: total > 0 ? `${Math.round(passed / total * 100)}%` : "—", color: "text-indigo-600" },
               ].map((c) => (
                 <div key={c.label} className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
                   <p className="text-xs text-gray-500">{c.label}</p>
@@ -122,9 +123,9 @@ export default function QCReportsPage() {
 
             <div className="grid grid-cols-3 gap-4">
               {[
-                { type: "INCOMING" as QCType, label: "Incoming QC" },
-                { type: "IN_PROCESS" as QCType, label: "In-Process QC" },
-                { type: "FINISHED_GOODS" as QCType, label: "Finished Goods QC" },
+                { type: "INCOMING" as QCType, label: tx("Incoming QC") },
+                { type: "IN_PROCESS" as QCType, label: tx("In-Process QC") },
+                { type: "FINISHED_GOODS" as QCType, label: tx("Finished Goods QC") },
               ].map(({ type, label }) => {
                 const s = byType(type);
                 return (
@@ -132,7 +133,7 @@ export default function QCReportsPage() {
                     <p className="text-sm font-semibold text-gray-700 mb-2">{label}</p>
                     <p className="text-3xl font-bold text-gray-900">{s.total}</p>
                     <div className="mt-2"><PassBar pass={s.passed} total={s.total} /></div>
-                    <p className="text-xs text-gray-400 mt-1">{s.passed} passed of {s.total}</p>
+                    <p className="text-xs text-gray-400 mt-1">{s.passed} {tx("passed of")} {s.total}</p>
                   </div>
                 );
               })}
@@ -146,7 +147,7 @@ export default function QCReportsPage() {
         loadingRej ? <Spinner /> :
         rejections.length === 0 ? (
           <div className="rounded-xl border border-dashed border-gray-300 p-12 text-center text-gray-500">
-            No rejection data yet.
+            {tx("No rejection data yet.")}
           </div>
         ) : (
           <Table
@@ -155,14 +156,14 @@ export default function QCReportsPage() {
             emptyMessage="No rejections."
             columns={[
               {
-                header: "Item",
+                header: tx("Item"),
                 accessor: (r) => <span className="font-medium">{r.material_name || r.product_name || "—"}</span>,
               },
-              { header: "Supplier", accessor: (r) => r.supplier_name ?? "—" },
-              { header: "Total Inspections", accessor: "total_inspections" },
-              { header: "Rejected", accessor: (r) => <span className={r.total_rejected > 0 ? "text-red-600 font-semibold" : "text-gray-400"}>{r.total_rejected}</span> },
+              { header: tx("Supplier"), accessor: (r) => r.supplier_name ?? "—" },
+              { header: tx("Total Inspections"), accessor: "total_inspections" },
+              { header: tx("Rejected"), accessor: (r) => <span className={r.total_rejected > 0 ? "text-red-600 font-semibold" : "text-gray-400"}>{r.total_rejected}</span> },
               {
-                header: "Rejection Rate",
+                header: tx("Rejection Rate"),
                 accessor: (r) => (
                   <div className="flex items-center gap-2">
                     <div className="w-20 h-2 rounded-full bg-gray-200">
@@ -174,7 +175,7 @@ export default function QCReportsPage() {
                 ),
               },
               {
-                header: "Last Rejection",
+                header: tx("Last Rejection"),
                 accessor: (r) => r.last_rejection_date ? new Date(r.last_rejection_date).toLocaleDateString() : "—",
               },
             ]}
@@ -191,7 +192,7 @@ export default function QCReportsPage() {
             emptyMessage={`No ${currentQCType?.replace(/_/g, " ")} inspections.`}
             columns={[
               {
-                header: "Inspection No",
+                header: tx("Inspection No"),
                 accessor: (i) => (
                   <button className="font-mono text-xs font-medium text-indigo-600 hover:underline" onClick={() => router.push(`/dashboard/quality/${i.id}`)}>
                     {i.inspection_no}
@@ -199,7 +200,7 @@ export default function QCReportsPage() {
                 ),
               },
               {
-                header: "Item",
+                header: tx("Item"),
                 accessor: (i) => (
                   <span>
                     {i.material_code && <span className="font-mono text-xs text-gray-400 mr-1">{i.material_code}</span>}
@@ -207,17 +208,17 @@ export default function QCReportsPage() {
                   </span>
                 ),
               },
-              { header: "Supplier / Batch", accessor: (i) => i.supplier_name || i.batch_no || "—" },
-              { header: "Lot", accessor: (i) => i.lot_number ? <span className="font-mono text-xs">{i.lot_number}</span> : "—" },
-              { header: "Date", accessor: (i) => new Date(i.inspection_date).toLocaleDateString() },
+              { header: tx("Supplier / Batch"), accessor: (i) => i.supplier_name || i.batch_no || "—" },
+              { header: tx("Lot"), accessor: (i) => i.lot_number ? <span className="font-mono text-xs">{i.lot_number}</span> : "—" },
+              { header: tx("Date"), accessor: (i) => new Date(i.inspection_date).toLocaleDateString() },
               {
-                header: "Tests",
+                header: tx("Tests"),
                 accessor: (i) => i.test_count > 0
                   ? <PassBar pass={i.pass_count} total={i.test_count} />
                   : <span className="text-gray-400 text-xs">—</span>,
               },
               {
-                header: "Status",
+                header: tx("Status"),
                 accessor: (i) => (
                   <div className="flex items-center gap-1">
                     <Badge
@@ -230,7 +231,7 @@ export default function QCReportsPage() {
               },
               {
                 header: "",
-                accessor: (i) => <Button variant="secondary" onClick={() => router.push(`/dashboard/quality/${i.id}`)}>View</Button>,
+                accessor: (i) => <Button variant="secondary" onClick={() => router.push(`/dashboard/quality/${i.id}`)}>{tx("View")}</Button>,
               },
             ]}
           />

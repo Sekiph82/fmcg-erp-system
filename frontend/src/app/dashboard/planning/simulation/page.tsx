@@ -5,15 +5,16 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   planningApi, ScenarioSummary, OpQueueOut, SimulationOut, fmtMins,
 } from "@/lib/planning";
+import { tx, lx } from "@/lib/i18n/core";
 
 type Change = { op_id: string; field: string; new_value: string | number };
 
-const FIELD_OPTIONS = [
-  { value: "delay_days",    label: "Delay (days)", numeric: true },
-  { value: "planned_qty",   label: "Planned Qty",  numeric: true },
-  { value: "total_minutes", label: "Duration (min)", numeric: true },
-  { value: "work_center_id", label: "Work Center ID", numeric: false },
-];
+const FIELD_OPTIONS = lx(() => [
+  { value: "delay_days",    label: tx("Delay (days)"), numeric: true },
+  { value: "planned_qty",   label: tx("Planned Qty"),  numeric: true },
+  { value: "total_minutes", label: tx("Duration (min)"), numeric: true },
+  { value: "work_center_id", label: tx("Work Center ID"), numeric: false },
+]);
 
 export default function SimulationPage() {
   const qc = useQueryClient();
@@ -96,8 +97,8 @@ export default function SimulationPage() {
   return (
     <div className="p-6 space-y-5">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-gray-900">Simulation Sandbox</h1>
-        <a href="/dashboard/planning" className="text-xs text-blue-600 hover:underline">← Planning Dashboard</a>
+        <h1 className="text-xl font-semibold text-gray-900">{tx("Simulation Sandbox")}</h1>
+        <a href="/dashboard/planning" className="text-xs text-blue-600 hover:underline">{tx("← Planning Dashboard")}</a>
       </div>
 
       {/* Scenario selector */}
@@ -107,7 +108,7 @@ export default function SimulationPage() {
           value={selectedId || ""}
           onChange={(e) => setSelectedId(e.target.value || null)}
         >
-          <option value="">-- select scenario --</option>
+          <option value="">{tx("-- select scenario --")}</option>
           {scenarios.map((s) => (
             <option key={s.id} value={s.id}>{s.scenario_no} — {s.scenario_name}</option>
           ))}
@@ -119,18 +120,18 @@ export default function SimulationPage() {
           {/* Builder */}
           <div className="space-y-4">
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-              <h2 className="text-sm font-semibold text-gray-700 mb-3">Build Simulation</h2>
+              <h2 className="text-sm font-semibold text-gray-700 mb-3">{tx("Build Simulation")}</h2>
               <div className="space-y-3">
                 <input
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
-                  placeholder="Simulation name *"
+                  placeholder={tx("Simulation name *")}
                   value={simName}
                   onChange={(e) => setSimName(e.target.value)}
                 />
                 <textarea
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
                   rows={2}
-                  placeholder="Description (optional)"
+                  placeholder={tx("Description (optional)")}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                 />
@@ -138,7 +139,7 @@ export default function SimulationPage() {
 
               {/* Change builder */}
               <div className="mt-4 bg-gray-50 rounded-lg p-3 space-y-3">
-                <p className="text-xs font-medium text-gray-600">Add Change</p>
+                <p className="text-xs font-medium text-gray-600">{tx("Add Change")}</p>
                 <div className="grid grid-cols-2 gap-2">
                   <select
                     className="border border-gray-200 rounded px-2 py-1.5 text-xs"
@@ -151,25 +152,25 @@ export default function SimulationPage() {
                   </select>
                   <input
                     className="border border-gray-200 rounded px-2 py-1.5 text-xs"
-                    placeholder="New value"
+                    placeholder={tx("New value")}
                     value={fieldValue}
                     onChange={(e) => setFieldValue(e.target.value)}
                   />
                 </div>
-                <p className="text-xs text-gray-400">{selectedOpIds.size} operation(s) selected below</p>
+                <p className="text-xs text-gray-400">{selectedOpIds.size} {tx("operation(s) selected below")}</p>
                 <button
                   onClick={addChange}
                   disabled={!fieldValue || selectedOpIds.size === 0}
                   className="w-full py-1.5 text-xs bg-indigo-600 text-white rounded-lg disabled:opacity-40 hover:bg-indigo-700"
                 >
-                  Stage Change
+                  {tx("Stage Change")}
                 </button>
               </div>
 
               {/* Staged changes */}
               {changes.length > 0 && (
                 <div className="mt-3 space-y-1">
-                  <p className="text-xs font-medium text-gray-500">{changes.length} change(s) staged:</p>
+                  <p className="text-xs font-medium text-gray-500">{changes.length} {tx("change(s) staged:")}</p>
                   {changes.map((c, i) => (
                     <div key={i} className="flex items-center justify-between text-xs bg-blue-50 rounded px-2 py-1">
                       <span className="text-blue-700 font-mono">{c.op_id.slice(0, 8)}…</span>
@@ -188,14 +189,14 @@ export default function SimulationPage() {
                 disabled={!simName || changes.length === 0 || createSim.isPending}
                 className="mt-4 w-full bg-teal-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-teal-700 disabled:opacity-40"
               >
-                {createSim.isPending ? "Computing…" : "Compute Simulation"}
+                {createSim.isPending ? tx("Computing…") : tx("Compute Simulation")}
               </button>
             </div>
 
             {/* Ops selector */}
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
               <div className="px-4 py-3 border-b border-gray-50">
-                <p className="text-xs font-semibold text-gray-600">Select Operations for Change</p>
+                <p className="text-xs font-semibold text-gray-600">{tx("Select Operations for Change")}</p>
               </div>
               <div className="max-h-72 overflow-y-auto divide-y divide-gray-50">
                 {ops.map((op) => (
@@ -222,10 +223,10 @@ export default function SimulationPage() {
           {/* Simulations List */}
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
             <div className="px-5 py-4 border-b border-gray-50">
-              <h2 className="text-sm font-semibold text-gray-700">Simulations ({sims.length})</h2>
+              <h2 className="text-sm font-semibold text-gray-700">{tx("Simulations (")}{sims.length})</h2>
             </div>
             {sims.length === 0 ? (
-              <div className="p-8 text-center text-sm text-gray-400">No simulations yet</div>
+              <div className="p-8 text-center text-sm text-gray-400">{tx("No simulations yet")}</div>
             ) : (
               <div className="divide-y divide-gray-50">
                 {sims.map((s) => (
@@ -242,16 +243,16 @@ export default function SimulationPage() {
                     </div>
                     {s.impact_summary && <p className="text-xs text-gray-500 mt-0.5 truncate">{s.impact_summary}</p>}
                     <div className="flex gap-4 mt-1 text-xs">
-                      {s.ops_rescheduled != null && <span>Rescheduled: <b>{s.ops_rescheduled}</b></span>}
-                      {s.ops_delayed != null && <span>Delayed: <span className={impactColor(s.ops_delayed, true)}>{s.ops_delayed}</span></span>}
-                      {s.utilization_delta != null && <span>Util Δ: <span className={impactColor(Number(s.utilization_delta))}>{Number(s.utilization_delta).toFixed(1)}%</span></span>}
+                      {s.ops_rescheduled != null && <span>{tx("Rescheduled:")} <b>{s.ops_rescheduled}</b></span>}
+                      {s.ops_delayed != null && <span>{tx("Delayed:")} <span className={impactColor(s.ops_delayed, true)}>{s.ops_delayed}</span></span>}
+                      {s.utilization_delta != null && <span>{tx("Util Δ:")} <span className={impactColor(Number(s.utilization_delta))}>{Number(s.utilization_delta).toFixed(1)}%</span></span>}
                     </div>
                     {s.status === "COMPUTED" && (
                       <button
                         onClick={(e) => { e.stopPropagation(); publishSim.mutate(s.id); }}
                         className="mt-2 text-xs px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200"
                       >
-                        Publish
+                        {tx("Publish")}
                       </button>
                     )}
                   </div>
@@ -272,12 +273,12 @@ export default function SimulationPage() {
             </div>
             <div className="grid grid-cols-2 gap-3 mb-4">
               {[
-                { label: "Rescheduled Ops", value: viewSim.ops_rescheduled ?? "—" },
-                { label: "Delayed Ops", value: viewSim.ops_delayed ?? "—" },
-                { label: "Util Δ", value: viewSim.utilization_delta != null ? `${Number(viewSim.utilization_delta).toFixed(1)}%` : "—" },
-                { label: "CO Hours Δ", value: viewSim.changeover_delta_hrs != null ? `${Number(viewSim.changeover_delta_hrs).toFixed(1)}h` : "—" },
-                { label: "Throughput Δ", value: viewSim.throughput_delta_pct != null ? `${Number(viewSim.throughput_delta_pct).toFixed(1)}%` : "—" },
-                { label: "Status", value: viewSim.status },
+                { label: tx("Rescheduled Ops"), value: viewSim.ops_rescheduled ?? "—" },
+                { label: tx("Delayed Ops"), value: viewSim.ops_delayed ?? "—" },
+                { label: tx("Util Δ"), value: viewSim.utilization_delta != null ? `${Number(viewSim.utilization_delta).toFixed(1)}%` : "—" },
+                { label: tx("CO Hours Δ"), value: viewSim.changeover_delta_hrs != null ? `${Number(viewSim.changeover_delta_hrs).toFixed(1)}h` : "—" },
+                { label: tx("Throughput Δ"), value: viewSim.throughput_delta_pct != null ? `${Number(viewSim.throughput_delta_pct).toFixed(1)}%` : "—" },
+                { label: tx("Status"), value: viewSim.status },
               ].map((k) => (
                 <div key={k.label} className="bg-gray-50 rounded-lg p-3">
                   <p className="text-xs text-gray-400">{k.label}</p>
@@ -291,7 +292,7 @@ export default function SimulationPage() {
               </div>
             )}
             <p className="text-xs text-gray-400 text-right">
-              {viewSim.changes?.length ?? 0} change(s) · {viewSim.sim_no}
+              {viewSim.changes?.length ?? 0} {tx("change(s) ·")} {viewSim.sim_no}
             </p>
           </div>
         </div>

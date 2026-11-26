@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { imApi, DuplicateLog, DuplicateRisk } from "@/lib/invoice_match";
+import { tx } from "@/lib/i18n/core";
 
 const RISK_COLOR: Record<DuplicateRisk, string> = {
   EXACT:     "bg-red-100 text-red-700",
@@ -29,28 +30,28 @@ export default function DuplicatesPage() {
     <div className="p-6 space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Duplicate Invoice Review</h1>
-          <p className="text-sm text-gray-500 mt-1">Invoices flagged for potential duplication</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Duplicate Invoice Review")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{tx("Invoices flagged for potential duplication")}</p>
         </div>
         <span className={`text-lg font-bold ${data.length > 0 ? "text-red-600" : "text-green-600"}`}>
-          {data.length} unresolved
+          {data.length} {tx("unresolved")}
         </span>
       </div>
 
       <div className="flex gap-2 items-end">
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Resolver Name</label>
+          <label className="block text-xs text-gray-500 mb-1">{tx("Resolver Name")}</label>
           <input className="border rounded-lg px-3 py-1.5 text-sm w-48"
-            placeholder="Your name"
+            placeholder={tx("Your name")}
             value={resolver} onChange={(e) => setResolver(e.target.value)} />
         </div>
       </div>
 
       {isLoading ? (
-        <p className="text-gray-400">Loading…</p>
+        <p className="text-gray-400">{tx("Loading…")}</p>
       ) : data.length === 0 ? (
         <div className="bg-green-50 border border-green-200 rounded-xl p-6 text-center">
-          <p className="text-green-700 font-medium">✓ No unresolved duplicate suspicions.</p>
+          <p className="text-green-700 font-medium">{tx("✓ No unresolved duplicate suspicions.")}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -64,18 +65,18 @@ export default function DuplicatesPage() {
                     </span>
                     {dup.similarity_score != null && (
                       <span className="text-xs text-gray-400">
-                        Similarity: {Math.round(Number(dup.similarity_score) * 100)}%
+                        {tx("Similarity:")} {Math.round(Number(dup.similarity_score) * 100)}%
                       </span>
                     )}
                   </div>
                   <p className="text-sm font-medium text-gray-800">
-                    Invoice: <span className="font-mono">{dup.invoice_no ?? "—"}</span>
-                    {" "}matches{" "}
+                    {tx("Invoice:")} <span className="font-mono">{dup.invoice_no ?? "—"}</span>
+                    {" "}{tx("matches")}{" "}
                     <span className="font-mono">{dup.matched_invoice_no ?? "—"}</span>
                   </p>
                   {dup.match_reasons && (
                     <p className="text-xs text-gray-500">
-                      Matched on: {(dup.match_reasons as string[]).join(", ")}
+                      {tx("Matched on:")} {(dup.match_reasons as string[]).join(", ")}
                     </p>
                   )}
                 </div>
@@ -83,7 +84,7 @@ export default function DuplicatesPage() {
                   <div className="flex flex-col gap-2">
                     <input
                       className="border rounded-lg px-3 py-1.5 text-sm w-64"
-                      placeholder="Resolution notes"
+                      placeholder={tx("Resolution notes")}
                       value={notes[dup.id] ?? ""}
                       onChange={(e) => setNotes({ ...notes, [dup.id]: e.target.value })}
                     />
@@ -92,17 +93,17 @@ export default function DuplicatesPage() {
                       disabled={!resolver || resolve.isPending}
                       className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
                     >
-                      Mark Resolved
+                      {tx("Mark Resolved")}
                     </button>
                   </div>
                 )}
                 {dup.is_resolved && (
                   <span className="text-xs text-green-600 font-medium">
-                    ✓ Resolved by {dup.resolved_by}
+                    {tx("✓ Resolved by")} {dup.resolved_by}
                   </span>
                 )}
               </div>
-              <p className="text-xs text-gray-400">Detected {new Date(dup.created_at).toLocaleString()}</p>
+              <p className="text-xs text-gray-400">{tx("Detected")} {new Date(dup.created_at).toLocaleString()}</p>
             </div>
           ))}
         </div>

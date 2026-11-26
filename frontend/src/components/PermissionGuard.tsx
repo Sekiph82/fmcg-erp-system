@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuth } from "@/context/AuthContext";
+import { tx } from "@/lib/i18n/core";
 
 interface Props {
   permission: string;
@@ -34,10 +35,10 @@ export function RequirePermission({ permission, children }: { permission: string
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
           </svg>
         </div>
-        <h2 className="text-lg font-semibold text-gray-800">Access Denied</h2>
+        <h2 className="text-lg font-semibold text-gray-800">{tx("Access Denied")}</h2>
         <p className="text-sm text-gray-500">
-          You don&apos;t have permission to view this page.<br />
-          Required: <code className="bg-gray-100 px-1 rounded text-xs">{permission}</code>
+          {tx("You don't have permission to view this page.")}<br />
+          {tx("Required:")} <code className="bg-gray-100 px-1 rounded text-xs">{permission}</code>
         </p>
       </div>
     );

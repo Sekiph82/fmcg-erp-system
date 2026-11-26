@@ -1,6 +1,7 @@
 "use client";
 
 import { Component, ReactNode, ErrorInfo } from "react";
+import { tx } from "@/lib/i18n/core";
 
 interface Props {
   children: ReactNode;
@@ -34,14 +35,14 @@ export class ErrorBoundary extends Component<Props, State> {
             </svg>
           </div>
           <div>
-            <p className="text-base font-semibold text-gray-200">Something went wrong</p>
+            <p className="text-base font-semibold text-gray-200">{tx("Something went wrong")}</p>
             <p className="mt-1 text-sm text-gray-500">{this.state.error.message}</p>
           </div>
           <button
             onClick={() => this.setState({ error: null })}
             className="mt-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
           >
-            Try again
+            {tx("Try again")}
           </button>
         </div>
       );

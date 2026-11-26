@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { psApi, SupplierItemPriceOut, SupplierItemPriority, fmt } from "@/lib/procurement_suggestion";
+import { tx } from "@/lib/i18n/core";
 
 const PRIORITY_OPTIONS: SupplierItemPriority[] = ["PRIMARY", "SECONDARY", "TERTIARY", "FALLBACK"];
 
@@ -73,7 +74,7 @@ function PriceForm({
         {field("Buffer Days", "buffer_days", "number")}
         {field("Customs Days", "customs_days", "number")}
         <div>
-          <label className="text-xs text-gray-600 block mb-0.5">Priority</label>
+          <label className="text-xs text-gray-600 block mb-0.5">{tx("Priority")}</label>
           <select
             value={form.priority}
             onChange={(e) => set("priority", e.target.value)}
@@ -88,7 +89,7 @@ function PriceForm({
         {field("Valid To", "valid_to", "date")}
       </div>
       <div>
-        <label className="text-xs text-gray-600">Notes</label>
+        <label className="text-xs text-gray-600">{tx("Notes")}</label>
         <textarea
           value={form.notes}
           onChange={(e) => set("notes", e.target.value)}
@@ -98,14 +99,14 @@ function PriceForm({
       </div>
       <div className="flex items-center gap-2">
         <input type="checkbox" checked={form.is_active} onChange={(e) => set("is_active", e.target.checked)} id="is_active" />
-        <label htmlFor="is_active" className="text-sm text-gray-600">Active</label>
+        <label htmlFor="is_active" className="text-sm text-gray-600">{tx("Active")}</label>
       </div>
       <div className="flex gap-2 pt-2">
         <button type="submit" className="flex-1 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">
-          {initial?.id ? "Update" : "Create"} Price
+          {initial?.id ? tx("Update") : tx("Create")} {tx("Price")}
         </button>
         <button type="button" onClick={onCancel} className="flex-1 py-2 border rounded text-sm hover:bg-gray-50">
-          Cancel
+          {tx("Cancel")}
         </button>
       </div>
     </form>
@@ -150,7 +151,7 @@ export default function SupplierPricesPage() {
       {(showForm || editing) && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl p-6 w-full max-w-2xl shadow-xl overflow-y-auto max-h-[90vh]">
-            <h2 className="font-semibold mb-4">{editing ? "Edit Supplier Price" : "Add Supplier Price"}</h2>
+            <h2 className="font-semibold mb-4">{editing ? tx("Edit Supplier Price") : tx("Add Supplier Price")}</h2>
             <PriceForm
               initial={editing ?? undefined}
               onSave={(data) => {
@@ -168,14 +169,14 @@ export default function SupplierPricesPage() {
 
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900">Supplier-Item Price Mappings</h1>
-          <p className="text-sm text-gray-500">Define price, MOQ, lead time per supplier-material combination</p>
+          <h1 className="text-xl font-semibold text-gray-900">{tx("Supplier-Item Price Mappings")}</h1>
+          <p className="text-sm text-gray-500">{tx("Define price, MOQ, lead time per supplier-material combination")}</p>
         </div>
         <button
           onClick={() => setShowForm(true)}
           className="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
         >
-          + Add Price Mapping
+          {tx("+ Add Price Mapping")}
         </button>
       </div>
 
@@ -183,25 +184,25 @@ export default function SupplierPricesPage() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
             <tr>
-              <th className="text-left px-3 py-2">Material</th>
-              <th className="text-left px-3 py-2">Supplier</th>
-              <th className="text-left px-3 py-2">Priority</th>
-              <th className="text-right px-3 py-2">Unit Price</th>
+              <th className="text-left px-3 py-2">{tx("Material")}</th>
+              <th className="text-left px-3 py-2">{tx("Supplier")}</th>
+              <th className="text-left px-3 py-2">{tx("Priority")}</th>
+              <th className="text-right px-3 py-2">{tx("Unit Price")}</th>
               <th className="text-right px-3 py-2">MOQ</th>
-              <th className="text-right px-3 py-2">Lead Days</th>
-              <th className="text-right px-3 py-2">Buffer</th>
-              <th className="text-right px-3 py-2">Customs</th>
-              <th className="text-right px-3 py-2">Reliability</th>
-              <th className="text-left px-3 py-2">Contract</th>
-              <th className="text-left px-3 py-2">Status</th>
-              <th className="text-left px-3 py-2">Actions</th>
+              <th className="text-right px-3 py-2">{tx("Lead Days")}</th>
+              <th className="text-right px-3 py-2">{tx("Buffer")}</th>
+              <th className="text-right px-3 py-2">{tx("Customs")}</th>
+              <th className="text-right px-3 py-2">{tx("Reliability")}</th>
+              <th className="text-left px-3 py-2">{tx("Contract")}</th>
+              <th className="text-left px-3 py-2">{tx("Status")}</th>
+              <th className="text-left px-3 py-2">{tx("Actions")}</th>
             </tr>
           </thead>
           <tbody>
-            {isLoading && <tr><td colSpan={12} className="px-4 py-8 text-center text-gray-400">Loading…</td></tr>}
+            {isLoading && <tr><td colSpan={12} className="px-4 py-8 text-center text-gray-400">{tx("Loading…")}</td></tr>}
             {!isLoading && !prices?.length && (
               <tr><td colSpan={12} className="px-4 py-8 text-center text-gray-400">
-                No price mappings yet. Add supplier-item prices to enable the procurement engine.
+                {tx("No price mappings yet. Add supplier-item prices to enable the procurement engine.")}
               </td></tr>
             )}
             {(prices ?? []).map((p) => (
@@ -216,24 +217,24 @@ export default function SupplierPricesPage() {
                 </td>
                 <td className="px-3 py-2 text-right font-mono">{p.currency} {fmt(p.unit_price)}</td>
                 <td className="px-3 py-2 text-right">{fmt(p.moq, 0)}</td>
-                <td className="px-3 py-2 text-right">{p.lead_time_days}d</td>
-                <td className="px-3 py-2 text-right">{p.buffer_days}d</td>
-                <td className="px-3 py-2 text-right">{p.customs_days}d</td>
+                <td className="px-3 py-2 text-right">{p.lead_time_days}{tx("d")}</td>
+                <td className="px-3 py-2 text-right">{p.buffer_days}{tx("d")}</td>
+                <td className="px-3 py-2 text-right">{p.customs_days}{tx("d")}</td>
                 <td className="px-3 py-2 text-right">{p.reliability_score != null ? `${p.reliability_score}%` : "—"}</td>
                 <td className="px-3 py-2 text-xs">{p.contract_no ?? "—"}</td>
                 <td className="px-3 py-2">
                   <span className={`text-xs px-1.5 py-0.5 rounded ${p.is_active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
-                    {p.is_active ? "Active" : "Inactive"}
+                    {p.is_active ? tx("Active") : tx("Inactive")}
                   </span>
                 </td>
                 <td className="px-3 py-2">
                   <div className="flex gap-1">
-                    <button onClick={() => setEditing(p)} className="text-blue-600 hover:underline text-xs">Edit</button>
+                    <button onClick={() => setEditing(p)} className="text-blue-600 hover:underline text-xs">{tx("Edit")}</button>
                     <button
-                      onClick={() => { if (confirm("Delete this price mapping?")) del.mutate(p.id); }}
+                      onClick={() => { if (confirm(tx("Delete this price mapping?"))) del.mutate(p.id); }}
                       className="text-red-500 hover:underline text-xs"
                     >
-                      Delete
+                      {tx("Delete")}
                     </button>
                   </div>
                 </td>

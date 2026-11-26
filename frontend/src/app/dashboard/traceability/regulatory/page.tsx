@@ -2,6 +2,7 @@
 import { useSearchParams } from "next/navigation";
 import { useState, useEffect, Suspense } from "react";
 import { traceApi, RecallRegulatoryReport, RecallHeader, SEVERITY_BG } from "@/lib/traceability";
+import { tx } from "@/lib/i18n/core";
 
 function RegulatoryContent() {
   const params = useSearchParams();
@@ -31,16 +32,16 @@ function RegulatoryContent() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-xl font-bold text-gray-900">Regulatory Report Export</h1>
-        <p className="text-sm text-gray-500">Generate regulator-ready recall summary for authorities, audits, and customer communications</p>
+        <h1 className="text-xl font-bold text-gray-900">{tx("Regulatory Report Export")}</h1>
+        <p className="text-sm text-gray-500">{tx("Generate regulator-ready recall summary for authorities, audits, and customer communications")}</p>
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 p-5 flex gap-3">
         <div className="flex-1">
-          <label className="text-xs font-medium text-gray-600">Select Recall</label>
+          <label className="text-xs font-medium text-gray-600">{tx("Select Recall")}</label>
           <select className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
             value={recallId} onChange={e => setRecallId(e.target.value)}>
-            <option value="">— Select a recall —</option>
+            <option value="">{tx("— Select a recall —")}</option>
             {recalls.map(r => (
               <option key={r.id} value={r.id}>{r.recall_no} — {r.recall_type} — {r.status}</option>
             ))}
@@ -49,7 +50,7 @@ function RegulatoryContent() {
         <div className="flex items-end">
           <button onClick={() => handleLoad()} disabled={!recallId || loading}
             className="px-5 py-2 bg-teal-600 text-white text-sm rounded-lg hover:bg-teal-700 disabled:opacity-50">
-            {loading ? "Loading…" : "Generate Report"}
+            {loading ? tx("Loading…") : tx("Generate Report")}
           </button>
         </div>
       </div>
@@ -60,8 +61,8 @@ function RegulatoryContent() {
           <div className="bg-white rounded-xl border border-teal-200 p-6">
             <div className="flex items-start justify-between mb-4">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">RECALL NOTICE</h2>
-                <p className="text-sm text-gray-500 mt-0.5">Reference: {report.recall_no}</p>
+                <h2 className="text-2xl font-bold text-gray-900">{tx("RECALL NOTICE")}</h2>
+                <p className="text-sm text-gray-500 mt-0.5">{tx("Reference:")} {report.recall_no}</p>
               </div>
               <div className="text-right">
                 <span className={`px-3 py-1 rounded text-sm font-semibold ${SEVERITY_BG[report.severity_level]}`}>
@@ -89,24 +90,24 @@ function RegulatoryContent() {
 
             {/* Narrative */}
             <div className="bg-teal-50 border border-teal-200 rounded-lg p-4">
-              <p className="text-xs font-semibold text-teal-700 uppercase mb-2">Executive Summary</p>
+              <p className="text-xs font-semibold text-teal-700 uppercase mb-2">{tx("Executive Summary")}</p>
               <p className="text-sm text-gray-800 leading-relaxed">{report.summary_narrative}</p>
             </div>
           </div>
 
           {/* Recall Reason */}
           <div className="bg-white rounded-xl border border-gray-200 p-5">
-            <h3 className="font-semibold text-gray-800 mb-2">Recall Reason</h3>
+            <h3 className="font-semibold text-gray-800 mb-2">{tx("Recall Reason")}</h3>
             <p className="text-sm text-gray-700">{report.recall_reason}</p>
           </div>
 
           {/* Quantity & Customer Data */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: "Total Affected Qty", value: report.total_affected_qty ? Number(report.total_affected_qty).toLocaleString() : "—" },
-              { label: "Customers Affected", value: report.total_affected_customers ?? "—" },
-              { label: "Recovery Rate", value: report.recovery_pct ? `${parseFloat(report.recovery_pct).toFixed(1)}%` : "—" },
-              { label: "Lots in Scope", value: report.affected_lots.length },
+              { label: tx("Total Affected Qty"), value: report.total_affected_qty ? Number(report.total_affected_qty).toLocaleString() : "—" },
+              { label: tx("Customers Affected"), value: report.total_affected_customers ?? "—" },
+              { label: tx("Recovery Rate"), value: report.recovery_pct ? `${parseFloat(report.recovery_pct).toFixed(1)}%` : "—" },
+              { label: tx("Lots in Scope"), value: report.affected_lots.length },
             ].map(s => (
               <div key={s.label} className="bg-white rounded-xl border border-gray-200 p-4 text-center">
                 <p className="text-2xl font-bold text-gray-800">{s.value}</p>
@@ -118,7 +119,7 @@ function RegulatoryContent() {
           {/* Affected Lots */}
           {report.affected_lots.length > 0 && (
             <div className="bg-white rounded-xl border border-gray-200 p-5">
-              <h3 className="font-semibold text-gray-800 mb-3">Affected Lot/Batch Numbers</h3>
+              <h3 className="font-semibold text-gray-800 mb-3">{tx("Affected Lot/Batch Numbers")}</h3>
               <div className="flex flex-wrap gap-2">
                 {report.affected_lots.map((lot, i) => (
                   <span key={i} className="px-3 py-1.5 bg-red-50 border border-red-200 rounded-lg text-xs font-mono text-red-700">
@@ -132,7 +133,7 @@ function RegulatoryContent() {
           {/* Actions Taken */}
           {report.actions_taken.length > 0 && (
             <div className="bg-white rounded-xl border border-gray-200 p-5">
-              <h3 className="font-semibold text-gray-800 mb-3">Actions Taken</h3>
+              <h3 className="font-semibold text-gray-800 mb-3">{tx("Actions Taken")}</h3>
               <ul className="space-y-1">
                 {report.actions_taken.map((a, i) => (
                   <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
@@ -145,16 +146,16 @@ function RegulatoryContent() {
 
           {/* Metrics */}
           <div className="bg-white rounded-xl border border-gray-200 p-5">
-            <h3 className="font-semibold text-gray-800 mb-3">Performance Metrics</h3>
+            <h3 className="font-semibold text-gray-800 mb-3">{tx("Performance Metrics")}</h3>
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-gray-50 rounded-lg p-3">
-                <p className="text-xs text-gray-500">Time to Trace</p>
+                <p className="text-xs text-gray-500">{tx("Time to Trace")}</p>
                 <p className="text-lg font-bold text-gray-800">
                   {report.time_to_trace_hours ? `${parseFloat(report.time_to_trace_hours).toFixed(2)}h` : "—"}
                 </p>
               </div>
               <div className="bg-gray-50 rounded-lg p-3">
-                <p className="text-xs text-gray-500">Time to Contain</p>
+                <p className="text-xs text-gray-500">{tx("Time to Contain")}</p>
                 <p className="text-lg font-bold text-gray-800">
                   {report.time_to_contain_hours ? `${parseFloat(report.time_to_contain_hours).toFixed(2)}h` : "—"}
                 </p>
@@ -165,7 +166,7 @@ function RegulatoryContent() {
           <button
             onClick={() => window.print()}
             className="px-6 py-2 bg-teal-600 text-white text-sm rounded-lg hover:bg-teal-700">
-            Print / Export Report
+            {tx("Print / Export Report")}
           </button>
         </div>
       )}
@@ -174,5 +175,5 @@ function RegulatoryContent() {
 }
 
 export default function RegulatoryPage() {
-  return <Suspense fallback={<div className="p-8 text-gray-400">Loading…</div>}><RegulatoryContent /></Suspense>;
+  return <Suspense fallback={<div className="p-8 text-gray-400">{tx("Loading…")}</div>}><RegulatoryContent /></Suspense>;
 }

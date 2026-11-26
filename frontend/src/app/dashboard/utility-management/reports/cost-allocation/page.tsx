@@ -7,6 +7,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
 import { reportsApi } from "@/lib/utilitiesReports";
+import { tx, lx } from "@/lib/i18n/core";
 
 const today = new Date().toISOString().slice(0, 10);
 const mtdStart = today.slice(0, 8) + "01";
@@ -15,13 +16,13 @@ const fmt = (n?: number | null, dp = 1) =>
 const pct = (n?: number | null) => n == null ? "—" : `${fmt(n, 1)}%`;
 const PIE_COLORS = ["#fbbf24", "#60a5fa", "#a78bfa", "#f97316", "#22d3ee", "#34d399", "#f43f5e"];
 
-const GROUP_BY_OPTIONS = [
-  { value: "department", label: "Department" },
-  { value: "production_line", label: "Production Line" },
-  { value: "machine_ref", label: "Machine" },
-  { value: "product", label: "Product" },
-  { value: "batch", label: "Batch" },
-];
+const GROUP_BY_OPTIONS = lx(() => [
+  { value: "department", label: tx("Department") },
+  { value: "production_line", label: tx("Production Line") },
+  { value: "machine_ref", label: tx("Machine") },
+  { value: "product", label: tx("Product") },
+  { value: "batch", label: tx("Batch") },
+]);
 
 const UTILITY_TYPES = ["", "ELECTRICITY", "WATER", "GAS", "STEAM", "COMPRESSED_AIR", "SOLAR"];
 
@@ -51,31 +52,31 @@ export default function CostAllocationPage() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <div className="flex items-center gap-3 mb-1">
-            <Link href="/dashboard/utility-management/reports" className="text-sm text-gray-500 hover:text-blue-600">← Reports</Link>
+            <Link href="/dashboard/utility-management/reports" className="text-sm text-gray-500 hover:text-blue-600">{tx("← Reports")}</Link>
           </div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white" style={{ borderLeft: "4px solid #f43f5e", paddingLeft: 12 }}>
-            Cost Allocation Report
+            {tx("Cost Allocation Report")}
           </h1>
-          <p className="text-sm text-gray-500 mt-1">Total: <strong>${fmt(d?.total_cost, 2)}</strong> — grouped by <strong>{GROUP_BY_OPTIONS.find(o => o.value === groupBy)?.label}</strong></p>
+          <p className="text-sm text-gray-500 mt-1">{tx("Total:")} <strong>${fmt(d?.total_cost, 2)}</strong> {tx("— grouped by")} <strong>{GROUP_BY_OPTIONS.find(o => o.value === groupBy)?.label}</strong></p>
         </div>
         <div className="flex gap-3 items-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3 flex-wrap">
           <input type="date" className={ic} value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
-          <span className="text-gray-400 text-xs">to</span>
+          <span className="text-gray-400 text-xs">{tx("to")}</span>
           <input type="date" className={ic} value={dateTo} onChange={e => setDateTo(e.target.value)} />
           <select className={ic} value={groupBy} onChange={e => setGroupBy(e.target.value)}>
             {GROUP_BY_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
           <select className={ic} value={utilityType} onChange={e => setUtilityType(e.target.value)}>
-            {UTILITY_TYPES.map(t => <option key={t} value={t}>{t || "All Utilities"}</option>)}
+            {UTILITY_TYPES.map(t => <option key={t} value={t}>{t || tx("All Utilities")}</option>)}
           </select>
-          <button onClick={() => reportsApi.exportCostAllocation(params)} className="px-3 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700">Export CSV</button>
+          <button onClick={() => reportsApi.exportCostAllocation(params)} className="px-3 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700">{tx("Export CSV")}</button>
         </div>
       </div>
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-          <h3 className="text-sm font-semibold mb-4">Cost by {GROUP_BY_OPTIONS.find(o => o.value === groupBy)?.label}</h3>
+          <h3 className="text-sm font-semibold mb-4">{tx("Cost by")} {GROUP_BY_OPTIONS.find(o => o.value === groupBy)?.label}</h3>
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={d?.rows ?? []} layout="vertical" margin={{ top: 4, right: 16, left: 80, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -87,7 +88,7 @@ export default function CostAllocationPage() {
           </ResponsiveContainer>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-          <h3 className="text-sm font-semibold mb-4">Cost by Utility Type</h3>
+          <h3 className="text-sm font-semibold mb-4">{tx("Cost by Utility Type")}</h3>
           <ResponsiveContainer width="100%" height={280}>
             <PieChart>
               <Pie data={d?.by_utility ?? []} dataKey="value" nameKey="label" cx="50%" cy="50%" outerRadius={100}
@@ -104,7 +105,7 @@ export default function CostAllocationPage() {
       {/* Table */}
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700 text-xs text-gray-500">
-          {d?.rows.length ?? 0} rows
+          {d?.rows.length ?? 0} {tx("rows")}
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -131,7 +132,7 @@ export default function CostAllocationPage() {
                 </tr>
               ))}
               {!d?.rows.length && (
-                <tr><td colSpan={10} className="px-4 py-8 text-center text-gray-400">No allocations for selected range</td></tr>
+                <tr><td colSpan={10} className="px-4 py-8 text-center text-gray-400">{tx("No allocations for selected range")}</td></tr>
               )}
             </tbody>
           </table>

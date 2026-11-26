@@ -15,6 +15,7 @@ import { salesApi } from "@/lib/sales";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
+import { tx } from "@/lib/i18n/core";
 
 const METHODS: CollectionMethod[] = ["CASH", "MPESA", "BANK_TRANSFER", "CHEQUE"];
 const COUNTED = new Set(["PENDING", "DEPOSITED", "CONFIRMED", "RECONCILED"]);  // bounced / cancelled money is not collected
@@ -114,19 +115,19 @@ export default function CollectionsPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Collections</h1>
-          <p className="text-sm text-gray-500 mt-1">Cash · M-Pesa · Bank receipts from the field</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Collections")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{tx("Cash · M-Pesa · Bank receipts from the field")}</p>
         </div>
-        <Button onClick={() => setOpen(true)}>+ Record Collection</Button>
+        <Button onClick={() => setOpen(true)}>{tx("+ Record Collection")}</Button>
       </div>
 
       {/* KPI row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
         {[
-          { label: "Total Collected", value: `KES ${totalAmount.toLocaleString()}`, color: "text-indigo-600" },
-          { label: "M-Pesa", value: `KES ${mpesaTotal.toLocaleString()}`, color: "text-emerald-600" },
-          { label: "Cash", value: `KES ${cashTotal.toLocaleString()}`, color: "text-green-600" },
-          { label: "Pending Confirmation", value: pending, color: pending > 0 ? "text-yellow-600" : "text-gray-500" },
+          { label: tx("Total Collected"), value: `KES ${totalAmount.toLocaleString()}`, color: "text-indigo-600" },
+          { label: tx("M-Pesa"), value: `KES ${mpesaTotal.toLocaleString()}`, color: "text-emerald-600" },
+          { label: tx("Cash"), value: `KES ${cashTotal.toLocaleString()}`, color: "text-green-600" },
+          { label: tx("Pending Confirmation"), value: pending, color: pending > 0 ? "text-yellow-600" : "text-gray-500" },
         ].map((k) => (
           <div key={k.label} className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
             <p className={`text-2xl font-bold ${k.color}`}>{k.value}</p>
@@ -171,7 +172,7 @@ export default function CollectionsPage() {
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" />
         </div>
       ) : collections.length === 0 ? (
-        <p className="text-gray-400 text-sm py-8 text-center">No collections found.</p>
+        <p className="text-gray-400 text-sm py-8 text-center">{tx("No collections found.")}</p>
       ) : (
         <div className="space-y-2">
           {actionError && <p role="alert" className="rounded-lg p-2 text-sm bg-red-50 border border-red-200 text-red-700">
@@ -189,17 +190,17 @@ export default function CollectionsPage() {
       )}
 
       {/* Create Modal */}
-      <Modal open={open} onClose={() => setOpen(false)} title="Record Collection">
+      <Modal open={open} onClose={() => setOpen(false)} title={tx("Record Collection")}>
         <form onSubmit={(e) => { e.preventDefault(); create.mutate(); }} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <Input
-              label="Collection No (optional)"
+              label={tx("Collection No (optional)")}
               value={form.collection_no}
               onChange={(e) => set("collection_no", e.target.value)}
-              placeholder="generated if empty"
+              placeholder={tx("generated if empty")}
             />
             <Input
-              label="Date *"
+              label={tx("Date *")}
               type="date"
               value={form.collection_date}
               onChange={(e) => set("collection_date", e.target.value)}
@@ -208,14 +209,14 @@ export default function CollectionsPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Customer *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{tx("Customer *")}</label>
             <select
               value={form.customer_id}
               onChange={(e) => { set("customer_id", e.target.value); set("invoice_id", ""); }}
               required
               className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
-              <option value="">Select customer…</option>
+              <option value="">{tx("Select customer…")}</option>
               {customers.map((c) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
@@ -223,18 +224,18 @@ export default function CollectionsPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Invoice being paid *</label>
-            <select aria-label="Invoice being paid" value={form.invoice_id} required disabled={!form.customer_id}
+            <label className="block text-sm font-medium text-gray-700 mb-1">{tx("Invoice being paid *")}</label>
+            <select aria-label={tx("Invoice being paid")} value={form.invoice_id} required disabled={!form.customer_id}
               onChange={(e) => { const i = openInvoices.find((x) => x.id === e.target.value); set("invoice_id", e.target.value);
                 if (i) { set("amount", String(i.outstanding_balance ?? i.total_amount - i.paid_amount)); set("currency", i.currency); } }}
               className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-              <option value="">{form.customer_id ? (openInvoices.length ? "Select invoice…" : "No open invoices") : "Select a customer first"}</option>
-              {openInvoices.map((i) => <option key={i.id} value={i.id}>{i.invoice_no} · due {i.due_date} · {i.currency} {(i.outstanding_balance ?? i.total_amount - i.paid_amount).toLocaleString()}</option>)}
+              <option value="">{form.customer_id ? (openInvoices.length ? tx("Select invoice…") : tx("No open invoices")) : tx("Select a customer first")}</option>
+              {openInvoices.map((i) => <option key={i.id} value={i.id}>{i.invoice_no} {tx("· due")} {i.due_date} · {i.currency} {(i.outstanding_balance ?? i.total_amount - i.paid_amount).toLocaleString()}</option>)}
             </select>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Payment Method *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{tx("Payment Method *")}</label>
             <div className="grid grid-cols-3 gap-2">
               {METHODS.map((m) => (
                 <button
@@ -255,7 +256,7 @@ export default function CollectionsPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <Input
-              label="Amount *"
+              label={tx("Amount *")}
               type="number"
               step="0.01"
               value={form.amount}
@@ -264,7 +265,7 @@ export default function CollectionsPage() {
               placeholder="0.00"
             />
             <Input
-              label="Currency"
+              label={tx("Currency")}
               value={form.currency}
               onChange={(e) => set("currency", e.target.value)}
               placeholder="KES"
@@ -274,13 +275,13 @@ export default function CollectionsPage() {
           {form.method === "MPESA" && (
             <div className="grid grid-cols-2 gap-4">
               <Input
-                label="M-Pesa Code"
+                label={tx("M-Pesa Code")}
                 value={form.mpesa_code}
                 onChange={(e) => set("mpesa_code", e.target.value)}
-                placeholder="e.g. QJK2X7ABC1"
+                placeholder={tx("e.g. QJK2X7ABC1")}
               />
               <Input
-                label="Phone"
+                label={tx("Phone")}
                 value={form.mpesa_phone}
                 onChange={(e) => set("mpesa_phone", e.target.value)}
                 placeholder="2547XXXXXXXX"
@@ -290,15 +291,15 @@ export default function CollectionsPage() {
 
           {form.method !== "MPESA" && (
             <Input
-              label="Reference / Cheque No"
+              label={tx("Reference / Cheque No")}
               value={form.reference}
               onChange={(e) => set("reference", e.target.value)}
-              placeholder="Bank ref or cheque number"
+              placeholder={tx("Bank ref or cheque number")}
             />
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{tx("Notes")}</label>
             <textarea
               value={form.notes}
               onChange={(e) => set("notes", e.target.value)}
@@ -309,8 +310,8 @@ export default function CollectionsPage() {
 
           {create.error && <p role="alert" className="text-sm text-red-600">{errorText(create.error, "Failed to record collection.")}</p>}
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" type="button" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button type="submit" loading={create.isPending}>Record</Button>
+            <Button variant="secondary" type="button" onClick={() => setOpen(false)}>{tx("Cancel")}</Button>
+            <Button type="submit" loading={create.isPending}>{tx("Record")}</Button>
           </div>
         </form>
       </Modal>
@@ -355,14 +356,14 @@ function CollectionRow({
           <p className="text-lg font-bold text-gray-900">
             {c.currency} {c.amount.toLocaleString()}
           </p>
-          {c.method === "CHEQUE" && c.status === "PENDING" && <Button variant="secondary" onClick={() => onAction("deposit")}>Deposited</Button>}
+          {c.method === "CHEQUE" && c.status === "PENDING" && <Button variant="secondary" onClick={() => onAction("deposit")}>{tx("Deposited")}</Button>}
           {((c.method !== "CHEQUE" && c.status === "PENDING") || (c.method === "CHEQUE" && c.status === "DEPOSITED")) && (
-            <Button variant="secondary" onClick={onConfirm}>{c.method === "CHEQUE" ? "Cleared — confirm" : "Confirm"}</Button>
+            <Button variant="secondary" onClick={onConfirm}>{c.method === "CHEQUE" ? tx("Cleared — confirm") : tx("Confirm")}</Button>
           )}
-          {c.method === "CHEQUE" && (c.status === "PENDING" || c.status === "DEPOSITED") && <Button variant="secondary" onClick={() => onAction("bounce")}>Bounced</Button>}
-          {(c.status === "PENDING" || c.status === "DEPOSITED") && <Button variant="secondary" onClick={() => onAction("cancel")}>Cancel</Button>}
+          {c.method === "CHEQUE" && (c.status === "PENDING" || c.status === "DEPOSITED") && <Button variant="secondary" onClick={() => onAction("bounce")}>{tx("Bounced")}</Button>}
+          {(c.status === "PENDING" || c.status === "DEPOSITED") && <Button variant="secondary" onClick={() => onAction("cancel")}>{tx("Cancel")}</Button>}
           {c.status === "CONFIRMED" && (
-            <Button variant="secondary" onClick={onReconcile}>Reconcile</Button>
+            <Button variant="secondary" onClick={onReconcile}>{tx("Reconcile")}</Button>
           )}
         </div>
       </div>

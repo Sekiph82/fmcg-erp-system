@@ -8,6 +8,7 @@ import {
 } from "@/lib/documents";
 import { RequirePermission } from "@/components/PermissionGuard";
 import { Badge } from "@/components/ui/Badge";
+import { tx } from "@/lib/i18n/core";
 
 const STATUS_VARIANT: Record<DocumentStatus, "yellow" | "green" | "gray" | "red"> = {
   DRAFT: "yellow",
@@ -73,26 +74,26 @@ function EditPanel({ doc, onClose }: { doc: DocumentRead; onClose: () => void })
 
   return (
     <div className="bg-white border rounded-lg p-5 space-y-4">
-      <h3 className="font-semibold text-gray-800">Edit Document</h3>
+      <h3 className="font-semibold text-gray-800">{tx("Edit Document")}</h3>
       <div className="grid grid-cols-2 gap-3">
         <div className="col-span-2">
-          <label className="text-xs text-gray-500">Title</label>
+          <label className="text-xs text-gray-500">{tx("Title")}</label>
           <input className="w-full border rounded px-3 py-2 text-sm mt-1" {...f("title")} />
         </div>
         <div className="col-span-2">
-          <label className="text-xs text-gray-500">Description</label>
+          <label className="text-xs text-gray-500">{tx("Description")}</label>
           <textarea className="w-full border rounded px-3 py-2 text-sm mt-1" rows={2} {...f("description")} />
         </div>
         <div className="col-span-2">
-          <label className="text-xs text-gray-500">Revision Note</label>
+          <label className="text-xs text-gray-500">{tx("Revision Note")}</label>
           <input className="w-full border rounded px-3 py-2 text-sm mt-1" {...f("revision_note")} />
         </div>
         <div>
-          <label className="text-xs text-gray-500">Effective Date</label>
+          <label className="text-xs text-gray-500">{tx("Effective Date")}</label>
           <input type="date" className="w-full border rounded px-3 py-2 text-sm mt-1" {...f("effective_date")} />
         </div>
         <div>
-          <label className="text-xs text-gray-500">Expiry Date</label>
+          <label className="text-xs text-gray-500">{tx("Expiry Date")}</label>
           <input type="date" className="w-full border rounded px-3 py-2 text-sm mt-1" {...f("expiry_date")} />
         </div>
       </div>
@@ -102,9 +103,9 @@ function EditPanel({ doc, onClose }: { doc: DocumentRead; onClose: () => void })
           disabled={mutation.isPending}
           className="px-4 py-2 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700 disabled:opacity-50"
         >
-          {mutation.isPending ? "Saving..." : "Save"}
+          {mutation.isPending ? tx("Saving...") : tx("Save")}
         </button>
-        <button onClick={onClose} className="px-4 py-2 border rounded text-sm hover:bg-gray-50">Cancel</button>
+        <button onClick={onClose} className="px-4 py-2 border rounded text-sm hover:bg-gray-50">{tx("Cancel")}</button>
       </div>
     </div>
   );
@@ -170,8 +171,8 @@ function DocumentDetailContent({ id }: { id: string }) {
     },
   });
 
-  if (isLoading) return <p className="text-sm text-gray-400 p-6">Loading...</p>;
-  if (!doc) return <p className="text-sm text-red-500 p-6">Document not found.</p>;
+  if (isLoading) return <p className="text-sm text-gray-400 p-6">{tx("Loading...")}</p>;
+  if (!doc) return <p className="text-sm text-red-500 p-6">{tx("Document not found.")}</p>;
 
   return (
     <div className="space-y-5 max-w-3xl">
@@ -179,15 +180,15 @@ function DocumentDetailContent({ id }: { id: string }) {
       <div className="flex items-start justify-between gap-4">
         <div>
           <button onClick={() => router.push("/dashboard/documents")} className="text-xs text-gray-400 hover:text-gray-600 mb-2 inline-block">
-            ← Documents
+            {tx("← Documents")}
           </button>
           <h1 className="text-xl font-bold text-gray-900">{doc.title}</h1>
           <div className="flex items-center gap-3 mt-2 flex-wrap">
             <Badge label={doc.status} variant={STATUS_VARIANT[doc.status]} />
             <span className="text-xs text-gray-500">{CATEGORY_LABELS[doc.category]}</span>
-            <span className="text-xs font-mono text-gray-400">v{doc.version}</span>
+            <span className="text-xs font-mono text-gray-400">{tx("v")}{doc.version}</span>
             {!doc.is_latest && (
-              <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded">Not Latest</span>
+              <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded">{tx("Not Latest")}</span>
             )}
           </div>
         </div>
@@ -198,14 +199,14 @@ function DocumentDetailContent({ id }: { id: string }) {
                 onClick={() => setEditing(!editing)}
                 className="px-3 py-1.5 border rounded text-sm hover:bg-gray-50"
               >
-                {editing ? "Cancel Edit" : "Edit"}
+                {editing ? tx("Cancel Edit") : tx("Edit")}
               </button>
               <button
                 onClick={() => approveMutation.mutate()}
                 disabled={approveMutation.isPending || (doc.file_storage_ready && doc.file_scan_status !== "CLEAN")}
                 className="px-3 py-1.5 bg-green-600 text-white rounded text-sm hover:bg-green-700 disabled:opacity-50"
               >
-                Approve
+                {tx("Approve")}
               </button>
             </>
           )}
@@ -215,7 +216,7 @@ function DocumentDetailContent({ id }: { id: string }) {
               disabled={obsoleteMutation.isPending}
               className="px-3 py-1.5 border border-red-200 text-red-600 rounded text-sm hover:bg-red-50 disabled:opacity-50"
             >
-              Mark Obsolete
+              {tx("Mark Obsolete")}
             </button>
           )}
           {doc.status !== "ARCHIVED" && (
@@ -224,14 +225,14 @@ function DocumentDetailContent({ id }: { id: string }) {
               disabled={archiveMutation.isPending}
               className="px-3 py-1.5 border text-gray-500 rounded text-sm hover:bg-gray-50 disabled:opacity-50"
             >
-              Archive
+              {tx("Archive")}
             </button>
           )}
           <button
             onClick={() => router.push(`/dashboard/documents/new?supersede=${id}`)}
             className="px-3 py-1.5 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700"
           >
-            New Version
+            {tx("New Version")}
           </button>
         </div>
       </div>
@@ -242,75 +243,75 @@ function DocumentDetailContent({ id }: { id: string }) {
       <div className="grid grid-cols-2 gap-4">
         {/* Core info */}
         <div className="bg-white border rounded-lg p-4 space-y-3">
-          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Document Info</h3>
-          <Row label="Category" value={CATEGORY_LABELS[doc.category]} />
-          <Row label="Version" value={`v${doc.version}`} />
-          <Row label="Status" value={doc.status} />
-          <Row label="Effective" value={doc.effective_date ?? "—"} />
-          <Row label="Expires" value={doc.expiry_date ?? "—"} />
-          {doc.revision_note && <Row label="Revision Note" value={doc.revision_note} />}
+          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{tx("Document Info")}</h3>
+          <Row label={tx("Category")} value={CATEGORY_LABELS[doc.category]} />
+          <Row label={tx("Version")} value={`v${doc.version}`} />
+          <Row label={tx("Status")} value={doc.status} />
+          <Row label={tx("Effective")} value={doc.effective_date ?? "—"} />
+          <Row label={tx("Expires")} value={doc.expiry_date ?? "—"} />
+          {doc.revision_note && <Row label={tx("Revision Note")} value={doc.revision_note} />}
         </div>
 
         {/* Entity link */}
         <div className="bg-white border rounded-lg p-4 space-y-3">
-          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Linked ERP Entity</h3>
+          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{tx("Linked ERP Entity")}</h3>
           {doc.related_entity_type ? (
             <>
               <Row
-                label="Entity Type"
+                label={tx("Entity Type")}
                 value={ENTITY_TYPE_LABELS[doc.related_entity_type] ?? doc.related_entity_type}
               />
-              <Row label="Entity ID" value={doc.related_entity_id ?? "—"} mono />
+              <Row label={tx("Entity ID")} value={doc.related_entity_id ?? "—"} mono />
               {(doc.related_entity_type === "mpesa_transaction" || doc.related_entity_type === "cash_transaction") && (
                 <div className="bg-blue-50 border border-blue-200 rounded px-3 py-2 text-xs text-blue-700">
-                  M-Pesa / payment document — linked to transaction record.
+                  {tx("M-Pesa / payment document — linked to transaction record.")}
                 </div>
               )}
             </>
           ) : (
-            <p className="text-sm text-gray-400">No entity linked</p>
+            <p className="text-sm text-gray-400">{tx("No entity linked")}</p>
           )}
         </div>
 
         {/* File */}
         <div className="bg-white border rounded-lg p-4 space-y-3">
-          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">File Attachment</h3>
+          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{tx("File Attachment")}</h3>
           {doc.file_name ? (
             <>
-              {doc.file_name && <Row label="File Name" value={doc.file_name} />}
-              {doc.mime_type && <Row label="MIME Type" value={doc.mime_type} />}
-              {doc.file_size_bytes && <Row label="Size" value={`${(doc.file_size_bytes / 1024).toFixed(1)} KB`} />}
-              <Row label="Malware Scan" value={doc.file_scan_status} />
+              {doc.file_name && <Row label={tx("File Name")} value={doc.file_name} />}
+              {doc.mime_type && <Row label={tx("MIME Type")} value={doc.mime_type} />}
+              {doc.file_size_bytes && <Row label={tx("Size")} value={`${(doc.file_size_bytes / 1024).toFixed(1)} KB`} />}
+              <Row label={tx("Malware Scan")} value={doc.file_scan_status} />
               {doc.file_storage_ready && doc.file_scan_status === "CLEAN" && (
                 <button
                   onClick={() => downloadMutation.mutate()}
                   disabled={downloadMutation.isPending}
                   className="px-3 py-1.5 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700 disabled:opacity-50"
                 >
-                  {downloadMutation.isPending ? "Preparing..." : "Download file"}
+                  {downloadMutation.isPending ? tx("Preparing...") : tx("Download file")}
                 </button>
               )}
               {doc.file_storage_ready && doc.file_scan_status !== "CLEAN" && (
                 <div className="space-y-2">
-                  <p className="text-xs text-amber-700">File access and approval stay blocked until a malware scan succeeds.</p>
+                  <p className="text-xs text-amber-700">{tx("File access and approval stay blocked until a malware scan succeeds.")}</p>
                   {doc.status === "DRAFT" && doc.is_latest && (
                     <button
                       onClick={() => scanMutation.mutate()}
                       disabled={scanMutation.isPending}
                       className="px-3 py-1.5 border rounded text-sm hover:bg-gray-50 disabled:opacity-50"
                     >
-                      {scanMutation.isPending ? "Scanning..." : "Run malware scan"}
+                      {scanMutation.isPending ? tx("Scanning...") : tx("Run malware scan")}
                     </button>
                   )}
                 </div>
               )}
               {!doc.file_storage_ready && (
-                <p className="text-xs text-amber-700">This record has legacy file metadata but no stored binary. Create a new version to attach a real file.</p>
+                <p className="text-xs text-amber-700">{tx("This record has legacy file metadata but no stored binary. Create a new version to attach a real file.")}</p>
               )}
             </>
           ) : (
             <div className="space-y-3">
-              <p className="text-sm text-gray-400">No file attached</p>
+              <p className="text-sm text-gray-400">{tx("No file attached")}</p>
               {doc.status === "DRAFT" && doc.is_latest && !doc.file_locked && (
                 <>
                   <input
@@ -319,37 +320,37 @@ function DocumentDetailContent({ id }: { id: string }) {
                     onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)}
                     className="block w-full text-sm text-gray-600"
                   />
-                  <p className="text-xs text-gray-400">Allowed: PDF, PNG, JPEG, TXT, CSV, DOCX, XLSX. The file remains unavailable until a configured malware scanner reports CLEAN.</p>
+                  <p className="text-xs text-gray-400">{tx("Allowed: PDF, PNG, JPEG, TXT, CSV, DOCX, XLSX. The file remains unavailable until a configured malware scanner reports CLEAN.")}</p>
                   <button
                     onClick={() => selectedFile && uploadMutation.mutate(selectedFile)}
                     disabled={!selectedFile || uploadMutation.isPending}
                     className="px-3 py-1.5 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700 disabled:opacity-50"
                   >
-                    {uploadMutation.isPending ? "Uploading..." : "Upload file"}
+                    {uploadMutation.isPending ? tx("Uploading...") : tx("Upload file")}
                   </button>
                 </>
               )}
             </div>
           )}
           {(uploadMutation.isError || scanMutation.isError || downloadMutation.isError) && (
-            <p className="text-xs text-red-600">The file action failed. Check the document permission, file type, size limit, and scanner configuration.</p>
+            <p className="text-xs text-red-600">{tx("The file action failed. Check the document permission, file type, size limit, and scanner configuration.")}</p>
           )}
         </div>
 
         {/* Accountability */}
         <div className="bg-white border rounded-lg p-4 space-y-3">
-          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Accountability</h3>
-          <Row label="Owner User ID" value={doc.owner_user_id ?? "—"} mono />
-          <Row label="Approved By ID" value={doc.approved_by_id ?? "—"} mono />
-          <Row label="Created" value={new Date(doc.created_at).toLocaleString()} />
-          <Row label="Updated" value={new Date(doc.updated_at).toLocaleString()} />
+          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{tx("Accountability")}</h3>
+          <Row label={tx("Owner User ID")} value={doc.owner_user_id ?? "—"} mono />
+          <Row label={tx("Approved By ID")} value={doc.approved_by_id ?? "—"} mono />
+          <Row label={tx("Created")} value={new Date(doc.created_at).toLocaleString()} />
+          <Row label={tx("Updated")} value={new Date(doc.updated_at).toLocaleString()} />
         </div>
       </div>
 
       {/* Description */}
       {doc.description && (
         <div className="bg-white border rounded-lg p-4">
-          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Description</h3>
+          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">{tx("Description")}</h3>
           <p className="text-sm text-gray-700 whitespace-pre-wrap">{doc.description}</p>
         </div>
       )}
@@ -360,32 +361,32 @@ function DocumentDetailContent({ id }: { id: string }) {
           className="w-full px-4 py-3 text-left flex items-center justify-between hover:bg-gray-50"
           onClick={() => setShowVersions(!showVersions)}
         >
-          <span className="text-sm font-semibold text-gray-800">Version History</span>
-          <span className="text-xs text-gray-400">{showVersions ? "▲ hide" : "▼ show"}</span>
+          <span className="text-sm font-semibold text-gray-800">{tx("Version History")}</span>
+          <span className="text-xs text-gray-400">{showVersions ? tx("▲ hide") : tx("▼ show")}</span>
         </button>
         {showVersions && (
           <div className="border-t">
             {versions.length === 0 ? (
-              <p className="p-4 text-sm text-gray-400">No history found</p>
+              <p className="p-4 text-sm text-gray-400">{tx("No history found")}</p>
             ) : (
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b bg-gray-50 text-xs text-gray-500 uppercase">
-                    <th className="px-4 py-2 text-left">Version</th>
-                    <th className="px-4 py-2 text-left">Status</th>
-                    <th className="px-4 py-2 text-left">Latest</th>
-                    <th className="px-4 py-2 text-left">Note</th>
-                    <th className="px-4 py-2 text-left">Created</th>
+                    <th className="px-4 py-2 text-left">{tx("Version")}</th>
+                    <th className="px-4 py-2 text-left">{tx("Status")}</th>
+                    <th className="px-4 py-2 text-left">{tx("Latest")}</th>
+                    <th className="px-4 py-2 text-left">{tx("Note")}</th>
+                    <th className="px-4 py-2 text-left">{tx("Created")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
                   {versions.map((v) => (
                     <tr key={v.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-2 font-mono text-xs">v{v.version}</td>
+                      <td className="px-4 py-2 font-mono text-xs">{tx("v")}{v.version}</td>
                       <td className="px-4 py-2">
                         <Badge label={v.status} variant={STATUS_VARIANT[v.status]} />
                       </td>
-                      <td className="px-4 py-2 text-xs">{v.is_latest ? <span className="text-green-600">Yes</span> : <span className="text-gray-400">No</span>}</td>
+                      <td className="px-4 py-2 text-xs">{v.is_latest ? <span className="text-green-600">{tx("Yes")}</span> : <span className="text-gray-400">{tx("No")}</span>}</td>
                       <td className="px-4 py-2 text-xs text-gray-500">{v.revision_note ?? "—"}</td>
                       <td className="px-4 py-2 text-xs text-gray-400">{new Date(v.created_at).toLocaleDateString()}</td>
                     </tr>

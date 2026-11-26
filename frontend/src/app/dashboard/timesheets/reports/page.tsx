@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { timesheetsApi } from "@/lib/timesheets";
+import { tx } from "@/lib/i18n/core";
 
 type ReportTab = "summary" | "utilization" | "overtime" | "project" | "activity" | "payroll";
 
@@ -21,7 +22,7 @@ export default function TimesheetReportsPage() {
       else if (tab === "project") setData(await timesheetsApi.reportProjectTime());
       else if (tab === "activity") setData(await timesheetsApi.reportActivitySummary(periodStart || undefined));
       else if (tab === "payroll") {
-        if (!periodStart || !periodEnd) { alert("Both period start and end required for payroll input"); setLoading(false); return; }
+        if (!periodStart || !periodEnd) { alert(tx("Both period start and end required for payroll input")); setLoading(false); return; }
         setData(await timesheetsApi.payrollInput(periodStart, periodEnd));
       }
     } finally {
@@ -30,17 +31,17 @@ export default function TimesheetReportsPage() {
   };
 
   const tabs: { key: ReportTab; label: string }[] = [
-    { key: "summary", label: "Summary" },
-    { key: "utilization", label: "Utilization" },
-    { key: "overtime", label: "Overtime" },
-    { key: "project", label: "Project Time" },
-    { key: "activity", label: "Activity Mix" },
-    { key: "payroll", label: "Payroll Input" },
+    { key: "summary", label: tx("Summary") },
+    { key: "utilization", label: tx("Utilization") },
+    { key: "overtime", label: tx("Overtime") },
+    { key: "project", label: tx("Project Time") },
+    { key: "activity", label: tx("Activity Mix") },
+    { key: "payroll", label: tx("Payroll Input") },
   ];
 
   return (
     <div className="p-6 space-y-4">
-      <h1 className="text-xl font-bold text-gray-900">Timesheet Reports</h1>
+      <h1 className="text-xl font-bold text-gray-900">{tx("Timesheet Reports")}</h1>
 
       <div className="flex gap-2 flex-wrap">
         {tabs.map(t => (
@@ -54,20 +55,20 @@ export default function TimesheetReportsPage() {
       <div className="bg-white border rounded-lg p-4 shadow-sm space-y-3">
         <div className="flex gap-3 items-end flex-wrap">
           <div>
-            <label className="text-xs text-gray-500">Period Start</label>
+            <label className="text-xs text-gray-500">{tx("Period Start")}</label>
             <input type="date" className="block border rounded px-2 py-1 text-sm mt-1 w-40"
               value={periodStart} onChange={(e) => setPeriodStart(e.target.value)} />
           </div>
           {tab === "payroll" && (
             <div>
-              <label className="text-xs text-gray-500">Period End *</label>
+              <label className="text-xs text-gray-500">{tx("Period End *")}</label>
               <input type="date" className="block border rounded px-2 py-1 text-sm mt-1 w-40"
                 value={periodEnd} onChange={(e) => setPeriodEnd(e.target.value)} />
             </div>
           )}
           <button onClick={run} disabled={loading}
             className="rounded bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">
-            {loading ? "Loading…" : "Run Report"}
+            {loading ? tx("Loading…") : tx("Run Report")}
           </button>
         </div>
 
@@ -77,10 +78,10 @@ export default function TimesheetReportsPage() {
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 {[
-                  { label: "Total Timesheets", val: d.total_timesheets },
-                  { label: "Total Hours", val: d.total_hours.toFixed(1), color: "text-blue-700" },
-                  { label: "Overtime Hours", val: d.overtime_hours.toFixed(1), color: "text-orange-700" },
-                  { label: "Regular Hours", val: d.regular_hours.toFixed(1), color: "text-green-700" },
+                  { label: tx("Total Timesheets"), val: d.total_timesheets },
+                  { label: tx("Total Hours"), val: d.total_hours.toFixed(1), color: "text-blue-700" },
+                  { label: tx("Overtime Hours"), val: d.overtime_hours.toFixed(1), color: "text-orange-700" },
+                  { label: tx("Regular Hours"), val: d.regular_hours.toFixed(1), color: "text-green-700" },
                 ].map(k => (
                   <div key={k.label} className="bg-gray-50 rounded p-3 text-center">
                     <p className={`text-2xl font-bold ${k.color ?? "text-gray-900"}`}>{k.val}</p>
@@ -89,7 +90,7 @@ export default function TimesheetReportsPage() {
                 ))}
               </div>
               <div>
-                <h3 className="text-sm font-semibold text-gray-700 mb-2">By Status</h3>
+                <h3 className="text-sm font-semibold text-gray-700 mb-2">{tx("By Status")}</h3>
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
                   {Object.entries(d.by_status).map(([s, c]) => (
                     <div key={s} className="bg-gray-50 rounded p-2 text-center">
@@ -106,7 +107,7 @@ export default function TimesheetReportsPage() {
         {!!data && (tab === "utilization" || tab === "overtime") && (
           <table className="w-full text-sm">
             <thead className="bg-gray-50"><tr>
-              {["Employee","Dept","Timesheets","Total Hrs","OT Hrs"].map(h=><th key={h} className="px-3 py-2 text-left text-xs font-semibold text-gray-600">{h}</th>)}
+              {[tx("Employee"),tx("Dept"),tx("Timesheets"),tx("Total Hrs"),tx("OT Hrs")].map(h=><th key={h} className="px-3 py-2 text-left text-xs font-semibold text-gray-600">{h}</th>)}
             </tr></thead>
             <tbody className="divide-y">
               {(data as { employee_id: string; employee_name: string | null; department: string | null; timesheet_count: number; total_hours: number; overtime_hours: number }[]).map(r => (
@@ -125,13 +126,13 @@ export default function TimesheetReportsPage() {
         {!!data && tab === "project" && (
           <table className="w-full text-sm">
             <thead className="bg-gray-50"><tr>
-              {["Project","Total Hours","Entries"].map(h=><th key={h} className="px-3 py-2 text-left text-xs font-semibold text-gray-600">{h}</th>)}
+              {[tx("Project"),tx("Total Hours"),tx("Entries")].map(h=><th key={h} className="px-3 py-2 text-left text-xs font-semibold text-gray-600">{h}</th>)}
             </tr></thead>
             <tbody className="divide-y">
               {(data as { project_id: string; project_name: string | null; total_hours: number; entries: number }[]).map(r => (
                 <tr key={r.project_id}>
                   <td className="px-3 py-2 font-medium">{r.project_name ?? r.project_id}</td>
-                  <td className="px-3 py-2 font-semibold text-blue-700">{r.total_hours.toFixed(1)}h</td>
+                  <td className="px-3 py-2 font-semibold text-blue-700">{r.total_hours.toFixed(1)}{tx("h")}</td>
                   <td className="px-3 py-2 text-gray-600">{r.entries}</td>
                 </tr>
               ))}
@@ -143,7 +144,7 @@ export default function TimesheetReportsPage() {
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             {(data as { activity_type: string; total_hours: number }[]).map(r => (
               <div key={r.activity_type} className="bg-gray-50 rounded p-3 text-center">
-                <p className="text-xl font-bold text-gray-800">{r.total_hours.toFixed(1)}h</p>
+                <p className="text-xl font-bold text-gray-800">{r.total_hours.toFixed(1)}{tx("h")}</p>
                 <p className="text-xs text-gray-500 capitalize">{r.activity_type}</p>
               </div>
             ))}
@@ -153,7 +154,7 @@ export default function TimesheetReportsPage() {
         {!!data && tab === "payroll" && (
           <table className="w-full text-sm">
             <thead className="bg-gray-50"><tr>
-              {["Employee","Period","Regular Hrs","OT Hrs","Total Hrs"].map(h=><th key={h} className="px-3 py-2 text-left text-xs font-semibold text-gray-600">{h}</th>)}
+              {[tx("Employee"),tx("Period"),tx("Regular Hrs"),tx("OT Hrs"),tx("Total Hrs")].map(h=><th key={h} className="px-3 py-2 text-left text-xs font-semibold text-gray-600">{h}</th>)}
             </tr></thead>
             <tbody className="divide-y">
               {(data as { employee_id: string; employee_name: string | null; period_start: string; period_end: string; regular_hours: number; overtime_hours: number; total_hours: number }[]).map(r => (

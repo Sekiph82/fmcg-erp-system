@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { dimApi, DimValue } from "@/lib/dimensions";
+import { tx } from "@/lib/i18n/core";
 
 export default function DimValuesPage() {
   const qc = useQueryClient();
@@ -61,7 +62,7 @@ export default function DimValuesPage() {
         <td className="px-4 py-3 text-center text-xs text-gray-400">{v.children_count}</td>
         <td className="px-4 py-3 text-center">
           <span className={`px-2 py-0.5 rounded-full text-xs ${v.active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
-            {v.active ? "Active" : "Inactive"}
+            {v.active ? tx("Active") : tx("Inactive")}
           </span>
         </td>
       </tr>,
@@ -73,21 +74,21 @@ export default function DimValuesPage() {
     <div className="p-6 space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Dimension Value Tree Manager</h1>
-          <p className="text-sm text-gray-500">Hierarchical values for each dimension axis.</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Dimension Value Tree Manager")}</h1>
+          <p className="text-sm text-gray-500">{tx("Hierarchical values for each dimension axis.")}</p>
         </div>
         <button onClick={() => setShowForm(!showForm)} disabled={!selectedTypeId}
           className="glow-button disabled:opacity-50">
-          {showForm ? "Cancel" : "+ Add Value"}
+          {showForm ? tx("Cancel") : tx("+ Add Value")}
         </button>
       </div>
 
       <div className="liquid-glass p-4 flex items-end gap-4">
         <div className="flex flex-col gap-1 flex-1 max-w-xs">
-          <label className="text-xs text-gray-500">Filter by Dimension Type</label>
+          <label className="text-xs text-gray-500">{tx("Filter by Dimension Type")}</label>
           <select value={selectedTypeId} onChange={(e) => setSelectedTypeId(e.target.value)}
             className="rounded-lg border border-gray-300 px-3 py-2 text-sm">
-            <option value="">— All Types —</option>
+            <option value="">{tx("— All Types —")}</option>
             {types.map((t) => <option key={t.id} value={t.id}>{t.type_name}</option>)}
           </select>
         </div>
@@ -95,37 +96,37 @@ export default function DimValuesPage() {
 
       {showForm && selectedTypeId && (
         <div className="liquid-glass p-5 space-y-4">
-          <h2 className="text-sm font-semibold text-gray-700">New Value</h2>
+          <h2 className="text-sm font-semibold text-gray-700">{tx("New Value")}</h2>
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-1">
-              <label className="text-xs text-gray-500">Code *</label>
+              <label className="text-xs text-gray-500">{tx("Code *")}</label>
               <input type="text" value={form.dim_code} onChange={(e) => set("dim_code", e.target.value)}
                 className="rounded-lg border border-gray-300 px-3 py-2 text-sm" />
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-xs text-gray-500">Name *</label>
+              <label className="text-xs text-gray-500">{tx("Name *")}</label>
               <input type="text" value={form.dim_name} onChange={(e) => set("dim_name", e.target.value)}
                 className="rounded-lg border border-gray-300 px-3 py-2 text-sm" />
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-xs text-gray-500">Parent (optional)</label>
+              <label className="text-xs text-gray-500">{tx("Parent (optional)")}</label>
               <select value={form.parent_id} onChange={(e) => set("parent_id", e.target.value)}
                 className="rounded-lg border border-gray-300 px-3 py-2 text-sm">
-                <option value="">— Root Level —</option>
+                <option value="">{tx("— Root Level —")}</option>
                 {values.filter((v) => v.dim_type_id === selectedTypeId).map((v) => (
                   <option key={v.id} value={v.id}>{v.dim_name}</option>
                 ))}
               </select>
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-xs text-gray-500">Notes</label>
+              <label className="text-xs text-gray-500">{tx("Notes")}</label>
               <input type="text" value={form.notes} onChange={(e) => set("notes", e.target.value)}
                 className="rounded-lg border border-gray-300 px-3 py-2 text-sm" />
             </div>
           </div>
           <button onClick={() => create.mutate()} disabled={create.isPending || !form.dim_code || !form.dim_name}
             className="glow-button">
-            {create.isPending ? "Creating…" : "Create Value"}
+            {create.isPending ? tx("Creating…") : tx("Create Value")}
           </button>
         </div>
       )}
@@ -134,19 +135,19 @@ export default function DimValuesPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-blue-900/30">
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Code</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Name</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Type</th>
-              <th className="text-center px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Level</th>
-              <th className="text-center px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Children</th>
-              <th className="text-center px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Status</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Code")}</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Name")}</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Type")}</th>
+              <th className="text-center px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Level")}</th>
+              <th className="text-center px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Children")}</th>
+              <th className="text-center px-4 py-3 text-xs font-semibold text-gray-400 uppercase">{tx("Status")}</th>
             </tr>
           </thead>
           <tbody>
             {isLoading ? (
-              <tr><td colSpan={6} className="text-center py-10 text-gray-400">Loading…</td></tr>
+              <tr><td colSpan={6} className="text-center py-10 text-gray-400">{tx("Loading…")}</td></tr>
             ) : values.length === 0 ? (
-              <tr><td colSpan={6} className="text-center py-10 text-gray-400">No values. Select a type and add values.</td></tr>
+              <tr><td colSpan={6} className="text-center py-10 text-gray-400">{tx("No values. Select a type and add values.")}</td></tr>
             ) : renderTree(null)}
           </tbody>
         </table>

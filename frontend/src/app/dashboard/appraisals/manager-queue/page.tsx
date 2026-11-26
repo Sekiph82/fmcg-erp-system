@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { appraisalsApi, AppraisalRecord } from "@/lib/appraisals";
+import { tx } from "@/lib/i18n/core";
 
 export default function ManagerQueuePage() {
   const [records, setRecords] = useState<AppraisalRecord[]>([]);
@@ -59,13 +60,13 @@ export default function ManagerQueuePage() {
 
   return (
     <div className="p-6 space-y-4">
-      <h1 className="text-xl font-bold text-gray-900">Manager Review Queue</h1>
+      <h1 className="text-xl font-bold text-gray-900">{tx("Manager Review Queue")}</h1>
       <p className="text-sm text-gray-500">
-        Appraisals awaiting manager review. Enter scores, recommendations, and submit to HR.
+        {tx("Appraisals awaiting manager review. Enter scores, recommendations, and submit to HR.")}
       </p>
 
       {loading ? (
-        <p className="text-gray-500 text-sm">Loading…</p>
+        <p className="text-gray-500 text-sm">{tx("Loading…")}</p>
       ) : (
         <div className="grid gap-3">
           {records.map((r) => (
@@ -73,14 +74,14 @@ export default function ManagerQueuePage() {
               <div>
                 <p className="font-semibold text-gray-800">{r.employee_name ?? r.employee_id}</p>
                 <p className="text-sm text-gray-500">{r.department_name ?? "—"}</p>
-                <p className="text-xs text-gray-400">Self Score: {r.self_score ?? "—"} · Submitted: {r.self_submitted_at ? new Date(r.self_submitted_at).toLocaleDateString() : "—"}</p>
+                <p className="text-xs text-gray-400">{tx("Self Score:")} {r.self_score ?? "—"} {tx("· Submitted:")} {r.self_submitted_at ? new Date(r.self_submitted_at).toLocaleDateString() : "—"}</p>
               </div>
               <button onClick={() => openRecord(r)} className="rounded bg-orange-600 px-4 py-1.5 text-sm text-white hover:bg-orange-700">
-                Review
+                {tx("Review")}
               </button>
             </div>
           ))}
-          {records.length === 0 && <p className="text-gray-400 text-sm text-center py-8">No appraisals pending manager review.</p>}
+          {records.length === 0 && <p className="text-gray-400 text-sm text-center py-8">{tx("No appraisals pending manager review.")}</p>}
         </div>
       )}
 
@@ -88,24 +89,24 @@ export default function ManagerQueuePage() {
         <div className="fixed inset-0 bg-black/50 flex items-start justify-center z-50 p-4 overflow-auto">
           <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl p-6 space-y-4 my-4">
             <div className="flex justify-between">
-              <h2 className="text-lg font-bold text-gray-900">Manager Review — {selected.employee_name ?? selected.employee_id}</h2>
+              <h2 className="text-lg font-bold text-gray-900">{tx("Manager Review —")} {selected.employee_name ?? selected.employee_id}</h2>
               <button onClick={() => setSelected(null)} className="text-gray-400 hover:text-gray-700 text-xl">✕</button>
             </div>
 
             <div className="grid grid-cols-2 gap-2 text-sm bg-gray-50 rounded p-3">
-              <div><span className="text-gray-500">Self Score:</span> <strong>{selected.self_score ?? "—"}</strong></div>
-              <div><span className="text-gray-500">KPI Lines:</span> {selected.kpi_lines.length}</div>
+              <div><span className="text-gray-500">{tx("Self Score:")}</span> <strong>{selected.self_score ?? "—"}</strong></div>
+              <div><span className="text-gray-500">{tx("KPI Lines:")}</span> {selected.kpi_lines.length}</div>
               {selected.notes && <div className="col-span-2 text-gray-600">{selected.notes}</div>}
             </div>
 
             {selected.kpi_lines.length > 0 && (
               <div>
-                <h3 className="text-sm font-semibold text-gray-700 mb-2">KPI Manager Scores (0–100)</h3>
+                <h3 className="text-sm font-semibold text-gray-700 mb-2">{tx("KPI Manager Scores (0–100)")}</h3>
                 <div className="space-y-2">
                   {selected.kpi_lines.map((l) => (
                     <div key={l.kpi_line_id} className="grid grid-cols-3 gap-2 items-center">
                       <span className="text-sm text-gray-700 col-span-2">
-                        {l.kpi_name} <span className="text-gray-400 text-xs">(Self: {l.self_score ?? "—"})</span>
+                        {l.kpi_name} <span className="text-gray-400 text-xs">{tx("(Self:")} {l.self_score ?? "—"})</span>
                       </span>
                       <input
                         type="number" min={0} max={100}
@@ -121,19 +122,19 @@ export default function ManagerQueuePage() {
 
             {selected.competency_lines.length > 0 && (
               <div>
-                <h3 className="text-sm font-semibold text-gray-700 mb-2">Competency Manager Ratings (1–5)</h3>
+                <h3 className="text-sm font-semibold text-gray-700 mb-2">{tx("Competency Manager Ratings (1–5)")}</h3>
                 <div className="space-y-2">
                   {selected.competency_lines.map((l) => (
                     <div key={l.competency_line_id} className="grid grid-cols-3 gap-2 items-center">
                       <span className="text-sm text-gray-700 col-span-2">
-                        {l.competency_name} <span className="text-gray-400 text-xs">(Self: {l.self_rating ?? "—"})</span>
+                        {l.competency_name} <span className="text-gray-400 text-xs">{tx("(Self:")} {l.self_rating ?? "—"})</span>
                       </span>
                       <select
                         className="border rounded px-2 py-1 text-sm"
                         value={compMgrRatings[l.competency_line_id] ?? ""}
                         onChange={(e) => setCompMgrRatings({ ...compMgrRatings, [l.competency_line_id]: e.target.value })}
                       >
-                        <option value="">Select…</option>
+                        <option value="">{tx("Select…")}</option>
                         {[1,2,3,4,5].map(v => <option key={v} value={v}>{v}</option>)}
                       </select>
                     </div>
@@ -144,21 +145,21 @@ export default function ManagerQueuePage() {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs text-gray-500">Manager Score (optional override)</label>
+                <label className="text-xs text-gray-500">{tx("Manager Score (optional override)")}</label>
                 <input type="number" min={0} max={100} className="w-full border rounded px-2 py-1 text-sm mt-1"
                   value={managerScore} onChange={(e) => setManagerScore(e.target.value)} />
               </div>
               <div>
-                <label className="text-xs text-gray-500">Increment Recommendation %</label>
+                <label className="text-xs text-gray-500">{tx("Increment Recommendation %")}</label>
                 <input type="number" min={0} max={100} className="w-full border rounded px-2 py-1 text-sm mt-1"
                   value={increment} onChange={(e) => setIncrement(e.target.value)} />
               </div>
               <div className="flex items-center gap-2 col-span-2">
                 <input type="checkbox" checked={promotion} onChange={(e) => setPromotion(e.target.checked)} />
-                <label className="text-sm text-gray-700">Recommend for promotion</label>
+                <label className="text-sm text-gray-700">{tx("Recommend for promotion")}</label>
               </div>
               <div className="col-span-2">
-                <label className="text-xs text-gray-500">Manager Notes</label>
+                <label className="text-xs text-gray-500">{tx("Manager Notes")}</label>
                 <textarea className="w-full border rounded px-2 py-1 text-sm mt-1" rows={3}
                   value={notes} onChange={(e) => setNotes(e.target.value)} />
               </div>
@@ -167,9 +168,9 @@ export default function ManagerQueuePage() {
             <div className="flex gap-2">
               <button onClick={submit} disabled={saving}
                 className="rounded bg-orange-600 px-6 py-2 text-sm font-medium text-white hover:bg-orange-700 disabled:opacity-50">
-                {saving ? "Submitting…" : "Submit to HR"}
+                {saving ? tx("Submitting…") : tx("Submit to HR")}
               </button>
-              <button onClick={() => setSelected(null)} className="rounded border px-4 py-2 text-sm text-gray-600 hover:bg-gray-50">Cancel</button>
+              <button onClick={() => setSelected(null)} className="rounded border px-4 py-2 text-sm text-gray-600 hover:bg-gray-50">{tx("Cancel")}</button>
             </div>
           </div>
         </div>

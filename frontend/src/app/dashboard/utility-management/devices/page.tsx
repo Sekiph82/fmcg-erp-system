@@ -35,6 +35,7 @@ import { ToastContainer } from "@/components/ui/Toast";
 import { useToast } from "@/hooks/useToast";
 import { ImportModal } from "@/components/import/ImportModal";
 import { RequirePermission } from "@/components/PermissionGuard";
+import { tx } from "@/lib/i18n/core";
 
 const EMPTY_CREATE: UtilityDeviceCreate = {
   device_code: "",
@@ -59,7 +60,7 @@ function deviceTypeVariant(t: DeviceType): "blue" | "green" | "yellow" | "gray" 
 
 function CalibrationWarning({ device }: { device: UtilityDevice }) {
   if (!device.calibration_required) return null;
-  if (!device.next_calibration_date) return <span className="text-xs text-amber-500">Due date not set</span>;
+  if (!device.next_calibration_date) return <span className="text-xs text-amber-500">{tx("Due date not set")}</span>;
 
   const today = new Date();
   const dueDate = new Date(device.next_calibration_date);
@@ -68,14 +69,14 @@ function CalibrationWarning({ device }: { device: UtilityDevice }) {
   if (device.calibration_due) {
     return (
       <span className="inline-flex items-center gap-1 rounded-full bg-red-50 border border-red-200 px-2 py-0.5 text-xs font-medium text-red-700">
-        Overdue
+        {tx("Overdue")}
       </span>
     );
   }
   if (daysUntil <= 30) {
     return (
       <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-xs font-medium text-amber-700">
-        Due in {daysUntil}d
+        {tx("Due in")} {daysUntil}{tx("d")}
       </span>
     );
   }
@@ -103,91 +104,91 @@ function DeviceForm({
   return (
     <div className="space-y-0">
       <div className="grid grid-cols-2 gap-4">
-        <SectionTitle>Identity</SectionTitle>
+        <SectionTitle>{tx("Identity")}</SectionTitle>
         {mode === "create" && (
           <Input
-            label="Device Code *"
+            label={tx("Device Code *")}
             value={v.device_code ?? ""}
             onChange={(e) => onChange({ device_code: e.target.value.toUpperCase() })}
-            placeholder="e.g. MTR-ELEC-001"
+            placeholder={tx("e.g. MTR-ELEC-001")}
             required
           />
         )}
         <Input
-          label="Device Name *"
+          label={tx("Device Name *")}
           value={v.name ?? ""}
           onChange={(e) => onChange({ name: e.target.value })}
           required
         />
         <Select
-          label="Device Type *"
+          label={tx("Device Type *")}
           value={v.device_type ?? "METER"}
           onChange={(e) => onChange({ device_type: e.target.value as DeviceType })}
           options={DEVICE_TYPE_OPTIONS}
         />
         <Select
-          label="Utility Type *"
+          label={tx("Utility Type *")}
           value={v.utility_type ?? "ELECTRICITY"}
           onChange={(e) => onChange({ utility_type: e.target.value as UtilityType })}
           options={UTILITY_TYPE_OPTIONS}
         />
         <Input
-          label="Unit of Measure *"
+          label={tx("Unit of Measure *")}
           value={v.unit_of_measure ?? ""}
           onChange={(e) => onChange({ unit_of_measure: e.target.value })}
-          placeholder="e.g. kWh, m³, bar"
+          placeholder={tx("e.g. kWh, m³, bar")}
           required
         />
 
-        <SectionTitle>Reading Classification</SectionTitle>
+        <SectionTitle>{tx("Reading Classification")}</SectionTitle>
         <Select
-          label="Reading Type"
+          label={tx("Reading Type")}
           value={v.reading_type ?? ""}
           onChange={(e) => onChange({ reading_type: (e.target.value || null) as ReadingType | null })}
-          options={[{ value: "", label: "— Select —" }, ...READING_TYPE_OPTIONS]}
+          options={[{ value: "", label: tx("— Select —") }, ...READING_TYPE_OPTIONS]}
         />
         <Select
-          label="Reading Source"
+          label={tx("Reading Source")}
           value={v.reading_source ?? ""}
           onChange={(e) => onChange({ reading_source: (e.target.value || null) as ReadingSource | null })}
-          options={[{ value: "", label: "— Select —" }, ...READING_SOURCE_OPTIONS]}
+          options={[{ value: "", label: tx("— Select —") }, ...READING_SOURCE_OPTIONS]}
         />
         <Select
-          label="Reading Frequency"
+          label={tx("Reading Frequency")}
           value={v.reading_frequency ?? ""}
           onChange={(e) => onChange({ reading_frequency: (e.target.value || null) as ReadingFrequency | null })}
-          options={[{ value: "", label: "— Select —" }, ...READING_FREQUENCY_OPTIONS]}
+          options={[{ value: "", label: tx("— Select —") }, ...READING_FREQUENCY_OPTIONS]}
         />
 
-        <SectionTitle>Alarm Limits</SectionTitle>
+        <SectionTitle>{tx("Alarm Limits")}</SectionTitle>
         <Input
-          label="Min Alarm Limit"
+          label={tx("Min Alarm Limit")}
           type="number"
           value={v.min_alarm_limit ?? ""}
           onChange={(e) => onChange({ min_alarm_limit: e.target.value || null })}
           placeholder={`Min ${v.unit_of_measure || "value"}`}
         />
         <Input
-          label="Max Alarm Limit"
+          label={tx("Max Alarm Limit")}
           type="number"
           value={v.max_alarm_limit ?? ""}
           onChange={(e) => onChange({ max_alarm_limit: e.target.value || null })}
           placeholder={`Max ${v.unit_of_measure || "value"}`}
         />
         <Input
-          label="Min Engineering Value"
+          label={tx("Min Engineering Value")}
           type="number"
           value={v.min_value ?? ""}
           onChange={(e) => onChange({ min_value: e.target.value || null })}
         />
         <Input
-          label="Max Engineering Value"
+          label={tx("Max Engineering Value")}
           type="number"
           value={v.max_value ?? ""}
           onChange={(e) => onChange({ max_value: e.target.value || null })}
         />
 
-        <SectionTitle>Calibration</SectionTitle>
+        <SectionTitle>{tx("Calibration")}</SectionTitle>
         <div className="flex items-center gap-2 col-span-2">
           <input
             id="cal-required"
@@ -196,89 +197,89 @@ function DeviceForm({
             onChange={(e) => onChange({ calibration_required: e.target.checked })}
             className="h-4 w-4 rounded border-gray-300 text-indigo-600"
           />
-          <label htmlFor="cal-required" className="text-sm text-gray-700">Calibration Required</label>
+          <label htmlFor="cal-required" className="text-sm text-gray-700">{tx("Calibration Required")}</label>
         </div>
         <Input
-          label="Calibration Frequency (days)"
+          label={tx("Calibration Frequency (days)")}
           type="number"
           value={v.calibration_frequency_days ?? ""}
           onChange={(e) => onChange({ calibration_frequency_days: e.target.value ? Number(e.target.value) : null })}
-          placeholder="e.g. 365"
+          placeholder={tx("e.g. 365")}
         />
         <Input
-          label="Last Calibration Date"
+          label={tx("Last Calibration Date")}
           type="date"
           value={v.last_calibration_date ?? ""}
           onChange={(e) => onChange({ last_calibration_date: e.target.value || null })}
         />
         <Input
-          label="Next Calibration Date"
+          label={tx("Next Calibration Date")}
           type="date"
           value={v.next_calibration_date ?? ""}
           onChange={(e) => onChange({ next_calibration_date: e.target.value || null })}
         />
 
-        <SectionTitle>Location</SectionTitle>
+        <SectionTitle>{tx("Location")}</SectionTitle>
         <Input
-          label="Location"
+          label={tx("Location")}
           value={v.location ?? ""}
           onChange={(e) => onChange({ location: e.target.value || null })}
-          placeholder="Physical location description"
+          placeholder={tx("Physical location description")}
         />
         <Input
-          label="Building / Area"
+          label={tx("Building / Area")}
           value={v.building_area ?? ""}
           onChange={(e) => onChange({ building_area: e.target.value || null })}
-          placeholder="e.g. Main Substation"
+          placeholder={tx("e.g. Main Substation")}
         />
         <Input
-          label="Department"
+          label={tx("Department")}
           value={v.department ?? ""}
           onChange={(e) => onChange({ department: e.target.value || null })}
-          placeholder="e.g. Utilities"
+          placeholder={tx("e.g. Utilities")}
         />
         <Input
-          label="Related Line ID"
+          label={tx("Related Line ID")}
           value={v.related_line_id ?? ""}
           onChange={(e) => onChange({ related_line_id: e.target.value || null })}
-          placeholder="Production line code"
+          placeholder={tx("Production line code")}
         />
         <Input
-          label="Related Machine ID"
+          label={tx("Related Machine ID")}
           value={v.related_machine_id ?? ""}
           onChange={(e) => onChange({ related_machine_id: e.target.value || null })}
-          placeholder="Machine / equipment code"
+          placeholder={tx("Machine / equipment code")}
         />
 
-        <SectionTitle>Equipment</SectionTitle>
+        <SectionTitle>{tx("Equipment")}</SectionTitle>
         <Input
-          label="Manufacturer"
+          label={tx("Manufacturer")}
           value={v.manufacturer ?? ""}
           onChange={(e) => onChange({ manufacturer: e.target.value || null })}
         />
         <Input
-          label="Model"
+          label={tx("Model")}
           value={v.equipment_model ?? ""}
           onChange={(e) => onChange({ equipment_model: e.target.value || null })}
         />
         <Input
-          label="Serial Number"
+          label={tx("Serial Number")}
           value={v.serial_no ?? ""}
           onChange={(e) => onChange({ serial_no: e.target.value || null })}
         />
         <Input
-          label="Install Date"
+          label={tx("Install Date")}
           type="date"
           value={v.install_date ?? ""}
           onChange={(e) => onChange({ install_date: e.target.value || null })}
         />
 
-        <SectionTitle>Notes</SectionTitle>
+        <SectionTitle>{tx("Notes")}</SectionTitle>
         <Input
-          label="Notes"
+          label={tx("Notes")}
           value={v.notes ?? ""}
           onChange={(e) => onChange({ notes: e.target.value || null })}
-          placeholder="Optional notes"
+          placeholder={tx("Optional notes")}
         />
         <div className="flex items-center gap-2">
           <input
@@ -288,7 +289,7 @@ function DeviceForm({
             onChange={(e) => onChange({ is_active: e.target.checked })}
             className="h-4 w-4 rounded border-gray-300 text-indigo-600"
           />
-          <label htmlFor="dev-is-active" className="text-sm text-gray-700">Active</label>
+          <label htmlFor="dev-is-active" className="text-sm text-gray-700">{tx("Active")}</label>
         </div>
       </div>
     </div>
@@ -330,9 +331,9 @@ export default function UtilityDevicesPage() {
       qc.invalidateQueries({ queryKey: ["utility-management", "devices"] });
       setCreateOpen(false);
       setForm(EMPTY_CREATE);
-      toast("success", "Device created", `${dev.name} (${dev.device_code}) added.`);
+      toast("success", tx("Device created"), tx("{name} ({device_code}) added.", { name: dev.name, device_code: dev.device_code }));
     },
-    onError: (err) => toast("error", "Failed to create", extractApiError(err)),
+    onError: (err) => toast("error", tx("Failed to create"), extractApiError(err)),
   });
 
   const updateMutation = useMutation({
@@ -341,9 +342,9 @@ export default function UtilityDevicesPage() {
     onSuccess: (dev) => {
       qc.invalidateQueries({ queryKey: ["utility-management", "devices"] });
       setEditTarget(null);
-      toast("success", "Device updated", `${dev.name} saved.`);
+      toast("success", tx("Device updated"), tx("{name} saved.", { name: dev.name }));
     },
-    onError: (err) => toast("error", "Failed to update", extractApiError(err)),
+    onError: (err) => toast("error", tx("Failed to update"), extractApiError(err)),
   });
 
   const deleteMutation = useMutation({
@@ -351,9 +352,9 @@ export default function UtilityDevicesPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["utility-management", "devices"] });
       setDeleteTarget(null);
-      toast("success", "Device deleted");
+      toast("success", tx("Device deleted"));
     },
-    onError: (err) => toast("error", "Cannot delete", extractApiError(err)),
+    onError: (err) => toast("error", tx("Cannot delete"), extractApiError(err)),
   });
 
   const openEdit = (dev: UtilityDevice) => {
@@ -401,7 +402,7 @@ export default function UtilityDevicesPage() {
         "utility_devices.csv",
       );
     } catch {
-      toast("error", "Export failed");
+      toast("error", tx("Export failed"));
     }
   };
 
@@ -412,30 +413,30 @@ export default function UtilityDevicesPage() {
 
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Meters &amp; Sensors</h1>
+            <h1 className="text-2xl font-bold text-gray-900">{tx("Meters & Sensors")}</h1>
             <p className="text-sm text-gray-500 mt-1">
               {devices.length} devices &nbsp;·&nbsp;
               {devices.filter((d) => d.calibration_due).length > 0 && (
                 <span className="text-red-600 font-medium">
-                  {devices.filter((d) => d.calibration_due).length} calibration(s) overdue
+                  {devices.filter((d) => d.calibration_due).length} {tx("calibration(s) overdue")}
                 </span>
               )}
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="secondary" onClick={handleExport}>Export CSV</Button>
+            <Button variant="secondary" onClick={handleExport}>{tx("Export CSV")}</Button>
             <ImportModal
               module="utility_devices"
               onSuccess={() => qc.invalidateQueries({ queryKey: ["utility-management", "devices"] })}
             />
-            <Button onClick={() => setCreateOpen(true)}>+ Add Device</Button>
+            <Button onClick={() => setCreateOpen(true)}>{tx("+ Add Device")}</Button>
           </div>
         </div>
 
         {/* Filters */}
         <div className="mb-4 flex flex-wrap items-center gap-3">
           <Input
-            placeholder="Search code or name…"
+            placeholder={tx("Search code or name…")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="max-w-xs"
@@ -444,22 +445,22 @@ export default function UtilityDevicesPage() {
             label=""
             value={filterType}
             onChange={(e) => setFilterType(e.target.value as UtilityType | "")}
-            options={[{ value: "", label: "All utility types" }, ...UTILITY_TYPE_OPTIONS]}
+            options={[{ value: "", label: tx("All utility types") }, ...UTILITY_TYPE_OPTIONS]}
           />
           <Select
             label=""
             value={filterDeviceType}
             onChange={(e) => setFilterDeviceType(e.target.value as DeviceType | "")}
-            options={[{ value: "", label: "All device types" }, ...DEVICE_TYPE_OPTIONS]}
+            options={[{ value: "", label: tx("All device types") }, ...DEVICE_TYPE_OPTIONS]}
           />
           <Select
             label=""
             value={filterActive}
             onChange={(e) => setFilterActive(e.target.value as "" | "true" | "false")}
             options={[
-              { value: "", label: "All statuses" },
-              { value: "true", label: "Active only" },
-              { value: "false", label: "Inactive only" },
+              { value: "", label: tx("All statuses") },
+              { value: "true", label: tx("Active only") },
+              { value: "false", label: tx("Inactive only") },
             ]}
           />
         </div>
@@ -475,32 +476,32 @@ export default function UtilityDevicesPage() {
             emptyMessage={search ? "No devices match your search." : "No devices yet."}
             columns={[
               {
-                header: "Code",
+                header: tx("Code"),
                 accessor: (r) => (
                   <span className="font-mono text-xs font-semibold text-gray-800">{r.device_code}</span>
                 ),
               },
-              { header: "Name", accessor: "name" },
+              { header: tx("Name"), accessor: "name" },
               {
-                header: "Type",
+                header: tx("Type"),
                 accessor: (r) => (
                   <Badge label={DEVICE_TYPE_LABELS[r.device_type]} variant={deviceTypeVariant(r.device_type)} />
                 ),
               },
               {
-                header: "Utility",
+                header: tx("Utility"),
                 accessor: (r) => (
                   <span className="text-xs text-gray-600">{UTILITY_TYPE_LABELS[r.utility_type]}</span>
                 ),
               },
               {
-                header: "Unit",
+                header: tx("Unit"),
                 accessor: (r) => (
                   <span className="font-mono text-xs text-gray-600">{r.unit_of_measure}</span>
                 ),
               },
               {
-                header: "Readings",
+                header: tx("Readings"),
                 accessor: (r) => (
                   <span className="inline-flex items-center rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700">
                     {r.reading_count}
@@ -508,13 +509,13 @@ export default function UtilityDevicesPage() {
                 ),
               },
               {
-                header: "Calibration",
+                header: tx("Calibration"),
                 accessor: (r) => <CalibrationWarning device={r} />,
               },
               {
-                header: "Status",
+                header: tx("Status"),
                 accessor: (r) => (
-                  <Badge label={r.is_active ? "Active" : "Inactive"} variant={r.is_active ? "green" : "gray"} />
+                  <Badge label={r.is_active ? tx("Active") : tx("Inactive")} variant={r.is_active ? "green" : "gray"} />
                 ),
               },
               {
@@ -525,21 +526,21 @@ export default function UtilityDevicesPage() {
                       onClick={() => setViewTarget(r)}
                       className="text-xs text-gray-500 hover:text-gray-700 hover:underline"
                     >
-                      View
+                      {tx("View")}
                     </button>
                     <button
                       onClick={() => openEdit(r)}
                       className="text-xs text-indigo-600 hover:text-indigo-800 hover:underline"
                     >
-                      Edit
+                      {tx("Edit")}
                     </button>
                     <button
                       onClick={() => setDeleteTarget(r)}
                       className="text-xs text-red-500 hover:text-red-700 hover:underline"
                       disabled={r.reading_count > 0}
-                      title={r.reading_count > 0 ? "Has readings — delete readings first" : "Delete"}
+                      title={r.reading_count > 0 ? tx("Has readings — delete readings first") : tx("Delete")}
                     >
-                      Delete
+                      {tx("Delete")}
                     </button>
                   </div>
                 ),
@@ -552,50 +553,50 @@ export default function UtilityDevicesPage() {
         <Modal
           open={!!viewTarget}
           onClose={() => setViewTarget(null)}
-          title={`Device — ${viewTarget?.device_code}`}
+          title={tx("Device — {device_code}", { device_code: viewTarget?.device_code })}
         >
           {viewTarget && (
             <div className="space-y-4">
               <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
-                <div><dt className="text-xs text-gray-500">Name</dt><dd className="font-medium">{viewTarget.name}</dd></div>
-                <div><dt className="text-xs text-gray-500">Device Type</dt><dd>{DEVICE_TYPE_LABELS[viewTarget.device_type]}</dd></div>
-                <div><dt className="text-xs text-gray-500">Utility Type</dt><dd>{UTILITY_TYPE_LABELS[viewTarget.utility_type]}</dd></div>
-                <div><dt className="text-xs text-gray-500">Unit</dt><dd className="font-mono">{viewTarget.unit_of_measure}</dd></div>
+                <div><dt className="text-xs text-gray-500">{tx("Name")}</dt><dd className="font-medium">{viewTarget.name}</dd></div>
+                <div><dt className="text-xs text-gray-500">{tx("Device Type")}</dt><dd>{DEVICE_TYPE_LABELS[viewTarget.device_type]}</dd></div>
+                <div><dt className="text-xs text-gray-500">{tx("Utility Type")}</dt><dd>{UTILITY_TYPE_LABELS[viewTarget.utility_type]}</dd></div>
+                <div><dt className="text-xs text-gray-500">{tx("Unit")}</dt><dd className="font-mono">{viewTarget.unit_of_measure}</dd></div>
                 {viewTarget.reading_type && (
-                  <div><dt className="text-xs text-gray-500">Reading Type</dt><dd>{viewTarget.reading_type}</dd></div>
+                  <div><dt className="text-xs text-gray-500">{tx("Reading Type")}</dt><dd>{viewTarget.reading_type}</dd></div>
                 )}
                 {viewTarget.reading_frequency && (
-                  <div><dt className="text-xs text-gray-500">Frequency</dt><dd>{viewTarget.reading_frequency}</dd></div>
+                  <div><dt className="text-xs text-gray-500">{tx("Frequency")}</dt><dd>{viewTarget.reading_frequency}</dd></div>
                 )}
                 {viewTarget.min_alarm_limit && (
-                  <div><dt className="text-xs text-gray-500">Min Alarm</dt><dd>{viewTarget.min_alarm_limit} {viewTarget.unit_of_measure}</dd></div>
+                  <div><dt className="text-xs text-gray-500">{tx("Min Alarm")}</dt><dd>{viewTarget.min_alarm_limit} {viewTarget.unit_of_measure}</dd></div>
                 )}
                 {viewTarget.max_alarm_limit && (
-                  <div><dt className="text-xs text-gray-500">Max Alarm</dt><dd>{viewTarget.max_alarm_limit} {viewTarget.unit_of_measure}</dd></div>
+                  <div><dt className="text-xs text-gray-500">{tx("Max Alarm")}</dt><dd>{viewTarget.max_alarm_limit} {viewTarget.unit_of_measure}</dd></div>
                 )}
                 {viewTarget.department && (
-                  <div><dt className="text-xs text-gray-500">Department</dt><dd>{viewTarget.department}</dd></div>
+                  <div><dt className="text-xs text-gray-500">{tx("Department")}</dt><dd>{viewTarget.department}</dd></div>
                 )}
                 {viewTarget.building_area && (
-                  <div><dt className="text-xs text-gray-500">Building / Area</dt><dd>{viewTarget.building_area}</dd></div>
+                  <div><dt className="text-xs text-gray-500">{tx("Building / Area")}</dt><dd>{viewTarget.building_area}</dd></div>
                 )}
                 {viewTarget.location && (
-                  <div className="col-span-2"><dt className="text-xs text-gray-500">Location</dt><dd>{viewTarget.location}</dd></div>
+                  <div className="col-span-2"><dt className="text-xs text-gray-500">{tx("Location")}</dt><dd>{viewTarget.location}</dd></div>
                 )}
-                <div><dt className="text-xs text-gray-500">Calibration Required</dt><dd>{viewTarget.calibration_required ? "Yes" : "No"}</dd></div>
+                <div><dt className="text-xs text-gray-500">{tx("Calibration Required")}</dt><dd>{viewTarget.calibration_required ? tx("Yes") : tx("No")}</dd></div>
                 {viewTarget.next_calibration_date && (
-                  <div><dt className="text-xs text-gray-500">Next Calibration</dt><dd><CalibrationWarning device={viewTarget} /></dd></div>
+                  <div><dt className="text-xs text-gray-500">{tx("Next Calibration")}</dt><dd><CalibrationWarning device={viewTarget} /></dd></div>
                 )}
                 {viewTarget.manufacturer && (
-                  <div><dt className="text-xs text-gray-500">Manufacturer</dt><dd>{viewTarget.manufacturer}</dd></div>
+                  <div><dt className="text-xs text-gray-500">{tx("Manufacturer")}</dt><dd>{viewTarget.manufacturer}</dd></div>
                 )}
                 {viewTarget.serial_no && (
-                  <div><dt className="text-xs text-gray-500">Serial No.</dt><dd className="font-mono text-xs">{viewTarget.serial_no}</dd></div>
+                  <div><dt className="text-xs text-gray-500">{tx("Serial No.")}</dt><dd className="font-mono text-xs">{viewTarget.serial_no}</dd></div>
                 )}
-                <div><dt className="text-xs text-gray-500">Readings</dt><dd>{viewTarget.reading_count}</dd></div>
+                <div><dt className="text-xs text-gray-500">{tx("Readings")}</dt><dd>{viewTarget.reading_count}</dd></div>
               </dl>
               <div className="flex justify-end">
-                <Button variant="secondary" onClick={() => setViewTarget(null)}>Close</Button>
+                <Button variant="secondary" onClick={() => setViewTarget(null)}>{tx("Close")}</Button>
               </div>
             </div>
           )}
@@ -605,7 +606,7 @@ export default function UtilityDevicesPage() {
         <Modal
           open={createOpen}
           onClose={() => { setCreateOpen(false); setForm(EMPTY_CREATE); }}
-          title="Add Device"
+          title={tx("Add Device")}
         >
           <form
             onSubmit={(e) => { e.preventDefault(); createMutation.mutate(form); }}
@@ -614,9 +615,9 @@ export default function UtilityDevicesPage() {
             <DeviceForm value={form} onChange={(u) => setForm((f) => ({ ...f, ...u }))} mode="create" />
             <div className="flex justify-end gap-3 pt-2">
               <Button variant="secondary" type="button" onClick={() => { setCreateOpen(false); setForm(EMPTY_CREATE); }}>
-                Cancel
+                {tx("Cancel")}
               </Button>
-              <Button type="submit" loading={createMutation.isPending}>Create</Button>
+              <Button type="submit" loading={createMutation.isPending}>{tx("Create")}</Button>
             </div>
           </form>
         </Modal>
@@ -625,7 +626,7 @@ export default function UtilityDevicesPage() {
         <Modal
           open={!!editTarget}
           onClose={() => setEditTarget(null)}
-          title={`Edit Device — ${editTarget?.device_code}`}
+          title={tx("Edit Device — {device_code}", { device_code: editTarget?.device_code })}
         >
           <form
             onSubmit={(e) => {
@@ -636,8 +637,8 @@ export default function UtilityDevicesPage() {
           >
             <DeviceForm value={editForm} onChange={(u) => setEditForm((f) => ({ ...f, ...u }))} mode="edit" />
             <div className="flex justify-end gap-3 pt-2">
-              <Button variant="secondary" type="button" onClick={() => setEditTarget(null)}>Cancel</Button>
-              <Button type="submit" loading={updateMutation.isPending}>Save Changes</Button>
+              <Button variant="secondary" type="button" onClick={() => setEditTarget(null)}>{tx("Cancel")}</Button>
+              <Button type="submit" loading={updateMutation.isPending}>{tx("Save Changes")}</Button>
             </div>
           </form>
         </Modal>
@@ -646,37 +647,36 @@ export default function UtilityDevicesPage() {
         <Modal
           open={!!deleteTarget}
           onClose={() => setDeleteTarget(null)}
-          title="Delete Device"
+          title={tx("Delete Device")}
         >
           {deleteTarget && (
             deleteTarget.reading_count > 0 ? (
               <div className="space-y-4">
                 <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3">
-                  <p className="text-sm font-semibold text-red-800">Cannot delete &quot;{deleteTarget.name}&quot;</p>
+                  <p className="text-sm font-semibold text-red-800">{tx("Cannot delete \"")}{deleteTarget.name}&quot;</p>
                   <p className="text-xs text-red-600 mt-1">
-                    {deleteTarget.reading_count} reading(s) reference this device. Delete readings first.
+                    {deleteTarget.reading_count} {tx("reading(s) reference this device. Delete readings first.")}
                   </p>
                 </div>
                 <div className="flex justify-end">
-                  <Button variant="secondary" onClick={() => setDeleteTarget(null)}>Close</Button>
+                  <Button variant="secondary" onClick={() => setDeleteTarget(null)}>{tx("Close")}</Button>
                 </div>
               </div>
             ) : (
               <div className="space-y-4">
                 <p className="text-sm text-gray-600">
-                  Delete device{" "}
+                  {tx("Delete device")}{" "}
                   <span className="font-semibold">{deleteTarget.name}</span>{" "}
-                  <span className="font-mono text-xs text-gray-500">({deleteTarget.device_code})</span>?
-                  This cannot be undone.
+                  <span className="font-mono text-xs text-gray-500">({deleteTarget.device_code})</span>{tx("? This cannot be undone.")}
                 </p>
                 <div className="flex justify-end gap-3">
-                  <Button variant="secondary" onClick={() => setDeleteTarget(null)}>Cancel</Button>
+                  <Button variant="secondary" onClick={() => setDeleteTarget(null)}>{tx("Cancel")}</Button>
                   <Button
                     variant="danger"
                     loading={deleteMutation.isPending}
                     onClick={() => deleteMutation.mutate(deleteTarget.id)}
                   >
-                    Delete
+                    {tx("Delete")}
                   </Button>
                 </div>
               </div>

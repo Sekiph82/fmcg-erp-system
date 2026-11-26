@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { apiClient } from "@/lib/api";
 import { STATUS_BG } from "@/lib/qms";
+import { tx } from "@/lib/i18n/core";
 
 interface Inspection {
   id: string;
@@ -51,11 +52,11 @@ export default function QCInspectionsPage() {
     <div className="p-6 space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">QC Inspections</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Incoming · In-Process · Final · Retest inspections</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("QC Inspections")}</h1>
+          <p className="text-sm text-gray-500 mt-0.5">{tx("Incoming · In-Process · Final · Retest inspections")}</p>
         </div>
         <a href="/dashboard/quality" className="text-sm text-indigo-600 hover:underline">
-          ← Back to Quality
+          {tx("← Back to Quality")}
         </a>
       </div>
 
@@ -65,37 +66,37 @@ export default function QCInspectionsPage() {
           value={typeFilter}
           onChange={e => setTypeFilter(e.target.value)}
         >
-          <option value="">All Types</option>
-          <option value="INCOMING">Incoming (IQC)</option>
-          <option value="IN_PROCESS">In-Process (IPQC)</option>
-          <option value="FINISHED_GOODS">Final (FQC)</option>
-          <option value="RETEST">Retest</option>
+          <option value="">{tx("All Types")}</option>
+          <option value="INCOMING">{tx("Incoming (IQC)")}</option>
+          <option value="IN_PROCESS">{tx("In-Process (IPQC)")}</option>
+          <option value="FINISHED_GOODS">{tx("Final (FQC)")}</option>
+          <option value="RETEST">{tx("Retest")}</option>
         </select>
         <select
           className="border rounded-lg px-3 py-2 text-sm text-gray-700 bg-white"
           value={statusFilter}
           onChange={e => setStatusFilter(e.target.value)}
         >
-          <option value="">All Statuses</option>
-          <option value="PENDING">Pending</option>
-          <option value="IN_PROGRESS">In Progress</option>
-          <option value="PASSED">Passed</option>
-          <option value="FAILED">Failed</option>
-          <option value="CONDITIONAL_RELEASE">Conditional</option>
-          <option value="CANCELLED">Cancelled</option>
+          <option value="">{tx("All Statuses")}</option>
+          <option value="PENDING">{tx("Pending")}</option>
+          <option value="IN_PROGRESS">{tx("In Progress")}</option>
+          <option value="PASSED">{tx("Passed")}</option>
+          <option value="FAILED">{tx("Failed")}</option>
+          <option value="CONDITIONAL_RELEASE">{tx("Conditional")}</option>
+          <option value="CANCELLED">{tx("Cancelled")}</option>
         </select>
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         {loading ? (
-          <p className="px-5 py-8 text-gray-400 text-sm">Loading…</p>
+          <p className="px-5 py-8 text-gray-400 text-sm">{tx("Loading…")}</p>
         ) : inspections.length === 0 ? (
-          <p className="px-5 py-8 text-gray-400 text-sm">No inspections found</p>
+          <p className="px-5 py-8 text-gray-400 text-sm">{tx("No inspections found")}</p>
         ) : (
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-xs uppercase text-gray-500">
               <tr>
-                {["Inspection #", "Type", "Item", "Lot / Batch", "Date", "Inspector", "Results", "Status", "Decision"].map(h => (
+                {[tx("Inspection #"), tx("Type"), tx("Item"), tx("Lot / Batch"), tx("Date"), tx("Inspector"), tx("Results"), tx("Status"), tx("Decision")].map(h => (
                   <th key={h} className="px-4 py-3 text-left font-medium">{h}</th>
                 ))}
               </tr>
@@ -124,8 +125,8 @@ export default function QCInspectionsPage() {
                   <td className="px-4 py-3">
                     {i.test_count > 0 ? (
                       <span className={`text-xs ${i.critical_fail ? "text-red-700 font-semibold" : "text-gray-600"}`}>
-                        {i.pass_count}/{i.test_count} pass
-                        {i.critical_fail && " ⚠ CRIT"}
+                        {i.pass_count}/{i.test_count} {tx("pass")}
+                        {i.critical_fail && tx(" ⚠ CRIT")}
                       </span>
                     ) : <span className="text-gray-400 text-xs">—</span>}
                   </td>

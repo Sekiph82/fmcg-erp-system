@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { ToastContainer } from "@/components/ui/Toast";
 import { useToast } from "@/hooks/useToast";
+import { tx, lx } from "@/lib/i18n/core";
 
 const statusVariant = (s: OrderStatus) =>
   s === "COMPLETED" ? "green"
@@ -24,14 +25,14 @@ const statusVariant = (s: OrderStatus) =>
   : s === "CANCELLED" ? "red"
   : "blue";
 
-const STATUS_OPTIONS = [
-  { value: "", label: "All Statuses" },
-  { value: "PLANNED", label: "Planned" },
-  { value: "RELEASED", label: "Released" },
-  { value: "IN_PROGRESS", label: "In Progress" },
-  { value: "COMPLETED", label: "Completed" },
-  { value: "CANCELLED", label: "Cancelled" },
-];
+const STATUS_OPTIONS = lx(() => [
+  { value: "", label: tx("All Statuses") },
+  { value: "PLANNED", label: tx("Planned") },
+  { value: "RELEASED", label: tx("Released") },
+  { value: "IN_PROGRESS", label: tx("In Progress") },
+  { value: "COMPLETED", label: tx("Completed") },
+  { value: "CANCELLED", label: tx("Cancelled") },
+]);
 
 const UOMS = [
   { value: "KG", label: "KG" }, { value: "L", label: "L" },
@@ -72,9 +73,9 @@ export default function ProductionOrdersPage() {
       qc.invalidateQueries({ queryKey: ["production-orders"] });
       setOpen(false);
       setForm(emptyOrder);
-      toast("success", "Order created", `${o.order_no} created.`);
+      toast("success", tx("Order created"), tx("{order_no} created.", { order_no: o.order_no }));
     },
-    onError: (err) => toast("error", "Failed", extractApiError(err)),
+    onError: (err) => toast("error", tx("Failed"), extractApiError(err)),
   });
 
   const setF = (key: keyof OrderCreate, value: unknown) =>
@@ -93,15 +94,15 @@ export default function ProductionOrdersPage() {
 
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Production Orders</h1>
-          <p className="text-sm text-gray-500 mt-1">{orders.length} total</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Production Orders")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{orders.length} {tx("total")}</p>
         </div>
-        <Button onClick={() => setOpen(true)}>+ New Order</Button>
+        <Button onClick={() => setOpen(true)}>{tx("+ New Order")}</Button>
       </div>
 
       <div className="mb-4 flex gap-3">
         <Input
-          placeholder="Search by order no, product, batch…"
+          placeholder={tx("Search by order no, product, batch…")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="max-w-xs"
@@ -125,7 +126,7 @@ export default function ProductionOrdersPage() {
           emptyMessage="No production orders yet."
           columns={[
             {
-              header: "Order No",
+              header: tx("Order No"),
               accessor: (o) => (
                 <button
                   className="font-mono text-xs text-indigo-600 hover:underline"
@@ -136,7 +137,7 @@ export default function ProductionOrdersPage() {
               ),
             },
             {
-              header: "Product",
+              header: tx("Product"),
               accessor: (o) => (
                 <span>
                   <span className="font-mono text-xs text-gray-500">{o.product_sku}</span>{" "}
@@ -144,24 +145,24 @@ export default function ProductionOrdersPage() {
                 </span>
               ),
             },
-            { header: "Batch", accessor: (o) => o.batch_no ?? "—" },
+            { header: tx("Batch"), accessor: (o) => o.batch_no ?? "—" },
             {
-              header: "Planned Qty",
+              header: tx("Planned Qty"),
               accessor: (o) => `${Number(o.planned_quantity).toLocaleString()} ${o.uom}`,
             },
             {
-              header: "Actual Qty",
+              header: tx("Actual Qty"),
               accessor: (o) =>
                 o.actual_quantity != null
                   ? `${Number(o.actual_quantity).toLocaleString()} ${o.uom}`
                   : "—",
             },
             {
-              header: "Status",
+              header: tx("Status"),
               accessor: (o) => <Badge label={o.status} variant={statusVariant(o.status)} />,
             },
             {
-              header: "Scheduled",
+              header: tx("Scheduled"),
               accessor: (o) =>
                 o.scheduled_start
                   ? new Date(o.scheduled_start).toLocaleDateString()
@@ -171,7 +172,7 @@ export default function ProductionOrdersPage() {
               header: "",
               accessor: (o) => (
                 <Button variant="secondary" onClick={() => router.push(`/dashboard/production/orders/${o.id}`)}>
-                  View
+                  {tx("View")}
                 </Button>
               ),
             },
@@ -179,87 +180,87 @@ export default function ProductionOrdersPage() {
         />
       )}
 
-      <Modal open={open} onClose={() => { setOpen(false); setForm(emptyOrder); }} title="New Production Order">
+      <Modal open={open} onClose={() => { setOpen(false); setForm(emptyOrder); }} title={tx("New Production Order")}>
         <form onSubmit={(e) => { e.preventDefault(); create.mutate(form); }} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <Input
-              label="Order No *"
+              label={tx("Order No *")}
               value={form.order_no}
               onChange={(e) => setF("order_no", e.target.value)}
               required
-              placeholder="e.g. PO-2026-0001"
+              placeholder={tx("e.g. PO-2026-0001")}
             />
             <Input
-              label="Batch No"
+              label={tx("Batch No")}
               value={form.batch_no ?? ""}
               onChange={(e) => setF("batch_no", e.target.value || undefined)}
-              placeholder="e.g. BT-20260401-001"
+              placeholder={tx("e.g. BT-20260401-001")}
             />
           </div>
           <Select
-            label="Product *"
-            options={[{ value: "", label: "Select product…" }, ...products.map((p) => ({ value: p.id, label: `${p.sku} — ${p.name}` }))]}
+            label={tx("Product *")}
+            options={[{ value: "", label: tx("Select product…") }, ...products.map((p) => ({ value: p.id, label: `${p.sku} — ${p.name}` }))]}
             value={form.product_id}
             onChange={(e) => { setF("product_id", e.target.value); setF("recipe_id", ""); }}
           />
           <Select
-            label="Recipe (Approved) *"
-            options={[{ value: "", label: "Select recipe…" }, ...filteredRecipes.map((r) => ({ value: r.id, label: `${r.name} v${r.version}` }))]}
+            label={tx("Recipe (Approved) *")}
+            options={[{ value: "", label: tx("Select recipe…") }, ...filteredRecipes.map((r) => ({ value: r.id, label: `${r.name} v${r.version}` }))]}
             value={form.recipe_id}
             onChange={(e) => setF("recipe_id", e.target.value)}
           />
           <div className="grid grid-cols-2 gap-4">
             <Input
-              label="Planned Quantity *"
+              label={tx("Planned Quantity *")}
               type="number"
               step="0.001"
               value={form.planned_quantity}
               onChange={(e) => setF("planned_quantity", parseFloat(e.target.value) || 0)}
               required
             />
-            <Select label="Unit" options={UOMS} value={form.uom} onChange={(e) => setF("uom", e.target.value)} />
+            <Select label={tx("Unit")} options={UOMS} value={form.uom} onChange={(e) => setF("uom", e.target.value)} />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <Select
-              label="FG Target Warehouse *"
-              options={[{ value: "", label: "Select…" }, ...fgWarehouses.map((w) => ({ value: w.id, label: w.name }))]}
+              label={tx("FG Target Warehouse *")}
+              options={[{ value: "", label: tx("Select…") }, ...fgWarehouses.map((w) => ({ value: w.id, label: w.name }))]}
               value={form.target_warehouse_id}
               onChange={(e) => setF("target_warehouse_id", e.target.value)}
             />
             <Select
-              label="Material Source Warehouse"
-              options={[{ value: "", label: "None (manual)" }, ...rmWarehouses.map((w) => ({ value: w.id, label: w.name }))]}
+              label={tx("Material Source Warehouse")}
+              options={[{ value: "", label: tx("None (manual)") }, ...rmWarehouses.map((w) => ({ value: w.id, label: w.name }))]}
               value={form.source_warehouse_id ?? ""}
               onChange={(e) => setF("source_warehouse_id", e.target.value || undefined)}
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <Input
-              label="Scheduled Start *"
+              label={tx("Scheduled Start *")}
               type="datetime-local"
               onChange={(e) => setF("scheduled_start", e.target.value)}
               required
             />
             <Input
-              label="Scheduled End *"
+              label={tx("Scheduled End *")}
               type="datetime-local"
               onChange={(e) => setF("scheduled_end", e.target.value)}
               required
             />
           </div>
           <Input
-            label="Notes"
+            label={tx("Notes")}
             value={form.notes ?? ""}
             onChange={(e) => setF("notes", e.target.value || undefined)}
           />
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" type="button" onClick={() => { setOpen(false); setForm(emptyOrder); }}>Cancel</Button>
+            <Button variant="secondary" type="button" onClick={() => { setOpen(false); setForm(emptyOrder); }}>{tx("Cancel")}</Button>
             <Button
               type="submit"
               loading={create.isPending}
               disabled={!form.order_no || !form.product_id || !form.recipe_id || !form.target_warehouse_id}
             >
-              Create Order
+              {tx("Create Order")}
             </Button>
           </div>
         </form>

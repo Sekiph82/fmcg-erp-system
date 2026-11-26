@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api";
+import { tx } from "@/lib/i18n/core";
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
@@ -131,26 +132,26 @@ function HealthStatusPanel() {
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
-      <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">Live Integration Status</h3>
+      <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">{tx("Live Integration Status")}</h3>
       <div className="flex items-center gap-3">
         {isLoading ? (
           <>
             <span className="w-3 h-3 rounded-full bg-gray-300 dark:bg-gray-600 animate-pulse" />
-            <span className="text-sm text-gray-500 dark:text-gray-400">Checking Integration API…</span>
+            <span className="text-sm text-gray-500 dark:text-gray-400">{tx("Checking Integration API…")}</span>
           </>
         ) : offline ? (
           <>
             <span className="w-3 h-3 rounded-full bg-red-500 flex-shrink-0" />
-            <span className="text-sm font-medium text-red-600 dark:text-red-400">Integration API Offline</span>
+            <span className="text-sm font-medium text-red-600 dark:text-red-400">{tx("Integration API Offline")}</span>
           </>
         ) : (
           <>
             <span className="w-3 h-3 rounded-full bg-green-500 flex-shrink-0 animate-pulse" />
-            <span className="text-sm font-medium text-green-600 dark:text-green-400">Integration API Online</span>
+            <span className="text-sm font-medium text-green-600 dark:text-green-400">{tx("Integration API Online")}</span>
           </>
         )}
       </div>
-      <p className="text-xs text-gray-400 mt-3">Auto-checks every 60 seconds.</p>
+      <p className="text-xs text-gray-400 mt-3">{tx("Auto-checks every 60 seconds.")}</p>
     </div>
   );
 }
@@ -167,12 +168,12 @@ export default function UtilityIntegrationHubPage() {
             href="/dashboard/utility-management/kpi-center"
             className="text-sm text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
           >
-            ← KPI Center
+            {tx("← KPI Center")}
           </Link>
         </div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Utility Integration Hub</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{tx("Utility Integration Hub")}</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          Cross-module connectivity status — Finance, Production, Inventory, Maintenance, and Quality.
+          {tx("Cross-module connectivity status — Finance, Production, Inventory, Maintenance, and Quality.")}
         </p>
       </div>
 
@@ -184,15 +185,15 @@ export default function UtilityIntegrationHubPage() {
         {/* Section 1: Finance / GL */}
         <IntegrationCard
           icon={<IconBolt />}
-          title="Finance / GL Posting"
+          title={tx("Finance / GL Posting")}
           description="Post approved utility bills to the General Ledger as journal entries. Verified bills can be posted with a debit and credit account to create double-entry journal records in the Finance module."
           links={[
-            { label: "Utility Billing →", href: "/dashboard/utility-management/billing" },
-            { label: "Finance →", href: "/dashboard/finance" },
+            { label: tx("Utility Billing →"), href: "/dashboard/utility-management/billing" },
+            { label: tx("Finance →"), href: "/dashboard/finance" },
           ]}
           statusBadge={
             <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">
-              GL Posting
+              {tx("GL Posting")}
             </span>
           }
         />
@@ -200,15 +201,15 @@ export default function UtilityIntegrationHubPage() {
         {/* Section 2: Production */}
         <IntegrationCard
           icon={<IconChartBar />}
-          title="Production Integration"
+          title={tx("Production Integration")}
           description="Utility consumption is tracked per production order and batch via MachineConsumptionRecord and UtilityTransaction tables. Cost allocations can be posted to production costing for accurate product cost calculations."
           links={[
-            { label: "Machine Utility →", href: "/dashboard/utility-management/machine-utility" },
-            { label: "Production →", href: "/dashboard/production" },
+            { label: tx("Machine Utility →"), href: "/dashboard/utility-management/machine-utility" },
+            { label: tx("Production →"), href: "/dashboard/production" },
           ]}
           statusBadge={
             <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300">
-              Cost Tracking
+              {tx("Cost Tracking")}
             </span>
           }
         />
@@ -216,15 +217,15 @@ export default function UtilityIntegrationHubPage() {
         {/* Section 3: Inventory / Chemical */}
         <IntegrationCard
           icon={<IconCube />}
-          title="Inventory / Chemical Stock"
+          title={tx("Inventory / Chemical Stock")}
           description="Chemical dosing records can be synced to inventory stock movements when a material is linked. Each dosing event issued from a warehouse will generate a corresponding stock movement in the Inventory module."
           links={[
-            { label: "Chemical Treatment →", href: "/dashboard/utility-management/chemical-treatment" },
-            { label: "Inventory →", href: "/dashboard/inventory" },
+            { label: tx("Chemical Treatment →"), href: "/dashboard/utility-management/chemical-treatment" },
+            { label: tx("Inventory →"), href: "/dashboard/inventory" },
           ]}
           statusBadge={
             <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
-              Stock Sync
+              {tx("Stock Sync")}
             </span>
           }
         />
@@ -232,15 +233,15 @@ export default function UtilityIntegrationHubPage() {
         {/* Section 4: Maintenance */}
         <IntegrationCard
           icon={<IconWrench />}
-          title="Maintenance Integration"
+          title={tx("Maintenance Integration")}
           description="Utility assets can be linked to maintenance module assets for PM schedules and breakdown tracking. Alarm events can trigger work orders or breakdown records directly from the Alarm Center."
           links={[
-            { label: "Utility Assets →", href: "/dashboard/utility-management/assets" },
-            { label: "Maintenance →", href: "/dashboard/maintenance" },
+            { label: tx("Utility Assets →"), href: "/dashboard/utility-management/assets" },
+            { label: tx("Maintenance →"), href: "/dashboard/maintenance" },
           ]}
           statusBadge={
             <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300">
-              PM & Breakdowns
+              {tx("PM & Breakdowns")}
             </span>
           }
         />
@@ -248,15 +249,15 @@ export default function UtilityIntegrationHubPage() {
         {/* Section 5: Quality */}
         <IntegrationCard
           icon={<IconBeaker />}
-          title="Quality Integration"
+          title={tx("Quality Integration")}
           description="Water quality parameters (boiler chemistry, soft water hardness, wastewater compliance) can be linked to QC inspections. Compliance status and lot-level quality decisions are visible from utility assets."
           links={[
-            { label: "Wastewater →", href: "/dashboard/utility-management/wastewater" },
-            { label: "Quality →", href: "/dashboard/quality" },
+            { label: tx("Wastewater →"), href: "/dashboard/utility-management/wastewater" },
+            { label: tx("Quality →"), href: "/dashboard/quality" },
           ]}
           statusBadge={
             <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300">
-              QC Linkage
+              {tx("QC Linkage")}
             </span>
           }
         />
@@ -264,15 +265,15 @@ export default function UtilityIntegrationHubPage() {
         {/* Section 6: Alarm Center shortcut */}
         <IntegrationCard
           icon={<IconShield />}
-          title="Alarm Center"
+          title={tx("Alarm Center")}
           description="Monitor real-time utility alarms and anomalies. From the Alarm Center you can acknowledge, resolve, suppress alarms, and create maintenance work orders or breakdown records directly from alarm events."
           links={[
-            { label: "Alarm Center →", href: "/dashboard/utility-management/alarm-center" },
-            { label: "Alarm Rules →", href: "/dashboard/utility-management/alarm-rules" },
+            { label: tx("Alarm Center →"), href: "/dashboard/utility-management/alarm-center" },
+            { label: tx("Alarm Rules →"), href: "/dashboard/utility-management/alarm-rules" },
           ]}
           statusBadge={
             <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300">
-              Real-time
+              {tx("Real-time")}
             </span>
           }
         />

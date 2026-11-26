@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { aiApi, AIRecommendation } from "@/lib/aiApi";
 import { RequirePermission } from "@/components/PermissionGuard";
+import { tx } from "@/lib/i18n/core";
 
 const PRIORITY_PILL: Record<string, string> = {
   low: "bg-gray-100 text-gray-600",
@@ -63,14 +64,14 @@ export default function RecommendationsPage() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Recommendations</h1>
-          <p className="text-sm text-gray-500 mt-0.5">AI-powered actions to optimize your operations</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Recommendations")}</h1>
+          <p className="text-sm text-gray-500 mt-0.5">{tx("AI-powered actions to optimize your operations")}</p>
         </div>
         <div className="flex items-center gap-2">
           <input
             value={focusArea}
             onChange={(e) => setFocusArea(e.target.value)}
-            placeholder="Focus area (optional)"
+            placeholder={tx("Focus area (optional)")}
             className="text-sm border border-gray-200 rounded-lg px-3 py-2 w-48 focus:outline-none focus:ring-2 focus:ring-purple-300"
           />
           <button
@@ -78,7 +79,7 @@ export default function RecommendationsPage() {
             disabled={generate.isPending}
             className="px-4 py-2 text-sm font-medium bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
           >
-            {generate.isPending ? "Generating…" : "Generate Recommendations"}
+            {generate.isPending ? tx("Generating…") : tx("Generate Recommendations")}
           </button>
         </div>
       </div>
@@ -90,23 +91,23 @@ export default function RecommendationsPage() {
           onChange={(e) => setPriorityFilter(e.target.value)}
           className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-purple-300"
         >
-          <option value="">All Priorities</option>
-          <option value="critical">Critical</option>
-          <option value="high">High</option>
-          <option value="medium">Medium</option>
-          <option value="low">Low</option>
+          <option value="">{tx("All Priorities")}</option>
+          <option value="critical">{tx("Critical")}</option>
+          <option value="high">{tx("High")}</option>
+          <option value="medium">{tx("Medium")}</option>
+          <option value="low">{tx("Low")}</option>
         </select>
         <select
           value={categoryFilter}
           onChange={(e) => setCategoryFilter(e.target.value)}
           className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-purple-300"
         >
-          <option value="">All Categories</option>
-          <option value="pricing">Pricing</option>
-          <option value="stock_optimization">Stock Optimization</option>
-          <option value="supplier_selection">Supplier Selection</option>
-          <option value="production_planning">Production Planning</option>
-          <option value="margin_improvement">Margin Improvement</option>
+          <option value="">{tx("All Categories")}</option>
+          <option value="pricing">{tx("Pricing")}</option>
+          <option value="stock_optimization">{tx("Stock Optimization")}</option>
+          <option value="supplier_selection">{tx("Supplier Selection")}</option>
+          <option value="production_planning">{tx("Production Planning")}</option>
+          <option value="margin_improvement">{tx("Margin Improvement")}</option>
         </select>
         <label className="flex items-center gap-2 text-sm text-gray-600">
           <input
@@ -115,23 +116,23 @@ export default function RecommendationsPage() {
             onChange={(e) => setShowActioned(e.target.checked)}
             className="rounded"
           />
-          Show actioned
+          {tx("Show actioned")}
         </label>
-        <span className="ml-auto text-sm text-gray-400">{data.length} items</span>
+        <span className="ml-auto text-sm text-gray-400">{data.length} {tx("items")}</span>
       </div>
 
       {/* Cards */}
       {isLoading ? (
-        <p className="text-center text-gray-400 py-8">Loading recommendations…</p>
+        <p className="text-center text-gray-400 py-8">{tx("Loading recommendations…")}</p>
       ) : data.length === 0 ? (
         <div className="bg-white rounded-xl border border-gray-100 p-12 text-center">
-          <p className="text-gray-400 mb-4">No recommendations yet. Click &quot;Generate Recommendations&quot; to get AI-powered insights.</p>
+          <p className="text-gray-400 mb-4">{tx("No recommendations yet. Click \"Generate Recommendations\" to get AI-powered insights.")}</p>
           <button
             onClick={() => generate.mutate()}
             disabled={generate.isPending}
             className="px-4 py-2 text-sm font-medium bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
           >
-            {generate.isPending ? "Generating…" : "Generate Now"}
+            {generate.isPending ? tx("Generating…") : tx("Generate Now")}
           </button>
         </div>
       ) : (
@@ -156,7 +157,7 @@ export default function RecommendationsPage() {
                 </div>
                 {r.confidence_level && (
                   <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${CONFIDENCE_BADGE[r.confidence_level] ?? "bg-gray-100 text-gray-600"}`}>
-                    {r.confidence_level} conf.
+                    {r.confidence_level} {tx("conf.")}
                   </span>
                 )}
               </div>
@@ -167,7 +168,7 @@ export default function RecommendationsPage() {
 
               {r.expected_impact && (
                 <div className="flex items-start gap-1">
-                  <span className="text-xs text-green-600 font-semibold flex-shrink-0">Impact:</span>
+                  <span className="text-xs text-green-600 font-semibold flex-shrink-0">{tx("Impact:")}</span>
                   <span className="text-xs text-gray-600">{r.expected_impact}</span>
                 </div>
               )}
@@ -180,18 +181,18 @@ export default function RecommendationsPage() {
                       onClick={() => action.mutate(r.id)}
                       className="text-xs px-3 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700"
                     >
-                      Mark Actioned
+                      {tx("Mark Actioned")}
                     </button>
                     <button
                       onClick={() => dismiss.mutate(r.id)}
                       className="text-xs px-3 py-1 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200"
                     >
-                      Dismiss
+                      {tx("Dismiss")}
                     </button>
                   </div>
                 )}
-                {r.is_actioned && <span className="text-xs text-green-600 font-medium">✓ Actioned</span>}
-                {r.is_dismissed && <span className="text-xs text-gray-400">Dismissed</span>}
+                {r.is_actioned && <span className="text-xs text-green-600 font-medium">{tx("✓ Actioned")}</span>}
+                {r.is_dismissed && <span className="text-xs text-gray-400">{tx("Dismissed")}</span>}
               </div>
             </div>
           ))}

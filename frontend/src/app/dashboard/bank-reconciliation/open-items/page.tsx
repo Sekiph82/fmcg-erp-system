@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { brApi, BROpenItem, LINE_STATUS_COLOR } from "@/lib/bank_reconciliation";
+import { tx } from "@/lib/i18n/core";
 
 export default function OpenItemsPage() {
   const [minDays, setMinDays] = useState(0);
@@ -17,24 +18,24 @@ export default function OpenItemsPage() {
     <div className="p-6 space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Open Items — Aging</h1>
-          <p className="text-sm text-gray-500 mt-1">Unreconciled statement lines requiring action</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Open Items — Aging")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{tx("Unreconciled statement lines requiring action")}</p>
         </div>
         <div className="text-right">
           <p className="text-2xl font-bold text-red-600">
             {totalUnmatched.toLocaleString(undefined, { minimumFractionDigits: 2 })}
           </p>
-          <p className="text-xs text-gray-500">Total unmatched</p>
+          <p className="text-xs text-gray-500">{tx("Total unmatched")}</p>
         </div>
       </div>
 
       {/* Age filter */}
       <div className="flex gap-2">
         {[
-          { label: "All", days: 0 },
-          { label: "7+ days", days: 7 },
-          { label: "30+ days", days: 30 },
-          { label: "90+ days", days: 90 },
+          { label: tx("All"), days: 0 },
+          { label: tx("7+ days"), days: 7 },
+          { label: tx("30+ days"), days: 30 },
+          { label: tx("90+ days"), days: 90 },
         ].map((f) => (
           <button key={f.days} onClick={() => setMinDays(f.days)}
             className={`px-3 py-1.5 text-xs rounded-lg border ${
@@ -46,13 +47,13 @@ export default function OpenItemsPage() {
       </div>
 
       {isLoading ? (
-        <p className="text-gray-400">Loading…</p>
+        <p className="text-gray-400">{tx("Loading…")}</p>
       ) : (
         <div className="bg-white border rounded-xl overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
               <tr>
-                {["Account", "Statement", "Date", "D/C", "Amount", "Unmatched", "Days", "Narration", "Status"].map((h) => (
+                {[tx("Account"), tx("Statement"), tx("Date"), "D/C", tx("Amount"), tx("Unmatched"), tx("Days"), tx("Narration"), tx("Status")].map((h) => (
                   <th key={h} className="px-4 py-2 text-left font-medium">{h}</th>
                 ))}
               </tr>
@@ -72,7 +73,7 @@ export default function OpenItemsPage() {
                   <td className="px-4 py-2 font-medium text-red-600">{item.unmatched_amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                   <td className="px-4 py-2">
                     <span className={`font-semibold ${item.days_outstanding > 90 ? "text-red-700" : item.days_outstanding > 30 ? "text-orange-600" : "text-gray-700"}`}>
-                      {item.days_outstanding}d
+                      {item.days_outstanding}{tx("d")}
                     </span>
                   </td>
                   <td className="px-4 py-2 text-xs text-gray-600 max-w-xs truncate">{item.narration || "—"}</td>
@@ -85,14 +86,14 @@ export default function OpenItemsPage() {
               ))}
               {items.length === 0 && (
                 <div className="p-8 text-center">
-                  <p className="text-green-600 font-medium">✓ No open items in this range.</p>
+                  <p className="text-green-600 font-medium">{tx("✓ No open items in this range.")}</p>
                 </div>
               )}
             </tbody>
           </table>
           {items.length === 0 && (
             <div className="px-4 py-8 text-center">
-              <p className="text-green-600 font-medium">✓ No open items{minDays > 0 ? ` older than ${minDays} days` : ""}.</p>
+              <p className="text-green-600 font-medium">{tx("✓ No open items")}{minDays > 0 ? tx(" older than {minDays} days", { minDays }) : ""}.</p>
             </div>
           )}
         </div>

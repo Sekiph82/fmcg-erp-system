@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { EntityPicker } from "@/components/EntityPicker";
 import { apiClient } from "@/lib/api";
+import { tx } from "@/lib/i18n/core";
 
 interface NPSAnalytics {
   nps_score: number | null;
@@ -40,14 +41,14 @@ const CLASS_COLORS: Record<string, string> = {
 };
 
 function NPSGauge({ score }: { score: number | null }) {
-  if (score === null) return <div className="text-center text-gray-400 text-sm">No data</div>;
+  if (score === null) return <div className="text-center text-gray-400 text-sm">{tx("No data")}</div>;
   const color = score >= 50 ? "text-green-600" : score >= 0 ? "text-amber-600" : "text-red-600";
   return (
     <div className={`text-center ${color}`}>
       <p className="text-5xl font-bold">{score > 0 ? `+${score}` : score}</p>
-      <p className="text-xs text-gray-500 mt-1">NPS Score</p>
+      <p className="text-xs text-gray-500 mt-1">{tx("NPS Score")}</p>
       <p className="text-xs text-gray-400 mt-0.5">
-        {score >= 50 ? "Excellent 🟢" : score >= 30 ? "Good 🟡" : score >= 0 ? "Fair 🟠" : "Poor 🔴"}
+        {score >= 50 ? tx("Excellent 🟢") : score >= 30 ? tx("Good 🟡") : score >= 0 ? tx("Fair 🟠") : tx("Poor 🔴")}
       </p>
     </div>
   );
@@ -69,13 +70,13 @@ export default function NPSPage() {
   const [linkErr, setLinkErr] = useState("");
   const makeLink = async (surveyId: string) => {
     setLinkErr(""); setLinkUrl("");
-    if (!linkCustomer) { setLinkErr("Choose a customer"); return; }
+    if (!linkCustomer) { setLinkErr(tx("Choose a customer")); return; }
     try {
       const r = await apiClient.post<{ url: string }>(`/api/v1/nps/surveys/${surveyId}/links`, { customer_id: linkCustomer });
       setLinkUrl(r.data.url);
     } catch (e: unknown) {
       const d = (e as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail;
-      setLinkErr(typeof d === "string" ? d : "Could not create the link");
+      setLinkErr(typeof d === "string" ? d : tx("Could not create the link"));
     }
   };
   const [error, setError] = useState("");
@@ -95,7 +96,7 @@ export default function NPSPage() {
   useEffect(() => { load(); }, []);
 
   const logResponse = async () => {
-    if (!logForm.customer_id || !logForm.survey_id) { setError("Choose a survey and a customer"); return; }
+    if (!logForm.customer_id || !logForm.survey_id) { setError(tx("Choose a survey and a customer")); return; }
     setSaving(true); setError("");
     try {
       await apiClient.post("/api/v1/nps/responses", {
@@ -108,7 +109,7 @@ export default function NPSPage() {
       setShowLog(false);
       setLogForm({ survey_id: "", customer_id: "", score: "8", comment: "", channel: "manual" });
       await load();
-    } catch { setError("Failed to log response"); }
+    } catch { setError(tx("Failed to log response")); }
     finally { setSaving(false); }
   };
 
@@ -119,23 +120,23 @@ export default function NPSPage() {
     <div className="p-6 space-y-5">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">NPS Tracking</h1>
-          <p className="text-xs text-gray-500 mt-0.5">Net Promoter Score — measure customer loyalty and satisfaction.</p>
+          <h1 className="text-xl font-bold text-gray-900">{tx("NPS Tracking")}</h1>
+          <p className="text-xs text-gray-500 mt-0.5">{tx("Net Promoter Score — measure customer loyalty and satisfaction.")}</p>
         </div>
         <div className="flex gap-2">
           <a href="/dashboard/surveys"
             className="rounded border px-4 py-2 text-sm text-gray-600 hover:bg-gray-50">
-            Manage Surveys
+            {tx("Manage Surveys")}
           </a>
           <button onClick={() => { setShowLog(true); setError(""); }}
             className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
-            + Log Response
+            {tx("+ Log Response")}
           </button>
         </div>
       </div>
 
       {loading ? (
-        <p className="text-sm text-gray-500">Loading…</p>
+        <p className="text-sm text-gray-500">{tx("Loading…")}</p>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
           {/* Main NPS score */}
@@ -144,9 +145,9 @@ export default function NPSPage() {
             {analytics && analytics.total_responses > 0 && (
               <div className="mt-4 grid grid-cols-3 gap-3 w-full text-center">
                 {[
-                  { label: "Promoters", value: analytics.promoters, pct: analytics.promoter_pct, color: "text-green-600" },
-                  { label: "Passives", value: analytics.passives, pct: 100 - analytics.promoter_pct - analytics.detractor_pct, color: "text-amber-600" },
-                  { label: "Detractors", value: analytics.detractors, pct: analytics.detractor_pct, color: "text-red-600" },
+                  { label: tx("Promoters"), value: analytics.promoters, pct: analytics.promoter_pct, color: "text-green-600" },
+                  { label: tx("Passives"), value: analytics.passives, pct: 100 - analytics.promoter_pct - analytics.detractor_pct, color: "text-amber-600" },
+                  { label: tx("Detractors"), value: analytics.detractors, pct: analytics.detractor_pct, color: "text-red-600" },
                 ].map(s => (
                   <div key={s.label}>
                     <p className={`text-lg font-bold ${s.color}`}>{s.value}</p>
@@ -157,13 +158,13 @@ export default function NPSPage() {
               </div>
             )}
             {analytics && (
-              <p className="text-xs text-gray-400 mt-3">{analytics.total_responses} total responses</p>
+              <p className="text-xs text-gray-400 mt-3">{analytics.total_responses} {tx("total responses")}</p>
             )}
           </div>
 
           {/* Score distribution */}
           <div className="bg-white border rounded-xl p-5 shadow-sm">
-            <h3 className="text-sm font-semibold text-gray-700 mb-4">Score Distribution</h3>
+            <h3 className="text-sm font-semibold text-gray-700 mb-4">{tx("Score Distribution")}</h3>
             <div className="space-y-1.5">
               {Array.from({ length: 11 }, (_, i) => i).reverse().map(score => {
                 const count = dist[String(score)] ?? 0;
@@ -184,34 +185,34 @@ export default function NPSPage() {
 
           {/* Active surveys */}
           <div className="bg-white border rounded-xl p-5 shadow-sm">
-            <h3 className="text-sm font-semibold text-gray-700 mb-4">Surveys</h3>
+            <h3 className="text-sm font-semibold text-gray-700 mb-4">{tx("Surveys")}</h3>
             {surveys.length === 0 ? (
-              <p className="text-xs text-gray-400">No surveys yet.</p>
+              <p className="text-xs text-gray-400">{tx("No surveys yet.")}</p>
             ) : (
               <div className="space-y-3">
                 {surveys.map(s => (
                   <div key={s.id} className="border rounded-lg p-3">
                     <p className="text-xs font-medium text-gray-800">{s.title}</p>
                     <button onClick={() => { setLinkFor(linkFor === s.id ? null : s.id); setLinkUrl(""); setLinkErr(""); }}
-                      className="mt-1 text-xs text-blue-700 underline">Send to a customer</button>
+                      className="mt-1 text-xs text-blue-700 underline">{tx("Send to a customer")}</button>
                     {linkFor === s.id && (
                       <div className="mt-2 space-y-2">
-                        <EntityPicker kind="customer" label="Customer for survey link" value={linkCustomer} onChange={setLinkCustomer} />
-                        <button onClick={() => makeLink(s.id)} className="w-full rounded bg-blue-600 py-1.5 text-xs text-white">Create one-time link</button>
+                        <EntityPicker kind="customer" label={tx("Customer for survey link")} value={linkCustomer} onChange={setLinkCustomer} />
+                        <button onClick={() => makeLink(s.id)} className="w-full rounded bg-blue-600 py-1.5 text-xs text-white">{tx("Create one-time link")}</button>
                         {linkErr && <p className="text-xs text-red-600">{linkErr}</p>}
                         {linkUrl && (
                           <div className="text-xs space-y-1">
-                            <input readOnly value={linkUrl} aria-label="Survey link" onFocus={e => e.target.select()} className="w-full border rounded px-2 py-1 font-mono" />
+                            <input readOnly value={linkUrl} aria-label={tx("Survey link")} onFocus={e => e.target.select()} className="w-full border rounded px-2 py-1 font-mono" />
                             <div className="flex gap-2">
-                              <button onClick={() => navigator.clipboard?.writeText(linkUrl)} className="rounded border px-2 py-1">Copy</button>
-                              <a href={`https://wa.me/?text=${encodeURIComponent("Please rate POVU: " + linkUrl)}`} target="_blank" rel="noopener noreferrer" className="rounded border px-2 py-1">WhatsApp</a>
+                              <button onClick={() => navigator.clipboard?.writeText(linkUrl)} className="rounded border px-2 py-1">{tx("Copy")}</button>
+                              <a href={`https://wa.me/?text=${encodeURIComponent("Please rate POVU: " + linkUrl)}`} target="_blank" rel="noopener noreferrer" className="rounded border px-2 py-1">{tx("WhatsApp")}</a>
                             </div>
                           </div>
                         )}
                       </div>
                     )}
                     <div className="flex items-center justify-between mt-1">
-                      <span className="text-xs text-gray-400">{s.response_count} responses</span>
+                      <span className="text-xs text-gray-400">{s.response_count} {tx("responses")}</span>
                       <span className={`text-xs font-bold ${s.nps_score >= 50 ? "text-green-600" : s.nps_score >= 0 ? "text-amber-600" : "text-red-600"}`}>
                         {s.nps_score > 0 ? "+" : ""}{s.nps_score}
                       </span>
@@ -228,13 +229,13 @@ export default function NPSPage() {
       {byCustomer.length > 0 && (
         <div className="bg-white border rounded-xl shadow-sm">
           <div className="px-5 py-3 border-b">
-            <h3 className="text-sm font-semibold text-gray-700">NPS by Customer</h3>
+            <h3 className="text-sm font-semibold text-gray-700">{tx("NPS by Customer")}</h3>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-gray-50 border-b">
                 <tr>
-                  {["Customer", "Avg Score", "Responses", "Classification"].map(h => (
+                  {[tx("Customer"), tx("Avg Score"), tx("Responses"), tx("Classification")].map(h => (
                     <th key={h} className="px-4 py-2 text-left text-xs font-semibold text-gray-600">{h}</th>
                   ))}
                 </tr>
@@ -272,8 +273,8 @@ export default function NPSPage() {
       {analytics && (analytics.top_detractors.length > 0 || analytics.top_promoters.length > 0) && (
         <div className="grid grid-cols-2 gap-5">
           {[
-            { label: "Detractor Comments", items: analytics.top_detractors, color: "border-red-200 bg-red-50", textColor: "text-red-700" },
-            { label: "Promoter Comments", items: analytics.top_promoters, color: "border-green-200 bg-green-50", textColor: "text-green-700" },
+            { label: tx("Detractor Comments"), items: analytics.top_detractors, color: "border-red-200 bg-red-50", textColor: "text-red-700" },
+            { label: tx("Promoter Comments"), items: analytics.top_promoters, color: "border-green-200 bg-green-50", textColor: "text-green-700" },
           ].map(section => (
             <div key={section.label} className={`border rounded-xl p-4 ${section.color}`}>
               <h3 className={`text-xs font-semibold mb-3 ${section.textColor}`}>{section.label}</h3>
@@ -281,7 +282,7 @@ export default function NPSPage() {
                 {section.items.map((item, i) => (
                   <div key={i} className="bg-white rounded-lg p-3 border">
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-medium text-gray-700">{item.customer_name ?? "Anonymous"}</span>
+                      <span className="text-xs font-medium text-gray-700">{item.customer_name ?? tx("Anonymous")}</span>
                       <span className={`text-xs font-bold ${section.textColor}`}>{item.score}/10</span>
                     </div>
                     <p className="text-xs text-gray-600 italic">&quot;{item.comment}&quot;</p>
@@ -298,27 +299,27 @@ export default function NPSPage() {
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm">
             <div className="px-6 py-4 border-b flex items-center justify-between">
-              <h2 className="text-base font-semibold">Log NPS Response</h2>
+              <h2 className="text-base font-semibold">{tx("Log NPS Response")}</h2>
               <button onClick={() => setShowLog(false)} className="text-gray-400 text-xl">×</button>
             </div>
             <div className="p-6 space-y-4">
               {error && <p className="text-xs text-red-500 bg-red-50 border border-red-200 rounded px-3 py-2">{error}</p>}
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Survey *</label>
+                <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Survey *")}</label>
                 <select value={logForm.survey_id}
                   onChange={e => setLogForm(f => ({ ...f, survey_id: e.target.value }))}
                   className="w-full border rounded px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none">
-                  <option value="">Select survey…</option>
+                  <option value="">{tx("Select survey…")}</option>
                   {surveys.map(s => <option key={s.id} value={s.id}>{s.title}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Customer *</label>
-                <EntityPicker kind="customer" label="Customer" value={logForm.customer_id}
+                <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Customer *")}</label>
+                <EntityPicker kind="customer" label={tx("Customer")} value={logForm.customer_id}
                   onChange={id => setLogForm(f => ({ ...f, customer_id: id }))} />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-2">Score (0-10) *</label>
+                <label className="block text-xs font-medium text-gray-600 mb-2">{tx("Score (0-10) *")}</label>
                 <div className="flex gap-1.5 flex-wrap">
                   {Array.from({ length: 11 }, (_, i) => i).map(n => (
                     <button key={n} onClick={() => setLogForm(f => ({ ...f, score: String(n) }))}
@@ -335,10 +336,10 @@ export default function NPSPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Comment</label>
+                <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Comment")}</label>
                 <textarea value={logForm.comment}
                   onChange={e => setLogForm(f => ({ ...f, comment: e.target.value }))}
-                  rows={2} placeholder="Customer feedback…"
+                  rows={2} placeholder={tx("Customer feedback…")}
                   className="w-full border rounded px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none resize-none"
                 />
               </div>
@@ -346,11 +347,11 @@ export default function NPSPage() {
             <div className="px-6 pb-5 flex gap-3">
               <button onClick={logResponse} disabled={saving}
                 className="flex-1 rounded bg-blue-600 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">
-                {saving ? "Saving…" : "Log Response"}
+                {saving ? tx("Saving…") : tx("Log Response")}
               </button>
               <button onClick={() => setShowLog(false)}
                 className="flex-1 rounded border py-2 text-sm text-gray-600 hover:bg-gray-50">
-                Cancel
+                {tx("Cancel")}
               </button>
             </div>
           </div>

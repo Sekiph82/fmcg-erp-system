@@ -3,6 +3,7 @@ import { EntityPicker } from "@/components/EntityPicker";
 import { useSearchParams } from "next/navigation";
 import { useState, useEffect, Suspense } from "react";
 import { traceApi, GenealogyTree, GenealogyEdge, STAGE_COLOR } from "@/lib/traceability";
+import { tx } from "@/lib/i18n/core";
 
 function GenealogyContent() {
   const params = useSearchParams();
@@ -31,26 +32,26 @@ function GenealogyContent() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-xl font-bold text-gray-900">Genealogy Graph / Tree</h1>
-        <p className="text-sm text-gray-500">Full lot genealogy — parent/child relationships across all production stages</p>
+        <h1 className="text-xl font-bold text-gray-900">{tx("Genealogy Graph / Tree")}</h1>
+        <p className="text-sm text-gray-500">{tx("Full lot genealogy — parent/child relationships across all production stages")}</p>
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 p-5 flex flex-wrap gap-3">
         <div className="flex-1 min-w-48">
-          <label className="text-xs font-medium text-gray-600">Lot</label>
-          <EntityPicker kind="lot" label="Lot" value={lotId} onChange={setLotId} />
+          <label className="text-xs font-medium text-gray-600">{tx("Lot")}</label>
+          <EntityPicker kind="lot" label={tx("Lot")} value={lotId} onChange={setLotId} />
         </div>
         <div className="w-36">
-          <label className="text-xs font-medium text-gray-600">Direction</label>
+          <label className="text-xs font-medium text-gray-600">{tx("Direction")}</label>
           <select className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
             value={direction} onChange={e => setDirection(e.target.value as any)}>
-            <option value="both">Both</option>
-            <option value="forward">Forward Only</option>
-            <option value="backward">Backward Only</option>
+            <option value="both">{tx("Both")}</option>
+            <option value="forward">{tx("Forward Only")}</option>
+            <option value="backward">{tx("Backward Only")}</option>
           </select>
         </div>
         <div className="w-28">
-          <label className="text-xs font-medium text-gray-600">Max Depth</label>
+          <label className="text-xs font-medium text-gray-600">{tx("Max Depth")}</label>
           <select className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
             value={maxDepth} onChange={e => setMaxDepth(Number(e.target.value))}>
             {[3,5,6,8,10].map(d => <option key={d} value={d}>{d}</option>)}
@@ -59,7 +60,7 @@ function GenealogyContent() {
         <div className="flex items-end">
           <button onClick={() => handleLoad()} disabled={!lotId || loading}
             className="px-5 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 disabled:opacity-50">
-            {loading ? "Loading…" : "Build Genealogy"}
+            {loading ? tx("Loading…") : tx("Build Genealogy")}
           </button>
         </div>
       </div>
@@ -71,15 +72,15 @@ function GenealogyContent() {
             <div className="bg-white rounded-xl border border-gray-200 px-5 py-3 flex gap-6">
               <div className="text-center">
                 <p className="text-2xl font-bold text-purple-700">{tree.lot_count}</p>
-                <p className="text-xs text-gray-500">Lots in Tree</p>
+                <p className="text-xs text-gray-500">{tx("Lots in Tree")}</p>
               </div>
               <div className="text-center">
                 <p className="text-2xl font-bold text-gray-800">{tree.edges.length}</p>
-                <p className="text-xs text-gray-500">Links</p>
+                <p className="text-xs text-gray-500">{tx("Links")}</p>
               </div>
               <div className="text-center">
                 <p className="text-2xl font-bold text-gray-800">{tree.depth}</p>
-                <p className="text-xs text-gray-500">Max Depth</p>
+                <p className="text-xs text-gray-500">{tx("Max Depth")}</p>
               </div>
             </div>
 
@@ -100,7 +101,7 @@ function GenealogyContent() {
             {(["list","graph"] as const).map(v => (
               <button key={v} onClick={() => setView(v)}
                 className={`px-4 py-1.5 rounded text-sm font-medium ${view === v ? "bg-white shadow text-gray-800" : "text-gray-500"}`}>
-                {v === "list" ? "Table View" : "Graph View"}
+                {v === "list" ? tx("Table View") : tx("Graph View")}
               </button>
             ))}
           </div>
@@ -110,7 +111,7 @@ function GenealogyContent() {
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 text-xs uppercase text-gray-500">
                   <tr>
-                    {["Lot Number","Stage","Parent","Relationship","Quantity"].map(h => (
+                    {[tx("Lot Number"),tx("Stage"),tx("Parent"),tx("Relationship"),tx("Quantity")].map(h => (
                       <th key={h} className="px-4 py-3 text-left font-medium">{h}</th>
                     ))}
                   </tr>
@@ -145,7 +146,7 @@ function GenealogyContent() {
                   })}
                   {tree.edges.length === 0 && (
                     <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-400">
-                      No genealogy links found for this lot
+                      {tx("No genealogy links found for this lot")}
                     </td></tr>
                   )}
                 </tbody>
@@ -155,7 +156,7 @@ function GenealogyContent() {
 
           {view === "graph" && (
             <div className="bg-gray-50 rounded-xl border border-gray-200 p-6 min-h-64">
-              <p className="text-xs text-gray-500 mb-4 text-center">Genealogy graph — {tree.nodes.length} nodes, {tree.edges.length} edges</p>
+              <p className="text-xs text-gray-500 mb-4 text-center">{tx("Genealogy graph —")} {tree.nodes.length} {tx("nodes,")} {tree.edges.length} {tx("edges")}</p>
               <div className="flex flex-wrap justify-center gap-3">
                 {tree.nodes.map(n => (
                   <div key={String(n.lot_id)}
@@ -167,7 +168,7 @@ function GenealogyContent() {
                 ))}
               </div>
               <p className="text-xs text-gray-400 text-center mt-4">
-                Full interactive graph requires a dedicated graph visualization library (e.g. React Flow, D3). Table view above shows all relationships.
+                {tx("Full interactive graph requires a dedicated graph visualization library (e.g. React Flow, D3). Table view above shows all relationships.")}
               </p>
             </div>
           )}
@@ -178,5 +179,5 @@ function GenealogyContent() {
 }
 
 export default function GenealogyPage() {
-  return <Suspense fallback={<div className="p-8 text-gray-400">Loading…</div>}><GenealogyContent /></Suspense>;
+  return <Suspense fallback={<div className="p-8 text-gray-400">{tx("Loading…")}</div>}><GenealogyContent /></Suspense>;
 }

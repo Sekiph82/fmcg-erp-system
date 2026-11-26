@@ -4,6 +4,7 @@ import {
   customFieldsApi, WorkflowRule, EntityType,
   ENTITY_LABEL, WF_TRIGGER_LABEL, WF_ACTION_LABEL,
 } from "@/lib/custom_fields";
+import { tx } from "@/lib/i18n/core";
 
 const ENTITY_TYPES: EntityType[] = [
   "customer", "supplier", "product", "sales_order", "purchase_order",
@@ -91,7 +92,7 @@ export default function WorkflowRulesPage() {
   };
 
   const save = async () => {
-    if (!form.rule_name.trim()) { setError("Rule name required"); return; }
+    if (!form.rule_name.trim()) { setError(tx("Rule name required")); return; }
     setSaving(true);
     setError("");
     try {
@@ -115,7 +116,7 @@ export default function WorkflowRulesPage() {
       setShowModal(false);
       await load();
     } catch {
-      setError("Failed to save rule.");
+      setError(tx("Failed to save rule."));
     } finally {
       setSaving(false);
     }
@@ -127,7 +128,7 @@ export default function WorkflowRulesPage() {
   };
 
   const deleteRule = async (id: string) => {
-    if (!confirm("Delete this workflow rule?")) return;
+    if (!confirm(tx("Delete this workflow rule?"))) return;
     await customFieldsApi.deleteWorkflowRule(id);
     await load();
   };
@@ -136,27 +137,24 @@ export default function WorkflowRulesPage() {
     <div className="p-6 space-y-5">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Workflow Rules</h1>
+          <h1 className="text-xl font-bold text-gray-900">{tx("Workflow Rules")}</h1>
           <p className="text-xs text-gray-500 mt-0.5">
-            Trigger-based automation rules for custom field events. Define what happens when records change.
+            {tx("Trigger-based automation rules for custom field events. Define what happens when records change.")}
           </p>
         </div>
         <button
           onClick={openCreate}
           className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
         >
-          + New Rule
+          {tx("+ New Rule")}
         </button>
       </div>
 
       {/* Trigger concepts info strip */}
       <div className="bg-blue-50 border border-blue-100 rounded-lg px-4 py-3">
-        <p className="text-xs text-blue-700 font-medium mb-1">How Workflow Rules Work</p>
+        <p className="text-xs text-blue-700 font-medium mb-1">{tx("How Workflow Rules Work")}</p>
         <p className="text-xs text-blue-600">
-          Rules fire when a trigger event occurs on a record of the selected module.
-          Optionally add a condition to narrow when the rule applies.
-          Then define the action (notify, set field, call webhook, etc.).
-          Rules are evaluated by backend automation — the engine stub is wired for future full execution.
+          {tx("Rules fire when a trigger event occurs on a record of the selected module. Optionally add a condition to narrow when the rule applies. Then define the action (notify, set field, call webhook, etc.). Rules are evaluated by backend automation — the engine stub is wired for future full execution.")}
         </p>
       </div>
 
@@ -166,20 +164,20 @@ export default function WorkflowRulesPage() {
           value={filterEntity}
           onChange={e => setFilterEntity(e.target.value)}
         >
-          <option value="">All Modules</option>
+          <option value="">{tx("All Modules")}</option>
           {ENTITY_TYPES.map(t => <option key={t} value={t}>{ENTITY_LABEL[t]}</option>)}
         </select>
-        <span className="text-xs text-gray-500 self-center">{rules.length} rules</span>
+        <span className="text-xs text-gray-500 self-center">{rules.length} {tx("rules")}</span>
       </div>
 
       {loading ? (
-        <p className="text-sm text-gray-500">Loading…</p>
+        <p className="text-sm text-gray-500">{tx("Loading…")}</p>
       ) : rules.length === 0 ? (
         <div className="bg-white border rounded-lg p-12 text-center text-gray-400">
           <p className="text-2xl mb-2">⚡</p>
-          <p className="text-sm">No workflow rules yet. Create your first rule.</p>
+          <p className="text-sm">{tx("No workflow rules yet. Create your first rule.")}</p>
           <button onClick={openCreate} className="mt-3 text-xs text-blue-600 hover:underline">
-            Create rule →
+            {tx("Create rule →")}
           </button>
         </div>
       ) : (
@@ -187,7 +185,7 @@ export default function WorkflowRulesPage() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b">
               <tr>
-                {["Rule Name", "Module", "Trigger", "Condition", "Action", "Status", "Actions"].map(h => (
+                {[tx("Rule Name"), tx("Module"), tx("Trigger"), tx("Condition"), tx("Action"), tx("Status"), tx("Actions")].map(h => (
                   <th key={h} className="px-4 py-2 text-left text-xs font-semibold text-gray-600">{h}</th>
                 ))}
               </tr>
@@ -213,7 +211,7 @@ export default function WorkflowRulesPage() {
                         <code className="bg-gray-100 px-1 rounded">{r.condition_value}</code>
                       </span>
                     ) : (
-                      <span className="text-gray-400">Always</span>
+                      <span className="text-gray-400">{tx("Always")}</span>
                     )}
                   </td>
                   <td className="px-4 py-3">
@@ -223,16 +221,16 @@ export default function WorkflowRulesPage() {
                   </td>
                   <td className="px-4 py-3">
                     <span className={`text-xs rounded-full px-2 py-0.5 ${r.active_flag ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
-                      {r.active_flag ? "active" : "disabled"}
+                      {r.active_flag ? tx("active") : tx("disabled")}
                     </span>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex gap-2">
-                      <button onClick={() => openEdit(r)} className="text-xs text-blue-600 hover:underline">Edit</button>
+                      <button onClick={() => openEdit(r)} className="text-xs text-blue-600 hover:underline">{tx("Edit")}</button>
                       <button onClick={() => toggleActive(r)} className="text-xs text-yellow-600 hover:underline">
-                        {r.active_flag ? "Disable" : "Enable"}
+                        {r.active_flag ? tx("Disable") : tx("Enable")}
                       </button>
-                      <button onClick={() => deleteRule(r.rule_id)} className="text-xs text-red-500 hover:underline">Delete</button>
+                      <button onClick={() => deleteRule(r.rule_id)} className="text-xs text-red-500 hover:underline">{tx("Delete")}</button>
                     </div>
                   </td>
                 </tr>
@@ -248,7 +246,7 @@ export default function WorkflowRulesPage() {
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="px-6 py-4 border-b flex items-center justify-between">
               <h2 className="text-base font-semibold text-gray-900">
-                {editId ? "Edit Workflow Rule" : "New Workflow Rule"}
+                {editId ? tx("Edit Workflow Rule") : tx("New Workflow Rule")}
               </h2>
               <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
             </div>
@@ -256,19 +254,19 @@ export default function WorkflowRulesPage() {
               {error && <p className="text-xs text-red-500 bg-red-50 border border-red-200 rounded px-3 py-2">{error}</p>}
 
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Rule Name <span className="text-red-400">*</span></label>
+                <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Rule Name")} <span className="text-red-400">*</span></label>
                 <input
                   type="text"
                   value={form.rule_name}
                   onChange={e => setForm(f => ({ ...f, rule_name: e.target.value }))}
-                  placeholder="e.g. Notify sales team on new CRM record"
+                  placeholder={tx("e.g. Notify sales team on new CRM record")}
                   className="w-full border rounded px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Module</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Module")}</label>
                   <select
                     value={form.entity_type}
                     onChange={e => setForm(f => ({ ...f, entity_type: e.target.value as EntityType }))}
@@ -278,7 +276,7 @@ export default function WorkflowRulesPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Trigger Event</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Trigger Event")}</label>
                   <select
                     value={form.trigger_event}
                     onChange={e => setForm(f => ({ ...f, trigger_event: e.target.value }))}
@@ -290,21 +288,21 @@ export default function WorkflowRulesPage() {
               </div>
 
               <div className="border rounded-lg p-4 space-y-3 bg-gray-50">
-                <p className="text-xs font-semibold text-gray-600">Condition (optional)</p>
+                <p className="text-xs font-semibold text-gray-600">{tx("Condition (optional)")}</p>
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Field Code (if condition applies to a specific field)</label>
+                  <label className="block text-xs text-gray-500 mb-1">{tx("Field Code (if condition applies to a specific field)")}</label>
                   <input
                     type="text"
                     value={form.condition_field}
                     onChange={e => setForm(f => ({ ...f, condition_field: e.target.value }))}
-                    placeholder="e.g. customer_tier"
+                    placeholder={tx("e.g. customer_tier")}
                     className="w-full border rounded px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none bg-white"
                   />
                 </div>
                 {form.condition_field && (
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs text-gray-500 mb-1">Operator</label>
+                      <label className="block text-xs text-gray-500 mb-1">{tx("Operator")}</label>
                       <select
                         value={form.condition_operator}
                         onChange={e => setForm(f => ({ ...f, condition_operator: e.target.value }))}
@@ -314,12 +312,12 @@ export default function WorkflowRulesPage() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs text-gray-500 mb-1">Value</label>
+                      <label className="block text-xs text-gray-500 mb-1">{tx("Value")}</label>
                       <input
                         type="text"
                         value={form.condition_value}
                         onChange={e => setForm(f => ({ ...f, condition_value: e.target.value }))}
-                        placeholder="e.g. gold"
+                        placeholder={tx("e.g. gold")}
                         className="w-full border rounded px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none bg-white"
                       />
                     </div>
@@ -328,7 +326,7 @@ export default function WorkflowRulesPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Action</label>
+                <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Action")}</label>
                 <select
                   value={form.action_type}
                   onChange={e => setForm(f => ({ ...f, action_type: e.target.value }))}
@@ -340,24 +338,24 @@ export default function WorkflowRulesPage() {
 
               {form.action_type === "send_notification" && (
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Notification Message</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Notification Message")}</label>
                   <textarea
                     value={form.action_message}
                     onChange={e => setForm(f => ({ ...f, action_message: e.target.value }))}
                     rows={2}
-                    placeholder="e.g. New high-value customer record created"
+                    placeholder={tx("e.g. New high-value customer record created")}
                     className="w-full border rounded px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none resize-none"
                   />
                 </div>
               )}
 
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
+                <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Notes")}</label>
                 <textarea
                   value={form.notes}
                   onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
                   rows={2}
-                  placeholder="Internal notes about this rule…"
+                  placeholder={tx("Internal notes about this rule…")}
                   className="w-full border rounded px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none resize-none"
                 />
               </div>
@@ -370,7 +368,7 @@ export default function WorkflowRulesPage() {
                   onChange={e => setForm(f => ({ ...f, active_flag: e.target.checked }))}
                   className="h-4 w-4 rounded border-gray-300 text-blue-600"
                 />
-                <label htmlFor="active_flag" className="text-sm text-gray-700">Active</label>
+                <label htmlFor="active_flag" className="text-sm text-gray-700">{tx("Active")}</label>
               </div>
             </div>
             <div className="px-6 pb-5 flex gap-3">
@@ -379,13 +377,13 @@ export default function WorkflowRulesPage() {
                 disabled={saving}
                 className="flex-1 rounded bg-blue-600 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
               >
-                {saving ? "Saving…" : editId ? "Update Rule" : "Create Rule"}
+                {saving ? tx("Saving…") : editId ? tx("Update Rule") : tx("Create Rule")}
               </button>
               <button
                 onClick={() => setShowModal(false)}
                 className="flex-1 rounded border py-2 text-sm text-gray-600 hover:bg-gray-50"
               >
-                Cancel
+                {tx("Cancel")}
               </button>
             </div>
           </div>
@@ -393,9 +391,9 @@ export default function WorkflowRulesPage() {
       )}
 
       <div className="flex gap-3 text-xs">
-        <a href="/dashboard/custom-fields" className="text-blue-600 hover:underline">Custom Fields Dashboard</a>
+        <a href="/dashboard/custom-fields" className="text-blue-600 hover:underline">{tx("Custom Fields Dashboard")}</a>
         <span className="text-gray-300">|</span>
-        <a href="/dashboard/custom-fields/form-builder" className="text-blue-600 hover:underline">Form Builder</a>
+        <a href="/dashboard/custom-fields/form-builder" className="text-blue-600 hover:underline">{tx("Form Builder")}</a>
       </div>
     </div>
   );

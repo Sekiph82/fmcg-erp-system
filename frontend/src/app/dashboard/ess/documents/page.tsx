@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { essSelf, ESSDocument, ESSDocumentType } from "@/lib/ess";
+import { tx } from "@/lib/i18n/core";
 
 const DOC_ICONS: Record<ESSDocumentType, string> = { payslip: "💰", contract: "📝", offer_letter: "📨", experience_cert: "🏆", salary_cert: "💼", hr_letter: "📮", appraisal: "⭐", other: "📄" };
 const DOC_TYPES: ESSDocumentType[] = ["payslip", "contract", "offer_letter", "experience_cert", "salary_cert", "hr_letter", "appraisal", "other"];
@@ -21,19 +22,19 @@ export default function DocumentsPage() {
     <div className="p-6 space-y-5 text-slate-200">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-white">Document Center</h1>
-          <p className="text-slate-500 text-sm mt-0.5">{docs.length} documents available</p>
+          <h1 className="text-xl font-bold text-white">{tx("Document Center")}</h1>
+          <p className="text-slate-500 text-sm mt-0.5">{docs.length} {tx("documents available")}</p>
         </div>
         <select value={filter} onChange={(e) => setFilter(e.target.value)}
           className="bg-[#0d1829] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none">
-          <option value="">All Types</option>
+          <option value="">{tx("All Types")}</option>
           {DOC_TYPES.map((t) => <option key={t} value={t}>{t.replace("_", " ")}</option>)}
         </select>
       </div>
 
       {Object.keys(grouped).length === 0 && (
         <div className="glow-card p-8 text-center text-slate-600">
-          No documents available. HR will upload documents here.
+          {tx("No documents available. HR will upload documents here.")}
         </div>
       )}
 
@@ -52,7 +53,7 @@ export default function DocumentsPage() {
                   <p className="text-xs text-slate-600">{new Date(doc.created_at).toLocaleDateString()}</p>
                   {doc.document_ref && (
                     <a href={doc.document_ref} target="_blank" rel="noopener noreferrer"
-                      className="text-xs text-indigo-400 hover:text-indigo-300 mt-1 block">Download / View →</a>
+                      className="text-xs text-indigo-400 hover:text-indigo-300 mt-1 block">{tx("Download / View →")}</a>
                   )}
                 </div>
               </div>

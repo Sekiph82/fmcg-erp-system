@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
+import { tx } from "@/lib/i18n/core";
 
 type Tab = "rules" | "promotions";
 
@@ -131,22 +132,22 @@ export default function PricingPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Pricing & Promotions</h1>
-          <p className="text-sm text-gray-500 mt-1">Tiered pricing · Distributor rates · Volume discounts · Bundles</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Pricing & Promotions")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{tx("Tiered pricing · Distributor rates · Volume discounts · Bundles")}</p>
         </div>
         <div className="flex gap-2">
-          {tab === "rules" && <Button onClick={() => setRuleOpen(true)}>+ Pricing Rule</Button>}
-          {tab === "promotions" && <Button onClick={() => setPromoOpen(true)}>+ Promotion</Button>}
+          {tab === "rules" && <Button onClick={() => setRuleOpen(true)}>{tx("+ Pricing Rule")}</Button>}
+          {tab === "promotions" && <Button onClick={() => setPromoOpen(true)}>{tx("+ Promotion")}</Button>}
         </div>
       </div>
 
       {/* KPIs */}
       <div className="grid grid-cols-4 gap-3 mb-6">
         {[
-          { label: "Standard Rules", value: rules.filter((r) => r.pricing_level === "STANDARD").length, color: "text-gray-700" },
-          { label: "Region Rules", value: rules.filter((r) => r.pricing_level === "REGION").length, color: "text-blue-600" },
-          { label: "Distributor Rules", value: rules.filter((r) => r.pricing_level === "DISTRIBUTOR").length, color: "text-purple-600" },
-          { label: "Active Promos", value: activePromos, color: "text-green-600" },
+          { label: tx("Standard Rules"), value: rules.filter((r) => r.pricing_level === "STANDARD").length, color: "text-gray-700" },
+          { label: tx("Region Rules"), value: rules.filter((r) => r.pricing_level === "REGION").length, color: "text-blue-600" },
+          { label: tx("Distributor Rules"), value: rules.filter((r) => r.pricing_level === "DISTRIBUTOR").length, color: "text-purple-600" },
+          { label: tx("Active Promos"), value: activePromos, color: "text-green-600" },
         ].map((k) => (
           <div key={k.label} className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm text-center">
             <p className={`text-2xl font-bold ${k.color}`}>{k.value}</p>
@@ -158,8 +159,8 @@ export default function PricingPage() {
       {/* Tabs */}
       <div className="flex gap-1 border-b border-gray-200 mb-5">
         {[
-          { id: "rules" as Tab, label: "Pricing Rules" },
-          { id: "promotions" as Tab, label: "Promotions" },
+          { id: "rules" as Tab, label: tx("Pricing Rules") },
+          { id: "promotions" as Tab, label: tx("Promotions") },
         ].map((t) => (
           <button
             key={t.id}
@@ -194,7 +195,7 @@ export default function PricingPage() {
           {rulesLoading ? (
             <Spinner />
           ) : rules.length === 0 ? (
-            <p className="text-gray-400 text-sm py-8 text-center">No pricing rules found.</p>
+            <p className="text-gray-400 text-sm py-8 text-center">{tx("No pricing rules found.")}</p>
           ) : (
             <div className="space-y-2">
               {rules.map((rule) => (
@@ -214,7 +215,7 @@ export default function PricingPage() {
         promosLoading ? (
           <Spinner />
         ) : promotions.length === 0 ? (
-          <p className="text-gray-400 text-sm py-8 text-center">No promotions found.</p>
+          <p className="text-gray-400 text-sm py-8 text-center">{tx("No promotions found.")}</p>
         ) : (
           <div className="space-y-3">
             {promotions.map((promo) => (
@@ -230,10 +231,10 @@ export default function PricingPage() {
       )}
 
       {/* Create Pricing Rule Modal */}
-      <Modal open={ruleOpen} onClose={() => setRuleOpen(false)} title="New Pricing Rule">
+      <Modal open={ruleOpen} onClose={() => setRuleOpen(false)} title={tx("New Pricing Rule")}>
         <form onSubmit={(e) => { e.preventDefault(); createRule.mutate(); }} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Pricing Level</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{tx("Pricing Level")}</label>
             <div className="grid grid-cols-2 gap-2">
               {LEVELS.map((l) => (
                 <button
@@ -252,20 +253,20 @@ export default function PricingPage() {
             </div>
           </div>
 
-          <div><label className="block text-sm font-medium text-gray-700 mb-1">Product *</label><EntityPicker kind="product" label="Product" required value={ruleForm.product_id} onChange={(id) => setR("product_id", id)} /></div>
+          <div><label className="block text-sm font-medium text-gray-700 mb-1">{tx("Product *")}</label><EntityPicker kind="product" label={tx("Product")} required value={ruleForm.product_id} onChange={(id) => setR("product_id", id)} /></div>
 
           {ruleForm.pricing_level === "REGION" && (
             <Input
-              label="Region *"
+              label={tx("Region *")}
               value={ruleForm.region}
               onChange={(e) => setR("region", e.target.value)}
-              placeholder="e.g. Nairobi, Coast, Western"
+              placeholder={tx("e.g. Nairobi, Coast, Western")}
             />
           )}
 
           <div className="grid grid-cols-2 gap-4">
             <Input
-              label="Unit Price *"
+              label={tx("Unit Price *")}
               type="number"
               step="0.01"
               value={ruleForm.unit_price}
@@ -273,7 +274,7 @@ export default function PricingPage() {
               required
             />
             <Input
-              label="Currency"
+              label={tx("Currency")}
               value={ruleForm.currency}
               onChange={(e) => setR("currency", e.target.value)}
               placeholder="KES"
@@ -282,24 +283,24 @@ export default function PricingPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <Input
-              label="Min Quantity"
+              label={tx("Min Quantity")}
               type="number"
               value={ruleForm.min_quantity}
               onChange={(e) => setR("min_quantity", e.target.value)}
-              placeholder="0 = no minimum"
+              placeholder={tx("0 = no minimum")}
             />
             <div />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <Input
-              label="Effective From"
+              label={tx("Effective From")}
               type="date"
               value={ruleForm.effective_from}
               onChange={(e) => setR("effective_from", e.target.value)}
             />
             <Input
-              label="Effective To"
+              label={tx("Effective To")}
               type="date"
               value={ruleForm.effective_to}
               onChange={(e) => setR("effective_to", e.target.value)}
@@ -307,32 +308,32 @@ export default function PricingPage() {
           </div>
 
           <Input
-            label="Notes"
+            label={tx("Notes")}
             value={ruleForm.notes}
             onChange={(e) => setR("notes", e.target.value)}
           />
 
-          {createRule.error && <p className="text-sm text-red-600">Failed to create rule.</p>}
+          {createRule.error && <p className="text-sm text-red-600">{tx("Failed to create rule.")}</p>}
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" type="button" onClick={() => setRuleOpen(false)}>Cancel</Button>
-            <Button type="submit" loading={createRule.isPending}>Create Rule</Button>
+            <Button variant="secondary" type="button" onClick={() => setRuleOpen(false)}>{tx("Cancel")}</Button>
+            <Button type="submit" loading={createRule.isPending}>{tx("Create Rule")}</Button>
           </div>
         </form>
       </Modal>
 
       {/* Create Promotion Modal */}
-      <Modal open={promoOpen} onClose={() => setPromoOpen(false)} title="New Promotion">
+      <Modal open={promoOpen} onClose={() => setPromoOpen(false)} title={tx("New Promotion")}>
         <form onSubmit={(e) => { e.preventDefault(); createPromo.mutate(); }} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <Input
-              label="Code *"
+              label={tx("Code *")}
               value={promoForm.code}
               onChange={(e) => setP("code", e.target.value)}
               required
               placeholder="PROMO2024"
             />
             <Input
-              label="Name *"
+              label={tx("Name *")}
               value={promoForm.name}
               onChange={(e) => setP("name", e.target.value)}
               required
@@ -340,7 +341,7 @@ export default function PricingPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Promo Type</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{tx("Promo Type")}</label>
             <div className="grid grid-cols-3 gap-2">
               {PROMO_TYPES.map((t) => (
                 <button
@@ -353,7 +354,7 @@ export default function PricingPage() {
                       : "border-gray-200 text-gray-600 hover:border-gray-300"
                   }`}
                 >
-                  {t === "DISCOUNT" ? "% Discount" : t === "BUNDLE" ? "Buy X Get Y" : "Volume"}
+                  {t === "DISCOUNT" ? tx("% Discount") : t === "BUNDLE" ? tx("Buy X Get Y") : tx("Volume")}
                 </button>
               ))}
             </div>
@@ -362,18 +363,18 @@ export default function PricingPage() {
           {promoForm.promo_type === "DISCOUNT" && (
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Discount Type</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{tx("Discount Type")}</label>
                 <select
                   value={promoForm.discount_type}
                   onChange={(e) => setP("discount_type", e.target.value)}
                   className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
-                  <option value="PERCENTAGE">Percentage %</option>
-                  <option value="FIXED_AMOUNT">Fixed Amount</option>
+                  <option value="PERCENTAGE">{tx("Percentage %")}</option>
+                  <option value="FIXED_AMOUNT">{tx("Fixed Amount")}</option>
                 </select>
               </div>
               <Input
-                label="Discount Value"
+                label={tx("Discount Value")}
                 type="number"
                 step="0.01"
                 value={promoForm.discount_value}
@@ -385,14 +386,14 @@ export default function PricingPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <Input
-              label="Start Date *"
+              label={tx("Start Date *")}
               type="date"
               value={promoForm.start_date}
               onChange={(e) => setP("start_date", e.target.value)}
               required
             />
             <Input
-              label="End Date *"
+              label={tx("End Date *")}
               type="date"
               value={promoForm.end_date}
               onChange={(e) => setP("end_date", e.target.value)}
@@ -402,22 +403,22 @@ export default function PricingPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <Input
-              label="Min Order Value"
+              label={tx("Min Order Value")}
               type="number"
               value={promoForm.min_order_value}
               onChange={(e) => setP("min_order_value", e.target.value)}
-              placeholder="0 = no minimum"
+              placeholder={tx("0 = no minimum")}
             />
             <Input
-              label="Region"
+              label={tx("Region")}
               value={promoForm.region}
               onChange={(e) => setP("region", e.target.value)}
-              placeholder="Leave blank for all regions"
+              placeholder={tx("Leave blank for all regions")}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{tx("Description")}</label>
             <textarea
               value={promoForm.description}
               onChange={(e) => setP("description", e.target.value)}
@@ -426,10 +427,10 @@ export default function PricingPage() {
             />
           </div>
 
-          {createPromo.error && <p className="text-sm text-red-600">Failed to create promotion.</p>}
+          {createPromo.error && <p className="text-sm text-red-600">{tx("Failed to create promotion.")}</p>}
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" type="button" onClick={() => setPromoOpen(false)}>Cancel</Button>
-            <Button type="submit" loading={createPromo.isPending}>Create Promotion</Button>
+            <Button variant="secondary" type="button" onClick={() => setPromoOpen(false)}>{tx("Cancel")}</Button>
+            <Button type="submit" loading={createPromo.isPending}>{tx("Create Promotion")}</Button>
           </div>
         </form>
       </Modal>
@@ -453,9 +454,9 @@ function PricingRuleRow({ rule, onDeactivate }: { rule: PricingRule; onDeactivat
               {rule.customer_name && <span className="text-gray-400 ml-2">· {rule.customer_name}</span>}
             </p>
             <p className="text-xs text-gray-400">
-              {rule.min_quantity ? `Min qty: ${rule.min_quantity}` : "Any qty"}
-              {rule.effective_from && <span> · From {rule.effective_from}</span>}
-              {rule.effective_to && <span> · To {rule.effective_to}</span>}
+              {rule.min_quantity ? tx("Min qty: {min_quantity}", { min_quantity: rule.min_quantity }) : tx("Any qty")}
+              {rule.effective_from && <span> {tx("· From")} {rule.effective_from}</span>}
+              {rule.effective_to && <span> {tx("· To")} {rule.effective_to}</span>}
             </p>
           </div>
         </div>
@@ -465,7 +466,7 @@ function PricingRuleRow({ rule, onDeactivate }: { rule: PricingRule; onDeactivat
             onClick={onDeactivate}
             className="text-xs text-red-400 hover:text-red-600 transition-colors"
           >
-            Deactivate
+            {tx("Deactivate")}
           </button>
         </div>
       </div>
@@ -484,7 +485,7 @@ function PromoCard({ promo, today, onDeactivate }: { promo: Promotion; today: st
           <div className="flex items-center gap-2 mb-1">
             <span className="font-mono text-sm font-bold text-gray-900">{promo.code}</span>
             <Badge
-              label={isExpired ? "Expired" : isActive ? "Active" : "Inactive"}
+              label={isExpired ? tx("Expired") : isActive ? tx("Active") : tx("Inactive")}
               variant={isExpired ? "red" : isActive ? "green" : "gray"}
             />
             <span className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${
@@ -499,9 +500,9 @@ function PromoCard({ promo, today, onDeactivate }: { promo: Promotion; today: st
           <p className="text-xs text-gray-400 mt-0.5">
             {promo.start_date} → {promo.end_date}
             {promo.discount_value && (
-              <span> · {promo.discount_type === "PERCENTAGE" ? `${promo.discount_value}%` : `KES ${promo.discount_value}`} off</span>
+              <span> · {promo.discount_type === "PERCENTAGE" ? `${promo.discount_value}%` : `KES ${promo.discount_value}`} {tx("off")}</span>
             )}
-            {promo.min_order_value && <span> · Min order KES {promo.min_order_value.toLocaleString()}</span>}
+            {promo.min_order_value && <span> {tx("· Min order KES")} {promo.min_order_value.toLocaleString()}</span>}
             {promo.region && <span> · {promo.region}</span>}
           </p>
           {promo.description && <p className="text-xs text-gray-400 mt-1">{promo.description}</p>}
@@ -511,7 +512,7 @@ function PromoCard({ promo, today, onDeactivate }: { promo: Promotion; today: st
             onClick={onDeactivate}
             className="text-xs text-red-400 hover:text-red-600 transition-colors shrink-0"
           >
-            Deactivate
+            {tx("Deactivate")}
           </button>
         )}
       </div>

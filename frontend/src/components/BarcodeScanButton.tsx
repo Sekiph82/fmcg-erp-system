@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { tx } from "@/lib/i18n/core";
 
 type Detector = { detect: (source: HTMLVideoElement) => Promise<{ rawValue: string }[]> };
 type DetectorCtor = new (opts?: { formats?: string[] }) => Detector;
@@ -62,7 +63,7 @@ export function BarcodeScanButton({ onScan, label = "Scan" }: { onScan: (code: s
         videoRef.current.srcObject = s;
         return videoRef.current.play().then(loop);
       })
-      .catch(() => { if (!stopped) setError("Camera unavailable or permission denied."); });
+      .catch(() => { if (!stopped) setError(tx("Camera unavailable or permission denied.")); });
 
     return () => {
       stopped = true;
@@ -83,11 +84,11 @@ export function BarcodeScanButton({ onScan, label = "Scan" }: { onScan: (code: s
         {label}
       </button>
       {open && (
-        <div role="dialog" aria-modal="true" aria-label="Barcode scanner" className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-black/80 p-4">
+        <div role="dialog" aria-modal="true" aria-label={tx("Barcode scanner")} className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-black/80 p-4">
           <video ref={videoRef} muted playsInline className="w-full max-w-md rounded-xl bg-black" />
           {error && <p role="alert" className="text-sm text-red-200">{error}</p>}
           <button type="button" onClick={() => setOpen(false)} className="min-h-12 w-full max-w-md rounded-xl bg-white font-semibold text-gray-900">
-            Cancel
+            {tx("Cancel")}
           </button>
         </div>
       )}

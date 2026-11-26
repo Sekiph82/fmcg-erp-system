@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { faApi, FAAssetCategory, DEPR_METHOD_LABEL } from "@/lib/fixed_assets";
+import { tx } from "@/lib/i18n/core";
 
 export default function FACategoriesPage() {
   const qc = useQueryClient();
@@ -37,15 +38,15 @@ export default function FACategoriesPage() {
   return (
     <div className="p-6 space-y-5">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Asset Categories</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{tx("Asset Categories")}</h1>
         <button onClick={() => setShowForm(!showForm)} className="glow-button">
-          {showForm ? "Cancel" : "+ New Category"}
+          {showForm ? tx("Cancel") : tx("+ New Category")}
         </button>
       </div>
 
       {showForm && (
         <div className="liquid-glass p-5 space-y-4">
-          <h2 className="text-sm font-semibold text-gray-700">New Asset Category</h2>
+          <h2 className="text-sm font-semibold text-gray-700">{tx("New Asset Category")}</h2>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {[
               ["category_code","Category Code","text"],
@@ -68,7 +69,7 @@ export default function FACategoriesPage() {
               </div>
             ))}
             <div className="flex flex-col gap-1">
-              <label className="text-xs text-gray-500">Depreciation Method</label>
+              <label className="text-xs text-gray-500">{tx("Depreciation Method")}</label>
               <select
                 value={form.default_depreciation_method}
                 onChange={(e) => setForm({ ...form, default_depreciation_method: e.target.value })}
@@ -81,7 +82,7 @@ export default function FACategoriesPage() {
             </div>
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-gray-500">Notes</label>
+            <label className="text-xs text-gray-500">{tx("Notes")}</label>
             <textarea
               value={form.notes}
               onChange={(e) => setForm({ ...form, notes: e.target.value })}
@@ -94,7 +95,7 @@ export default function FACategoriesPage() {
             disabled={create.isPending || !form.category_code || !form.category_name}
             className="glow-button"
           >
-            {create.isPending ? "Saving…" : "Save Category"}
+            {create.isPending ? tx("Saving…") : tx("Save Category")}
           </button>
         </div>
       )}
@@ -103,26 +104,26 @@ export default function FACategoriesPage() {
         <table className="min-w-full text-sm">
           <thead>
             <tr>
-              {["Code","Name","Depr. Method","Useful Life","Cap. Threshold","Asset A/C","Depr. A/C","Active"].map(h => (
+              {[tx("Code"),tx("Name"),tx("Depr. Method"),tx("Useful Life"),tx("Cap. Threshold"),tx("Asset A/C"),tx("Depr. A/C"),tx("Active")].map(h => (
                 <th key={h} className="px-4 py-3 text-left">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {isLoading ? (
-              <tr><td colSpan={8} className="px-4 py-10 text-center text-gray-400">Loading…</td></tr>
+              <tr><td colSpan={8} className="px-4 py-10 text-center text-gray-400">{tx("Loading…")}</td></tr>
             ) : cats.map((c) => (
               <tr key={c.id}>
                 <td className="px-4 py-2 font-mono text-xs font-medium">{c.category_code}</td>
                 <td className="px-4 py-2 font-medium">{c.category_name}</td>
                 <td className="px-4 py-2 text-xs">{DEPR_METHOD_LABEL[c.default_depreciation_method]}</td>
-                <td className="px-4 py-2">{c.default_useful_life_months ? `${c.default_useful_life_months}m` : "—"}</td>
+                <td className="px-4 py-2">{c.default_useful_life_months ? tx("{default_useful_life_months}m", { default_useful_life_months: c.default_useful_life_months }) : "—"}</td>
                 <td className="px-4 py-2">{c.capitalization_threshold ? c.capitalization_threshold.toLocaleString() : "—"}</td>
                 <td className="px-4 py-2 font-mono text-xs">{c.asset_account ?? "—"}</td>
                 <td className="px-4 py-2 font-mono text-xs">{c.accum_depreciation_account ?? "—"}</td>
                 <td className="px-4 py-2">
                   <span className={`text-xs font-medium ${c.is_active ? "text-green-600" : "text-gray-400"}`}>
-                    {c.is_active ? "Active" : "Inactive"}
+                    {c.is_active ? tx("Active") : tx("Inactive")}
                   </span>
                 </td>
               </tr>

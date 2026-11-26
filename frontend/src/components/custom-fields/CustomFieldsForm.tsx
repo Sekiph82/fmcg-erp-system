@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from "react";
 import {
   customFieldsApi, CustomFieldDefinition, FieldValueOut, FieldType,
 } from "@/lib/custom_fields";
+import { tx } from "@/lib/i18n/core";
 
 interface Props {
   entityType: string;
@@ -83,14 +84,14 @@ function renderInput(
           <input type="checkbox" checked={!!value}
             onChange={e => onChange(e.target.checked)}
             className="w-4 h-4 rounded" />
-          <span className="text-sm text-gray-700">{value ? "Yes" : "No"}</span>
+          <span className="text-sm text-gray-700">{value ? tx("Yes") : tx("No")}</span>
         </label>
       );
     case "select":
       return (
         <select className={cls} value={(value as string) ?? ""}
           onChange={e => onChange(e.target.value)}>
-          <option value="">Select…</option>
+          <option value="">{tx("Select…")}</option>
           {field.options.filter(o => o.active_flag).map(o => (
             <option key={o.option_value} value={o.option_value}>{o.option_label}</option>
           ))}
@@ -120,7 +121,7 @@ function renderInput(
     case "file_attachment":
       return (
         <input type="text" className={cls}
-          placeholder="File name or path…"
+          placeholder={tx("File name or path…")}
           value={(value as string) ?? ""}
           onChange={e => onChange(e.target.value)} />
       );
@@ -181,7 +182,7 @@ export default function CustomFieldsForm({
     }
   };
 
-  if (loading) return <p className="text-xs text-gray-400 py-2">Loading custom fields…</p>;
+  if (loading) return <p className="text-xs text-gray-400 py-2">{tx("Loading custom fields…")}</p>;
   if (fields.length === 0) return null;
 
   // Group by section
@@ -206,8 +207,8 @@ export default function CustomFieldsForm({
                 <label className="text-xs text-gray-500 block mb-1">
                   {field.field_label}
                   {field.required_flag && <span className="text-red-500 ml-0.5">*</span>}
-                  {field.sensitive_flag && <span className="text-orange-500 ml-1 text-xs">(sensitive)</span>}
-                  {field.field_type === "computed" && <span className="text-gray-400 ml-1">∑ computed</span>}
+                  {field.sensitive_flag && <span className="text-orange-500 ml-1 text-xs">{tx("(sensitive)")}</span>}
+                  {field.field_type === "computed" && <span className="text-gray-400 ml-1">{tx("∑ computed")}</span>}
                 </label>
                 {renderInput(field, values[field.field_code], v => handleChange(field.field_code, v), readOnly)}
                 {field.help_text && <p className="text-xs text-gray-400 mt-0.5">{field.help_text}</p>}
@@ -221,9 +222,9 @@ export default function CustomFieldsForm({
         <div className="flex items-center gap-3">
           <button onClick={save} disabled={saving}
             className="rounded bg-blue-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">
-            {saving ? "Saving…" : "Save Custom Fields"}
+            {saving ? tx("Saving…") : tx("Save Custom Fields")}
           </button>
-          {saved && <span className="text-sm text-green-600">✓ Saved</span>}
+          {saved && <span className="text-sm text-green-600">{tx("✓ Saved")}</span>}
         </div>
       )}
     </div>

@@ -3,14 +3,15 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { lcApi, LC_STATUS_COLOR, LCStatus, LandedCostSummary, fmtCurrency } from "@/lib/landed_cost";
+import { tx, lx } from "@/lib/i18n/core";
 
-const STATUSES: { value: LCStatus | ""; label: string }[] = [
-  { value: "", label: "All" },
-  { value: "DRAFT", label: "Draft" },
-  { value: "VALIDATED", label: "Validated" },
-  { value: "POSTED", label: "Posted" },
-  { value: "CANCELLED", label: "Cancelled" },
-];
+const STATUSES: { value: LCStatus | ""; label: string }[] = lx(() => [
+  { value: "", label: tx("All") },
+  { value: "DRAFT", label: tx("Draft") },
+  { value: "VALIDATED", label: tx("Validated") },
+  { value: "POSTED", label: tx("Posted") },
+  { value: "CANCELLED", label: tx("Cancelled") },
+]);
 
 export default function LandedCostDocuments() {
   const [statusFilter, setStatusFilter] = useState<LCStatus | "">("");
@@ -34,12 +35,12 @@ export default function LandedCostDocuments() {
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Landed Cost Documents</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{tx("Landed Cost Documents")}</h1>
         <Link
           href="/dashboard/landed-cost/new"
           className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
         >
-          + New Document
+          {tx("+ New Document")}
         </Link>
       </div>
 
@@ -47,7 +48,7 @@ export default function LandedCostDocuments() {
       <div className="flex flex-wrap gap-3">
         <input
           className="border rounded-lg px-3 py-1.5 text-sm w-56"
-          placeholder="Search LC no, vendor, bill…"
+          placeholder={tx("Search LC no, vendor, bill…")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -73,16 +74,16 @@ export default function LandedCostDocuments() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
             <tr>
-              {["LC No", "Bill No", "Vendor", "Bill Date", "Currency", "Total (Base)", "Method", "Status", ""].map((h) => (
+              {[tx("LC No"), tx("Bill No"), tx("Vendor"), tx("Bill Date"), tx("Currency"), tx("Total (Base)"), tx("Method"), tx("Status"), ""].map((h) => (
                 <th key={h} className="px-4 py-2 text-left font-medium">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {isLoading ? (
-              <tr><td colSpan={9} className="px-4 py-6 text-center text-gray-400">Loading…</td></tr>
+              <tr><td colSpan={9} className="px-4 py-6 text-center text-gray-400">{tx("Loading…")}</td></tr>
             ) : filtered.length === 0 ? (
-              <tr><td colSpan={9} className="px-4 py-6 text-center text-gray-400">No documents found.</td></tr>
+              <tr><td colSpan={9} className="px-4 py-6 text-center text-gray-400">{tx("No documents found.")}</td></tr>
             ) : (
               filtered.map((doc) => (
                 <tr key={doc.id} className="hover:bg-gray-50">
@@ -100,7 +101,7 @@ export default function LandedCostDocuments() {
                   </td>
                   <td className="px-4 py-2">
                     <Link href={`/dashboard/landed-cost/${doc.id}`} className="text-blue-600 hover:underline text-xs">
-                      View
+                      {tx("View")}
                     </Link>
                   </td>
                 </tr>

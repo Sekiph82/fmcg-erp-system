@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { qmsApi, CriticalControlPoint, CCPMonitoringLog, CalibrationRecord, RISK_BG } from "@/lib/qms";
+import { tx } from "@/lib/i18n/core";
 
 export default function CCPMonitoringPage() {
   const [ccps, setCCPs] = useState<CriticalControlPoint[]>([]);
@@ -47,7 +48,7 @@ export default function CCPMonitoringPage() {
       loadLogs(selectedCCP);
       load();
     } catch {
-      setMonitorError("The reading was not recorded. Check the selected instrument's calibration status and try again.");
+      setMonitorError(tx("The reading was not recorded. Check the selected instrument's calibration status and try again."));
     }
   };
 
@@ -66,78 +67,78 @@ export default function CCPMonitoringPage() {
     <div className="p-6 space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">CCP Monitoring Dashboard</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Critical Control Points — real-time monitoring and violation tracking</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("CCP Monitoring Dashboard")}</h1>
+          <p className="text-sm text-gray-500 mt-0.5">{tx("Critical Control Points — real-time monitoring and violation tracking")}</p>
         </div>
         <div className="flex gap-3">
           <button onClick={() => setShowNewCCP(!showNewCCP)}
             className="px-4 py-2 bg-teal-600 text-white text-sm rounded-lg hover:bg-teal-700">
-            + Define CCP
+            {tx("+ Define CCP")}
           </button>
         </div>
       </div>
 
       {showNewCCP && (
         <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
-          <h3 className="font-semibold text-gray-800">Define New Critical Control Point</h3>
+          <h3 className="font-semibold text-gray-800">{tx("Define New Critical Control Point")}</h3>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs text-gray-500 block mb-1">CCP Name *</label>
+              <label className="text-xs text-gray-500 block mb-1">{tx("CCP Name *")}</label>
               <input className="border rounded-lg px-3 py-2 text-sm w-full"
                 value={ccpForm.ccp_name as string}
                 onChange={e => setCcpForm(p => ({ ...p, ccp_name: e.target.value }))} />
             </div>
             <div>
-              <label className="text-xs text-gray-500 block mb-1">Process Step *</label>
-              <input className="border rounded-lg px-3 py-2 text-sm w-full" placeholder="e.g. Pasteurization"
+              <label className="text-xs text-gray-500 block mb-1">{tx("Process Step *")}</label>
+              <input className="border rounded-lg px-3 py-2 text-sm w-full" placeholder={tx("e.g. Pasteurization")}
                 value={ccpForm.process_step as string}
                 onChange={e => setCcpForm(p => ({ ...p, process_step: e.target.value }))} />
             </div>
             <div>
-              <label className="text-xs text-gray-500 block mb-1">Hazard Type *</label>
+              <label className="text-xs text-gray-500 block mb-1">{tx("Hazard Type *")}</label>
               <select className="border rounded-lg px-3 py-2 text-sm w-full"
                 value={ccpForm.hazard_type as string}
                 onChange={e => setCcpForm(p => ({ ...p, hazard_type: e.target.value }))}>
-                <option value="BIOLOGICAL">Biological</option>
-                <option value="CHEMICAL">Chemical</option>
-                <option value="PHYSICAL">Physical</option>
-                <option value="ALLERGEN">Allergen</option>
+                <option value="BIOLOGICAL">{tx("Biological")}</option>
+                <option value="CHEMICAL">{tx("Chemical")}</option>
+                <option value="PHYSICAL">{tx("Physical")}</option>
+                <option value="ALLERGEN">{tx("Allergen")}</option>
               </select>
             </div>
             <div>
-              <label className="text-xs text-gray-500 block mb-1">Parameter Name *</label>
-              <input className="border rounded-lg px-3 py-2 text-sm w-full" placeholder="e.g. Temperature (°C)"
+              <label className="text-xs text-gray-500 block mb-1">{tx("Parameter Name *")}</label>
+              <input className="border rounded-lg px-3 py-2 text-sm w-full" placeholder={tx("e.g. Temperature (°C)")}
                 value={ccpForm.parameter_name as string}
                 onChange={e => setCcpForm(p => ({ ...p, parameter_name: e.target.value }))} />
             </div>
             <div>
-              <label className="text-xs text-gray-500 block mb-1">Critical Limit Min</label>
+              <label className="text-xs text-gray-500 block mb-1">{tx("Critical Limit Min")}</label>
               <input type="number" className="border rounded-lg px-3 py-2 text-sm w-full"
                 value={(ccpForm.critical_limit_min as number) || ""}
                 onChange={e => setCcpForm(p => ({ ...p, critical_limit_min: parseFloat(e.target.value) }))} />
             </div>
             <div>
-              <label className="text-xs text-gray-500 block mb-1">Critical Limit Max</label>
+              <label className="text-xs text-gray-500 block mb-1">{tx("Critical Limit Max")}</label>
               <input type="number" className="border rounded-lg px-3 py-2 text-sm w-full"
                 value={(ccpForm.critical_limit_max as number) || ""}
                 onChange={e => setCcpForm(p => ({ ...p, critical_limit_max: parseFloat(e.target.value) }))} />
             </div>
             <div>
-              <label className="text-xs text-gray-500 block mb-1">Monitoring Method *</label>
+              <label className="text-xs text-gray-500 block mb-1">{tx("Monitoring Method *")}</label>
               <input className="border rounded-lg px-3 py-2 text-sm w-full"
                 value={ccpForm.monitoring_method as string}
                 onChange={e => setCcpForm(p => ({ ...p, monitoring_method: e.target.value }))} />
             </div>
             <div>
-              <label className="text-xs text-gray-500 block mb-1">Monitoring Frequency *</label>
-              <input className="border rounded-lg px-3 py-2 text-sm w-full" placeholder="e.g. Every 30 minutes"
+              <label className="text-xs text-gray-500 block mb-1">{tx("Monitoring Frequency *")}</label>
+              <input className="border rounded-lg px-3 py-2 text-sm w-full" placeholder={tx("e.g. Every 30 minutes")}
                 value={ccpForm.monitoring_frequency as string}
                 onChange={e => setCcpForm(p => ({ ...p, monitoring_frequency: e.target.value }))} />
             </div>
             <div className="col-span-2">
-              <label className="text-xs text-gray-500 block mb-1">Corrective Action (use semicolons for steps) *</label>
+              <label className="text-xs text-gray-500 block mb-1">{tx("Corrective Action (use semicolons for steps) *")}</label>
               <textarea className="border rounded-lg px-3 py-2 text-sm w-full" rows={2}
-                placeholder="Stop production; Adjust temperature; Re-test; Document corrective action"
+                placeholder={tx("Stop production; Adjust temperature; Re-test; Document corrective action")}
                 value={ccpForm.corrective_action_description as string}
                 onChange={e => setCcpForm(p => ({ ...p, corrective_action_description: e.target.value }))} />
             </div>
@@ -145,23 +146,23 @@ export default function CCPMonitoringPage() {
               <label className="flex items-center gap-2 text-sm mt-2">
                 <input type="checkbox" checked={ccpForm.allergen_related as boolean || false}
                   onChange={e => setCcpForm(p => ({ ...p, allergen_related: e.target.checked }))} />
-                Allergen-related
+                {tx("Allergen-related")}
               </label>
               <label className="flex items-center gap-2 text-sm mt-2">
                 <input type="checkbox" checked={ccpForm.cleaning_required as boolean || false}
                   onChange={e => setCcpForm(p => ({ ...p, cleaning_required: e.target.checked }))} />
-                Cleaning required
+                {tx("Cleaning required")}
               </label>
             </div>
           </div>
           <div className="flex gap-3">
             <button onClick={handleCreateCCP}
               className="px-4 py-2 bg-teal-600 text-white text-sm rounded-lg hover:bg-teal-700">
-              Define CCP
+              {tx("Define CCP")}
             </button>
             <button onClick={() => setShowNewCCP(false)}
               className="px-4 py-2 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200">
-              Cancel
+              {tx("Cancel")}
             </button>
           </div>
         </div>
@@ -170,14 +171,14 @@ export default function CCPMonitoringPage() {
       {/* Recent Violations */}
       {violations.length > 0 && (
         <div className="bg-red-50 border border-red-200 rounded-xl p-4">
-          <h2 className="font-semibold text-red-800 mb-3">⚠ Recent CCP Violations</h2>
+          <h2 className="font-semibold text-red-800 mb-3">{tx("⚠ Recent CCP Violations")}</h2>
           <div className="space-y-2">
             {violations.slice(0, 5).map(v => (
               <div key={v.id} className="flex items-center justify-between bg-white rounded-lg px-4 py-2 border border-red-100">
                 <div>
                   <span className="font-medium text-red-800">{v.ccp_name || "CCP"}</span>
                   <span className="text-xs text-gray-500 ml-2">
-                    Value: {v.recorded_value} | Deviation: {v.deviation_amount}
+                    {tx("Value:")} {v.recorded_value} {tx("| Deviation:")} {v.deviation_amount}
                   </span>
                 </div>
                 <span className="text-xs text-gray-400">{new Date(v.monitoring_datetime).toLocaleString()}</span>
@@ -191,12 +192,12 @@ export default function CCPMonitoringPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <div className="px-5 py-3 border-b border-gray-100">
-            <h2 className="font-semibold text-gray-800">Active CCPs</h2>
+            <h2 className="font-semibold text-gray-800">{tx("Active CCPs")}</h2>
           </div>
           {loading ? (
-            <p className="px-5 py-8 text-gray-400 text-sm">Loading…</p>
+            <p className="px-5 py-8 text-gray-400 text-sm">{tx("Loading…")}</p>
           ) : ccps.length === 0 ? (
-            <p className="px-5 py-8 text-gray-400 text-sm">No CCPs defined yet</p>
+            <p className="px-5 py-8 text-gray-400 text-sm">{tx("No CCPs defined yet")}</p>
           ) : (
             <div className="divide-y divide-gray-100">
               {ccps.map(c => (
@@ -216,10 +217,10 @@ export default function CCPMonitoringPage() {
                     <span>{c.process_step}</span>
                     <span>│</span>
                     <span>{c.parameter_name}</span>
-                    {c.critical_limit_min != null && <span>Min: {c.critical_limit_min}</span>}
-                    {c.critical_limit_max != null && <span>Max: {c.critical_limit_max}</span>}
+                    {c.critical_limit_min != null && <span>{tx("Min:")} {c.critical_limit_min}</span>}
+                    {c.critical_limit_max != null && <span>{tx("Max:")} {c.critical_limit_max}</span>}
                     {c.recent_violations > 0 && (
-                      <span className="text-red-600 font-medium">⚠ {c.recent_violations} violation(s)</span>
+                      <span className="text-red-600 font-medium">⚠ {c.recent_violations} {tx("violation(s)")}</span>
                     )}
                   </div>
                 </div>
@@ -232,7 +233,7 @@ export default function CCPMonitoringPage() {
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
             <h2 className="font-semibold text-gray-800">
-              {selectedCCP ? `${selectedCCP.ccp_no} — Monitoring Logs` : "Select a CCP to view logs"}
+              {selectedCCP ? tx("{ccp_no} — Monitoring Logs", { ccp_no: selectedCCP.ccp_no }) : tx("Select a CCP to view logs")}
             </h2>
             {selectedCCP && (
               <button onClick={() => {
@@ -242,7 +243,7 @@ export default function CCPMonitoringPage() {
                 setMonitorForm({ recorded_value: "", instrument_calibration_id: "", notes: "" });
               }}
                 className="text-sm px-3 py-1.5 bg-teal-600 text-white rounded-lg hover:bg-teal-700">
-                + Record
+                {tx("+ Record")}
               </button>
             )}
           </div>
@@ -252,18 +253,18 @@ export default function CCPMonitoringPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs text-gray-500 block mb-1">
-                    {selectedCCP.parameter_name} value *
+                    {selectedCCP.parameter_name} {tx("value *")}
                   </label>
                   <input type="number" className="border rounded-lg px-3 py-2 text-sm w-full"
                     value={(monitorForm.recorded_value as number) || ""}
                     onChange={e => setMonitorForm(p => ({ ...p, recorded_value: parseFloat(e.target.value) }))} />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500 block mb-1">Calibration instrument *</label>
+                  <label className="text-xs text-gray-500 block mb-1">{tx("Calibration instrument *")}</label>
                   <select className="border rounded-lg px-3 py-2 text-sm w-full"
                     value={(monitorForm.instrument_calibration_id as string) || ""}
                     onChange={e => setMonitorForm(p => ({ ...p, instrument_calibration_id: e.target.value }))}>
-                    <option value="">Select a verified instrument</option>
+                    <option value="">{tx("Select a verified instrument")}</option>
                     {calibrationInstruments.map((instrument) => {
                       const eligible = instrument.is_active && (instrument.status === "CURRENT" || instrument.status === "DUE_SOON");
                       return <option key={instrument.id} value={instrument.id} disabled={!eligible}>
@@ -271,37 +272,37 @@ export default function CCPMonitoringPage() {
                       </option>;
                     })}
                   </select>
-                  <p className="mt-1 text-xs text-gray-500">Numeric CCP readings require a linked instrument that is verified and not expired. Due soon remains usable until its due date.</p>
+                  <p className="mt-1 text-xs text-gray-500">{tx("Numeric CCP readings require a linked instrument that is verified and not expired. Due soon remains usable until its due date.")}</p>
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500 block mb-1">Notes</label>
+                  <label className="text-xs text-gray-500 block mb-1">{tx("Notes")}</label>
                   <input className="border rounded-lg px-3 py-2 text-sm w-full"
                     value={(monitorForm.notes as string) || ""}
                     onChange={e => setMonitorForm(p => ({ ...p, notes: e.target.value }))} />
                 </div>
               </div>
               {monitorError ? <p role="alert" className="text-sm text-red-700">{monitorError}</p> : null}
-              {calibrationInstruments.length === 0 ? <p className="text-sm text-amber-700">No calibration instruments are available. Register one in the calibration registry before recording a numeric reading.</p> : null}
+              {calibrationInstruments.length === 0 ? <p className="text-sm text-amber-700">{tx("No calibration instruments are available. Register one in the calibration registry before recording a numeric reading.")}</p> : null}
               <div className="flex gap-3">
                 <button onClick={handleMonitor}
                   disabled={typeof monitorForm.recorded_value !== "number" || !Number.isFinite(monitorForm.recorded_value) || !monitorForm.instrument_calibration_id}
                   className="px-3 py-1.5 bg-teal-600 text-white text-sm rounded-lg hover:bg-teal-700">
-                  Record
+                  {tx("Record")}
                 </button>
                 <button onClick={() => setShowMonitor(false)}
                   className="px-3 py-1.5 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200">
-                  Cancel
+                  {tx("Cancel")}
                 </button>
               </div>
             </div>
           )}
 
           {!selectedCCP ? (
-            <p className="px-5 py-8 text-gray-400 text-sm">Click a CCP to view monitoring history</p>
+            <p className="px-5 py-8 text-gray-400 text-sm">{tx("Click a CCP to view monitoring history")}</p>
           ) : logsLoading ? (
-            <p className="px-5 py-8 text-gray-400 text-sm">Loading logs…</p>
+            <p className="px-5 py-8 text-gray-400 text-sm">{tx("Loading logs…")}</p>
           ) : logs.length === 0 ? (
-            <p className="px-5 py-8 text-gray-400 text-sm">No monitoring records for this CCP</p>
+            <p className="px-5 py-8 text-gray-400 text-sm">{tx("No monitoring records for this CCP")}</p>
           ) : (
             <div className="divide-y divide-gray-100 max-h-96 overflow-y-auto">
               {logs.map(l => (
@@ -312,10 +313,10 @@ export default function CCPMonitoringPage() {
                       <span className="font-medium text-gray-800">{l.recorded_value}</span>
                       {l.is_violation && (
                         <span className="text-xs bg-red-100 text-red-800 px-2 py-0.5 rounded">
-                          VIOLATION +{l.deviation_amount}
+                          {tx("VIOLATION +")}{l.deviation_amount}
                         </span>
                       )}
-                      {l.calibration_instrument_code && <span className="text-xs text-gray-500">Instrument {l.calibration_instrument_code} · {l.calibration_status_at_record?.replaceAll("_", " ")}</span>}
+                      {l.calibration_instrument_code && <span className="text-xs text-gray-500">{tx("Instrument")} {l.calibration_instrument_code} · {l.calibration_status_at_record?.replaceAll("_", " ")}</span>}
                     </div>
                     <span className="text-xs text-gray-400">{new Date(l.monitoring_datetime).toLocaleString()}</span>
                   </div>

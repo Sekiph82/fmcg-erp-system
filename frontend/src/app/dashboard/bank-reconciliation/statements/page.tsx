@@ -3,16 +3,17 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { brApi, BRStatement, BRStatementStatus, STATUS_COLOR } from "@/lib/bank_reconciliation";
+import { tx, lx } from "@/lib/i18n/core";
 
-const STATUSES: { value: BRStatementStatus | ""; label: string }[] = [
-  { value: "", label: "All" },
-  { value: "DRAFT", label: "Draft" },
-  { value: "IMPORTED", label: "Imported" },
-  { value: "IN_RECONCILIATION", label: "In Recon" },
-  { value: "RECONCILED", label: "Reconciled" },
-  { value: "CLOSED", label: "Closed" },
-  { value: "LOCKED", label: "Locked" },
-];
+const STATUSES: { value: BRStatementStatus | ""; label: string }[] = lx(() => [
+  { value: "", label: tx("All") },
+  { value: "DRAFT", label: tx("Draft") },
+  { value: "IMPORTED", label: tx("Imported") },
+  { value: "IN_RECONCILIATION", label: tx("In Recon") },
+  { value: "RECONCILED", label: tx("Reconciled") },
+  { value: "CLOSED", label: tx("Closed") },
+  { value: "LOCKED", label: tx("Locked") },
+]);
 
 export default function StatementsListPage() {
   const [statusFilter, setStatusFilter] = useState<BRStatementStatus | "">("");
@@ -25,10 +26,10 @@ export default function StatementsListPage() {
   return (
     <div className="p-6 space-y-5">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Bank Statements</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{tx("Bank Statements")}</h1>
         <Link href="/dashboard/bank-reconciliation/import"
           className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700">
-          Import Statement
+          {tx("Import Statement")}
         </Link>
       </div>
 
@@ -44,13 +45,13 @@ export default function StatementsListPage() {
       </div>
 
       {isLoading ? (
-        <p className="text-gray-400">Loading…</p>
+        <p className="text-gray-400">{tx("Loading…")}</p>
       ) : (
         <div className="bg-white border rounded-xl overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
               <tr>
-                {["Statement No", "Account", "Period", "Opening", "Closing", "Lines", "Source", "Status", ""].map((h) => (
+                {[tx("Statement No"), tx("Account"), tx("Period"), tx("Opening"), tx("Closing"), tx("Lines"), tx("Source"), tx("Status"), ""].map((h) => (
                   <th key={h} className="px-4 py-2 text-left font-medium">{h}</th>
                 ))}
               </tr>
@@ -73,13 +74,13 @@ export default function StatementsListPage() {
                   <td className="px-4 py-2">
                     <Link href={`/dashboard/bank-reconciliation/statements/${s.id}`}
                       className="text-blue-600 hover:underline text-xs">
-                      Open
+                      {tx("Open")}
                     </Link>
                   </td>
                 </tr>
               ))}
               {statements.length === 0 && (
-                <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400 text-sm">No statements found.</td></tr>
+                <tr><td colSpan={9} className="px-4 py-8 text-center text-gray-400 text-sm">{tx("No statements found.")}</td></tr>
               )}
             </tbody>
           </table>

@@ -4,6 +4,7 @@ import {
   shelfLifeApi, DispositionSuggestion, DispositionStatus,
   DISPOSITION_ACTION_LABEL,
 } from "@/lib/shelfLife";
+import { tx } from "@/lib/i18n/core";
 
 const STATUS_BG: Record<DispositionStatus, string> = {
   suggested: "bg-amber-100 text-amber-700",
@@ -33,7 +34,7 @@ export default function DispositionPage() {
     setGenerating(true);
     try {
       const r = await shelfLifeApi.generateDispositions();
-      alert(`Generated ${r.created} new disposition suggestions.`);
+      alert(tx("Generated {created} new disposition suggestions.", { created: r.created }));
       load();
     } finally { setGenerating(false); }
   };
@@ -57,12 +58,12 @@ export default function DispositionPage() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Disposition Suggestion Console</h1>
-          <p className="text-sm text-gray-500">System-generated lot disposition recommendations for expired, near-expiry, and at-risk stock</p>
+          <h1 className="text-xl font-bold text-gray-900">{tx("Disposition Suggestion Console")}</h1>
+          <p className="text-sm text-gray-500">{tx("System-generated lot disposition recommendations for expired, near-expiry, and at-risk stock")}</p>
         </div>
         <button onClick={handleGenerate} disabled={generating}
           className="px-4 py-2 text-sm bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50">
-          {generating ? "Generating…" : "Generate Suggestions"}
+          {generating ? tx("Generating…") : tx("Generate Suggestions")}
         </button>
       </div>
 
@@ -71,7 +72,7 @@ export default function DispositionPage() {
         {(["", "suggested","approved","executed","cancelled"] as const).map(s => (
           <button key={s} onClick={() => { setFilterStatus(s as any); load(s ? s as DispositionStatus : undefined); }}
             className={`px-3 py-1.5 rounded-lg text-sm border ${filterStatus === s ? "bg-orange-600 text-white border-orange-600" : "border-gray-200 text-gray-600 hover:bg-gray-50"}`}>
-            {s || "All"}
+            {s || tx("All")}
           </button>
         ))}
       </div>
@@ -80,16 +81,16 @@ export default function DispositionPage() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-xs uppercase text-gray-500">
             <tr>
-              {["Lot ID","Action","Status","Urgency","Days Until Expiry","Fin. Exposure","Reason","Action"].map(h => (
+              {[tx("Lot ID"),tx("Action"),tx("Status"),tx("Urgency"),tx("Days Until Expiry"),tx("Fin. Exposure"),tx("Reason"),tx("Action")].map(h => (
                 <th key={h} className="px-4 py-3 text-left font-medium">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {loading ? (
-              <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">Loading…</td></tr>
+              <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">{tx("Loading…")}</td></tr>
             ) : suggestions.length === 0 ? (
-              <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">No disposition suggestions</td></tr>
+              <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">{tx("No disposition suggestions")}</td></tr>
             ) : suggestions.map(s => (
               <tr key={s.id} className="hover:bg-gray-50">
                 <td className="px-4 py-3 font-mono text-xs">{s.lot_id.slice(0,10)}…</td>
@@ -113,7 +114,7 @@ export default function DispositionPage() {
                 <td className="px-4 py-3">
                   {s.days_until_expiry !== null ? (
                     <span className={s.days_until_expiry < 0 ? "text-red-700 font-bold" : s.days_until_expiry <= 14 ? "text-amber-700 font-semibold" : "text-gray-700"}>
-                      {s.days_until_expiry < 0 ? `${Math.abs(s.days_until_expiry)}d expired` : `${s.days_until_expiry}d`}
+                      {s.days_until_expiry < 0 ? `${Math.abs(s.days_until_expiry)}d expired` : tx("{days_until_expiry}d", { days_until_expiry: s.days_until_expiry })}
                     </span>
                   ) : "—"}
                 </td>
@@ -125,7 +126,7 @@ export default function DispositionPage() {
                   {s.status === "suggested" && (
                     <button onClick={() => setSelectedId(s.id)}
                       className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700">
-                      Approve
+                      {tx("Approve")}
                     </button>
                   )}
                 </td>
@@ -139,23 +140,23 @@ export default function DispositionPage() {
       {selectedId && selected && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4">
-            <h3 className="font-semibold text-gray-800">Approve Disposition</h3>
+            <h3 className="font-semibold text-gray-800">{tx("Approve Disposition")}</h3>
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
               <p className="text-sm font-medium text-amber-800">{DISPOSITION_ACTION_LABEL[selected.action]}</p>
               <p className="text-xs text-amber-600 mt-1">{selected.reason}</p>
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-600">Execution Notes</label>
+              <label className="text-xs font-medium text-gray-600">{tx("Execution Notes")}</label>
               <textarea rows={3} className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
                 value={approveNote} onChange={e => setApproveNote(e.target.value)}
-                placeholder="Notes on how this disposition will be executed…" />
+                placeholder={tx("Notes on how this disposition will be executed…")} />
             </div>
             <div className="flex gap-2 justify-end">
               <button onClick={() => { setSelectedId(null); setApproveNote(""); }}
-                className="px-4 py-2 text-sm border rounded-lg">Cancel</button>
+                className="px-4 py-2 text-sm border rounded-lg">{tx("Cancel")}</button>
               <button onClick={handleApprove} disabled={!!approving}
                 className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
-                {approving ? "Approving…" : "Approve Disposition"}
+                {approving ? tx("Approving…") : tx("Approve Disposition")}
               </button>
             </div>
           </div>

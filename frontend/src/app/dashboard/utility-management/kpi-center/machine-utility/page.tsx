@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Tooltip } from "recharts";
 import { kpiApi } from "@/lib/utilityKpi";
+import { tx } from "@/lib/i18n/core";
 
 const today = new Date().toISOString().slice(0, 10);
 const mtdStart = today.slice(0, 8) + "01";
@@ -38,7 +39,7 @@ function DateFilter({ from, to, onFrom, onTo }: { from: string; to: string; onFr
   return (
     <div className="flex gap-3 items-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3">
       <input type="date" className={ic} value={from} onChange={e => onFrom(e.target.value)} />
-      <span className="text-gray-400 text-xs">to</span>
+      <span className="text-gray-400 text-xs">{tx("to")}</span>
       <input type="date" className={ic} value={to} onChange={e => onTo(e.target.value)} />
     </div>
   );
@@ -99,15 +100,15 @@ export default function MachineUtilityKpiPage() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <div className="flex items-center gap-3 mb-1">
-            <Link href="/dashboard/utility-management/kpi-center" className="text-sm text-gray-500 hover:text-blue-600">← KPI Center</Link>
+            <Link href="/dashboard/utility-management/kpi-center" className="text-sm text-gray-500 hover:text-blue-600">{tx("← KPI Center")}</Link>
             <span className="text-gray-300">|</span>
-            <Link href="/dashboard/utility-management/machine-utility" className="text-sm text-blue-600 hover:underline">Machine Records →</Link>
+            <Link href="/dashboard/utility-management/machine-utility" className="text-sm text-blue-600 hover:underline">{tx("Machine Records →")}</Link>
           </div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white" style={{ borderLeft: "4px solid #818cf8", paddingLeft: 12 }}>
-            Machine Utility KPI Dashboard
+            {tx("Machine Utility KPI Dashboard")}
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Per-machine utility consumption, standby waste, variance flags, and cost per batch.
+            {tx("Per-machine utility consumption, standby waste, variance flags, and cost per batch.")}
           </p>
         </div>
         <DateFilter from={dateFrom} to={dateTo} onFrom={setDateFrom} onTo={setDateTo} />
@@ -120,9 +121,9 @@ export default function MachineUtilityKpiPage() {
             <div className="rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-300 dark:border-red-700 p-4 flex items-center gap-3">
               <span className="text-red-500 text-xl">🔴</span>
               <div className="text-sm">
-                <p className="font-semibold text-red-800 dark:text-red-300">High Variance Flag</p>
+                <p className="font-semibold text-red-800 dark:text-red-300">{tx("High Variance Flag")}</p>
                 <p className="text-red-700 dark:text-red-400">
-                  Average consumption variance {pct(kpi.avg_variance_pct)} exceeds acceptable threshold. Review machine calibration and process consistency.
+                  {tx("Average consumption variance")} {pct(kpi.avg_variance_pct)} {tx("exceeds acceptable threshold. Review machine calibration and process consistency.")}
                 </p>
               </div>
             </div>
@@ -131,9 +132,9 @@ export default function MachineUtilityKpiPage() {
             <div className="rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-300 dark:border-amber-700 p-4 flex items-center gap-3">
               <span className="text-amber-500 text-xl">⚡</span>
               <div className="text-sm">
-                <p className="font-semibold text-amber-800 dark:text-amber-300">Standby Waste Flag</p>
+                <p className="font-semibold text-amber-800 dark:text-amber-300">{tx("Standby Waste Flag")}</p>
                 <p className="text-amber-700 dark:text-amber-400">
-                  Machines consuming {pct(kpi.standby_pct)} of energy while idle. Consider auto-shutdown policies for non-production hours.
+                  {tx("Machines consuming")} {pct(kpi.standby_pct)} {tx("of energy while idle. Consider auto-shutdown policies for non-production hours.")}
                 </p>
               </div>
             </div>
@@ -144,30 +145,30 @@ export default function MachineUtilityKpiPage() {
       {/* KPI cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         <KpiCard
-          label="Total Consumption"
+          label={tx("Total Consumption")}
           value={fmt(kpi?.total_consumption, 1)}
           unit={kpi?.consumption_unit ?? "kWh"}
           sub={`${dateFrom} – ${dateTo}`}
         />
         <KpiCard
-          label="Electricity / Runtime Hour"
+          label={tx("Electricity / Runtime Hour")}
           value={fmt(kpi?.electricity_per_runtime_h, 2)}
           unit="kWh/h"
           warn={(kpi?.electricity_per_runtime_h ?? 0) > 75}
         />
         <KpiCard
-          label="Water per Batch"
+          label={tx("Water per Batch")}
           value={fmt(kpi?.water_per_batch, 3)}
           unit="m³/batch"
           warn={(kpi?.water_per_batch ?? 0) > 5}
         />
         <KpiCard
-          label="Air per Batch"
+          label={tx("Air per Batch")}
           value={fmt(kpi?.air_per_batch, 2)}
           unit="Nm³/batch"
         />
         <KpiCard
-          label="Standby Consumption"
+          label={tx("Standby Consumption")}
           value={pct(kpi?.standby_pct)}
           warn={(kpi?.standby_pct ?? 0) > 10}
           critical={(kpi?.standby_pct ?? 0) > 20}
@@ -175,12 +176,12 @@ export default function MachineUtilityKpiPage() {
           sub="% of total while machine idle"
         />
         <KpiCard
-          label="Cost per Batch"
+          label={tx("Cost per Batch")}
           value={fmtCcy(kpi?.cost_per_batch)}
           unit="/batch"
         />
         <KpiCard
-          label="Avg Consumption Variance"
+          label={tx("Avg Consumption Variance")}
           value={pct(kpi?.avg_variance_pct)}
           warn={(kpi?.avg_variance_pct ?? 0) > 15}
           critical={(kpi?.avg_variance_pct ?? 0) > 25}
@@ -188,7 +189,7 @@ export default function MachineUtilityKpiPage() {
           sub="vs expected standard consumption"
         />
         <KpiCard
-          label="Anomaly Count"
+          label={tx("Anomaly Count")}
           value={kpi?.anomaly_count == null ? "—" : String(kpi.anomaly_count)}
           warn={(kpi?.anomaly_count ?? 0) > 0}
           critical={(kpi?.anomaly_count ?? 0) > 3}
@@ -198,8 +199,8 @@ export default function MachineUtilityKpiPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Radar chart */}
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Machine Performance Radar</h3>
-          <p className="text-xs text-gray-400 mb-2">Higher score = better performance (normalized 0–100)</p>
+          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">{tx("Machine Performance Radar")}</h3>
+          <p className="text-xs text-gray-400 mb-2">{tx("Higher score = better performance (normalized 0–100)")}</p>
           <ResponsiveContainer width="100%" height={260}>
             <RadarChart data={radarData}>
               <PolarGrid />
@@ -213,32 +214,32 @@ export default function MachineUtilityKpiPage() {
 
         {/* Summary table */}
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Consumption Summary</h3>
+          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">{tx("Consumption Summary")}</h3>
           <table className="w-full text-sm">
             <thead>
               <tr className="text-xs text-gray-400 border-b border-gray-100 dark:border-gray-700">
-                <th className="text-left pb-2">Metric</th>
-                <th className="text-right pb-2">Value</th>
-                <th className="text-right pb-2">Status</th>
+                <th className="text-left pb-2">{tx("Metric")}</th>
+                <th className="text-right pb-2">{tx("Value")}</th>
+                <th className="text-right pb-2">{tx("Status")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
               {[
-                { label: "Total Consumption", value: `${fmt(kpi?.total_consumption, 1)} ${kpi?.consumption_unit ?? "kWh"}`, ok: true },
-                { label: "Electricity / h", value: `${fmt(kpi?.electricity_per_runtime_h, 2)} kWh/h`, ok: (kpi?.electricity_per_runtime_h ?? 0) <= 75 },
-                { label: "Water / batch", value: `${fmt(kpi?.water_per_batch, 3)} m³`, ok: (kpi?.water_per_batch ?? 0) <= 5 },
-                { label: "Air / batch", value: `${fmt(kpi?.air_per_batch, 2)} Nm³`, ok: true },
-                { label: "Standby %", value: pct(kpi?.standby_pct), ok: (kpi?.standby_pct ?? 0) <= 10 },
-                { label: "Cost / batch", value: fmtCcy(kpi?.cost_per_batch), ok: true },
-                { label: "Variance %", value: pct(kpi?.avg_variance_pct), ok: (kpi?.avg_variance_pct ?? 0) <= 15 },
-                { label: "Anomalies", value: String(kpi?.anomaly_count ?? "—"), ok: (kpi?.anomaly_count ?? 0) === 0 },
+                { label: tx("Total Consumption"), value: `${fmt(kpi?.total_consumption, 1)} ${kpi?.consumption_unit ?? "kWh"}`, ok: true },
+                { label: tx("Electricity / h"), value: `${fmt(kpi?.electricity_per_runtime_h, 2)} kWh/h`, ok: (kpi?.electricity_per_runtime_h ?? 0) <= 75 },
+                { label: tx("Water / batch"), value: `${fmt(kpi?.water_per_batch, 3)} m³`, ok: (kpi?.water_per_batch ?? 0) <= 5 },
+                { label: tx("Air / batch"), value: `${fmt(kpi?.air_per_batch, 2)} Nm³`, ok: true },
+                { label: tx("Standby %"), value: pct(kpi?.standby_pct), ok: (kpi?.standby_pct ?? 0) <= 10 },
+                { label: tx("Cost / batch"), value: fmtCcy(kpi?.cost_per_batch), ok: true },
+                { label: tx("Variance %"), value: pct(kpi?.avg_variance_pct), ok: (kpi?.avg_variance_pct ?? 0) <= 15 },
+                { label: tx("Anomalies"), value: String(kpi?.anomaly_count ?? "—"), ok: (kpi?.anomaly_count ?? 0) === 0 },
               ].map(row => (
                 <tr key={row.label}>
                   <td className="py-2 text-gray-600 dark:text-gray-400">{row.label}</td>
                   <td className="py-2 text-right font-medium text-gray-800 dark:text-gray-200">{row.value}</td>
                   <td className="py-2 text-right">
                     <span className={`text-xs px-1.5 py-0.5 rounded ${row.ok ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300" : "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400"}`}>
-                      {row.ok ? "OK" : "Review"}
+                      {row.ok ? "OK" : tx("Review")}
                     </span>
                   </td>
                 </tr>

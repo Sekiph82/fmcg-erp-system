@@ -6,6 +6,7 @@ import {
   lcApi, LandedCostType, LCAllocationMethod, LCReferenceType,
   COST_TYPE_LABEL, ALLOC_METHOD_LABEL,
 } from "@/lib/landed_cost";
+import { tx } from "@/lib/i18n/core";
 
 const COST_TYPES = Object.keys(COST_TYPE_LABEL) as LandedCostType[];
 const ALLOC_METHODS = (Object.keys(ALLOC_METHOD_LABEL) as LCAllocationMethod[])
@@ -68,7 +69,7 @@ export default function NewLandedCostPage() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (lines.length === 0) { setError("Add at least one cost line."); return; }
+    if (lines.length === 0) { setError(tx("Add at least one cost line.")); return; }
     setError("");
     mutation.mutate({
       ...form,
@@ -85,16 +86,16 @@ export default function NewLandedCostPage() {
 
   return (
     <form onSubmit={handleSubmit} className="p-6 space-y-6 max-w-4xl">
-      <h1 className="text-2xl font-bold text-gray-900">New Landed Cost Document</h1>
+      <h1 className="text-2xl font-bold text-gray-900">{tx("New Landed Cost Document")}</h1>
 
       {error && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded">{error}</p>}
 
       {/* Header fields */}
       <div className="bg-white border rounded-xl p-5 space-y-4">
-        <h2 className="font-semibold text-gray-700">Document Header</h2>
+        <h2 className="font-semibold text-gray-700">{tx("Document Header")}</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Reference Type</label>
+            <label className="block text-xs text-gray-500 mb-1">{tx("Reference Type")}</label>
             <select
               className="border rounded-lg px-3 py-2 text-sm w-full"
               value={form.reference_type}
@@ -104,22 +105,22 @@ export default function NewLandedCostPage() {
             </select>
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Vendor / Carrier Name</label>
+            <label className="block text-xs text-gray-500 mb-1">{tx("Vendor / Carrier Name")}</label>
             <input className="border rounded-lg px-3 py-2 text-sm w-full"
               value={form.vendor_name} onChange={(e) => setForm({ ...form, vendor_name: e.target.value })} />
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Bill / Invoice No</label>
+            <label className="block text-xs text-gray-500 mb-1">{tx("Bill / Invoice No")}</label>
             <input className="border rounded-lg px-3 py-2 text-sm w-full"
               value={form.bill_no} onChange={(e) => setForm({ ...form, bill_no: e.target.value })} />
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Bill Date</label>
+            <label className="block text-xs text-gray-500 mb-1">{tx("Bill Date")}</label>
             <input type="date" className="border rounded-lg px-3 py-2 text-sm w-full"
               value={form.bill_date} onChange={(e) => setForm({ ...form, bill_date: e.target.value })} />
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Document total currency</label>
+            <label className="block text-xs text-gray-500 mb-1">{tx("Document total currency")}</label>
             <input className="border rounded-lg px-3 py-2 text-sm w-full uppercase"
               value={form.currency_code} maxLength={10}
               onChange={(e) => {
@@ -130,7 +131,7 @@ export default function NewLandedCostPage() {
               }} />
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Allocation Method</label>
+            <label className="block text-xs text-gray-500 mb-1">{tx("Allocation Method")}</label>
             <select className="border rounded-lg px-3 py-2 text-sm w-full"
               value={form.allocation_method}
               onChange={(e) => setForm({ ...form, allocation_method: e.target.value as LCAllocationMethod })}
@@ -139,7 +140,7 @@ export default function NewLandedCostPage() {
             </select>
           </div>
           <div className="md:col-span-2">
-            <label className="block text-xs text-gray-500 mb-1">Notes</label>
+            <label className="block text-xs text-gray-500 mb-1">{tx("Notes")}</label>
             <input className="border rounded-lg px-3 py-2 text-sm w-full"
               value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
           </div>
@@ -149,10 +150,10 @@ export default function NewLandedCostPage() {
       {/* Cost lines */}
       <div className="bg-white border rounded-xl p-5 space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="font-semibold text-gray-700">Cost Components</h2>
+          <h2 className="font-semibold text-gray-700">{tx("Cost Components")}</h2>
           <button type="button" onClick={addLine}
             className="text-xs px-3 py-1.5 border rounded-lg hover:bg-gray-50 text-blue-600">
-            + Add Line
+            {tx("+ Add Line")}
           </button>
         </div>
 
@@ -160,7 +161,7 @@ export default function NewLandedCostPage() {
           <div key={i} className="border rounded-lg p-4 space-y-3 bg-gray-50">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Cost Type</label>
+                <label className="block text-xs text-gray-500 mb-1">{tx("Cost Type")}</label>
                 <select className="border rounded px-2 py-1.5 text-sm w-full bg-white"
                   value={line.cost_type}
                   onChange={(e) => updateLine(i, "cost_type", e.target.value)}>
@@ -168,31 +169,31 @@ export default function NewLandedCostPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Estimated Amount (FC)</label>
+                <label className="block text-xs text-gray-500 mb-1">{tx("Estimated Amount (FC)")}</label>
                 <input type="number" step="any" className="border rounded px-2 py-1.5 text-sm w-full bg-white"
                   value={line.amount_fc}
                   onChange={(e) => updateLine(i, "amount_fc", e.target.value)} />
               </div>
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Line currency</label>
+                <label className="block text-xs text-gray-500 mb-1">{tx("Line currency")}</label>
                 <input className="border rounded px-2 py-1.5 text-sm w-full bg-white uppercase" maxLength={10}
                   value={line.currency_code}
                   onChange={(e) => updateLine(i, "currency_code", e.target.value.toUpperCase())} />
               </div>
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Vendor / Agent</label>
+                <label className="block text-xs text-gray-500 mb-1">{tx("Vendor / Agent")}</label>
                 <input className="border rounded px-2 py-1.5 text-sm w-full bg-white"
                   value={line.vendor_name}
                   onChange={(e) => updateLine(i, "vendor_name", e.target.value)} />
               </div>
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Description</label>
+                <label className="block text-xs text-gray-500 mb-1">{tx("Description")}</label>
                 <input className="border rounded px-2 py-1.5 text-sm w-full bg-white"
                   value={line.description}
                   onChange={(e) => updateLine(i, "description", e.target.value)} />
               </div>
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Account Code</label>
+                <label className="block text-xs text-gray-500 mb-1">{tx("Account Code")}</label>
                 <input className="border rounded px-2 py-1.5 text-sm w-full bg-white"
                   value={line.account_code}
                   onChange={(e) => updateLine(i, "account_code", e.target.value)} />
@@ -201,12 +202,12 @@ export default function NewLandedCostPage() {
                 <label className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer">
                   <input type="checkbox" checked={line.is_included_in_valuation}
                     onChange={(e) => updateLine(i, "is_included_in_valuation", e.target.checked)} />
-                  Include in valuation
+                  {tx("Include in valuation")}
                 </label>
                 {lines.length > 1 && (
                   <button type="button" onClick={() => removeLine(i)}
                     className="text-xs text-red-500 hover:underline ml-auto">
-                    Remove
+                    {tx("Remove")}
                   </button>
                 )}
               </div>
@@ -221,15 +222,15 @@ export default function NewLandedCostPage() {
           disabled={mutation.isPending}
           className="px-6 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50"
         >
-          {mutation.isPending ? "Creating…" : "Create Document"}
+          {mutation.isPending ? tx("Creating…") : tx("Create Document")}
         </button>
         <button type="button" onClick={() => router.back()}
           className="px-4 py-2 border rounded-lg text-sm hover:bg-gray-50">
-          Cancel
+          {tx("Cancel")}
         </button>
       </div>
       <p className="text-xs text-gray-500">
-        Rates are taken from Finance Exchange Rates using the bill date (or today if no bill date is entered). Each saved line keeps the applied rate and source date; add a dated Finance rate first if none exists.
+        {tx("Rates are taken from Finance Exchange Rates using the bill date (or today if no bill date is entered). Each saved line keeps the applied rate and source date; add a dated Finance rate first if none exists.")}
       </p>
     </form>
   );

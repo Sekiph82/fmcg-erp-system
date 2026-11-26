@@ -4,6 +4,7 @@ import { useParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { subscriptionApi, STATUS_COLORS, GEN_STATUS_COLORS, RECURRENCE_LABELS } from "@/lib/subscription";
 import Link from "next/link";
+import { tx } from "@/lib/i18n/core";
 
 export default function TemplateDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -61,15 +62,15 @@ export default function TemplateDetailPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["sub-template", id] }),
   });
 
-  if (isLoading) return <div className="p-6 text-slate-500">Loading…</div>;
-  if (!t) return <div className="p-6 text-slate-500">Template not found</div>;
+  if (isLoading) return <div className="p-6 text-slate-500">{tx("Loading…")}</div>;
+  if (!t) return <div className="p-6 text-slate-500">{tx("Template not found")}</div>;
 
   return (
     <div className="p-6 space-y-6 text-slate-200">
       <div className="flex items-start justify-between">
         <div>
           <div className="flex items-center gap-3 mb-1">
-            <Link href="/dashboard/recurring-orders/templates" className="text-slate-500 hover:text-slate-300 text-sm">← Templates</Link>
+            <Link href="/dashboard/recurring-orders/templates" className="text-slate-500 hover:text-slate-300 text-sm">{tx("← Templates")}</Link>
             <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[t.status]}`}>{t.status}</span>
           </div>
           <h1 className="text-xl font-bold text-white">{t.template_code}</h1>
@@ -79,31 +80,31 @@ export default function TemplateDetailPage() {
           {t.status === "DRAFT" && (
             <button onClick={() => activateMut.mutate()} disabled={activateMut.isPending}
               className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium disabled:opacity-50">
-              Activate
+              {tx("Activate")}
             </button>
           )}
           {t.status === "ACTIVE" && (
             <>
               <button onClick={() => generateNowMut.mutate()} disabled={generateNowMut.isPending}
                 className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium disabled:opacity-50">
-                {generateNowMut.isPending ? "Generating…" : "Generate Now"}
+                {generateNowMut.isPending ? tx("Generating…") : tx("Generate Now")}
               </button>
               <button onClick={() => setShowPausePanel(true)}
                 className="px-4 py-2 rounded-lg border border-amber-500/40 text-amber-400 hover:bg-amber-500/10 text-sm font-medium">
-                Pause
+                {tx("Pause")}
               </button>
             </>
           )}
           {t.status === "PAUSED" && (
             <button onClick={() => resumeMut.mutate()} disabled={resumeMut.isPending}
               className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium disabled:opacity-50">
-              Resume
+              {tx("Resume")}
             </button>
           )}
           {["ACTIVE", "PAUSED", "DRAFT"].includes(t.status) && (
             <button onClick={() => cancelMut.mutate()} disabled={cancelMut.isPending}
               className="px-4 py-2 rounded-lg border border-red-500/40 text-red-400 hover:bg-red-500/10 text-sm font-medium disabled:opacity-50">
-              Cancel
+              {tx("Cancel")}
             </button>
           )}
         </div>
@@ -112,14 +113,14 @@ export default function TemplateDetailPage() {
       {/* Info grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: "Recurrence", value: RECURRENCE_LABELS[t.recurrence_type] },
-          { label: "Generation Mode", value: t.generation_mode.replace(/_/g, " ") },
-          { label: "Next Generation", value: t.next_generation_date ?? "—" },
-          { label: "Last Generated", value: t.last_generation_date ?? "—" },
-          { label: "Start Date", value: t.start_date },
-          { label: "End Date", value: t.end_date ?? "No end" },
-          { label: "Currency", value: t.currency },
-          { label: "Lines", value: String(t.lines.length) },
+          { label: tx("Recurrence"), value: RECURRENCE_LABELS[t.recurrence_type] },
+          { label: tx("Generation Mode"), value: t.generation_mode.replace(/_/g, " ") },
+          { label: tx("Next Generation"), value: t.next_generation_date ?? "—" },
+          { label: tx("Last Generated"), value: t.last_generation_date ?? "—" },
+          { label: tx("Start Date"), value: t.start_date },
+          { label: tx("End Date"), value: t.end_date ?? "No end" },
+          { label: tx("Currency"), value: t.currency },
+          { label: tx("Lines"), value: String(t.lines.length) },
         ].map((item) => (
           <div key={item.label} className="glow-card p-4">
             <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">{item.label}</p>
@@ -131,27 +132,27 @@ export default function TemplateDetailPage() {
       {/* Pause panel */}
       {showPausePanel && (
         <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-5 space-y-3">
-          <h3 className="text-sm font-semibold text-amber-300">Pause Template</h3>
+          <h3 className="text-sm font-semibold text-amber-300">{tx("Pause Template")}</h3>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs text-slate-400 mb-1 block">Effective From</label>
+              <label className="text-xs text-slate-400 mb-1 block">{tx("Effective From")}</label>
               <input type="date" value={pauseForm.effective_from}
                 onChange={(e) => setPauseForm((f) => ({ ...f, effective_from: e.target.value }))}
                 className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none" />
             </div>
             <div>
-              <label className="text-xs text-slate-400 mb-1 block">Effective To (optional)</label>
+              <label className="text-xs text-slate-400 mb-1 block">{tx("Effective To (optional)")}</label>
               <input type="date" value={pauseForm.effective_to}
                 onChange={(e) => setPauseForm((f) => ({ ...f, effective_to: e.target.value }))}
                 className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none" />
             </div>
           </div>
           <div>
-            <label className="text-xs text-slate-400 mb-1 block">Reason</label>
+            <label className="text-xs text-slate-400 mb-1 block">{tx("Reason")}</label>
             <input value={pauseForm.reason}
               onChange={(e) => setPauseForm((f) => ({ ...f, reason: e.target.value }))}
               className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none"
-              placeholder="Optional reason..." />
+              placeholder={tx("Optional reason...")} />
           </div>
           <div className="flex gap-2">
             <button
@@ -163,11 +164,11 @@ export default function TemplateDetailPage() {
               })}
               disabled={!pauseForm.effective_from || pauseMut.isPending}
               className="px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-sm font-medium disabled:opacity-50">
-              {pauseMut.isPending ? "Pausing…" : "Confirm Pause"}
+              {pauseMut.isPending ? tx("Pausing…") : tx("Confirm Pause")}
             </button>
             <button onClick={() => setShowPausePanel(false)}
               className="px-4 py-2 rounded-lg border border-white/[0.08] text-slate-400 text-sm">
-              Cancel
+              {tx("Cancel")}
             </button>
           </div>
         </div>
@@ -181,7 +182,7 @@ export default function TemplateDetailPage() {
               className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
                 tab === tb ? "border-indigo-500 text-indigo-300" : "border-transparent text-slate-500 hover:text-slate-300"
               }`}>
-              {tb === "lines" ? "Order Lines" : tb === "log" ? "Generation Log" : "Pause / Skip History"}
+              {tb === "lines" ? tx("Order Lines") : tb === "log" ? tx("Generation Log") : tx("Pause / Skip History")}
             </button>
           ))}
         </div>
@@ -192,12 +193,12 @@ export default function TemplateDetailPage() {
             <table className="w-full text-sm">
               <thead className="bg-white/[0.03] text-slate-500 text-xs uppercase tracking-wider">
                 <tr>
-                  <th className="px-4 py-3 text-left">Item ID</th>
+                  <th className="px-4 py-3 text-left">{tx("Item ID")}</th>
                   <th className="px-4 py-3 text-left">UOM</th>
-                  <th className="px-4 py-3 text-right">Qty</th>
-                  <th className="px-4 py-3 text-left">Price Source</th>
-                  <th className="px-4 py-3 text-right">Fixed Price</th>
-                  <th className="px-4 py-3 text-left">Active</th>
+                  <th className="px-4 py-3 text-right">{tx("Qty")}</th>
+                  <th className="px-4 py-3 text-left">{tx("Price Source")}</th>
+                  <th className="px-4 py-3 text-right">{tx("Fixed Price")}</th>
+                  <th className="px-4 py-3 text-left">{tx("Active")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/[0.04]">
@@ -210,13 +211,13 @@ export default function TemplateDetailPage() {
                     <td className="px-4 py-3 text-right text-slate-400">{l.fixed_price ?? "—"}</td>
                     <td className="px-4 py-3">
                       <span className={`text-xs px-2 py-0.5 rounded-full ${l.active_flag ? "bg-emerald-500/20 text-emerald-300" : "bg-red-500/20 text-red-400"}`}>
-                        {l.active_flag ? "Active" : "Inactive"}
+                        {l.active_flag ? tx("Active") : tx("Inactive")}
                       </span>
                     </td>
                   </tr>
                 ))}
                 {t.lines.length === 0 && (
-                  <tr><td colSpan={6} className="text-center py-6 text-slate-600">No lines — add lines to enable order generation</td></tr>
+                  <tr><td colSpan={6} className="text-center py-6 text-slate-600">{tx("No lines — add lines to enable order generation")}</td></tr>
                 )}
               </tbody>
             </table>
@@ -229,11 +230,11 @@ export default function TemplateDetailPage() {
             <table className="w-full text-sm">
               <thead className="bg-white/[0.03] text-slate-500 text-xs uppercase tracking-wider">
                 <tr>
-                  <th className="px-4 py-3 text-left">Scheduled</th>
-                  <th className="px-4 py-3 text-left">Generated At</th>
-                  <th className="px-4 py-3 text-left">Status</th>
-                  <th className="px-4 py-3 text-left">Sales Order</th>
-                  <th className="px-4 py-3 text-left">Failure Reason</th>
+                  <th className="px-4 py-3 text-left">{tx("Scheduled")}</th>
+                  <th className="px-4 py-3 text-left">{tx("Generated At")}</th>
+                  <th className="px-4 py-3 text-left">{tx("Status")}</th>
+                  <th className="px-4 py-3 text-left">{tx("Sales Order")}</th>
+                  <th className="px-4 py-3 text-left">{tx("Failure Reason")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/[0.04]">
@@ -255,7 +256,7 @@ export default function TemplateDetailPage() {
                   </tr>
                 ))}
                 {genLog.length === 0 && (
-                  <tr><td colSpan={5} className="text-center py-6 text-slate-600">No generation history</td></tr>
+                  <tr><td colSpan={5} className="text-center py-6 text-slate-600">{tx("No generation history")}</td></tr>
                 )}
               </tbody>
             </table>
@@ -268,12 +269,12 @@ export default function TemplateDetailPage() {
             <table className="w-full text-sm">
               <thead className="bg-white/[0.03] text-slate-500 text-xs uppercase tracking-wider">
                 <tr>
-                  <th className="px-4 py-3 text-left">Action</th>
-                  <th className="px-4 py-3 text-left">From</th>
-                  <th className="px-4 py-3 text-left">To</th>
-                  <th className="px-4 py-3 text-left">Reason</th>
-                  <th className="px-4 py-3 text-left">Portal</th>
-                  <th className="px-4 py-3 text-left">Created</th>
+                  <th className="px-4 py-3 text-left">{tx("Action")}</th>
+                  <th className="px-4 py-3 text-left">{tx("From")}</th>
+                  <th className="px-4 py-3 text-left">{tx("To")}</th>
+                  <th className="px-4 py-3 text-left">{tx("Reason")}</th>
+                  <th className="px-4 py-3 text-left">{tx("Portal")}</th>
+                  <th className="px-4 py-3 text-left">{tx("Created")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/[0.04]">
@@ -285,12 +286,12 @@ export default function TemplateDetailPage() {
                     <td className="px-4 py-3 text-slate-300 text-xs">{p.effective_from}</td>
                     <td className="px-4 py-3 text-slate-400 text-xs">{p.effective_to ?? "—"}</td>
                     <td className="px-4 py-3 text-slate-400 text-xs">{p.reason ?? "—"}</td>
-                    <td className="px-4 py-3 text-xs">{p.portal_request ? "Yes" : "No"}</td>
+                    <td className="px-4 py-3 text-xs">{p.portal_request ? tx("Yes") : tx("No")}</td>
                     <td className="px-4 py-3 text-slate-500 text-xs">{new Date(p.created_at).toLocaleDateString()}</td>
                   </tr>
                 ))}
                 {pauses.length === 0 && (
-                  <tr><td colSpan={6} className="text-center py-6 text-slate-600">No pause / skip history</td></tr>
+                  <tr><td colSpan={6} className="text-center py-6 text-slate-600">{tx("No pause / skip history")}</td></tr>
                 )}
               </tbody>
             </table>

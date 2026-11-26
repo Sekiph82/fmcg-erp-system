@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { listDrivers, createDriver, updateDriver, FleetDriver, DriverStatus, DRIVER_STATUS_BADGE } from "@/lib/fleet";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { tx } from "@/lib/i18n/core";
 
 const STATUSES: DriverStatus[] = ["available", "on_trip", "off_duty", "inactive"];
 
@@ -29,7 +30,7 @@ export default function DriversPage() {
       setShowForm(false); setForm({ status: "available" }); await load();
     } catch (err: unknown) {
       const e2 = err as { response?: { data?: { detail?: string } } };
-      setError(e2?.response?.data?.detail || "Failed to create driver");
+      setError(e2?.response?.data?.detail || tx("Failed to create driver"));
     }
     setSaving(false);
   }
@@ -45,36 +46,36 @@ export default function DriversPage() {
     <div className="max-w-5xl mx-auto py-8 px-4 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Drivers</h1>
-          <p className="text-sm text-gray-500 mt-1">{drivers.length} driver(s)</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Drivers")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{drivers.length} {tx("driver(s)")}</p>
         </div>
-        <Button onClick={() => setShowForm(!showForm)}>{showForm ? "Cancel" : "Add Driver"}</Button>
+        <Button onClick={() => setShowForm(!showForm)}>{showForm ? tx("Cancel") : tx("Add Driver")}</Button>
       </div>
 
       {showForm && (
         <div className="bg-white rounded-2xl border border-gray-200 p-6">
           <form onSubmit={handleCreate} className="grid grid-cols-2 gap-4">
-            <Input id="code" label="Driver Code" value={form.driver_code || ""} onChange={(e) => setForm({ ...form, driver_code: e.target.value })} placeholder="Auto-generated if blank" />
-            <Input id="name" label="Full Name" value={form.full_name || ""} onChange={(e) => setForm({ ...form, full_name: e.target.value })} required />
-            <Input id="phone" label="Phone" value={form.phone || ""} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
-            <Input id="license" label="License Number" value={form.license_number || ""} onChange={(e) => setForm({ ...form, license_number: e.target.value })} required />
-            <Input id="class" label="License Class" value={form.license_class || ""} onChange={(e) => setForm({ ...form, license_class: e.target.value })} placeholder="A, B, CE..." />
-            <Input id="expiry" label="License Expiry" type="date" value={form.license_expiry || ""} onChange={(e) => setForm({ ...form, license_expiry: e.target.value })} />
+            <Input id="code" label={tx("Driver Code")} value={form.driver_code || ""} onChange={(e) => setForm({ ...form, driver_code: e.target.value })} placeholder={tx("Auto-generated if blank")} />
+            <Input id="name" label={tx("Full Name")} value={form.full_name || ""} onChange={(e) => setForm({ ...form, full_name: e.target.value })} required />
+            <Input id="phone" label={tx("Phone")} value={form.phone || ""} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+            <Input id="license" label={tx("License Number")} value={form.license_number || ""} onChange={(e) => setForm({ ...form, license_number: e.target.value })} required />
+            <Input id="class" label={tx("License Class")} value={form.license_class || ""} onChange={(e) => setForm({ ...form, license_class: e.target.value })} placeholder={tx("A, B, CE...")} />
+            <Input id="expiry" label={tx("License Expiry")} type="date" value={form.license_expiry || ""} onChange={(e) => setForm({ ...form, license_expiry: e.target.value })} />
             {error && <div className="col-span-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">{error}</div>}
             <div className="col-span-2 flex justify-end gap-3">
-              <Button variant="secondary" type="button" onClick={() => setShowForm(false)}>Cancel</Button>
-              <Button type="submit" loading={saving}>Add Driver</Button>
+              <Button variant="secondary" type="button" onClick={() => setShowForm(false)}>{tx("Cancel")}</Button>
+              <Button type="submit" loading={saving}>{tx("Add Driver")}</Button>
             </div>
           </form>
         </div>
       )}
 
-      {loading ? <div className="text-gray-500 py-8 text-center">Loading...</div> : (
+      {loading ? <div className="text-gray-500 py-8 text-center">{tx("Loading...")}</div> : (
         <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                {["Code", "Name", "Phone", "License", "Class", "Expiry", "Status", ""].map((h) => (
+                {[tx("Code"), tx("Name"), tx("Phone"), tx("License"), tx("Class"), tx("Expiry"), tx("Status"), ""].map((h) => (
                   <th key={h} className="text-left px-4 py-3 font-medium text-gray-700">{h}</th>
                 ))}
               </tr>
@@ -90,7 +91,7 @@ export default function DriversPage() {
                     <td className="px-4 py-3 font-mono text-xs">{d.license_number}</td>
                     <td className="px-4 py-3 text-gray-600">{d.license_class || "—"}</td>
                     <td className={`px-4 py-3 text-xs ${expired ? "text-red-600 font-medium" : "text-gray-600"}`}>
-                      {d.license_expiry || "—"}{expired ? " ⚠ Expired" : ""}
+                      {d.license_expiry || "—"}{expired ? tx(" ⚠ Expired") : ""}
                     </td>
                     <td className="px-4 py-3">
                       <span className={`text-xs px-2 py-0.5 rounded font-medium capitalize ${DRIVER_STATUS_BADGE[d.status]}`}>
@@ -105,7 +106,7 @@ export default function DriversPage() {
                   </tr>
                 );
               })}
-              {drivers.length === 0 && <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">No drivers found</td></tr>}
+              {drivers.length === 0 && <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">{tx("No drivers found")}</td></tr>}
             </tbody>
           </table>
         </div>

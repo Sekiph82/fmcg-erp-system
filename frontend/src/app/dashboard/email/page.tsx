@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { ConnectedAccounts } from "@/components/ConnectedAccounts";
 import { SharedMailboxPanel } from "@/components/email/SharedMailboxPanel";
+import { tx } from "@/lib/i18n/core";
 
 const MODULE_LABEL: Record<string, string> = {
   procurement: "Purchase",
@@ -105,15 +106,15 @@ export default function EmailPage() {
         {/* Accounts bar */}
         <div className="px-4 py-3 border-b">
           <div className="flex items-center justify-between mb-2">
-            <span className="font-semibold text-gray-800">Email</span>
-            <button className="text-xs text-indigo-600 hover:underline" onClick={() => setShowAddAccount(true)}>+ Account</button>
+            <span className="font-semibold text-gray-800">{tx("Email")}</span>
+            <button className="text-xs text-indigo-600 hover:underline" onClick={() => setShowAddAccount(true)}>{tx("+ Account")}</button>
           </div>
           <div className="flex gap-2 flex-wrap">
             <button
               className={`text-xs px-2 py-1 rounded border ${!activeAccount ? "bg-indigo-600 text-white border-indigo-600" : "text-gray-600 border-gray-200"}`}
               onClick={() => setActiveAccount(null)}
             >
-              All ({accounts.length})
+              {tx("All (")}{accounts.length})
             </button>
             {accounts.map((a) => (
               <button
@@ -129,21 +130,21 @@ export default function EmailPage() {
           {activeAccount && (
             <div className="mt-2 text-xs space-y-1">
               {activeAccount.connected ? (
-                <p className="text-emerald-700">Connected · {activeAccount.imap_host}{activeAccount.last_sync_at ? ` · synced ${fmtEmailDate(activeAccount.last_sync_at)}` : ""}</p>
+                <p className="text-emerald-700">{tx("Connected ·")} {activeAccount.imap_host}{activeAccount.last_sync_at ? ` · synced ${fmtEmailDate(activeAccount.last_sync_at)}` : ""}</p>
               ) : (
-                <p className="text-amber-700">Not connected: cannot send or receive.</p>
+                <p className="text-amber-700">{tx("Not connected: cannot send or receive.")}</p>
               )}
               {activeAccount.sync_error && <p className="text-red-700">{activeAccount.sync_error}</p>}
               <div className="flex gap-3">
                 <button className="text-indigo-600 hover:underline" onClick={() => setConnectFor(activeAccount)}>
-                  {activeAccount.connected ? "Change password" : "Connect"}
+                  {activeAccount.connected ? tx("Change password") : tx("Connect")}
                 </button>
                 <button className="text-gray-500 hover:underline" onClick={async () => {
-                  if (!confirm(`Disconnect ${activeAccount.email_address}? The stored password is erased; mail history stays.`)) return;
+                  if (!confirm(tx("Disconnect {email_address}? The stored password is erased; mail history stays.", { email_address: activeAccount.email_address }))) return;
                   await emailApi.removeAccount(activeAccount.id);
                   setActiveAccount(null);
                   qc.invalidateQueries({ queryKey: ["email-accounts"] });
-                }}>Disconnect</button>
+                }}>{tx("Disconnect")}</button>
               </div>
             </div>
           )}
@@ -156,35 +157,35 @@ export default function EmailPage() {
             className={`text-xs px-2 py-1 rounded ${filterUnread ? "bg-amber-100 text-amber-700" : "text-gray-500 hover:bg-gray-100"}`}
             onClick={() => setFilterUnread(!filterUnread)}
           >
-            {filterUnread ? `Unread (${unreadCount})` : `All (${threads.length})`}
+            {filterUnread ? tx("Unread ({unreadCount})", { unreadCount }) : tx("All ({length})", { length: threads.length })}
           </button>
           <div className="ml-auto flex gap-1">
             {activeAccount && (
               <button
                 className="text-xs text-gray-500 hover:text-indigo-600"
                 onClick={() => syncAccount.mutate(activeAccount.id)}
-                title="Sync inbox"
+                title={tx("Sync inbox")}
               >
-                ↻ Sync
+                {tx("↻ Sync")}
               </button>
             )}
-            <Button onClick={() => { setReplyTo(null); setComposeMode(true); }} className="text-xs py-1">Compose</Button>
+            <Button onClick={() => { setReplyTo(null); setComposeMode(true); }} className="text-xs py-1">{tx("Compose")}</Button>
           </div>
         </div>
 
         {/* Thread list */}
         <div className="flex-1 overflow-y-auto">
           {threadsLoading ? (
-            <p className="px-4 py-6 text-xs text-gray-400 text-center">Loading…</p>
+            <p className="px-4 py-6 text-xs text-gray-400 text-center">{tx("Loading…")}</p>
           ) : threads.length === 0 ? (
             <div className="px-4 py-8 text-center">
-              <p className="text-sm text-gray-400">No emails yet</p>
+              <p className="text-sm text-gray-400">{tx("No emails yet")}</p>
               {activeAccount && (
                 <button
                   className="mt-2 text-xs text-indigo-600 hover:underline"
                   onClick={() => syncAccount.mutate(activeAccount.id)}
                 >
-                  Sync inbox to populate
+                  {tx("Sync inbox to populate")}
                 </button>
               )}
             </div>
@@ -210,7 +211,7 @@ export default function EmailPage() {
                       {t.linked_object_ref && ` · ${t.linked_object_ref}`}
                     </span>
                   )}
-                  <span className="text-xs text-gray-400">{t.message_count} msg</span>
+                  <span className="text-xs text-gray-400">{t.message_count} {tx("msg")}</span>
                 </div>
               </button>
             ))
@@ -221,22 +222,22 @@ export default function EmailPage() {
       {/* Right: Thread detail or compose */}
       <div className={`flex-1 flex-col min-w-0 ${activeThread || composeMode ? "flex" : "hidden md:flex"}`}>
         <button className="md:hidden text-left text-sm text-indigo-600 px-4 py-2 border-b" onClick={() => { setActiveThread(null); setComposeMode(false); setReplyTo(null); }}>
-          ← Back to list
+          {tx("← Back to list")}
         </button>
         {composeMode ? (
           <div className="flex-1 p-6 space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="font-semibold text-gray-800">{replyTo ? "Reply" : "New Email"}{sendAccount ? ` · from ${sendAccount.email_address}` : ""}</h2>
+              <h2 className="font-semibold text-gray-800">{replyTo ? tx("Reply") : tx("New Email")}{sendAccount ? tx(" · from {email_address}", { email_address: sendAccount.email_address }) : ""}</h2>
               <button className="text-gray-400 hover:text-gray-700" onClick={() => { setComposeMode(false); setReplyTo(null); }}>✕</button>
             </div>
             {!sendAccount && (
-              <p className="text-sm text-amber-600">Select an account from the left sidebar first</p>
+              <p className="text-sm text-amber-600">{tx("Select an account from the left sidebar first")}</p>
             )}
             <div className="space-y-3">
               {[
-                { label: "To", field: "to" as const, placeholder: "recipient@example.com, another@example.com" },
-                { label: "CC", field: "cc" as const, placeholder: "cc@example.com (optional)" },
-                { label: "Subject", field: "subject" as const, placeholder: "Email subject…" },
+                { label: tx("To"), field: "to" as const, placeholder: tx("recipient@example.com, another@example.com") },
+                { label: "CC", field: "cc" as const, placeholder: tx("cc@example.com (optional)") },
+                { label: tx("Subject"), field: "subject" as const, placeholder: tx("Email subject…") },
               ].map(({ label, field, placeholder }) => (
                 <div key={field} className="flex items-center gap-3">
                   <label className="w-16 text-sm text-gray-500 shrink-0">{label}</label>
@@ -250,7 +251,7 @@ export default function EmailPage() {
               ))}
               <textarea
                 className="w-full border rounded px-3 py-2 text-sm mt-2 h-48 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-300"
-                placeholder="Write your email…"
+                placeholder={tx("Write your email…")}
                 value={compose.body}
                 onChange={(e) => setCompose((f) => ({ ...f, body: e.target.value }))}
               />
@@ -261,22 +262,22 @@ export default function EmailPage() {
                 onClick={() => sendAccount && compose.to && compose.subject && sendEmail.mutate()}
                 disabled={!sendAccount || !compose.to || !compose.subject}
               >
-                Send
+                {tx("Send")}
               </Button>
-              <Button variant="secondary" onClick={() => { setComposeMode(false); setReplyTo(null); }}>Discard</Button>
+              <Button variant="secondary" onClick={() => { setComposeMode(false); setReplyTo(null); }}>{tx("Discard")}</Button>
             </div>
           </div>
         ) : !activeThread ? (
           <div className="flex-1 flex items-center justify-center text-gray-400">
             <div className="text-center">
               <p className="text-2xl mb-2">✉</p>
-              <p className="text-sm">Select a thread to read</p>
+              <p className="text-sm">{tx("Select a thread to read")}</p>
               {accounts.length === 0 && (
                 <button
                   className="mt-3 text-sm text-indigo-600 hover:underline"
                   onClick={() => setShowAddAccount(true)}
                 >
-                  + Connect email account
+                  {tx("+ Connect email account")}
                 </button>
               )}
             </div>
@@ -310,7 +311,7 @@ export default function EmailPage() {
                     <div className="flex items-baseline gap-2">
                       <span className="text-sm font-medium text-gray-800">{msg.from_name ?? msg.from_email}</span>
                       <span className="text-xs text-gray-400">{fmtEmailDate(msg.received_at)}</span>
-                      {!msg.is_inbound && <span className="text-xs text-indigo-500">Sent</span>}
+                      {!msg.is_inbound && <span className="text-xs text-indigo-500">{tx("Sent")}</span>}
                     </div>
                     <div className={`rounded-xl px-4 py-3 text-sm whitespace-pre-wrap ${msg.is_inbound ? "bg-gray-100 text-gray-800" : "bg-indigo-600 text-white"}`}>
                       {msg.body_text}
@@ -339,7 +340,7 @@ export default function EmailPage() {
                   }));
                 }}
               >
-                Reply to this thread…
+                {tx("Reply to this thread…")}
               </button>
             </div>
           </div>
@@ -390,9 +391,9 @@ function ServerFields({ form, set, provider }: { form: Record<string, string>; s
   return (
     <>
       <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">App password</label>
+        <label className="block text-xs font-medium text-gray-600 mb-1">{tx("App password")}</label>
         <input type="password" autoComplete="new-password" className={FIELD} value={form.password} onChange={(e) => set("password", e.target.value)} />
-        <p className="text-xs text-gray-400 mt-1">{hint} Stored encrypted; the login is tested before saving.</p>
+        <p className="text-xs text-gray-400 mt-1">{hint} {tx("Stored encrypted; the login is tested before saving.")}</p>
       </div>
       {provider === "SMTP" && (
         <div className="grid grid-cols-2 gap-2">
@@ -432,30 +433,30 @@ function AddAccountModal({ onClose, onSave }: { onClose: () => void; onSave: () 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4 max-h-full overflow-y-auto">
-        <h2 className="font-semibold text-lg">Connect Email Account</h2>
+        <h2 className="font-semibold text-lg">{tx("Connect Email Account")}</h2>
         <div className="space-y-3">
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Provider</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Provider")}</label>
             <select className={FIELD} value={form.provider} onChange={(e) => set("provider", e.target.value)}>
-              <option value="GMAIL">Gmail / Google Workspace</option>
-              <option value="OUTLOOK">Outlook / Microsoft 365</option>
-              <option value="SMTP">Other (IMAP/SMTP)</option>
+              <option value="GMAIL">{tx("Gmail / Google Workspace")}</option>
+              <option value="OUTLOOK">{tx("Outlook / Microsoft 365")}</option>
+              <option value="SMTP">{tx("Other (IMAP/SMTP)")}</option>
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Email Address</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Email Address")}</label>
             <input className={FIELD} value={form.email_address} onChange={(e) => set("email_address", e.target.value)} placeholder="sales@povu.co.ke" />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Display Name (optional)</label>
-            <input className={FIELD} value={form.display_name} onChange={(e) => set("display_name", e.target.value)} placeholder="POVU Sales" />
+            <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Display Name (optional)")}</label>
+            <input className={FIELD} value={form.display_name} onChange={(e) => set("display_name", e.target.value)} placeholder={tx("POVU Sales")} />
           </div>
           <ServerFields form={form} set={set} provider={form.provider as EmailProvider} />
           {err && <p role="alert" className="text-sm text-red-700">{err}</p>}
         </div>
         <div className="flex gap-2 justify-end">
-          <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button loading={saving} onClick={save} disabled={!form.email_address.includes("@")}>Connect &amp; Sync</Button>
+          <Button variant="secondary" onClick={onClose}>{tx("Cancel")}</Button>
+          <Button loading={saving} onClick={save} disabled={!form.email_address.includes("@")}>{tx("Connect & Sync")}</Button>
         </div>
       </div>
     </div>
@@ -488,12 +489,12 @@ function ConnectModal({ account, onClose, onSave }: { account: EmailAccount; onC
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4 max-h-full overflow-y-auto">
-        <h2 className="font-semibold text-lg">Connect {account.email_address}</h2>
+        <h2 className="font-semibold text-lg">{tx("Connect")} {account.email_address}</h2>
         <ServerFields form={form} set={set} provider={account.provider} />
         {err && <p role="alert" className="text-sm text-red-700">{err}</p>}
         <div className="flex gap-2 justify-end">
-          <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button loading={saving} onClick={save} disabled={!form.password}>Connect</Button>
+          <Button variant="secondary" onClick={onClose}>{tx("Cancel")}</Button>
+          <Button loading={saving} onClick={save} disabled={!form.password}>{tx("Connect")}</Button>
         </div>
       </div>
     </div>

@@ -2,6 +2,7 @@
 import { EntityPicker } from "@/components/EntityPicker";
 import { useState } from "react";
 import { traceApi, RecallHeader, RecallDetail, SEVERITY_BG } from "@/lib/traceability";
+import { tx } from "@/lib/i18n/core";
 
 interface DrillMetrics {
   time_to_trace_minutes: number;
@@ -84,8 +85,8 @@ export default function MockRecallPage() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-xl font-bold text-gray-900">Mock Recall Drill</h1>
-        <p className="text-sm text-gray-500">Simulate a recall to test traceability systems, measure response times, and evaluate readiness</p>
+        <h1 className="text-xl font-bold text-gray-900">{tx("Mock Recall Drill")}</h1>
+        <p className="text-sm text-gray-500">{tx("Simulate a recall to test traceability systems, measure response times, and evaluate readiness")}</p>
       </div>
 
       {step === "setup" && (
@@ -95,42 +96,42 @@ export default function MockRecallPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <p className="text-sm text-amber-700">
-              This will create a MOCK recall record. No actual customer notifications will be sent. Use to test recall readiness and traceability completeness.
+              {tx("This will create a MOCK recall record. No actual customer notifications will be sent. Use to test recall readiness and traceability completeness.")}
             </p>
           </div>
           <div className="space-y-3">
             <div>
-              <label className="text-xs font-medium text-gray-600">Drill Name</label>
+              <label className="text-xs font-medium text-gray-600">{tx("Drill Name")}</label>
               <input className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
                 value={form.scenario_name} onChange={e => setForm(f => ({ ...f, scenario_name: e.target.value }))} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-medium text-gray-600">Source lot (to trace)</label>
-                <EntityPicker kind="lot" label="Source lot" value={form.source_lot_id} onChange={(id) => setForm(f => ({ ...f, source_lot_id: id }))} />
+                <label className="text-xs font-medium text-gray-600">{tx("Source lot (to trace)")}</label>
+                <EntityPicker kind="lot" label={tx("Source lot")} value={form.source_lot_id} onChange={(id) => setForm(f => ({ ...f, source_lot_id: id }))} />
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-600">Severity Level</label>
+                <label className="text-xs font-medium text-gray-600">{tx("Severity Level")}</label>
                 <select className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
                   value={form.severity_level} onChange={e => setForm(f => ({ ...f, severity_level: e.target.value }))}>
-                  {["low","medium","high","critical"].map(s => <option key={s} value={s}>{s}</option>)}
+                  {[tx("low"),tx("medium"),tx("high"),tx("critical")].map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-600">Target Market</label>
+                <label className="text-xs font-medium text-gray-600">{tx("Target Market")}</label>
                 <input className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
                   value={form.target_market} onChange={e => setForm(f => ({ ...f, target_market: e.target.value }))} />
               </div>
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-600">Notes</label>
+              <label className="text-xs font-medium text-gray-600">{tx("Notes")}</label>
               <input className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
                 value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
             </div>
           </div>
           <button onClick={handleStart} disabled={saving}
             className="w-full py-3 bg-amber-600 text-white text-sm font-semibold rounded-lg hover:bg-amber-700 disabled:opacity-50">
-            {saving ? "Starting Drill…" : "Start Mock Recall Drill"}
+            {saving ? tx("Starting Drill…") : tx("Start Mock Recall Drill")}
           </button>
         </div>
       )}
@@ -138,37 +139,37 @@ export default function MockRecallPage() {
       {step === "running" && (
         <div className="bg-white rounded-xl border border-gray-200 p-8 text-center max-w-lg mx-auto">
           <div className="animate-spin h-12 w-12 border-4 border-amber-600 border-t-transparent rounded-full mx-auto mb-4" />
-          <p className="font-semibold text-gray-800">Running Mock Recall Drill…</p>
-          <p className="text-sm text-gray-500 mt-1">Running forward trace, calculating scope, building customer impact list, running AI agents</p>
-          <p className="text-xs text-gray-400 mt-3">Timer running since {startTime ? new Date(startTime).toLocaleTimeString() : "—"}</p>
+          <p className="font-semibold text-gray-800">{tx("Running Mock Recall Drill…")}</p>
+          <p className="text-sm text-gray-500 mt-1">{tx("Running forward trace, calculating scope, building customer impact list, running AI agents")}</p>
+          <p className="text-xs text-gray-400 mt-3">{tx("Timer running since")} {startTime ? new Date(startTime).toLocaleTimeString() : "—"}</p>
         </div>
       )}
 
       {step === "results" && recall && metrics && (
         <div className="space-y-6 max-w-3xl">
           <div className="bg-green-50 border border-green-200 rounded-xl p-5">
-            <h2 className="font-bold text-green-800 text-lg">Drill Completed — {recall.recall_no}</h2>
-            <p className="text-sm text-green-700 mt-1">Mock recall drill executed successfully</p>
+            <h2 className="font-bold text-green-800 text-lg">{tx("Drill Completed —")} {recall.recall_no}</h2>
+            <p className="text-sm text-green-700 mt-1">{tx("Mock recall drill executed successfully")}</p>
           </div>
 
           {/* Effectiveness Score */}
           <div className="bg-white rounded-xl border border-gray-200 p-5 text-center">
-            <p className="text-sm text-gray-500 uppercase tracking-wide">Effectiveness Score</p>
+            <p className="text-sm text-gray-500 uppercase tracking-wide">{tx("Effectiveness Score")}</p>
             <p className={`text-6xl font-bold mt-2 ${metrics.effectiveness_score >= 80 ? "text-green-600" : metrics.effectiveness_score >= 60 ? "text-amber-600" : "text-red-600"}`}>
               {metrics.effectiveness_score}/100
             </p>
-            <p className="text-xs text-gray-400 mt-2">Based on time-to-trace and scope completeness</p>
+            <p className="text-xs text-gray-400 mt-2">{tx("Based on time-to-trace and scope completeness")}</p>
           </div>
 
           {/* Metrics */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {[
-              { label: "Time to Trace", value: `${metrics.time_to_trace_minutes}min`, ok: metrics.time_to_trace_minutes < 10 },
-              { label: "Time to Contain (est.)", value: `${metrics.time_to_contain_minutes}min`, ok: metrics.time_to_contain_minutes < 30 },
-              { label: "Lots Identified", value: metrics.lots_identified },
-              { label: "Scope Lines", value: metrics.scope_lines_found },
-              { label: "Customers Found", value: metrics.customers_identified },
-              { label: "Status", value: recall.status.replace("_"," "), ok: true },
+              { label: tx("Time to Trace"), value: `${metrics.time_to_trace_minutes}min`, ok: metrics.time_to_trace_minutes < 10 },
+              { label: tx("Time to Contain (est.)"), value: `${metrics.time_to_contain_minutes}min`, ok: metrics.time_to_contain_minutes < 30 },
+              { label: tx("Lots Identified"), value: metrics.lots_identified },
+              { label: tx("Scope Lines"), value: metrics.scope_lines_found },
+              { label: tx("Customers Found"), value: metrics.customers_identified },
+              { label: tx("Status"), value: recall.status.replace("_"," "), ok: true },
             ].map(s => (
               <div key={s.label} className={`rounded-xl border p-4 text-center ${s.ok === false ? "border-red-200 bg-red-50" : s.ok === true ? "border-green-200 bg-green-50" : "border-gray-200 bg-white"}`}>
                 <p className="text-2xl font-bold text-gray-800">{s.value}</p>
@@ -180,7 +181,7 @@ export default function MockRecallPage() {
           {/* Recommendations */}
           {recall.ai_recs.length > 0 && (
             <div className="bg-white rounded-xl border border-gray-200 p-5">
-              <h3 className="font-semibold text-gray-800 mb-3">AI Recommendations from Drill</h3>
+              <h3 className="font-semibold text-gray-800 mb-3">{tx("AI Recommendations from Drill")}</h3>
               <div className="space-y-2">
                 {recall.ai_recs.map(r => (
                   <div key={r.id} className="p-3 bg-indigo-50 rounded-lg">
@@ -195,11 +196,11 @@ export default function MockRecallPage() {
           <div className="flex gap-3">
             <a href={`/dashboard/traceability/recalls/${recall.id}`}
               className="px-4 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50">
-              View Full Recall Record →
+              {tx("View Full Recall Record →")}
             </a>
             <button onClick={() => { setStep("setup"); setRecall(null); setMetrics(null); }}
               className="px-4 py-2 text-sm bg-amber-600 text-white rounded-lg hover:bg-amber-700">
-              Run Another Drill
+              {tx("Run Another Drill")}
             </button>
           </div>
         </div>

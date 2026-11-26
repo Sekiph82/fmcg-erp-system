@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { tx } from "@/lib/i18n/core";
 
 interface DashboardShellProps {
   title: string;
@@ -25,7 +26,7 @@ export function DashboardShell({ title, subtitle, days, onDaysChange, backHref, 
         <div>
           {backHref && (
             <button onClick={() => router.push(backHref)} className="text-xs text-slate-500 hover:text-slate-300 mb-1 block">
-              ← Reports
+              {tx("← Reports")}
             </button>
           )}
           <h1 className="text-xl font-semibold text-white leading-tight">{title}</h1>
@@ -43,7 +44,7 @@ export function DashboardShell({ title, subtitle, days, onDaysChange, backHref, 
                   : "text-slate-500 hover:text-slate-300",
               ].join(" ")}
             >
-              {d}d
+              {d}{tx("d")}
             </button>
           ))}
         </div>

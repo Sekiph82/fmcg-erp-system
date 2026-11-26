@@ -1,24 +1,25 @@
 "use client";
 import { useEffect, useState } from "react";
 import { reportBuilderApi, RBAIRec, RBAIAgentType, RBAIRecStatus } from "@/lib/report_builder";
+import { tx, lx } from "@/lib/i18n/core";
 
-const AGENT_META: Record<RBAIAgentType, { label: string; desc: string; color: string }> = {
+const AGENT_META: Record<RBAIAgentType, { label: string; desc: string; color: string }> = lx(() => ({
   builder_assistant: {
-    label: "Report Builder Assistant",
-    desc: "Finds unused reports and suggests fields, filters, and scheduling actions to maximize report value.",
+    label: tx("Report Builder Assistant"),
+    desc: tx("Finds unused reports and suggests fields, filters, and scheduling actions to maximize report value."),
     color: "bg-blue-50 border-blue-200",
   },
   insight_generator: {
-    label: "Insight Generator",
-    desc: "Identifies high-usage reports and recommends pinning to dashboards or scheduling for automated delivery.",
+    label: tx("Insight Generator"),
+    desc: tx("Identifies high-usage reports and recommends pinning to dashboards or scheduling for automated delivery."),
     color: "bg-green-50 border-green-200",
   },
   performance_optimizer: {
-    label: "Performance Optimizer",
-    desc: "Detects reports without filters that may cause large, slow queries and recommends optimizations.",
+    label: tx("Performance Optimizer"),
+    desc: tx("Detects reports without filters that may cause large, slow queries and recommends optimizations."),
     color: "bg-orange-50 border-orange-200",
   },
-};
+}));
 
 const STATUS_COLOR: Record<RBAIRecStatus, string> = {
   pending: "bg-yellow-100 text-yellow-700",
@@ -52,7 +53,7 @@ export default function ReportBuilderAIPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-xl font-bold text-gray-900">Report Builder AI Insights</h1>
+      <h1 className="text-xl font-bold text-gray-900">{tx("Report Builder AI Insights")}</h1>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         {(Object.entries(AGENT_META) as [RBAIAgentType, typeof AGENT_META[RBAIAgentType]][]).map(([type, meta]) => (
@@ -61,7 +62,7 @@ export default function ReportBuilderAIPage() {
             <p className="text-xs text-gray-600 mt-1 mb-3">{meta.desc}</p>
             <button onClick={() => run(type)} disabled={running === type}
               className="w-full rounded bg-gray-800 px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-700 disabled:opacity-50">
-              {running === type ? "Running…" : "Run Agent"}
+              {running === type ? tx("Running…") : tx("Run Agent")}
             </button>
           </div>
         ))}
@@ -69,10 +70,10 @@ export default function ReportBuilderAIPage() {
 
       <div className="bg-white border rounded-lg shadow-sm">
         <div className="px-4 py-3 border-b">
-          <h2 className="font-semibold text-gray-800 text-sm">AI Recommendations ({recs.filter(r => r.status === "pending").length} pending)</h2>
+          <h2 className="font-semibold text-gray-800 text-sm">{tx("AI Recommendations (")}{recs.filter(r => r.status === "pending").length} {tx("pending)")}</h2>
         </div>
-        {loading ? <p className="text-gray-500 text-sm p-4">Loading…</p> :
-          recs.length === 0 ? <p className="text-gray-400 text-sm text-center py-8">No recommendations yet.</p> : (
+        {loading ? <p className="text-gray-500 text-sm p-4">{tx("Loading…")}</p> :
+          recs.length === 0 ? <p className="text-gray-400 text-sm text-center py-8">{tx("No recommendations yet.")}</p> : (
             <div className="divide-y">
               {recs.map((r) => (
                 <div key={r.rec_id} className="px-4 py-3">
@@ -81,16 +82,16 @@ export default function ReportBuilderAIPage() {
                       <div className="flex items-center gap-2 flex-wrap mb-1">
                         <span className="text-xs font-medium text-gray-500 uppercase">{AGENT_META[r.agent_type]?.label}</span>
                         <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLOR[r.status]}`}>{r.status}</span>
-                        {r.score != null && <span className="text-xs text-gray-400">Score: {r.score}</span>}
+                        {r.score != null && <span className="text-xs text-gray-400">{tx("Score:")} {r.score}</span>}
                       </div>
                       <p className="text-sm font-semibold text-gray-800">{r.title}</p>
                       <p className="text-sm text-gray-600">{r.body}</p>
                     </div>
                     {r.status === "pending" && (
                       <div className="flex flex-col gap-1 shrink-0">
-                        <button onClick={() => ack(r.rec_id, "acknowledged")} className="rounded border border-blue-300 px-2 py-0.5 text-xs text-blue-600 hover:bg-blue-50">Ack</button>
-                        <button onClick={() => ack(r.rec_id, "actioned")} className="rounded border border-green-300 px-2 py-0.5 text-xs text-green-600 hover:bg-green-50">Action</button>
-                        <button onClick={() => ack(r.rec_id, "dismissed")} className="rounded border border-gray-200 px-2 py-0.5 text-xs text-gray-500 hover:bg-gray-50">Dismiss</button>
+                        <button onClick={() => ack(r.rec_id, "acknowledged")} className="rounded border border-blue-300 px-2 py-0.5 text-xs text-blue-600 hover:bg-blue-50">{tx("Ack")}</button>
+                        <button onClick={() => ack(r.rec_id, "actioned")} className="rounded border border-green-300 px-2 py-0.5 text-xs text-green-600 hover:bg-green-50">{tx("Action")}</button>
+                        <button onClick={() => ack(r.rec_id, "dismissed")} className="rounded border border-gray-200 px-2 py-0.5 text-xs text-gray-500 hover:bg-gray-50">{tx("Dismiss")}</button>
                       </div>
                     )}
                   </div>

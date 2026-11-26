@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import Link from "next/link";
 import { HELP_REGISTRY, HELP_MODULES, HELP_ROLES } from "@/lib/help/help-registry";
 import { searchHelpEntries } from "@/lib/help/get-help-for-route";
+import { tx } from "@/lib/i18n/core";
 
 export default function HelpCenterPage() {
   const [query, setQuery] = useState("");
@@ -21,17 +22,16 @@ export default function HelpCenterPage() {
     <div className="mx-auto max-w-4xl space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-slate-100">Help Center</h1>
+        <h1 className="text-2xl font-bold text-slate-100">{tx("Help Center")}</h1>
         <p className="mt-1 text-sm text-slate-400">
-          Browse ERP module guides, manual references, and quick training material.
+          {tx("Browse ERP module guides, manual references, and quick training material.")}
         </p>
       </div>
 
       {/* PDF note */}
       <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 px-4 py-3">
         <p className="text-sm text-amber-300/80">
-          <span className="font-semibold">PDF manuals</span> are available from your admin or training package.
-          Kenya Go-Live PDF and Full Reference PDF can be generated locally from{" "}
+          <span className="font-semibold">{tx("PDF manuals")}</span> {tx("are available from your admin or training package. Kenya Go-Live PDF and Full Reference PDF can be generated locally from")}{" "}
           <code className="text-[11px] text-amber-400">docs/user-manual/pdf-export/</code>.
         </p>
       </div>
@@ -42,7 +42,7 @@ export default function HelpCenterPage() {
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search topics, modules, keywords…"
+          placeholder={tx("Search topics, modules, keywords…")}
           className="flex-1 min-w-48 rounded-lg border border-slate-700/60 bg-slate-800/50 px-4 py-2 text-sm text-slate-200 placeholder:text-slate-500 focus:border-cyan-500/50 focus:outline-none"
         />
         <select
@@ -50,7 +50,7 @@ export default function HelpCenterPage() {
           onChange={(e) => setModuleFilter(e.target.value)}
           className="rounded-lg border border-slate-700/60 bg-slate-800/50 px-3 py-2 text-sm text-slate-300 focus:border-cyan-500/50 focus:outline-none"
         >
-          <option value="">All modules</option>
+          <option value="">{tx("All modules")}</option>
           {HELP_MODULES.map((m) => (
             <option key={m} value={m}>{m}</option>
           ))}
@@ -60,7 +60,7 @@ export default function HelpCenterPage() {
           onChange={(e) => setRoleFilter(e.target.value)}
           className="rounded-lg border border-slate-700/60 bg-slate-800/50 px-3 py-2 text-sm text-slate-300 focus:border-cyan-500/50 focus:outline-none"
         >
-          <option value="">All roles</option>
+          <option value="">{tx("All roles")}</option>
           {HELP_ROLES.map((r) => (
             <option key={r} value={r}>{r}</option>
           ))}
@@ -70,14 +70,14 @@ export default function HelpCenterPage() {
             onClick={() => { setQuery(""); setModuleFilter(""); setRoleFilter(""); }}
             className="rounded-lg border border-slate-700/50 bg-slate-800/30 px-3 py-2 text-sm text-slate-400 hover:text-slate-200 transition-colors"
           >
-            Clear
+            {tx("Clear")}
           </button>
         )}
       </div>
 
       {/* Results count */}
       <p className="text-xs text-slate-500">
-        {results.length} of {HELP_REGISTRY.length} topics
+        {results.length} {tx("of")} {HELP_REGISTRY.length} {tx("topics")}
       </p>
 
       {/* Entry list */}
@@ -101,7 +101,7 @@ export default function HelpCenterPage() {
               <span className="text-[10px] text-slate-600">{entry.route}</span>
               {entry.quickGuidePath && (
                 <span className="rounded border border-amber-500/20 bg-amber-500/5 px-1.5 py-0.5 text-[9px] text-amber-400">
-                  Kenya guide
+                  {tx("Kenya guide")}
                 </span>
               )}
             </div>
@@ -111,29 +111,29 @@ export default function HelpCenterPage() {
 
       {results.length === 0 && (
         <div className="rounded-lg border border-slate-700/40 bg-slate-800/20 py-12 text-center">
-          <p className="text-sm text-slate-400">No help topics match your search.</p>
+          <p className="text-sm text-slate-400">{tx("No help topics match your search.")}</p>
           <button
             onClick={() => { setQuery(""); setModuleFilter(""); setRoleFilter(""); }}
             className="mt-2 text-xs text-cyan-400 hover:underline"
           >
-            Clear filters
+            {tx("Clear filters")}
           </button>
         </div>
       )}
 
       {/* Manual references */}
       <div className="border-t border-slate-700/40 pt-6 space-y-3">
-        <h2 className="text-sm font-semibold text-slate-300">Manual Source Files</h2>
+        <h2 className="text-sm font-semibold text-slate-300">{tx("Manual Source Files")}</h2>
         <div className="grid gap-2 sm:grid-cols-2">
           <div className="rounded-lg border border-slate-700/40 bg-slate-800/20 p-3">
-            <p className="text-xs font-semibold text-amber-400">Kenya Go-Live Training Manuals</p>
-            <p className="text-[11px] text-slate-500 mt-1">docs/user-manual/kenya-go-live/</p>
-            <p className="text-[11px] text-slate-500">10 chapters — role-based training</p>
+            <p className="text-xs font-semibold text-amber-400">{tx("Kenya Go-Live Training Manuals")}</p>
+            <p className="text-[11px] text-slate-500 mt-1">{tx("docs/user-manual/kenya-go-live/")}</p>
+            <p className="text-[11px] text-slate-500">{tx("10 chapters — role-based training")}</p>
           </div>
           <div className="rounded-lg border border-slate-700/40 bg-slate-800/20 p-3">
-            <p className="text-xs font-semibold text-slate-300">Full Reference Manual</p>
-            <p className="text-[11px] text-slate-500 mt-1">docs/user-manual/full-reference/</p>
-            <p className="text-[11px] text-slate-500">15 chapters — all modules</p>
+            <p className="text-xs font-semibold text-slate-300">{tx("Full Reference Manual")}</p>
+            <p className="text-[11px] text-slate-500 mt-1">{tx("docs/user-manual/full-reference/")}</p>
+            <p className="text-[11px] text-slate-500">{tx("15 chapters — all modules")}</p>
           </div>
         </div>
       </div>

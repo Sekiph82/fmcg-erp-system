@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { esgApi, Activity, SourceType, SOURCE_TYPE_LABELS, SOURCE_UNITS } from "@/lib/esg";
+import { tx } from "@/lib/i18n/core";
 
 const SCOPE_BADGE: Record<string, string> = {
   SCOPE1: "bg-red-100 text-red-700",
@@ -64,7 +65,7 @@ export default function ESGActivitiesPage() {
       setShowModal(false);
       load();
     } catch (err: any) {
-      setError(err?.response?.data?.detail || "Save failed");
+      setError(err?.response?.data?.detail || tx("Save failed"));
     } finally {
       setSaving(false);
     }
@@ -76,29 +77,29 @@ export default function ESGActivitiesPage() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Activity Data</h1>
-          <p className="text-sm text-gray-500 mt-1">Log emission-generating activities</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Activity Data")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{tx("Log emission-generating activities")}</p>
         </div>
         <button
           onClick={() => setShowModal(true)}
           className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
         >
-          + Log Activity
+          {tx("+ Log Activity")}
         </button>
       </div>
 
       {/* KPI */}
       <div className="grid grid-cols-3 gap-4">
         <div className="bg-white rounded-lg border p-4">
-          <p className="text-xs text-gray-500">Activities Logged</p>
+          <p className="text-xs text-gray-500">{tx("Activities Logged")}</p>
           <p className="text-2xl font-bold text-gray-800 mt-1">{activities.length}</p>
         </div>
         <div className="bg-white rounded-lg border p-4">
-          <p className="text-xs text-gray-500">Total Emissions (kgCO₂e)</p>
+          <p className="text-xs text-gray-500">{tx("Total Emissions (kgCO₂e)")}</p>
           <p className="text-2xl font-bold text-red-600 mt-1">{totalEmission.toLocaleString(undefined, { maximumFractionDigits: 1 })}</p>
         </div>
         <div className="bg-white rounded-lg border p-4">
-          <p className="text-xs text-gray-500">Auto-Imported</p>
+          <p className="text-xs text-gray-500">{tx("Auto-Imported")}</p>
           <p className="text-2xl font-bold text-blue-600 mt-1">{activities.filter((a) => a.is_auto_imported).length}</p>
         </div>
       </div>
@@ -110,17 +111,17 @@ export default function ESGActivitiesPage() {
           onChange={(e) => setFilterSource(e.target.value as SourceType | "")}
           className="border rounded-lg px-3 py-2 text-sm"
         >
-          <option value="">All Sources</option>
+          <option value="">{tx("All Sources")}</option>
           {(Object.keys(SOURCE_TYPE_LABELS) as SourceType[]).map((s) => (
             <option key={s} value={s}>{SOURCE_TYPE_LABELS[s]}</option>
           ))}
         </select>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">From</label>
+          <label className="block text-xs text-gray-500 mb-1">{tx("From")}</label>
           <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="border rounded-lg px-3 py-2 text-sm" />
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">To</label>
+          <label className="block text-xs text-gray-500 mb-1">{tx("To")}</label>
           <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="border rounded-lg px-3 py-2 text-sm" />
         </div>
       </div>
@@ -130,19 +131,19 @@ export default function ESGActivitiesPage() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-gray-600 uppercase text-xs">
             <tr>
-              <th className="px-4 py-3 text-left">Date</th>
-              <th className="px-4 py-3 text-left">Source</th>
-              <th className="px-4 py-3 text-right">Quantity</th>
-              <th className="px-4 py-3 text-left">Unit</th>
-              <th className="px-4 py-3 text-right">kgCO₂e</th>
-              <th className="px-4 py-3 text-left">Scope</th>
-              <th className="px-4 py-3 text-left">Ref</th>
-              <th className="px-4 py-3 text-left">Import</th>
+              <th className="px-4 py-3 text-left">{tx("Date")}</th>
+              <th className="px-4 py-3 text-left">{tx("Source")}</th>
+              <th className="px-4 py-3 text-right">{tx("Quantity")}</th>
+              <th className="px-4 py-3 text-left">{tx("Unit")}</th>
+              <th className="px-4 py-3 text-right">{tx("kgCO₂e")}</th>
+              <th className="px-4 py-3 text-left">{tx("Scope")}</th>
+              <th className="px-4 py-3 text-left">{tx("Ref")}</th>
+              <th className="px-4 py-3 text-left">{tx("Import")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {loading ? (
-              <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">Loading…</td></tr>
+              <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">{tx("Loading…")}</td></tr>
             ) : activities.length === 0 ? (
               <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">No activities logged. Use &ldquo;Log Activity&rdquo; or import fleet fuel data.</td></tr>
             ) : (
@@ -158,11 +159,11 @@ export default function ESGActivitiesPage() {
                   <td className="px-4 py-2">
                     {a.scope ? (
                       <span className={`px-2 py-0.5 rounded-full text-xs ${SCOPE_BADGE[a.scope]}`}>{a.scope}</span>
-                    ) : <span className="text-gray-300 text-xs">No factor</span>}
+                    ) : <span className="text-gray-300 text-xs">{tx("No factor")}</span>}
                   </td>
                   <td className="px-4 py-2 text-xs text-gray-400">{a.source_reference || "—"}</td>
                   <td className="px-4 py-2 text-xs">
-                    {a.is_auto_imported && <span className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-600">auto</span>}
+                    {a.is_auto_imported && <span className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-600">{tx("auto")}</span>}
                   </td>
                 </tr>
               ))
@@ -175,10 +176,10 @@ export default function ESGActivitiesPage() {
       {showModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
-            <h2 className="text-lg font-semibold mb-4">Log Activity</h2>
+            <h2 className="text-lg font-semibold mb-4">{tx("Log Activity")}</h2>
             <form onSubmit={handleSave} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">Source Type *</label>
+                <label className="block text-sm font-medium mb-1">{tx("Source Type *")}</label>
                 <select
                   required
                   value={form.source_type}
@@ -192,7 +193,7 @@ export default function ESGActivitiesPage() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Activity Date *</label>
+                  <label className="block text-sm font-medium mb-1">{tx("Activity Date *")}</label>
                   <input
                     required type="date"
                     value={form.activity_date}
@@ -201,7 +202,7 @@ export default function ESGActivitiesPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Quantity *</label>
+                  <label className="block text-sm font-medium mb-1">{tx("Quantity *")}</label>
                   <input
                     required type="number" step="0.0001"
                     value={form.quantity}
@@ -212,7 +213,7 @@ export default function ESGActivitiesPage() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Unit</label>
+                  <label className="block text-sm font-medium mb-1">{tx("Unit")}</label>
                   <input
                     value={form.unit}
                     onChange={(e) => setForm({ ...form, unit: e.target.value })}
@@ -220,17 +221,17 @@ export default function ESGActivitiesPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Reference</label>
+                  <label className="block text-sm font-medium mb-1">{tx("Reference")}</label>
                   <input
                     value={form.source_reference}
                     onChange={(e) => setForm({ ...form, source_reference: e.target.value })}
                     className="w-full border rounded-lg px-3 py-2 text-sm"
-                    placeholder="Vehicle ID, meter ID…"
+                    placeholder={tx("Vehicle ID, meter ID…")}
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Notes</label>
+                <label className="block text-sm font-medium mb-1">{tx("Notes")}</label>
                 <textarea
                   value={form.notes}
                   onChange={(e) => setForm({ ...form, notes: e.target.value })}
@@ -239,9 +240,9 @@ export default function ESGActivitiesPage() {
               </div>
               {error && <p className="text-red-600 text-sm">{error}</p>}
               <div className="flex gap-2 pt-1">
-                <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-2 border rounded-lg text-sm hover:bg-gray-50">Cancel</button>
+                <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-2 border rounded-lg text-sm hover:bg-gray-50">{tx("Cancel")}</button>
                 <button type="submit" disabled={saving} className="flex-1 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50">
-                  {saving ? "Saving…" : "Log Activity"}
+                  {saving ? tx("Saving…") : tx("Log Activity")}
                 </button>
               </div>
             </form>

@@ -2,6 +2,7 @@
 import { EntityPicker } from "@/components/EntityPicker";
 import { useState } from "react";
 import { shelfLifeApi, FEFORankResponse, FEFOValidateIssueResponse, SL_STATUS_BG, fmtDays } from "@/lib/shelfLife";
+import { tx } from "@/lib/i18n/core";
 
 export default function ProductionValidationPage() {
   const [tab, setTab] = useState<"rank" | "validate">("rank");
@@ -52,53 +53,53 @@ export default function ProductionValidationPage() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-xl font-bold text-gray-900">Production Issue Shelf-Life Validation</h1>
-        <p className="text-sm text-gray-500">FEFO lot ranking and issue validation for production consumption</p>
+        <h1 className="text-xl font-bold text-gray-900">{tx("Production Issue Shelf-Life Validation")}</h1>
+        <p className="text-sm text-gray-500">{tx("FEFO lot ranking and issue validation for production consumption")}</p>
       </div>
 
       <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
         {(["rank","validate"] as const).map(t => (
           <button key={t} onClick={() => setTab(t)}
             className={`px-4 py-1.5 rounded text-sm font-medium ${tab === t ? "bg-white shadow text-gray-800" : "text-gray-500"}`}>
-            {t === "rank" ? "FEFO Lot Ranking" : "Validate Specific Lot"}
+            {t === "rank" ? tx("FEFO Lot Ranking") : tx("Validate Specific Lot")}
           </button>
         ))}
       </div>
 
       {tab === "rank" && (
         <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4 max-w-2xl">
-          <h2 className="font-semibold text-gray-800">FEFO Lot Ranking</h2>
+          <h2 className="font-semibold text-gray-800">{tx("FEFO Lot Ranking")}</h2>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-medium text-gray-600">Product</label>
-              <EntityPicker kind="product" label="Product" value={rankForm.product_id} onChange={(id) => setRankForm(f => ({ ...f, product_id: id }))} />
+              <label className="text-xs font-medium text-gray-600">{tx("Product")}</label>
+              <EntityPicker kind="product" label={tx("Product")} value={rankForm.product_id} onChange={(id) => setRankForm(f => ({ ...f, product_id: id }))} />
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-600">Material</label>
-              <EntityPicker kind="material" label="Material" value={rankForm.material_id} onChange={(id) => setRankForm(f => ({ ...f, material_id: id }))} />
+              <label className="text-xs font-medium text-gray-600">{tx("Material")}</label>
+              <EntityPicker kind="material" label={tx("Material")} value={rankForm.material_id} onChange={(id) => setRankForm(f => ({ ...f, material_id: id }))} />
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-600">Warehouse</label>
-              <EntityPicker kind="warehouse" label="Warehouse" value={rankForm.warehouse_id} onChange={(id) => setRankForm(f => ({ ...f, warehouse_id: id }))} />
+              <label className="text-xs font-medium text-gray-600">{tx("Warehouse")}</label>
+              <EntityPicker kind="warehouse" label={tx("Warehouse")} value={rankForm.warehouse_id} onChange={(id) => setRankForm(f => ({ ...f, warehouse_id: id }))} />
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-600">Quantity Needed</label>
+              <label className="text-xs font-medium text-gray-600">{tx("Quantity Needed")}</label>
               <input type="number" className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
                 value={rankForm.quantity} onChange={e => setRankForm(f => ({ ...f, quantity: e.target.value }))} />
             </div>
           </div>
           <button onClick={handleRank} disabled={ranking}
             className="w-full py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50">
-            {ranking ? "Ranking…" : "Get FEFO Lot Ranking"}
+            {ranking ? tx("Ranking…") : tx("Get FEFO Lot Ranking")}
           </button>
 
           {rankResult && (
             <div className="mt-4 space-y-3">
               <div className="flex items-center justify-between">
-                <p className="font-medium text-gray-800">Strategy: <span className="text-purple-700">{rankResult.strategy_used.toUpperCase()}</span></p>
+                <p className="font-medium text-gray-800">{tx("Strategy:")} <span className="text-purple-700">{rankResult.strategy_used.toUpperCase()}</span></p>
                 {rankResult.recommended_lot_id && (
                   <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">
-                    Recommended: {rankResult.recommended_lot_id.slice(0,8)}
+                    {tx("Recommended:")} {rankResult.recommended_lot_id.slice(0,8)}
                   </span>
                 )}
               </div>
@@ -113,9 +114,9 @@ export default function ProductionValidationPage() {
                     <div className="flex-1">
                       <p className="text-sm font-mono text-gray-700">{c.lot_number} — {c.lot_id.slice(0,8)}</p>
                       <div className="flex gap-3 text-xs text-gray-500 mt-0.5">
-                        <span>Expiry: {c.expiry_date || "—"}</span>
-                        <span>Remaining: <span className="font-semibold">{fmtDays(c.remaining_days)}</span></span>
-                        <span>Qty: {c.quantity_available}</span>
+                        <span>{tx("Expiry:")} {c.expiry_date || "—"}</span>
+                        <span>{tx("Remaining:")} <span className="font-semibold">{fmtDays(c.remaining_days)}</span></span>
+                        <span>{tx("Qty:")} {c.quantity_available}</span>
                       </div>
                       {c.exclusion_reason && (
                         <p className="text-xs text-red-600 mt-0.5">✗ {c.exclusion_reason}</p>
@@ -134,29 +135,29 @@ export default function ProductionValidationPage() {
 
       {tab === "validate" && (
         <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4 max-w-2xl">
-          <h2 className="font-semibold text-gray-800">Validate Specific Lot for Issue</h2>
+          <h2 className="font-semibold text-gray-800">{tx("Validate Specific Lot for Issue")}</h2>
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2">
-              <label className="text-xs font-medium text-gray-600">Lot *</label>
-              <EntityPicker kind="lot" label="Lot" value={valForm.lot_id} onChange={(id) => setValForm(f => ({ ...f, lot_id: id }))} />
+              <label className="text-xs font-medium text-gray-600">{tx("Lot *")}</label>
+              <EntityPicker kind="lot" label={tx("Lot")} value={valForm.lot_id} onChange={(id) => setValForm(f => ({ ...f, lot_id: id }))} />
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-600">Quantity</label>
+              <label className="text-xs font-medium text-gray-600">{tx("Quantity")}</label>
               <input type="number" className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
                 value={valForm.quantity} onChange={e => setValForm(f => ({ ...f, quantity: e.target.value }))} />
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-600">Product</label>
-              <EntityPicker kind="product" label="Product" value={valForm.product_id} onChange={(id) => setValForm(f => ({ ...f, product_id: id }))} />
+              <label className="text-xs font-medium text-gray-600">{tx("Product")}</label>
+              <EntityPicker kind="product" label={tx("Product")} value={valForm.product_id} onChange={(id) => setValForm(f => ({ ...f, product_id: id }))} />
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-600">Material</label>
-              <EntityPicker kind="material" label="Material" value={valForm.material_id} onChange={(id) => setValForm(f => ({ ...f, material_id: id }))} />
+              <label className="text-xs font-medium text-gray-600">{tx("Material")}</label>
+              <EntityPicker kind="material" label={tx("Material")} value={valForm.material_id} onChange={(id) => setValForm(f => ({ ...f, material_id: id }))} />
             </div>
           </div>
           <button onClick={handleValidate} disabled={!valForm.lot_id || validating}
             className="w-full py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50">
-            {validating ? "Validating…" : "Validate for Production Issue"}
+            {validating ? tx("Validating…") : tx("Validate for Production Issue")}
           </button>
 
           {valResult && (
@@ -167,10 +168,10 @@ export default function ProductionValidationPage() {
                 </div>
                 <div>
                   <p className={`font-bold text-lg ${valResult.allowed ? "text-green-800" : "text-red-800"}`}>
-                    Issue {valResult.allowed ? "Allowed" : "BLOCKED"}
+                    {tx("Issue")} {valResult.allowed ? tx("Allowed") : "BLOCKED"}
                   </p>
                   {valResult.requires_approval && (
-                    <p className="text-sm text-amber-700 font-medium">⚠ Requires approval</p>
+                    <p className="text-sm text-amber-700 font-medium">{tx("⚠ Requires approval")}</p>
                   )}
                   {valResult.lot_status && (
                     <span className={`text-xs px-2 py-0.5 rounded ${SL_STATUS_BG[valResult.lot_status]}`}>
@@ -179,7 +180,7 @@ export default function ProductionValidationPage() {
                   )}
                 </div>
                 <div className="ml-auto text-right">
-                  <p className="text-xs text-gray-500">Remaining</p>
+                  <p className="text-xs text-gray-500">{tx("Remaining")}</p>
                   <p className="text-2xl font-bold text-gray-800">{fmtDays(valResult.remaining_days)}</p>
                 </div>
               </div>

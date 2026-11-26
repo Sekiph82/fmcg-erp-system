@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { scApi, fmt, orderStatusBadge } from "@/lib/subcontracting";
+import { tx } from "@/lib/i18n/core";
 
 function Kpi({ label, value, warn, sub }: { label: string; value: string|number; warn?: boolean; sub?: string }) {
   return (
@@ -20,63 +21,63 @@ export default function SubcontractingDashboard() {
 
   const runAI = useMutation({
     mutationFn: () => scApi.runAI(),
-    onSuccess: (r) => { qc.invalidateQueries({ queryKey: ["sc-dashboard"] }); alert(`AI ran — ${r.generated} recommendation(s) generated`); },
+    onSuccess: (r) => { qc.invalidateQueries({ queryKey: ["sc-dashboard"] }); alert(tx("AI ran — {generated} recommendation(s) generated", { generated: r.generated })); },
   });
 
-  if (isLoading) return <div className="p-8 text-gray-400">Loading…</div>;
-  if (!data) return <div className="p-8 text-red-500">Failed to load dashboard.</div>;
+  if (isLoading) return <div className="p-8 text-gray-400">{tx("Loading…")}</div>;
+  if (!data) return <div className="p-8 text-red-500">{tx("Failed to load dashboard.")}</div>;
 
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900">Subcontracting</h1>
-          <p className="text-sm text-gray-500">External manufacturing · Material control · Yield tracking</p>
+          <h1 className="text-xl font-semibold text-gray-900">{tx("Subcontracting")}</h1>
+          <p className="text-sm text-gray-500">{tx("External manufacturing · Material control · Yield tracking")}</p>
         </div>
         <div className="flex gap-2">
           <a href="/dashboard/subcontracting/locations" className="px-3 py-1.5 text-sm border rounded hover:bg-gray-50">
-            Manage Locations
+            {tx("Manage Locations")}
           </a>
           <button onClick={() => runAI.mutate()} disabled={runAI.isPending}
             className="px-3 py-1.5 text-sm border rounded hover:bg-gray-50 disabled:opacity-50">
-            {runAI.isPending ? "Running AI…" : "Run AI Agents"}
+            {runAI.isPending ? tx("Running AI…") : tx("Run AI Agents")}
           </button>
           <a href="/dashboard/subcontracting/orders" className="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
-            + New Order
+            {tx("+ New Order")}
           </a>
         </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-        <Kpi label="Total Orders" value={data.total_orders} />
-        <Kpi label="Active" value={data.active_orders} />
-        <Kpi label="Overdue" value={data.overdue_orders} warn={data.overdue_orders > 0} />
-        <Kpi label="Completed" value={data.completed_orders} />
-        <Kpi label="Avg Yield" value={data.avg_yield_pct != null ? `${fmt(data.avg_yield_pct, 1)}%` : "—"} />
-        <Kpi label="Scrap Cost" value={`KES ${fmt(data.total_scrap_cost, 0)}`} warn={data.total_scrap_cost > 0} />
+        <Kpi label={tx("Total Orders")} value={data.total_orders} />
+        <Kpi label={tx("Active")} value={data.active_orders} />
+        <Kpi label={tx("Overdue")} value={data.overdue_orders} warn={data.overdue_orders > 0} />
+        <Kpi label={tx("Completed")} value={data.completed_orders} />
+        <Kpi label={tx("Avg Yield")} value={data.avg_yield_pct != null ? `${fmt(data.avg_yield_pct, 1)}%` : "—"} />
+        <Kpi label={tx("Scrap Cost")} value={`KES ${fmt(data.total_scrap_cost, 0)}`} warn={data.total_scrap_cost > 0} />
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Kpi label="Material Issued Value" value={`KES ${fmt(data.total_material_issued_value, 0)}`} />
-        <Kpi label="AI Recommendations" value={data.ai_recs_count} />
-        <Kpi label="Suppliers" value={data.supplier_count} />
-        <Kpi label="SC Locations" value={data.locations_count} />
+        <Kpi label={tx("Material Issued Value")} value={`KES ${fmt(data.total_material_issued_value, 0)}`} />
+        <Kpi label={tx("AI Recommendations")} value={data.ai_recs_count} />
+        <Kpi label={tx("Suppliers")} value={data.supplier_count} />
+        <Kpi label={tx("SC Locations")} value={data.locations_count} />
       </div>
 
       <div className="bg-white border border-gray-200 rounded-lg">
         <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-gray-700">Recent Orders</h2>
-          <a href="/dashboard/subcontracting/orders" className="text-xs text-blue-600 hover:underline">View all →</a>
+          <h2 className="text-sm font-semibold text-gray-700">{tx("Recent Orders")}</h2>
+          <a href="/dashboard/subcontracting/orders" className="text-xs text-blue-600 hover:underline">{tx("View all →")}</a>
         </div>
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
             <tr>
-              <th className="text-left px-4 py-2">Order No</th>
-              <th className="text-left px-4 py-2">Supplier</th>
-              <th className="text-left px-4 py-2">Status</th>
-              <th className="text-right px-4 py-2">Due Date</th>
-              <th className="text-right px-4 py-2">Service Cost</th>
-              <th className="text-left px-4 py-2">Actions</th>
+              <th className="text-left px-4 py-2">{tx("Order No")}</th>
+              <th className="text-left px-4 py-2">{tx("Supplier")}</th>
+              <th className="text-left px-4 py-2">{tx("Status")}</th>
+              <th className="text-right px-4 py-2">{tx("Due Date")}</th>
+              <th className="text-right px-4 py-2">{tx("Service Cost")}</th>
+              <th className="text-left px-4 py-2">{tx("Actions")}</th>
             </tr>
           </thead>
           <tbody>
@@ -90,21 +91,21 @@ export default function SubcontractingDashboard() {
                 <td className="px-4 py-2 text-right text-gray-600">{o.expected_completion_date ?? "—"}</td>
                 <td className="px-4 py-2 text-right">{o.total_service_cost ? `KES ${fmt(o.total_service_cost, 0)}` : "—"}</td>
                 <td className="px-4 py-2">
-                  <a href={`/dashboard/subcontracting/orders?id=${o.id}`} className="text-blue-600 hover:underline text-xs">Manage →</a>
+                  <a href={`/dashboard/subcontracting/orders?id=${o.id}`} className="text-blue-600 hover:underline text-xs">{tx("Manage →")}</a>
                 </td>
               </tr>
             ))}
-            {!orders?.length && <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">No orders yet.</td></tr>}
+            {!orders?.length && <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">{tx("No orders yet.")}</td></tr>}
           </tbody>
         </table>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { label: "Orders", href: "/dashboard/subcontracting/orders", desc: "Create & manage subcontract orders" },
-          { label: "Subcontractor Stock", href: "/dashboard/subcontracting/stock", desc: "Materials at subcontractor sites" },
-          { label: "Yield Analysis", href: "/dashboard/subcontracting/yield", desc: "Yield vs expected · Scrap tracking" },
-          { label: "AI Agents", href: "/dashboard/subcontracting/ai", desc: "Performance · Cost · Risk insights" },
+          { label: tx("Orders"), href: "/dashboard/subcontracting/orders", desc: tx("Create & manage subcontract orders") },
+          { label: tx("Subcontractor Stock"), href: "/dashboard/subcontracting/stock", desc: tx("Materials at subcontractor sites") },
+          { label: tx("Yield Analysis"), href: "/dashboard/subcontracting/yield", desc: tx("Yield vs expected · Scrap tracking") },
+          { label: tx("AI Agents"), href: "/dashboard/subcontracting/ai", desc: tx("Performance · Cost · Risk insights") },
         ].map((l) => (
           <a key={l.href} href={l.href} className="bg-white border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors block">
             <p className="font-medium text-gray-800 text-sm">{l.label}</p>

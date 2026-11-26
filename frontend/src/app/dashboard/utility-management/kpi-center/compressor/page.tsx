@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import { kpiApi } from "@/lib/utilityKpi";
+import { tx } from "@/lib/i18n/core";
 
 const today = new Date().toISOString().slice(0, 10);
 const mtdStart = today.slice(0, 8) + "01";
@@ -37,7 +38,7 @@ function DateFilter({ from, to, onFrom, onTo }: { from: string; to: string; onFr
   return (
     <div className="flex gap-3 items-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-3">
       <input type="date" className={ic} value={from} onChange={e => onFrom(e.target.value)} />
-      <span className="text-gray-400 text-xs">to</span>
+      <span className="text-gray-400 text-xs">{tx("to")}</span>
       <input type="date" className={ic} value={to} onChange={e => onTo(e.target.value)} />
     </div>
   );
@@ -66,15 +67,15 @@ export default function CompressorKpiPage() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <div className="flex items-center gap-3 mb-1">
-            <Link href="/dashboard/utility-management/kpi-center" className="text-sm text-gray-500 hover:text-blue-600">← KPI Center</Link>
+            <Link href="/dashboard/utility-management/kpi-center" className="text-sm text-gray-500 hover:text-blue-600">{tx("← KPI Center")}</Link>
             <span className="text-gray-300">|</span>
-            <Link href="/dashboard/utility-management/compressor" className="text-sm text-blue-600 hover:underline">Operational Records →</Link>
+            <Link href="/dashboard/utility-management/compressor" className="text-sm text-blue-600 hover:underline">{tx("Operational Records →")}</Link>
           </div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white" style={{ borderLeft: "4px solid #22d3ee", paddingLeft: 12 }}>
-            Compressed Air KPI Dashboard
+            {tx("Compressed Air KPI Dashboard")}
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Monitor air generation efficiency, leak estimation, and compressor energy intensity.
+            {tx("Monitor air generation efficiency, leak estimation, and compressor energy intensity.")}
           </p>
         </div>
         <DateFilter from={dateFrom} to={dateTo} onFrom={setDateFrom} onTo={setDateTo} />
@@ -83,18 +84,18 @@ export default function CompressorKpiPage() {
       {/* KPI cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         <KpiCard
-          label="Air Generated"
+          label={tx("Air Generated")}
           value={fmt(kpi?.air_nm3_total, 1)}
           unit="Nm³"
           sub={`${dateFrom} – ${dateTo}`}
         />
         <KpiCard
-          label="Electricity Used"
+          label={tx("Electricity Used")}
           value={fmt(kpi?.electricity_kwh_total, 1)}
           unit="kWh"
         />
         <KpiCard
-          label="Energy Intensity"
+          label={tx("Energy Intensity")}
           value={fmt(kpi?.air_kwh_per_nm3, 4)}
           unit="kWh/Nm³"
           warn={(kpi?.air_kwh_per_nm3 ?? 0) > 0.12}
@@ -102,31 +103,31 @@ export default function CompressorKpiPage() {
           highlight={(kpi?.air_kwh_per_nm3 ?? 0) > 0 && (kpi?.air_kwh_per_nm3 ?? 0) <= 0.10}
         />
         <KpiCard
-          label="Leak Estimate"
+          label={tx("Leak Estimate")}
           value={pct(kpi?.leak_estimate_pct)}
           highlight={(kpi?.leak_estimate_pct ?? 0) > 0 && (kpi?.leak_estimate_pct ?? 0) <= 5}
           warn={(kpi?.leak_estimate_pct ?? 0) > 10}
           critical={(kpi?.leak_estimate_pct ?? 0) > 20}
         />
         <KpiCard
-          label="Night Idle Consumption"
+          label={tx("Night Idle Consumption")}
           value={fmt(kpi?.night_idle_kwh, 1)}
           unit="kWh"
           warn={(kpi?.night_idle_kwh ?? 0) > 200}
         />
         <KpiCard
-          label="Avg Compressor Load"
+          label={tx("Avg Compressor Load")}
           value={pct(kpi?.avg_load_pct)}
           highlight={(kpi?.avg_load_pct ?? 0) >= 70}
           warn={(kpi?.avg_load_pct ?? 0) < 50 && (kpi?.avg_load_pct ?? 0) > 0}
         />
         <KpiCard
-          label="Runtime Hours"
+          label={tx("Runtime Hours")}
           value={fmt(kpi?.runtime_hours, 1)}
           unit="h"
         />
         <KpiCard
-          label="Anomaly Count"
+          label={tx("Anomaly Count")}
           value={kpi?.anomaly_count == null ? "—" : String(kpi.anomaly_count)}
           warn={(kpi?.anomaly_count ?? 0) > 0}
           critical={(kpi?.anomaly_count ?? 0) > 3}
@@ -138,13 +139,13 @@ export default function CompressorKpiPage() {
         <div className="rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-300 dark:border-amber-700 p-4 flex gap-3 items-start">
           <span className="text-amber-500 text-lg">⚠</span>
           <div className="text-sm">
-            <p className="font-semibold text-amber-800 dark:text-amber-300">Efficiency Warning</p>
+            <p className="font-semibold text-amber-800 dark:text-amber-300">{tx("Efficiency Warning")}</p>
             <ul className="list-disc list-inside mt-1 text-amber-700 dark:text-amber-400 space-y-0.5">
               {(kpi?.leak_estimate_pct ?? 0) > 10 && (
-                <li>Leak estimate {pct(kpi?.leak_estimate_pct)} exceeds 10% threshold — inspect distribution lines</li>
+                <li>{tx("Leak estimate")} {pct(kpi?.leak_estimate_pct)} {tx("exceeds 10% threshold — inspect distribution lines")}</li>
               )}
               {(kpi?.air_kwh_per_nm3 ?? 0) > 0.15 && (
-                <li>Energy intensity {fmt(kpi?.air_kwh_per_nm3, 4)} kWh/Nm³ is above target — check compressor condition</li>
+                <li>{tx("Energy intensity")} {fmt(kpi?.air_kwh_per_nm3, 4)} {tx("kWh/Nm³ is above target — check compressor condition")}</li>
               )}
             </ul>
           </div>
@@ -153,7 +154,7 @@ export default function CompressorKpiPage() {
 
       {/* Trend chart */}
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Compressed Air & Electricity Daily Trend</h3>
+        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">{tx("Compressed Air & Electricity Daily Trend")}</h3>
         <ResponsiveContainer width="100%" height={260}>
           <LineChart data={trend} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" />

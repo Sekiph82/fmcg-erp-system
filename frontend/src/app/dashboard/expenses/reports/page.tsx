@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { expensesApi, fmtCurrency } from "@/lib/expenses";
+import { tx } from "@/lib/i18n/core";
 
 type Tab = "employee" | "category" | "violations";
 
@@ -19,14 +20,14 @@ export default function ExpenseReportsPage() {
   useEffect(() => { load(); }, [tab]);
 
   const tabs: { id: Tab; label: string }[] = [
-    { id: "employee", label: "By Employee" },
-    { id: "category", label: "By Category" },
-    { id: "violations", label: "Policy Violations" },
+    { id: "employee", label: tx("By Employee") },
+    { id: "category", label: tx("By Category") },
+    { id: "violations", label: tx("Policy Violations") },
   ];
 
   return (
     <div className="p-6 space-y-5 text-slate-200">
-      <h1 className="text-xl font-bold text-white">Expense Reports</h1>
+      <h1 className="text-xl font-bold text-white">{tx("Expense Reports")}</h1>
 
       <div className="flex gap-2">
         {tabs.map((t) => (
@@ -37,12 +38,12 @@ export default function ExpenseReportsPage() {
         ))}
       </div>
 
-      {loading ? <p className="text-slate-500 text-sm">Loading…</p> : (
+      {loading ? <p className="text-slate-500 text-sm">{tx("Loading…")}</p> : (
         <div className="glass-table">
           {tab === "employee" && (
             <table className="w-full text-sm">
               <thead><tr className="border-b border-white/[0.07]">
-                {["Employee ID", "Claims", "Total Claimed", "Total Approved"].map((h) => (
+                {["Employee ID", "Claims", tx("Total Claimed"), tx("Total Approved")].map((h) => (
                   <th key={h} className={`px-4 py-3 text-[10px] text-slate-500 uppercase tracking-widest ${h !== "Employee ID" && h !== "Claims" ? "text-right" : "text-left"}`}>{h}</th>
                 ))}
               </tr></thead>
@@ -55,14 +56,14 @@ export default function ExpenseReportsPage() {
                     <td className="px-4 py-3 text-right text-emerald-400">{fmtCurrency(r.total_approved || 0)}</td>
                   </tr>
                 ))}
-                {data.length === 0 && <tr><td colSpan={4} className="px-4 py-8 text-center text-slate-600">No data</td></tr>}
+                {data.length === 0 && <tr><td colSpan={4} className="px-4 py-8 text-center text-slate-600">{tx("No data")}</td></tr>}
               </tbody>
             </table>
           )}
           {tab === "category" && (
             <table className="w-full text-sm">
               <thead><tr className="border-b border-white/[0.07]">
-                {["Category", "Lines", "Total Claimed", "Total Approved"].map((h) => (
+                {["Category", "Lines", tx("Total Claimed"), tx("Total Approved")].map((h) => (
                   <th key={h} className={`px-4 py-3 text-[10px] text-slate-500 uppercase tracking-widest ${h !== "Category" && h !== "Lines" ? "text-right" : "text-left"}`}>{h}</th>
                 ))}
               </tr></thead>
@@ -75,14 +76,14 @@ export default function ExpenseReportsPage() {
                     <td className="px-4 py-3 text-right text-emerald-400">{fmtCurrency(r.total_approved || 0)}</td>
                   </tr>
                 ))}
-                {data.length === 0 && <tr><td colSpan={4} className="px-4 py-8 text-center text-slate-600">No data</td></tr>}
+                {data.length === 0 && <tr><td colSpan={4} className="px-4 py-8 text-center text-slate-600">{tx("No data")}</td></tr>}
               </tbody>
             </table>
           )}
           {tab === "violations" && (
             <table className="w-full text-sm">
               <thead><tr className="border-b border-white/[0.07]">
-                {["Line ID", "Receipt", "Amount", "Severity", "Note"].map((h) => (
+                {[tx("Line ID"), tx("Receipt"), "Amount", tx("Severity"), tx("Note")].map((h) => (
                   <th key={h} className={`px-4 py-3 text-[10px] text-slate-500 uppercase tracking-widest ${h === "Amount" ? "text-right" : "text-left"}`}>{h}</th>
                 ))}
               </tr></thead>
@@ -98,7 +99,7 @@ export default function ExpenseReportsPage() {
                     <td className="px-4 py-3 text-slate-500 text-xs">{r.note}</td>
                   </tr>
                 ))}
-                {data.length === 0 && <tr><td colSpan={5} className="px-4 py-8 text-center text-slate-600">No violations</td></tr>}
+                {data.length === 0 && <tr><td colSpan={5} className="px-4 py-8 text-center text-slate-600">{tx("No violations")}</td></tr>}
               </tbody>
             </table>
           )}

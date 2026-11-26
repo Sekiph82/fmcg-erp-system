@@ -4,6 +4,7 @@ import { useCallback, useState, useEffect } from "react";
 import { payrollKeApi, PayrollRun, MONTH_NAMES } from "@/lib/payrollKe";
 import { RequirePermission } from "@/components/PermissionGuard";
 import { useAuth } from "@/context/AuthContext";
+import { tx } from "@/lib/i18n/core";
 
 export default function PayrollReportsPage() {
   return (
@@ -83,17 +84,17 @@ function PayrollReportsContent() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Statutory Reports</h1>
-          <p className="text-sm text-gray-500 mt-1">PAYE · NHIF · NSSF — Kenya Revenue Authority compliance</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Statutory Reports")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{tx("PAYE · NHIF · NSSF — Kenya Revenue Authority compliance")}</p>
         </div>
       </div>
 
       {/* Run selector */}
       <div className="flex gap-3 items-end flex-wrap">
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Payroll Run</label>
+          <label className="block text-xs text-gray-500 mb-1">{tx("Payroll Run")}</label>
           <select value={selectedRun} onChange={(e) => setSelectedRun(e.target.value)} className="border rounded-lg px-3 py-2 text-sm min-w-48">
-            {runs.length === 0 ? <option value="">No approved runs</option> : (
+            {runs.length === 0 ? <option value="">{tx("No approved runs")}</option> : (
               runs.map((r) => (
                 <option key={r.id} value={r.id}>{r.run_no} — {MONTH_NAMES[r.period_month]} {r.period_year}</option>
               ))
@@ -102,7 +103,7 @@ function PayrollReportsContent() {
         </div>
         {currentRun && (
           <div className="text-sm text-gray-500">
-            {currentRun.employee_count} employees · KES {Number(currentRun.total_net).toLocaleString()} net
+            {currentRun.employee_count} {tx("employees · KES")} {Number(currentRun.total_net).toLocaleString()} {tx("net")}
           </div>
         )}
       </div>
@@ -120,17 +121,17 @@ function PayrollReportsContent() {
       {/* Report info */}
       {tab === "paye" && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-700">
-          PAYE deducted must be remitted to KRA by the 9th of the following month via iTax. File P10 return monthly.
+          {tx("PAYE deducted must be remitted to KRA by the 9th of the following month via iTax. File P10 return monthly.")}
         </div>
       )}
       {tab === "nhif" && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-700">
-          NHIF contributions remitted to NHIF by the 9th of the following month. File monthly deduction schedules on the NHIF portal.
+          {tx("NHIF contributions remitted to NHIF by the 9th of the following month. File monthly deduction schedules on the NHIF portal.")}
         </div>
       )}
       {tab === "nssf" && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-700">
-          NSSF contributions (employee + employer match) remitted by the 15th of the following month. Both tiers required under NSSF Act 2013.
+          {tx("NSSF contributions (employee + employer match) remitted by the 15th of the following month. Both tiers required under NSSF Act 2013.")}
         </div>
       )}
 
@@ -138,9 +139,9 @@ function PayrollReportsContent() {
       <div className="bg-white rounded-lg border overflow-hidden">
         <div className="flex justify-end px-4 py-2 border-b">
           {canExportPayroll ? (
-            <button onClick={exportCSV} className="text-xs text-blue-600 hover:underline">Export CSV</button>
+            <button onClick={exportCSV} className="text-xs text-blue-600 hover:underline">{tx("Export CSV")}</button>
           ) : (
-            <span className="text-xs text-gray-400">Export restricted</span>
+            <span className="text-xs text-gray-400">{tx("Export restricted")}</span>
           )}
         </div>
         <div className="overflow-x-auto">
@@ -154,9 +155,9 @@ function PayrollReportsContent() {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {loading ? (
-                <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400">Loading…</td></tr>
+                <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400">{tx("Loading…")}</td></tr>
               ) : reportData.length === 0 ? (
-                <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400">No data. Select an approved payroll run and calculate first.</td></tr>
+                <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400">{tx("No data. Select an approved payroll run and calculate first.")}</td></tr>
               ) : (
                 reportData.map((row, i) => (
                   <tr key={i} className="hover:bg-gray-50">
@@ -175,15 +176,15 @@ function PayrollReportsContent() {
       {currentRun && reportData.length > 0 && tab !== "summary" && (
         <div className="bg-gray-50 rounded-lg border p-4 grid grid-cols-3 gap-4 text-sm">
           <div>
-            <p className="text-xs text-gray-500">Total PAYE</p>
+            <p className="text-xs text-gray-500">{tx("Total PAYE")}</p>
             <p className="font-bold text-red-600">KES {Number(currentRun.total_paye).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
           </div>
           <div>
-            <p className="text-xs text-gray-500">Total NHIF</p>
+            <p className="text-xs text-gray-500">{tx("Total NHIF")}</p>
             <p className="font-bold text-orange-600">KES {Number(currentRun.total_nhif).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
           </div>
           <div>
-            <p className="text-xs text-gray-500">Total NSSF</p>
+            <p className="text-xs text-gray-500">{tx("Total NSSF")}</p>
             <p className="font-bold text-yellow-600">KES {Number(currentRun.total_nssf).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
           </div>
         </div>

@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { calendarApi, CalendarResource, AvailabilitySlot } from "@/lib/calendar";
+import { tx } from "@/lib/i18n/core";
 
 export default function AvailabilityPage() {
   const [resources, setResources] = useState<CalendarResource[]>([]);
@@ -23,7 +24,7 @@ export default function AvailabilityPage() {
   );
 
   const findSlots = async () => {
-    if (selectedResources.length === 0) { alert("Select at least one resource"); return; }
+    if (selectedResources.length === 0) { alert(tx("Select at least one resource")); return; }
     setLoading(true);
     setSearched(true);
     try {
@@ -40,7 +41,7 @@ export default function AvailabilityPage() {
   };
 
   const checkSpecific = async () => {
-    if (!checkResource || !checkStart || !checkEnd) { alert("Fill all fields"); return; }
+    if (!checkResource || !checkStart || !checkEnd) { alert(tx("Fill all fields")); return; }
     const result = await calendarApi.checkAvailability({
       resource_id: checkResource,
       start_datetime: new Date(checkStart).toISOString(),
@@ -54,24 +55,24 @@ export default function AvailabilityPage() {
 
   return (
     <div className="p-6 space-y-6 max-w-4xl">
-      <h1 className="text-xl font-bold text-gray-900">Availability Checker</h1>
+      <h1 className="text-xl font-bold text-gray-900">{tx("Availability Checker")}</h1>
 
       <div className="bg-white border rounded-lg p-5 shadow-sm space-y-4">
-        <h2 className="font-semibold text-gray-800">Find Available Slots</h2>
+        <h2 className="font-semibold text-gray-800">{tx("Find Available Slots")}</h2>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="text-xs text-gray-500 block mb-1">Date</label>
+            <label className="text-xs text-gray-500 block mb-1">{tx("Date")}</label>
             <input type="date" className="w-full border rounded px-2 py-1.5 text-sm"
               value={date} onChange={e => setDate(e.target.value)} />
           </div>
           <div>
-            <label className="text-xs text-gray-500 block mb-1">Duration (minutes)</label>
+            <label className="text-xs text-gray-500 block mb-1">{tx("Duration (minutes)")}</label>
             <input type="number" min={15} step={15} className="w-full border rounded px-2 py-1.5 text-sm"
               value={duration} onChange={e => setDuration(Number(e.target.value))} />
           </div>
         </div>
         <div>
-          <label className="text-xs text-gray-500 block mb-2">Select Resources *</label>
+          <label className="text-xs text-gray-500 block mb-2">{tx("Select Resources *")}</label>
           <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
             {resources.filter(r => r.status === "active").map(r => (
               <label key={r.resource_id} className="flex items-center gap-2 p-2 border rounded cursor-pointer hover:bg-gray-50">
@@ -84,28 +85,28 @@ export default function AvailabilityPage() {
               </label>
             ))}
           </div>
-          {resources.length === 0 && <p className="text-sm text-gray-400">No active resources.</p>}
+          {resources.length === 0 && <p className="text-sm text-gray-400">{tx("No active resources.")}</p>}
         </div>
         <button onClick={findSlots} disabled={loading}
           className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">
-          {loading ? "Searching…" : "Find Available Slots"}
+          {loading ? tx("Searching…") : tx("Find Available Slots")}
         </button>
       </div>
 
       {searched && !loading && (
         <div className="bg-white border rounded-lg p-5 shadow-sm">
           <h2 className="font-semibold text-gray-800 mb-3">
-            Available Slots on {new Date(date).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}
+            {tx("Available Slots on")} {new Date(date).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}
           </h2>
           {slots.length === 0
-            ? <p className="text-sm text-gray-400 text-center py-8">No available slots found for the selected duration and resources.</p>
+            ? <p className="text-sm text-gray-400 text-center py-8">{tx("No available slots found for the selected duration and resources.")}</p>
             : (
               <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
                 {slots.map((s, i) => (
                   <div key={i} className="border border-green-200 bg-green-50 rounded-lg p-3 text-center cursor-pointer hover:bg-green-100">
                     <p className="text-sm font-semibold text-green-800">{fmt(s.start)} – {fmt(s.end)}</p>
                     <p className="text-xs text-green-600 mt-0.5">{fmtDate(s.start)}</p>
-                    <p className="text-xs text-green-500 mt-1">{duration} min · All resources free</p>
+                    <p className="text-xs text-green-500 mt-1">{duration} {tx("min · All resources free")}</p>
                   </div>
                 ))}
               </div>
@@ -115,37 +116,37 @@ export default function AvailabilityPage() {
       )}
 
       <div className="bg-white border rounded-lg p-5 shadow-sm space-y-4">
-        <h2 className="font-semibold text-gray-800">Check Specific Slot</h2>
+        <h2 className="font-semibold text-gray-800">{tx("Check Specific Slot")}</h2>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
           <div className="col-span-2 md:col-span-1">
-            <label className="text-xs text-gray-500 block mb-1">Resource</label>
+            <label className="text-xs text-gray-500 block mb-1">{tx("Resource")}</label>
             <select className="w-full border rounded px-2 py-1.5 text-sm" value={checkResource}
               onChange={e => { setCheckResource(e.target.value); setCheckResult(null); }}>
-              <option value="">Select resource…</option>
+              <option value="">{tx("Select resource…")}</option>
               {resources.map(r => <option key={r.resource_id} value={r.resource_id}>{r.name}</option>)}
             </select>
           </div>
           <div>
-            <label className="text-xs text-gray-500 block mb-1">Start</label>
+            <label className="text-xs text-gray-500 block mb-1">{tx("Start")}</label>
             <input type="datetime-local" className="w-full border rounded px-2 py-1.5 text-sm"
               value={checkStart} onChange={e => { setCheckStart(e.target.value); setCheckResult(null); }} />
           </div>
           <div>
-            <label className="text-xs text-gray-500 block mb-1">End</label>
+            <label className="text-xs text-gray-500 block mb-1">{tx("End")}</label>
             <input type="datetime-local" className="w-full border rounded px-2 py-1.5 text-sm"
               value={checkEnd} onChange={e => { setCheckEnd(e.target.value); setCheckResult(null); }} />
           </div>
         </div>
         <button onClick={checkSpecific}
           className="rounded border border-blue-300 px-4 py-1.5 text-sm text-blue-600 hover:bg-blue-50">
-          Check Availability
+          {tx("Check Availability")}
         </button>
         {checkResult && (
           <div className={`flex items-center gap-2 text-sm font-medium p-3 rounded ${checkResult.available ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}>
             <span className="text-lg">{checkResult.available ? "✓" : "✗"}</span>
             {checkResult.available
-              ? "Resource is available for this time slot."
-              : `Resource is NOT available — ${checkResult.conflicts} conflict(s) detected.`}
+              ? tx("Resource is available for this time slot.")
+              : tx("Resource is NOT available — {conflicts} conflict(s) detected.", { conflicts: checkResult.conflicts })}
           </div>
         )}
       </div>

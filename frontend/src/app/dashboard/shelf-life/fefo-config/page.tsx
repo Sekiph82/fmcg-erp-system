@@ -4,6 +4,7 @@ import {
   shelfLifeApi, ItemShelfLifeConfig, PickingStrategyConfig,
   STRATEGY_LABEL, ShelfLifeCategory,
 } from "@/lib/shelfLife";
+import { tx } from "@/lib/i18n/core";
 
 const CATEGORIES: ShelfLifeCategory[] = ["raw", "intermediate", "bulk", "finished_goods", "packaging", "other"];
 const STRATEGIES = ["fefo", "fifo", "lifo", "manual", "hybrid"] as const;
@@ -85,14 +86,14 @@ export default function FEFOConfigPage() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">FEFO Configuration</h1>
-          <p className="text-sm text-gray-500">Shelf-life policies and picking strategy settings</p>
+          <h1 className="text-xl font-bold text-gray-900">{tx("FEFO Configuration")}</h1>
+          <p className="text-sm text-gray-500">{tx("Shelf-life policies and picking strategy settings")}</p>
         </div>
         <button
           onClick={() => tab === "item" ? setShowItemModal(true) : setShowStratModal(true)}
           className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700"
         >
-          + Add {tab === "item" ? "Item Config" : "Picking Strategy"}
+          {tx("+ Add")} {tab === "item" ? tx("Item Config") : tx("Picking Strategy")}
         </button>
       </div>
 
@@ -101,7 +102,7 @@ export default function FEFOConfigPage() {
         {(["item", "strategy"] as const).map((t) => (
           <button key={t} onClick={() => setTab(t)}
             className={`px-4 py-1.5 rounded text-sm font-medium ${tab === t ? "bg-white shadow text-gray-800" : "text-gray-500"}`}>
-            {t === "item" ? "Item Shelf-Life Config" : "Picking Strategy Overrides"}
+            {t === "item" ? tx("Item Shelf-Life Config") : tx("Picking Strategy Overrides")}
           </button>
         ))}
       </div>
@@ -111,14 +112,14 @@ export default function FEFOConfigPage() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-xs uppercase text-gray-500">
               <tr>
-                {["Category", "Shelf-Life Days", "Near-Expiry (d)", "Min Issue (d)", "Min Ship (d)", "Strategy", "Block Policy", "Retest"].map((h) => (
+                {[tx("Category"), tx("Shelf-Life Days"), tx("Near-Expiry (d)"), tx("Min Issue (d)"), tx("Min Ship (d)"), tx("Strategy"), tx("Block Policy"), tx("Retest")].map((h) => (
                   <th key={h} className="px-4 py-3 text-left font-medium">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {configs.length === 0 ? (
-                <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">No item configs yet</td></tr>
+                <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">{tx("No item configs yet")}</td></tr>
               ) : configs.map((c) => (
                 <tr key={c.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3 font-medium">{c.shelf_life_category}</td>
@@ -134,7 +135,7 @@ export default function FEFOConfigPage() {
                       {c.expiry_block_policy}
                     </span>
                   </td>
-                  <td className="px-4 py-3">{c.allowed_retest ? "Yes" : "No"}</td>
+                  <td className="px-4 py-3">{c.allowed_retest ? tx("Yes") : tx("No")}</td>
                 </tr>
               ))}
             </tbody>
@@ -147,14 +148,14 @@ export default function FEFOConfigPage() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-xs uppercase text-gray-500">
               <tr>
-                {["Scope", "Strategy", "Active", "Notes", "Created"].map((h) => (
+                {[tx("Scope"), tx("Strategy"), tx("Active"), tx("Notes"), tx("Created")].map((h) => (
                   <th key={h} className="px-4 py-3 text-left font-medium">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {strategies.length === 0 ? (
-                <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-400">No strategy overrides configured</td></tr>
+                <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-400">{tx("No strategy overrides configured")}</td></tr>
               ) : strategies.map((s) => (
                 <tr key={s.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3">{s.scope}</td>
@@ -175,84 +176,84 @@ export default function FEFOConfigPage() {
       {showItemModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
-            <h3 className="font-semibold text-gray-800 text-lg">Add Item Shelf-Life Config</h3>
+            <h3 className="font-semibold text-gray-800 text-lg">{tx("Add Item Shelf-Life Config")}</h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-xs font-medium text-gray-600">Category</label>
+                <label className="text-xs font-medium text-gray-600">{tx("Category")}</label>
                 <select className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
                   value={form.shelf_life_category} onChange={e => setForm(f => ({ ...f, shelf_life_category: e.target.value }))}>
                   {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-600">Shelf-Life Days</label>
+                <label className="text-xs font-medium text-gray-600">{tx("Shelf-Life Days")}</label>
                 <input type="number" className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
                   value={form.shelf_life_days} onChange={e => setForm(f => ({ ...f, shelf_life_days: e.target.value }))} />
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-600">Near-Expiry Threshold (days)</label>
+                <label className="text-xs font-medium text-gray-600">{tx("Near-Expiry Threshold (days)")}</label>
                 <input type="number" className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
                   value={form.near_expiry_threshold_days} onChange={e => setForm(f => ({ ...f, near_expiry_threshold_days: e.target.value }))} />
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-600">Min Remaining for Issue (days)</label>
+                <label className="text-xs font-medium text-gray-600">{tx("Min Remaining for Issue (days)")}</label>
                 <input type="number" className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
                   value={form.min_remaining_days_issue} onChange={e => setForm(f => ({ ...f, min_remaining_days_issue: e.target.value }))} />
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-600">Min Remaining for Shipment (days)</label>
+                <label className="text-xs font-medium text-gray-600">{tx("Min Remaining for Shipment (days)")}</label>
                 <input type="number" className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
                   value={form.min_remaining_days_ship} onChange={e => setForm(f => ({ ...f, min_remaining_days_ship: e.target.value }))} />
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-600">Default Picking Strategy</label>
+                <label className="text-xs font-medium text-gray-600">{tx("Default Picking Strategy")}</label>
                 <select className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
                   value={form.picking_strategy_default} onChange={e => setForm(f => ({ ...f, picking_strategy_default: e.target.value }))}>
                   {STRATEGIES.map(s => <option key={s} value={s}>{STRATEGY_LABEL[s]}</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-600">Expiry Block Policy</label>
+                <label className="text-xs font-medium text-gray-600">{tx("Expiry Block Policy")}</label>
                 <select className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
                   value={form.expiry_block_policy} onChange={e => setForm(f => ({ ...f, expiry_block_policy: e.target.value }))}>
                   {BLOCK_POLICIES.map(p => <option key={p} value={p}>{p}</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-600">Near-Expiry Issue Policy</label>
+                <label className="text-xs font-medium text-gray-600">{tx("Near-Expiry Issue Policy")}</label>
                 <select className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
                   value={form.near_expiry_issue_policy} onChange={e => setForm(f => ({ ...f, near_expiry_issue_policy: e.target.value }))}>
                   {NEAR_EXPIRY_POLICIES.map(p => <option key={p} value={p}>{p}</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-600">Near-Expiry Shipment Policy</label>
+                <label className="text-xs font-medium text-gray-600">{tx("Near-Expiry Shipment Policy")}</label>
                 <select className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
                   value={form.near_expiry_ship_policy} onChange={e => setForm(f => ({ ...f, near_expiry_ship_policy: e.target.value }))}>
                   {NEAR_EXPIRY_POLICIES.map(p => <option key={p} value={p}>{p}</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-600">Max Hold Hours (bulk/intermediate)</label>
+                <label className="text-xs font-medium text-gray-600">{tx("Max Hold Hours (bulk/intermediate)")}</label>
                 <input type="number" className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
                   value={form.max_hold_hours} onChange={e => setForm(f => ({ ...f, max_hold_hours: e.target.value }))} />
               </div>
               <div className="flex items-center gap-2 mt-4">
                 <input type="checkbox" id="retest" checked={form.allowed_retest}
                   onChange={e => setForm(f => ({ ...f, allowed_retest: e.target.checked }))} />
-                <label htmlFor="retest" className="text-sm text-gray-700">Allow Retest for this item</label>
+                <label htmlFor="retest" className="text-sm text-gray-700">{tx("Allow Retest for this item")}</label>
               </div>
               <div className="col-span-2">
-                <label className="text-xs font-medium text-gray-600">Notes</label>
+                <label className="text-xs font-medium text-gray-600">{tx("Notes")}</label>
                 <input className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
                   value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
               </div>
             </div>
             <div className="flex gap-2 justify-end pt-2">
-              <button onClick={() => setShowItemModal(false)} className="px-4 py-2 text-sm border rounded-lg">Cancel</button>
+              <button onClick={() => setShowItemModal(false)} className="px-4 py-2 text-sm border rounded-lg">{tx("Cancel")}</button>
               <button onClick={saveItem} disabled={saving}
                 className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50">
-                {saving ? "Saving…" : "Save Config"}
+                {saving ? tx("Saving…") : tx("Save Config")}
               </button>
             </div>
           </div>
@@ -263,9 +264,9 @@ export default function FEFOConfigPage() {
       {showStratModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4">
-            <h3 className="font-semibold text-gray-800 text-lg">Add Picking Strategy Override</h3>
+            <h3 className="font-semibold text-gray-800 text-lg">{tx("Add Picking Strategy Override")}</h3>
             <div>
-              <label className="text-xs font-medium text-gray-600">Scope</label>
+              <label className="text-xs font-medium text-gray-600">{tx("Scope")}</label>
               <select className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
                 value={stratForm.scope} onChange={e => setStratForm(f => ({ ...f, scope: e.target.value }))}>
                 {["item_warehouse_location","item_warehouse","item_default","warehouse_default","system_fallback"].map(s =>
@@ -274,22 +275,22 @@ export default function FEFOConfigPage() {
               </select>
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-600">Strategy</label>
+              <label className="text-xs font-medium text-gray-600">{tx("Strategy")}</label>
               <select className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
                 value={stratForm.strategy} onChange={e => setStratForm(f => ({ ...f, strategy: e.target.value }))}>
                 {STRATEGIES.map(s => <option key={s} value={s}>{STRATEGY_LABEL[s]}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-600">Notes</label>
+              <label className="text-xs font-medium text-gray-600">{tx("Notes")}</label>
               <input className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
                 value={stratForm.notes} onChange={e => setStratForm(f => ({ ...f, notes: e.target.value }))} />
             </div>
             <div className="flex gap-2 justify-end">
-              <button onClick={() => setShowStratModal(false)} className="px-4 py-2 text-sm border rounded-lg">Cancel</button>
+              <button onClick={() => setShowStratModal(false)} className="px-4 py-2 text-sm border rounded-lg">{tx("Cancel")}</button>
               <button onClick={saveStrat} disabled={saving}
                 className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50">
-                {saving ? "Saving…" : "Save"}
+                {saving ? tx("Saving…") : tx("Save")}
               </button>
             </div>
           </div>

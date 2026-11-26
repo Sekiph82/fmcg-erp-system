@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { logisticsApi, IntlShipmentStatus, ClearanceStatus } from "@/lib/logistics";
 import { Badge } from "@/components/ui/Badge";
+import { tx } from "@/lib/i18n/core";
 
 const statusBadge = (s: IntlShipmentStatus) => {
   if (s === "DELIVERED" || s === "CUSTOMS_CLEARED") return "green";
@@ -47,17 +48,17 @@ function LogisticsShipmentsTab() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">International Logistics</h1>
-        <p className="text-sm text-gray-500 mt-1">Turkey → Kenya supply chain visibility</p>
+        <h1 className="text-2xl font-bold text-gray-900">{tx("International Logistics")}</h1>
+        <p className="text-sm text-gray-500 mt-1">{tx("Turkey → Kenya supply chain visibility")}</p>
       </div>
 
       {/* KPI tiles */}
       <div className="grid grid-cols-4 gap-4">
         {[
-          { label: "Active Shipments", value: active.length, sub: "in planning or transit", color: "text-gray-900", href: "/dashboard/logistics?tab=shipments" },
-          { label: "In Transit", value: inTransit.length, sub: "vessels at sea", color: "text-blue-700", href: "/dashboard/logistics?tab=shipments" },
-          { label: "At Port / Clearing", value: atPort.length, sub: "Mombasa port / customs", color: "text-orange-600", href: "/dashboard/logistics?tab=arrivals" },
-          { label: "Overdue Documents", value: overdueDocs.length, sub: "draft or rejected docs", color: overdueDocs.length > 0 ? "text-red-600" : "text-gray-700", href: "/dashboard/logistics?tab=documents" },
+          { label: tx("Active Shipments"), value: active.length, sub: "in planning or transit", color: "text-gray-900", href: "/dashboard/logistics?tab=shipments" },
+          { label: tx("In Transit"), value: inTransit.length, sub: "vessels at sea", color: "text-blue-700", href: "/dashboard/logistics?tab=shipments" },
+          { label: tx("At Port / Clearing"), value: atPort.length, sub: "Mombasa port / customs", color: "text-orange-600", href: "/dashboard/logistics?tab=arrivals" },
+          { label: tx("Overdue Documents"), value: overdueDocs.length, sub: "draft or rejected docs", color: overdueDocs.length > 0 ? "text-red-600" : "text-gray-700", href: "/dashboard/logistics?tab=documents" },
         ].map((t) => (
           <button key={t.label} onClick={() => router.push(t.href)} className="bg-white rounded-lg border p-5 text-left hover:border-indigo-300 transition-colors">
             <p className="text-xs text-gray-500 uppercase tracking-wide">{t.label}</p>
@@ -70,7 +71,7 @@ function LogisticsShipmentsTab() {
       {/* ETA alerts */}
       {alerts.length > 0 && (
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-          <p className="text-sm font-semibold text-amber-800 mb-2">{alerts.length} shipment(s) arriving within 14 days</p>
+          <p className="text-sm font-semibold text-amber-800 mb-2">{alerts.length} {tx("shipment(s) arriving within 14 days")}</p>
           <div className="space-y-1">
             {alerts.map((s) => (
               <div key={s.id} className="flex items-center justify-between text-xs text-amber-700">
@@ -78,9 +79,9 @@ function LogisticsShipmentsTab() {
                 <span>{s.vessel_name || s.carrier || "—"}</span>
                 <span>ETA: <strong>{s.eta}</strong></span>
                 <span className={s.days_to_eta != null && s.days_to_eta <= 3 ? "text-red-600 font-bold" : ""}>
-                  {s.days_to_eta != null ? `${s.days_to_eta}d` : "—"}
+                  {s.days_to_eta != null ? tx("{days_to_eta}d", { days_to_eta: s.days_to_eta }) : "—"}
                 </span>
-                <button className="text-indigo-600 hover:underline" onClick={() => router.push("/dashboard/logistics?tab=arrivals")}>View</button>
+                <button className="text-indigo-600 hover:underline" onClick={() => router.push("/dashboard/logistics?tab=arrivals")}>{tx("View")}</button>
               </div>
             ))}
           </div>
@@ -90,27 +91,27 @@ function LogisticsShipmentsTab() {
       {/* Shipment pipeline */}
       <div className="bg-white rounded-lg border">
         <div className="px-5 py-3 border-b flex items-center justify-between">
-          <h2 className="font-semibold text-gray-800">Shipment Pipeline — Turkey to Kenya</h2>
-          <button className="text-xs text-indigo-600 hover:underline" onClick={() => router.push("/dashboard/logistics?tab=shipments")}>Manage all</button>
+          <h2 className="font-semibold text-gray-800">{tx("Shipment Pipeline — Turkey to Kenya")}</h2>
+          <button className="text-xs text-indigo-600 hover:underline" onClick={() => router.push("/dashboard/logistics?tab=shipments")}>{tx("Manage all")}</button>
         </div>
         {isLoading ? (
-          <p className="px-5 py-8 text-center text-gray-400">Loading…</p>
+          <p className="px-5 py-8 text-center text-gray-400">{tx("Loading…")}</p>
         ) : (
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-gray-50 text-xs text-gray-500 uppercase">
-                <th className="px-5 py-2 text-left">Shipment</th>
-                <th className="px-5 py-2 text-left">Mode</th>
-                <th className="px-5 py-2 text-left">Vessel / Carrier</th>
+                <th className="px-5 py-2 text-left">{tx("Shipment")}</th>
+                <th className="px-5 py-2 text-left">{tx("Mode")}</th>
+                <th className="px-5 py-2 text-left">{tx("Vessel / Carrier")}</th>
                 <th className="px-5 py-2 text-left">B/L</th>
-                <th className="px-5 py-2 text-left">Origin Port</th>
+                <th className="px-5 py-2 text-left">{tx("Origin Port")}</th>
                 <th className="px-5 py-2 text-right">ETA</th>
-                <th className="px-5 py-2 text-right">ETA (revised)</th>
-                <th className="px-5 py-2 text-right">Days</th>
-                <th className="px-5 py-2 text-center">Ctrs</th>
-                <th className="px-5 py-2 text-center">POs</th>
-                <th className="px-5 py-2 text-left">Clearance</th>
-                <th className="px-5 py-2 text-left">Status</th>
+                <th className="px-5 py-2 text-right">{tx("ETA (revised)")}</th>
+                <th className="px-5 py-2 text-right">{tx("Days")}</th>
+                <th className="px-5 py-2 text-center">{tx("Ctrs")}</th>
+                <th className="px-5 py-2 text-center">{tx("POs")}</th>
+                <th className="px-5 py-2 text-left">{tx("Clearance")}</th>
+                <th className="px-5 py-2 text-left">{tx("Status")}</th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -130,9 +131,9 @@ function LogisticsShipmentsTab() {
                   <td className="px-5 py-3 text-right">
                     {r.days_to_eta != null ? (
                       <span className={r.days_to_eta < 0 ? "text-red-600 font-semibold" : r.days_to_eta <= 7 ? "text-orange-500 font-semibold" : "text-gray-600"}>
-                        {r.days_to_eta < 0 ? `${Math.abs(r.days_to_eta)}d late` : `${r.days_to_eta}d`}
+                        {r.days_to_eta < 0 ? `${Math.abs(r.days_to_eta)}d late` : tx("{days_to_eta}d", { days_to_eta: r.days_to_eta })}
                       </span>
-                    ) : r.ata ? <span className="text-green-600 text-xs">Arrived</span> : "—"}
+                    ) : r.ata ? <span className="text-green-600 text-xs">{tx("Arrived")}</span> : "—"}
                   </td>
                   <td className="px-5 py-3 text-center">{r.container_count}</td>
                   <td className="px-5 py-3 text-center">{r.po_count}</td>
@@ -143,7 +144,7 @@ function LogisticsShipmentsTab() {
                 </tr>
               ))}
               {rows.length === 0 && (
-                <tr><td colSpan={12} className="px-5 py-8 text-center text-gray-400">No active shipments</td></tr>
+                <tr><td colSpan={12} className="px-5 py-8 text-center text-gray-400">{tx("No active shipments")}</td></tr>
               )}
             </tbody>
           </table>
@@ -153,10 +154,10 @@ function LogisticsShipmentsTab() {
       {/* Quick links */}
       <div className="grid grid-cols-4 gap-4">
         {[
-          { label: "Shipment Planning", desc: "Create and manage import shipments", href: "/dashboard/logistics?tab=shipments" },
-          { label: "Container Tracking", desc: "Track container status and seal numbers", href: "/dashboard/logistics?tab=containers" },
-          { label: "Customs Documents", desc: "Invoice, BL, packing list, certificates", href: "/dashboard/logistics?tab=documents" },
-          { label: "Arrival & Clearance", desc: "ETA alerts, port events, KRA clearance", href: "/dashboard/logistics?tab=arrivals" },
+          { label: tx("Shipment Planning"), desc: tx("Create and manage import shipments"), href: "/dashboard/logistics?tab=shipments" },
+          { label: tx("Container Tracking"), desc: tx("Track container status and seal numbers"), href: "/dashboard/logistics?tab=containers" },
+          { label: tx("Customs Documents"), desc: tx("Invoice, BL, packing list, certificates"), href: "/dashboard/logistics?tab=documents" },
+          { label: tx("Arrival & Clearance"), desc: tx("ETA alerts, port events, KRA clearance"), href: "/dashboard/logistics?tab=arrivals" },
         ].map((item) => (
           <button key={item.href} onClick={() => router.push(item.href)} className="bg-white rounded-lg border p-4 text-left hover:border-indigo-300 transition-colors">
             <p className="font-semibold text-sm text-gray-800">{item.label}</p>
@@ -176,16 +177,16 @@ const FleetPage               = dynamic(() => import("@/app/dashboard/fleet/page
 
 export default function LogisticsDashboardPage() {
   const tabs = [
-    { key: "overview",    label: "Overview",    permission: "logistics.view", content: <LogisticsShipmentsTab /> },
-    { key: "shipments",   label: "Shipments",   permission: "logistics.view", content: <LogisticsShipmentsPage /> },
-    { key: "containers",  label: "Containers",  permission: "logistics.view", content: <LogisticsContainersPage /> },
-    { key: "arrivals",    label: "Arrivals",    permission: "logistics.view", content: <LogisticsArrivalsPage /> },
-    { key: "documents",   label: "Documents",   permission: "logistics.view", content: <LogisticsDocumentsPage /> },
-    { key: "fleet",       label: "Fleet",       permission: "logistics.view", content: <FleetPage /> },
+    { key: "overview",    label: tx("Overview"),    permission: "logistics.view", content: <LogisticsShipmentsTab /> },
+    { key: "shipments",   label: tx("Shipments"),   permission: "logistics.view", content: <LogisticsShipmentsPage /> },
+    { key: "containers",  label: tx("Containers"),  permission: "logistics.view", content: <LogisticsContainersPage /> },
+    { key: "arrivals",    label: tx("Arrivals"),    permission: "logistics.view", content: <LogisticsArrivalsPage /> },
+    { key: "documents",   label: tx("Documents"),   permission: "logistics.view", content: <LogisticsDocumentsPage /> },
+    { key: "fleet",       label: tx("Fleet"),       permission: "logistics.view", content: <FleetPage /> },
   ];
   return (
     <ModuleWorkspace
-      title="Logistics"
+      title={tx("Logistics")}
       description="International shipments, containers, fleet, customs clearance"
       permission="logistics.view"
       tabs={tabs}

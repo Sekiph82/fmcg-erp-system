@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { kanbanApi, KanbanBoard, BoardModuleType, BoardVisibility, MODULE_LABEL, MODULE_TYPES, STAGE_COLOR } from "@/lib/kanban";
+import { tx } from "@/lib/i18n/core";
 
 export default function BoardsPage() {
   const [boards, setBoards] = useState<KanbanBoard[]>([]);
@@ -27,50 +28,50 @@ export default function BoardsPage() {
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-gray-900">Kanban Boards</h1>
+        <h1 className="text-xl font-bold text-gray-900">{tx("Kanban Boards")}</h1>
         <button onClick={() => setShowForm(true)}
           className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
-          + New Board
+          {tx("+ New Board")}
         </button>
       </div>
 
       <select className="border rounded px-2 py-1 text-sm" value={moduleFilter}
         onChange={(e) => setModuleFilter(e.target.value)}>
-        <option value="">All Modules</option>
+        <option value="">{tx("All Modules")}</option>
         {MODULE_TYPES.map(m => <option key={m} value={m}>{MODULE_LABEL[m]}</option>)}
       </select>
 
       {showForm && (
         <div className="bg-white border rounded-lg p-4 shadow-sm space-y-3">
-          <h2 className="font-semibold text-gray-800">New Board</h2>
+          <h2 className="font-semibold text-gray-800">{tx("New Board")}</h2>
           <div className="grid grid-cols-2 gap-3">
             {(["board_code","board_name","owner_name"] as const).map(f => (
               <div key={f}><label className="text-xs text-gray-500 capitalize">{f.replace(/_/g," ")}</label>
                 <input className="w-full border rounded px-2 py-1 text-sm mt-1" value={form[f]}
                   onChange={(e) => setForm({ ...form, [f]: e.target.value })} /></div>
             ))}
-            <div><label className="text-xs text-gray-500">Module Type</label>
+            <div><label className="text-xs text-gray-500">{tx("Module Type")}</label>
               <select className="w-full border rounded px-2 py-1 text-sm mt-1" value={form.module_type}
                 onChange={(e) => setForm({ ...form, module_type: e.target.value as BoardModuleType })}>
                 {MODULE_TYPES.map(m => <option key={m} value={m}>{MODULE_LABEL[m]}</option>)}
               </select></div>
-            <div><label className="text-xs text-gray-500">Visibility</label>
+            <div><label className="text-xs text-gray-500">{tx("Visibility")}</label>
               <select className="w-full border rounded px-2 py-1 text-sm mt-1" value={form.visibility}
                 onChange={(e) => setForm({ ...form, visibility: e.target.value as BoardVisibility })}>
                 {(["private","team","global"] as BoardVisibility[]).map(v => <option key={v} value={v}>{v}</option>)}
               </select></div>
-            <div className="col-span-2"><label className="text-xs text-gray-500">Description</label>
+            <div className="col-span-2"><label className="text-xs text-gray-500">{tx("Description")}</label>
               <textarea className="w-full border rounded px-2 py-1 text-sm mt-1" rows={2} value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
           </div>
           <div className="flex gap-2">
-            <button onClick={submit} className="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">Save</button>
-            <button onClick={() => setShowForm(false)} className="rounded border px-4 py-1.5 text-sm text-gray-600 hover:bg-gray-50">Cancel</button>
+            <button onClick={submit} className="rounded bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">{tx("Save")}</button>
+            <button onClick={() => setShowForm(false)} className="rounded border px-4 py-1.5 text-sm text-gray-600 hover:bg-gray-50">{tx("Cancel")}</button>
           </div>
         </div>
       )}
 
-      {loading ? <p className="text-gray-500 text-sm">Loading…</p> : (
+      {loading ? <p className="text-gray-500 text-sm">{tx("Loading…")}</p> : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {boards.map(b => (
             <div key={b.board_id} className="bg-white border rounded-lg shadow-sm overflow-hidden">
@@ -86,7 +87,7 @@ export default function BoardsPage() {
                     <div className="flex gap-2 mt-2 text-xs text-gray-400">
                       <span>{b.visibility}</span>
                       {b.owner_name && <span>· {b.owner_name}</span>}
-                      <span>· {b.columns.length} columns</span>
+                      <span>· {b.columns.length} {tx("columns")}</span>
                     </div>
                   </div>
                 </div>
@@ -104,13 +105,13 @@ export default function BoardsPage() {
               <div className="px-4 py-2 flex gap-2">
                 <Link href={`/dashboard/kanban/view?board=${b.board_id}`}
                   className="rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700">
-                  Open Board
+                  {tx("Open Board")}
                 </Link>
               </div>
             </div>
           ))}
           {boards.length === 0 && (
-            <p className="text-gray-400 text-sm col-span-3 text-center py-8">No boards. Seed defaults or create one.</p>
+            <p className="text-gray-400 text-sm col-span-3 text-center py-8">{tx("No boards. Seed defaults or create one.")}</p>
           )}
         </div>
       )}

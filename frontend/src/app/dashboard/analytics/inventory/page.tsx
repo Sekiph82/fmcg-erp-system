@@ -10,6 +10,7 @@ import { ExceptionList } from "@/components/analytics/ExceptionList";
 import { ChartCard } from "@/components/analytics/ChartCard";
 import { DaysSelector } from "@/components/analytics/DaysSelector";
 import { RequirePermission } from "@/components/PermissionGuard";
+import { tx } from "@/lib/i18n/core";
 
 export default function InventoryAnalyticsPage() {
   const [days, setDays] = useState(30);
@@ -24,8 +25,8 @@ export default function InventoryAnalyticsPage() {
       <div className="max-w-2xl mx-auto space-y-5 pb-10">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Inventory Dashboard</h1>
-            <p className="text-xs text-gray-400 mt-0.5">Stock levels, movements &amp; alerts</p>
+            <h1 className="text-xl font-bold text-gray-900">{tx("Inventory Dashboard")}</h1>
+            <p className="text-xs text-gray-400 mt-0.5">{tx("Stock levels, movements & alerts")}</p>
           </div>
           <DaysSelector value={days} onChange={setDays} />
         </div>
@@ -33,14 +34,14 @@ export default function InventoryAnalyticsPage() {
         {/* KPI row */}
         <div className="grid grid-cols-2 gap-3">
           <KPICard
-            label="Stock Value"
+            label={tx("Stock Value")}
             value={fmtKES(data?.total_stock_value ?? 0)}
             subtext={`${data?.total_sku_count ?? 0} SKUs`}
             status="ok"
             loading={isLoading}
           />
           <KPICard
-            label="Low Stock Items"
+            label={tx("Low Stock Items")}
             value={data?.low_stock_count ?? 0}
             subtext={`${data?.zero_stock_count ?? 0} zero stock`}
             status={
@@ -51,13 +52,13 @@ export default function InventoryAnalyticsPage() {
             loading={isLoading}
           />
           <KPICard
-            label="Products"
+            label={tx("Products")}
             value={data?.product_count ?? 0}
             status="ok"
             loading={isLoading}
           />
           <KPICard
-            label="Blocked Stock"
+            label={tx("Blocked Stock")}
             value={data?.blocked_stock_count ?? 0}
             status={(data?.blocked_stock_count ?? 0) > 0 ? "warning" : "ok"}
             loading={isLoading}
@@ -65,7 +66,7 @@ export default function InventoryAnalyticsPage() {
         </div>
 
         {/* Movement trends */}
-        <ChartCard title="Net Stock Movement" subtitle={`Last ${days} days (receipts − issues)`}>
+        <ChartCard title={tx("Net Stock Movement")} subtitle={`Last ${days} days (receipts − issues)`}>
           <LineChart
             series={[
               { name: "Net Movement", color: "#6366f1", data: data?.movement_trend_30d ?? [] },
@@ -77,7 +78,7 @@ export default function InventoryAnalyticsPage() {
         </ChartCard>
 
         {/* Movement type distribution */}
-        <ChartCard title="By Movement Type" subtitle="Volume distribution">
+        <ChartCard title={tx("By Movement Type")} subtitle="Volume distribution">
           <DistributionBar
             data={data?.by_movement_type ?? []}
             formatValue={(v) => fmt(v, 0)}
@@ -85,7 +86,7 @@ export default function InventoryAnalyticsPage() {
         </ChartCard>
 
         {/* Low stock exceptions */}
-        <ChartCard title="Low Stock Alerts" subtitle="Items at or below reorder point">
+        <ChartCard title={tx("Low Stock Alerts")} subtitle="Items at or below reorder point">
           <ExceptionList
             items={data?.low_stock_items ?? []}
             title=""

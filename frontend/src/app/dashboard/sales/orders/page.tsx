@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { ToastContainer } from "@/components/ui/Toast";
 import { useToast } from "@/hooks/useToast";
+import { tx, lx } from "@/lib/i18n/core";
 
 const statusVariant = (s: SOStatus) =>
   s === "INVOICED" || s === "SHIPPED" ? "green"
@@ -23,16 +24,16 @@ const statusVariant = (s: SOStatus) =>
   : s === "CANCELLED" ? "red"
   : "blue";
 
-const STATUS_OPTS = [
-  { value: "", label: "All" },
-  { value: "DRAFT", label: "Draft" },
-  { value: "CONFIRMED", label: "Confirmed" },
-  { value: "ALLOCATED", label: "Allocated" },
-  { value: "PICKING", label: "Picking" },
-  { value: "SHIPPED", label: "Shipped" },
-  { value: "INVOICED", label: "Invoiced" },
-  { value: "CANCELLED", label: "Cancelled" },
-];
+const STATUS_OPTS = lx(() => [
+  { value: "", label: tx("All") },
+  { value: "DRAFT", label: tx("Draft") },
+  { value: "CONFIRMED", label: tx("Confirmed") },
+  { value: "ALLOCATED", label: tx("Allocated") },
+  { value: "PICKING", label: tx("Picking") },
+  { value: "SHIPPED", label: tx("Shipped") },
+  { value: "INVOICED", label: tx("Invoiced") },
+  { value: "CANCELLED", label: tx("Cancelled") },
+]);
 
 const UNIT_OPTS = ["PCS", "BOX", "CARTON", "PALLET", "KG", "L"].map((u) => ({ value: u, label: u }));
 const CURRENCY_OPTS = ["USD", "EUR", "GBP", "JPY", "CNY", "SGD"].map((c) => ({ value: c, label: c }));
@@ -118,7 +119,7 @@ export default function SalesOrdersPage() {
       qc.invalidateQueries({ queryKey: ["sales-orders"] });
       setShowCreate(false);
       resetForm();
-      toast("success", `Sales order ${so.order_no} created`);
+      toast("success", tx("Sales order {order_no} created", { order_no: so.order_no }));
     },
     onError: (e) => toast("error", extractApiError(e)),
   });
@@ -145,37 +146,37 @@ export default function SalesOrdersPage() {
     setLines((prev) => prev.filter((_, i) => i !== idx).map((l, i) => ({ ...l, line_no: i + 1 })));
 
   const columns = [
-    { header: "Order No", accessor: (r: typeof orders[0]) => (
+    { header: tx("Order No"), accessor: (r: typeof orders[0]) => (
       <button onClick={() => router.push(`/dashboard/sales/orders/${r.id}`)} className="text-blue-600 hover:underline font-medium">
         {r.order_no}
       </button>
     )},
-    { header: "Customer", accessor: (r: typeof orders[0]) => r.customer_name || "—" },
-    { header: "Order Date", accessor: (r: typeof orders[0]) => r.order_date },
-    { header: "Delivery Date", accessor: (r: typeof orders[0]) => {
+    { header: tx("Customer"), accessor: (r: typeof orders[0]) => r.customer_name || "—" },
+    { header: tx("Order Date"), accessor: (r: typeof orders[0]) => r.order_date },
+    { header: tx("Delivery Date"), accessor: (r: typeof orders[0]) => {
       const due = r.days_until_delivery;
       const cls = due !== undefined && due < 0 ? "text-red-600 font-medium" : due !== undefined && due <= 3 ? "text-yellow-600" : "";
       return <span className={cls}>{r.requested_delivery_date}</span>;
     }},
-    { header: "Lines", accessor: (r: typeof orders[0]) => r.line_count },
-    { header: "Total Value", accessor: (r: typeof orders[0]) =>
+    { header: tx("Lines"), accessor: (r: typeof orders[0]) => r.line_count },
+    { header: tx("Total Value"), accessor: (r: typeof orders[0]) =>
       r.total_value !== undefined ? `${r.currency} ${Number(r.total_value).toLocaleString(undefined, { minimumFractionDigits: 2 })}` : "—"
     },
-    { header: "Status", accessor: (r: typeof orders[0]) => (
+    { header: tx("Status"), accessor: (r: typeof orders[0]) => (
       <div className="flex flex-col gap-1">
         <Badge label={r.status} variant={statusVariant(r.status)} />
         {r.access?.view_only && (
-          <span title={r.access.reason ?? "You can view this record but cannot modify it in this scope."} className="text-xs text-gray-500">
-            View only
+          <span title={r.access.reason ?? tx("You can view this record but cannot modify it in this scope.")} className="text-xs text-gray-500">
+            {tx("View only")}
           </span>
         )}
       </div>
     )},
   ];
 
-  const customerOpts = [{ value: "", label: "Select customer..." }, ...customers.map((c) => ({ value: c.id, label: c.name }))];
-  const productOpts = [{ value: "", label: "Select product..." }, ...products.map((p: any) => ({ value: p.id, label: `${p.sku} – ${p.name}` }))];
-  const warehouseOpts = [{ value: "", label: "No warehouse" }, ...warehouses.map((w: any) => ({ value: w.id, label: w.name }))];
+  const customerOpts = [{ value: "", label: tx("Select customer...") }, ...customers.map((c) => ({ value: c.id, label: c.name }))];
+  const productOpts = [{ value: "", label: tx("Select product...") }, ...products.map((p: any) => ({ value: p.id, label: `${p.sku} – ${p.name}` }))];
+  const warehouseOpts = [{ value: "", label: tx("No warehouse") }, ...warehouses.map((w: any) => ({ value: w.id, label: w.name }))];
 
   return (
     <div className="space-y-6">
@@ -183,60 +184,60 @@ export default function SalesOrdersPage() {
 
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Sales Orders</h1>
-          <p className="text-sm text-gray-500 mt-1">{orders.length} orders</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Sales Orders")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{orders.length} {tx("orders")}</p>
         </div>
         <div className="flex gap-3">
           <Select options={STATUS_OPTS} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} />
-          <Button onClick={() => setShowCreate(true)}>+ New Order</Button>
+          <Button onClick={() => setShowCreate(true)}>{tx("+ New Order")}</Button>
         </div>
       </div>
 
       {isLoading ? (
-        <div className="text-center py-12 text-gray-500">Loading...</div>
+        <div className="text-center py-12 text-gray-500">{tx("Loading...")}</div>
       ) : (
         <Table columns={columns} data={orders} keyField="id" emptyMessage="No sales orders found." />
       )}
 
-      <Modal open={showCreate} onClose={() => { setShowCreate(false); resetForm(); }} title="Create Sales Order">
+      <Modal open={showCreate} onClose={() => { setShowCreate(false); resetForm(); }} title={tx("Create Sales Order")}>
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Order No" value={form.order_no} onChange={(e) => setForm({ ...form, order_no: e.target.value })} required />
-            <Select label="Customer" options={customerOpts} value={form.customer_id} onChange={(e) => setForm({ ...form, customer_id: e.target.value })} />
+            <Input label={tx("Order No")} value={form.order_no} onChange={(e) => setForm({ ...form, order_no: e.target.value })} required />
+            <Select label={tx("Customer")} options={customerOpts} value={form.customer_id} onChange={(e) => setForm({ ...form, customer_id: e.target.value })} />
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Order Date" type="date" value={form.order_date} onChange={(e) => setForm({ ...form, order_date: e.target.value })} />
-            <Input label="Requested Delivery" type="date" value={form.requested_delivery_date} onChange={(e) => setForm({ ...form, requested_delivery_date: e.target.value })} required />
+            <Input label={tx("Order Date")} type="date" value={form.order_date} onChange={(e) => setForm({ ...form, order_date: e.target.value })} />
+            <Input label={tx("Requested Delivery")} type="date" value={form.requested_delivery_date} onChange={(e) => setForm({ ...form, requested_delivery_date: e.target.value })} required />
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <Select label="Warehouse (optional)" options={warehouseOpts} value={form.warehouse_id} onChange={(e) => setForm({ ...form, warehouse_id: e.target.value })} />
-            <Select label="Currency" options={CURRENCY_OPTS} value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value })} />
+            <Select label={tx("Warehouse (optional)")} options={warehouseOpts} value={form.warehouse_id} onChange={(e) => setForm({ ...form, warehouse_id: e.target.value })} />
+            <Select label={tx("Currency")} options={CURRENCY_OPTS} value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value })} />
           </div>
-          <Input label="Notes" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
+          <Input label={tx("Notes")} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
 
           <div>
             <div className="flex items-center justify-between mb-2">
-              <h3 className="font-medium text-gray-700">Order Lines</h3>
-              <Button variant="secondary" onClick={addLine}>+ Add Line</Button>
+              <h3 className="font-medium text-gray-700">{tx("Order Lines")}</h3>
+              <Button variant="secondary" onClick={addLine}>{tx("+ Add Line")}</Button>
             </div>
             <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
               {lines.map((line, idx) => (
                 <div key={idx} className="border rounded p-3 space-y-2 bg-gray-50">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-gray-500">Line {line.line_no}</span>
+                    <span className="text-xs font-semibold text-gray-500">{tx("Line")} {line.line_no}</span>
                     {lines.length > 1 && (
-                      <button onClick={() => removeLine(idx)} className="text-red-500 text-xs hover:underline">Remove</button>
+                      <button onClick={() => removeLine(idx)} className="text-red-500 text-xs hover:underline">{tx("Remove")}</button>
                     )}
                   </div>
                   <Select options={productOpts} value={line.product_id} onChange={(e) => updateLine(idx, "product_id", e.target.value)} />
                   <div className="grid grid-cols-3 gap-2">
-                    <Input placeholder="Qty" type="number" value={line.ordered_quantity} onChange={(e) => updateLine(idx, "ordered_quantity", e.target.value)} />
+                    <Input placeholder={tx("Qty")} type="number" value={line.ordered_quantity} onChange={(e) => updateLine(idx, "ordered_quantity", e.target.value)} />
                     <Select options={UNIT_OPTS} value={line.unit} onChange={(e) => updateLine(idx, "unit", e.target.value)} />
-                    <Input placeholder="Unit Price" type="number" value={line.unit_price} onChange={(e) => updateLine(idx, "unit_price", e.target.value)} />
+                    <Input placeholder={tx("Unit Price")} type="number" value={line.unit_price} onChange={(e) => updateLine(idx, "unit_price", e.target.value)} />
                   </div>
                   <div className="grid grid-cols-2 gap-2">
-                    <Input placeholder="Discount %" type="number" min={0} max={100} value={line.discount_pct} onChange={(e) => updateLine(idx, "discount_pct", e.target.value)} />
-                    <Input placeholder="Tax %" type="number" min={0} max={100} value={line.tax_rate} onChange={(e) => updateLine(idx, "tax_rate", e.target.value)} />
+                    <Input placeholder={tx("Discount %")} type="number" min={0} max={100} value={line.discount_pct} onChange={(e) => updateLine(idx, "discount_pct", e.target.value)} />
+                    <Input placeholder={tx("Tax %")} type="number" min={0} max={100} value={line.tax_rate} onChange={(e) => updateLine(idx, "tax_rate", e.target.value)} />
                   </div>
                 </div>
               ))}
@@ -244,9 +245,9 @@ export default function SalesOrdersPage() {
           </div>
 
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" onClick={() => { setShowCreate(false); resetForm(); }}>Cancel</Button>
+            <Button variant="secondary" onClick={() => { setShowCreate(false); resetForm(); }}>{tx("Cancel")}</Button>
             <Button onClick={() => createMut.mutate()} disabled={createMut.isPending || !form.order_no || !form.customer_id || !form.requested_delivery_date}>
-              {createMut.isPending ? "Creating..." : "Create"}
+              {createMut.isPending ? tx("Creating...") : tx("Create")}
             </Button>
           </div>
         </div>

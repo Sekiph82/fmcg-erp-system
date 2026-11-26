@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { secondarySalesApi, UploadSource, SecondarySalesLineInput } from "@/lib/secondarySales";
+import { tx } from "@/lib/i18n/core";
 
 export default function SecondarySalesUploadPage() {
   const router = useRouter();
@@ -67,8 +68,8 @@ export default function SecondarySalesUploadPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.distributor_id) { setError("Select a distributor"); return; }
-    if (lines.every((l) => !l.quantity_sold)) { setError("Add at least one line with quantity"); return; }
+    if (!form.distributor_id) { setError(tx("Select a distributor")); return; }
+    if (lines.every((l) => !l.quantity_sold)) { setError(tx("Add at least one line with quantity")); return; }
     setSubmitting(true);
     setError("");
     try {
@@ -79,7 +80,7 @@ export default function SecondarySalesUploadPage() {
       });
       router.push("/dashboard/secondary-sales");
     } catch (err: any) {
-      setError(err?.response?.data?.detail || "Upload failed");
+      setError(err?.response?.data?.detail || tx("Upload failed"));
       setSubmitting(false);
     }
   };
@@ -88,33 +89,33 @@ export default function SecondarySalesUploadPage() {
     <div className="p-6 max-w-4xl mx-auto space-y-6">
       <div>
         <button onClick={() => router.back()} className="text-sm text-blue-600 hover:underline mb-4 inline-block">
-          ← Back
+          {tx("← Back")}
         </button>
-        <h1 className="text-2xl font-bold text-gray-900">Upload Secondary Sales Data</h1>
-        <p className="text-sm text-gray-500 mt-1">Enter distributor sell-out data manually or via CSV</p>
+        <h1 className="text-2xl font-bold text-gray-900">{tx("Upload Secondary Sales Data")}</h1>
+        <p className="text-sm text-gray-500 mt-1">{tx("Enter distributor sell-out data manually or via CSV")}</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Header fields */}
         <div className="bg-white rounded-lg border p-5 space-y-4">
-          <h2 className="font-semibold text-gray-800">Upload Details</h2>
+          <h2 className="font-semibold text-gray-800">{tx("Upload Details")}</h2>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-1">Distributor *</label>
+              <label className="block text-sm font-medium mb-1">{tx("Distributor *")}</label>
               <select
                 required
                 value={form.distributor_id}
                 onChange={(e) => setForm({ ...form, distributor_id: e.target.value })}
                 className="w-full border rounded-lg px-3 py-2 text-sm"
               >
-                <option value="">Select distributor…</option>
+                <option value="">{tx("Select distributor…")}</option>
                 {distributors.map((d) => (
                   <option key={d.id} value={d.id}>{d.name}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Upload Source</label>
+              <label className="block text-sm font-medium mb-1">{tx("Upload Source")}</label>
               <select
                 value={form.upload_source}
                 onChange={(e) => setForm({ ...form, upload_source: e.target.value as UploadSource })}
@@ -126,7 +127,7 @@ export default function SecondarySalesUploadPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Period From *</label>
+              <label className="block text-sm font-medium mb-1">{tx("Period From *")}</label>
               <input
                 required
                 type="date"
@@ -136,7 +137,7 @@ export default function SecondarySalesUploadPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Period To *</label>
+              <label className="block text-sm font-medium mb-1">{tx("Period To *")}</label>
               <input
                 required
                 type="date"
@@ -147,7 +148,7 @@ export default function SecondarySalesUploadPage() {
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Notes</label>
+            <label className="block text-sm font-medium mb-1">{tx("Notes")}</label>
             <textarea
               value={form.notes}
               onChange={(e) => setForm({ ...form, notes: e.target.value })}
@@ -159,9 +160,9 @@ export default function SecondarySalesUploadPage() {
 
         {/* CSV Upload */}
         <div className="bg-white rounded-lg border p-5 space-y-3">
-          <h2 className="font-semibold text-gray-800">CSV Import (Optional)</h2>
+          <h2 className="font-semibold text-gray-800">{tx("CSV Import (Optional)")}</h2>
           <p className="text-xs text-gray-500">
-            CSV columns: <code>retailer_name, product_sku, quantity_sold, unit_price (opt), sale_date (opt)</code>
+            {tx("CSV columns:")} <code>retailer_name, product_sku, quantity_sold, unit_price (opt), sale_date (opt)</code>
           </p>
           <input
             ref={fileRef}
@@ -188,20 +189,20 @@ export default function SecondarySalesUploadPage() {
         {/* Lines */}
         <div className="bg-white rounded-lg border p-5 space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-gray-800">Sales Lines ({lines.length})</h2>
+            <h2 className="font-semibold text-gray-800">{tx("Sales Lines (")}{lines.length})</h2>
             <button type="button" onClick={addLine} className="text-sm text-blue-600 hover:underline">
-              + Add Line
+              {tx("+ Add Line")}
             </button>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="text-xs text-gray-500 uppercase border-b">
                 <tr>
-                  <th className="py-2 text-left pr-3">Retailer Name</th>
-                  <th className="py-2 text-left pr-3">Product SKU</th>
-                  <th className="py-2 text-left pr-3">Qty Sold *</th>
-                  <th className="py-2 text-left pr-3">Unit Price</th>
-                  <th className="py-2 text-left pr-3">Sale Date</th>
+                  <th className="py-2 text-left pr-3">{tx("Retailer Name")}</th>
+                  <th className="py-2 text-left pr-3">{tx("Product SKU")}</th>
+                  <th className="py-2 text-left pr-3">{tx("Qty Sold *")}</th>
+                  <th className="py-2 text-left pr-3">{tx("Unit Price")}</th>
+                  <th className="py-2 text-left pr-3">{tx("Sale Date")}</th>
                   <th className="py-2"></th>
                 </tr>
               </thead>
@@ -213,7 +214,7 @@ export default function SecondarySalesUploadPage() {
                         value={line.retailer_name || ""}
                         onChange={(e) => updateLine(idx, "retailer_name", e.target.value)}
                         className="w-32 border rounded px-2 py-1 text-xs"
-                        placeholder="Retailer…"
+                        placeholder={tx("Retailer…")}
                       />
                     </td>
                     <td className="py-1 pr-2">
@@ -221,7 +222,7 @@ export default function SecondarySalesUploadPage() {
                         value={line.product_sku || ""}
                         onChange={(e) => updateLine(idx, "product_sku", e.target.value)}
                         className="w-28 border rounded px-2 py-1 text-xs"
-                        placeholder="SKU…"
+                        placeholder={tx("SKU…")}
                       />
                     </td>
                     <td className="py-1 pr-2">
@@ -274,14 +275,14 @@ export default function SecondarySalesUploadPage() {
             onClick={() => router.back()}
             className="flex-1 py-2 border rounded-lg text-sm hover:bg-gray-50"
           >
-            Cancel
+            {tx("Cancel")}
           </button>
           <button
             type="submit"
             disabled={submitting}
             className="flex-1 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50"
           >
-            {submitting ? "Uploading…" : "Upload & Validate"}
+            {submitting ? tx("Uploading…") : tx("Upload & Validate")}
           </button>
         </div>
       </form>

@@ -2,6 +2,7 @@
 import { EntityPicker } from "@/components/EntityPicker";
 import { useEffect, useState } from "react";
 import { shelfLifeApi, RetestRequest, RetestStatus } from "@/lib/shelfLife";
+import { tx } from "@/lib/i18n/core";
 
 const STATUS_BG: Record<RetestStatus, string> = {
   pending:    "bg-gray-100 text-gray-700",
@@ -62,12 +63,12 @@ export default function RetestQueuePage() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Retest Queue</h1>
-          <p className="text-sm text-gray-500">{queue.length} lots awaiting retest or in-progress</p>
+          <h1 className="text-xl font-bold text-gray-900">{tx("Retest Queue")}</h1>
+          <p className="text-sm text-gray-500">{queue.length} {tx("lots awaiting retest or in-progress")}</p>
         </div>
         <button onClick={() => setShowCreate(true)}
           className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-          + Create Retest Request
+          {tx("+ Create Retest Request")}
         </button>
       </div>
 
@@ -75,16 +76,16 @@ export default function RetestQueuePage() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-xs uppercase text-gray-500">
             <tr>
-              {["Request #","Lot ID","Status","Reason","Scheduled Date","Assigned To","Action"].map(h => (
+              {[tx("Request #"),tx("Lot ID"),tx("Status"),tx("Reason"),tx("Scheduled Date"),tx("Assigned To"),tx("Action")].map(h => (
                 <th key={h} className="px-4 py-3 text-left font-medium">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {loading ? (
-              <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400">Loading…</td></tr>
+              <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400">{tx("Loading…")}</td></tr>
             ) : queue.length === 0 ? (
-              <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400">No lots in retest queue</td></tr>
+              <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400">{tx("No lots in retest queue")}</td></tr>
             ) : queue.map(r => (
               <tr key={r.id} className="hover:bg-gray-50">
                 <td className="px-4 py-3 font-mono text-xs font-medium text-blue-700">{r.request_number}</td>
@@ -99,7 +100,7 @@ export default function RetestQueuePage() {
                   {["requested","in_progress"].includes(r.status) && (
                     <button onClick={() => setShowResult(r)}
                       className="px-3 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700">
-                      Record Result
+                      {tx("Record Result")}
                     </button>
                   )}
                 </td>
@@ -113,26 +114,26 @@ export default function RetestQueuePage() {
       {showCreate && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4">
-            <h3 className="font-semibold text-gray-800">New Retest Request</h3>
+            <h3 className="font-semibold text-gray-800">{tx("New Retest Request")}</h3>
             <div>
-              <label className="text-xs font-medium text-gray-600">Lot</label>
-              <EntityPicker kind="lot" label="Lot" value={form.lot_id} onChange={(id) => setForm((f) => ({ ...f, lot_id: id }))} />
+              <label className="text-xs font-medium text-gray-600">{tx("Lot")}</label>
+              <EntityPicker kind="lot" label={tx("Lot")} value={form.lot_id} onChange={(id) => setForm((f) => ({ ...f, lot_id: id }))} />
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-600">Reason</label>
+              <label className="text-xs font-medium text-gray-600">{tx("Reason")}</label>
               <textarea rows={3} className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
                 value={form.reason} onChange={e => setForm(f => ({ ...f, reason: e.target.value }))} />
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-600">Scheduled Date</label>
+              <label className="text-xs font-medium text-gray-600">{tx("Scheduled Date")}</label>
               <input type="date" className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
                 value={form.scheduled_date} onChange={e => setForm(f => ({ ...f, scheduled_date: e.target.value }))} />
             </div>
             <div className="flex gap-2 justify-end">
-              <button onClick={() => setShowCreate(false)} className="px-4 py-2 text-sm border rounded-lg">Cancel</button>
+              <button onClick={() => setShowCreate(false)} className="px-4 py-2 text-sm border rounded-lg">{tx("Cancel")}</button>
               <button onClick={handleCreate} disabled={saving}
                 className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
-                {saving ? "Creating…" : "Create"}
+                {saving ? tx("Creating…") : tx("Create")}
               </button>
             </div>
           </div>
@@ -143,37 +144,37 @@ export default function RetestQueuePage() {
       {showResult && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4">
-            <h3 className="font-semibold text-gray-800">Record Retest Result — {showResult.request_number}</h3>
+            <h3 className="font-semibold text-gray-800">{tx("Record Retest Result —")} {showResult.request_number}</h3>
             <div className="flex gap-4">
               {[true, false].map(p => (
                 <label key={String(p)} className="flex items-center gap-2 cursor-pointer">
                   <input type="radio" name="result" checked={resultForm.result_passed === p}
                     onChange={() => setResultForm(f => ({ ...f, result_passed: p }))} />
                   <span className={`text-sm font-medium ${p ? "text-green-700" : "text-red-700"}`}>
-                    {p ? "Passed" : "Failed"}
+                    {p ? tx("Passed") : tx("Failed")}
                   </span>
                 </label>
               ))}
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-600">Result Notes</label>
+              <label className="text-xs font-medium text-gray-600">{tx("Result Notes")}</label>
               <textarea rows={3} className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
                 value={resultForm.result_notes}
                 onChange={e => setResultForm(f => ({ ...f, result_notes: e.target.value }))} />
             </div>
             {resultForm.result_passed && (
               <div>
-                <label className="text-xs font-medium text-gray-600">New Expiry Date (if extended)</label>
+                <label className="text-xs font-medium text-gray-600">{tx("New Expiry Date (if extended)")}</label>
                 <input type="date" className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
                   value={resultForm.new_expiry_date}
                   onChange={e => setResultForm(f => ({ ...f, new_expiry_date: e.target.value }))} />
               </div>
             )}
             <div className="flex gap-2 justify-end">
-              <button onClick={() => setShowResult(null)} className="px-4 py-2 text-sm border rounded-lg">Cancel</button>
+              <button onClick={() => setShowResult(null)} className="px-4 py-2 text-sm border rounded-lg">{tx("Cancel")}</button>
               <button onClick={handleResult} disabled={saving}
                 className={`px-4 py-2 text-sm text-white rounded-lg disabled:opacity-50 ${resultForm.result_passed ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700"}`}>
-                {saving ? "Saving…" : `Record ${resultForm.result_passed ? "Pass" : "Fail"}`}
+                {saving ? tx("Saving…") : `Record ${resultForm.result_passed ? "Pass" : "Fail"}`}
               </button>
             </div>
           </div>

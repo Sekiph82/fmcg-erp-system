@@ -6,6 +6,7 @@ import {
   execApi, ExecDashboard, ProdExecOrderSummary, ProdExecStatus,
   STATUS_COLOR, LIFECYCLE_NEXT, fmtKES,
 } from "@/lib/productionExecution";
+import { tx } from "@/lib/i18n/core";
 
 const STATUSES: ProdExecStatus[] = ["DRAFT", "PLANNED", "RELEASED", "IN_PROGRESS", "PAUSED", "COMPLETED", "CLOSED", "CANCELLED"];
 const SOURCES = ["MANUAL", "MRP", "MPS", "SALES", "SUBCONTRACT_RETURN"];
@@ -74,25 +75,25 @@ export default function ProductionExecutionPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Production Execution</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Production Orders · Work Orders · Batch Traceability</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Production Execution")}</h1>
+          <p className="text-sm text-gray-500 mt-0.5">{tx("Production Orders · Work Orders · Batch Traceability")}</p>
         </div>
         <button onClick={() => setShowCreate(true)} className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700">
-          + New Order
+          {tx("+ New Order")}
         </button>
       </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
         {[
-          { label: "Total Orders",   value: dashboard?.total_orders ?? 0,      color: "text-gray-900" },
-          { label: "Draft",          value: dashboard?.draft_orders ?? 0,       color: "text-gray-500" },
-          { label: "Released",       value: dashboard?.released_orders ?? 0,    color: "text-indigo-600" },
-          { label: "In Progress",    value: dashboard?.in_progress_orders ?? 0, color: "text-yellow-600" },
-          { label: "Done Today",     value: dashboard?.completed_today ?? 0,    color: "text-green-600" },
-          { label: "Delayed",        value: dashboard?.delayed_orders ?? 0,     color: "text-red-600" },
-          { label: "Active WOs",     value: dashboard?.active_work_orders ?? 0, color: "text-purple-600" },
-          { label: "Scrap (units)",  value: dashboard?.total_scrap_qty?.toFixed(1) ?? 0, color: "text-orange-600" },
+          { label: tx("Total Orders"),   value: dashboard?.total_orders ?? 0,      color: "text-gray-900" },
+          { label: tx("Draft"),          value: dashboard?.draft_orders ?? 0,       color: "text-gray-500" },
+          { label: tx("Released"),       value: dashboard?.released_orders ?? 0,    color: "text-indigo-600" },
+          { label: tx("In Progress"),    value: dashboard?.in_progress_orders ?? 0, color: "text-yellow-600" },
+          { label: tx("Done Today"),     value: dashboard?.completed_today ?? 0,    color: "text-green-600" },
+          { label: tx("Delayed"),        value: dashboard?.delayed_orders ?? 0,     color: "text-red-600" },
+          { label: tx("Active WOs"),     value: dashboard?.active_work_orders ?? 0, color: "text-purple-600" },
+          { label: tx("Scrap (units)"),  value: dashboard?.total_scrap_qty?.toFixed(1) ?? 0, color: "text-orange-600" },
         ].map((k) => (
           <div key={k.label} className="bg-white rounded-xl border border-gray-100 shadow-sm p-3">
             <p className="text-xs text-gray-400">{k.label}</p>
@@ -108,27 +109,27 @@ export default function ProductionExecutionPage() {
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
         >
-          <option value="">All Statuses</option>
+          <option value="">{tx("All Statuses")}</option>
           {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
         <a href="/dashboard/production-execution/work-orders" className="text-sm text-indigo-600 hover:underline ml-auto">
-          Work Order Queue →
+          {tx("Work Order Queue →")}
         </a>
       </div>
 
       {/* Orders Table */}
       {isLoading ? (
-        <div className="text-center text-gray-400 py-8">Loading…</div>
+        <div className="text-center text-gray-400 py-8">{tx("Loading…")}</div>
       ) : orders.length === 0 ? (
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-8 text-center text-sm text-gray-400">
-          No production orders found. Create your first order to begin execution.
+          {tx("No production orders found. Create your first order to begin execution.")}
         </div>
       ) : (
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-gray-50">
               <tr>
-                {["Order #", "Product", "Batch", "Qty", "Progress", "Schedule", "Status", "Cost", ""].map((h) => (
+                {[tx("Order #"), tx("Product"), tx("Batch"), tx("Qty"), tx("Progress"), tx("Schedule"), tx("Status"), tx("Cost"), ""].map((h) => (
                   <th key={h} className="px-3 py-3 text-left font-medium text-gray-400 text-xs">{h}</th>
                 ))}
               </tr>
@@ -164,7 +165,7 @@ export default function ProductionExecutionPage() {
                       <span className="text-xs text-gray-400 w-7">{progressPct(o)}%</span>
                     </div>
                     {o.scrap_qty > 0 && (
-                      <p className="text-xs text-red-500 mt-0.5">Scrap: {Number(o.scrap_qty).toFixed(2)} {o.uom}</p>
+                      <p className="text-xs text-red-500 mt-0.5">{tx("Scrap:")} {Number(o.scrap_qty).toFixed(2)} {o.uom}</p>
                     )}
                   </td>
                   <td className="px-3 py-2 text-xs">
@@ -184,14 +185,14 @@ export default function ProductionExecutionPage() {
                   </td>
                   <td className="px-3 py-2">
                     <div className="flex items-center gap-2">
-                      <a href={`/dashboard/production-execution/${o.id}`} className="text-xs text-blue-600 hover:underline">View</a>
+                      <a href={`/dashboard/production-execution/${o.id}`} className="text-xs text-blue-600 hover:underline">{tx("View")}</a>
                       {LIFECYCLE_NEXT[o.status] && (
                         <button onClick={() => advance.mutate(o.id)} disabled={advance.isPending} className="text-xs text-indigo-600 hover:underline">
                           {LIFECYCLE_NEXT[o.status]}
                         </button>
                       )}
                       {["DRAFT", "PLANNED", "RELEASED"].includes(o.status) && (
-                        <button onClick={() => cancel.mutate(o.id)} className="text-xs text-red-400 hover:text-red-600">Cancel</button>
+                        <button onClick={() => cancel.mutate(o.id)} className="text-xs text-red-400 hover:text-red-600">{tx("Cancel")}</button>
                       )}
                     </div>
                   </td>
@@ -207,14 +208,14 @@ export default function ProductionExecutionPage() {
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold">New Production Order</h2>
+              <h2 className="text-lg font-semibold">{tx("New Production Order")}</h2>
               <button onClick={() => setShowCreate(false)} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
             </div>
             <div className="space-y-3">
-              <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="Product Name" value={form.product_name} onChange={(e) => setForm({ ...form, product_name: e.target.value })} />
+              <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder={tx("Product Name")} value={form.product_name} onChange={(e) => setForm({ ...form, product_name: e.target.value })} />
               <div className="grid grid-cols-3 gap-3">
                 <div className="col-span-2">
-                  <label className="text-xs text-gray-500 mb-1 block">Planned Qty *</label>
+                  <label className="text-xs text-gray-500 mb-1 block">{tx("Planned Qty *")}</label>
                   <input type="number" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={form.planned_qty} onChange={(e) => setForm({ ...form, planned_qty: e.target.value })} />
                 </div>
                 <div>
@@ -226,28 +227,28 @@ export default function ProductionExecutionPage() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Source</label>
+                  <label className="text-xs text-gray-500 mb-1 block">{tx("Source")}</label>
                   <select className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={form.source_type} onChange={(e) => setForm({ ...form, source_type: e.target.value })}>
                     {SOURCES.map((s) => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Priority (1=high, 10=low)</label>
+                  <label className="text-xs text-gray-500 mb-1 block">{tx("Priority (1=high, 10=low)")}</label>
                   <input type="number" min={1} max={10} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Planned Start</label>
+                  <label className="text-xs text-gray-500 mb-1 block">{tx("Planned Start")}</label>
                   <input type="datetime-local" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={form.planned_start} onChange={(e) => setForm({ ...form, planned_start: e.target.value })} />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Planned End</label>
+                  <label className="text-xs text-gray-500 mb-1 block">{tx("Planned End")}</label>
                   <input type="datetime-local" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={form.planned_end} onChange={(e) => setForm({ ...form, planned_end: e.target.value })} />
                 </div>
               </div>
-              <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="Batch No (auto-generated if blank)" value={form.batch_no} onChange={(e) => setForm({ ...form, batch_no: e.target.value })} />
-              <textarea className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" rows={2} placeholder="Remarks" value={form.remarks} onChange={(e) => setForm({ ...form, remarks: e.target.value })} />
+              <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder={tx("Batch No (auto-generated if blank)")} value={form.batch_no} onChange={(e) => setForm({ ...form, batch_no: e.target.value })} />
+              <textarea className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" rows={2} placeholder={tx("Remarks")} value={form.remarks} onChange={(e) => setForm({ ...form, remarks: e.target.value })} />
             </div>
             <div className="flex gap-3 mt-4">
               <button
@@ -255,9 +256,9 @@ export default function ProductionExecutionPage() {
                 disabled={!form.planned_qty || create.isPending}
                 className="flex-1 bg-indigo-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-40"
               >
-                {create.isPending ? "Creating…" : "Create Order"}
+                {create.isPending ? tx("Creating…") : tx("Create Order")}
               </button>
-              <button onClick={() => setShowCreate(false)} className="px-4 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50">Cancel</button>
+              <button onClick={() => setShowCreate(false)} className="px-4 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50">{tx("Cancel")}</button>
             </div>
           </div>
         </div>

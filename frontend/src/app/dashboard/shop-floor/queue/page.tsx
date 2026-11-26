@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { sfApi, LiveWOItem, LIVE_STATUS_COLOR } from "@/lib/shopFloor";
+import { tx } from "@/lib/i18n/core";
 
 export default function WorkCenterQueuePage() {
   const [lineFilter, setLineFilter] = useState("");
@@ -31,27 +32,27 @@ export default function WorkCenterQueuePage() {
       <div className="flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <a href="/dashboard/shop-floor" className="text-sm text-gray-400 hover:text-gray-600">← Dashboard</a>
+            <a href="/dashboard/shop-floor" className="text-sm text-gray-400 hover:text-gray-600">{tx("← Dashboard")}</a>
           </div>
-          <h1 className="text-xl font-bold text-gray-900">Work Center Queue Board</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Live view by production line</p>
+          <h1 className="text-xl font-bold text-gray-900">{tx("Work Center Queue Board")}</h1>
+          <p className="text-sm text-gray-500 mt-0.5">{tx("Live view by production line")}</p>
         </div>
         <div className="flex gap-2">
           <input
             className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm"
-            placeholder="Filter by line…"
+            placeholder={tx("Filter by line…")}
             value={lineFilter}
             onChange={(e) => setLineFilter(e.target.value)}
           />
-          <span className="text-sm text-gray-400 self-center">{queue.length} WOs</span>
+          <span className="text-sm text-gray-400 self-center">{queue.length} {tx("WOs")}</span>
         </div>
       </div>
 
       {isLoading ? (
-        <div className="text-center text-gray-400 py-12">Loading…</div>
+        <div className="text-center text-gray-400 py-12">{tx("Loading…")}</div>
       ) : queue.length === 0 ? (
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-8 text-center text-sm text-gray-400">
-          No active work orders
+          {tx("No active work orders")}
         </div>
       ) : (
         <div className="space-y-6">
@@ -86,11 +87,11 @@ export default function WorkCenterQueuePage() {
                             {wo.live_status}
                           </span>
                           {wo.qc_required_flag && (
-                            <span className="text-xs text-purple-500 flex-shrink-0">QC req.</span>
+                            <span className="text-xs text-purple-500 flex-shrink-0">{tx("QC req.")}</span>
                           )}
                         </div>
                         <p className="text-xs text-gray-400 truncate">
-                          {wo.product_name || "—"} · {wo.batch_no || "—"} · {wo.operator_name || "No operator"}
+                          {wo.product_name || "—"} · {wo.batch_no || "—"} · {wo.operator_name || tx("No operator")}
                         </p>
                         <div className="mt-1.5 flex items-center gap-2">
                           <div className="flex-1 bg-gray-100 rounded-full h-1.5">
@@ -106,10 +107,10 @@ export default function WorkCenterQueuePage() {
                       </div>
                       <div className="text-right flex-shrink-0">
                         {wo.scrap_qty > 0 && (
-                          <p className="text-xs text-red-500">Scrap: {wo.scrap_qty.toFixed(0)}</p>
+                          <p className="text-xs text-red-500">{tx("Scrap:")} {wo.scrap_qty.toFixed(0)}</p>
                         )}
                         {wo.has_active_downtime && (
-                          <p className="text-xs text-red-600 font-medium">⚠ Downtime</p>
+                          <p className="text-xs text-red-600 font-medium">{tx("⚠ Downtime")}</p>
                         )}
                         {wo.last_event && (
                           <p className="text-xs text-gray-400">{wo.last_event}</p>

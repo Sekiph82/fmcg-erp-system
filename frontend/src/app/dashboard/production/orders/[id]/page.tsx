@@ -17,15 +17,16 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { ToastContainer } from "@/components/ui/Toast";
 import { useToast } from "@/hooks/useToast";
+import { tx, lx } from "@/lib/i18n/core";
 
-const DOWNTIME_REASONS: { value: DowntimeReason; label: string }[] = [
-  { value: "BREAKDOWN", label: "Equipment Breakdown" },
-  { value: "MAINTENANCE", label: "Planned Maintenance" },
-  { value: "CHANGEOVER", label: "Product Changeover" },
-  { value: "MATERIAL_SHORTAGE", label: "Material Shortage" },
-  { value: "QUALITY_HOLD", label: "Quality Hold" },
-  { value: "OTHER", label: "Other" },
-];
+const DOWNTIME_REASONS: { value: DowntimeReason; label: string }[] = lx(() => [
+  { value: "BREAKDOWN", label: tx("Equipment Breakdown") },
+  { value: "MAINTENANCE", label: tx("Planned Maintenance") },
+  { value: "CHANGEOVER", label: tx("Product Changeover") },
+  { value: "MATERIAL_SHORTAGE", label: tx("Material Shortage") },
+  { value: "QUALITY_HOLD", label: tx("Quality Hold") },
+  { value: "OTHER", label: tx("Other") },
+]);
 
 const statusVariant = (s: string) =>
   s === "COMPLETED" ? "green"
@@ -95,44 +96,44 @@ export default function OrderDetailPage() {
 
   const approve = useMutation({
     mutationFn: () => productionApi.approveOrder(id),
-    onSuccess: () => { invalidate(); toast("success", "Approved", "Approval recorded; release remains a separate action."); },
-    onError: (err) => toast("error", "Failed", extractApiError(err)),
+    onSuccess: () => { invalidate(); toast("success", tx("Approved"), tx("Approval recorded; release remains a separate action.")); },
+    onError: (err) => toast("error", tx("Failed"), extractApiError(err)),
   });
 
   const release = useMutation({
     mutationFn: () => productionApi.releaseOrder(id),
-    onSuccess: () => { invalidate(); toast("success", "Released", "Order released to production floor."); },
-    onError: (err) => toast("error", "Failed", extractApiError(err)),
+    onSuccess: () => { invalidate(); toast("success", tx("Released"), tx("Order released to production floor.")); },
+    onError: (err) => toast("error", tx("Failed"), extractApiError(err)),
   });
 
   const start = useMutation({
     mutationFn: () => productionApi.startOrder(id),
-    onSuccess: () => { invalidate(); toast("success", "Started", "Production started."); },
-    onError: (err) => toast("error", "Failed", extractApiError(err)),
+    onSuccess: () => { invalidate(); toast("success", tx("Started"), tx("Production started.")); },
+    onError: (err) => toast("error", tx("Failed"), extractApiError(err)),
   });
 
   const pause = useMutation({
     mutationFn: () => productionApi.pauseOrder(id, { machine_id: pauseForm.machine_id || undefined, reason: pauseForm.reason, notes: pauseForm.notes || undefined }),
-    onSuccess: () => { invalidate(); setPauseOpen(false); toast("success", "Paused", "Downtime logged."); },
-    onError: (err) => toast("error", "Failed", extractApiError(err)),
+    onSuccess: () => { invalidate(); setPauseOpen(false); toast("success", tx("Paused"), tx("Downtime logged.")); },
+    onError: (err) => toast("error", tx("Failed"), extractApiError(err)),
   });
 
   const resume = useMutation({
     mutationFn: () => productionApi.resumeOrder(id),
-    onSuccess: () => { invalidate(); toast("success", "Resumed", "Downtime closed."); },
-    onError: (err) => toast("error", "Failed", extractApiError(err)),
+    onSuccess: () => { invalidate(); toast("success", tx("Resumed"), tx("Downtime closed.")); },
+    onError: (err) => toast("error", tx("Failed"), extractApiError(err)),
   });
 
   const complete = useMutation({
     mutationFn: () => productionApi.completeOrder(id, completeForm),
-    onSuccess: () => { invalidate(); setCompleteOpen(false); toast("success", "Completed", "Production order completed. Stock updated."); },
-    onError: (err) => toast("error", "Failed", extractApiError(err)),
+    onSuccess: () => { invalidate(); setCompleteOpen(false); toast("success", tx("Completed"), tx("Production order completed. Stock updated.")); },
+    onError: (err) => toast("error", tx("Failed"), extractApiError(err)),
   });
 
   const cancel = useMutation({
     mutationFn: () => productionApi.cancelOrder(id),
-    onSuccess: () => { invalidate(); toast("success", "Cancelled", "Order cancelled."); },
-    onError: (err) => toast("error", "Failed", extractApiError(err)),
+    onSuccess: () => { invalidate(); toast("success", tx("Cancelled"), tx("Order cancelled.")); },
+    onError: (err) => toast("error", tx("Failed"), extractApiError(err)),
   });
 
   const generateOperations = useMutation({
@@ -143,9 +144,9 @@ export default function OrderDetailPage() {
     onSuccess: (created) => {
       qc.invalidateQueries({ queryKey: ["production-work-orders", id] });
       setSelectedRoutingId("");
-      toast("success", "Operations added", `${created.length} routing operations linked in sequence.`);
+      toast("success", tx("Operations added"), tx("{length} routing operations linked in sequence.", { length: created.length }));
     },
-    onError: (err) => toast("error", "Failed", extractApiError(err)),
+    onError: (err) => toast("error", tx("Failed"), extractApiError(err)),
   });
 
   const splitOperation = useMutation({
@@ -157,9 +158,9 @@ export default function OrderDetailPage() {
       qc.invalidateQueries({ queryKey: ["production-work-orders", id] });
       setSplitTarget(null);
       setSplitQuantities(["", ""]);
-      toast("success", "Operation split", "The original operation was preserved and linked to its two replacements.");
+      toast("success", tx("Operation split"), tx("The original operation was preserved and linked to its two replacements."));
     },
-    onError: (err) => toast("error", "Split failed", extractApiError(err)),
+    onError: (err) => toast("error", tx("Split failed"), extractApiError(err)),
   });
 
   const mergeOperations = useMutation({
@@ -167,9 +168,9 @@ export default function OrderDetailPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["production-work-orders", id] });
       setMergeSelection([]);
-      toast("success", "Operations merged", "The source operations were preserved and linked to the replacement.");
+      toast("success", tx("Operations merged"), tx("The source operations were preserved and linked to the replacement."));
     },
-    onError: (err) => toast("error", "Merge failed", extractApiError(err)),
+    onError: (err) => toast("error", tx("Merge failed"), extractApiError(err)),
   });
 
   const reworkOperation = useMutation({
@@ -183,9 +184,9 @@ export default function OrderDetailPage() {
       invalidate();
       setReworkTarget(null);
       setReworkForm({ quantity: "", reason: "" });
-      toast("success", "Rework operation created", `${created.work_order_id} is linked to the completed source operation.`);
+      toast("success", tx("Rework operation created"), tx("{work_order_id} is linked to the completed source operation.", { work_order_id: created.work_order_id }));
     },
-    onError: (err) => toast("error", "Rework failed", extractApiError(err)),
+    onError: (err) => toast("error", tx("Rework failed"), extractApiError(err)),
   });
 
   const { data: workOrderGenealogy = [] } = useQuery<WorkOrderGenealogy[]>({
@@ -202,7 +203,7 @@ export default function OrderDetailPage() {
     </div>
   );
 
-  if (!order) return <div className="text-gray-500 py-16 text-center">Order not found.</div>;
+  if (!order) return <div className="text-gray-500 py-16 text-center">{tx("Order not found.")}</div>;
 
   const isInProgress = order.status === "IN_PROGRESS";
   const isReleased = order.status === "RELEASED";
@@ -244,7 +245,7 @@ export default function OrderDetailPage() {
         <div className="flex items-start justify-between flex-wrap gap-4">
           <div>
             <button className="text-sm text-indigo-600 hover:underline mb-2 block" onClick={() => router.push("/dashboard/production/orders")}>
-              ← Back to Orders
+              {tx("← Back to Orders")}
             </button>
             <h1 className="text-2xl font-bold text-gray-900 font-mono">{order.order_no}</h1>
             <p className="text-sm text-gray-600 mt-1">
@@ -252,7 +253,7 @@ export default function OrderDetailPage() {
               {order.product_name} — {order.recipe_name}
             </p>
             {order.batch_no && (
-              <p className="text-xs text-gray-500 mt-1">Batch: <span className="font-mono">{order.batch_no}</span></p>
+              <p className="text-xs text-gray-500 mt-1">{tx("Batch:")} <span className="font-mono">{order.batch_no}</span></p>
             )}
           </div>
 
@@ -260,41 +261,41 @@ export default function OrderDetailPage() {
             <Badge label={order.status} variant={statusVariant(order.status)} />
             <div className="flex gap-2 flex-wrap justify-end">
               {isPlanned && !isApproved && !order.created_by && (
-                <span className="text-xs text-amber-700">Creator attribution is required before approval</span>
+                <span className="text-xs text-amber-700">{tx("Creator attribution is required before approval")}</span>
               )}
               {isPlanned && !isApproved && order.created_by && (
                 <Button variant="secondary" onClick={() => approve.mutate()} loading={approve.isPending}>
-                  Approve
+                  {tx("Approve")}
                 </Button>
               )}
               {isPlanned && isApproved && (
                 <Button variant="secondary" onClick={() => release.mutate()} loading={release.isPending}>
-                  Release
+                  {tx("Release")}
                 </Button>
               )}
               {isReleased && (
                 <Button onClick={() => start.mutate()} loading={start.isPending}>
-                  Start Production
+                  {tx("Start Production")}
                 </Button>
               )}
               {isInProgress && !hasActiveDowntime && (
                 <Button variant="secondary" onClick={() => setPauseOpen(true)}>
-                  Record Downtime
+                  {tx("Record Downtime")}
                 </Button>
               )}
               {isInProgress && hasActiveDowntime && (
                 <Button variant="secondary" onClick={() => resume.mutate()} loading={resume.isPending}>
-                  Resume
+                  {tx("Resume")}
                 </Button>
               )}
               {isInProgress && (
                 <Button onClick={() => setCompleteOpen(true)}>
-                  Complete
+                  {tx("Complete")}
                 </Button>
               )}
               {(isPlanned || isReleased) && !isCompleted && !isCancelled && (
                 <Button variant="secondary" onClick={() => cancel.mutate()} loading={cancel.isPending}>
-                  Cancel
+                  {tx("Cancel")}
                 </Button>
               )}
             </div>
@@ -303,19 +304,19 @@ export default function OrderDetailPage() {
 
         {isApproved && (
           <p className="mt-3 text-xs text-gray-500">
-            Approved by <span className="font-mono">{order.approved_by}</span>
-            {order.approved_at && <> at {new Date(order.approved_at).toLocaleString()}</>}
+            {tx("Approved by")} <span className="font-mono">{order.approved_by}</span>
+            {order.approved_at && <> {tx("at")} {new Date(order.approved_at).toLocaleString()}</>}
           </p>
         )}
 
         {/* Key metrics row */}
         <div className="mt-5 grid grid-cols-2 md:grid-cols-4 gap-4 pt-5 border-t border-gray-100">
           <div>
-            <p className="text-xs text-gray-500">Planned Qty</p>
+            <p className="text-xs text-gray-500">{tx("Planned Qty")}</p>
             <p className="text-lg font-semibold">{Number(order.planned_quantity).toLocaleString()} <span className="text-sm font-normal text-gray-400">{order.uom}</span></p>
           </div>
           <div>
-            <p className="text-xs text-gray-500">Actual Qty</p>
+            <p className="text-xs text-gray-500">{tx("Actual Qty")}</p>
             <p className="text-lg font-semibold">
               {order.actual_quantity != null ? (
                 <>
@@ -331,19 +332,19 @@ export default function OrderDetailPage() {
             </p>
           </div>
           <div>
-            <p className="text-xs text-gray-500">Backordered Qty</p>
+            <p className="text-xs text-gray-500">{tx("Backordered Qty")}</p>
             <p className="text-lg font-semibold">
               {Number(order.backordered_quantity ?? 0).toLocaleString()} <span className="text-sm font-normal text-gray-400">{order.uom}</span>
             </p>
           </div>
           <div>
-            <p className="text-xs text-gray-500">Scheduled</p>
+            <p className="text-xs text-gray-500">{tx("Scheduled")}</p>
             <p className="text-sm font-medium">{new Date(order.scheduled_start).toLocaleString()}</p>
             <p className="text-xs text-gray-400">→ {new Date(order.scheduled_end).toLocaleString()}</p>
           </div>
           {order.actual_start && (
             <div>
-              <p className="text-xs text-gray-500">Actual</p>
+              <p className="text-xs text-gray-500">{tx("Actual")}</p>
               <p className="text-sm font-medium">{new Date(order.actual_start).toLocaleString()}</p>
               {order.actual_end && <p className="text-xs text-gray-400">→ {new Date(order.actual_end).toLocaleString()}</p>}
             </div>
@@ -353,18 +354,18 @@ export default function OrderDetailPage() {
 
       {order.backorder_of_id && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          This order is a backorder of{" "}
+          {tx("This order is a backorder of")}{" "}
           <button className="font-mono underline" onClick={() => router.push(`/dashboard/production/orders/${order.backorder_of_id}`)}>
-            the source production order
+            {tx("the source production order")}
           </button>
-          . It remains unapproved until an authorized user approves it.
+          {tx(". It remains unapproved until an authorized user approves it.")}
         </div>
       )}
       {order.backorders.length > 0 && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-5">
-          <h2 className="font-semibold text-amber-950">Backorder created from this order</h2>
+          <h2 className="font-semibold text-amber-950">{tx("Backorder created from this order")}</h2>
           <p className="mt-1 text-sm text-amber-900">
-            The unproduced quantity is recorded separately. The new order stays planned and requires approval before release.
+            {tx("The unproduced quantity is recorded separately. The new order stays planned and requires approval before release.")}
           </p>
           <ul className="mt-3 space-y-2">
             {order.backorders.map((backorder) => (
@@ -386,8 +387,8 @@ export default function OrderDetailPage() {
       <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
         <div className="mb-4 flex items-center justify-between gap-4 flex-wrap">
           <div>
-            <h2 className="text-lg font-semibold text-gray-800">Routing Operations</h2>
-            <p className="text-sm text-gray-500">Work orders follow the selected routing step order and work-center assignments.</p>
+            <h2 className="text-lg font-semibold text-gray-800">{tx("Routing Operations")}</h2>
+            <p className="text-sm text-gray-500">{tx("Work orders follow the selected routing step order and work-center assignments.")}</p>
           </div>
           {isPlanned && !isApproved && (
             <div className="flex items-end gap-2 flex-wrap">
@@ -397,14 +398,14 @@ export default function OrderDetailPage() {
                   loading={mergeOperations.isPending}
                   onClick={() => mergeOperations.mutate()}
                 >
-                  Merge {mergeSelection.length} Operations
+                  {tx("Merge")} {mergeSelection.length} {tx("Operations")}
                 </Button>
               )}
               {routedWorkOrders.length === 0 && <>
               <Select
-                label="Active Routing"
+                label={tx("Active Routing")}
                 options={[
-                  { value: "", label: "Select routing…" },
+                  { value: "", label: tx("Select routing…") },
                   ...availableRoutings.filter((routing) => routing.is_active && routing.steps.length > 0).map((routing) => ({
                     value: routing.id,
                     label: `${routing.routing_id} v${routing.version} · ${routing.steps.length} steps`,
@@ -418,14 +419,14 @@ export default function OrderDetailPage() {
                 loading={generateOperations.isPending}
                 onClick={() => generateOperations.mutate()}
               >
-                Generate Operations
+                {tx("Generate Operations")}
               </Button>
               </>}
             </div>
           )}
         </div>
         {routedWorkOrders.length === 0 ? (
-          <p className="text-sm text-gray-500">No work-order operations are linked to this production order.</p>
+          <p className="text-sm text-gray-500">{tx("No work-order operations are linked to this production order.")}</p>
         ) : (
           <Table
             keyField="id"
@@ -433,11 +434,11 @@ export default function OrderDetailPage() {
             emptyMessage="No work-order operations are linked to this production order."
             columns={[
               {
-                header: "Merge",
+                header: tx("Merge"),
                 accessor: (workOrder) => workOrder.status === "planned" && isPlanned && !isApproved ? (
                   <input
                     type="checkbox"
-                    aria-label={`Select ${workOrder.work_order_id} for merge`}
+                    aria-label={tx("Select {work_order_id} for merge", { work_order_id: workOrder.work_order_id })}
                     checked={mergeSelection.includes(workOrder.id)}
                     onChange={(event) => setMergeSelection((current) => event.target.checked
                       ? [...current, workOrder.id]
@@ -445,20 +446,20 @@ export default function OrderDetailPage() {
                   />
                 ) : "—",
               },
-              { header: "Step", accessor: (workOrder) => workOrder.routing_step_number ?? "Manual" },
-              { header: "Work Order", accessor: (workOrder) => <span className="font-mono text-xs">{workOrder.work_order_id}</span> },
-              { header: "Operation", accessor: (workOrder) => workOrder.operation },
-              { header: "Rework", accessor: (workOrder) => workOrder.rework_of_id
-                ? <span title={workOrder.rework_reason}>Rework · {workOrder.rework_reason}</span>
+              { header: tx("Step"), accessor: (workOrder) => workOrder.routing_step_number ?? "Manual" },
+              { header: tx("Work Order"), accessor: (workOrder) => <span className="font-mono text-xs">{workOrder.work_order_id}</span> },
+              { header: tx("Operation"), accessor: (workOrder) => workOrder.operation },
+              { header: tx("Rework"), accessor: (workOrder) => workOrder.rework_of_id
+                ? <span title={workOrder.rework_reason}>{tx("Rework ·")} {workOrder.rework_reason}</span>
                 : Number(workOrder.rework_quantity ?? 0) > 0
                   ? `${Number(workOrder.rework_quantity).toLocaleString()} ${order.uom} sent to rework`
                   : "—" },
-              { header: "Work Center", accessor: (workOrder) => workOrder.work_center_name ?? "—" },
-              { header: "Planned Qty", accessor: (workOrder) => workOrder.planned_quantity == null ? "—" : `${Number(workOrder.planned_quantity).toLocaleString()} ${order.uom}` },
-              { header: "Actual Qty", accessor: (workOrder) => workOrder.actual_quantity == null ? "—" : `${Number(workOrder.actual_quantity).toLocaleString()} ${order.uom}` },
-              { header: "Status", accessor: (workOrder) => <Badge label={workOrder.status} variant={workOrder.status === "completed" ? "green" : workOrder.status === "in_progress" ? "blue" : "blue"} /> },
+              { header: tx("Work Center"), accessor: (workOrder) => workOrder.work_center_name ?? "—" },
+              { header: tx("Planned Qty"), accessor: (workOrder) => workOrder.planned_quantity == null ? "—" : `${Number(workOrder.planned_quantity).toLocaleString()} ${order.uom}` },
+              { header: tx("Actual Qty"), accessor: (workOrder) => workOrder.actual_quantity == null ? "—" : `${Number(workOrder.actual_quantity).toLocaleString()} ${order.uom}` },
+              { header: tx("Status"), accessor: (workOrder) => <Badge label={workOrder.status} variant={workOrder.status === "completed" ? "green" : workOrder.status === "in_progress" ? "blue" : "blue"} /> },
               {
-                header: "Actions",
+                header: tx("Actions"),
                 accessor: (workOrder) => <div className="flex gap-2 whitespace-nowrap">
                   {isInProgress && isReworkEligible(workOrder) && workOrder.status === "completed" &&
                     Number(workOrder.actual_quantity ?? 0) > Number(workOrder.rework_quantity ?? 0) && (
@@ -468,7 +469,7 @@ export default function OrderDetailPage() {
                         setReworkTarget(workOrder);
                         setReworkForm({ quantity: "", reason: "" });
                       }}
-                    >Rework</button>
+                    >{tx("Rework")}</button>
                   )}
                   {workOrder.status === "planned" && isPlanned && !isApproved && Number(workOrder.planned_quantity ?? 0) > 0 && (
                     <button
@@ -478,12 +479,12 @@ export default function OrderDetailPage() {
                         setSplitTarget(workOrder);
                         setSplitQuantities([first, (Number(workOrder.planned_quantity ?? 0) - Number(first)).toFixed(3)]);
                       }}
-                    >Split</button>
+                    >{tx("Split")}</button>
                   )}
                   <button
                     className="text-xs font-medium text-indigo-700 hover:underline"
                     onClick={() => setGenealogyTarget(workOrder.id)}
-                  >History</button>
+                  >{tx("History")}</button>
                 </div>,
               },
             ]}
@@ -492,11 +493,11 @@ export default function OrderDetailPage() {
         {genealogyTarget && (
           <div className="mt-4 rounded-lg border border-gray-200 p-4">
             <div className="mb-2 flex items-center justify-between">
-              <h3 className="font-medium text-gray-800">Split / merge / rework history</h3>
-              <button className="text-sm text-indigo-700 hover:underline" onClick={() => setGenealogyTarget(null)}>Close</button>
+              <h3 className="font-medium text-gray-800">{tx("Split / merge / rework history")}</h3>
+              <button className="text-sm text-indigo-700 hover:underline" onClick={() => setGenealogyTarget(null)}>{tx("Close")}</button>
             </div>
             {workOrderGenealogy.length === 0 ? (
-              <p className="text-sm text-gray-500">No transformation history for this operation.</p>
+              <p className="text-sm text-gray-500">{tx("No transformation history for this operation.")}</p>
             ) : (
               <ul className="space-y-1 text-sm text-gray-600">
                 {workOrderGenealogy.map((edge) => (
@@ -510,20 +511,20 @@ export default function OrderDetailPage() {
         )}
       </div>
 
-      <Modal open={Boolean(reworkTarget)} onClose={() => setReworkTarget(null)} title="Create Rework Operation">
+      <Modal open={Boolean(reworkTarget)} onClose={() => setReworkTarget(null)} title={tx("Create Rework Operation")}>
         {reworkTarget && (
           <form
             onSubmit={(event) => { event.preventDefault(); reworkOperation.mutate(); }}
             className="space-y-4"
           >
             <p className="text-sm text-gray-600">
-              A rework operation can be created for completed output while its production order is still in progress. It reuses the source step and work center, preserves batch lineage, and must complete before the parent order can close. Completed parent orders stay immutable.
+              {tx("A rework operation can be created for completed output while its production order is still in progress. It reuses the source step and work center, preserves batch lineage, and must complete before the parent order can close. Completed parent orders stay immutable.")}
             </p>
             <p className="text-xs text-gray-500">
-              Unreworked source output: {Math.max(0, Number(reworkTarget.actual_quantity ?? 0) - Number(reworkTarget.rework_quantity ?? 0)).toLocaleString()} {order.uom}
+              {tx("Unreworked source output:")} {Math.max(0, Number(reworkTarget.actual_quantity ?? 0) - Number(reworkTarget.rework_quantity ?? 0)).toLocaleString()} {order.uom}
             </p>
             <Input
-              label="Quantity to rework *"
+              label={tx("Quantity to rework *")}
               type="number"
               min="0.001"
               max={Math.max(0, Number(reworkTarget.actual_quantity ?? 0) - Number(reworkTarget.rework_quantity ?? 0))}
@@ -532,17 +533,17 @@ export default function OrderDetailPage() {
               onChange={(event) => setReworkForm((current) => ({ ...current, quantity: event.target.value }))}
             />
             <Input
-              label="Reason *"
+              label={tx("Reason *")}
               value={reworkForm.reason}
               onChange={(event) => setReworkForm((current) => ({ ...current, reason: event.target.value }))}
             />
             <div className="flex justify-end gap-3 pt-2">
-              <Button variant="secondary" type="button" onClick={() => setReworkTarget(null)}>Cancel</Button>
+              <Button variant="secondary" type="button" onClick={() => setReworkTarget(null)}>{tx("Cancel")}</Button>
               <Button
                 type="submit"
                 loading={reworkOperation.isPending}
                 disabled={!Number(reworkForm.quantity) || Number(reworkForm.quantity) > Number(reworkTarget.actual_quantity ?? 0) - Number(reworkTarget.rework_quantity ?? 0) || reworkForm.reason.trim().length < 3}
-              >Create Rework</Button>
+              >{tx("Create Rework")}</Button>
             </div>
           </form>
         )}
@@ -551,13 +552,13 @@ export default function OrderDetailPage() {
       {/* OEE card */}
       {order.oee && (
         <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">OEE Metrics</h2>
+          <h2 className="text-lg font-semibold text-gray-800 mb-4">{tx("OEE Metrics")}</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
               { label: "OEE", value: order.oee.oee, color: order.oee.oee == null ? "text-gray-500" : order.oee.oee >= 0.85 ? "text-green-600" : order.oee.oee >= 0.65 ? "text-yellow-600" : "text-red-500" },
-              { label: "Availability", value: order.oee.availability, color: order.oee.availability == null ? "text-gray-500" : "text-blue-600" },
-              { label: "Performance", value: order.oee.performance, color: order.oee.performance == null ? "text-gray-500" : "text-indigo-600" },
-              { label: "Quality", value: order.oee.quality, color: order.oee.quality == null ? "text-gray-500" : "text-purple-600" },
+              { label: tx("Availability"), value: order.oee.availability, color: order.oee.availability == null ? "text-gray-500" : "text-blue-600" },
+              { label: tx("Performance"), value: order.oee.performance, color: order.oee.performance == null ? "text-gray-500" : "text-indigo-600" },
+              { label: tx("Quality"), value: order.oee.quality, color: order.oee.quality == null ? "text-gray-500" : "text-purple-600" },
             ].map(({ label, value, color }) => (
               <div key={label} className="text-center p-4 rounded-lg bg-gray-50">
                 <p className="text-xs text-gray-500 mb-1">{label}</p>
@@ -566,9 +567,9 @@ export default function OrderDetailPage() {
             ))}
           </div>
           <div className="mt-3 text-xs text-gray-400 flex gap-4">
-            <span>Scheduled: {order.oee.scheduled_minutes.toFixed(0)} min</span>
-            {order.oee.actual_minutes != null && <span>Actual: {order.oee.actual_minutes.toFixed(0)} min</span>}
-            <span>Downtime: {order.oee.downtime_minutes.toFixed(0)} min</span>
+            <span>{tx("Scheduled:")} {order.oee.scheduled_minutes.toFixed(0)} {tx("min")}</span>
+            {order.oee.actual_minutes != null && <span>{tx("Actual:")} {order.oee.actual_minutes.toFixed(0)} {tx("min")}</span>}
+            <span>{tx("Downtime:")} {order.oee.downtime_minutes.toFixed(0)} {tx("min")}</span>
           </div>
         </div>
       )}
@@ -576,7 +577,7 @@ export default function OrderDetailPage() {
       {/* Material Consumption */}
       <div>
         <h2 className="text-lg font-semibold text-gray-800 mb-3">
-          Material Consumption
+          {tx("Material Consumption")}
           <span className="ml-2 text-sm font-normal text-gray-400">({order.consumptions.length})</span>
         </h2>
         <Table
@@ -585,7 +586,7 @@ export default function OrderDetailPage() {
           emptyMessage="No material consumption recorded."
           columns={[
             {
-              header: "Material",
+              header: tx("Material"),
               accessor: (c) => (
                 <span>
                   <span className="font-mono text-xs text-gray-500">{c.material_code}</span>{" "}
@@ -593,17 +594,17 @@ export default function OrderDetailPage() {
                 </span>
               ),
             },
-            { header: "Lot", accessor: (c) => c.lot_number ?? "—" },
+            { header: tx("Lot"), accessor: (c) => c.lot_number ?? "—" },
             {
-              header: "Standard",
+              header: tx("Standard"),
               accessor: (c) => `${Number(c.standard_quantity).toFixed(3)} ${c.unit}`,
             },
             {
-              header: "Actual",
+              header: tx("Actual"),
               accessor: (c) => `${Number(c.actual_quantity).toFixed(3)} ${c.unit}`,
             },
             {
-              header: "Variance",
+              header: tx("Variance"),
               accessor: (c) => {
                 const v = Number(c.variance_quantity);
                 return (
@@ -613,7 +614,7 @@ export default function OrderDetailPage() {
                 );
               },
             },
-            { header: "Warehouse", accessor: (c) => c.source_warehouse_name ?? "—" },
+            { header: tx("Warehouse"), accessor: (c) => c.source_warehouse_name ?? "—" },
           ]}
         />
       </div>
@@ -621,7 +622,7 @@ export default function OrderDetailPage() {
       {/* FG Receipts */}
       <div>
         <h2 className="text-lg font-semibold text-gray-800 mb-3">
-          Finished Goods Receipts
+          {tx("Finished Goods Receipts")}
           <span className="ml-2 text-sm font-normal text-gray-400">({order.fg_receipts.length})</span>
         </h2>
         <Table
@@ -629,10 +630,10 @@ export default function OrderDetailPage() {
           data={order.fg_receipts}
           emptyMessage="No finished goods received yet."
           columns={[
-            { header: "Quantity", accessor: (r) => `${Number(r.quantity).toLocaleString()} ${r.uom}` },
-            { header: "Lot No", accessor: (r) => r.lot_number ?? "—" },
-            { header: "Batch No", accessor: (r) => r.batch_no ?? "—" },
-            { header: "Warehouse", accessor: (r) => r.warehouse_name ?? "—" },
+            { header: tx("Quantity"), accessor: (r) => `${Number(r.quantity).toLocaleString()} ${r.uom}` },
+            { header: tx("Lot No"), accessor: (r) => r.lot_number ?? "—" },
+            { header: tx("Batch No"), accessor: (r) => r.batch_no ?? "—" },
+            { header: tx("Warehouse"), accessor: (r) => r.warehouse_name ?? "—" },
           ]}
         />
       </div>
@@ -640,10 +641,10 @@ export default function OrderDetailPage() {
       {/* Downtime */}
       <div>
         <h2 className="text-lg font-semibold text-gray-800 mb-3">
-          Downtime Log
+          {tx("Downtime Log")}
           <span className="ml-2 text-sm font-normal text-gray-400">({order.downtime_logs.length})</span>
           {hasActiveDowntime && (
-            <Badge label="Active" variant="red" />
+            <Badge label={tx("Active")} variant="red" />
           )}
         </h2>
         <Table
@@ -651,20 +652,20 @@ export default function OrderDetailPage() {
           data={order.downtime_logs}
           emptyMessage="No downtime recorded."
           columns={[
-            { header: "Machine", accessor: (d) => d.machine_id ?? "—" },
-            { header: "Reason", accessor: (d) => d.reason.replace(/_/g, " ") },
-            { header: "Start", accessor: (d) => new Date(d.start_time).toLocaleString() },
-            { header: "End", accessor: (d) => d.end_time ? new Date(d.end_time).toLocaleString() : <Badge label="Open" variant="red" /> },
-            { header: "Duration", accessor: (d) => d.duration_minutes != null ? `${d.duration_minutes} min` : "—" },
-            { header: "Notes", accessor: (d) => d.notes ?? "—" },
+            { header: tx("Machine"), accessor: (d) => d.machine_id ?? "—" },
+            { header: tx("Reason"), accessor: (d) => d.reason.replace(/_/g, " ") },
+            { header: tx("Start"), accessor: (d) => new Date(d.start_time).toLocaleString() },
+            { header: tx("End"), accessor: (d) => d.end_time ? new Date(d.end_time).toLocaleString() : <Badge label={tx("Open")} variant="red" /> },
+            { header: tx("Duration"), accessor: (d) => d.duration_minutes != null ? `${d.duration_minutes} min` : "—" },
+            { header: tx("Notes"), accessor: (d) => d.notes ?? "—" },
           ]}
         />
       </div>
 
       <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-        <h2 className="text-lg font-semibold text-gray-800 mb-3">Immutable transition history</h2>
-        {historyLoading ? <p className="text-sm text-gray-400">Loading history…</p> : transitionHistory.length === 0 ? (
-          <p className="text-sm text-gray-500">No recorded transitions yet. History starts with events created after the audit-history migration; earlier events are not backfilled.</p>
+        <h2 className="text-lg font-semibold text-gray-800 mb-3">{tx("Immutable transition history")}</h2>
+        {historyLoading ? <p className="text-sm text-gray-400">{tx("Loading history…")}</p> : transitionHistory.length === 0 ? (
+          <p className="text-sm text-gray-500">{tx("No recorded transitions yet. History starts with events created after the audit-history migration; earlier events are not backfilled.")}</p>
         ) : (
           <ol className="divide-y divide-gray-100">
             {transitionHistory.map((event) => (
@@ -674,11 +675,11 @@ export default function OrderDetailPage() {
                   <p className="text-xs text-gray-500">
                     {event.entity_type.replace(/_/g, " ")} · {event.from_status || "—"} → {event.to_status || "—"}
                   </p>
-                  {event.entity_id !== event.parent_entity_id && <p className="text-xs font-mono text-gray-400">Operation: {event.entity_id}</p>}
+                  {event.entity_id !== event.parent_entity_id && <p className="text-xs font-mono text-gray-400">{tx("Operation:")} {event.entity_id}</p>}
                 </div>
                 <div className="text-xs text-gray-500 md:text-right">
                   <p>{new Date(event.created_at).toLocaleString()}</p>
-                  <p>Actor: {event.actor_label}</p>
+                  <p>{tx("Actor:")} {event.actor_label}</p>
                 </div>
               </li>
             ))}
@@ -687,13 +688,13 @@ export default function OrderDetailPage() {
       </section>
 
       {/* Complete Modal */}
-      <Modal open={completeOpen} onClose={() => setCompleteOpen(false)} title="Complete Production Order">
+      <Modal open={completeOpen} onClose={() => setCompleteOpen(false)} title={tx("Complete Production Order")}>
         <form onSubmit={(e) => { e.preventDefault(); complete.mutate(); }} className="space-y-4">
           <p className="text-sm text-gray-500">
-            Materials and finished goods are posted for the actual quantity. If this order has recorded WIP, the quantity must match its available WIP balance. Any unproduced remainder becomes a linked planned backorder, which requires separate approval before release.
+            {tx("Materials and finished goods are posted for the actual quantity. If this order has recorded WIP, the quantity must match its available WIP balance. Any unproduced remainder becomes a linked planned backorder, which requires separate approval before release.")}
           </p>
           <Input
-            label="Actual Quantity Produced *"
+            label={tx("Actual Quantity Produced *")}
             type="number"
             min="0.001"
             max={order.planned_quantity}
@@ -704,20 +705,20 @@ export default function OrderDetailPage() {
           />
           <div className="grid grid-cols-2 gap-4">
             <Input
-              label="FG Lot Number"
+              label={tx("FG Lot Number")}
               value={completeForm.fg_lot_number ?? ""}
               onChange={(e) => setCompleteForm((f) => ({ ...f, fg_lot_number: e.target.value || undefined }))}
-              placeholder="e.g. LOT-20260401"
+              placeholder={tx("e.g. LOT-20260401")}
             />
             <Input
-              label="FG Expiry Date"
+              label={tx("FG Expiry Date")}
               type="date"
               onChange={(e) => setCompleteForm((f) => ({ ...f, fg_expiry_date: e.target.value || undefined }))}
             />
           </div>
           {rmWarehouses.length > 0 && (
             <Select
-              label="Material Source Warehouse"
+              label={tx("Material Source Warehouse")}
               options={[
                 { value: "", label: order.source_warehouse_id ? "Use order default" : "Skip material consumption" },
                 ...rmWarehouses.map((w) => ({ value: w.id, label: w.name })),
@@ -733,51 +734,51 @@ export default function OrderDetailPage() {
               onChange={(e) => setCompleteForm((f) => ({ ...f, consume_materials: e.target.checked }))}
               className="h-4 w-4 rounded border-gray-300"
             />
-            <span className="text-sm text-gray-700">Auto-consume materials from BOM</span>
+            <span className="text-sm text-gray-700">{tx("Auto-consume materials from BOM")}</span>
           </label>
           <Input
-            label="Notes"
+            label={tx("Notes")}
             value={completeForm.notes ?? ""}
             onChange={(e) => setCompleteForm((f) => ({ ...f, notes: e.target.value || undefined }))}
           />
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" type="button" onClick={() => setCompleteOpen(false)}>Cancel</Button>
+            <Button variant="secondary" type="button" onClick={() => setCompleteOpen(false)}>{tx("Cancel")}</Button>
             <Button
               type="submit"
               loading={complete.isPending}
               disabled={!completeForm.actual_quantity || completeForm.actual_quantity > Number(order.planned_quantity)}
             >
-              Complete Order
+              {tx("Complete Order")}
             </Button>
           </div>
         </form>
       </Modal>
 
       {/* Pause / Downtime Modal */}
-      <Modal open={pauseOpen} onClose={() => setPauseOpen(false)} title="Record Downtime">
+      <Modal open={pauseOpen} onClose={() => setPauseOpen(false)} title={tx("Record Downtime")}>
         <form onSubmit={(e) => { e.preventDefault(); pause.mutate(); }} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <Input
-              label="Machine / Line ID"
+              label={tx("Machine / Line ID")}
               value={pauseForm.machine_id}
               onChange={(e) => setPauseForm((f) => ({ ...f, machine_id: e.target.value }))}
-              placeholder="e.g. LINE-01"
+              placeholder={tx("e.g. LINE-01")}
             />
             <Select
-              label="Reason *"
+              label={tx("Reason *")}
               options={DOWNTIME_REASONS}
               value={pauseForm.reason}
               onChange={(e) => setPauseForm((f) => ({ ...f, reason: e.target.value as DowntimeReason }))}
             />
           </div>
           <Input
-            label="Notes"
+            label={tx("Notes")}
             value={pauseForm.notes}
             onChange={(e) => setPauseForm((f) => ({ ...f, notes: e.target.value }))}
           />
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" type="button" onClick={() => setPauseOpen(false)}>Cancel</Button>
-            <Button type="submit" loading={pause.isPending}>Log Downtime</Button>
+            <Button variant="secondary" type="button" onClick={() => setPauseOpen(false)}>{tx("Cancel")}</Button>
+            <Button type="submit" loading={pause.isPending}>{tx("Log Downtime")}</Button>
           </div>
         </form>
       </Modal>
@@ -792,10 +793,10 @@ export default function OrderDetailPage() {
           className="space-y-4"
         >
           <p className="text-sm text-gray-600">
-            Enter two planned quantities whose sum exactly matches the source. The source stays in history as cancelled; no actual production data is moved.
+            {tx("Enter two planned quantities whose sum exactly matches the source. The source stays in history as cancelled; no actual production data is moved.")}
           </p>
           <Input
-            label={`First quantity (${order.uom})`}
+            label={tx("First quantity ({uom})", { uom: order.uom })}
             type="number"
             min="0.001"
             step="0.001"
@@ -804,7 +805,7 @@ export default function OrderDetailPage() {
             required
           />
           <Input
-            label={`Second quantity (${order.uom})`}
+            label={tx("Second quantity ({uom})", { uom: order.uom })}
             type="number"
             min="0.001"
             step="0.001"
@@ -813,10 +814,10 @@ export default function OrderDetailPage() {
             required
           />
           <p className="text-xs text-gray-500">
-            Source planned quantity: {Number(splitTarget?.planned_quantity ?? 0).toLocaleString()} {order.uom}
+            {tx("Source planned quantity:")} {Number(splitTarget?.planned_quantity ?? 0).toLocaleString()} {order.uom}
           </p>
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" type="button" onClick={() => setSplitTarget(null)}>Cancel</Button>
+            <Button variant="secondary" type="button" onClick={() => setSplitTarget(null)}>{tx("Cancel")}</Button>
             <Button
               type="submit"
               loading={splitOperation.isPending}
@@ -828,7 +829,7 @@ export default function OrderDetailPage() {
                   || Math.round(values[0] * 1000) + Math.round(values[1] * 1000) !== sourceMilli;
               })()}
             >
-              Split Work Order
+              {tx("Split Work Order")}
             </Button>
           </div>
         </form>

@@ -5,6 +5,7 @@ import { ModuleWorkspace } from "@/components/workspace";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { sfApi, SFDashboard, LIVE_STATUS_COLOR, IMPACT_COLOR, DOWNTIME_CAT_LABEL } from "@/lib/shopFloor";
 import { useAuth } from "@/context/AuthContext";
+import { tx } from "@/lib/i18n/core";
 
 function ShopFloorDashboardTab() {
   const qc = useQueryClient();
@@ -29,16 +30,16 @@ function ShopFloorDashboardTab() {
   });
 
   const kpis = dash ? [
-    { label: "Active Sessions",    value: dash.active_sessions,         color: "text-indigo-600" },
-    { label: "Running WOs",        value: dash.running_work_orders,      color: "text-green-600" },
-    { label: "Paused WOs",         value: dash.paused_work_orders,       color: "text-yellow-600" },
-    { label: "QC Holds",           value: dash.qc_hold_count,            color: "text-purple-600" },
-    { label: "Active Downtime",    value: dash.active_downtime_count,    color: "text-red-600" },
-    { label: "Help Requests",      value: dash.help_requests_open,       color: "text-orange-600" },
-    { label: "Good Qty Today",     value: dash.total_good_qty_today.toFixed(0), color: "text-teal-600" },
-    { label: "Scrap Today",        value: dash.total_scrap_today.toFixed(0),    color: "text-red-400" },
-    { label: "Pending AI Recs",    value: dash.pending_ai_recs,          color: "text-blue-600" },
-    { label: "Overrides Today",    value: dash.supervisor_overrides_today, color: "text-gray-600" },
+    { label: tx("Active Sessions"),    value: dash.active_sessions,         color: "text-indigo-600" },
+    { label: tx("Running WOs"),        value: dash.running_work_orders,      color: "text-green-600" },
+    { label: tx("Paused WOs"),         value: dash.paused_work_orders,       color: "text-yellow-600" },
+    { label: tx("QC Holds"),           value: dash.qc_hold_count,            color: "text-purple-600" },
+    { label: tx("Active Downtime"),    value: dash.active_downtime_count,    color: "text-red-600" },
+    { label: tx("Help Requests"),      value: dash.help_requests_open,       color: "text-orange-600" },
+    { label: tx("Good Qty Today"),     value: dash.total_good_qty_today.toFixed(0), color: "text-teal-600" },
+    { label: tx("Scrap Today"),        value: dash.total_scrap_today.toFixed(0),    color: "text-red-400" },
+    { label: tx("Pending AI Recs"),    value: dash.pending_ai_recs,          color: "text-blue-600" },
+    { label: tx("Overrides Today"),    value: dash.supervisor_overrides_today, color: "text-gray-600" },
   ] : [];
 
   return (
@@ -46,8 +47,8 @@ function ShopFloorDashboardTab() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Shop Floor Dashboard</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Real-time factory execution overview</p>
+          <h1 className="text-xl font-bold text-gray-900">{tx("Shop Floor Dashboard")}</h1>
+          <p className="text-sm text-gray-500 mt-0.5">{tx("Real-time factory execution overview")}</p>
         </div>
         <div className="flex gap-2">
           <button
@@ -55,20 +56,20 @@ function ShopFloorDashboardTab() {
             disabled={!canApprove || runAI.isPending}
             className="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
           >
-            {runAI.isPending ? "Running AI…" : "Run AI Agents"}
+            {runAI.isPending ? tx("Running AI…") : tx("Run AI Agents")}
           </button>
           <a href="/dashboard/shop-floor/terminal" className="px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700">
-            Operator Terminal
+            {tx("Operator Terminal")}
           </a>
           <a href="/dashboard/shop-floor/supervisor" className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-            Supervisor Console
+            {tx("Supervisor Console")}
           </a>
         </div>
       </div>
 
       {/* KPI Grid */}
       {isLoading ? (
-        <div className="text-center text-gray-400 py-8">Loading…</div>
+        <div className="text-center text-gray-400 py-8">{tx("Loading…")}</div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           {kpis.map((k) => (
@@ -83,7 +84,7 @@ function ShopFloorDashboardTab() {
       {/* Alerts */}
       {alerts.length > 0 && (
         <div className="bg-white rounded-xl border border-orange-200 shadow-sm p-4">
-          <h2 className="text-sm font-semibold text-orange-700 mb-3">Active Alerts ({alerts.length})</h2>
+          <h2 className="text-sm font-semibold text-orange-700 mb-3">{tx("Active Alerts (")}{alerts.length})</h2>
           <div className="space-y-2">
             {(alerts as any[]).map((a, i) => (
               <div key={i} className={`flex items-start gap-3 p-2.5 rounded-lg text-sm ${
@@ -103,11 +104,11 @@ function ShopFloorDashboardTab() {
         {/* Active Downtime */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-gray-700">Active Downtime</h2>
-            <a href="/dashboard/shop-floor/downtime" className="text-xs text-indigo-500 hover:underline">View All →</a>
+            <h2 className="text-sm font-semibold text-gray-700">{tx("Active Downtime")}</h2>
+            <a href="/dashboard/shop-floor/downtime" className="text-xs text-indigo-500 hover:underline">{tx("View All →")}</a>
           </div>
           {!dash || dash.active_downtimes.length === 0 ? (
-            <p className="text-sm text-gray-400 text-center py-4">No active downtime</p>
+            <p className="text-sm text-gray-400 text-center py-4">{tx("No active downtime")}</p>
           ) : (
             <div className="space-y-2">
               {dash.active_downtimes.map((dt) => {
@@ -116,10 +117,10 @@ function ShopFloorDashboardTab() {
                   <div key={dt.id} className="flex items-center justify-between p-2.5 bg-red-50 rounded-lg">
                     <div>
                       <p className="text-sm font-medium text-red-800">{DOWNTIME_CAT_LABEL[dt.downtime_category] || dt.downtime_category}</p>
-                      <p className="text-xs text-red-600">{dt.line_id || "No line"} • {dt.machine_name || ""}</p>
+                      <p className="text-xs text-red-600">{dt.line_id || tx("No line")} • {dt.machine_name || ""}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-bold text-red-700">{elapsed} min</p>
+                      <p className="text-sm font-bold text-red-700">{elapsed} {tx("min")}</p>
                       <span className={`text-xs px-1.5 py-0.5 rounded ${IMPACT_COLOR[dt.impact_level]}`}>{dt.impact_level}</span>
                     </div>
                   </div>
@@ -132,11 +133,11 @@ function ShopFloorDashboardTab() {
         {/* Recent Handovers */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-gray-700">Recent Handovers</h2>
-            <a href="/dashboard/shop-floor/handover" className="text-xs text-indigo-500 hover:underline">View All →</a>
+            <h2 className="text-sm font-semibold text-gray-700">{tx("Recent Handovers")}</h2>
+            <a href="/dashboard/shop-floor/handover" className="text-xs text-indigo-500 hover:underline">{tx("View All →")}</a>
           </div>
           {!dash || dash.recent_handovers.length === 0 ? (
-            <p className="text-sm text-gray-400 text-center py-4">No recent handovers</p>
+            <p className="text-sm text-gray-400 text-center py-4">{tx("No recent handovers")}</p>
           ) : (
             <div className="space-y-2">
               {dash.recent_handovers.slice(0, 4).map((h) => (
@@ -145,10 +146,10 @@ function ShopFloorDashboardTab() {
                     <p className="text-sm font-medium text-gray-800">
                       {h.shift_from_name || "?"} → {h.shift_to_name || "?"}
                     </p>
-                    <p className="text-xs text-gray-400">{h.line_id || "All lines"} • {h.outgoing_supervisor || "—"}</p>
+                    <p className="text-xs text-gray-400">{h.line_id || tx("All lines")} • {h.outgoing_supervisor || "—"}</p>
                   </div>
                   <span className={`text-xs px-1.5 py-0.5 rounded ${h.is_approved ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}>
-                    {h.is_approved ? "Approved" : "Pending"}
+                    {h.is_approved ? tx("Approved") : tx("Pending")}
                   </span>
                 </div>
               ))}
@@ -160,11 +161,11 @@ function ShopFloorDashboardTab() {
       {/* Nav Links */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { href: "/dashboard/shop-floor/terminal", label: "Operator Terminal", desc: "Start, pause, finish WOs", color: "bg-green-50 border-green-200 text-green-700" },
-          { href: "/dashboard/shop-floor/dispensing", label: "Material Dispensing", desc: "Weigh, issue & label raw material", color: "bg-indigo-50 border-indigo-200 text-indigo-700" },
-          { href: "/dashboard/shop-floor/queue",    label: "Work Center Queue", desc: "Live WO board by line",   color: "bg-blue-50 border-blue-200 text-blue-700" },
-          { href: "/dashboard/shop-floor/downtime", label: "Downtime Board",    desc: "Track interruptions",    color: "bg-red-50 border-red-200 text-red-700" },
-          { href: "/dashboard/shop-floor/handover", label: "Shift Handover",    desc: "Document shift transfers", color: "bg-indigo-50 border-indigo-200 text-indigo-700" },
+          { href: "/dashboard/shop-floor/terminal", label: tx("Operator Terminal"), desc: tx("Start, pause, finish WOs"), color: "bg-green-50 border-green-200 text-green-700" },
+          { href: "/dashboard/shop-floor/dispensing", label: tx("Material Dispensing"), desc: tx("Weigh, issue & label raw material"), color: "bg-indigo-50 border-indigo-200 text-indigo-700" },
+          { href: "/dashboard/shop-floor/queue",    label: tx("Work Center Queue"), desc: tx("Live WO board by line"),   color: "bg-blue-50 border-blue-200 text-blue-700" },
+          { href: "/dashboard/shop-floor/downtime", label: tx("Downtime Board"),    desc: tx("Track interruptions"),    color: "bg-red-50 border-red-200 text-red-700" },
+          { href: "/dashboard/shop-floor/handover", label: tx("Shift Handover"),    desc: tx("Document shift transfers"), color: "bg-indigo-50 border-indigo-200 text-indigo-700" },
         ].map((n) => (
           <a key={n.href} href={n.href} className={`block rounded-xl border p-4 hover:shadow-md transition-shadow ${n.color}`}>
             <p className="font-semibold text-sm">{n.label}</p>
@@ -189,18 +190,18 @@ export default function ShopFloorPage() {
   const scopedView = Boolean(codes.has("shop_floor.view_own_scope") || codes.has("production.view_own_scope"));
   const canApprove = Boolean(user?.is_superuser || codes.has("production.approve"));
   const tabs = [
-    ...(broadView ? [{ key: "overview", label: "Overview", permission: "production.view", content: <ShopFloorDashboardTab /> }] : []),
-    ...((broadView || scopedView) ? [{ key: "terminal", label: "Terminal", permission: "production.view", content: <SFTerminalPage /> }] : []),
-    ...(broadView && canApprove ? [{ key: "supervisor", label: "Supervisor", permission: "production.approve", content: <SFSupervisorPage /> }] : []),
+    ...(broadView ? [{ key: "overview", label: tx("Overview"), permission: "production.view", content: <ShopFloorDashboardTab /> }] : []),
+    ...((broadView || scopedView) ? [{ key: "terminal", label: tx("Terminal"), permission: "production.view", content: <SFTerminalPage /> }] : []),
+    ...(broadView && canApprove ? [{ key: "supervisor", label: tx("Supervisor"), permission: "production.approve", content: <SFSupervisorPage /> }] : []),
     ...(broadView ? [
-      { key: "queue", label: "Queue", permission: "production.view", content: <SFQueuePage /> },
-      { key: "downtime", label: "Downtime", permission: "production.view", content: <SFDowntimePage /> },
-      { key: "handover", label: "Handover", permission: "production.view", content: <SFHandoverPage /> },
+      { key: "queue", label: tx("Queue"), permission: "production.view", content: <SFQueuePage /> },
+      { key: "downtime", label: tx("Downtime"), permission: "production.view", content: <SFDowntimePage /> },
+      { key: "handover", label: tx("Handover"), permission: "production.view", content: <SFHandoverPage /> },
     ] : []),
   ];
   return (
     <ModuleWorkspace
-      title="Shop Floor"
+      title={tx("Shop Floor")}
       description="Operator terminal, supervisor console, queue board, downtime, handover"
       permission="production.view"
       tabs={tabs}

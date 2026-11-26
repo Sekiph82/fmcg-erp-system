@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { RequirePermission } from "@/components/PermissionGuard";
 import { advProductionApi, WorkCenter } from "@/lib/productionAdvanced";
+import { tx } from "@/lib/i18n/core";
 
 const statusBadge = (s: AssetStatus) =>
   s === "ACTIVE" ? "green" : s === "UNDER_MAINTENANCE" ? "yellow" : s === "DECOMMISSIONED" ? "gray" : "blue";
@@ -46,10 +47,10 @@ export default function AssetsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Asset Register</h1>
-          <p className="text-sm text-gray-500 mt-1">Machines, equipment and production lines</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Asset Register")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{tx("Machines, equipment and production lines")}</p>
         </div>
-        <Button onClick={() => setShowNew(true)}>Add Asset</Button>
+        <Button onClick={() => setShowNew(true)}>{tx("Add Asset")}</Button>
       </div>
 
       {/* Status filter */}
@@ -72,20 +73,20 @@ export default function AssetsPage() {
 
       <div className="bg-white rounded-lg border overflow-x-auto">
         {isLoading ? (
-          <p className="px-5 py-8 text-center text-gray-400">Loading…</p>
+          <p className="px-5 py-8 text-center text-gray-400">{tx("Loading…")}</p>
         ) : (
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-gray-50 text-xs text-gray-500 uppercase">
-                <th className="px-5 py-2 text-left">Asset No</th>
-                <th className="px-5 py-2 text-left">Name</th>
-                <th className="px-5 py-2 text-left">Type</th>
-                <th className="px-5 py-2 text-left">Line</th>
-                <th className="px-5 py-2 text-left">Production Work Center</th>
-                <th className="px-5 py-2 text-left">Serial No</th>
-                <th className="px-5 py-2 text-left">Install Date</th>
-                <th className="px-5 py-2 text-left">Location</th>
-                <th className="px-5 py-2 text-left">Status</th>
+                <th className="px-5 py-2 text-left">{tx("Asset No")}</th>
+                <th className="px-5 py-2 text-left">{tx("Name")}</th>
+                <th className="px-5 py-2 text-left">{tx("Type")}</th>
+                <th className="px-5 py-2 text-left">{tx("Line")}</th>
+                <th className="px-5 py-2 text-left">{tx("Production Work Center")}</th>
+                <th className="px-5 py-2 text-left">{tx("Serial No")}</th>
+                <th className="px-5 py-2 text-left">{tx("Install Date")}</th>
+                <th className="px-5 py-2 text-left">{tx("Location")}</th>
+                <th className="px-5 py-2 text-left">{tx("Status")}</th>
                 <th className="px-5 py-2" />
               </tr>
             </thead>
@@ -102,12 +103,12 @@ export default function AssetsPage() {
                   <td className="px-5 py-3 text-gray-500">{a.location || "—"}</td>
                   <td className="px-5 py-3"><Badge label={a.status} variant={statusBadge(a.status)} /></td>
                   <td className="px-5 py-3">
-                    <button className="text-xs text-indigo-600 hover:underline" onClick={() => setEditAsset(a)}>Edit</button>
+                    <button className="text-xs text-indigo-600 hover:underline" onClick={() => setEditAsset(a)}>{tx("Edit")}</button>
                   </td>
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={10} className="px-5 py-8 text-center text-gray-400">No assets</td></tr>
+                <tr><td colSpan={10} className="px-5 py-8 text-center text-gray-400">{tx("No assets")}</td></tr>
               )}
             </tbody>
           </table>
@@ -116,7 +117,7 @@ export default function AssetsPage() {
 
       {showNew && (
         <AssetModal
-          title="Add Asset"
+          title={tx("Add Asset")}
           workCenters={workCenters}
           onClose={() => setShowNew(false)}
           onSubmit={(data) => createAsset.mutate(data)}
@@ -125,7 +126,7 @@ export default function AssetsPage() {
       )}
       {editAsset && (
         <AssetModal
-          title="Edit Asset"
+          title={tx("Edit Asset")}
           initial={editAsset}
           workCenters={workCenters}
           onClose={() => setEditAsset(null)}
@@ -169,14 +170,14 @@ function AssetModal({ title, initial, workCenters, onClose, onSubmit, loading }:
         <h2 className="font-semibold text-lg">{title}</h2>
         <div className="grid grid-cols-2 gap-3">
           {[
-            { key: "asset_no", label: "Asset No", disabled: !!initial },
-            { key: "name", label: "Name" },
-            { key: "asset_type", label: "Type" },
-            { key: "line", label: "Production Line" },
-            { key: "serial_no", label: "Serial No" },
-            { key: "manufacturer", label: "Manufacturer" },
-            { key: "model", label: "Model" },
-            { key: "location", label: "Location" },
+            { key: "asset_no", label: tx("Asset No"), disabled: !!initial },
+            { key: "name", label: tx("Name") },
+            { key: "asset_type", label: tx("Type") },
+            { key: "line", label: tx("Production Line") },
+            { key: "serial_no", label: tx("Serial No") },
+            { key: "manufacturer", label: tx("Manufacturer") },
+            { key: "model", label: tx("Model") },
+            { key: "location", label: tx("Location") },
           ].map(({ key, label, disabled }) => (
             <div key={key}>
               <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
@@ -189,37 +190,37 @@ function AssetModal({ title, initial, workCenters, onClose, onSubmit, loading }:
             </div>
           ))}
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Install Date</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Install Date")}</label>
             <input type="date" className="w-full border rounded px-3 py-2 text-sm" value={form.install_date} onChange={(e) => set("install_date", e.target.value)} />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Warranty Expiry</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Warranty Expiry")}</label>
             <input type="date" className="w-full border rounded px-3 py-2 text-sm" value={form.warranty_expiry} onChange={(e) => set("warranty_expiry", e.target.value)} />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Production Work Center</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Production Work Center")}</label>
             <select className="w-full border rounded px-3 py-2 text-sm" value={form.work_center_id} onChange={(e) => set("work_center_id", e.target.value)}>
-              <option value="">Not linked</option>
+              <option value="">{tx("Not linked")}</option>
               {workCenters.map((center) => <option key={center.id} value={center.id}>{center.work_center_id} — {center.name}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Status</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Status")}</label>
             <select className="w-full border rounded px-3 py-2 text-sm" value={form.status} onChange={(e) => set("status", e.target.value)}>
-              <option value="ACTIVE">Active</option>
-              <option value="IDLE">Idle</option>
-              <option value="UNDER_MAINTENANCE">Under Maintenance</option>
-              <option value="DECOMMISSIONED">Decommissioned</option>
+              <option value="ACTIVE">{tx("Active")}</option>
+              <option value="IDLE">{tx("Idle")}</option>
+              <option value="UNDER_MAINTENANCE">{tx("Under Maintenance")}</option>
+              <option value="DECOMMISSIONED">{tx("Decommissioned")}</option>
             </select>
           </div>
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
+          <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Notes")}</label>
           <textarea className="w-full border rounded px-3 py-2 text-sm" rows={2} value={form.notes} onChange={(e) => set("notes", e.target.value)} />
         </div>
         <div className="flex gap-2 justify-end">
-          <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button loading={loading} onClick={() => onSubmit({ ...form, work_center_id: form.work_center_id || null })}>Save</Button>
+          <Button variant="secondary" onClick={onClose}>{tx("Cancel")}</Button>
+          <Button loading={loading} onClick={() => onSubmit({ ...form, work_center_id: form.work_center_id || null })}>{tx("Save")}</Button>
         </div>
       </div>
     </div>

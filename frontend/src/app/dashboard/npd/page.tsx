@@ -6,6 +6,7 @@ import { ModuleWorkspace } from "@/components/workspace";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { PermissionGuard, RequirePermission } from "@/components/PermissionGuard";
+import { tx } from "@/lib/i18n/core";
 
 interface NPDProject {
   id: string;
@@ -105,13 +106,13 @@ function NPDTab() {
     <div className="p-6 space-y-6 max-w-6xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">New Product Development</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Idea → Concept → Development → Pilot → Launch pipeline</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("New Product Development")}</h1>
+          <p className="text-sm text-gray-500 mt-0.5">{tx("Idea → Concept → Development → Pilot → Launch pipeline")}</p>
         </div>
         <PermissionGuard permission="npd.create">
           <button onClick={() => setShowForm(true)}
             className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded">
-            + New Project
+            {tx("+ New Project")}
           </button>
         </PermissionGuard>
       </div>
@@ -122,7 +123,7 @@ function NPDTab() {
       {dash && (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           <div className="bg-white border rounded-lg p-4 shadow-sm">
-            <p className="text-xs text-gray-500">Total Active</p>
+            <p className="text-xs text-gray-500">{tx("Total Active")}</p>
             <p className="text-2xl font-bold mt-1 text-gray-800">{dash.total_active}</p>
           </div>
           {["PILOT", "LAUNCH"].map((s) => (
@@ -142,7 +143,7 @@ function NPDTab() {
       <div className="flex gap-2 flex-wrap">
         <button onClick={() => setFilterStage("")}
           className={`text-xs rounded-full border px-3 py-1.5 ${!filterStage ? "bg-blue-600 text-white border-blue-600" : "bg-gray-50 text-gray-600 border-gray-300 hover:bg-gray-100"}`}>
-          All
+          {tx("All")}
         </button>
         {STAGE_ORDER.map((s) => (
           <button key={s} onClick={() => setFilterStage(filterStage === s ? "" : s)}
@@ -155,51 +156,51 @@ function NPDTab() {
       {/* New project form */}
       {showForm && (
         <div className="bg-white border rounded-lg p-5 shadow-sm space-y-3">
-          <h2 className="text-sm font-semibold text-gray-700">New NPD Project</h2>
+          <h2 className="text-sm font-semibold text-gray-700">{tx("New NPD Project")}</h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <div className="sm:col-span-2">
-              <label className="text-xs text-gray-500 block mb-1">Product Name *</label>
-              <input type="text" value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} placeholder="e.g. POVU AllClean Lemon 1 L Bottle"
+              <label className="text-xs text-gray-500 block mb-1">{tx("Product Name *")}</label>
+              <input type="text" value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} placeholder={tx("e.g. POVU AllClean Lemon 1 L Bottle")}
                 className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" />
             </div>
             <div>
-              <label className="text-xs text-gray-500 block mb-1">Category</label>
+              <label className="text-xs text-gray-500 block mb-1">{tx("Category")}</label>
               <select value={form.category} onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))}
                 className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none">
                 {CATEGORIES.map((c) => <option key={c} value={c}>{c.replace(/_/g, " ")}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-xs text-gray-500 block mb-1">Brand</label>
-              <input type="text" value={form.brand} onChange={(e) => setForm((p) => ({ ...p, brand: e.target.value }))} placeholder="e.g. POVU Naturals"
+              <label className="text-xs text-gray-500 block mb-1">{tx("Brand")}</label>
+              <input type="text" value={form.brand} onChange={(e) => setForm((p) => ({ ...p, brand: e.target.value }))} placeholder={tx("e.g. POVU Naturals")}
                 className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" />
             </div>
             <div>
-              <label className="text-xs text-gray-500 block mb-1">Target Launch Date</label>
+              <label className="text-xs text-gray-500 block mb-1">{tx("Target Launch Date")}</label>
               <input type="date" value={form.target_launch_date} onChange={(e) => setForm((p) => ({ ...p, target_launch_date: e.target.value }))}
                 className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none" />
             </div>
             <div>
-              <label className="text-xs text-gray-500 block mb-1">Est. COGS/Unit (KES)</label>
-              <input type="number" step="0.01" value={form.estimated_cogs} onChange={(e) => setForm((p) => ({ ...p, estimated_cogs: e.target.value }))} placeholder="e.g. 25.50"
+              <label className="text-xs text-gray-500 block mb-1">{tx("Est. COGS/Unit (KES)")}</label>
+              <input type="number" step="0.01" value={form.estimated_cogs} onChange={(e) => setForm((p) => ({ ...p, estimated_cogs: e.target.value }))} placeholder={tx("e.g. 25.50")}
                 className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none" />
             </div>
             <div className="sm:col-span-2">
-              <label className="text-xs text-gray-500 block mb-1">Description</label>
-              <input type="text" value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} placeholder="Brief description"
+              <label className="text-xs text-gray-500 block mb-1">{tx("Description")}</label>
+              <input type="text" value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} placeholder={tx("Brief description")}
                 className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none" />
             </div>
           </div>
           <div className="flex gap-2">
             <button onClick={save} disabled={saving || !form.name}
-              className="bg-blue-600 text-white text-sm px-4 py-2 rounded disabled:opacity-50">{saving ? "Creating…" : "Create Project"}</button>
-            <button onClick={() => setShowForm(false)} className="border border-gray-300 text-sm px-4 py-2 rounded hover:bg-gray-50">Cancel</button>
+              className="bg-blue-600 text-white text-sm px-4 py-2 rounded disabled:opacity-50">{saving ? tx("Creating…") : tx("Create Project")}</button>
+            <button onClick={() => setShowForm(false)} className="border border-gray-300 text-sm px-4 py-2 rounded hover:bg-gray-50">{tx("Cancel")}</button>
           </div>
         </div>
       )}
 
       {/* Project list */}
-      {loading ? <p className="text-gray-400 text-sm">Loading…</p> : (
+      {loading ? <p className="text-gray-400 text-sm">{tx("Loading…")}</p> : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {projects.map((proj) => (
             <Link key={proj.id} href={`/dashboard/npd/${proj.id}`}
@@ -218,16 +219,16 @@ function NPDTab() {
                 <span className="bg-gray-100 rounded px-2 py-0.5">{proj.category.replace(/_/g, " ")}</span>
               </div>
               {proj.target_launch_date && (
-                <p className="text-xs text-gray-400">Target: {proj.target_launch_date}</p>
+                <p className="text-xs text-gray-400">{tx("Target:")} {proj.target_launch_date}</p>
               )}
               {proj.estimated_cogs !== null && (
-                <p className="text-xs text-gray-500">Est. COGS: KES {proj.estimated_cogs?.toFixed(2)}/unit</p>
+                <p className="text-xs text-gray-500">{tx("Est. COGS: KES")} {proj.estimated_cogs?.toFixed(2)}/unit</p>
               )}
             </Link>
           ))}
           {projects.length === 0 && (
             <div className="col-span-3 bg-gray-50 border rounded-lg p-8 text-center text-sm text-gray-400">
-              No NPD projects yet. Create one above.
+              {tx("No NPD projects yet. Create one above.")}
             </div>
           )}
         </div>
@@ -239,7 +240,7 @@ function NPDTab() {
 
 export default function NPDPage() {
   const tabs = [
-    { key: "npd", label: "New Products", permission: "npd.view", content: <NPDTab /> },
+    { key: "npd", label: tx("New Products"), permission: "npd.view", content: <NPDTab /> },
   ];
   return (
     <ModuleWorkspace

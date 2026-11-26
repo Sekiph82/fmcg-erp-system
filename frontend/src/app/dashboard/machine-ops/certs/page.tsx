@@ -4,6 +4,7 @@ import { EntityPicker } from "@/components/EntityPicker";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { moApi, SkillCert, CertStatus, CERT_STATUS_COLORS } from "@/lib/machineOperator";
+import { tx } from "@/lib/i18n/core";
 
 export default function CertsPage() {
   const qc = useQueryClient();
@@ -45,23 +46,23 @@ export default function CertsPage() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <a href="/dashboard/machine-ops" className="text-sm text-indigo-600 hover:underline">← Dashboard</a>
-          <h1 className="text-xl font-bold text-gray-900">Certification Expiry Monitor</h1>
+          <a href="/dashboard/machine-ops" className="text-sm text-indigo-600 hover:underline">{tx("← Dashboard")}</a>
+          <h1 className="text-xl font-bold text-gray-900">{tx("Certification Expiry Monitor")}</h1>
         </div>
         <div className="flex gap-2">
           <button onClick={() => refresh.mutate()} disabled={refresh.isPending} className="border border-gray-300 text-gray-600 px-3 py-2 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50">
-            {refresh.isPending ? "Refreshing…" : "Refresh Statuses"}
+            {refresh.isPending ? tx("Refreshing…") : tx("Refresh Statuses")}
           </button>
-          <button onClick={() => setShowCreate(true)} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">+ Add Cert</button>
+          <button onClick={() => setShowCreate(true)} className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">{tx("+ Add Cert")}</button>
         </div>
       </div>
 
       <div className="grid grid-cols-4 gap-3">
         {[
-          { label: "Total Certs", value: certs.length },
-          { label: "Valid", value: valid, color: "text-green-700" },
-          { label: "Expiring Soon", value: expiring, color: expiring > 0 ? "text-yellow-600" : "text-gray-700" },
-          { label: "Expired", value: expired, color: expired > 0 ? "text-red-600" : "text-gray-700" },
+          { label: tx("Total Certs"), value: certs.length },
+          { label: tx("Valid"), value: valid, color: "text-green-700" },
+          { label: tx("Expiring Soon"), value: expiring, color: expiring > 0 ? "text-yellow-600" : "text-gray-700" },
+          { label: tx("Expired"), value: expired, color: expired > 0 ? "text-red-600" : "text-gray-700" },
         ].map((s) => (
           <div key={s.label} className="bg-white rounded-lg border p-3 text-center">
             <p className="text-xs text-gray-500">{s.label}</p>
@@ -72,23 +73,23 @@ export default function CertsPage() {
 
       {(expired > 0 || expiring > 0) && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800">
-          ⚠ {expired > 0 ? `${expired} expired certification(s) — these operators are blocked from certified assignments. ` : ""}
-          {expiring > 0 ? `${expiring} certification(s) expiring within 30 days.` : ""}
+          ⚠ {expired > 0 ? tx("{expired} expired certification(s) — these operators are blocked from certified assignments. ", { expired }) : ""}
+          {expiring > 0 ? tx("{expiring} certification(s) expiring within 30 days.", { expiring }) : ""}
         </div>
       )}
 
       <div className="bg-white rounded-lg border p-3 flex items-center gap-3">
         <label className="flex items-center gap-2 text-sm cursor-pointer">
           <input type="checkbox" checked={expiringOnly} onChange={(e) => setExpiringOnly(e.target.checked)} className="rounded" />
-          Show expiring / expired only
+          {tx("Show expiring / expired only")}
         </label>
       </div>
 
       <div className="bg-white rounded-lg border overflow-x-auto">
-        {isLoading && <div className="p-6 text-gray-400 text-sm">Loading…</div>}
+        {isLoading && <div className="p-6 text-gray-400 text-sm">{tx("Loading…")}</div>}
         <table className="w-full text-sm">
           <thead className="bg-gray-50">
-            <tr>{["Operator", "Machine", "Operation", "Skill Level", "Required", "Expiry", "Status"].map((h) => (
+            <tr>{[tx("Operator"), tx("Machine"), tx("Operation"), tx("Skill Level"), tx("Required"), tx("Expiry"), tx("Status")].map((h) => (
               <th key={h} className="px-4 py-2 text-left text-xs font-medium text-gray-600">{h}</th>
             ))}</tr>
           </thead>
@@ -99,7 +100,7 @@ export default function CertsPage() {
                 <td className="px-4 py-2.5 text-xs">{c.machine_name || c.machine_id?.slice(0, 8) || "—"}</td>
                 <td className="px-4 py-2.5 font-mono text-xs">{c.operation_code || "—"}</td>
                 <td className="px-4 py-2.5 text-xs">{c.skill_level}</td>
-                <td className="px-4 py-2.5 text-xs">{c.certification_required ? "Yes" : "No"}</td>
+                <td className="px-4 py-2.5 text-xs">{c.certification_required ? tx("Yes") : tx("No")}</td>
                 <td className={`px-4 py-2.5 text-xs font-medium ${c.cert_status === "EXPIRED" ? "text-red-600" : c.cert_status === "EXPIRING_SOON" ? "text-yellow-600" : "text-gray-700"}`}>
                   {c.certification_expiry || "—"}
                 </td>
@@ -109,7 +110,7 @@ export default function CertsPage() {
               </tr>
             ))}
             {!isLoading && !certs.length && (
-              <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400 text-sm">No certifications found.</td></tr>
+              <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400 text-sm">{tx("No certifications found.")}</td></tr>
             )}
           </tbody>
         </table>
@@ -118,19 +119,19 @@ export default function CertsPage() {
       {showCreate && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-xl p-6 w-[480px] space-y-4">
-            <h2 className="font-bold text-gray-900">Add Skill / Certification</h2>
+            <h2 className="font-bold text-gray-900">{tx("Add Skill / Certification")}</h2>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Operator *</label>
-                <EntityPicker kind="operator" label="Operator" required value={form.operator_id} onChange={(id) => setForm((p) => ({ ...p, operator_id: id }))} />
+                <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Operator *")}</label>
+                <EntityPicker kind="operator" label={tx("Operator")} required value={form.operator_id} onChange={(id) => setForm((p) => ({ ...p, operator_id: id }))} />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Machine</label>
-                <EntityPicker kind="machine" label="Machine" value={form.machine_id} onChange={(id) => setForm((p) => ({ ...p, machine_id: id }))} />
+                <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Machine")}</label>
+                <EntityPicker kind="machine" label={tx("Machine")} value={form.machine_id} onChange={(id) => setForm((p) => ({ ...p, machine_id: id }))} />
               </div>
               {[
-                { label: "Operation Code", field: "operation_code", placeholder: "e.g. FILLING-OPS" },
-                { label: "Expiry Date", field: "certification_expiry", type: "date" },
+                { label: tx("Operation Code"), field: "operation_code", placeholder: tx("e.g. FILLING-OPS") },
+                { label: tx("Expiry Date"), field: "certification_expiry", type: "date" },
               ].map(({ label, field, placeholder, type }) => (
                 <div key={field}>
                   <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
@@ -144,20 +145,20 @@ export default function CertsPage() {
                 </div>
               ))}
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Skill Level</label>
+                <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Skill Level")}</label>
                 <select value={form.skill_level} onChange={(e) => setForm((p) => ({ ...p, skill_level: e.target.value }))} className="w-full border rounded px-3 py-2 text-sm">
                   {["TRAINEE", "BASIC", "INTERMEDIATE", "ADVANCED", "EXPERT"].map((s) => <option key={s}>{s}</option>)}
                 </select>
               </div>
               <div className="flex items-center gap-2 mt-5">
                 <input type="checkbox" id="cert_req" checked={form.certification_required} onChange={(e) => setForm((p) => ({ ...p, certification_required: e.target.checked }))} />
-                <label htmlFor="cert_req" className="text-sm text-gray-700">Certification Required</label>
+                <label htmlFor="cert_req" className="text-sm text-gray-700">{tx("Certification Required")}</label>
               </div>
             </div>
             <div className="flex gap-2 justify-end pt-2">
-              <button onClick={() => setShowCreate(false)} className="px-4 py-2 text-sm text-gray-600 border rounded-lg hover:bg-gray-50">Cancel</button>
+              <button onClick={() => setShowCreate(false)} className="px-4 py-2 text-sm text-gray-600 border rounded-lg hover:bg-gray-50">{tx("Cancel")}</button>
               <button onClick={() => create.mutate()} disabled={!form.operator_id} className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
-                {create.isPending ? "Saving…" : "Add Cert"}
+                {create.isPending ? tx("Saving…") : tx("Add Cert")}
               </button>
             </div>
           </div>

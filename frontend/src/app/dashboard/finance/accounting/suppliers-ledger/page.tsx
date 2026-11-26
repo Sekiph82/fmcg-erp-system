@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { financeApi, SupplierLedgerRow } from "@/lib/finance";
+import { tx } from "@/lib/i18n/core";
 
 function fmtKES(n: number) {
   return `KES ${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -21,22 +22,22 @@ export default function SuppliersLedgerPage() {
   return (
     <div className="max-w-6xl mx-auto space-y-6 pb-10">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Suppliers Ledger</h1>
-        <p className="text-sm text-gray-400 mt-0.5">Total purchases, payments made, and outstanding payables per supplier</p>
+        <h1 className="text-2xl font-bold text-gray-900">{tx("Suppliers Ledger")}</h1>
+        <p className="text-sm text-gray-400 mt-0.5">{tx("Total purchases, payments made, and outstanding payables per supplier")}</p>
       </div>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-3 gap-4">
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1">Total Purchases</p>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1">{tx("Total Purchases")}</p>
           <p className="text-xl font-bold text-indigo-700">{fmtKES(totalPurchases)}</p>
         </div>
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1">Total Paid</p>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1">{tx("Total Paid")}</p>
           <p className="text-xl font-bold text-green-600">{fmtKES(totalPaid)}</p>
         </div>
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1">Outstanding Payable</p>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1">{tx("Outstanding Payable")}</p>
           <p className={`text-xl font-bold ${totalPayable > 0 ? "text-red-600" : "text-green-600"}`}>
             {fmtKES(totalPayable)}
           </p>
@@ -46,18 +47,18 @@ export default function SuppliersLedgerPage() {
       {/* Table */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-50">
-          <h2 className="font-semibold text-gray-800">{data.length} Suppliers</h2>
+          <h2 className="font-semibold text-gray-800">{data.length} {tx("Suppliers")}</h2>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 text-xs text-gray-500 uppercase tracking-widest">
-                <th className="px-5 py-3 text-left font-semibold">Code</th>
-                <th className="px-5 py-3 text-left font-semibold">Supplier</th>
-                <th className="px-5 py-3 text-right font-semibold">Total Purchases</th>
-                <th className="px-5 py-3 text-right font-semibold">Total Paid</th>
-                <th className="px-5 py-3 text-right font-semibold">Outstanding</th>
-                <th className="px-5 py-3 text-center font-semibold">Status</th>
+                <th className="px-5 py-3 text-left font-semibold">{tx("Code")}</th>
+                <th className="px-5 py-3 text-left font-semibold">{tx("Supplier")}</th>
+                <th className="px-5 py-3 text-right font-semibold">{tx("Total Purchases")}</th>
+                <th className="px-5 py-3 text-right font-semibold">{tx("Total Paid")}</th>
+                <th className="px-5 py-3 text-right font-semibold">{tx("Outstanding")}</th>
+                <th className="px-5 py-3 text-center font-semibold">{tx("Status")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -75,7 +76,7 @@ export default function SuppliersLedgerPage() {
               {!isLoading && data.length === 0 && (
                 <tr>
                   <td colSpan={6} className="px-5 py-8 text-center text-gray-400">
-                    No supplier records found.
+                    {tx("No supplier records found.")}
                   </td>
                 </tr>
               )}
@@ -92,11 +93,11 @@ export default function SuppliersLedgerPage() {
                     </td>
                     <td className="px-5 py-3 text-center">
                       {payable <= 0 ? (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">Settled</span>
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">{tx("Settled")}</span>
                       ) : row.total_purchases === 0 ? (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-400 font-medium">No Invoices</span>
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-400 font-medium">{tx("No Invoices")}</span>
                       ) : (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-medium">Payable</span>
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-medium">{tx("Payable")}</span>
                       )}
                     </td>
                   </tr>
@@ -106,7 +107,7 @@ export default function SuppliersLedgerPage() {
             {data.length > 0 && (
               <tfoot>
                 <tr className="bg-gray-50 font-semibold text-sm border-t-2 border-gray-200">
-                  <td className="px-5 py-3" colSpan={2}>Total</td>
+                  <td className="px-5 py-3" colSpan={2}>{tx("Total")}</td>
                   <td className="px-5 py-3 text-right text-indigo-700">{fmtKES(totalPurchases)}</td>
                   <td className="px-5 py-3 text-right text-green-600">{fmtKES(totalPaid)}</td>
                   <td className={`px-5 py-3 text-right ${totalPayable > 0 ? "text-red-600" : "text-green-600"}`}>

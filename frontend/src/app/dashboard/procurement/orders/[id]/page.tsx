@@ -17,6 +17,7 @@ import { Select } from "@/components/ui/Select";
 import { ToastContainer } from "@/components/ui/Toast";
 import { useToast } from "@/hooks/useToast";
 import { useAuth } from "@/context/AuthContext";
+import { tx } from "@/lib/i18n/core";
 
 const statusVariant = (s: string) =>
   s === "RECEIVED" ? "green"
@@ -101,20 +102,20 @@ export default function PODetailPage() {
 
   const approvePO = useMutation({
     mutationFn: () => procurementApi.approvePO(id),
-    onSuccess: () => { invalidate(); toast("success", "Approved", ""); },
-    onError: (e) => toast("error", "Failed", extractApiError(e)),
+    onSuccess: () => { invalidate(); toast("success", tx("Approved"), ""); },
+    onError: (e) => toast("error", tx("Failed"), extractApiError(e)),
   });
 
   const markOrdered = useMutation({
     mutationFn: () => procurementApi.markOrdered(id),
-    onSuccess: () => { invalidate(); toast("success", "Marked as Ordered", "Awaiting delivery."); },
-    onError: (e) => toast("error", "Failed", extractApiError(e)),
+    onSuccess: () => { invalidate(); toast("success", tx("Marked as Ordered"), tx("Awaiting delivery.")); },
+    onError: (e) => toast("error", tx("Failed"), extractApiError(e)),
   });
 
   const cancelPO = useMutation({
     mutationFn: () => procurementApi.cancelPO(id),
-    onSuccess: () => { invalidate(); toast("success", "Cancelled", ""); },
-    onError: (e) => toast("error", "Failed", extractApiError(e)),
+    onSuccess: () => { invalidate(); toast("success", tx("Cancelled"), ""); },
+    onError: (e) => toast("error", tx("Failed"), extractApiError(e)),
   });
 
   // M40.S01.T003: scan-driven receipt — an item scan adds one to its PO line; a lot scan sets the lot of the last item
@@ -135,7 +136,7 @@ export default function PODetailPage() {
     setScanMsg({ ok: true, text: `${grnLines[idx].material_name}: +1` });
   };
   const lotScan = (code: string) => {
-    if (lastLine.current === null) { setScanMsg({ ok: false, text: "Scan an item first, then its lot label." }); return; }
+    if (lastLine.current === null) { setScanMsg({ ok: false, text: tx("Scan an item first, then its lot label.") }); return; }
     const li = lastLine.current;
     setGrnLines((ls) => ls.map((r, i) => (i === li ? { ...r, lot_number: code } : r)));
     setScanMsg({ ok: true, text: `Lot ${code} set for ${grnLines[li].material_name}` });
@@ -162,21 +163,21 @@ export default function PODetailPage() {
     onSuccess: (grn) => {
       invalidate();
       setGrnOpen(false);
-      toast("success", "GRN created", `${grn.grn_no} — post it to update stock.`);
+      toast("success", tx("GRN created"), tx("{grn_no} — post it to update stock.", { grn_no: grn.grn_no }));
     },
-    onError: (e) => toast("error", "Failed", extractApiError(e)),
+    onError: (e) => toast("error", tx("Failed"), extractApiError(e)),
   });
 
   const postGRN = useMutation({
     mutationFn: (grnId: string) => procurementApi.postGRN(grnId),
-    onSuccess: () => { invalidate(); toast("success", "Posted", "Stock, cost layer, and valuation journal posted together."); },
-    onError: (e) => toast("error", "Failed", extractApiError(e)),
+    onSuccess: () => { invalidate(); toast("success", tx("Posted"), tx("Stock, cost layer, and valuation journal posted together.")); },
+    onError: (e) => toast("error", tx("Failed"), extractApiError(e)),
   });
 
   const postGRNValuation = useMutation({
     mutationFn: (grnId: string) => procurementApi.postGRNValuation(grnId),
-    onSuccess: () => { invalidate(); toast("success", "Inventory valued", "The GRN valuation journal is posted."); },
-    onError: (e) => toast("error", "Valuation failed", extractApiError(e)),
+    onSuccess: () => { invalidate(); toast("success", tx("Inventory valued"), tx("The GRN valuation journal is posted.")); },
+    onError: (e) => toast("error", tx("Valuation failed"), extractApiError(e)),
   });
 
   const createShipment = useMutation({
@@ -189,8 +190,8 @@ export default function PODetailPage() {
       landed_cost_other: shipForm.landed_cost_other ? parseFloat(shipForm.landed_cost_other) : undefined,
       eta: shipForm.eta || undefined,
     }),
-    onSuccess: () => { invalidate(); setShipOpen(false); toast("success", "Shipment linked", ""); },
-    onError: (e) => toast("error", "Failed", extractApiError(e)),
+    onSuccess: () => { invalidate(); setShipOpen(false); toast("success", tx("Shipment linked"), ""); },
+    onError: (e) => toast("error", tx("Failed"), extractApiError(e)),
   });
 
   const recordPayment = useMutation({
@@ -205,9 +206,9 @@ export default function PODetailPage() {
       invalidate();
       setPayOpen(false);
       setPayForm({ payment_date: "", amount: "", method: "bank", reference: "", notes: "" });
-      toast("success", "Payment recorded", "");
+      toast("success", tx("Payment recorded"), "");
     },
-    onError: (e) => toast("error", "Failed", extractApiError(e)),
+    onError: (e) => toast("error", tx("Failed"), extractApiError(e)),
   });
 
   const createEval = useMutation({
@@ -220,12 +221,12 @@ export default function PODetailPage() {
       price_competitiveness_score: parseFloat(evalForm.price_competitiveness_score),
       responsiveness_score: parseFloat(evalForm.responsiveness_score),
     }),
-    onSuccess: () => { setEvalOpen(false); toast("success", "Evaluation saved", ""); },
-    onError: (e) => toast("error", "Failed", extractApiError(e)),
+    onSuccess: () => { setEvalOpen(false); toast("success", tx("Evaluation saved"), ""); },
+    onError: (e) => toast("error", tx("Failed"), extractApiError(e)),
   });
 
   if (isLoading) return <div className="flex justify-center py-24"><div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" /></div>;
-  if (!po) return <div className="text-center py-16 text-gray-500">PO not found.</div>;
+  if (!po) return <div className="text-center py-16 text-gray-500">{tx("PO not found.")}</div>;
 
   const isDraft = po.status === "DRAFT";
   const isApproved = po.status === "APPROVED";
@@ -266,21 +267,20 @@ export default function PODetailPage() {
         <div className="flex items-start justify-between flex-wrap gap-4">
           <div>
             <button className="text-sm text-indigo-600 hover:underline mb-2 block" onClick={() => router.push("/dashboard/procurement/orders")}>
-              ← Back to Purchase Orders
+              {tx("← Back to Purchase Orders")}
             </button>
             <h1 className="text-2xl font-bold text-gray-900 font-mono">{po.po_no}</h1>
             <p className="text-sm text-gray-500 mt-1">
               {po.supplier_name}
-              {po.pr_no && ` · PR: ${po.pr_no}`}
+              {po.pr_no && tx(" · PR: {pr_no}", { pr_no: po.pr_no })}
               {` · ${po.currency}`}
               {po.payment_terms && ` · ${po.payment_terms}`}
             </p>
             <p className="text-xs text-gray-400 mt-1">
-              Order date: {new Date(po.order_date).toLocaleDateString()} ·
-              Expected delivery: <span className={(po.days_until_delivery ?? 0) < 0 ? "text-red-600 font-semibold" : ""}>{new Date(po.expected_delivery_date).toLocaleDateString()}</span>
+              {tx("Order date:")} {new Date(po.order_date).toLocaleDateString()} {tx("· Expected delivery:")} <span className={(po.days_until_delivery ?? 0) < 0 ? "text-red-600 font-semibold" : ""}>{new Date(po.expected_delivery_date).toLocaleDateString()}</span>
               {po.days_until_delivery != null && (
                 <span className="ml-1">
-                  {po.days_until_delivery < 0 ? `(${Math.abs(po.days_until_delivery)}d overdue)` : `(in ${po.days_until_delivery}d)`}
+                  {po.days_until_delivery < 0 ? `(${Math.abs(po.days_until_delivery)}d overdue)` : tx("(in {days_until_delivery}d)", { days_until_delivery: po.days_until_delivery })}
                 </span>
               )}
             </p>
@@ -294,21 +294,21 @@ export default function PODetailPage() {
               />
             </div>
             <div className="flex gap-2 flex-wrap justify-end">
-              {isDraft && <Button onClick={() => approvePO.mutate()} loading={approvePO.isPending}>Approve</Button>}
-              {isApproved && <Button onClick={() => markOrdered.mutate()} loading={markOrdered.isPending}>Mark as Ordered</Button>}
-              {canReceive && <Button onClick={openGRN}>Record Receipt</Button>}
+              {isDraft && <Button onClick={() => approvePO.mutate()} loading={approvePO.isPending}>{tx("Approve")}</Button>}
+              {isApproved && <Button onClick={() => markOrdered.mutate()} loading={markOrdered.isPending}>{tx("Mark as Ordered")}</Button>}
+              {canReceive && <Button onClick={openGRN}>{tx("Record Receipt")}</Button>}
               {canPay && (
                 <Button variant="secondary" onClick={() => {
                   setPayForm((f) => ({ ...f, amount: String(po.total_value ?? ""), payment_date: new Date().toISOString().split("T")[0] }));
                   setPayOpen(true);
-                }}>Record Payment</Button>
+                }}>{tx("Record Payment")}</Button>
               )}
-              {isReceived && <Button variant="secondary" onClick={() => setEvalOpen(true)}>Evaluate Supplier</Button>}
+              {isReceived && <Button variant="secondary" onClick={() => setEvalOpen(true)}>{tx("Evaluate Supplier")}</Button>}
               {!shipment && (isOrdered || isPartial) && (
-                <Button variant="secondary" onClick={() => setShipOpen(true)}>Link Shipment</Button>
+                <Button variant="secondary" onClick={() => setShipOpen(true)}>{tx("Link Shipment")}</Button>
               )}
               {(isDraft || isApproved || isOrdered) && (
-                <Button variant="secondary" onClick={() => cancelPO.mutate()} loading={cancelPO.isPending}>Cancel</Button>
+                <Button variant="secondary" onClick={() => cancelPO.mutate()} loading={cancelPO.isPending}>{tx("Cancel")}</Button>
               )}
             </div>
           </div>
@@ -317,26 +317,26 @@ export default function PODetailPage() {
         {/* Value summary */}
         <div className="mt-4 grid grid-cols-4 gap-4 pt-4 border-t border-gray-100">
           <div>
-            <p className="text-xs text-gray-500">Total Value</p>
+            <p className="text-xs text-gray-500">{tx("Total Value")}</p>
             <p className="text-xl font-bold">
               {po.total_value != null ? Number(po.total_value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "—"} {po.currency}
             </p>
           </div>
           <div>
-            <p className="text-xs text-gray-500">Paid</p>
+            <p className="text-xs text-gray-500">{tx("Paid")}</p>
             <p className={`text-xl font-bold ${po.payment_status === "paid" ? "text-green-600" : "text-gray-900"}`}>
               {po.paid_amount != null ? Number(po.paid_amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "0.00"} {po.currency}
             </p>
             {po.mpesa_reference && (
-              <p className="text-xs text-gray-400 mt-0.5">M-Pesa: {po.mpesa_reference}</p>
+              <p className="text-xs text-gray-400 mt-0.5">{tx("M-Pesa:")} {po.mpesa_reference}</p>
             )}
           </div>
           <div>
-            <p className="text-xs text-gray-500">Lines</p>
+            <p className="text-xs text-gray-500">{tx("Lines")}</p>
             <p className="text-xl font-bold">{po.lines.length}</p>
           </div>
           <div>
-            <p className="text-xs text-gray-500">Receipts</p>
+            <p className="text-xs text-gray-500">{tx("Receipts")}</p>
             <p className="text-xl font-bold">{grns.length}</p>
           </div>
         </div>
@@ -347,21 +347,21 @@ export default function PODetailPage() {
         <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
           <div className="flex items-start justify-between flex-wrap gap-2">
             <div>
-              <p className="text-sm font-semibold text-blue-800 mb-1">Import Shipment: {shipment.shipment_no}</p>
+              <p className="text-sm font-semibold text-blue-800 mb-1">{tx("Import Shipment:")} {shipment.shipment_no}</p>
               <div className="text-xs text-blue-700 space-y-0.5">
-                {shipment.vessel_name && <p>Vessel: {shipment.vessel_name}</p>}
+                {shipment.vessel_name && <p>{tx("Vessel:")} {shipment.vessel_name}</p>}
                 {shipment.bl_number && <p>B/L: {shipment.bl_number}</p>}
                 {shipment.port_of_loading && <p>{shipment.port_of_loading} → {shipment.port_of_discharge}</p>}
                 {shipment.eta && <p>ETA: {new Date(shipment.eta).toLocaleDateString()}</p>}
                 {shipment.ata && <p>ATA: {new Date(shipment.ata).toLocaleDateString()}</p>}
-                {shipment.customs_ref && <p>Customs ref: {shipment.customs_ref}</p>}
+                {shipment.customs_ref && <p>{tx("Customs ref:")} {shipment.customs_ref}</p>}
               </div>
             </div>
             <div className="text-right">
               <Badge label={shipment.status.replace(/_/g, " ")} variant="blue" />
               {shipment.total_landed_cost > 0 && (
                 <p className="text-xs text-blue-700 mt-1">
-                  Landed cost: {Number(shipment.total_landed_cost).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {tx("Landed cost:")} {Number(shipment.total_landed_cost).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
               )}
             </div>
@@ -371,7 +371,7 @@ export default function PODetailPage() {
 
       {/* PO Lines */}
       <div>
-        <h2 className="text-lg font-semibold text-gray-800 mb-3">Order Lines</h2>
+        <h2 className="text-lg font-semibold text-gray-800 mb-3">{tx("Order Lines")}</h2>
         <Table
           keyField="id"
           data={po.lines}
@@ -379,7 +379,7 @@ export default function PODetailPage() {
           columns={[
             { header: "#", accessor: "line_no", className: "w-10 text-gray-400 text-xs" },
             {
-              header: "Material / Item",
+              header: tx("Material / Item"),
               accessor: (l) => (
                 <span>
                   {l.material_code && <span className="font-mono text-xs text-gray-400 mr-1">{l.material_code}</span>}
@@ -387,12 +387,12 @@ export default function PODetailPage() {
                 </span>
               ),
             },
-            { header: "Ordered", accessor: (l) => `${Number(l.ordered_quantity).toFixed(3)} ${l.unit}` },
-            { header: "Received", accessor: (l) => <span className={l.received_quantity >= l.ordered_quantity ? "text-green-600 font-medium" : ""}>{Number(l.received_quantity).toFixed(3)}</span> },
-            { header: "Pending", accessor: (l) => <span className={l.pending_quantity > 0 ? "text-amber-600" : "text-gray-400"}>{Number(l.pending_quantity).toFixed(3)}</span> },
-            { header: "Unit Price", accessor: (l) => Number(l.unit_price).toFixed(4) },
-            { header: "Tax %", accessor: (l) => `${(Number(l.tax_rate) * 100).toFixed(1)}%` },
-            { header: "Line Total", accessor: (l) => Number(l.line_total).toLocaleString(undefined, { minimumFractionDigits: 2 }) },
+            { header: tx("Ordered"), accessor: (l) => `${Number(l.ordered_quantity).toFixed(3)} ${l.unit}` },
+            { header: tx("Received"), accessor: (l) => <span className={l.received_quantity >= l.ordered_quantity ? "text-green-600 font-medium" : ""}>{Number(l.received_quantity).toFixed(3)}</span> },
+            { header: tx("Pending"), accessor: (l) => <span className={l.pending_quantity > 0 ? "text-amber-600" : "text-gray-400"}>{Number(l.pending_quantity).toFixed(3)}</span> },
+            { header: tx("Unit Price"), accessor: (l) => Number(l.unit_price).toFixed(4) },
+            { header: tx("Tax %"), accessor: (l) => `${(Number(l.tax_rate) * 100).toFixed(1)}%` },
+            { header: tx("Line Total"), accessor: (l) => Number(l.line_total).toLocaleString(undefined, { minimumFractionDigits: 2 }) },
           ]}
         />
       </div>
@@ -400,27 +400,27 @@ export default function PODetailPage() {
       {/* GRNs */}
       {grns.length > 0 && (
         <div>
-          <h2 className="text-lg font-semibold text-gray-800 mb-3">Goods Receipts</h2>
+          <h2 className="text-lg font-semibold text-gray-800 mb-3">{tx("Goods Receipts")}</h2>
           <Table
             keyField="id"
             data={grns}
             emptyMessage=""
             columns={[
-              { header: "GRN No", accessor: (g) => <span className="font-mono text-xs font-medium">{g.grn_no}</span> },
-              { header: "Received Date", accessor: (g) => new Date(g.received_date).toLocaleDateString() },
-              { header: "Warehouse", accessor: (g) => g.warehouse_name ?? "—" },
-              { header: "Status", accessor: (g) => <Badge label={g.status} variant={g.status === "POSTED" ? "green" : "blue"} /> },
+              { header: tx("GRN No"), accessor: (g) => <span className="font-mono text-xs font-medium">{g.grn_no}</span> },
+              { header: tx("Received Date"), accessor: (g) => new Date(g.received_date).toLocaleDateString() },
+              { header: tx("Warehouse"), accessor: (g) => g.warehouse_name ?? "—" },
+              { header: tx("Status"), accessor: (g) => <Badge label={g.status} variant={g.status === "POSTED" ? "green" : "blue"} /> },
               {
                 header: "",
                 accessor: (g) => g.status === "DRAFT"
                   ? hasPermission("finance.post")
-                    ? <Button onClick={() => postGRN.mutate(g.id)} loading={postGRN.isPending}>Post stock and valuation</Button>
-                    : <span className="text-xs text-amber-700">Finance valuation permission required</span>
+                    ? <Button onClick={() => postGRN.mutate(g.id)} loading={postGRN.isPending}>{tx("Post stock and valuation")}</Button>
+                    : <span className="text-xs text-amber-700">{tx("Finance valuation permission required")}</span>
                   : g.valuation_status === "POSTED" || g.valuation_status === "NOT_REQUIRED"
-                    ? <span className="text-xs text-green-700">Stock and valuation posted</span>
+                    ? <span className="text-xs text-green-700">{tx("Stock and valuation posted")}</span>
                     : hasPermission("finance.post")
-                      ? <Button onClick={() => postGRNValuation.mutate(g.id)} loading={postGRNValuation.isPending}>Post inventory valuation</Button>
-                      : <span className="text-xs text-amber-700">Awaiting finance valuation</span>,
+                      ? <Button onClick={() => postGRNValuation.mutate(g.id)} loading={postGRNValuation.isPending}>{tx("Post inventory valuation")}</Button>
+                      : <span className="text-xs text-amber-700">{tx("Awaiting finance valuation")}</span>,
               },
             ]}
           />
@@ -430,101 +430,101 @@ export default function PODetailPage() {
       {/* Payment History */}
       {payments.length > 0 && (
         <div>
-          <h2 className="text-lg font-semibold text-gray-800 mb-3">Payment History</h2>
+          <h2 className="text-lg font-semibold text-gray-800 mb-3">{tx("Payment History")}</h2>
           <Table
             keyField="id"
             data={payments as SupplierPayment[]}
             emptyMessage=""
             columns={[
-              { header: "Date", accessor: (p) => new Date(p.payment_date).toLocaleDateString() },
+              { header: tx("Date"), accessor: (p) => new Date(p.payment_date).toLocaleDateString() },
               {
-                header: "Method",
+                header: tx("Method"),
                 accessor: (p) => (
                   <span className={payMethodColor(p.method)}>
                     {p.method.toUpperCase()}
                   </span>
                 ),
               },
-              { header: "Amount", accessor: (p) => `${Number(p.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}` },
-              { header: "Reference", accessor: (p) => p.reference || "—" },
-              { header: "Notes", accessor: (p) => p.notes || "—" },
+              { header: tx("Amount"), accessor: (p) => `${Number(p.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}` },
+              { header: tx("Reference"), accessor: (p) => p.reference || "—" },
+              { header: tx("Notes"), accessor: (p) => p.notes || "—" },
             ]}
           />
         </div>
       )}
 
       {/* Record Payment Modal */}
-      <Modal open={payOpen} onClose={() => setPayOpen(false)} title="Record Supplier Payment">
+      <Modal open={payOpen} onClose={() => setPayOpen(false)} title={tx("Record Supplier Payment")}>
         <form onSubmit={(e) => { e.preventDefault(); recordPayment.mutate(); }} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Payment Date *" type="date" value={payForm.payment_date} onChange={(e) => setPayForm((f) => ({ ...f, payment_date: e.target.value }))} required />
-            <Input label={`Amount (${po.currency}) *`} type="number" step="0.01" value={payForm.amount} onChange={(e) => setPayForm((f) => ({ ...f, amount: e.target.value }))} required />
+            <Input label={tx("Payment Date *")} type="date" value={payForm.payment_date} onChange={(e) => setPayForm((f) => ({ ...f, payment_date: e.target.value }))} required />
+            <Input label={tx("Amount ({currency}) *", { currency: po.currency })} type="number" step="0.01" value={payForm.amount} onChange={(e) => setPayForm((f) => ({ ...f, amount: e.target.value }))} required />
           </div>
           <Select
-            label="Payment Method *"
+            label={tx("Payment Method *")}
             options={[
-              { value: "bank", label: "Bank Transfer" },
-              { value: "cash", label: "Cash" },
-              { value: "mpesa", label: "M-Pesa" },
+              { value: "bank", label: tx("Bank Transfer") },
+              { value: "cash", label: tx("Cash") },
+              { value: "mpesa", label: tx("M-Pesa") },
             ]}
             value={payForm.method}
             onChange={(e) => setPayForm((f) => ({ ...f, method: e.target.value }))}
           />
           <Input
-            label={payForm.method === "mpesa" ? "M-Pesa Receipt Number" : "Reference / Transaction ID"}
+            label={payForm.method === "mpesa" ? tx("M-Pesa Receipt Number") : tx("Reference / Transaction ID")}
             value={payForm.reference}
             onChange={(e) => setPayForm((f) => ({ ...f, reference: e.target.value }))}
-            placeholder={payForm.method === "mpesa" ? "e.g. RCK0X1234XYZ" : ""}
+            placeholder={payForm.method === "mpesa" ? tx("e.g. RCK0X1234XYZ") : ""}
           />
-          <Input label="Notes" value={payForm.notes} onChange={(e) => setPayForm((f) => ({ ...f, notes: e.target.value }))} />
+          <Input label={tx("Notes")} value={payForm.notes} onChange={(e) => setPayForm((f) => ({ ...f, notes: e.target.value }))} />
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" type="button" onClick={() => setPayOpen(false)}>Cancel</Button>
+            <Button variant="secondary" type="button" onClick={() => setPayOpen(false)}>{tx("Cancel")}</Button>
             <Button type="submit" loading={recordPayment.isPending} disabled={!payForm.payment_date || !payForm.amount}>
-              Save Payment
+              {tx("Save Payment")}
             </Button>
           </div>
         </form>
       </Modal>
 
       {/* GRN Modal */}
-      <Modal open={grnOpen} onClose={() => setGrnOpen(false)} title="Record Goods Receipt">
+      <Modal open={grnOpen} onClose={() => setGrnOpen(false)} title={tx("Record Goods Receipt")}>
         <form onSubmit={(e) => { e.preventDefault(); createGRN.mutate(); }} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <Input label="GRN No *" value={grnForm.grn_no} onChange={(e) => setGrnForm((f) => ({ ...f, grn_no: e.target.value }))} placeholder="e.g. GRN-2026-001" required />
-            <Input label="Received Date *" type="date" onChange={(e) => setGrnForm((f) => ({ ...f, received_date: e.target.value }))} required />
+            <Input label={tx("GRN No *")} value={grnForm.grn_no} onChange={(e) => setGrnForm((f) => ({ ...f, grn_no: e.target.value }))} placeholder={tx("e.g. GRN-2026-001")} required />
+            <Input label={tx("Received Date *")} type="date" onChange={(e) => setGrnForm((f) => ({ ...f, received_date: e.target.value }))} required />
           </div>
           <Select
-            label="Warehouse *"
-            options={[{ value: "", label: "Select…" }, ...warehouses.map((w) => ({ value: w.id, label: w.name }))]}
+            label={tx("Warehouse *")}
+            options={[{ value: "", label: tx("Select…") }, ...warehouses.map((w) => ({ value: w.id, label: w.name }))]}
             value={grnForm.warehouse_id}
             onChange={(e) => setGrnForm((f) => ({ ...f, warehouse_id: e.target.value }))}
           />
 
           <div>
-            <p className="text-sm font-semibold text-gray-700 mb-2">Receipt Lines</p>
+            <p className="text-sm font-semibold text-gray-700 mb-2">{tx("Receipt Lines")}</p>
             <div className="mb-3 space-y-1">
-              <ScanInput id="grn-scan" label="Scan item code (adds 1 to its line)" onScan={grnScan} />
-              <ScanInput id="grn-lot" label="Scan lot label (for the last scanned item)" onScan={lotScan} />
+              <ScanInput id="grn-scan" label={tx("Scan item code (adds 1 to its line)")} onScan={grnScan} />
+              <ScanInput id="grn-lot" label={tx("Scan lot label (for the last scanned item)")} onScan={lotScan} />
               {scanMsg && <p role="status" className={`text-xs ${scanMsg.ok ? "text-emerald-700" : "text-red-700"}`}>{scanMsg.text}</p>}
             </div>
             <div className="space-y-3">
               {grnLines.map((l, i) => (
                 <div key={i} className="rounded-lg border border-gray-200 p-3 space-y-2">
-                  <p className="text-xs font-medium text-gray-600">{l.material_name} — Ordered: {l.ordered_quantity} {l.unit}</p>
+                  <p className="text-xs font-medium text-gray-600">{l.material_name} {tx("— Ordered:")} {l.ordered_quantity} {l.unit}</p>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                    <Input label="Received Qty" type="number" step="0.001" value={l.received_quantity}
+                    <Input label={tx("Received Qty")} type="number" step="0.001" value={l.received_quantity}
                       onChange={(e) => setGrnLines((ls) => ls.map((r, idx) => idx === i ? { ...r, received_quantity: e.target.value, accepted_quantity: e.target.value } : r))} />
-                    <Input label="Accepted Qty" type="number" step="0.001" value={l.accepted_quantity}
+                    <Input label={tx("Accepted Qty")} type="number" step="0.001" value={l.accepted_quantity}
                       onChange={(e) => setGrnLines((ls) => ls.map((r, idx) => idx === i ? { ...r, accepted_quantity: e.target.value } : r))} />
-                    <Input label="Rejected Qty" type="number" step="0.001" value={l.rejected_quantity}
+                    <Input label={tx("Rejected Qty")} type="number" step="0.001" value={l.rejected_quantity}
                       onChange={(e) => setGrnLines((ls) => ls.map((r, idx) => idx === i ? { ...r, rejected_quantity: e.target.value } : r))} />
-                    <Input label="Accepted Volume (m³)" type="number" min="0" step="any" value={l.accepted_volume_m3}
+                    <Input label={tx("Accepted Volume (m³)")} type="number" min="0" step="any" value={l.accepted_volume_m3}
                       onChange={(e) => setGrnLines((ls) => ls.map((r, idx) => idx === i ? { ...r, accepted_volume_m3: e.target.value } : r))} />
                   </div>
                   <div className="grid grid-cols-2 gap-2">
-                    <Input label="Lot Number" value={l.lot_number}
+                    <Input label={tx("Lot Number")} value={l.lot_number}
                       onChange={(e) => setGrnLines((ls) => ls.map((r, idx) => idx === i ? { ...r, lot_number: e.target.value } : r))} />
-                    <Input label="Expiry Date" type="date" value={l.expiry_date}
+                    <Input label={tx("Expiry Date")} type="date" value={l.expiry_date}
                       onChange={(e) => setGrnLines((ls) => ls.map((r, idx) => idx === i ? { ...r, expiry_date: e.target.value } : r))} />
                   </div>
                 </div>
@@ -533,59 +533,59 @@ export default function PODetailPage() {
           </div>
 
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" type="button" onClick={() => setGrnOpen(false)}>Cancel</Button>
-            <Button type="submit" loading={createGRN.isPending} disabled={!grnForm.grn_no || !grnForm.received_date || !grnForm.warehouse_id}>Save Receipt</Button>
+            <Button variant="secondary" type="button" onClick={() => setGrnOpen(false)}>{tx("Cancel")}</Button>
+            <Button type="submit" loading={createGRN.isPending} disabled={!grnForm.grn_no || !grnForm.received_date || !grnForm.warehouse_id}>{tx("Save Receipt")}</Button>
           </div>
         </form>
       </Modal>
 
       {/* Shipment Modal */}
-      <Modal open={shipOpen} onClose={() => setShipOpen(false)} title="Link Import Shipment">
+      <Modal open={shipOpen} onClose={() => setShipOpen(false)} title={tx("Link Import Shipment")}>
         <form onSubmit={(e) => { e.preventDefault(); createShipment.mutate(); }} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Shipment No *" value={shipForm.shipment_no} onChange={(e) => setShipForm((f) => ({ ...f, shipment_no: e.target.value }))} required />
-            <Input label="B/L Number" value={shipForm.bl_number} onChange={(e) => setShipForm((f) => ({ ...f, bl_number: e.target.value }))} />
+            <Input label={tx("Shipment No *")} value={shipForm.shipment_no} onChange={(e) => setShipForm((f) => ({ ...f, shipment_no: e.target.value }))} required />
+            <Input label={tx("B/L Number")} value={shipForm.bl_number} onChange={(e) => setShipForm((f) => ({ ...f, bl_number: e.target.value }))} />
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Vessel Name" value={shipForm.vessel_name} onChange={(e) => setShipForm((f) => ({ ...f, vessel_name: e.target.value }))} />
+            <Input label={tx("Vessel Name")} value={shipForm.vessel_name} onChange={(e) => setShipForm((f) => ({ ...f, vessel_name: e.target.value }))} />
             <Input label="ETA" type="date" value={shipForm.eta} onChange={(e) => setShipForm((f) => ({ ...f, eta: e.target.value }))} />
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Port of Loading" value={shipForm.port_of_loading} onChange={(e) => setShipForm((f) => ({ ...f, port_of_loading: e.target.value }))} />
-            <Input label="Port of Discharge" value={shipForm.port_of_discharge} onChange={(e) => setShipForm((f) => ({ ...f, port_of_discharge: e.target.value }))} />
+            <Input label={tx("Port of Loading")} value={shipForm.port_of_loading} onChange={(e) => setShipForm((f) => ({ ...f, port_of_loading: e.target.value }))} />
+            <Input label={tx("Port of Discharge")} value={shipForm.port_of_discharge} onChange={(e) => setShipForm((f) => ({ ...f, port_of_discharge: e.target.value }))} />
           </div>
-          <Input label="Customs Reference" value={shipForm.customs_ref} onChange={(e) => setShipForm((f) => ({ ...f, customs_ref: e.target.value }))} />
-          <p className="text-xs font-semibold text-gray-600">Landed Costs</p>
+          <Input label={tx("Customs Reference")} value={shipForm.customs_ref} onChange={(e) => setShipForm((f) => ({ ...f, customs_ref: e.target.value }))} />
+          <p className="text-xs font-semibold text-gray-600">{tx("Landed Costs")}</p>
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Freight" type="number" step="0.01" value={shipForm.landed_cost_freight} onChange={(e) => setShipForm((f) => ({ ...f, landed_cost_freight: e.target.value }))} />
-            <Input label="Insurance" type="number" step="0.01" value={shipForm.landed_cost_insurance} onChange={(e) => setShipForm((f) => ({ ...f, landed_cost_insurance: e.target.value }))} />
-            <Input label="Duties" type="number" step="0.01" value={shipForm.landed_cost_duties} onChange={(e) => setShipForm((f) => ({ ...f, landed_cost_duties: e.target.value }))} />
-            <Input label="Other" type="number" step="0.01" value={shipForm.landed_cost_other} onChange={(e) => setShipForm((f) => ({ ...f, landed_cost_other: e.target.value }))} />
+            <Input label={tx("Freight")} type="number" step="0.01" value={shipForm.landed_cost_freight} onChange={(e) => setShipForm((f) => ({ ...f, landed_cost_freight: e.target.value }))} />
+            <Input label={tx("Insurance")} type="number" step="0.01" value={shipForm.landed_cost_insurance} onChange={(e) => setShipForm((f) => ({ ...f, landed_cost_insurance: e.target.value }))} />
+            <Input label={tx("Duties")} type="number" step="0.01" value={shipForm.landed_cost_duties} onChange={(e) => setShipForm((f) => ({ ...f, landed_cost_duties: e.target.value }))} />
+            <Input label={tx("Other")} type="number" step="0.01" value={shipForm.landed_cost_other} onChange={(e) => setShipForm((f) => ({ ...f, landed_cost_other: e.target.value }))} />
           </div>
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" type="button" onClick={() => setShipOpen(false)}>Cancel</Button>
-            <Button type="submit" loading={createShipment.isPending} disabled={!shipForm.shipment_no}>Save Shipment</Button>
+            <Button variant="secondary" type="button" onClick={() => setShipOpen(false)}>{tx("Cancel")}</Button>
+            <Button type="submit" loading={createShipment.isPending} disabled={!shipForm.shipment_no}>{tx("Save Shipment")}</Button>
           </div>
         </form>
       </Modal>
 
       {/* Supplier Evaluation Modal */}
-      <Modal open={evalOpen} onClose={() => setEvalOpen(false)} title="Evaluate Supplier">
+      <Modal open={evalOpen} onClose={() => setEvalOpen(false)} title={tx("Evaluate Supplier")}>
         <form onSubmit={(e) => { e.preventDefault(); createEval.mutate(); }} className="space-y-4">
-          <p className="text-xs text-gray-500">Score each dimension 0–100</p>
-          <Input label="Evaluation Date *" type="date" onChange={(e) => setEvalForm((f) => ({ ...f, evaluation_date: e.target.value }))} required />
+          <p className="text-xs text-gray-500">{tx("Score each dimension 0–100")}</p>
+          <Input label={tx("Evaluation Date *")} type="date" onChange={(e) => setEvalForm((f) => ({ ...f, evaluation_date: e.target.value }))} required />
           <div className="grid grid-cols-2 gap-4">
-            <Input label="On-Time Delivery" type="number" min="0" max="100" value={evalForm.on_time_delivery_score} onChange={(e) => setEvalForm((f) => ({ ...f, on_time_delivery_score: e.target.value }))} />
-            <Input label="Quality" type="number" min="0" max="100" value={evalForm.quality_score} onChange={(e) => setEvalForm((f) => ({ ...f, quality_score: e.target.value }))} />
-            <Input label="Price Competitiveness" type="number" min="0" max="100" value={evalForm.price_competitiveness_score} onChange={(e) => setEvalForm((f) => ({ ...f, price_competitiveness_score: e.target.value }))} />
-            <Input label="Responsiveness" type="number" min="0" max="100" value={evalForm.responsiveness_score} onChange={(e) => setEvalForm((f) => ({ ...f, responsiveness_score: e.target.value }))} />
+            <Input label={tx("On-Time Delivery")} type="number" min="0" max="100" value={evalForm.on_time_delivery_score} onChange={(e) => setEvalForm((f) => ({ ...f, on_time_delivery_score: e.target.value }))} />
+            <Input label={tx("Quality")} type="number" min="0" max="100" value={evalForm.quality_score} onChange={(e) => setEvalForm((f) => ({ ...f, quality_score: e.target.value }))} />
+            <Input label={tx("Price Competitiveness")} type="number" min="0" max="100" value={evalForm.price_competitiveness_score} onChange={(e) => setEvalForm((f) => ({ ...f, price_competitiveness_score: e.target.value }))} />
+            <Input label={tx("Responsiveness")} type="number" min="0" max="100" value={evalForm.responsiveness_score} onChange={(e) => setEvalForm((f) => ({ ...f, responsiveness_score: e.target.value }))} />
           </div>
-          <Input label="Notes" value={evalForm.notes} onChange={(e) => setEvalForm((f) => ({ ...f, notes: e.target.value }))} />
+          <Input label={tx("Notes")} value={evalForm.notes} onChange={(e) => setEvalForm((f) => ({ ...f, notes: e.target.value }))} />
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" type="button" onClick={() => setEvalOpen(false)}>Cancel</Button>
+            <Button variant="secondary" type="button" onClick={() => setEvalOpen(false)}>{tx("Cancel")}</Button>
             <Button type="submit" loading={createEval.isPending}
               disabled={!evalForm.evaluation_date || !evalForm.on_time_delivery_score || !evalForm.quality_score || !evalForm.price_competitiveness_score || !evalForm.responsiveness_score}>
-              Save Evaluation
+              {tx("Save Evaluation")}
             </Button>
           </div>
         </form>

@@ -7,6 +7,7 @@ import {
   projectsApi, Project, ProjectStatus, STATUS_COLOR, fmtDate,
 } from "@/lib/projects";
 import { Button } from "@/components/ui/Button";
+import { tx } from "@/lib/i18n/core";
 
 function KpiCard({ label, value }: { label: string; value: string | number }) {
   return (
@@ -51,44 +52,44 @@ function CreateModal({ onClose }: { onClose: () => void }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4">
         <div className="flex justify-between items-center">
-          <h2 className="text-lg font-bold">New Project</h2>
+          <h2 className="text-lg font-bold">{tx("New Project")}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">✕</button>
         </div>
 
         <div className="space-y-3">
           <div>
-            <label className="text-sm font-medium text-gray-700">Project Name *</label>
+            <label className="text-sm font-medium text-gray-700">{tx("Project Name *")}</label>
             <input className="w-full border rounded px-3 py-2 text-sm mt-1" value={form.name}
-              onChange={e => setForm({ ...form, name: e.target.value })} placeholder="e.g. Q3 NPD Launch" />
+              onChange={e => setForm({ ...form, name: e.target.value })} placeholder={tx("e.g. Q3 NPD Launch")} />
           </div>
           <div>
-            <label className="text-sm font-medium text-gray-700">Description</label>
+            <label className="text-sm font-medium text-gray-700">{tx("Description")}</label>
             <textarea className="w-full border rounded px-3 py-2 text-sm mt-1" rows={2}
               value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-sm font-medium text-gray-700">Start Date</label>
+              <label className="text-sm font-medium text-gray-700">{tx("Start Date")}</label>
               <input type="date" className="w-full border rounded px-3 py-2 text-sm mt-1" value={form.start_date}
                 onChange={e => setForm({ ...form, start_date: e.target.value })} />
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-700">End Date</label>
+              <label className="text-sm font-medium text-gray-700">{tx("End Date")}</label>
               <input type="date" className="w-full border rounded px-3 py-2 text-sm mt-1" value={form.end_date}
                 onChange={e => setForm({ ...form, end_date: e.target.value })} />
             </div>
           </div>
           <div>
-            <label className="text-sm font-medium text-gray-700">Budget (KES)</label>
+            <label className="text-sm font-medium text-gray-700">{tx("Budget (KES)")}</label>
             <input type="number" min={0} className="w-full border rounded px-3 py-2 text-sm mt-1" value={form.budget}
               onChange={e => setForm({ ...form, budget: e.target.value })} />
           </div>
         </div>
 
         <div className="flex gap-2 justify-end pt-2">
-          <Button variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button variant="secondary" onClick={onClose}>{tx("Cancel")}</Button>
           <Button onClick={() => mut.mutate()} disabled={!form.name || mut.isPending}>
-            {mut.isPending ? "Creating…" : "Create Project"}
+            {mut.isPending ? tx("Creating…") : tx("Create Project")}
           </Button>
         </div>
         {mut.isError && <p className="text-xs text-red-600">{(mut.error as Error).message}</p>}
@@ -114,30 +115,30 @@ export default function ProjectsPage() {
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Project Management</h1>
-          <p className="text-sm text-gray-500">Track projects, milestones, tasks, and Gantt timelines</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Project Management")}</h1>
+          <p className="text-sm text-gray-500">{tx("Track projects, milestones, tasks, and Gantt timelines")}</p>
         </div>
-        <Button onClick={() => setShowCreate(true)}>+ New Project</Button>
+        <Button onClick={() => setShowCreate(true)}>{tx("+ New Project")}</Button>
       </div>
 
       {dash && (
         <div className="grid grid-cols-2 md:grid-cols-5 lg:grid-cols-9 gap-3">
-          <KpiCard label="Total" value={dash.total_projects} />
-          <KpiCard label="Planning" value={dash.planning_count} />
-          <KpiCard label="Active" value={dash.active_count} />
-          <KpiCard label="On Hold" value={dash.on_hold_count} />
-          <KpiCard label="Completed" value={dash.completed_count} />
-          <KpiCard label="Cancelled" value={dash.cancelled_count} />
-          <KpiCard label="Total Tasks" value={dash.total_tasks} />
-          <KpiCard label="Overdue" value={dash.overdue_tasks} />
-          <KpiCard label="Blocked" value={dash.blocked_tasks} />
+          <KpiCard label={tx("Total")} value={dash.total_projects} />
+          <KpiCard label={tx("Planning")} value={dash.planning_count} />
+          <KpiCard label={tx("Active")} value={dash.active_count} />
+          <KpiCard label={tx("On Hold")} value={dash.on_hold_count} />
+          <KpiCard label={tx("Completed")} value={dash.completed_count} />
+          <KpiCard label={tx("Cancelled")} value={dash.cancelled_count} />
+          <KpiCard label={tx("Total Tasks")} value={dash.total_tasks} />
+          <KpiCard label={tx("Overdue")} value={dash.overdue_tasks} />
+          <KpiCard label={tx("Blocked")} value={dash.blocked_tasks} />
         </div>
       )}
 
       <div className="flex gap-2 flex-wrap">
         <button onClick={() => setStatusFilter("")}
           className={`text-xs px-3 py-1.5 rounded-full border font-medium ${statusFilter === "" ? "bg-gray-900 text-white" : "bg-white text-gray-600 border-gray-200"}`}>
-          All
+          {tx("All")}
         </button>
         {statuses.map(s => (
           <button key={s} onClick={() => setStatusFilter(s)}
@@ -149,9 +150,9 @@ export default function ProjectsPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {isLoading ? (
-          <div className="col-span-3 p-8 text-center text-gray-400">Loading projects…</div>
+          <div className="col-span-3 p-8 text-center text-gray-400">{tx("Loading projects…")}</div>
         ) : projects.length === 0 ? (
-          <div className="col-span-3 p-8 text-center text-gray-400">No projects yet. Create your first project.</div>
+          <div className="col-span-3 p-8 text-center text-gray-400">{tx("No projects yet. Create your first project.")}</div>
         ) : projects.map(p => (
           <div key={p.id} className="bg-white rounded-xl border shadow-sm p-4 space-y-3 hover:shadow-md transition-shadow cursor-pointer"
             onClick={() => router.push(`/dashboard/projects/${p.id}`)}>
@@ -170,8 +171,8 @@ export default function ProjectsPage() {
             <ProgressBar done={p.done_count} total={p.task_count} />
 
             <div className="flex justify-between text-xs text-gray-500">
-              <span>{p.task_count} tasks ({p.done_count} done)</span>
-              <span>{p.milestone_count} milestones</span>
+              <span>{p.task_count} {tx("tasks (")}{p.done_count} {tx("done)")}</span>
+              <span>{p.milestone_count} {tx("milestones")}</span>
             </div>
 
             <div className="flex justify-between text-xs text-gray-400 border-t pt-2">

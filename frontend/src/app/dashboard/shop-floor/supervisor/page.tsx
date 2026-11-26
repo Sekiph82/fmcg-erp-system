@@ -7,6 +7,7 @@ import {
   sfApi, LiveWOItem, SFAIRec, SupervisorOverride,
   LIVE_STATUS_COLOR, DOWNTIME_CAT_LABEL,
 } from "@/lib/shopFloor";
+import { tx } from "@/lib/i18n/core";
 
 const OVERRIDE_TYPES = [
   "APPROVE_OVERPRODUCTION", "APPROVE_SCRAP", "UNBLOCK",
@@ -86,15 +87,15 @@ export default function SupervisorConsole() {
       <div className="flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <a href="/dashboard/shop-floor" className="text-sm text-gray-400 hover:text-gray-600">← Dashboard</a>
+            <a href="/dashboard/shop-floor" className="text-sm text-gray-400 hover:text-gray-600">{tx("← Dashboard")}</a>
           </div>
-          <h1 className="text-xl font-bold text-gray-900">Supervisor Console</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Monitor and intervene across all lines</p>
+          <h1 className="text-xl font-bold text-gray-900">{tx("Supervisor Console")}</h1>
+          <p className="text-sm text-gray-500 mt-0.5">{tx("Monitor and intervene across all lines")}</p>
         </div>
         <div className="flex gap-2 items-center">
-          <span className="text-sm text-gray-600">{user?.full_name ?? "Authenticated supervisor"}</span>
+          <span className="text-sm text-gray-600">{user?.full_name ?? tx("Authenticated supervisor")}</span>
           <button onClick={() => runAI.mutate()} disabled={!canApprove || runAI.isPending} className="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50">
-            {runAI.isPending ? "Running…" : "Run AI"}
+            {runAI.isPending ? tx("Running…") : tx("Run AI")}
           </button>
         </div>
       </div>
@@ -102,10 +103,10 @@ export default function SupervisorConsole() {
       {/* Summary KPIs */}
       <div className="grid grid-cols-4 gap-3">
         {[
-          { label: "Alerts", value: criticalAlerts.length, color: "text-red-600", bg: criticalAlerts.length > 0 ? "bg-red-50 border-red-200" : "bg-white border-gray-100" },
-          { label: "Blocked",  value: blocked.length,  color: "text-red-500",    bg: "bg-white border-gray-100" },
-          { label: "QC Hold",  value: qcHold.length,   color: "text-purple-600", bg: "bg-white border-gray-100" },
-          { label: "Need Review", value: supervisorReview.length, color: "text-orange-600", bg: "bg-white border-gray-100" },
+          { label: tx("Alerts"), value: criticalAlerts.length, color: "text-red-600", bg: criticalAlerts.length > 0 ? "bg-red-50 border-red-200" : "bg-white border-gray-100" },
+          { label: tx("Blocked"),  value: blocked.length,  color: "text-red-500",    bg: "bg-white border-gray-100" },
+          { label: tx("QC Hold"),  value: qcHold.length,   color: "text-purple-600", bg: "bg-white border-gray-100" },
+          { label: tx("Need Review"), value: supervisorReview.length, color: "text-orange-600", bg: "bg-white border-gray-100" },
         ].map((k) => (
           <div key={k.label} className={`rounded-xl border shadow-sm p-3 text-center ${k.bg}`}>
             <p className="text-xs text-gray-400">{k.label}</p>
@@ -117,7 +118,7 @@ export default function SupervisorConsole() {
       {/* Alerts */}
       {criticalAlerts.length > 0 && (
         <div className="bg-red-50 border border-red-200 rounded-xl p-4 space-y-2">
-          <p className="text-sm font-semibold text-red-700">Critical Alerts</p>
+          <p className="text-sm font-semibold text-red-700">{tx("Critical Alerts")}</p>
           {criticalAlerts.map((a: any, i: number) => (
             <div key={i} className="flex items-start gap-2 text-sm text-red-800 bg-white/60 rounded-lg p-2">
               <span className="text-xs font-bold bg-red-200 px-1.5 py-0.5 rounded">{a.type}</span>
@@ -130,9 +131,9 @@ export default function SupervisorConsole() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Live Work Orders Needing Attention */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-          <h2 className="text-sm font-semibold text-gray-700 mb-3">Work Orders Needing Attention</h2>
+          <h2 className="text-sm font-semibold text-gray-700 mb-3">{tx("Work Orders Needing Attention")}</h2>
           {[...blocked, ...qcHold, ...supervisorReview].length === 0 ? (
-            <p className="text-sm text-gray-400 text-center py-4">All clear</p>
+            <p className="text-sm text-gray-400 text-center py-4">{tx("All clear")}</p>
           ) : (
             <div className="space-y-2">
               {[...blocked, ...qcHold, ...supervisorReview].map((wo) => (
@@ -144,7 +145,7 @@ export default function SupervisorConsole() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium text-sm">{wo.step_name}</p>
-                      <p className="text-xs text-gray-400">{wo.product_name || "—"} · {wo.line_id || "No line"}</p>
+                      <p className="text-xs text-gray-400">{wo.product_name || "—"} · {wo.line_id || tx("No line")}</p>
                     </div>
                     <div className="text-right">
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${LIVE_STATUS_COLOR[wo.live_status]}`}>
@@ -160,7 +161,7 @@ export default function SupervisorConsole() {
                         disabled={!canApprove}
                         className="flex-1 py-1.5 bg-orange-500 text-white rounded-lg text-xs font-medium hover:bg-orange-600"
                       >
-                        Supervisor Override
+                        {tx("Supervisor Override")}
                       </button>
                     </div>
                   )}
@@ -172,7 +173,7 @@ export default function SupervisorConsole() {
 
         {/* All Live Orders */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-          <h2 className="text-sm font-semibold text-gray-700 mb-3">All Live Work Orders ({queue.length})</h2>
+          <h2 className="text-sm font-semibold text-gray-700 mb-3">{tx("All Live Work Orders (")}{queue.length})</h2>
           <div className="space-y-1.5 max-h-72 overflow-y-auto">
             {queue.map((wo) => (
               <div key={wo.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50">
@@ -180,7 +181,7 @@ export default function SupervisorConsole() {
                   <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${LIVE_STATUS_COLOR[wo.live_status]}`}>{wo.live_status}</span>
                   <div>
                     <p className="text-sm font-medium">{wo.step_name}</p>
-                    <p className="text-xs text-gray-400">{wo.line_id || "—"} · {wo.operator_name || "No operator"}</p>
+                    <p className="text-xs text-gray-400">{wo.line_id || "—"} · {wo.operator_name || tx("No operator")}</p>
                   </div>
                 </div>
                 <p className="text-xs font-mono text-gray-500">{wo.completed_qty.toFixed(0)}/{wo.planned_qty.toFixed(0)}</p>
@@ -193,7 +194,7 @@ export default function SupervisorConsole() {
       {/* AI Recommendations */}
       {aiRecs.length > 0 && (
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-          <h2 className="text-sm font-semibold text-gray-700 mb-3">AI Recommendations ({aiRecs.length} pending)</h2>
+          <h2 className="text-sm font-semibold text-gray-700 mb-3">{tx("AI Recommendations (")}{aiRecs.length} {tx("pending)")}</h2>
           <div className="space-y-2">
             {aiRecs.map((rec) => (
               <div key={rec.id} className="p-3 rounded-xl bg-indigo-50 border border-indigo-100">
@@ -205,13 +206,13 @@ export default function SupervisorConsole() {
                     <div className="flex gap-2 mt-1">
                       <span className="text-xs text-indigo-400">{rec.agent_type.replace(/_/g, " ")}</span>
                       {rec.confidence_score && (
-                        <span className="text-xs text-indigo-400">· {(Number(rec.confidence_score) * 100).toFixed(0)}% confidence</span>
+                        <span className="text-xs text-indigo-400">· {(Number(rec.confidence_score) * 100).toFixed(0)}{tx("% confidence")}</span>
                       )}
                     </div>
                   </div>
                   <div className="flex gap-1">
-                    <button disabled={!canApprove || actionRec.isPending} onClick={() => actionRec.mutate({ id: rec.id, status: "ACCEPTED" })} className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 disabled:opacity-40">Accept</button>
-                    <button disabled={!canApprove || actionRec.isPending} onClick={() => actionRec.mutate({ id: rec.id, status: "REJECTED" })} className="px-2 py-1 bg-gray-300 text-gray-700 text-xs rounded hover:bg-gray-400 disabled:opacity-40">Dismiss</button>
+                    <button disabled={!canApprove || actionRec.isPending} onClick={() => actionRec.mutate({ id: rec.id, status: "ACCEPTED" })} className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 disabled:opacity-40">{tx("Accept")}</button>
+                    <button disabled={!canApprove || actionRec.isPending} onClick={() => actionRec.mutate({ id: rec.id, status: "REJECTED" })} className="px-2 py-1 bg-gray-300 text-gray-700 text-xs rounded hover:bg-gray-400 disabled:opacity-40">{tx("Dismiss")}</button>
                   </div>
                 </div>
               </div>
@@ -223,12 +224,12 @@ export default function SupervisorConsole() {
       {/* Recent Overrides */}
       {overrides.length > 0 && (
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-          <h2 className="text-sm font-semibold text-gray-700 mb-3">Recent Supervisor Overrides</h2>
+          <h2 className="text-sm font-semibold text-gray-700 mb-3">{tx("Recent Supervisor Overrides")}</h2>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-xs text-gray-400 border-b border-gray-50">
-                  {["Type", "Supervisor", "Target", "Reason", "Time"].map((h) => <th key={h} className="py-1.5 pr-4">{h}</th>)}
+                  {[tx("Type"), tx("Supervisor"), tx("Target"), tx("Reason"), tx("Time")].map((h) => <th key={h} className="py-1.5 pr-4">{h}</th>)}
                 </tr>
               </thead>
               <tbody>
@@ -251,26 +252,26 @@ export default function SupervisorConsole() {
       {showOverrideModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl space-y-4">
-            <h2 className="text-lg font-bold text-gray-900">Supervisor Override</h2>
+            <h2 className="text-lg font-bold text-gray-900">{tx("Supervisor Override")}</h2>
             {selectedWO && <p className="text-sm text-gray-500">WO: {selectedWO.step_name}</p>}
             <div>
-              <label className="text-xs text-gray-500">Override Type</label>
+              <label className="text-xs text-gray-500">{tx("Override Type")}</label>
               <select className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mt-0.5" value={overrideType} onChange={(e) => setOverrideType(e.target.value)}>
                 {OVERRIDE_TYPES.map((t) => <option key={t} value={t}>{t.replace(/_/g, " ")}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-xs text-gray-500">Reason</label>
+              <label className="text-xs text-gray-500">{tx("Reason")}</label>
               <textarea className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mt-0.5" rows={2} value={overrideReason} onChange={(e) => setOverrideReason(e.target.value)} />
             </div>
             <div className="flex gap-2">
-              <button onClick={() => setShowOverrideModal(false)} className="flex-1 py-2 border border-gray-200 rounded-lg text-sm">Cancel</button>
+              <button onClick={() => setShowOverrideModal(false)} className="flex-1 py-2 border border-gray-200 rounded-lg text-sm">{tx("Cancel")}</button>
               <button
                 onClick={() => overrideMut.mutate()}
                 disabled={!canApprove || !overrideReason.trim() || overrideMut.isPending}
                 className="flex-1 py-2 bg-orange-600 text-white rounded-lg text-sm font-medium disabled:opacity-40"
               >
-                Apply Override
+                {tx("Apply Override")}
               </button>
             </div>
           </div>

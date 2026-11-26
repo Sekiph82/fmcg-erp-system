@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { listDeadLetter, replayEvents, retryDelivery, DeliveryAttempt, STATUS_BADGE } from "@/lib/webhooks";
 import { Button } from "@/components/ui/Button";
+import { tx } from "@/lib/i18n/core";
 
 export default function DeadLetterPage() {
   const [items, setItems] = useState<DeliveryAttempt[]>([]);
@@ -32,25 +33,25 @@ export default function DeadLetterPage() {
       for (const id of Array.from(selected)) {
         await retryDelivery(id);
       }
-      setMsg(`Retried ${selected.size} item(s)`);
+      setMsg(tx("Retried {size} item(s)", { size: selected.size }));
       setSelected(new Set());
       await load();
-    } catch { setMsg("Retry failed"); }
+    } catch { setMsg(tx("Retry failed")); }
     setRetrying(false);
   }
 
-  if (loading) return <div className="p-8 text-gray-500">Loading...</div>;
+  if (loading) return <div className="p-8 text-gray-500">{tx("Loading...")}</div>;
 
   return (
     <div className="max-w-6xl mx-auto py-8 px-4 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Dead-Letter Queue</h1>
-          <p className="text-sm text-gray-500 mt-1">{items.length} undeliverable event(s)</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Dead-Letter Queue")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{items.length} {tx("undeliverable event(s)")}</p>
         </div>
         {selected.size > 0 && (
           <Button onClick={handleRetrySelected} loading={retrying}>
-            Retry Selected ({selected.size})
+            {tx("Retry Selected (")}{selected.size})
           </Button>
         )}
       </div>
@@ -62,7 +63,7 @@ export default function DeadLetterPage() {
       {items.length === 0 ? (
         <div className="text-center py-16 text-gray-400">
           <div className="text-4xl mb-2">✓</div>
-          <div>Dead-letter queue is empty</div>
+          <div>{tx("Dead-letter queue is empty")}</div>
         </div>
       ) : (
         <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
@@ -75,11 +76,11 @@ export default function DeadLetterPage() {
                     else setSelected(new Set());
                   }} />
                 </th>
-                <th className="text-left px-4 py-3 font-medium text-gray-700">Delivery ID</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-700">Attempts</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-700">HTTP Status</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-700">Error</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-700">Last Attempt</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-700">{tx("Delivery ID")}</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-700">{tx("Attempts")}</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-700">{tx("HTTP Status")}</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-700">{tx("Error")}</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-700">{tx("Last Attempt")}</th>
                 <th className="px-4 py-3"></th>
               </tr>
             </thead>
@@ -99,14 +100,14 @@ export default function DeadLetterPage() {
                     ) : "—"}
                   </td>
                   <td className="px-4 py-3 text-red-600 text-xs max-w-xs truncate">
-                    {item.error_message || item.response_body?.slice(0, 80) || "Unknown error"}
+                    {item.error_message || item.response_body?.slice(0, 80) || tx("Unknown error")}
                   </td>
                   <td className="px-4 py-3 text-gray-400 text-xs">
                     {item.attempted_at ? new Date(item.attempted_at).toLocaleString() : "—"}
                   </td>
                   <td className="px-4 py-3">
                     <button onClick={() => retryDelivery(item.id).then(() => load())} className="text-xs text-indigo-600 hover:underline">
-                      Retry
+                      {tx("Retry")}
                     </button>
                   </td>
                 </tr>

@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { hrApi, ApprovalStatus, LeaveRequest } from "@/lib/hr";
 import { RequirePermission } from "@/components/PermissionGuard";
 import { Badge } from "@/components/ui/Badge";
+import { tx } from "@/lib/i18n/core";
 
 const APPROVAL_VARIANT: Record<ApprovalStatus, "yellow" | "green" | "red" | "gray"> = {
   PENDING: "yellow",
@@ -26,28 +27,28 @@ function LeaveRequestForm({ employees, onSave, onCancel }: {
   });
   return (
     <div className="bg-white border rounded-lg p-4 space-y-3">
-      <h3 className="font-semibold text-sm text-gray-800">New Leave Request</h3>
+      <h3 className="font-semibold text-sm text-gray-800">{tx("New Leave Request")}</h3>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="text-xs text-gray-500">Employee</label>
+          <label className="text-xs text-gray-500">{tx("Employee")}</label>
           <select className="w-full border rounded px-2 py-1.5 text-sm mt-1" {...f("employee_id")}>
-            <option value="">— select —</option>
+            <option value="">{tx("— select —")}</option>
             {employees.map((e) => <option key={e.id} value={e.id}>{e.full_name} ({e.department})</option>)}
           </select>
         </div>
         <div>
-          <label className="text-xs text-gray-500">Leave Type</label>
+          <label className="text-xs text-gray-500">{tx("Leave Type")}</label>
           <select className="w-full border rounded px-2 py-1.5 text-sm mt-1" {...f("leave_type")}>
             {["ANNUAL", "SICK", "MATERNITY", "PATERNITY", "UNPAID", "COMPASSIONATE", "OTHER"].map((t) => <option key={t}>{t}</option>)}
           </select>
         </div>
-        <div><label className="text-xs text-gray-500">Start Date</label><input type="date" className="w-full border rounded px-2 py-1.5 text-sm mt-1" {...f("start_date")} /></div>
-        <div><label className="text-xs text-gray-500">End Date</label><input type="date" className="w-full border rounded px-2 py-1.5 text-sm mt-1" {...f("end_date")} /></div>
-        <div className="col-span-2"><label className="text-xs text-gray-500">Reason</label><textarea className="w-full border rounded px-2 py-1.5 text-sm mt-1" rows={2} {...f("reason")} /></div>
+        <div><label className="text-xs text-gray-500">{tx("Start Date")}</label><input type="date" className="w-full border rounded px-2 py-1.5 text-sm mt-1" {...f("start_date")} /></div>
+        <div><label className="text-xs text-gray-500">{tx("End Date")}</label><input type="date" className="w-full border rounded px-2 py-1.5 text-sm mt-1" {...f("end_date")} /></div>
+        <div className="col-span-2"><label className="text-xs text-gray-500">{tx("Reason")}</label><textarea className="w-full border rounded px-2 py-1.5 text-sm mt-1" rows={2} {...f("reason")} /></div>
       </div>
       <div className="flex gap-2">
-        <button onClick={() => onSave(Object.fromEntries(Object.entries(form).filter(([, v]) => v !== "")))} className="px-3 py-1.5 bg-indigo-600 text-white rounded text-sm" disabled={!form.employee_id || !form.start_date || !form.end_date}>Submit</button>
-        <button onClick={onCancel} className="px-3 py-1.5 border rounded text-sm">Cancel</button>
+        <button onClick={() => onSave(Object.fromEntries(Object.entries(form).filter(([, v]) => v !== "")))} className="px-3 py-1.5 bg-indigo-600 text-white rounded text-sm" disabled={!form.employee_id || !form.start_date || !form.end_date}>{tx("Submit")}</button>
+        <button onClick={onCancel} className="px-3 py-1.5 border rounded text-sm">{tx("Cancel")}</button>
       </div>
     </div>
   );
@@ -63,22 +64,22 @@ function ReviewModal({ request, onSubmit, onClose }: {
   return (
     <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 w-96 space-y-4 shadow-xl">
-        <h3 className="font-semibold text-gray-800">Review Leave Request</h3>
-        <p className="text-sm text-gray-600">{request.employee?.full_name} · {request.leave_type} · {request.days_requested} day(s)</p>
+        <h3 className="font-semibold text-gray-800">{tx("Review Leave Request")}</h3>
+        <p className="text-sm text-gray-600">{request.employee?.full_name} · {request.leave_type} · {request.days_requested} {tx("day(s)")}</p>
         <div>
-          <label className="text-xs text-gray-500">Decision</label>
+          <label className="text-xs text-gray-500">{tx("Decision")}</label>
           <select className="w-full border rounded px-2 py-1.5 text-sm mt-1" value={status} onChange={(e) => setStatus(e.target.value as ApprovalStatus)}>
-            <option value="APPROVED">Approve</option>
-            <option value="REJECTED">Reject</option>
+            <option value="APPROVED">{tx("Approve")}</option>
+            <option value="REJECTED">{tx("Reject")}</option>
           </select>
         </div>
         <div>
-          <label className="text-xs text-gray-500">Note (optional)</label>
+          <label className="text-xs text-gray-500">{tx("Note (optional)")}</label>
           <textarea className="w-full border rounded px-2 py-1.5 text-sm mt-1" rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
         </div>
         <div className="flex gap-2">
-          <button onClick={() => onSubmit(status, note)} className="px-4 py-2 bg-indigo-600 text-white rounded text-sm">Submit</button>
-          <button onClick={onClose} className="px-4 py-2 border rounded text-sm">Cancel</button>
+          <button onClick={() => onSubmit(status, note)} className="px-4 py-2 bg-indigo-600 text-white rounded text-sm">{tx("Submit")}</button>
+          <button onClick={onClose} className="px-4 py-2 border rounded text-sm">{tx("Cancel")}</button>
         </div>
       </div>
     </div>
@@ -113,11 +114,11 @@ function LeaveContent() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Leave Management</h1>
-          <p className="text-sm text-gray-500 mt-1">{requests.length} requests</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Leave Management")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{requests.length} {tx("requests")}</p>
         </div>
         <button onClick={() => setShowForm(true)} className="px-4 py-2 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700">
-          + Request Leave
+          {tx("+ Request Leave")}
         </button>
       </div>
 
@@ -141,27 +142,27 @@ function LeaveContent() {
 
       <div className="flex gap-3">
         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="border rounded px-3 py-2 text-sm">
-          <option value="">All Statuses</option>
+          <option value="">{tx("All Statuses")}</option>
           {["PENDING", "APPROVED", "REJECTED", "CANCELLED"].map((s) => <option key={s}>{s}</option>)}
         </select>
       </div>
 
       <div className="bg-white border rounded-lg overflow-hidden">
         {isLoading ? (
-          <p className="p-6 text-sm text-gray-400 text-center">Loading...</p>
+          <p className="p-6 text-sm text-gray-400 text-center">{tx("Loading...")}</p>
         ) : requests.length === 0 ? (
-          <p className="p-6 text-sm text-gray-400 text-center">No leave requests</p>
+          <p className="p-6 text-sm text-gray-400 text-center">{tx("No leave requests")}</p>
         ) : (
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-gray-50 text-xs text-gray-500 uppercase">
-                <th className="px-4 py-2 text-left">Employee</th>
-                <th className="px-4 py-2 text-left">Type</th>
-                <th className="px-4 py-2 text-left">Start</th>
-                <th className="px-4 py-2 text-left">End</th>
-                <th className="px-4 py-2 text-right">Days</th>
-                <th className="px-4 py-2 text-left">Status</th>
-                <th className="px-4 py-2 text-left">Notes</th>
+                <th className="px-4 py-2 text-left">{tx("Employee")}</th>
+                <th className="px-4 py-2 text-left">{tx("Type")}</th>
+                <th className="px-4 py-2 text-left">{tx("Start")}</th>
+                <th className="px-4 py-2 text-left">{tx("End")}</th>
+                <th className="px-4 py-2 text-right">{tx("Days")}</th>
+                <th className="px-4 py-2 text-left">{tx("Status")}</th>
+                <th className="px-4 py-2 text-left">{tx("Notes")}</th>
                 <th className="px-4 py-2"></th>
               </tr>
             </thead>
@@ -180,7 +181,7 @@ function LeaveContent() {
                   <td className="px-4 py-3 text-right">
                     {r.approval_status === "PENDING" && (
                       <button onClick={() => setReviewing(r)} className="text-xs text-indigo-600 hover:underline">
-                        Review
+                        {tx("Review")}
                       </button>
                     )}
                   </td>

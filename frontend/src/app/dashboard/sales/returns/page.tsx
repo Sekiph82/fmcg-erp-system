@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
+import { tx } from "@/lib/i18n/core";
 
 const STATUS_COLORS: Record<ReturnStatus, "green" | "blue" | "yellow" | "gray" | "red"> = {
   DRAFT: "gray",
@@ -93,18 +94,18 @@ export default function ReturnsPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Returns</h1>
-          <p className="text-sm text-gray-500 mt-1">Damaged · Expired · Wrong item · Customer refused</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Returns")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{tx("Damaged · Expired · Wrong item · Customer refused")}</p>
         </div>
-        <Button onClick={() => setOpen(true)}>+ New Return</Button>
+        <Button onClick={() => setOpen(true)}>{tx("+ New Return")}</Button>
       </div>
 
       {/* KPIs */}
       <div className="grid grid-cols-3 gap-3 mb-6">
         {[
-          { label: "Awaiting Approval", value: pending, color: "text-yellow-600" },
-          { label: "Approved", value: approved, color: "text-blue-600" },
-          { label: "Processed", value: processed, color: "text-green-600" },
+          { label: tx("Awaiting Approval"), value: pending, color: "text-yellow-600" },
+          { label: tx("Approved"), value: approved, color: "text-blue-600" },
+          { label: tx("Processed"), value: processed, color: "text-green-600" },
         ].map((k) => (
           <div key={k.label} className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm text-center">
             <p className={`text-3xl font-bold ${k.color}`}>{k.value}</p>
@@ -134,7 +135,7 @@ export default function ReturnsPage() {
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" />
         </div>
       ) : returns.length === 0 ? (
-        <p className="text-gray-400 text-sm py-8 text-center">No returns found.</p>
+        <p className="text-gray-400 text-sm py-8 text-center">{tx("No returns found.")}</p>
       ) : (
         <div className="space-y-3">
           {returns.map((r) => (
@@ -155,12 +156,12 @@ export default function ReturnsPage() {
                       {r.customer_name} · {r.return_date} · {r.reason.replace("_", " ")}
                     </p>
                     {r.credit_note_no && (
-                      <p className="text-xs text-blue-600 mt-0.5">Credit Note: {r.credit_note_no}</p>
+                      <p className="text-xs text-blue-600 mt-0.5">{tx("Credit Note:")} {r.credit_note_no}</p>
                     )}
                   </div>
                 </div>
                 <div className="text-right text-xs text-gray-400">
-                  {r.line_count} line{r.line_count !== 1 ? "s" : ""}
+                  {r.line_count} {tx("line")}{r.line_count !== 1 ? tx("s") : ""}
                 </div>
               </div>
             </div>
@@ -170,13 +171,13 @@ export default function ReturnsPage() {
 
       {/* Return Detail Modal */}
       {selected && (
-        <Modal open={!!selected} onClose={() => setSelected(null)} title={`Return: ${selected.return_no}`}>
+        <Modal open={!!selected} onClose={() => setSelected(null)} title={tx("Return: {return_no}", { return_no: selected.return_no })}>
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3 text-sm">
-              <div><span className="text-gray-500">Customer:</span> <span className="font-medium">{selected.customer_name}</span></div>
-              <div><span className="text-gray-500">Date:</span> <span className="font-medium">{selected.return_date}</span></div>
-              <div><span className="text-gray-500">Reason:</span> <span className="font-medium">{selected.reason.replace("_", " ")}</span></div>
-              <div><span className="text-gray-500">Status:</span> <Badge label={selected.status} variant={STATUS_COLORS[selected.status]} /></div>
+              <div><span className="text-gray-500">{tx("Customer:")}</span> <span className="font-medium">{selected.customer_name}</span></div>
+              <div><span className="text-gray-500">{tx("Date:")}</span> <span className="font-medium">{selected.return_date}</span></div>
+              <div><span className="text-gray-500">{tx("Reason:")}</span> <span className="font-medium">{selected.reason.replace("_", " ")}</span></div>
+              <div><span className="text-gray-500">{tx("Status:")}</span> <Badge label={selected.status} variant={STATUS_COLORS[selected.status]} /></div>
             </div>
 
             {selected.notes && (
@@ -185,7 +186,7 @@ export default function ReturnsPage() {
 
             {selected.lines.length > 0 && (
               <div>
-                <p className="text-sm font-semibold text-gray-700 mb-2">Lines</p>
+                <p className="text-sm font-semibold text-gray-700 mb-2">{tx("Lines")}</p>
                 <div className="space-y-1.5">
                   {selected.lines.map((l) => (
                     <div key={l.id} className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2 text-xs">
@@ -216,10 +217,10 @@ export default function ReturnsPage() {
                     setSelected(null);
                   })}
                 >
-                  Reject
+                  {tx("Reject")}
                 </Button>
                 <Button onClick={() => approve.mutate(selected.id)} loading={approve.isPending}>
-                  Approve
+                  {tx("Approve")}
                 </Button>
               </div>
             )}
@@ -228,18 +229,18 @@ export default function ReturnsPage() {
       )}
 
       {/* Create Return Modal */}
-      <Modal open={open} onClose={() => setOpen(false)} title="New Return Order">
+      <Modal open={open} onClose={() => setOpen(false)} title={tx("New Return Order")}>
         <form onSubmit={(e) => { e.preventDefault(); create.mutate(); }} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <Input
-              label="Return No *"
+              label={tx("Return No *")}
               value={form.return_no}
               onChange={(e) => set("return_no", e.target.value)}
               required
               placeholder="RET-001"
             />
             <Input
-              label="Return Date *"
+              label={tx("Return Date *")}
               type="date"
               value={form.return_date}
               onChange={(e) => set("return_date", e.target.value)}
@@ -248,14 +249,14 @@ export default function ReturnsPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Customer *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{tx("Customer *")}</label>
             <select
               value={form.customer_id}
               onChange={(e) => set("customer_id", e.target.value)}
               required
               className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
-              <option value="">Select customer…</option>
+              <option value="">{tx("Select customer…")}</option>
               {customers.map((c) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
@@ -263,7 +264,7 @@ export default function ReturnsPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Return Reason *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{tx("Return Reason *")}</label>
             <div className="grid grid-cols-2 gap-2">
               {REASONS.map((r) => (
                 <button
@@ -282,10 +283,10 @@ export default function ReturnsPage() {
             </div>
           </div>
 
-          <div><label className="block text-sm font-medium text-gray-700 mb-1">Original Sales Order (optional)</label><EntityPicker kind="sales_order" label="Original sales order" value={form.original_so_id} onChange={(id) => set("original_so_id", id)} /></div>
+          <div><label className="block text-sm font-medium text-gray-700 mb-1">{tx("Original Sales Order (optional)")}</label><EntityPicker kind="sales_order" label={tx("Original sales order")} value={form.original_so_id} onChange={(id) => set("original_so_id", id)} /></div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{tx("Notes")}</label>
             <textarea
               value={form.notes}
               onChange={(e) => set("notes", e.target.value)}
@@ -294,10 +295,10 @@ export default function ReturnsPage() {
             />
           </div>
 
-          {create.error && <p className="text-sm text-red-600">Failed to create return.</p>}
+          {create.error && <p className="text-sm text-red-600">{tx("Failed to create return.")}</p>}
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" type="button" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button type="submit" loading={create.isPending}>Create Return</Button>
+            <Button variant="secondary" type="button" onClick={() => setOpen(false)}>{tx("Cancel")}</Button>
+            <Button type="submit" loading={create.isPending}>{tx("Create Return")}</Button>
           </div>
         </form>
       </Modal>

@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { faApi, DEPR_METHOD_LABEL, DepreciationMethod } from "@/lib/fixed_assets";
+import { tx } from "@/lib/i18n/core";
 
 interface Form {
   asset_code: string;
@@ -75,43 +76,43 @@ export default function NewAssetPage() {
 
   return (
     <div className="p-6 space-y-5 max-w-3xl">
-      <h1 className="text-2xl font-bold text-gray-900">New Fixed Asset</h1>
+      <h1 className="text-2xl font-bold text-gray-900">{tx("New Fixed Asset")}</h1>
 
       {create.isError && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
-          Failed to create asset. Check required fields and try again.
+          {tx("Failed to create asset. Check required fields and try again.")}
         </div>
       )}
 
       {/* Identity */}
       <div className="liquid-glass p-5 space-y-4">
-        <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Identity</h2>
+        <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">{tx("Identity")}</h2>
         <div className="grid grid-cols-2 gap-4">
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-gray-500">Asset Code *</label>
+            <label className="text-xs text-gray-500">{tx("Asset Code *")}</label>
             <input type="text" value={form.asset_code} onChange={(e) => set("asset_code", e.target.value)}
-              className="rounded-lg border border-gray-300 px-3 py-2 text-sm" placeholder="e.g. FA-2024-001" />
+              className="rounded-lg border border-gray-300 px-3 py-2 text-sm" placeholder={tx("e.g. FA-2024-001")} />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-gray-500">Asset Name *</label>
+            <label className="text-xs text-gray-500">{tx("Asset Name *")}</label>
             <input type="text" value={form.asset_name} onChange={(e) => set("asset_name", e.target.value)}
               className="rounded-lg border border-gray-300 px-3 py-2 text-sm" />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-gray-500">Category *</label>
+            <label className="text-xs text-gray-500">{tx("Category *")}</label>
             <select value={form.asset_category_id} onChange={(e) => set("asset_category_id", e.target.value)}
               className="rounded-lg border border-gray-300 px-3 py-2 text-sm">
-              <option value="">— Select Category —</option>
+              <option value="">{tx("— Select Category —")}</option>
               {cats.map((c) => <option key={c.id} value={c.id}>{c.category_name}</option>)}
             </select>
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-gray-500">Serial Number</label>
+            <label className="text-xs text-gray-500">{tx("Serial Number")}</label>
             <input type="text" value={form.serial_number} onChange={(e) => set("serial_number", e.target.value)}
               className="rounded-lg border border-gray-300 px-3 py-2 text-sm" />
           </div>
           <div className="col-span-2 flex flex-col gap-1">
-            <label className="text-xs text-gray-500">Description</label>
+            <label className="text-xs text-gray-500">{tx("Description")}</label>
             <textarea value={form.description} onChange={(e) => set("description", e.target.value)}
               className="rounded-lg border border-gray-300 px-3 py-2 text-sm" rows={2} />
           </div>
@@ -120,20 +121,20 @@ export default function NewAssetPage() {
 
       {/* Cost */}
       <div className="liquid-glass p-5 space-y-4">
-        <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Cost & Date</h2>
+        <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">{tx("Cost & Date")}</h2>
         <div className="grid grid-cols-3 gap-4">
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-gray-500">Original Cost (KES) *</label>
+            <label className="text-xs text-gray-500">{tx("Original Cost (KES) *")}</label>
             <input type="number" value={form.original_cost} onChange={(e) => set("original_cost", e.target.value)}
               className="rounded-lg border border-gray-300 px-3 py-2 text-sm" min="0" />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-gray-500">Salvage Value (KES)</label>
+            <label className="text-xs text-gray-500">{tx("Salvage Value (KES)")}</label>
             <input type="number" value={form.salvage_value} onChange={(e) => set("salvage_value", e.target.value)}
               className="rounded-lg border border-gray-300 px-3 py-2 text-sm" min="0" />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-gray-500">In-Service Date *</label>
+            <label className="text-xs text-gray-500">{tx("In-Service Date *")}</label>
             <input type="date" value={form.in_service_date} onChange={(e) => set("in_service_date", e.target.value)}
               className="rounded-lg border border-gray-300 px-3 py-2 text-sm" />
           </div>
@@ -142,10 +143,10 @@ export default function NewAssetPage() {
 
       {/* Depreciation */}
       <div className="liquid-glass p-5 space-y-4">
-        <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Depreciation</h2>
+        <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">{tx("Depreciation")}</h2>
         <div className="grid grid-cols-2 gap-4">
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-gray-500">Method *</label>
+            <label className="text-xs text-gray-500">{tx("Method *")}</label>
             <select value={form.depreciation_method}
               onChange={(e) => set("depreciation_method", e.target.value as DepreciationMethod)}
               className="rounded-lg border border-gray-300 px-3 py-2 text-sm">
@@ -153,40 +154,40 @@ export default function NewAssetPage() {
             </select>
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-gray-500">Frequency</label>
+            <label className="text-xs text-gray-500">{tx("Frequency")}</label>
             <select value={form.depreciation_frequency} onChange={(e) => set("depreciation_frequency", e.target.value)}
               className="rounded-lg border border-gray-300 px-3 py-2 text-sm">
-              <option value="MONTHLY">Monthly</option>
-              <option value="QUARTERLY">Quarterly</option>
-              <option value="ANNUAL">Annual</option>
+              <option value="MONTHLY">{tx("Monthly")}</option>
+              <option value="QUARTERLY">{tx("Quarterly")}</option>
+              <option value="ANNUAL">{tx("Annual")}</option>
             </select>
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-gray-500">Start Rule</label>
+            <label className="text-xs text-gray-500">{tx("Start Rule")}</label>
             <select value={form.depreciation_start_rule} onChange={(e) => set("depreciation_start_rule", e.target.value)}
               className="rounded-lg border border-gray-300 px-3 py-2 text-sm">
-              <option value="NEXT_MONTH">Next Month</option>
-              <option value="SAME_MONTH">Same Month</option>
-              <option value="HALF_YEAR">Half-Year Convention</option>
+              <option value="NEXT_MONTH">{tx("Next Month")}</option>
+              <option value="SAME_MONTH">{tx("Same Month")}</option>
+              <option value="HALF_YEAR">{tx("Half-Year Convention")}</option>
             </select>
           </div>
           {!isUoP && !isDB && (
             <div className="flex flex-col gap-1">
-              <label className="text-xs text-gray-500">Useful Life (months)</label>
+              <label className="text-xs text-gray-500">{tx("Useful Life (months)")}</label>
               <input type="number" value={form.useful_life_months} onChange={(e) => set("useful_life_months", e.target.value)}
                 className="rounded-lg border border-gray-300 px-3 py-2 text-sm" min="1" />
             </div>
           )}
           {isUoP && (
             <div className="flex flex-col gap-1">
-              <label className="text-xs text-gray-500">Total Units of Production</label>
+              <label className="text-xs text-gray-500">{tx("Total Units of Production")}</label>
               <input type="number" value={form.useful_life_units_total} onChange={(e) => set("useful_life_units_total", e.target.value)}
                 className="rounded-lg border border-gray-300 px-3 py-2 text-sm" min="1" />
             </div>
           )}
           {isDB && (
             <div className="flex flex-col gap-1">
-              <label className="text-xs text-gray-500">Declining Rate (%/year)</label>
+              <label className="text-xs text-gray-500">{tx("Declining Rate (%/year)")}</label>
               <input type="number" value={form.depreciation_rate} onChange={(e) => set("depreciation_rate", e.target.value)}
                 className="rounded-lg border border-gray-300 px-3 py-2 text-sm" min="1" max="100" />
             </div>
@@ -196,7 +197,7 @@ export default function NewAssetPage() {
 
       {/* Location */}
       <div className="liquid-glass p-5 space-y-4">
-        <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Location & Assignment</h2>
+        <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">{tx("Location & Assignment")}</h2>
         <div className="grid grid-cols-2 gap-4">
           {[
             ["Cost Center", "cost_center"],
@@ -219,10 +220,10 @@ export default function NewAssetPage() {
           disabled={create.isPending || !form.asset_code || !form.asset_name || !form.asset_category_id || !form.original_cost}
           className="glow-button"
         >
-          {create.isPending ? "Creating…" : "Create Asset"}
+          {create.isPending ? tx("Creating…") : tx("Create Asset")}
         </button>
         <button onClick={() => router.back()} className="glow-button-secondary">
-          Cancel
+          {tx("Cancel")}
         </button>
       </div>
     </div>

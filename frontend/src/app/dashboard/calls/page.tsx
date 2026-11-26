@@ -6,6 +6,7 @@ import { VoicePanel, CallTranscript, CoachingPanel } from "@/components/VoicePan
 import { ContactCenterPanel } from "@/components/ContactCenterPanel";
 import { TranscriptReview } from "@/components/TranscriptReview";
 import { voipApi, CallLog, CallStats, OUTCOME_COLORS, fmtDuration } from "@/lib/voip";
+import { tx } from "@/lib/i18n/core";
 
 const BLANK_FORM = {
   phone_number: "", customer_id: "", direction: "OUTBOUND",
@@ -42,7 +43,7 @@ export default function CallsPage() {
   useEffect(() => { load(); }, [load]);
 
   const logCall = async () => {
-    if (!form.phone_number) { setError("Phone number required"); return; }
+    if (!form.phone_number) { setError(tx("Phone number required")); return; }
     setSaving(true); setError("");
     try {
       await voipApi.createCall({
@@ -64,7 +65,7 @@ export default function CallsPage() {
       await load();
     } catch (e: unknown) {
       const d = (e as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail;
-      setError(typeof d === "string" ? d : "Failed to log call — check the phone number and recording link (https).");
+      setError(typeof d === "string" ? d : tx("Failed to log call — check the phone number and recording link (https)."));
     } finally {
       setSaving(false);
     }
@@ -76,15 +77,15 @@ export default function CallsPage() {
       const r = await voipApi.clickToCall({ phone_number: c.phone_number, customer_id: c.customer_id ?? null });
       window.location.href = r.dial;
       await load();
-    } catch { setError("Could not start the call"); }
+    } catch { setError(tx("Could not start the call")); }
   };
   const analyse = async (c: CallLog) => {   // conversation insights (M36.S05.T004)
     try { await apiClient.post(`/api/v1/conversation-intel/call/${c.id}/analyse`); setError(""); window.location.href = "/dashboard/crm?tab=insights"; }
-    catch (e: unknown) { const d = (e as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail; setError(typeof d === "string" ? d : "Could not analyse this call."); }
+    catch (e: unknown) { const d = (e as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail; setError(typeof d === "string" ? d : tx("Could not analyse this call.")); }
   };
   const setOutcome = async (c: CallLog, outcome: string) => {
     try { await voipApi.updateCall(c.id, { outcome }); await load(); }   // server flags failed calls for follow-up
-    catch { setError("Only the person who made this call can set its outcome."); }
+    catch { setError(tx("Only the person who made this call can set its outcome.")); }
   };
 
   return (
@@ -94,23 +95,23 @@ export default function CallsPage() {
       <CoachingPanel />
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Call Center</h1>
-          <p className="text-xs text-gray-500 mt-0.5">Log and track sales calls, follow-ups, and call performance.</p>
+          <h1 className="text-xl font-bold text-gray-900">{tx("Call Center")}</h1>
+          <p className="text-xs text-gray-500 mt-0.5">{tx("Log and track sales calls, follow-ups, and call performance.")}</p>
         </div>
         <button onClick={() => { setShowLog(true); setError(""); }}
           className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
-          📞 Log Call
+          {tx("📞 Log Call")}
         </button>
       </div>
 
       {stats && (
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           {[
-            { label: "Total Calls", value: stats.total_calls, color: "text-gray-700" },
-            { label: "Answered", value: stats.answered_calls, color: "text-green-600" },
-            { label: "Answer Rate", value: `${stats.answer_rate}%`, color: stats.answer_rate >= 70 ? "text-green-600" : "text-amber-600" },
-            { label: "Follow-ups", value: stats.follow_ups_pending, color: "text-red-600" },
-            { label: "Avg Duration", value: fmtDuration(stats.avg_duration_seconds), color: "text-blue-600" },
+            { label: tx("Total Calls"), value: stats.total_calls, color: "text-gray-700" },
+            { label: tx("Answered"), value: stats.answered_calls, color: "text-green-600" },
+            { label: tx("Answer Rate"), value: `${stats.answer_rate}%`, color: stats.answer_rate >= 70 ? "text-green-600" : "text-amber-600" },
+            { label: tx("Follow-ups"), value: stats.follow_ups_pending, color: "text-red-600" },
+            { label: tx("Avg Duration"), value: fmtDuration(stats.avg_duration_seconds), color: "text-blue-600" },
           ].map(s => (
             <div key={s.label} className="bg-white border rounded-lg p-3 shadow-sm">
               <p className="text-xs text-gray-500">{s.label}</p>
@@ -122,7 +123,7 @@ export default function CallsPage() {
 
       {stats?.by_outcome && Object.keys(stats.by_outcome).length > 0 && (
         <div className="bg-white border rounded-lg p-4 shadow-sm">
-          <h3 className="text-xs font-semibold text-gray-600 mb-3">Calls by Outcome</h3>
+          <h3 className="text-xs font-semibold text-gray-600 mb-3">{tx("Calls by Outcome")}</h3>
           <div className="flex gap-3 flex-wrap">
             {Object.entries(stats.by_outcome).map(([outcome, count]) => (
               <div key={outcome}
@@ -145,25 +146,25 @@ export default function CallsPage() {
                 ? "bg-blue-600 text-white border-blue-600"
                 : "bg-white text-gray-600 border-gray-300 hover:border-blue-400"
             }`}>
-            {o || "All"}
+            {o || tx("All")}
           </button>
         ))}
-        <span className="text-xs text-gray-500 self-center">{calls.length} calls</span>
+        <span className="text-xs text-gray-500 self-center">{calls.length} {tx("calls")}</span>
       </div>
 
       {loading ? (
-        <p className="text-sm text-gray-500">Loading…</p>
+        <p className="text-sm text-gray-500">{tx("Loading…")}</p>
       ) : calls.length === 0 ? (
         <div className="bg-white border rounded-lg p-10 text-center text-gray-400">
           <p className="text-2xl mb-2">📞</p>
-          <p className="text-sm">No calls logged yet.</p>
+          <p className="text-sm">{tx("No calls logged yet.")}</p>
         </div>
       ) : (
         <div className="bg-white border rounded-lg shadow-sm overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 border-b">
               <tr>
-                {["Ref", "Direction", "Phone", "Customer", "Agent", "Duration", "Outcome", "Follow-up", "Recording", "Notes"].map(h => (
+                {[tx("Ref"), tx("Direction"), tx("Phone"), tx("Customer"), tx("Agent"), tx("Duration"), tx("Outcome"), tx("Follow-up"), tx("Recording"), tx("Notes")].map(h => (
                   <th key={h} className="px-4 py-2 text-left text-xs font-semibold text-gray-600">{h}</th>
                 ))}
               </tr>
@@ -174,20 +175,20 @@ export default function CallsPage() {
                   <td className="px-4 py-3 font-mono text-xs text-gray-500">{c.call_ref}</td>
                   <td className="px-4 py-3 text-xs">
                     <span className={`rounded px-1.5 py-0.5 ${c.direction === "INBOUND" ? "bg-blue-50 text-blue-600" : "bg-green-50 text-green-600"}`}>
-                      {c.direction === "INBOUND" ? "↓ IN" : "↑ OUT"}
+                      {c.direction === "INBOUND" ? tx("↓ IN") : tx("↑ OUT")}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-xs font-mono text-gray-700 whitespace-nowrap">{c.phone_number}
-                    <button onClick={() => dial(c)} aria-label={`Call ${c.phone_number}`} title="Call"
-                      className="ml-2 rounded border px-1.5 py-0.5 text-[11px] text-blue-700 hover:bg-blue-50">📞 Call</button></td>
+                    <button onClick={() => dial(c)} aria-label={tx("Call {phone_number}", { phone_number: c.phone_number })} title={tx("Call")}
+                      className="ml-2 rounded border px-1.5 py-0.5 text-[11px] text-blue-700 hover:bg-blue-50">{tx("📞 Call")}</button></td>
                   <td className="px-4 py-3 text-xs text-gray-700">{c.customer_name ?? "—"}</td>
                   <td className="px-4 py-3 text-xs text-gray-500">{c.agent_name ?? "—"}</td>
                   <td className="px-4 py-3 text-xs text-gray-600">{fmtDuration(c.duration_seconds)}</td>
                   <td className="px-4 py-3">
                     {c.outcome === "DIALED" ? (
-                      <select aria-label="Call outcome" defaultValue="" onChange={e => e.target.value && setOutcome(c, e.target.value)}
+                      <select aria-label={tx("Call outcome")} defaultValue="" onChange={e => e.target.value && setOutcome(c, e.target.value)}
                         className="text-xs border rounded px-1 py-0.5">
-                        <option value="">Dialed — set outcome</option>
+                        <option value="">{tx("Dialed — set outcome")}</option>
                         {OUTCOMES.map(o => <option key={o} value={o}>{o.replace("_", " ")}</option>)}
                       </select>
                     ) : c.outcome ? (
@@ -198,15 +199,15 @@ export default function CallsPage() {
                   </td>
                   <td className="px-4 py-3 text-xs">
                     {c.follow_up_required ? (
-                      <span className="text-red-600 font-medium">{c.follow_up_date ?? "Yes"}</span>
+                      <span className="text-red-600 font-medium">{c.follow_up_date ?? tx("Yes")}</span>
                     ) : <span className="text-gray-300">—</span>}
                   </td>
                   <td className="px-4 py-3 text-xs">
-                    {c.recording_url ? <a href={c.recording_url} target="_blank" rel="noopener noreferrer" className="text-blue-700 underline">Listen</a>
-                      : <span className="text-gray-300">{c.recording_consent ? "—" : "No consent"}</span>}
+                    {c.recording_url ? <a href={c.recording_url} target="_blank" rel="noopener noreferrer" className="text-blue-700 underline">{tx("Listen")}</a>
+                      : <span className="text-gray-300">{c.recording_consent ? "—" : tx("No consent")}</span>}
                     {c.has_transcript && c.recording_consent && (
-                      <button onClick={() => analyse(c)} className="ml-2 text-xs text-indigo-700 underline">Analyse</button>)}
-                    {c.recording_url && <details className="mt-1"><summary className="cursor-pointer text-indigo-700">Transcript</summary><CallTranscript callId={c.id} /><TranscriptReview callId={c.id} hasConsentedRecording={!!c.recording_consent} /></details>}
+                      <button onClick={() => analyse(c)} className="ml-2 text-xs text-indigo-700 underline">{tx("Analyse")}</button>)}
+                    {c.recording_url && <details className="mt-1"><summary className="cursor-pointer text-indigo-700">{tx("Transcript")}</summary><CallTranscript callId={c.id} /><TranscriptReview callId={c.id} hasConsentedRecording={!!c.recording_consent} /></details>}
                   </td>
                   <td className="px-4 py-3 text-xs text-gray-500 max-w-xs truncate">{c.notes ?? "—"}</td>
                 </tr>
@@ -220,17 +221,17 @@ export default function CallsPage() {
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
             <div className="px-6 py-4 border-b flex items-center justify-between">
-              <h2 className="text-base font-semibold">Log Call</h2>
+              <h2 className="text-base font-semibold">{tx("Log Call")}</h2>
               <button onClick={() => setShowLog(false)} className="text-gray-400 text-xl">×</button>
             </div>
             <div className="p-6 space-y-3">
               {error && <p className="text-xs text-red-500 bg-red-50 border border-red-200 rounded px-3 py-2">{error}</p>}
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  { label: "Phone Number *", key: "phone_number", placeholder: "+254712345678", col: 2 },
-                  { label: "Duration (seconds)", key: "duration_seconds", type: "number", placeholder: "0", col: 1 },
-                  { label: "Follow-up Date", key: "follow_up_date", type: "date", col: 1 },
-                  { label: "Tags", key: "tags", placeholder: "sales, cold-call", col: 2 },
+                  { label: tx("Phone Number *"), key: "phone_number", placeholder: "+254712345678", col: 2 },
+                  { label: tx("Duration (seconds)"), key: "duration_seconds", type: "number", placeholder: "0", col: 1 },
+                  { label: tx("Follow-up Date"), key: "follow_up_date", type: "date", col: 1 },
+                  { label: tx("Tags"), key: "tags", placeholder: tx("sales, cold-call"), col: 2 },
                 ].map(f => (
                   <div key={f.key} className={f.col === 2 ? "col-span-2" : ""}>
                     <label className="block text-xs font-medium text-gray-600 mb-1">{f.label}</label>
@@ -242,12 +243,12 @@ export default function CallsPage() {
                   </div>
                 ))}
                 <div className="col-span-2">
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Customer (optional)</label>
-                  <EntityPicker kind="customer" label="Customer" value={form.customer_id} onChange={id => setForm(p => ({ ...p, customer_id: id }))} />
+                  <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Customer (optional)")}</label>
+                  <EntityPicker kind="customer" label={tx("Customer")} value={form.customer_id} onChange={id => setForm(p => ({ ...p, customer_id: id }))} />
                 </div>
                 {[
-                  { label: "Direction", key: "direction", options: ["OUTBOUND", "INBOUND"] },
-                  { label: "Outcome", key: "outcome", options: OUTCOMES },
+                  { label: tx("Direction"), key: "direction", options: ["OUTBOUND", "INBOUND"] },
+                  { label: tx("Outcome"), key: "outcome", options: OUTCOMES },
                 ].map(f => (
                   <div key={f.key}>
                     <label className="block text-xs font-medium text-gray-600 mb-1">{f.label}</label>
@@ -259,10 +260,10 @@ export default function CallsPage() {
                   </div>
                 ))}
                 <div className="col-span-2">
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Notes")}</label>
                   <textarea value={form.notes}
                     onChange={e => setForm(p => ({ ...p, notes: e.target.value }))}
-                    rows={3} placeholder="Call summary…"
+                    rows={3} placeholder={tx("Call summary…")}
                     className="w-full border rounded px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none resize-none"
                   />
                 </div>
@@ -272,22 +273,22 @@ export default function CallsPage() {
                   onChange={e => setForm(p => ({ ...p, follow_up_required: e.target.checked }))}
                   className="h-4 w-4 rounded border-gray-300 text-blue-600"
                 />
-                Follow-up required
+                {tx("Follow-up required")}
               </label>
               <label className="flex items-start gap-2 text-sm text-gray-700 cursor-pointer">
                 <input type="checkbox" checked={form.recording_consent}
                   onChange={e => setForm(p => ({ ...p, recording_consent: e.target.checked }))}
                   className="h-4 w-4 mt-0.5 rounded border-gray-300 text-blue-600"
                 />
-                <span>The other person agreed to this call being recorded
-                  <span className="block text-xs text-gray-500">Required before a recording can be attached. Recordings are deleted after the retention period.</span></span>
+                <span>{tx("The other person agreed to this call being recorded")}
+                  <span className="block text-xs text-gray-500">{tx("Required before a recording can be attached. Recordings are deleted after the retention period.")}</span></span>
               </label>
               {form.recording_consent && (
                 <div className="space-y-2">
-                  <input aria-label="Recording link" placeholder="Recording link (https://…)" value={form.recording_url}
+                  <input aria-label={tx("Recording link")} placeholder={tx("Recording link (https://…)")} value={form.recording_url}
                     onChange={e => setForm(p => ({ ...p, recording_url: e.target.value }))}
                     className="w-full border rounded px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none" />
-                  <input aria-label="How consent was given" placeholder="How consent was given (e.g. verbal at call start)" maxLength={300}
+                  <input aria-label={tx("How consent was given")} placeholder={tx("How consent was given (e.g. verbal at call start)")} maxLength={300}
                     value={form.consent_note} onChange={e => setForm(p => ({ ...p, consent_note: e.target.value }))}
                     className="w-full border rounded px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none" />
                 </div>
@@ -296,11 +297,11 @@ export default function CallsPage() {
             <div className="px-6 pb-5 flex gap-3">
               <button onClick={logCall} disabled={saving}
                 className="flex-1 rounded bg-blue-600 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">
-                {saving ? "Logging…" : "Log Call"}
+                {saving ? tx("Logging…") : tx("Log Call")}
               </button>
               <button onClick={() => setShowLog(false)}
                 className="flex-1 rounded border py-2 text-sm text-gray-600 hover:bg-gray-50">
-                Cancel
+                {tx("Cancel")}
               </button>
             </div>
           </div>

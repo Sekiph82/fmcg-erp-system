@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api";
+import { tx } from "@/lib/i18n/core";
 
 type VATReturnStatus = "DRAFT" | "SUBMITTED" | "ACKNOWLEDGED";
 
@@ -74,16 +75,16 @@ export default function VATReturnsPage() {
   return (
     <div className="max-w-6xl mx-auto space-y-5 pb-10">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">VAT Returns (VAT3)</h1>
-        <p className="text-sm text-gray-400 mt-0.5">Monthly KRA VAT3 return auto-generated from invoices</p>
+        <h1 className="text-2xl font-bold text-gray-900">{tx("VAT Returns (VAT3)")}</h1>
+        <p className="text-sm text-gray-400 mt-0.5">{tx("Monthly KRA VAT3 return auto-generated from invoices")}</p>
       </div>
 
       {/* Generate */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-        <h2 className="font-semibold text-gray-800 mb-3">Generate VAT Return</h2>
+        <h2 className="font-semibold text-gray-800 mb-3">{tx("Generate VAT Return")}</h2>
         <div className="flex gap-3 items-end">
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Period (YYYY-MM)</label>
+            <label className="block text-xs font-medium text-gray-500 mb-1">{tx("Period (YYYY-MM)")}</label>
             <input type="month" value={genPeriod} onChange={(e) => setGenPeriod(e.target.value)}
               className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
           </div>
@@ -92,15 +93,13 @@ export default function VATReturnsPage() {
             disabled={genMut.isPending}
             className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50"
           >
-            {genMut.isPending ? "Generating…" : "Generate / Update"}
+            {genMut.isPending ? tx("Generating…") : tx("Generate / Update")}
           </button>
         </div>
-        {genMut.isError && <p className="text-sm text-red-500 mt-2">Failed to generate return.</p>}
+        {genMut.isError && <p className="text-sm text-red-500 mt-2">{tx("Failed to generate return.")}</p>}
         {genMut.data && (
           <div className="mt-3 bg-blue-50 border border-blue-100 rounded-lg p-3 text-sm text-blue-800">
-            Generated for {genMut.data.period_ym}: Output VAT KES {fmt(genMut.data.output_vat)} —
-            Input VAT KES {fmt(genMut.data.input_vat)} —
-            Net Payable KES {fmt(genMut.data.net_vat_payable)}
+            {tx("Generated for")} {genMut.data.period_ym}{tx(": Output VAT KES")} {fmt(genMut.data.output_vat)} {tx("— Input VAT KES")} {fmt(genMut.data.input_vat)} {tx("— Net Payable KES")} {fmt(genMut.data.net_vat_payable)}
           </div>
         )}
       </div>
@@ -111,18 +110,18 @@ export default function VATReturnsPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-100">
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Period</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Status</th>
-                <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Output VAT</th>
-                <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Input VAT</th>
-                <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Net Payable</th>
-                <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Actions</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{tx("Period")}</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{tx("Status")}</th>
+                <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{tx("Output VAT")}</th>
+                <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{tx("Input VAT")}</th>
+                <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{tx("Net Payable")}</th>
+                <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">{tx("Actions")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {isLoading && <tr><td colSpan={6} className="text-center py-8 text-gray-400">Loading…</td></tr>}
+              {isLoading && <tr><td colSpan={6} className="text-center py-8 text-gray-400">{tx("Loading…")}</td></tr>}
               {!isLoading && (returns ?? []).length === 0 && (
-                <tr><td colSpan={6} className="text-center py-8 text-gray-400">No VAT returns yet.</td></tr>
+                <tr><td colSpan={6} className="text-center py-8 text-gray-400">{tx("No VAT returns yet.")}</td></tr>
               )}
               {(returns ?? []).map((r) => (
                 <tr key={r.id} className={`hover:bg-gray-50 cursor-pointer ${selected?.id === r.id ? "bg-indigo-50" : ""}`}
@@ -145,7 +144,7 @@ export default function VATReturnsPage() {
                         disabled={fileMut.isPending}
                         className="text-xs bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full hover:bg-indigo-200 disabled:opacity-50"
                       >
-                        File
+                        {tx("File")}
                       </button>
                     )}
                   </td>
@@ -158,36 +157,36 @@ export default function VATReturnsPage() {
         {/* Detail panel */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
           <h2 className="font-semibold text-gray-800 mb-4">
-            {selected ? `Detail: ${selected.period_ym}` : "Select a period"}
+            {selected ? tx("Detail: {period_ym}", { period_ym: selected.period_ym }) : tx("Select a period")}
           </h2>
           {selected ? (
             <div className="space-y-3 text-sm">
               <div className="border-b border-gray-100 pb-2">
-                <p className="text-xs text-gray-400 uppercase mb-1">Sales</p>
-                <div className="flex justify-between"><span>Standard-Rated</span><span>{fmt(selected.standard_rated_sales)}</span></div>
-                <div className="flex justify-between"><span>Zero-Rated</span><span>{fmt(selected.zero_rated_sales)}</span></div>
-                <div className="flex justify-between"><span>Exempt</span><span>{fmt(selected.exempt_sales)}</span></div>
-                <div className="flex justify-between font-semibold mt-1"><span>Output VAT (16%)</span><span className="text-red-700">{fmt(selected.output_vat)}</span></div>
+                <p className="text-xs text-gray-400 uppercase mb-1">{tx("Sales")}</p>
+                <div className="flex justify-between"><span>{tx("Standard-Rated")}</span><span>{fmt(selected.standard_rated_sales)}</span></div>
+                <div className="flex justify-between"><span>{tx("Zero-Rated")}</span><span>{fmt(selected.zero_rated_sales)}</span></div>
+                <div className="flex justify-between"><span>{tx("Exempt")}</span><span>{fmt(selected.exempt_sales)}</span></div>
+                <div className="flex justify-between font-semibold mt-1"><span>{tx("Output VAT (16%)")}</span><span className="text-red-700">{fmt(selected.output_vat)}</span></div>
               </div>
               <div className="border-b border-gray-100 pb-2">
-                <p className="text-xs text-gray-400 uppercase mb-1">Purchases</p>
-                <div className="flex justify-between"><span>Standard-Rated</span><span>{fmt(selected.standard_rated_purchases)}</span></div>
-                <div className="flex justify-between font-semibold mt-1"><span>Input VAT</span><span className="text-green-700">{fmt(selected.input_vat)}</span></div>
+                <p className="text-xs text-gray-400 uppercase mb-1">{tx("Purchases")}</p>
+                <div className="flex justify-between"><span>{tx("Standard-Rated")}</span><span>{fmt(selected.standard_rated_purchases)}</span></div>
+                <div className="flex justify-between font-semibold mt-1"><span>{tx("Input VAT")}</span><span className="text-green-700">{fmt(selected.input_vat)}</span></div>
               </div>
               <div className="pt-1">
                 <div className="flex justify-between font-bold text-base">
-                  <span>Net VAT Payable</span>
+                  <span>{tx("Net VAT Payable")}</span>
                   <span className={selected.net_vat_payable >= 0 ? "text-red-700" : "text-green-700"}>
                     {fmt(selected.net_vat_payable)}
                   </span>
                 </div>
               </div>
               {selected.filed_at && (
-                <p className="text-xs text-gray-400">Filed: {selected.filed_at.slice(0, 10)}</p>
+                <p className="text-xs text-gray-400">{tx("Filed:")} {selected.filed_at.slice(0, 10)}</p>
               )}
             </div>
           ) : (
-            <p className="text-sm text-gray-400">Click a row to see details</p>
+            <p className="text-sm text-gray-400">{tx("Click a row to see details")}</p>
           )}
         </div>
       </div>

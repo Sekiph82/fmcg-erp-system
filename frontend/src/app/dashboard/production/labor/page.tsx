@@ -12,8 +12,9 @@ import { Select } from "@/components/ui/Select";
 import { ToastContainer } from "@/components/ui/Toast";
 import { useToast } from "@/hooks/useToast";
 import { ImportModal } from "@/components/import/ImportModal";
+import { tx, lx } from "@/lib/i18n/core";
 
-const ACTIVITY_OPTS = [{value:"production",label:"Production"},{value:"setup",label:"Setup"},{value:"qc",label:"QC"},{value:"cleaning",label:"Cleaning"},{value:"other",label:"Other"}];
+const ACTIVITY_OPTS = lx(() => [{value:"production",label:tx("Production")},{value:"setup",label:tx("Setup")},{value:"qc",label:"QC"},{value:"cleaning",label:tx("Cleaning")},{value:"other",label:tx("Other")}]);
 
 export default function LaborPage() {
   const qc = useQueryClient();
@@ -27,64 +28,64 @@ export default function LaborPage() {
 
   const totalHours = items.reduce((s,i)=>s+Number(i.hours_worked??0),0);
 
-  const create = useMutation({ mutationFn:()=>advProductionApi.createLabor({...form, work_order_id:form.work_order_id||undefined, hours_worked:parseFloat(form.hours_worked)||undefined, pieces_produced:parseInt(form.pieces_produced)||undefined}), onSuccess:()=>{ qc.invalidateQueries({queryKey:["labor"]}); setOpen(false); toast("success","Logged","Labor entry saved."); }, onError:(e)=>toast("error","Failed",extractApiError(e)) });
-  const del    = useMutation({ mutationFn:(id:string)=>advProductionApi.deleteLabor(id), onSuccess:()=>{ qc.invalidateQueries({queryKey:["labor"]}); setDel(null); toast("success","Deleted",""); }, onError:(e)=>toast("error","Failed",extractApiError(e)) });
+  const create = useMutation({ mutationFn:()=>advProductionApi.createLabor({...form, work_order_id:form.work_order_id||undefined, hours_worked:parseFloat(form.hours_worked)||undefined, pieces_produced:parseInt(form.pieces_produced)||undefined}), onSuccess:()=>{ qc.invalidateQueries({queryKey:["labor"]}); setOpen(false); toast("success",tx("Logged"),tx("Labor entry saved.")); }, onError:(e)=>toast("error",tx("Failed"),extractApiError(e)) });
+  const del    = useMutation({ mutationFn:(id:string)=>advProductionApi.deleteLabor(id), onSuccess:()=>{ qc.invalidateQueries({queryKey:["labor"]}); setDel(null); toast("success",tx("Deleted"),""); }, onError:(e)=>toast("error",tx("Failed"),extractApiError(e)) });
 
   return (
     <div>
       <ToastContainer toasts={toasts} onDismiss={dismiss}/>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Labor Tracking</h1>
-          <p className="text-sm text-gray-500 mt-1">{items.length} entries — total <strong>{totalHours.toFixed(1)}h</strong> logged</p>
+          <h1 className="text-2xl font-bold text-gray-900">{tx("Labor Tracking")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{items.length} {tx("entries — total")} <strong>{totalHours.toFixed(1)}{tx("h")}</strong> {tx("logged")}</p>
         </div>
         <div className="flex gap-2">
           <ImportModal module="labor_logs" onSuccess={()=>qc.invalidateQueries({queryKey:["labor"]})}/>
-          <Button onClick={()=>setOpen(true)}>+ Log Labor</Button>
+          <Button onClick={()=>setOpen(true)}>{tx("+ Log Labor")}</Button>
         </div>
       </div>
       {isLoading ? <div className="flex justify-center py-16"><div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent"/></div> : (
         <Table keyField="id" data={items} emptyMessage="No labor logs." columns={[
-          { header:"Labor ID",    accessor:(r)=><span className="font-mono text-xs font-medium">{r.labor_id}</span> },
-          { header:"Work Order",  accessor:(r)=>r.work_order_code??r.work_order_id },
-          { header:"Employee",    accessor:(r)=>r.operator_name??r.employee_code??"—" },
-          { header:"Role",        accessor:(r)=>r.role??"—" },
-          { header:"Activity",    accessor:(r)=><Badge label={r.activity_type} variant="blue"/> },
-          { header:"Hours",       accessor:(r)=>r.hours_worked ? `${Number(r.hours_worked).toFixed(1)}h` : "—" },
-          { header:"Pieces",      accessor:(r)=>r.pieces_produced?.toLocaleString()??"—" },
-          { header:"Date",        accessor:(r)=>new Date(r.created_at).toLocaleDateString() },
-          { header:"", accessor:(r)=><button onClick={()=>setDel(r.id)} className="text-xs text-red-500 hover:underline">Delete</button> },
+          { header:tx("Labor ID"),    accessor:(r)=><span className="font-mono text-xs font-medium">{r.labor_id}</span> },
+          { header:tx("Work Order"),  accessor:(r)=>r.work_order_code??r.work_order_id },
+          { header:tx("Employee"),    accessor:(r)=>r.operator_name??r.employee_code??"—" },
+          { header:tx("Role"),        accessor:(r)=>r.role??"—" },
+          { header:tx("Activity"),    accessor:(r)=><Badge label={r.activity_type} variant="blue"/> },
+          { header:tx("Hours"),       accessor:(r)=>r.hours_worked ? `${Number(r.hours_worked).toFixed(1)}h` : "—" },
+          { header:tx("Pieces"),      accessor:(r)=>r.pieces_produced?.toLocaleString()??"—" },
+          { header:tx("Date"),        accessor:(r)=>new Date(r.created_at).toLocaleDateString() },
+          { header:"", accessor:(r)=><button onClick={()=>setDel(r.id)} className="text-xs text-red-500 hover:underline">{tx("Delete")}</button> },
         ]}/>
       )}
 
-      <Modal open={open} onClose={()=>setOpen(false)} title="Log Labor Entry">
+      <Modal open={open} onClose={()=>setOpen(false)} title={tx("Log Labor Entry")}>
         <form onSubmit={e=>{e.preventDefault();create.mutate();}} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Labor ID *" value={form.labor_id} onChange={e=>setForm(f=>({...f,labor_id:e.target.value}))} required placeholder="LAB001"/>
-            <Select label="Work Order" options={[{value:"",label:"— select —"},...wos.map(w=>({value:w.id,label:`${w.work_order_id} – ${w.operation}`}))]} value={form.work_order_id} onChange={e=>setForm(f=>({...f,work_order_id:e.target.value}))}/>
+            <Input label={tx("Labor ID *")} value={form.labor_id} onChange={e=>setForm(f=>({...f,labor_id:e.target.value}))} required placeholder="LAB001"/>
+            <Select label={tx("Work Order")} options={[{value:"",label:tx("— select —")},...wos.map(w=>({value:w.id,label:`${w.work_order_id} – ${w.operation}`}))]} value={form.work_order_id} onChange={e=>setForm(f=>({...f,work_order_id:e.target.value}))}/>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Employee Code" value={form.employee_code} onChange={e=>setForm(f=>({...f,employee_code:e.target.value}))} placeholder="E001"/>
-            <Input label="Operator Name" value={form.operator_name} onChange={e=>setForm(f=>({...f,operator_name:e.target.value}))}/>
+            <Input label={tx("Employee Code")} value={form.employee_code} onChange={e=>setForm(f=>({...f,employee_code:e.target.value}))} placeholder="E001"/>
+            <Input label={tx("Operator Name")} value={form.operator_name} onChange={e=>setForm(f=>({...f,operator_name:e.target.value}))}/>
           </div>
           <div className="grid grid-cols-3 gap-4">
-            <Input label="Hours Worked" type="number" step="0.5" value={form.hours_worked} onChange={e=>setForm(f=>({...f,hours_worked:e.target.value}))}/>
-            <Input label="Pieces"       type="number" value={form.pieces_produced} onChange={e=>setForm(f=>({...f,pieces_produced:e.target.value}))}/>
-            <Input label="Role"         value={form.role} onChange={e=>setForm(f=>({...f,role:e.target.value}))} placeholder="operator, supervisor"/>
+            <Input label={tx("Hours Worked")} type="number" step="0.5" value={form.hours_worked} onChange={e=>setForm(f=>({...f,hours_worked:e.target.value}))}/>
+            <Input label={tx("Pieces")}       type="number" value={form.pieces_produced} onChange={e=>setForm(f=>({...f,pieces_produced:e.target.value}))}/>
+            <Input label={tx("Role")}         value={form.role} onChange={e=>setForm(f=>({...f,role:e.target.value}))} placeholder={tx("operator, supervisor")}/>
           </div>
-          <Select label="Activity Type" options={ACTIVITY_OPTS} value={form.activity_type} onChange={e=>setForm(f=>({...f,activity_type:e.target.value}))}/>
+          <Select label={tx("Activity Type")} options={ACTIVITY_OPTS} value={form.activity_type} onChange={e=>setForm(f=>({...f,activity_type:e.target.value}))}/>
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" type="button" onClick={()=>setOpen(false)}>Cancel</Button>
-            <Button type="submit" loading={create.isPending}>Save Entry</Button>
+            <Button variant="secondary" type="button" onClick={()=>setOpen(false)}>{tx("Cancel")}</Button>
+            <Button type="submit" loading={create.isPending}>{tx("Save Entry")}</Button>
           </div>
         </form>
       </Modal>
 
-      <Modal open={!!deletingId} onClose={()=>setDel(null)} title="Delete Labor Log">
-        <p className="text-sm text-gray-600 mb-4">Remove this labor entry?</p>
+      <Modal open={!!deletingId} onClose={()=>setDel(null)} title={tx("Delete Labor Log")}>
+        <p className="text-sm text-gray-600 mb-4">{tx("Remove this labor entry?")}</p>
         <div className="flex justify-end gap-3">
-          <Button variant="secondary" onClick={()=>setDel(null)}>Cancel</Button>
-          <Button variant="danger" loading={del.isPending} onClick={()=>deletingId&&del.mutate(deletingId)}>Delete</Button>
+          <Button variant="secondary" onClick={()=>setDel(null)}>{tx("Cancel")}</Button>
+          <Button variant="danger" loading={del.isPending} onClick={()=>deletingId&&del.mutate(deletingId)}>{tx("Delete")}</Button>
         </div>
       </Modal>
     </div>

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { bomApi, SubstGroupOut, SubstituteOut, SubstitutionPolicy, SubstitutionRequestOut } from "@/lib/bom";
 import { PermissionGuard, RequirePermission } from "@/components/PermissionGuard";
+import { tx } from "@/lib/i18n/core";
 
 const POLICIES: SubstitutionPolicy[] = ["NO_SUB", "PLANNER_APPROVAL", "QA_APPROVAL", "BOTH_REQUIRED", "SHORTAGE_ONLY", "EMERGENCY_ONLY"];
 
@@ -92,12 +93,12 @@ export default function SubstituteManagerPage() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <a href="/dashboard/bom" className="text-sm text-gray-400 hover:text-gray-600">← BOMs</a>
-          <h1 className="text-xl font-bold text-gray-900">Substitute Material Manager</h1>
+          <a href="/dashboard/bom" className="text-sm text-gray-400 hover:text-gray-600">{tx("← BOMs")}</a>
+          <h1 className="text-xl font-bold text-gray-900">{tx("Substitute Material Manager")}</h1>
         </div>
         <PermissionGuard permission="bom.create">
           <button onClick={() => setShowCreateGroup(true)} className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700">
-            + New Group
+            {tx("+ New Group")}
           </button>
         </PermissionGuard>
       </div>
@@ -105,9 +106,9 @@ export default function SubstituteManagerPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Group List */}
         <div className="space-y-2">
-          <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Substitute Groups</p>
+          <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">{tx("Substitute Groups")}</p>
           {groups.length === 0 ? (
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 text-center text-sm text-gray-400">No groups yet.</div>
+            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 text-center text-sm text-gray-400">{tx("No groups yet.")}</div>
           ) : groups.map((g) => (
             <div
               key={g.id}
@@ -121,8 +122,8 @@ export default function SubstituteManagerPage() {
                 </div>
                 <span className={`text-xs px-1.5 py-0.5 rounded shrink-0 ${POLICY_COLOR[g.policy]}`}>{g.policy.replace(/_/g, " ")}</span>
               </div>
-              <p className="text-xs text-gray-400 mt-1">{g.substitutes?.length ?? 0} substitutes</p>
-              {!g.is_active && <span className="text-xs text-gray-400">Inactive</span>}
+              <p className="text-xs text-gray-400 mt-1">{g.substitutes?.length ?? 0} {tx("substitutes")}</p>
+              {!g.is_active && <span className="text-xs text-gray-400">{tx("Inactive")}</span>}
             </div>
           ))}
         </div>
@@ -131,7 +132,7 @@ export default function SubstituteManagerPage() {
         <div className="lg:col-span-2">
           {!selectedGroup ? (
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-8 text-center text-sm text-gray-400">
-              Select a substitute group to view its members.
+              {tx("Select a substitute group to view its members.")}
             </div>
           ) : (
             <div className="space-y-4">
@@ -146,12 +147,12 @@ export default function SubstituteManagerPage() {
                 <div className="flex gap-2">
                   <PermissionGuard permission="bom.edit">
                     <button onClick={() => { setRequestSubstituteId(selectedGroup.substitutes.find((s) => s.is_active)?.id ?? ""); setShowRequest(true); }} disabled={!selectedGroup.substitutes.some((s) => s.is_active)} className="px-3 py-1.5 text-xs bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:opacity-40">
-                      Request Substitution
+                      {tx("Request Substitution")}
                     </button>
                   </PermissionGuard>
                   <PermissionGuard permission="bom.create">
                     <button onClick={() => setShowAddSub(true)} className="px-3 py-1.5 text-xs bg-teal-600 text-white rounded-lg hover:bg-teal-700">
-                      + Add Substitute
+                      {tx("+ Add Substitute")}
                     </button>
                   </PermissionGuard>
                 </div>
@@ -159,13 +160,13 @@ export default function SubstituteManagerPage() {
 
               {selectedGroup.policy === "EMERGENCY_ONLY" && (
                 <p className="rounded-lg bg-red-50 border border-red-100 p-3 text-xs text-red-800">
-                  Emergency use is only for cases where the primary material cannot meet the scheduled quantity/date and routine procurement cannot meet the schedule. A traceable shortage evidence reference and written reason are mandatory, followed by separate planner and quality approvals. The evidence and order reference are reviewed by approvers; this workflow does not verify them against stock/order records automatically.
+                  {tx("Emergency use is only for cases where the primary material cannot meet the scheduled quantity/date and routine procurement cannot meet the schedule. A traceable shortage evidence reference and written reason are mandatory, followed by separate planner and quality approvals. The evidence and order reference are reviewed by approvers; this workflow does not verify them against stock/order records automatically.")}
                 </p>
               )}
 
               {selectedGroup.substitutes.length === 0 ? (
                 <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 text-center text-sm text-gray-400">
-                  No substitutes in this group yet.
+                  {tx("No substitutes in this group yet.")}
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -177,21 +178,21 @@ export default function SubstituteManagerPage() {
                             {sub.priority}
                           </div>
                           <div>
-                            <p className="font-medium text-gray-800">{sub.item_name || sub.item_code || "Unknown"}</p>
+                            <p className="font-medium text-gray-800">{sub.item_name || sub.item_code || tx("Unknown")}</p>
                             <div className="flex items-center gap-2 mt-0.5 text-xs text-gray-400">
                               <span>{sub.item_type}</span>
                               <span>·</span>
-                              <span>Ratio: ×{sub.qty_ratio}</span>
-                              {sub.cost_impact_pct && <span className={`${Number(sub.cost_impact_pct) > 0 ? "text-red-500" : "text-green-500"}`}>Cost: {Number(sub.cost_impact_pct) > 0 ? "+" : ""}{sub.cost_impact_pct}%</span>}
+                              <span>{tx("Ratio: ×")}{sub.qty_ratio}</span>
+                              {sub.cost_impact_pct && <span className={`${Number(sub.cost_impact_pct) > 0 ? "text-red-500" : "text-green-500"}`}>{tx("Cost:")} {Number(sub.cost_impact_pct) > 0 ? "+" : ""}{sub.cost_impact_pct}%</span>}
                             </div>
                           </div>
                         </div>
-                        {!sub.is_active && <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded">Inactive</span>}
+                        {!sub.is_active && <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded">{tx("Inactive")}</span>}
                       </div>
                       {(sub.quality_impact || sub.allergen_impact) && (
                         <div className="mt-2 flex gap-3 text-xs">
-                          {sub.quality_impact && <span className="text-blue-600">Quality: {sub.quality_impact}</span>}
-                          {sub.allergen_impact && <span className="text-red-600">Allergen: {sub.allergen_impact}</span>}
+                          {sub.quality_impact && <span className="text-blue-600">{tx("Quality:")} {sub.quality_impact}</span>}
+                          {sub.allergen_impact && <span className="text-red-600">{tx("Allergen:")} {sub.allergen_impact}</span>}
                         </div>
                       )}
                       {sub.notes && <p className="mt-1 text-xs text-gray-400">{sub.notes}</p>}
@@ -206,39 +207,39 @@ export default function SubstituteManagerPage() {
 
       <section className="space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-gray-800">Substitution Approval Queue</h2>
-          <span className="text-xs text-gray-500">Pending requests remain unavailable to BOM explosion.</span>
+          <h2 className="text-sm font-semibold text-gray-800">{tx("Substitution Approval Queue")}</h2>
+          <span className="text-xs text-gray-500">{tx("Pending requests remain unavailable to BOM explosion.")}</span>
         </div>
         {requests.length === 0 ? (
-          <div className="rounded-xl border border-gray-100 bg-white p-5 text-sm text-gray-400">No substitution requests yet.</div>
+          <div className="rounded-xl border border-gray-100 bg-white p-5 text-sm text-gray-400">{tx("No substitution requests yet.")}</div>
         ) : requests.map((request: SubstitutionRequestOut) => (
           <article key={request.id} className="rounded-xl border border-gray-100 bg-white p-4 space-y-3">
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div>
                 <p className="font-medium text-sm text-gray-800">{request.substitute?.item_name || request.substitute?.item_code || request.substitute_id}</p>
-                <p className="font-mono text-[10px] text-gray-400">Request: {request.id}</p>
-                <p className="text-xs text-gray-500">{request.policy.replace(/_/g, " ")} · {request.context_reference} · {request.substitute_qty} for target {request.target_qty}</p>
-                <p className="mt-1 text-xs text-gray-500">Requested by {request.requester_name}: {request.reason}</p>
-                {request.shortage_evidence_reference && <p className="text-xs text-amber-700">Shortage evidence: {request.shortage_evidence_reference}</p>}
+                <p className="font-mono text-[10px] text-gray-400">{tx("Request:")} {request.id}</p>
+                <p className="text-xs text-gray-500">{request.policy.replace(/_/g, " ")} · {request.context_reference} · {request.substitute_qty} {tx("for target")} {request.target_qty}</p>
+                <p className="mt-1 text-xs text-gray-500">{tx("Requested by")} {request.requester_name}: {request.reason}</p>
+                {request.shortage_evidence_reference && <p className="text-xs text-amber-700">{tx("Shortage evidence:")} {request.shortage_evidence_reference}</p>}
               </div>
               <span className={`rounded px-2 py-1 text-xs ${request.status === "APPROVED" ? "bg-green-100 text-green-700" : request.status === "REJECTED" ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-800"}`}>{request.status}</span>
             </div>
             {request.decisions.map((decision) => (
-              <p key={decision.id} className="text-xs text-gray-600">{decision.approver_role}: {decision.decision} by {decision.actor_name} — {decision.reason}</p>
+              <p key={decision.id} className="text-xs text-gray-600">{decision.approver_role}: {decision.decision} {tx("by")} {decision.actor_name} — {decision.reason}</p>
             ))}
             {request.status === "PENDING" && (
               <div className="flex flex-wrap items-center gap-2 border-t pt-3">
-                <input className="min-w-56 flex-1 rounded border px-2 py-1.5 text-xs" placeholder="Decision reason (required)" value={decisionReasons[request.id] ?? ""} onChange={(e) => setDecisionReasons({ ...decisionReasons, [request.id]: e.target.value })} />
+                <input className="min-w-56 flex-1 rounded border px-2 py-1.5 text-xs" placeholder={tx("Decision reason (required)")} value={decisionReasons[request.id] ?? ""} onChange={(e) => setDecisionReasons({ ...decisionReasons, [request.id]: e.target.value })} />
                 {!request.decisions.some((decision) => decision.approver_role === "PLANNER") && ["PLANNER_APPROVAL", "BOTH_REQUIRED", "SHORTAGE_ONLY", "EMERGENCY_ONLY"].includes(request.policy) && (
                   <PermissionGuard permission="bom.approve">
-                    <button onClick={() => decide.mutate({ id: request.id, role: "planner", decision: "APPROVED", reason: decisionReasons[request.id] ?? "" })} disabled={(decisionReasons[request.id] ?? "").trim().length < 5 || decide.isPending} className="rounded bg-blue-600 px-3 py-1.5 text-xs text-white disabled:opacity-40">Planner approve</button>
-                    <button onClick={() => decide.mutate({ id: request.id, role: "planner", decision: "REJECTED", reason: decisionReasons[request.id] ?? "" })} disabled={(decisionReasons[request.id] ?? "").trim().length < 5 || decide.isPending} className="rounded border border-red-200 px-3 py-1.5 text-xs text-red-700 disabled:opacity-40">Planner reject</button>
+                    <button onClick={() => decide.mutate({ id: request.id, role: "planner", decision: "APPROVED", reason: decisionReasons[request.id] ?? "" })} disabled={(decisionReasons[request.id] ?? "").trim().length < 5 || decide.isPending} className="rounded bg-blue-600 px-3 py-1.5 text-xs text-white disabled:opacity-40">{tx("Planner approve")}</button>
+                    <button onClick={() => decide.mutate({ id: request.id, role: "planner", decision: "REJECTED", reason: decisionReasons[request.id] ?? "" })} disabled={(decisionReasons[request.id] ?? "").trim().length < 5 || decide.isPending} className="rounded border border-red-200 px-3 py-1.5 text-xs text-red-700 disabled:opacity-40">{tx("Planner reject")}</button>
                   </PermissionGuard>
                 )}
                 {!request.decisions.some((decision) => decision.approver_role === "QUALITY") && ["QA_APPROVAL", "BOTH_REQUIRED", "EMERGENCY_ONLY"].includes(request.policy) && (
                   <PermissionGuard permission="quality.approve">
-                    <button onClick={() => decide.mutate({ id: request.id, role: "quality", decision: "APPROVED", reason: decisionReasons[request.id] ?? "" })} disabled={(decisionReasons[request.id] ?? "").trim().length < 5 || decide.isPending} className="rounded bg-purple-600 px-3 py-1.5 text-xs text-white disabled:opacity-40">Quality approve</button>
-                    <button onClick={() => decide.mutate({ id: request.id, role: "quality", decision: "REJECTED", reason: decisionReasons[request.id] ?? "" })} disabled={(decisionReasons[request.id] ?? "").trim().length < 5 || decide.isPending} className="rounded border border-red-200 px-3 py-1.5 text-xs text-red-700 disabled:opacity-40">Quality reject</button>
+                    <button onClick={() => decide.mutate({ id: request.id, role: "quality", decision: "APPROVED", reason: decisionReasons[request.id] ?? "" })} disabled={(decisionReasons[request.id] ?? "").trim().length < 5 || decide.isPending} className="rounded bg-purple-600 px-3 py-1.5 text-xs text-white disabled:opacity-40">{tx("Quality approve")}</button>
+                    <button onClick={() => decide.mutate({ id: request.id, role: "quality", decision: "REJECTED", reason: decisionReasons[request.id] ?? "" })} disabled={(decisionReasons[request.id] ?? "").trim().length < 5 || decide.isPending} className="rounded border border-red-200 px-3 py-1.5 text-xs text-red-700 disabled:opacity-40">{tx("Quality reject")}</button>
                   </PermissionGuard>
                 )}
               </div>
@@ -253,21 +254,21 @@ export default function SubstituteManagerPage() {
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold">New Substitute Group</h2>
+              <h2 className="text-lg font-semibold">{tx("New Substitute Group")}</h2>
               <button onClick={() => setShowCreateGroup(false)} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
             </div>
             <div className="space-y-3">
-              <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="Group Name *" value={groupForm.group_name} onChange={(e) => setGroupForm({ ...groupForm, group_name: e.target.value })} />
+              <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder={tx("Group Name *")} value={groupForm.group_name} onChange={(e) => setGroupForm({ ...groupForm, group_name: e.target.value })} />
               <select className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={groupForm.policy} onChange={(e) => setGroupForm({ ...groupForm, policy: e.target.value as SubstitutionPolicy })}>
                 {POLICIES.map((p) => <option key={p} value={p}>{p}</option>)}
               </select>
-              <textarea className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" rows={2} placeholder="Notes (optional)" value={groupForm.notes} onChange={(e) => setGroupForm({ ...groupForm, notes: e.target.value })} />
+              <textarea className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" rows={2} placeholder={tx("Notes (optional)")} value={groupForm.notes} onChange={(e) => setGroupForm({ ...groupForm, notes: e.target.value })} />
             </div>
             <div className="flex gap-3 mt-4">
               <button onClick={() => createGroup.mutate()} disabled={!groupForm.group_name || createGroup.isPending} className="flex-1 bg-indigo-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-40">
-                {createGroup.isPending ? "Creating…" : "Create Group"}
+                {createGroup.isPending ? tx("Creating…") : tx("Create Group")}
               </button>
-              <button onClick={() => setShowCreateGroup(false)} className="px-4 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50">Cancel</button>
+              <button onClick={() => setShowCreateGroup(false)} className="px-4 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50">{tx("Cancel")}</button>
             </div>
           </div>
         </div>
@@ -280,44 +281,44 @@ export default function SubstituteManagerPage() {
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold">Add Substitute</h2>
+              <h2 className="text-lg font-semibold">{tx("Add Substitute")}</h2>
               <button onClick={() => setShowAddSub(false)} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
             </div>
-            <p className="text-sm text-gray-500 mb-3">Group: <strong>{selectedGroup.group_name}</strong></p>
+            <p className="text-sm text-gray-500 mb-3">{tx("Group:")} <strong>{selectedGroup.group_name}</strong></p>
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Item Type</label>
+                  <label className="text-xs text-gray-500 mb-1 block">{tx("Item Type")}</label>
                   <select className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={subForm.item_type} onChange={(e) => setSubForm({ ...subForm, item_type: e.target.value as any })}>
-                    <option value="MATERIAL">Material</option>
-                    <option value="PRODUCT">Product</option>
+                    <option value="MATERIAL">{tx("Material")}</option>
+                    <option value="PRODUCT">{tx("Product")}</option>
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Priority</label>
+                  <label className="text-xs text-gray-500 mb-1 block">{tx("Priority")}</label>
                   <input type="number" min={1} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={subForm.priority} onChange={(e) => setSubForm({ ...subForm, priority: Number(e.target.value) })} />
                 </div>
               </div>
-              <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="Item Name" value={subForm.item_name ?? ""} onChange={(e) => setSubForm({ ...subForm, item_name: e.target.value })} />
+              <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder={tx("Item Name")} value={subForm.item_name ?? ""} onChange={(e) => setSubForm({ ...subForm, item_name: e.target.value })} />
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Qty Ratio (substitute/original)</label>
+                  <label className="text-xs text-gray-500 mb-1 block">{tx("Qty Ratio (substitute/original)")}</label>
                   <input type="number" step="0.01" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={subForm.qty_ratio} onChange={(e) => setSubForm({ ...subForm, qty_ratio: Number(e.target.value) })} />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Cost Impact %</label>
-                  <input type="number" step="0.1" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="e.g. 5.0 or -3.0" value={subForm.cost_impact_pct ?? ""} onChange={(e) => setSubForm({ ...subForm, cost_impact_pct: e.target.value ? Number(e.target.value) : undefined })} />
+                  <label className="text-xs text-gray-500 mb-1 block">{tx("Cost Impact %")}</label>
+                  <input type="number" step="0.1" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder={tx("e.g. 5.0 or -3.0")} value={subForm.cost_impact_pct ?? ""} onChange={(e) => setSubForm({ ...subForm, cost_impact_pct: e.target.value ? Number(e.target.value) : undefined })} />
                 </div>
               </div>
-              <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="Quality impact (optional)" value={subForm.quality_impact ?? ""} onChange={(e) => setSubForm({ ...subForm, quality_impact: e.target.value })} />
-              <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="Allergen impact (optional)" value={subForm.allergen_impact ?? ""} onChange={(e) => setSubForm({ ...subForm, allergen_impact: e.target.value })} />
-              <textarea className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" rows={2} placeholder="Notes" value={subForm.notes ?? ""} onChange={(e) => setSubForm({ ...subForm, notes: e.target.value })} />
+              <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder={tx("Quality impact (optional)")} value={subForm.quality_impact ?? ""} onChange={(e) => setSubForm({ ...subForm, quality_impact: e.target.value })} />
+              <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder={tx("Allergen impact (optional)")} value={subForm.allergen_impact ?? ""} onChange={(e) => setSubForm({ ...subForm, allergen_impact: e.target.value })} />
+              <textarea className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" rows={2} placeholder={tx("Notes")} value={subForm.notes ?? ""} onChange={(e) => setSubForm({ ...subForm, notes: e.target.value })} />
             </div>
             <div className="flex gap-3 mt-4">
               <button onClick={() => addSubstitute.mutate()} disabled={!subForm.item_name || addSubstitute.isPending} className="flex-1 bg-teal-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-teal-700 disabled:opacity-40">
-                {addSubstitute.isPending ? "Adding…" : "Add Substitute"}
+                {addSubstitute.isPending ? tx("Adding…") : tx("Add Substitute")}
               </button>
-              <button onClick={() => setShowAddSub(false)} className="px-4 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50">Cancel</button>
+              <button onClick={() => setShowAddSub(false)} className="px-4 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50">{tx("Cancel")}</button>
             </div>
           </div>
         </div>
@@ -328,26 +329,26 @@ export default function SubstituteManagerPage() {
         <PermissionGuard permission="bom.edit">
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
             <div className="w-full max-w-xl space-y-3 rounded-2xl bg-white p-6 shadow-xl">
-              <div className="flex items-center justify-between"><h2 className="text-lg font-semibold">Request Substitute Use</h2><button onClick={() => setShowRequest(false)} className="text-xl text-gray-400">×</button></div>
-              <p className="text-xs text-gray-500">Policy: {selectedGroup.policy}. The request remains blocked from BOM explosion until all required approvals are recorded.</p>
+              <div className="flex items-center justify-between"><h2 className="text-lg font-semibold">{tx("Request Substitute Use")}</h2><button onClick={() => setShowRequest(false)} className="text-xl text-gray-400">×</button></div>
+              <p className="text-xs text-gray-500">{tx("Policy:")} {selectedGroup.policy}{tx(". The request remains blocked from BOM explosion until all required approvals are recorded.")}</p>
               <select className="w-full rounded border px-3 py-2 text-sm" value={requestForm.bom_line_id} onChange={(e) => {
                 const selectedLine = groupLines.find((line) => line.id === e.target.value);
                 setRequestForm({ ...requestForm, bom_id: selectedLine?.bom_id ?? "", bom_line_id: e.target.value });
               }}>
-                <option value="">Select BOM line *</option>
-                {groupLines.map((line) => <option key={line.id} value={line.id}>{line.bom_code} · line {line.line_no} · {line.item_name || line.item_code} ({line.required_qty} {line.required_uom})</option>)}
+                <option value="">{tx("Select BOM line *")}</option>
+                {groupLines.map((line) => <option key={line.id} value={line.id}>{line.bom_code} {tx("· line")} {line.line_no} · {line.item_name || line.item_code} ({line.required_qty} {line.required_uom})</option>)}
               </select>
               <select className="w-full rounded border px-3 py-2 text-sm" value={requestSubstituteId} onChange={(e) => setRequestSubstituteId(e.target.value)}>
-                <option value="">Select substitute *</option>
+                <option value="">{tx("Select substitute *")}</option>
                 {selectedGroup.substitutes.filter((s) => s.is_active).map((s) => <option key={s.id} value={s.id}>{s.item_name || s.item_code}</option>)}
               </select>
-              <input type="number" min="0.0001" step="0.0001" className="w-full rounded border px-3 py-2 text-sm" placeholder="BOM target quantity *" value={requestForm.target_qty} onChange={(e) => setRequestForm({ ...requestForm, target_qty: e.target.value })} />
-              <p className="text-xs text-gray-500">The system calculates substitute quantity from the BOM line basis, loss factors, and approved substitute ratio.</p>
-              <input className="w-full rounded border px-3 py-2 text-sm" placeholder="Production/order trace reference (approvers verify it) *" value={requestForm.context_reference} onChange={(e) => setRequestForm({ ...requestForm, context_reference: e.target.value })} />
-              <textarea className="w-full rounded border px-3 py-2 text-sm" rows={3} placeholder={selectedGroup.policy === "EMERGENCY_ONLY" ? "Why primary material cannot meet the scheduled quantity/date and routine procurement cannot meet schedule *" : "Reason for this substitution *"} value={requestForm.reason} onChange={(e) => setRequestForm({ ...requestForm, reason: e.target.value })} />
-              {(selectedGroup.policy === "SHORTAGE_ONLY" || selectedGroup.policy === "EMERGENCY_ONLY") && <input className="w-full rounded border px-3 py-2 text-sm" placeholder="Traceable shortage evidence reference *" value={requestForm.shortage_evidence_reference} onChange={(e) => setRequestForm({ ...requestForm, shortage_evidence_reference: e.target.value })} />}
-              <div className="flex gap-2"><button onClick={() => createRequest.mutate()} disabled={!requestForm.bom_id || !requestForm.bom_line_id || !requestSubstituteId || Number(requestForm.target_qty) <= 0 || requestForm.context_reference.trim().length < 1 || requestForm.reason.trim().length < 5 || (["SHORTAGE_ONLY", "EMERGENCY_ONLY"].includes(selectedGroup.policy) && !requestForm.shortage_evidence_reference.trim()) || createRequest.isPending} className="flex-1 rounded bg-amber-600 py-2 text-sm font-medium text-white disabled:opacity-40">{createRequest.isPending ? "Submitting…" : "Submit for approval"}</button><button onClick={() => setShowRequest(false)} className="rounded border px-4 text-sm">Cancel</button></div>
-              {createRequest.isError && <p className="text-xs text-red-700">Request could not be submitted; check permissions and required policy evidence.</p>}
+              <input type="number" min="0.0001" step="0.0001" className="w-full rounded border px-3 py-2 text-sm" placeholder={tx("BOM target quantity *")} value={requestForm.target_qty} onChange={(e) => setRequestForm({ ...requestForm, target_qty: e.target.value })} />
+              <p className="text-xs text-gray-500">{tx("The system calculates substitute quantity from the BOM line basis, loss factors, and approved substitute ratio.")}</p>
+              <input className="w-full rounded border px-3 py-2 text-sm" placeholder={tx("Production/order trace reference (approvers verify it) *")} value={requestForm.context_reference} onChange={(e) => setRequestForm({ ...requestForm, context_reference: e.target.value })} />
+              <textarea className="w-full rounded border px-3 py-2 text-sm" rows={3} placeholder={selectedGroup.policy === "EMERGENCY_ONLY" ? tx("Why primary material cannot meet the scheduled quantity/date and routine procurement cannot meet schedule *") : tx("Reason for this substitution *")} value={requestForm.reason} onChange={(e) => setRequestForm({ ...requestForm, reason: e.target.value })} />
+              {(selectedGroup.policy === "SHORTAGE_ONLY" || selectedGroup.policy === "EMERGENCY_ONLY") && <input className="w-full rounded border px-3 py-2 text-sm" placeholder={tx("Traceable shortage evidence reference *")} value={requestForm.shortage_evidence_reference} onChange={(e) => setRequestForm({ ...requestForm, shortage_evidence_reference: e.target.value })} />}
+              <div className="flex gap-2"><button onClick={() => createRequest.mutate()} disabled={!requestForm.bom_id || !requestForm.bom_line_id || !requestSubstituteId || Number(requestForm.target_qty) <= 0 || requestForm.context_reference.trim().length < 1 || requestForm.reason.trim().length < 5 || (["SHORTAGE_ONLY", "EMERGENCY_ONLY"].includes(selectedGroup.policy) && !requestForm.shortage_evidence_reference.trim()) || createRequest.isPending} className="flex-1 rounded bg-amber-600 py-2 text-sm font-medium text-white disabled:opacity-40">{createRequest.isPending ? tx("Submitting…") : tx("Submit for approval")}</button><button onClick={() => setShowRequest(false)} className="rounded border px-4 text-sm">{tx("Cancel")}</button></div>
+              {createRequest.isError && <p className="text-xs text-red-700">{tx("Request could not be submitted; check permissions and required policy evidence.")}</p>}
             </div>
           </div>
         </PermissionGuard>

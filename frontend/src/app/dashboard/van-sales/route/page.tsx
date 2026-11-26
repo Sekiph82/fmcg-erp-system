@@ -5,6 +5,7 @@ import { vanSalesApi, VISIT_STATUS_COLORS } from "@/lib/van_sales";
 import { positionFix, type Fix } from "@/lib/field";
 import { VanOutbox } from "@/components/van-sales/VanOutbox";
 import Link from "next/link";
+import { tx } from "@/lib/i18n/core";
 
 const errText = (e: unknown) => {
   const d = (e as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail;
@@ -31,11 +32,11 @@ function DayLog({ today, visitsDone }: { today: string; visitsDone: number }) {
   });
   return (
     <div className="glow-card p-4 flex flex-wrap items-center gap-3 text-sm">
-      <span className="font-medium text-white">My day</span>
-      <span className="text-slate-400">{log?.start_time ? `Started ${new Date(log.start_time + "Z").toLocaleTimeString()}${log.start_gps_lat != null ? " · GPS" : ""}` : "Not started"}
+      <span className="font-medium text-white">{tx("My day")}</span>
+      <span className="text-slate-400">{log?.start_time ? `Started ${new Date(log.start_time + "Z").toLocaleTimeString()}${log.start_gps_lat != null ? " · GPS" : ""}` : tx("Not started")}
         {log?.end_time ? ` · Ended ${new Date(log.end_time + "Z").toLocaleTimeString()}` : ""}</span>
-      {!log?.start_time && <button onClick={() => mut.mutate("start")} disabled={mut.isPending} className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium disabled:opacity-50">Start day</button>}
-      {log?.start_time && !log.end_time && <button onClick={() => mut.mutate("end")} disabled={mut.isPending} className="px-3 py-1.5 rounded-lg border border-white/[0.15] text-slate-200 text-xs disabled:opacity-50">End day</button>}
+      {!log?.start_time && <button onClick={() => mut.mutate("start")} disabled={mut.isPending} className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium disabled:opacity-50">{tx("Start day")}</button>}
+      {log?.start_time && !log.end_time && <button onClick={() => mut.mutate("end")} disabled={mut.isPending} className="px-3 py-1.5 rounded-lg border border-white/[0.15] text-slate-200 text-xs disabled:opacity-50">{tx("End day")}</button>}
       {msg && <p role={msg.ok ? "status" : "alert"} className={`w-full text-xs ${msg.ok ? "text-emerald-400" : "text-amber-300"}`}>{msg.text}</p>}
     </div>
   );
@@ -68,7 +69,7 @@ export default function RouteExecutionPage() {
   });
   const photoMut = useMutation({
     mutationFn: ({ id, file }: { id: string; file: File }) => vanSalesApi.uploadVisitPhoto(id, file),
-    onSuccess: () => { setMsg({ ok: true, text: "Outlet photo saved." }); refetch(); },
+    onSuccess: () => { setMsg({ ok: true, text: tx("Outlet photo saved.") }); refetch(); },
     onError: (e) => setMsg({ ok: false, text: errText(e) }),
   });
   const checkOutMut = useMutation({
@@ -87,19 +88,19 @@ export default function RouteExecutionPage() {
   return (
     <div className="p-6 space-y-5 text-slate-200">
       <div>
-        <h1 className="text-xl font-bold text-white">Route Execution</h1>
-        <p className="text-slate-500 text-sm mt-0.5">{today} — Visit tracking</p>
+        <h1 className="text-xl font-bold text-white">{tx("Route Execution")}</h1>
+        <p className="text-slate-500 text-sm mt-0.5">{today} {tx("— Visit tracking")}</p>
       </div>
 
       <DayLog today={today} visitsDone={visits.filter((v) => v.status === "COMPLETED").length} />
       {msg && <p role={msg.ok ? "status" : "alert"} className={`text-sm rounded-lg border p-3 ${msg.ok ? "border-emerald-500/30 text-emerald-300" : "border-red-500/30 text-red-300"}`}>{msg.text}</p>}
 
       <div>
-        <label className="text-xs text-slate-400 mb-1 block">Select Van / Driver</label>
+        <label className="text-xs text-slate-400 mb-1 block">{tx("Select Van / Driver")}</label>
         <select value={selectedVanId} onChange={(e) => setSelectedVanId(e.target.value)}
           className="bg-[#0d1829] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 w-64">
-          <option value="">Select van…</option>
-          {vans.map((v) => <option key={v.id} value={v.id}>{v.van_code} — {v.plate_number ?? "no plate"}</option>)}
+          <option value="">{tx("Select van…")}</option>
+          {vans.map((v) => <option key={v.id} value={v.id}>{v.van_code} — {v.plate_number ?? tx("no plate")}</option>)}
         </select>
       </div>
 
@@ -110,15 +111,15 @@ export default function RouteExecutionPage() {
           <div className="grid grid-cols-3 gap-4">
             <div className="glow-card p-4 text-center">
               <p className="text-2xl font-bold text-emerald-400">{completed}</p>
-              <p className="text-xs text-slate-500 mt-0.5">Completed</p>
+              <p className="text-xs text-slate-500 mt-0.5">{tx("Completed")}</p>
             </div>
             <div className="glow-card p-4 text-center">
               <p className="text-2xl font-bold text-amber-400">{remaining}</p>
-              <p className="text-xs text-slate-500 mt-0.5">Remaining</p>
+              <p className="text-xs text-slate-500 mt-0.5">{tx("Remaining")}</p>
             </div>
             <div className="glow-card p-4 text-center">
               <p className="text-2xl font-bold text-red-400">{missed}</p>
-              <p className="text-xs text-slate-500 mt-0.5">Missed</p>
+              <p className="text-xs text-slate-500 mt-0.5">{tx("Missed")}</p>
             </div>
           </div>
 
@@ -133,7 +134,7 @@ export default function RouteExecutionPage() {
                     </div>
                     <div>
                       <p className="text-sm font-medium text-white font-mono">{v.customer_id.slice(0, 8)}…</p>
-                      <p className="text-xs text-slate-500">{v.planned_time ? new Date(v.planned_time).toLocaleTimeString() : "No scheduled time"}</p>
+                      <p className="text-xs text-slate-500">{v.planned_time ? new Date(v.planned_time).toLocaleTimeString() : tx("No scheduled time")}</p>
                     </div>
                   </div>
                   <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${VISIT_STATUS_COLORS[v.status]}`}>{v.status}</span>
@@ -143,15 +144,15 @@ export default function RouteExecutionPage() {
                   <div className="flex gap-2">
                     <button onClick={() => checkInMut.mutate({ id: v.id })} disabled={checkInMut.isPending}
                       className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium disabled:opacity-50">
-                      {checkInMut.isPending && checkInMut.variables?.id === v.id ? "Getting location…" : "Check In"}
+                      {checkInMut.isPending && checkInMut.variables?.id === v.id ? tx("Getting location…") : tx("Check In")}
                     </button>
                     {noGps === v.id && <button onClick={() => checkInMut.mutate({ id: v.id, withoutGps: true })} disabled={checkInMut.isPending}
                       className="px-3 py-1.5 rounded-lg border border-amber-500/40 text-amber-300 text-xs">
-                      Check in without location
+                      {tx("Check in without location")}
                     </button>}
                     <button onClick={() => missedMut.mutate(v.id)}
                       className="px-3 py-1.5 rounded-lg border border-red-500/40 text-red-400 hover:bg-red-500/10 text-xs">
-                      Mark Missed
+                      {tx("Mark Missed")}
                     </button>
                   </div>
                 )}
@@ -159,32 +160,32 @@ export default function RouteExecutionPage() {
                   <div className="flex gap-2">
                     <Link href={`/dashboard/van-sales/pos?van_id=${selectedVanId}`}
                       className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium">
-                      Create Sale
+                      {tx("Create Sale")}
                     </Link>
                     <button onClick={() => checkOutMut.mutate(v.id)}
                       className="px-3 py-1.5 rounded-lg border border-white/[0.08] text-slate-400 hover:border-white/20 text-xs">
-                      Check Out
+                      {tx("Check Out")}
                     </button>
                   </div>
                 )}
                 {(v.status === "CHECKED_IN" || v.status === "COMPLETED") && (
                   <label className="block text-xs text-slate-400 mt-2">
-                    Outlet photo {v.outlet_photo_url ? "· saved (replace)" : "(optional)"}
-                    <input type="file" accept="image/jpeg,image/png" capture="environment" aria-label="Outlet photo" disabled={photoMut.isPending}
+                    {tx("Outlet photo")} {v.outlet_photo_url ? tx("· saved (replace)") : tx("(optional)")}
+                    <input type="file" accept="image/jpeg,image/png" capture="environment" aria-label={tx("Outlet photo")} disabled={photoMut.isPending}
                       onChange={(e) => { const f = e.target.files?.[0]; if (f) photoMut.mutate({ id: v.id, file: f }); e.target.value = ""; }}
                       className="mt-1 block w-full text-xs" />
                   </label>
                 )}
                 {v.check_in_time && (
                   <p className="text-xs text-slate-600 mt-2">
-                    In: {new Date(v.check_in_time).toLocaleTimeString()}
+                    {tx("In:")} {new Date(v.check_in_time).toLocaleTimeString()}
                     {v.check_out_time && ` · Out: ${new Date(v.check_out_time).toLocaleTimeString()}`}
                   </p>
                 )}
               </div>
             ))}
             {visits.length === 0 && (
-              <div className="text-center py-10 text-slate-600">No visits planned for today on this van.</div>
+              <div className="text-center py-10 text-slate-600">{tx("No visits planned for today on this van.")}</div>
             )}
           </div>
         </>
