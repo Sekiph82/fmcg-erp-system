@@ -2940,6 +2940,7 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
   - Independent review: ACCEPT_WITH_FIXES. Every finding (2 high, 5 medium, 9 low) fixed with regression tests; the e-mailed visitor-verification link is a recorded bounded delta.
   - Surface audit (T003): 16 defects fixed.
   - No live-provider requirement; activation stays in M47.S02 (NOT_DUE).
+  - Synchronization: gate commit c101d19 pushed; after fetch Desktop HEAD equals origin/main (c101d19); working tree clean apart from owner-untracked .hiveai/ and two M25 logs; disposable gate container m46-gate-pg removed; walk servers stopped and dev-server edits reverted.
 
 - [x] M47.S01.T006 — M46 carry-overs (from the M46 gate review, 2026-11-26)
   - **Scope:**
