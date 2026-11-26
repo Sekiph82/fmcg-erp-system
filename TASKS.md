@@ -2852,7 +2852,17 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
 # M47 — Parity-plus final integrated acceptance and future commissioning register
 
 ## M47.S01 — Final verification and additional gap closure
-- [ ] M47.S01.T001 — Re-audit dated HubSpot capability matrix against actual latest source and running local ERP; compare edition feature by feature, not names. Any uncovered software gap must become a new executable task (including gaps beyond original 40); implement and add acceptance coverage before final gate. No unverified parity claims. Update TASKS.md immediately, tests NOT RUN until gate.
+- [v] M47.S01.T001 — Re-audit dated HubSpot capability matrix against actual latest source and running local ERP; compare edition feature by feature, not names. Any uncovered software gap must become a new executable task (including gaps beyond original 40); implement and add acceptance coverage before final gate. No unverified parity claims. Update TASKS.md immediately, tests NOT RUN until gate.
+  Done 2026-11-26 [v] (tests NOT RUN as gate):
+  - The official HubSpot catalog was fetched again (HTTP 200, read in full: 483 hub rows, 11 agents, 9 AEO items). Against the 2026-11-25 snapshot there are 0 new, 0 removed and 0 renamed features (coordination/milestones/M47/HUBSPOT_CATALOG_DIFF_2026-11-26.md).
+  - A separate read-only explorer agent re-checked every v2 matrix row against the code at 681ac61.
+  - Matrix v3: coordination/milestones/M47/HUBSPOT_PARITY_MATRIX_v3_2026-11-26.md.
+  - Corrections:
+    - Ticket pipelines COMPLETE → DEPTH_GAP (the status enum is fixed).
+    - AI image → MISSING.
+    - Content sync stays MISSING (bundles contain no CMS content).
+  - Remaining buildable gaps became tasks M47.S01.T007–T011.
+  - Library-only items (SAML, Parquet, OCR) need owner consent to install and went to M47.S02.T010. No parity percentage is claimed.
 - [ ] M47.S01.T002 — Prove parity-plus integrated design through synthetic FMCG scenarios: website lead/chat → score → routing/sequence → quote/discount/signature → order → MRP/production/QC/stock → pick/dispatch/POD → invoice/ledger/tahsilat; distributor/shop/field channels; complaint/lot/recall/NPS/loyalty; campaigns/attribution/AI recommendations. Test absent-provider operation and native data continuity. Prepare evidence plan, test only at gate; update TASKS.md immediately.
 - [ ] M47.S01.T003 — Verify all software surfaces, role permissions, privacy, consent, auditability, accessible desktop/mobile screens, multi-company/currency/locales, import/export/backup/recovery, operational limits, deployment configuration and no real business data/credentials in public repo. Record docs, screenshots and missing tasks; do not imply production readiness without actual acceptance. Update TASKS.md immediately.
 - [ ] M47.S01.T004 — Final feature-by-feature comparison report: each HubSpot capability with evidence, achieved local parity/advantage, remaining limitations due to vendor-only/private data or approvals, exact future activation prerequisites, and measurable native FMCG advantages. If a software gap remains, add tasks and close them before final acceptance. No fake market-size or live accuracy equivalence. Update TASKS.md immediately.
@@ -2881,6 +2891,53 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
   - Media writes run off the event loop. An oversized upload is refused from Content-Length before the body is read.
   - Tests: tests/test_m47_s01_t006_carryovers.py.
 
+- [ ] M47.S01.T007 — Content Hub depth (gap from the v3 re-audit, coordination/milestones/M47/HUBSPOT_PARITY_MATRIX_v3_2026-11-26.md)
+  - **Scope:**
+    - AI-drafted page translation, within the content-studio budget, always NEEDS_REVIEW, falling back to a copy.
+    - Post narration through a TTS adapter (local engine if present, otherwise NOT_AVAILABLE) into cms_media audio linked to the post.
+    - AI image adapter (NOT_CONFIGURED, with a test mock) producing a draft creative that needs approval.
+    - One-to-many content remix.
+    - CMS content in config bundles (sites, live pages, tables, redirects, CTAs; dry-run diff).
+    - Video poster frame and trim through ffmpeg when present.
+  - **Acceptance at milestone gate:** tests per item; no unapproved publish; NOT_AVAILABLE states honest.
+  - **Claude checkpoint:** [v] pending milestone gate, tests NOT RUN until gate; never [x] before milestone PASS.
+- [ ] M47.S01.T008 — Automation and data depth (gap from the v3 re-audit, coordination/milestones/M47/HUBSPOT_PARITY_MATRIX_v3_2026-11-26.md)
+  - **Scope:**
+    - CRM workflows get a scheduled trigger and an inbound webhook trigger (bearer token).
+    - Custom web-event definitions, usable as a workflow trigger and an audience condition.
+    - Audiences on visited path, web event and intent score (consent-aware).
+    - Portal and shop usage as a customer-health signal.
+  - **Acceptance at milestone gate:** tests per item.
+  - **Claude checkpoint:** [v] pending milestone gate, tests NOT RUN until gate; never [x] before milestone PASS.
+- [ ] M47.S01.T009 — Sales depth (gap from the v3 re-audit, coordination/milestones/M47/HUBSPOT_PARITY_MATRIX_v3_2026-11-26.md)
+  - **Scope:**
+    - CRM tasks pushed to linked calendars.
+    - 1-to-1 video messages: recorded or uploaded video, a tracked expiring link, views on the timeline.
+    - Meeting recap and prep on meeting records.
+    - AI-drafted quote lines, never sent automatically.
+    - Bulk contract import.
+    - A deal-win model trained on closed deals, shown beside the rule score with metrics and a cold-start fallback.
+  - **Acceptance at milestone gate:** tests per item.
+  - **Claude checkpoint:** [v] pending milestone gate, tests NOT RUN until gate; never [x] before milestone PASS.
+- [ ] M47.S01.T010 — Platform and service depth (gap from the v3 re-audit, coordination/milestones/M47/HUBSPOT_PARITY_MATRIX_v3_2026-11-26.md)
+  - **Scope:**
+    - Field-level permissions (hidden or read-only per role on CRM and custom properties, enforced in the APIs).
+    - Form shortening for recognised consented visitors, plus rule-based smart properties.
+    - Configurable ticket pipelines.
+    - A Slack app with routing and signed interactive approvals.
+    - Campaign and nurture agent templates.
+    - Ad audience and conversion upload adapters tested against the simulator (NOT_CONFIGURED live).
+  - **Acceptance at milestone gate:** tests per item.
+  - **Claude checkpoint:** [v] pending milestone gate, tests NOT RUN until gate; never [x] before milestone PASS.
+- [ ] M47.S01.T011 — Usability depth (gap from the v3 re-audit, coordination/milestones/M47/HUBSPOT_PARITY_MATRIX_v3_2026-11-26.md)
+  - **Scope:**
+    - Drag-and-drop block ordering in the site and e-mail editors.
+    - A point-and-click web event tagger.
+    - Report-builder dataset blending of an uploaded table with a CRM source.
+    - Staff shell i18n (navigation, login, dashboard home) using the M46 framework.
+  - **Acceptance at milestone gate:** tests and browser check.
+  - **Claude checkpoint:** [v] pending milestone gate, tests NOT RUN until gate; never [x] before milestone PASS.
+
 ## M47.S02 — Future activation register (NOT_DUE [D], not outstanding software defects)
 These rows describe commissioning only; they must never stop accountless coding, testing, software milestone DONE or autonomous task selection. Claude must refine from source/evidence during M43.S00.T005. Do not change to [!] merely because the factory does not exist. Reopen activation when owner confirms actual prerequisites exist. Each row requires a setup checklist, minimal scoped real smoke test, rollback/disable, audit and exact live evidence; no credentials in Git.
 - [D] M47.S02.T001 — Production domain/HTTPS/DNS, OAuth redirect URLs, public forms/webhooks, QR/vCard links, SPF/DKIM/DMARC and deployment security; trigger: owner provides domain and hosting.
@@ -2892,5 +2949,6 @@ These rows describe commissioning only; they must never stop accountless coding,
 - [D] M47.S02.T007 — Actual employees/roles, products/BOMs, customers, distributors, warehouse/production lines, devices/printers/scanners, app store/MDM accounts and factory commissioning; trigger: real operational data and physical infrastructure. Synthetic records never substitute for these.
 - [D] M47.S02.T008 — Licensed enrichment/search/intent data, approved external AI/transcription endpoints, real traffic and historical churn/forecast calibration; trigger: owner-approved providers/data, permission, budget and representative records. Prior authorized live AI evidence stays historical; no new account needed for software tests.
 - [D] M47.S02.T009 — Real-company commissioning/UAT, performance/scale, backup/restore and security review on production infrastructure; trigger: deployment and operational staff. Do not declare live readiness until evidence exists.
+- [D] M47.S02.T010 — Library-only capabilities (owner consent to install packages): SAML (python3-saml plus xmlsec), Parquet export (pyarrow), business-card OCR (tesseract). The code paths already report NOT_AVAILABLE; activation = approved install + smoke test + rollback by uninstall.
 
 **Final software completion criteria:** all 40 original recommendations and every additional verified implementable capability mapped to accepted [x] rows (or justified already-existing/superseded evidence); all major milestone gates passed, exact source and Desktop/main synchronized, no actionable software gaps silently hidden in activation register. Separate limitations for proprietary datasets/vendor approvals and real operating conditions. Report software completion separately from future commissioning. No artificial 100% parity score. The required target is functional HubSpot parity-plus in the applicable product scope, including native FMCG advantages, verified with evidence.
