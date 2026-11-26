@@ -3626,7 +3626,8 @@ Dependency: prior major milestone accepted and synchronized; extend actual exist
     - Browser walkthrough: 5 screenshots; defect F fixed.
     - Independent Opus review: 14 findings fixed (T013). Re-review: ACCEPT; N1/N2 fixed, N3 accepted as a known limit.
     - No quality score claimed.
-- [ ] M50.S02.T002 — After successful gate, mark evidence-backed tasks [x], update TASKS.md/Project Status, commit/push main, fetch and verify Desktop HEAD == origin/main, preserve owner changes, record evidence SHA and sync result. Automatically proceed to next milestone; do not stop for missing business accounts.
+- [x] M50.S02.T002 — After successful gate, mark evidence-backed tasks [x], update TASKS.md/Project Status, commit/push main, fetch and verify Desktop HEAD == origin/main, preserve owner changes, record evidence SHA and sync result. Automatically proceed to next milestone; do not stop for missing business accounts.
+  - Synchronized 2026-11-26: the gate commit 5f4641e was pushed to origin/main; after fetch, Desktop HEAD == origin/main == 5f4641e. Owner files are preserved untracked.
 
 # M51 — Digital Experience Pro & Full Localization
 
